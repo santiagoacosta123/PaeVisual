@@ -1,65 +1,113 @@
-<div class="flex justify-between mb-4">
-  <div class="flex gap-2">
-    <button class="bg-[#FAB41F] px-4 py-2 rounded-[16px] font-bold text-slate-900">Todos</button>
-    <button class="bg-white border px-4 py-2 rounded-[16px]">Activos</button>
-    <button class="bg-white border px-4 py-2 rounded-[16px]">Inactivo</button>
+<div class="usuarios-container">
+  
+  <!-- BARRA DE ACCIÓN Y FILTROS -->
+  <div class="action-bar">
+    <div class="filter-tabs">
+      <button 
+        type="button" 
+        class="filter-btn" 
+        [class.active]="filtroActual === 'todos'" 
+        (click)="filtrar('todos')">
+        Todos
+      </button>
+      <button 
+        type="button" 
+        class="filter-btn" 
+        [class.active]="filtroActual === 'Activo'" 
+        (click)="filtrar('Activo')">
+        Activos
+      </button>
+      <button 
+        type="button" 
+        class="filter-btn" 
+        [class.active]="filtroActual === 'Inactivo'" 
+        (click)="filtrar('Inactivo')">
+        Inactivos
+      </button>
+    </div>
   </div>
-  <a routerLink="/crear-usuario" class="bg-[#FAB41F] px-5 py-2 rounded-[16px] font-bold text-slate-900">+ Nuevo Usuario</a>
-</div>
 
-<div class="bg-white p-6 rounded-[16px] shadow mb-6">
-  <div class="flex items-center justify-between mb-4">
-    <h2 class="text-xl font-black">{{ modoEdicion ? 'Actualizar usuario' : 'Registrar usuario' }}</h2>
-    <button *ngIf="modoEdicion" type="button" (click)="abrirFormulario()" class="border px-3 py-1 rounded-lg text-sm">Cancelar</button>
+  <!-- FORMULARIO DE REGISTRO / EDICIÓN -->
+  <div class="card-form-container">
+    <div class="form-header">
+      <h3 class="form-title">{{ modoEdicion ? 'Editar usuario' : 'Registrar usuario' }}</h3>
+      <p class="form-subtitle">Complete los campos para añadir o modificar un miembro en el sistema.</p>
+    </div>
+    
+    <div class="form-grid">
+      <!-- Input de Nombre -->
+      <div class="input-group">
+        <input 
+          type="text" 
+          [(ngModel)]="usuarioForm.nombre" 
+          placeholder="Nombre completo" 
+          class="form-input" 
+        />
+      </div>
+      
+      <!-- Selector de Rol -->
+      <div class="input-group">
+        <select [(ngModel)]="usuarioForm.rol" class="form-input">
+          <option value="" disabled selected>Seleccione el rol</option>
+          <option value="Admin">Admin</option>
+          <option value="Coordinador">Coordinador</option>
+          <option value="Supervisor">Supervisor</option>
+        </select>
+      </div>
+
+      <!-- Selector de Estado -->
+      <div class="input-group">
+        <select [(ngModel)]="usuarioForm.estado" class="form-input">
+          <option value="" disabled selected>Estado inicial</option>
+          <option value="Activo">Activo</option>
+          <option value="Inactivo">Inactivo</option>
+        </select>
+      </div>
+
+      <!-- Botón Guardar / Actualizar -->
+      <div class="form-action">
+        <button type="button" class="btn-primary" (click)="guardarUsuario()">
+          {{ modoEdicion ? 'Actualizar usuario' : 'Guardar usuario' }}
+        </button>
+      </div>
+    </div>
   </div>
 
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-    <input [(ngModel)]="usuarioForm.nombre" class="border p-3 rounded-[16px]" placeholder="Nombre completo">
-    <select [(ngModel)]="usuarioForm.rol" class="border p-3 rounded-[16px]">
-      <option value="Admin">Admin</option>
-      <option value="Coordinador">Coordinador</option>
-      <option value="Supervisor">Supervisor</option>
-      <option value="Jefa">Jefa</option>
-    </select>
-    <select [(ngModel)]="usuarioForm.estado" class="border p-3 rounded-[16px]">
-      <option value="Activo">Activo</option>
-      <option value="Inactivo">Inactivo</option>
-    </select>
+  <!-- TABLA DE USUARIOS -->
+  <div class="table-card">
+    <div class="table-header-title">
+      <h4>Usuarios Registrados</h4>
+    </div>
+    <table class="custom-table">
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Rol</th>
+          <th>Estado</th>
+          <th class="text-right">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let usuario of usuariosFiltrados">
+          <td class="font-medium">{{ usuario.nombre }}</td>
+          <td><span class="role-text">{{ usuario.rol }}</span></td>
+          <td>
+            <span class="status-badge" [ngClass]="usuario.estado === 'Activo' ? 'active' : 'inactive'">
+              {{ usuario.estado }}
+            </span>
+          </td>
+          <td class="actions-cell">
+            <button class="btn-action edit" (click)="editarUsuario(usuario)">Editar</button>
+            <button class="btn-action delete" (click)="eliminarUsuario(usuario)">Eliminar</button>
+          </td>
+        </tr>
+        <tr *ngIf="usuariosFiltrados.length === 0">
+          <td colspan="4" style="padding: 24px; text-align: center; color: #64748b;">
+            No hay usuarios registrados en esta categoría.
+          </td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 
-  <div class="flex justify-end mt-4">
-    <button type="button" (click)="guardarUsuario()" class="bg-[#FAB41F] px-6 py-2 rounded-[16px] font-bold text-slate-900">
-      {{ modoEdicion ? 'Actualizar' : 'Guardar' }}
-    </button>
-  </div>
-</div>
-
-<div class="bg-white rounded-[16px] shadow overflow-hidden">
-  <table class="w-full text-sm">
-    <thead class="bg-[#FAB41F] font-bold">
-      <tr>
-        <th class="p-4 text-left">Nombre</th>
-        <th>Rol</th>
-        <th>Estado</th>
-        <th>Acciones</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr *ngFor="let usuario of usuarios" class="border-t">
-        <td class="p-4">{{ usuario.nombre }}</td>
-        <td>{{ usuario.rol }}</td>
-        <td>
-          <span [ngClass]="usuario.estado === 'Activo' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'" class="px-3 py-1 rounded-full">
-            {{ usuario.estado }}
-          </span>
-        </td>
-        <td class="p-4">
-          <div class="flex gap-2">
-            <button type="button" (click)="editarUsuario(usuario)" class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold">✏️ Editar</button>
-            <button type="button" (click)="eliminarUsuario(usuario)" class="rounded-lg border border-red-200 bg-red-50 px-3 py-1 text-xs font-semibold text-red-600">🗑️ Eliminar</button>
-          </div>
-        </td>
-      </tr>
-    </tbody>
-  </table>
 </div>
