@@ -14,6 +14,7 @@ import { Reportes } from './reportes/reportes';
 import { ReporteInventario } from './reporte-inventario/reporte-inventario';
 
 export const routes: Routes = [
+
   {
     path: 'login',
     component: Login
@@ -21,14 +22,14 @@ export const routes: Routes = [
 
   {
     path: '',
+    redirectTo: 'login',
+    pathMatch: 'full'
+  },
+
+  {
+    path: '',
     component: LayoutComponent,
     children: [
-
-      {
-        path: '',
-        redirectTo: 'inicio',
-        pathMatch: 'full'
-      },
 
       {
         path: 'inicio',
@@ -82,3 +83,4 @@ export const routes: Routes = [
     redirectTo: 'login'
   }
 ];
+
