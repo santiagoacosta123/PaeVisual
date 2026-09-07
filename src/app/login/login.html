@@ -1,0 +1,82 @@
+<div class="split-layout">
+  
+  <!-- LADO IZQUIERDO: FORMULARIO -->
+  <div class="form-side">
+    <div class="form-content">
+      
+      <!-- LOGO OFICIAL SIRAE -->
+      <div class="logo-container">
+        <img src="/sirae-logo.png" alt="Logo SIRAE" class="sirae-logo" />
+      </div>
+      
+      <div class="header-text">
+        <h1>Bienvenido de nuevo</h1>
+        <p>Ingresa tus credenciales para acceder al sistema.</p>
+      </div>
+
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
+        
+        <!-- CORREO -->
+        <div class="input-group">
+          <label for="correo">Correo institucional</label>
+          <div class="input-wrapper">
+            <input 
+              id="correo" 
+              type="email" 
+              formControlName="correo" 
+              placeholder="usuario@correo.com" 
+              autocomplete="email"
+            />
+          </div>
+          <span class="error-text" *ngIf="correo?.invalid && (correo?.dirty || correo?.touched)">
+            Ingresa un correo válido
+          </span>
+        </div>
+
+        <!-- CONTRASEÑA -->
+        <div class="input-group">
+          <label for="clave">Contraseña</label>
+          <div class="input-wrapper">
+            <input 
+              id="clave" 
+              [type]="mostrarClave ? 'text' : 'password'" 
+              formControlName="clave" 
+              placeholder="••••••••" 
+            />
+            <button 
+              type="button" 
+              class="toggle-password" 
+              (click)="alternarClave()"
+              tabindex="-1"
+              aria-label="Alternar visibilidad de contraseña"
+            >
+              <svg *ngIf="!mostrarClave" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              <svg *ngIf="mostrarClave" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a18.5 18.5 0 0 1 4.22-5.06M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 7 11 7a18.5 18.5 0 0 1-2.16 3.19M14.12 14.12a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+            </button>
+          </div>
+          <span class="error-text" *ngIf="clave?.invalid && (clave?.dirty || clave?.touched)">
+            Mínimo 6 caracteres
+          </span>
+        </div>
+
+        <!-- ERROR GENERAL -->
+        <div class="error-alert" *ngIf="errorMensaje">
+          {{ errorMensaje }}
+        </div>
+
+        <!-- BOTÓN DE INGRESO -->
+        <button type="submit" class="submit-btn" [disabled]="cargando">
+          <span *ngIf="!cargando">Ingresar al sistema</span>
+          <span *ngIf="cargando" class="loader-text">Verificando...</span>
+        </button>
+
+      </form>
+    </div>
+  </div>
+
+  <!-- LADO DERECHO: IMAGEN CON DIFUMINADO Y BORDES REDONDEADOS -->
+  <div class="image-side">
+    <img src="/vegetales-frame.png" alt="Vegetales SIRAE" class="large-image" />
+  </div>
+
+</div>
