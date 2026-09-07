@@ -1,0 +1,32 @@
+<div class="space-y-6">
+  <div class="flex items-center justify-between">
+    <h1 class="text-2xl font-black">Reporte de inventario</h1>
+    <div class="flex gap-2">
+      <button type="button" (click)="verReporte()" class="border px-4 py-2 rounded-[16px]">Ver reporte</button>
+      <button type="button" (click)="descargarReporte()" class="bg-[#FAB41F] px-4 py-2 rounded-[16px] font-bold text-slate-900">Descargar</button>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-[16px] shadow overflow-hidden">
+    <table class="w-full text-sm">
+      <thead class="bg-[#FAB41F] font-bold">
+        <tr>
+          <th class="p-4 text-left">Producto</th>
+          <th>Categoría</th>
+          <th>Stock</th>
+          <th>Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let producto of productos" class="border-t">
+          <td class="p-4">{{ producto.nombre }}</td>
+          <td>{{ producto.categoria }}</td>
+          <td>{{ producto.stock }}</td>
+          <td>
+            <span [ngClass]="producto.estado === 'Disponible' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'" class="px-3 py-1 rounded-full">{{ producto.estado }}</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

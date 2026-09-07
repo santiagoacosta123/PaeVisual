@@ -1,0 +1,27 @@
+<div class="bg-white p-8 rounded-[16px] shadow max-w-3xl">
+  <h2 class="font-black text-xl mb-6">Crear nuevo usuario</h2>
+
+  <div class="grid grid-cols-2 gap-4">
+    <input class="border p-3 rounded-[16px]" placeholder="Nombre completo">
+    <input class="border p-3 rounded-[16px]" placeholder="Correo electrónico">
+
+    <select class="border p-3 rounded-[16px]">
+      <option>Rol</option>
+      <option>Administrador</option>
+      <option>Coordinador</option>
+      <option>Manipuladora Jefa</option>
+    </select>
+
+    <select class="border p-3 rounded-[16px]">
+      <option>Activo</option>
+      <option>Inactivo</option>
+    </select>
+
+    <input type="password" class="border p-3 rounded-[16px]" placeholder="Contraseña">
+  </div>
+
+  <div class="flex justify-end gap-3 mt-6">
+    <a routerLink="/usuarios" (click)="cancelar()" class="px-6 py-2 rounded-[16px] border">Cancelar</a>
+    <button type="button" (click)="guardarUsuario()" class="bg-[#FAB41F] font-black px-8 py-2 rounded-[16px]">Guardar</button>
+  </div>
+</div>
