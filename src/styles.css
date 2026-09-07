@@ -1,3 +1,30 @@
-/* You can add global styles to this file, and also import other style files */
-
 @import 'tailwindcss';
+
+:root {
+  --amarillo: #fab41f;
+  --amarillo-soft: #fff4d6;
+  --fondo: #f7f5f0;
+}
+
+html, body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--fondo);
+  font-family: 'Roboto', 'Segoe UI', sans-serif;
+}
+
+body {
+  color: #0f172a;
+}
+
+.bg-amarillo {
+  background-color: var(--amarillo);
+}
+
+.text-amarillo {
+  color: var(--amarillo);
+}
+
+button, input, select, textarea, a {
+  transition: all 0.2s ease;
+}
