@@ -1,22 +1,24 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router'; // Importante para la navegación con botones
 
 @Component({
   selector: 'app-inicio',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterModule],
   templateUrl: './inicio.html',
   styleUrls: ['./inicio.css']
 })
 export class InicioComponent {
-  nombreUsuario = 'Mariana Gomez';
-  fechaActual = 'SÁBADO, 29 DE AGOSTO DE 2026';
+  nombreUsuario = 'Administrador';
+  fechaActual = 'martes 28 de mayo de 2026';
 
+  // Datos para las 4 tarjetas principales con soporte de rutas
   resumen = [
-    { label: 'Usuarios', valor: '120', cambio: '+8% este mes', color: 'bg-[#FAB41F]' },
-    { label: 'Productos', valor: '85', cambio: '+12 nuevos', color: 'bg-[#FFF4D6]' },
-    { label: 'Sedes', valor: '12', cambio: '3 activas hoy', color: 'bg-[#FAB41F]' },
-    { label: 'Reportes', valor: '34', cambio: '7 pendientes', color: 'bg-[#FFF4D6]' }
+    { titulo: 'Usuarios Activos', valor: '4', desc: 'Usuarios', ruta: '/usuarios', btnTexto: 'Ver Usuarios' },
+    { titulo: 'Inventarios Activos', valor: '6', desc: 'Inventarios', ruta: '/productos', btnTexto: 'Ver Inventarios' },
+    { titulo: 'Menus Programados', valor: '10', desc: 'Menus', ruta: '/calendario', btnTexto: 'Ver Menus' },
+    { titulo: 'Entregas Realizadas', valor: '4', desc: 'Entregas', ruta: '/reportes', btnTexto: 'Ver Entregas' }
   ];
 
   alertas = [
@@ -25,16 +27,15 @@ export class InicioComponent {
     { nombre: 'Frijoles', stock: 15, estado: 'Poco stock' }
   ];
 
-  actividad = [
-    { texto: 'Jader creó un nuevo usuario', tiempo: 'Hace 15 min' },
-    { texto: 'Se actualizó el inventario central', tiempo: 'Hace 1 hora' },
-    { texto: 'Se generó reporte de ventas', tiempo: 'Hace 2 horas' },
-    { texto: 'Se asignó un nuevo rol', tiempo: 'Ayer' }
-  ];
-
   usuariosRecientes = [
     { nombre: 'María', rol: 'Coordinadora', estado: 'Activo' },
     { nombre: 'Carlos', rol: 'Supervisor', estado: 'Activo' },
     { nombre: 'Ana', rol: 'Jefa', estado: 'Inactivo' }
+  ];
+
+  actividad = [
+    { texto: 'Se actualizó el inventario de granos y cereales.', tiempo: 'Hace 15 minutos' },
+    { texto: 'Nuevo usuario registrado: Carlos (Supervisor).', tiempo: 'Hace 2 horas' },
+    { texto: 'Se programó el menú escolar para la sede principal.', tiempo: 'Hace 5 horas' }
   ];
 }

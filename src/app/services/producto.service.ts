@@ -1,37 +1,60 @@
 import { Injectable } from '@angular/core';
-import { Observable, of } from 'rxjs';
-import { Producto } from '../models/producto.model';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
 
-@Injectable({ providedIn: 'root' })
+@Injectable({
+  providedIn: 'root'
+})
 export class ProductoService {
-  private productos: Producto[] = [
-    { id: 1, nombre: 'Arroz', categoria: 'Grano', stock: 50 },
-    { id: 2, nombre: 'Leche', categoria: 'Lacteo', stock: 20 },
-    { id: 3, nombre: 'Queso', categoria: 'Lacteo', stock: 12 },
-    { id: 4, nombre: 'Frijoles', categoria: 'Grano', stock: 35 }
-  ];
 
-  getProductos(): Observable<Producto[]> {
-    return of(this.productos);
+  private apiInventario = 'http://127.0.0.1:8000/api/inventario/';
+  private apiIngredientes = 'http://127.0.0.1:8000/api/ingredientes/';
+  private apiUnidades = 'http://127.0.0.1:8000/api/unidades/';
+  private apiCategorias = 'http://127.0.0.1:8000/api/categorias/';
+
+  constructor(private http: HttpClient) {}
+
+  // INVENTARIO
+  getProductos(): Observable<any> {
+    console.log('➡️ GET:', this.apiInventario);
+    return this.http.get<any>(this.apiInventario);
   }
 
-  crearProducto(producto: Producto): Observable<Producto> {
-    const nuevo = { ...producto, id: Date.now() };
-    this.productos.push(nuevo);
-    return of(nuevo);
+  crearProducto(producto: any): Observable<any> {
+    console.log('➡️ POST:', this.apiInventario, producto);
+    return this.http.post<any>(this.apiInventario, producto);
   }
 
-  actualizarProducto(id: number, producto: Producto): Observable<Producto> {
-    const index = this.productos.findIndex((p) => p.id === id);
-    if (index !== -1) {
-      this.productos[index] = { ...producto, id };
-      return of(this.productos[index]);
-    }
-    return of(producto);
+  actualizarProducto(id: number, producto: any): Observable<any> {
+    console.log('➡️ PUT:', `${this.apiInventario}${id}/`, producto);
+    return this.http.put<any>(
+      `${this.apiInventario}${id}/`,
+      producto
+    );
   }
 
-  eliminarProducto(id: number): Observable<boolean> {
-    this.productos = this.productos.filter((p) => p.id !== id);
-    return of(true);
+  eliminarProducto(id: number): Observable<any> {
+    console.log('➡️ DELETE:', `${this.apiInventario}${id}/`);
+    return this.http.delete<any>(
+      `${this.apiInventario}${id}/`
+    );
+  }
+
+  // INGREDIENTES
+  getIngredientes(): Observable<any> {
+    console.log('➡️ GET:', this.apiIngredientes);
+    return this.http.get<any>(this.apiIngredientes);
+  }
+
+  // UNIDADES
+  getUnidades(): Observable<any> {
+    console.log('➡️ GET:', this.apiUnidades);
+    return this.http.get<any>(this.apiUnidades);
+  }
+
+  // CATEGORÍAS
+  getCategorias(): Observable<any> {
+    console.log('➡️ GET:', this.apiCategorias);
+    return this.http.get<any>(this.apiCategorias);
   }
 }
