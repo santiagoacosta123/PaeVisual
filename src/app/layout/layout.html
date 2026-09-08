@@ -1,40 +1,64 @@
 <div class="flex min-h-screen bg-[#f7f5f0] text-slate-800">
   <aside class="w-[260px] bg-white border-r border-slate-200/80 p-6 shadow-sm">
-    <div class="mb-8">
-      <p class="text-xs uppercase tracking-[0.25em] text-slate-400">Sistema</p>
-      <h2 class="mt-2 text-2xl font-black leading-tight">
-        <span class="text-[#FAB41F]">SIRAE</span>
-      </h2>
-    </div>
+    <div class="logo-container mb-5">
+        <img src="/sirae-logo.png" alt="Logo SIRAE" class="sirae-logo" />
+      </div>
 
     <nav class="space-y-2">
       <a routerLink="inicio" routerLinkActive="bg-[#FAB41F] text-white shadow-md" class="flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold text-slate-700 transition hover:bg-[#FFF4D6] hover:text-slate-900">
-        <span>🏠</span> Inicio
+        <span class="material-symbols-outlined">home</span> Inicio
       </a>
       <a routerLink="usuarios" routerLinkActive="bg-[#FAB41F] text-white shadow-md" class="flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold text-slate-700 transition hover:bg-[#FFF4D6] hover:text-slate-900">
-        <span>👤</span> Usuarios
+        <span class="material-symbols-outlined">people</span> Usuarios
       </a>
       <a routerLink="rol" routerLinkActive="bg-[#FAB41F] text-white shadow-md" class="flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold text-slate-700 transition hover:bg-[#FFF4D6] hover:text-slate-900">
-        <span>🛡️</span> Roles
+        <span class="material-symbols-outlined">shield</span> Roles
       </a>
       <a routerLink="productos" routerLinkActive="bg-[#FAB41F] text-white shadow-md" class="flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold text-slate-700 transition hover:bg-[#FFF4D6] hover:text-slate-900">
-        <span>📦</span> Productos
+        <span class="material-symbols-outlined">package</span> Productos
       </a>
-      <a routerLink="sedes" routerLinkActive="bg-[#FAB41F] text-white shadow-md" class="flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold text-slate-700 transition hover:bg-[#FFF4D6] hover:text-slate-900">
-        <span>🏫</span> Sedes
-      </a>
+
       <a routerLink="reporte-inventario" routerLinkActive="bg-[#FAB41F] text-white shadow-md" class="flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold text-slate-700 transition hover:bg-[#FFF4D6] hover:text-slate-900">
-        <span>📊</span> Reportes
+        <span class="material-symbols-outlined">bar_chart</span> Reportes
       </a>
     </nav>
 
     <div class="mt-10 border-t border-slate-200 pt-5">
-      <button type="button" (click)="configurar()" class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-left text-sm font-semibold text-slate-600 hover:bg-slate-50">
-        ⚙️ Configuración
-      </button>
-      <button type="button" (click)="cerrarSesion()" class="mt-2 w-full rounded-2xl border border-red-200 px-4 py-3 text-left text-sm font-semibold text-red-500 hover:bg-red-50">
-        🚪 Cerrar sesión
-      </button>
+      <div class="mt-10 border-t border-slate-200 pt-5">
+
+  <!-- Configuración -->
+  <button
+    type="button"
+    (click)="configurar()"
+    class="w-full h-20 flex items-center gap-3 px-6 rounded-2xl
+           border border-slate-200 bg-white
+           text-left text-lg font-medium text-slate-700
+           hover:bg-slate-50 transition">
+
+    <span class="material-symbols-outlined text-[30px]">
+      settings
+    </span>
+
+    <span>Configuración</span>
+
+  </button>
+
+  <button
+    type="button"
+    (click)="cerrarSesion()"
+    class="mt-3 w-full h-20 flex items-center gap-3 px-6 rounded-2xl
+           border border-red-200 bg-white
+           text-left text-lg font-medium text-red-500
+           hover:bg-red-50 transition">
+
+    <span class="material-symbols-outlined text-[30px]">
+      logout
+    </span>
+    <span>Cerrar sesión</span>
+
+  </button>
+
+</div>
     </div>
   </aside>
 
@@ -45,8 +69,8 @@
         <h1 class="text-xl font-black text-slate-800">Administrador</h1>
       </div>
       <div class="flex items-center gap-3 text-lg">
-        <span class="rounded-full bg-[#FFF4D6] p-2">🔔</span>
-        <span class="rounded-full bg-[#FFF4D6] p-2">👤</span>
+        <span class="material-symbols-outlined">Notifications</span>
+        <span class="material-symbols-outlined">person</span>
       </div>
     </div>
 
