@@ -1,30 +1,31 @@
 @import 'tailwindcss';
 
 :root {
-  --amarillo: #fab41f;
-  --amarillo-soft: #fff4d6;
-  --fondo: #f7f5f0;
+  --amarillo: #f4b41f;
+  --amarillo-soft: #fff8e1;
+  --gris: #777777;
+  --gris-soft: #f2f2f2;
+  --verde: #eefedd;
+  --rojo: #e53935;
+  --fondo: #f5f5f5;
 }
 
 html, body {
   margin: 0;
   min-height: 100%;
   background: var(--fondo);
-  font-family: 'Roboto', 'Segoe UI', sans-serif;
+  font-family: 'Roboto', sans-serif;
+  font-size: 15px;
+  color: #333333;
 }
 
-body {
-  color: #0f172a;
-}
-
-.bg-amarillo {
-  background-color: var(--amarillo);
-}
-
-.text-amarillo {
-  color: var(--amarillo);
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-style: normal;
 }
 
 button, input, select, textarea, a {
-  transition: all 0.2s ease;
+  font-family: 'Roboto', sans-serif;
+  transition: all 0.15s ease;
 }
+
