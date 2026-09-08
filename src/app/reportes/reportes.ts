@@ -26,6 +26,7 @@ interface SemanaConsolidado {
   styleUrls: ['./reportes.css'],
   templateUrl: './reportes.html',
 })
+
 export class Reportes {
 
   inventario: ItemInventario[] = [
@@ -51,7 +52,7 @@ export class Reportes {
   }
 
   enviarInventario() {
-    this.sweetAlert.info('Correo enviado', 'El reporte de inventario fue compartido con el equipo asignado.');
+    this.sweetAlert.info('Correo enviado', 'El reporte de inventario fue compartido.');
   }
 
   exportarConsolidado() {
@@ -59,7 +60,6 @@ export class Reportes {
   }
 
   enviarConsolidado() {
-    this.sweetAlert.info('Correo enviado', 'El consolidado mensual fue compartido con el equipo asignado.');
+    this.sweetAlert.info('Correo enviado', 'El consolidado mensual fue compartido.');
   }
 }
-
