@@ -1,37 +1,194 @@
-<div class="max-w-7xl mx-auto space-y-6">
-  <div class="flex items-center justify-between">
-    <h1 class="text-2xl font-black">Productos</h1>
-    <a routerLink="/nuevo-producto" class="bg-[#FAB41F] px-5 py-2 rounded-[16px] font-bold text-slate-900">+ Nuevo producto</a>
+<div class="productos-container">
+
+  <div class="section-header-banner">
+    <div class="header-titles">
+      <h2 class="section-title">Productos</h2>
+      <p class="section-subtitle">Gestión de productos e inventario</p>
+    </div>
+
+    <button
+      type="button"
+      class="btn-primary-action"
+      (click)="abrirFormulario()">
+      Agregar producto
+    </button>
   </div>
 
-  <div class="bg-white p-6 rounded-[16px] shadow mb-6">
-    <div class="flex items-center justify-between mb-4">
-      <h2 class="text-xl font-black">{{ modoEdicion ? 'Actualizar producto' : 'Registrar producto' }}</h2>
-      <button *ngIf="modoEdicion" type="button" (click)="abrirFormulario()" class="border px-3 py-1 rounded-lg text-sm">Cancelar</button>
-    </div>
+  <!-- FORMULARIO -->
+  <div class="form-card" *ngIf="mostrarFormulario">
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <input [(ngModel)]="productoForm.nombre" class="border p-3 rounded-[16px]" placeholder="Nombre del producto">
-      <input [(ngModel)]="productoForm.categoria" class="border p-3 rounded-[16px]" placeholder="Categoría">
-      <input type="number" [(ngModel)]="productoForm.stock" class="border p-3 rounded-[16px]" placeholder="Stock">
-    </div>
+    <div class="form-grid">
 
-    <div class="flex justify-end mt-4">
-      <button type="button" (click)="guardarProducto()" class="bg-[#FAB41F] px-6 py-2 rounded-[16px] font-bold text-slate-900">
-        {{ modoEdicion ? 'Actualizar' : 'Guardar' }}
-      </button>
-    </div>
-  </div>
+      <div class="form-group">
+        <label>Nombre del producto</label>
 
-  <div class="bg-white border rounded-2xl p-6 shadow-sm grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-    <div *ngFor="let p of productos" class="border rounded-xl p-4 shadow-sm">
-      <p class="font-bold text-lg">{{ p.nombre }}</p>
-      <p class="text-xs text-gray-500">{{ p.categoria }}</p>
-      <p class="text-sm mt-3">Stock: {{ p.stock }}</p>
-      <div class="flex gap-2 mt-4">
-        <button type="button" (click)="editarProducto(p)" class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold">✏️ Editar</button>
-        <button type="button" (click)="eliminarProducto(p)" class="rounded-lg border border-red-200 bg-red-50 px-3 py-1 text-xs font-semibold text-red-600">🗑️ Eliminar</button>
+        <input
+          type="text"
+          class="form-control"
+          [(ngModel)]="productoForm.nombre"
+          placeholder="Ingrese el nombre del producto">
       </div>
+
+      <div class="form-group">
+        <label>Categoría</label>
+
+        <input
+          type="text"
+          class="form-control"
+          [(ngModel)]="productoForm.categoria"
+          placeholder="Ingrese la categoría">
+      </div>
+
+      <div class="form-group">
+        <label>Stock</label>
+
+        <input
+          type="text"
+          class="form-control"
+          [(ngModel)]="productoForm.stock"
+          placeholder="Ingrese el stock">
+      </div>
+
+      <div class="form-group">
+        <label>Unidad de medida</label>
+
+        <input
+          type="text"
+          class="form-control"
+          [(ngModel)]="productoForm.unidad"
+          placeholder="Ej: Kilogramos">
+      </div>
+
+      <div class="form-group">
+        <label>Porcentaje</label>
+
+        <input
+          type="text"
+          class="form-control"
+          [(ngModel)]="productoForm.porcentaje"
+          placeholder="Ej: 100%">
+      </div>
+
     </div>
+
+    <div class="form-actions">
+
+      <button
+        type="button"
+        class="btn-save"
+        (click)="guardarProducto()">
+
+        {{ modoEdicion ? 'Actualizar producto' : 'Guardar producto' }}
+
+      </button>
+
+      <button
+        type="button"
+        class="btn-cancel"
+        (click)="cerrarFormulario()">
+
+        Cancelar
+
+      </button>
+
+    </div>
+
   </div>
+
+  <!-- TABLA -->
+  <div class="table-card">
+
+    <div class="table-responsive">
+
+      <table class="custom-data-table">
+
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th>Categoría</th>
+            <th>Stock</th>
+            <th>Unidad</th>
+            <th>Porcentaje</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+
+        <tbody>
+
+          <tr *ngFor="let p of productos">
+
+            <td>
+              <span class="product-name">
+                {{ p.nombre || p.nombre_ingrediente || 'Sin nombre' }}
+              </span>
+            </td>
+
+            <td>
+              <span class="category-badge">
+                {{ p.categoria || p.nombre_categoria || 'Sin categoría' }}
+              </span>
+            </td>
+
+            <td>
+              {{ p.stock ?? p.cantidad_actual ?? '0' }}
+            </td>
+
+            <td>
+              <span class="unit-badge">
+                {{ p.unidad || p.nombre_unidad || 'Sin unidad' }}
+              </span>
+            </td>
+
+            <td>
+              <span class="percentage-badge">
+                {{ p.porcentaje || '100%' }}
+              </span>
+            </td>
+
+            <td>
+
+              <div class="action-buttons-clean">
+
+                <button
+                  type="button"
+                  class="btn-icon-only edit"
+                  title="Editar"
+                  (click)="editarProducto(p)">
+                  ✏️
+                </button>
+
+                <button
+                  type="button"
+                  class="btn-icon-only delete"
+                  title="Eliminar"
+                  (click)="eliminarProducto(p)">
+                  🗑️
+                </button>
+
+              </div>
+
+            </td>
+
+          </tr>
+
+          <tr *ngIf="productos.length === 0">
+
+            <td
+              colspan="6"
+              class="no-results">
+
+              No hay productos registrados.
+
+            </td>
+
+          </tr>
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+  </div>
+
 </div>
