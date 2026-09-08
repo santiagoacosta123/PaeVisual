@@ -1,79 +1,213 @@
-<div class="flex min-h-screen bg-[#f7f5f0] text-slate-800">
-  <aside class="w-[260px] bg-white border-r border-slate-200/80 p-6 shadow-sm">
-    <div class="logo-container mb-5">
-        <img src="/sirae-logo.png" alt="Logo SIRAE" class="sirae-logo" />
-      </div>
+<div class="flex min-h-screen" style="background:#f5f5f5; font-family:'Roboto',sans-serif;">
 
-    <nav class="space-y-2">
-      <a routerLink="inicio" routerLinkActive="bg-[#FAB41F] text-white shadow-md" class="flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold text-slate-700 transition hover:bg-[#FFF4D6] hover:text-slate-900">
-        <span class="material-symbols-outlined">home</span> Inicio
-      </a>
-      <a routerLink="usuarios" routerLinkActive="bg-[#FAB41F] text-white shadow-md" class="flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold text-slate-700 transition hover:bg-[#FFF4D6] hover:text-slate-900">
-        <span class="material-symbols-outlined">people</span> Usuarios
-      </a>
-      <a routerLink="rol" routerLinkActive="bg-[#FAB41F] text-white shadow-md" class="flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold text-slate-700 transition hover:bg-[#FFF4D6] hover:text-slate-900">
-        <span class="material-symbols-outlined">shield</span> Roles
-      </a>
-      <a routerLink="productos" routerLinkActive="bg-[#FAB41F] text-white shadow-md" class="flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold text-slate-700 transition hover:bg-[#FFF4D6] hover:text-slate-900">
-        <span class="material-symbols-outlined">package</span> Productos
-      </a>
+  <!-- Sidebar -->
+  <aside style="width:240px; background:#fff; border-right:1px solid #e0e0e0;" class="flex flex-col p-5">
 
-      <a routerLink="reporte-inventario" routerLinkActive="bg-[#FAB41F] text-white shadow-md" class="flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold text-slate-700 transition hover:bg-[#FFF4D6] hover:text-slate-900">
-        <span class="material-symbols-outlined">bar_chart</span> Reportes
+    <!-- Logo -->
+    <div class="mb-6">
+      <img src="/sirae-logo.png" alt="Logo SIRAE" style="max-width:140px;" />
+    </div>
+
+    <!-- Navegación -->
+    <nav class="flex flex-col gap-1 flex-1">
+      <a routerLink="inicio" routerLinkActive="active-link"
+         style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; text-decoration:none; color:#333; font-size:14px; font-weight:500;">
+        <span class="material-symbols-outlined" style="font-size:20px; color:#777;">home</span>
+        Inicio
+      </a>
+      <a routerLink="usuarios" routerLinkActive="active-link"
+         style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; text-decoration:none; color:#333; font-size:14px; font-weight:500;">
+        <span class="material-symbols-outlined" style="font-size:20px; color:#777;">people</span>
+        Usuarios
+      </a>
+      <a routerLink="rol" routerLinkActive="active-link"
+         style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; text-decoration:none; color:#333; font-size:14px; font-weight:500;">
+        <span class="material-symbols-outlined" style="font-size:20px; color:#777;">shield</span>
+        Roles
+      </a>
+      <a routerLink="productos" routerLinkActive="active-link"
+         style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; text-decoration:none; color:#333; font-size:14px; font-weight:500;">
+        <span class="material-symbols-outlined" style="font-size:20px; color:#777;">package</span>
+        Productos
+      </a>
+      <a routerLink="reportes" routerLinkActive="active-link"
+         style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; text-decoration:none; color:#333; font-size:14px; font-weight:500;">
+        <span class="material-symbols-outlined" style="font-size:20px; color:#777;">bar_chart</span>
+        Reportes
       </a>
     </nav>
 
-    <div class="mt-10 border-t border-slate-200 pt-5">
-      <div class="mt-10 border-t border-slate-200 pt-5">
-
-  <!-- Configuración -->
-  <button
-    type="button"
-    (click)="configurar()"
-    class="w-full h-20 flex items-center gap-3 px-6 rounded-2xl
-           border border-slate-200 bg-white
-           text-left text-lg font-medium text-slate-700
-           hover:bg-slate-50 transition">
-
-    <span class="material-symbols-outlined text-[30px]">
-      settings
-    </span>
-
-    <span>Configuración</span>
-
-  </button>
-
-  <button
-    type="button"
-    (click)="cerrarSesion()"
-    class="mt-3 w-full h-20 flex items-center gap-3 px-6 rounded-2xl
-           border border-red-200 bg-white
-           text-left text-lg font-medium text-red-500
-           hover:bg-red-50 transition">
-
-    <span class="material-symbols-outlined text-[30px]">
-      logout
-    </span>
-    <span>Cerrar sesión</span>
-
-  </button>
-
-</div>
+    <!-- Fondo del sidebar: Configuración y Cerrar sesión -->
+    <div style="border-top:1px solid #e0e0e0; padding-top:12px; margin-top:12px; display:flex; flex-direction:column; gap:6px;">
+      <button type="button" (click)="configurar()"
+        style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; background:none; border:none; cursor:pointer; color:#555; font-size:14px; font-weight:500; width:100%; text-align:left;">
+        <span class="material-symbols-outlined" style="font-size:20px; color:#777;">settings</span>
+        Configuración
+      </button>
+      <button type="button" (click)="cerrarSesion()"
+        style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; background:none; border:none; cursor:pointer; color:#e53935; font-size:14px; font-weight:500; width:100%; text-align:left;">
+        <span class="material-symbols-outlined" style="font-size:20px; color:#e53935;">logout</span>
+        Cerrar sesión
+      </button>
     </div>
   </aside>
 
-  <main class="flex-1 p-6 md:p-8">
-    <div class="mb-6 flex items-center justify-between rounded-[20px] bg-white px-5 py-4 shadow-sm ring-1 ring-slate-200/80">
+  <!-- Contenido principal -->
+  <main style="flex:1; padding:24px; position:relative;">
+
+    <!-- Barra superior -->
+    <div style="background:#fff; border:1px solid #e0e0e0; border-radius:10px; padding:12px 20px; display:flex; align-items:center; justify-content:space-between; margin-bottom:24px;">
       <div>
-        <p class="text-xs uppercase tracking-[0.22em] text-slate-400">Panel</p>
-        <h1 class="text-xl font-black text-slate-800">Administrador</h1>
+        <p style="font-size:11px; color:#777; text-transform:uppercase; letter-spacing:1px; margin:0;">Panel</p>
+        <h1 style="font-size:18px; font-weight:700; color:#333; margin:0;">Administrador</h1>
       </div>
-      <div class="flex items-center gap-3 text-lg">
-        <span class="material-symbols-outlined">Notifications</span>
-        <span class="material-symbols-outlined">person</span>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <button type="button" style="background:none; border:none; cursor:pointer; color:#777; display:flex; align-items:center;">
+          <span class="material-symbols-outlined" style="font-size:22px;">notifications</span>
+        </button>
+        <button type="button" (click)="togglePerfil()"
+          style="background:none; border:none; cursor:pointer; color:#777; display:flex; align-items:center;">
+          <span class="material-symbols-outlined" style="font-size:22px;">person</span>
+        </button>
       </div>
     </div>
+
+    <!-- Panel de perfil desplegable -->
+    <div *ngIf="mostrarPerfil"
+      style="position:absolute; top:80px; right:24px; width:300px; background:#fff; border:1px solid #e0e0e0; border-radius:10px; box-shadow:0 4px 16px rgba(0,0,0,0.10); z-index:100; overflow:hidden;">
+
+      <!-- Vista: Mi perfil -->
+      <div *ngIf="vistaActual === 'perfil'">
+        <!-- Encabezado -->
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:16px 18px 12px; border-bottom:1px solid #f0f0f0;">
+          <span style="font-size:15px; font-weight:700; color:#333;">Mi perfil</span>
+          <button type="button" (click)="cerrarPanel()" style="background:none; border:none; cursor:pointer; color:#777; display:flex;">
+            <span class="material-symbols-outlined" style="font-size:20px;">close</span>
+          </button>
+        </div>
+
+        <!-- Datos del usuario -->
+        <div style="display:flex; align-items:center; gap:14px; padding:16px 18px; border-bottom:1px solid #f0f0f0;">
+          <div style="width:56px; height:56px; border-radius:50%; background:#f0f0f0; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+            <span class="material-symbols-outlined" style="font-size:32px; color:#777;">account_circle</span>
+          </div>
+          <div>
+            <p style="font-size:15px; font-weight:700; color:#333; margin:0;">{{ perfil.nombre }}</p>
+            <p style="font-size:13px; color:#777; margin:2px 0;">{{ perfil.sede }}</p>
+            <p style="font-size:13px; color:#777; margin:2px 0;">{{ perfil.correo }}</p>
+            <p style="font-size:13px; color:#777; margin:2px 0;">{{ perfil.telefono }}</p>
+          </div>
+        </div>
+
+        <div>
+          <button type="button" (click)="irA('editar')"
+            style="display:flex; align-items:center; justify-content:space-between; width:100%; padding:14px 18px; background:none; border:none; border-bottom:1px solid #f0f0f0; cursor:pointer; font-size:14px; font-weight:500; color:#333;">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <span class="material-symbols-outlined" style="font-size:20px; color:#777;">manage_accounts</span>
+              Editar perfil
+            </div>
+            <span class="material-symbols-outlined" style="font-size:18px; color:#aaa;">chevron_right</span>
+          </button>
+
+          <button type="button" (click)="irA('password')"
+            style="display:flex; align-items:center; justify-content:space-between; width:100%; padding:14px 18px; background:none; border:none; cursor:pointer; font-size:14px; font-weight:500; color:#333;">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <span class="material-symbols-outlined" style="font-size:20px; color:#777;">lock</span>
+              Cambiar contraseña
+            </div>
+            <span class="material-symbols-outlined" style="font-size:18px; color:#aaa;">chevron_right</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Vista: Editar perfil -->
+      <div *ngIf="vistaActual === 'editar'">
+        <div style="display:flex; align-items:center; gap:10px; padding:16px 18px 12px; border-bottom:1px solid #f0f0f0;">
+          <button type="button" (click)="irA('perfil')" style="background:none; border:none; cursor:pointer; display:flex; align-items:center; color:#777; padding:0;">
+            <span class="material-symbols-outlined" style="font-size:20px;">arrow_back</span>
+          </button>
+          <span style="font-size:15px; font-weight:700; color:#333;">Editar perfil</span>
+        </div>
+        <div style="padding:16px 18px; display:flex; flex-direction:column; gap:12px;">
+          <div>
+            <label style="font-size:12px; font-weight:600; color:#777; display:block; margin-bottom:4px;">Nombre</label>
+            <input type="text" [(ngModel)]="editForm.nombre"
+              style="width:100%; padding:8px 10px; border:1px solid #ddd; border-radius:6px; font-size:14px; font-family:'Roboto',sans-serif; box-sizing:border-box; outline:none;" />
+          </div>
+          <div>
+            <label style="font-size:12px; font-weight:600; color:#777; display:block; margin-bottom:4px;">Sede</label>
+            <input type="text" [(ngModel)]="editForm.sede"
+              style="width:100%; padding:8px 10px; border:1px solid #ddd; border-radius:6px; font-size:14px; font-family:'Roboto',sans-serif; box-sizing:border-box; outline:none;" />
+          </div>
+          <div>
+            <label style="font-size:12px; font-weight:600; color:#777; display:block; margin-bottom:4px;">Correo</label>
+            <input type="email" [(ngModel)]="editForm.correo"
+              style="width:100%; padding:8px 10px; border:1px solid #ddd; border-radius:6px; font-size:14px; font-family:'Roboto',sans-serif; box-sizing:border-box; outline:none;" />
+          </div>
+          <div>
+            <label style="font-size:12px; font-weight:600; color:#777; display:block; margin-bottom:4px;">Teléfono</label>
+            <input type="text" [(ngModel)]="editForm.telefono"
+              style="width:100%; padding:8px 10px; border:1px solid #ddd; border-radius:6px; font-size:14px; font-family:'Roboto',sans-serif; box-sizing:border-box; outline:none;" />
+          </div>
+          <button type="button" (click)="guardarPerfil()"
+            style="background:#f4b41f; color:#333; font-weight:700; font-family:'Roboto',sans-serif; border:none; border-radius:6px; padding:10px; font-size:14px; cursor:pointer; width:100%; margin-top:4px;">
+            Guardar cambios
+          </button>
+        </div>
+      </div>
+
+      <!-- Vista: Cambiar contraseña -->
+      <div *ngIf="vistaActual === 'password'">
+        <div style="display:flex; align-items:center; gap:10px; padding:16px 18px 12px; border-bottom:1px solid #f0f0f0;">
+          <button type="button" (click)="irA('perfil')" style="background:none; border:none; cursor:pointer; display:flex; align-items:center; color:#777; padding:0;">
+            <span class="material-symbols-outlined" style="font-size:20px;">arrow_back</span>
+          </button>
+          <span style="font-size:15px; font-weight:700; color:#333;">Cambiar contraseña</span>
+        </div>
+        <div style="padding:16px 18px; display:flex; flex-direction:column; gap:12px;">
+          <div>
+            <label style="font-size:12px; font-weight:600; color:#777; display:block; margin-bottom:4px;">Contraseña actual</label>
+            <input type="password" [(ngModel)]="passwordForm.actual"
+              style="width:100%; padding:8px 10px; border:1px solid #ddd; border-radius:6px; font-size:14px; font-family:'Roboto',sans-serif; box-sizing:border-box; outline:none;" />
+          </div>
+          <div>
+            <label style="font-size:12px; font-weight:600; color:#777; display:block; margin-bottom:4px;">Nueva contraseña</label>
+            <input type="password" [(ngModel)]="passwordForm.nueva"
+              style="width:100%; padding:8px 10px; border:1px solid #ddd; border-radius:6px; font-size:14px; font-family:'Roboto',sans-serif; box-sizing:border-box; outline:none;" />
+          </div>
+          <div>
+            <label style="font-size:12px; font-weight:600; color:#777; display:block; margin-bottom:4px;">Confirmar contraseña</label>
+            <input type="password" [(ngModel)]="passwordForm.confirmar"
+              style="width:100%; padding:8px 10px; border:1px solid #ddd; border-radius:6px; font-size:14px; font-family:'Roboto',sans-serif; box-sizing:border-box; outline:none;" />
+          </div>
+          <button type="button" (click)="guardarPassword()"
+            style="background:#f4b41f; color:#333; font-weight:700; font-family:'Roboto',sans-serif; border:none; border-radius:6px; padding:10px; font-size:14px; cursor:pointer; width:100%; margin-top:4px;">
+            Cambiar contraseña
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Backdrop para cerrar el panel al hacer clic fuera -->
+    <div *ngIf="mostrarPerfil" (click)="cerrarPanel()"
+      style="position:fixed; inset:0; z-index:99;"></div>
 
     <router-outlet></router-outlet>
   </main>
 </div>
+
+<!-- Estilos para el enlace activo del menú -->
+<style>
+  .active-link {
+    background: #f4b41f !important;
+    color: #fff !important;
+    font-weight: 600;
+  }
+  .active-link .material-symbols-outlined {
+    color: #fff !important;
+  }
+  aside a:hover:not(.active-link) {
+    background: #fff8e1;
+  }
+</style>
