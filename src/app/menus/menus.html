@@ -1,0 +1,351 @@
+<div class="min-h-screen bg-gray-100 p-6 md:p-10">
+  <div class="max-w-7xl mx-auto space-y-8">
+
+  <!-- ENCABEZADO DE PÁGINA -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-amber-200/70">
+    <div>
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-[#FAB41F]/20 text-amber-900 border border-[#FAB41F]/40 mb-2">
+        <span class="w-2 h-2 rounded-full bg-[#FAB41F] animate-pulse"></span>
+        Módulo Nutricional
+      </div>
+      <h1 class="text-3xl font-black tracking-tight text-slate-900">
+        Gestión de Menús
+      </h1>
+      <p class="text-slate-500 text-sm mt-1">
+        Planificación, registro diario de menús escolares y control de raciones
+      </p>
+    </div>
+
+    <!-- CONTADOR TOTAL -->
+    <div class="flex items-center gap-3 bg-white p-3 px-5 rounded-2xl border border-amber-200 shadow-sm">
+      <div class="w-10 h-10 rounded-xl bg-[#FAB41F] flex items-center justify-center text-slate-900 font-bold">
+        🥗
+      </div>
+      <div>
+        <span class="text-xs text-slate-500 font-medium block">Total Menús</span>
+        <span class="text-xl font-black text-slate-900">{{ menus.length }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ALERTA / NOTIFICACIÓN -->
+  <div
+    *ngIf="alerta"
+    [ngClass]="{
+      'bg-emerald-50 border-emerald-300 text-emerald-800': alerta.tipo === 'success',
+      'bg-red-50 border-red-300 text-red-800': alerta.tipo === 'error',
+      'bg-amber-50 border-amber-300 text-amber-800': alerta.tipo === 'info'
+    }"
+    class="p-4 rounded-2xl border flex items-center justify-between shadow-sm transition-all"
+  >
+    <div class="flex items-center gap-3">
+      <span class="text-lg">
+        {{ alerta.tipo === 'success' ? '✅' : (alerta.tipo === 'error' ? '⚠️' : 'ℹ️') }}
+      </span>
+      <span class="font-medium text-sm">{{ alerta.mensaje }}</span>
+    </div>
+    <button (click)="alerta = null" class="text-slate-400 hover:text-slate-600 text-sm font-bold">✕</button>
+  </div>
+
+  <!-- FORMULARIO DE REGISTRO / EDICIÓN -->
+  <div class="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-amber-200/80 relative overflow-hidden">
+    <!-- Barra decorativa superior amarilla -->
+    <div class="absolute top-0 left-0 right-0 h-2 bg-[#FAB41F]"></div>
+
+    <div class="flex items-center justify-between mb-6">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-[#FAB41F]/30 text-amber-900 flex items-center justify-center font-bold text-sm">
+          {{ editando ? '✏️' : '➕' }}
+        </div>
+        <h2 class="text-xl font-black text-slate-900">
+          {{ editando ? 'Editar Menú' : 'Registrar Nuevo Menú' }}
+        </h2>
+      </div>
+
+      <span *ngIf="editando" class="text-xs bg-[#FAB41F] text-slate-900 font-black px-3 py-1 rounded-full uppercase tracking-wider">
+        Modo Edición (ID: {{ idEditando }})
+      </span>
+    </div>
+
+    <form (ngSubmit)="editando ? actualizarMenu() : guardarMenu()">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+
+        <!-- Jornada -->
+        <div>
+          <label class="block text-sm font-bold text-slate-700 mb-1.5">
+            Jornada Escolar <span class="text-amber-600">*</span>
+          </label>
+          <select
+            [(ngModel)]="id_jornada"
+            name="id_jornada"
+            class="w-full px-4 py-3 rounded-2xl border border-slate-200 text-slate-800 bg-slate-50/50 outline-none transition-all focus:bg-white focus:border-[#FAB41F] focus:ring-4 focus:ring-[#FAB41F]/20"
+          >
+            <option value="" disabled>Seleccione una jornada</option>
+            <option *ngFor="let j of jornadas" [value]="j.id_jornada">
+              {{ j.nombre_jornada }} (ID: {{ j.id_jornada }})
+            </option>
+          </select>
+        </div>
+
+        <!-- Fecha -->
+        <div>
+          <label class="block text-sm font-bold text-slate-700 mb-1.5">
+            Fecha de Entrega <span class="text-amber-600">*</span>
+          </label>
+          <input
+            type="date"
+            [(ngModel)]="fecha"
+            name="fecha"
+            class="w-full px-4 py-3 rounded-2xl border border-slate-200 text-slate-800 bg-slate-50/50 outline-none transition-all focus:bg-white focus:border-[#FAB41F] focus:ring-4 focus:ring-[#FAB41F]/20"
+          />
+        </div>
+
+        <!-- Niños presentes -->
+        <div>
+          <label class="block text-sm font-bold text-slate-700 mb-1.5">
+            Niños Presentes <span class="text-amber-600">*</span>
+          </label>
+          <input
+            type="number"
+            min="0"
+            [(ngModel)]="ninos_presentes"
+            name="ninos_presentes"
+            placeholder="Ej: 35"
+            class="w-full px-4 py-3 rounded-2xl border border-slate-200 text-slate-800 placeholder-slate-400 bg-slate-50/50 outline-none transition-all focus:bg-white focus:border-[#FAB41F] focus:ring-4 focus:ring-[#FAB41F]/20"
+          />
+        </div>
+
+        <!-- Estado -->
+        <div>
+          <label class="block text-sm font-bold text-slate-700 mb-1.5">
+            Estado <span class="text-amber-600">*</span>
+          </label>
+          <select
+            [(ngModel)]="estado"
+            name="estado"
+            class="w-full px-4 py-3 rounded-2xl border border-slate-200 text-slate-800 bg-slate-50/50 outline-none transition-all focus:bg-white focus:border-[#FAB41F] focus:ring-4 focus:ring-[#FAB41F]/20"
+          >
+            <option value="Activo">Activo</option>
+            <option value="Inactivo">Inactivo</option>
+            <option value="Pendiente">Pendiente</option>
+          </select>
+        </div>
+
+        <!-- ID Contrato -->
+        <div>
+          <label class="block text-sm font-bold text-slate-700 mb-1.5">
+            ID de Contrato <span class="text-amber-600">*</span>
+          </label>
+          <input
+            type="number"
+            min="1"
+            [(ngModel)]="id_contrato"
+            name="id_contrato"
+            placeholder="Ej: 101"
+            class="w-full px-4 py-3 rounded-2xl border border-slate-200 text-slate-800 placeholder-slate-400 bg-slate-50/50 outline-none transition-all focus:bg-white focus:border-[#FAB41F] focus:ring-4 focus:ring-[#FAB41F]/20"
+          />
+        </div>
+
+        <!-- Información nutricional (Ocupa fila completa en grid) -->
+        <div class="md:col-span-2 lg:col-span-3">
+          <label class="block text-sm font-bold text-slate-700 mb-1.5">
+            Información Nutricional y Menú <span class="text-amber-600">*</span>
+          </label>
+          <textarea
+            rows="3"
+            [(ngModel)]="informacion_nutricional"
+            name="informacion_nutricional"
+            placeholder="Detalla los alimentos, ingredientes y balance nutricional..."
+            class="w-full px-4 py-3 rounded-2xl border border-slate-200 text-slate-800 placeholder-slate-400 bg-slate-50/50 outline-none transition-all focus:bg-white focus:border-[#FAB41F] focus:ring-4 focus:ring-[#FAB41F]/20"
+          ></textarea>
+        </div>
+
+      </div>
+
+      <!-- BOTONES DE ACCIÓN DEL FORMULARIO -->
+      <div class="flex flex-wrap items-center justify-end gap-3 mt-6 pt-4 border-t border-slate-100">
+        <!-- CANCELAR (si está editando) -->
+        <button
+          *ngIf="editando"
+          type="button"
+          (click)="cancelarEdicion()"
+          class="px-5 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 font-semibold transition text-sm cursor-pointer"
+        >
+          Cancelar
+        </button>
+
+        <!-- LIMPIAR (si no está editando) -->
+        <button
+          *ngIf="!editando"
+          type="button"
+          (click)="limpiarFormulario()"
+          class="px-5 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 font-semibold transition text-sm cursor-pointer"
+        >
+          Limpiar
+        </button>
+
+        <!-- GUARDAR -->
+        <button
+          *ngIf="!editando"
+          type="submit"
+          class="bg-[#FAB41F] hover:bg-[#e09e15] active:scale-[0.98] text-slate-900 font-black px-7 py-2.5 rounded-xl shadow-md hover:shadow-lg transition-all text-sm flex items-center gap-2 cursor-pointer"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+          </svg>
+          Guardar Menú
+        </button>
+
+        <!-- ACTUALIZAR -->
+        <button
+          *ngIf="editando"
+          type="submit"
+          class="bg-[#FAB41F] hover:bg-[#e09e15] active:scale-[0.98] text-slate-900 font-black px-7 py-2.5 rounded-xl shadow-md hover:shadow-lg transition-all text-sm flex items-center gap-2 cursor-pointer"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          Actualizar Menú
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- TABLA DE MENÚS REGISTRADOS -->
+  <div class="bg-white rounded-3xl shadow-sm border border-amber-200/80 overflow-hidden">
+    <div class="p-6 border-b border-slate-100 flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <span class="w-3 h-3 rounded-full bg-[#FAB41F]"></span>
+        <h2 class="text-xl font-black text-slate-900">
+          Menús Registrados
+        </h2>
+      </div>
+      <span class="text-xs text-slate-500 font-medium">
+        Mostrando {{ menus.length }} registro(s)
+      </span>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse text-sm">
+        <!-- ENCABEZADO AMARILLO INSTITUCIONAL -->
+        <thead class="bg-[#FAB41F] text-slate-900 font-black uppercase text-xs tracking-wider">
+          <tr>
+            <th class="px-4 py-4 w-16">ID</th>
+            <th class="px-4 py-4">Jornada</th>
+            <th class="px-4 py-4">Fecha</th>
+            <th class="px-4 py-4 text-center">Niños</th>
+            <th class="px-4 py-4">Estado</th>
+            <th class="px-4 py-4">Información Nutricional</th>
+            <th class="px-4 py-4 text-center">Contrato</th>
+            <th class="px-4 py-4 text-center w-48">Acciones</th>
+          </tr>
+        </thead>
+
+        <!-- CUERPO DE TABLA -->
+        <tbody class="divide-y divide-slate-100">
+          <tr
+            *ngFor="let menu of menus"
+            class="hover:bg-amber-50/40 transition-colors"
+          >
+            <!-- ID -->
+            <td class="px-4 py-4 font-semibold text-slate-500">
+              <span class="bg-amber-100/70 text-amber-900 px-2.5 py-1 rounded-lg text-xs font-bold border border-amber-200">
+                #{{ menu.id_menu }}
+              </span>
+            </td>
+
+            <!-- JORNADA -->
+            <td class="px-4 py-4 font-bold text-slate-800 whitespace-nowrap">
+              <span class="inline-flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-[#FAB41F]"></span>
+                {{ getNombreJornada(menu.id_jornada) }}
+              </span>
+            </td>
+
+            <!-- FECHA -->
+            <td class="px-4 py-4 text-slate-600 whitespace-nowrap">
+              {{ menu.fecha }}
+            </td>
+
+            <!-- NIÑOS -->
+            <td class="px-4 py-4 text-center font-bold text-slate-800">
+              <span class="bg-slate-100 px-2.5 py-1 rounded-full text-xs">
+                {{ menu.ninos_presentes }}
+              </span>
+            </td>
+
+            <!-- ESTADO -->
+            <td class="px-4 py-4">
+              <span
+                [ngClass]="{
+                  'bg-emerald-100 text-emerald-800 border-emerald-200': menu.estado === 'Activo',
+                  'bg-slate-100 text-slate-700 border-slate-200': menu.estado === 'Inactivo',
+                  'bg-amber-100 text-amber-800 border-amber-200': menu.estado === 'Pendiente'
+                }"
+                class="px-2.5 py-1 rounded-full text-xs font-bold border inline-block"
+              >
+                {{ menu.estado }}
+              </span>
+            </td>
+
+            <!-- INFORMACIÓN NUTRICIONAL -->
+            <td class="px-4 py-4 text-slate-600 max-w-xs truncate" [title]="menu.informacion_nutricional">
+              {{ menu.informacion_nutricional }}
+            </td>
+
+            <!-- CONTRATO -->
+            <td class="px-4 py-4 text-center text-slate-500 font-mono text-xs">
+              CT-{{ menu.id_contrato }}
+            </td>
+
+            <!-- ACCIONES: EDITAR (AMARILLO) Y ELIMINAR (ROJO) -->
+            <td class="px-4 py-4 text-center">
+              <div class="inline-flex items-center gap-2">
+                <!-- BOTÓN EDITAR -->
+                <button
+                  type="button"
+                  (click)="editarMenu(menu)"
+                  title="Editar este menú"
+                  class="bg-[#FAB41F] hover:bg-[#e09e15] active:scale-95 text-slate-900 font-bold px-3 py-1.5 rounded-xl shadow-xs hover:shadow transition-all inline-flex items-center gap-1 text-xs cursor-pointer"
+                >
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                  </svg>
+                  Editar
+                </button>
+
+                <!-- BOTÓN ELIMINAR -->
+                <button
+                  type="button"
+                  (click)="eliminarMenu(menu.id_menu!)"
+                  title="Eliminar este menú"
+                  class="bg-red-500 hover:bg-red-600 active:scale-95 text-white font-bold px-3 py-1.5 rounded-xl shadow-xs hover:shadow transition-all inline-flex items-center gap-1 text-xs cursor-pointer"
+                >
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  Eliminar
+                </button>
+              </div>
+            </td>
+          </tr>
+
+          <!-- SIN MENÚS -->
+          <tr *ngIf="menus.length === 0">
+            <td colspan="8" class="px-6 py-12 text-center text-slate-400 bg-slate-50/50">
+              <div class="flex flex-col items-center justify-center gap-2">
+                <div class="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center text-xl text-amber-700">
+                  🥗
+                </div>
+                <p class="font-bold text-slate-600 text-sm">No hay menús registrados</p>
+                <p class="text-xs text-slate-400">Completa el formulario superior para registrar el primer menú.</p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  </div>
+</div>

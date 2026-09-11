@@ -11,6 +11,9 @@ import { Productos } from './productos/productos';
 import { NuevoProducto } from './nuevo-producto/nuevo-producto';
 import { Reportes } from './reportes/reportes';
 import { ReporteInventario } from './reporte-inventario/reporte-inventario';
+import { Jornadas } from './jornadas/jornadas';
+import { CategoriasComponent } from './categorias/categorias';
+import { Menus } from './menus/menus';
 
 export const routes: Routes = [
 
@@ -75,6 +78,24 @@ export const routes: Routes = [
   {
     path: '**',
     redirectTo: 'login'
-  }
+  },
+  {
+        path:'jornadas',
+        component: Jornadas
+    },
+    {
+        path:'categorias',
+        component:CategoriasComponent
+    },
+    {
+        path:'menus',
+        component:Menus
+    },
+    {
+        path:'',
+        redirectTo:'jornadas',
+        pathMatch:'full'
+
+    }
 ];
 
