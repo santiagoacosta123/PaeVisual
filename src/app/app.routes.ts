@@ -11,6 +11,7 @@ import { Productos } from './productos/productos';
 import { NuevoProducto } from './nuevo-producto/nuevo-producto';
 import { Reportes } from './reportes/reportes';
 import { ReporteInventario } from './reporte-inventario/reporte-inventario';
+import { UnidadesMedidaComponent } from './unidades-medida/unidades-medida';
 
 export const routes: Routes = [
 
@@ -68,6 +69,11 @@ export const routes: Routes = [
       {
         path: 'reporte-inventario',
         component: ReporteInventario
+      },
+
+      {
+        path: 'unidades-medida',
+        component: UnidadesMedidaComponent
       }
     ]
   },
