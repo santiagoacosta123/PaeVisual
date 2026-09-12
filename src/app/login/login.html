@@ -1,10 +1,8 @@
 <div class="split-layout">
   
-  <!-- LADO IZQUIERDO: FORMULARIO -->
   <div class="form-side">
     <div class="form-content">
       
-      <!-- LOGO OFICIAL SIRAE -->
       <div class="logo-container">
         <img src="/sirae-logo.png" alt="Logo SIRAE" class="sirae-logo" />
       </div>
@@ -16,7 +14,6 @@
 
       <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
         
-        <!-- CORREO -->
         <div class="input-group">
           <label for="correo">Correo institucional</label>
           <div class="input-wrapper">
@@ -33,7 +30,6 @@
           </span>
         </div>
 
-        <!-- CONTRASEÑA -->
         <div class="input-group">
           <label for="clave">Contraseña</label>
           <div class="input-wrapper">
@@ -59,12 +55,10 @@
           </span>
         </div>
 
-        <!-- ERROR GENERAL -->
         <div class="error-alert" *ngIf="errorMensaje">
           {{ errorMensaje }}
         </div>
 
-        <!-- BOTÓN DE INGRESO -->
         <button type="submit" class="submit-btn" [disabled]="cargando">
           <span *ngIf="!cargando">Ingresar al sistema</span>
           <span *ngIf="cargando" class="loader-text">Verificando...</span>
@@ -74,7 +68,6 @@
     </div>
   </div>
 
-  <!-- LADO DERECHO: IMAGEN CON DIFUMINADO Y BORDES REDONDEADOS -->
   <div class="image-side">
     <img src="/vegetales-frame.png" alt="Vegetales SIRAE" class="large-image" />
   </div>
