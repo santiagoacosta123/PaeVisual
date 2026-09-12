@@ -1,14 +1,20 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  FormBuilder,
+  FormGroup,
+  ReactiveFormsModule,
+  Validators
+} from '@angular/forms';
 import { Router } from '@angular/router';
+import { AuthService } from '../services/auth.service';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-login',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule],
-  templateUrl: './login.html',
-  styleUrls: ['./login.css']
+  templateUrl: './login.html'
 })
 export class Login {
 
@@ -19,7 +25,8 @@ export class Login {
 
   constructor(
     private fb: FormBuilder,
-    private router: Router
+    private router: Router,
+    private authService: AuthService
   ) {
     this.loginForm = this.fb.group({
       correo: ['', [Validators.required, Validators.email]],
@@ -48,18 +55,50 @@ export class Login {
     }
 
     this.cargando = true;
-    const { correo, clave } = this.loginForm.value;
 
-    // Validación simulada directamente aquí (sin servicio aparte)
-    setTimeout(() => {
-      this.cargando = false;
+    const credenciales = {
+      correo: this.loginForm.value.correo,
+      clave: this.loginForm.value.clave
+    };
 
-      if (correo === 'admin@pae.com' && clave === '123456') {
-        localStorage.setItem('pae_token', 'token-simulado-123');
-        this.router.navigate(['/inicio']);
-      } else {
-        this.errorMensaje = 'Correo o contraseña incorrectos';
+    this.authService.login(credenciales).subscribe({
+      next: (respuesta: any) => {
+        this.cargando = false;
+
+        const token = respuesta?.token || respuesta?.access;
+
+        if (token) {
+          localStorage.setItem('pae_token', token);
+        }
+
+        Swal.fire({
+          icon: 'success',
+          title: '¡Bienvenido!',
+          text: 'Has iniciado sesión correctamente.',
+          timer: 1500,
+          showConfirmButton: false
+        }).then(() => {
+          this.router.navigate(['/inicio']);
+        });
+      },
+
+      error: (error: any) => {
+        this.cargando = false;
+
+        if (error?.error?.detail) {
+          this.errorMensaje = error.error.detail;
+        } else if (typeof error?.error === 'object') {
+          this.errorMensaje = 'Correo o contraseña incorrectos.';
+        } else {
+          this.errorMensaje = 'No se pudo conectar con el servidor.';
+        }
+
+        Swal.fire({
+          icon: 'error',
+          title: 'Error de acceso',
+          text: this.errorMensaje
+        });
       }
-    }, 800);
+    });
   }
 }

@@ -47,9 +47,7 @@ export class Productos implements OnInit {
     this.obtenerCategorias();
   }
 
-  // ==============================
-  // OBTENER PRODUCTOS
-  // ==============================
+  
 
   obtenerProductos(): void {
     this.productoService.getProductos().subscribe({

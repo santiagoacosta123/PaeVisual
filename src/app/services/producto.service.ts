@@ -9,8 +9,8 @@ export class ProductoService {
 
   private apiInventario = 'http://127.0.0.1:8000/api/inventario/';
   private apiIngredientes = 'http://127.0.0.1:8000/api/ingredientes/';
-  private apiUnidades = 'http://127.0.0.1:8000/api/unidades/';
-  private apiCategorias = 'http://127.0.0.1:8000/api/categorias/';
+  private apiUnidades = 'http://127.0.0.1:8000/api/unidades_medida/';
+  private apiCategorias = 'http://127.0.0.1:8000/api/categorias-inventario/';
 
   constructor(private http: HttpClient) {}
 
