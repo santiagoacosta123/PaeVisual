@@ -1,160 +1,203 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
-import { SweetAlertService } from '../sweet-alert.service';
 import { UsuarioService } from '../services/usuario.service';
-import { Usuario } from '../models/usuario.model';
+import { UsuarioModel } from '../models/usuario.model';
+import { RolService } from '../services/rol.service';
+import { RolModel } from '../models/rol.model';
 
 @Component({
   selector: 'app-usuarios',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule],
   templateUrl: './usuarios.html',
   styleUrls: ['./usuarios.css']
 })
 export class UsuariosComponent implements OnInit {
-  usuarios: Usuario[] = [];
-  usuariosFiltrados: Usuario[] = [];
-  filtroActual: string = 'todos';
-  
+
+  usuarios: UsuarioModel[] = [];
+  roles: RolModel[] = [];
+
   modoEdicion = false;
-  usuarioForm: Usuario = { nombre: '', rol: 'Admin', estado: 'Activo' };
   usuarioSeleccionadoId?: number;
 
+  usuarioForm: UsuarioModel = {
+    nombre: '',
+    apellido: '',
+    correo: '',
+    tipo_documento: 'CC',
+    numero_documento: '',
+    rol: 1,
+    password: '',
+    is_active: true,
+    is_staff: false
+  };
+
   constructor(
-    private sweetAlert: SweetAlertService,
-    private usuarioService: UsuarioService
+    private usuarioService: UsuarioService,
+    private rolService: RolService
   ) {}
 
   ngOnInit(): void {
     this.cargarUsuarios();
+    this.cargarRoles();
   }
 
   cargarUsuarios(): void {
     this.usuarioService.getUsuarios().subscribe({
-      next: (data) => {
-        // Si tu API responde con datos vacíos o quieres asegurar gente de prueba inicial:
-        if (!data || data.length === 0) {
-          this.usuarios = [
-            { id: 1, nombre: 'Jader', rol: 'Admin', estado: 'Activo' },
-            { id: 2, nombre: 'Maria', rol: 'Coordinador', estado: 'Activo' },
-            { id: 3, nombre: 'Carlos', rol: 'Supervisor', estado: 'Inactivo' },
-            { id: 4, nombre: 'Ana Sofía', rol: 'Coordinador', estado: 'Activo' },
-            { id: 5, nombre: 'Luis Fernando', rol: 'Supervisor', estado: 'Inactivo' }
-          ];
-        } else {
-          this.usuarios = data;
-        }
-        this.aplicarFiltro();
+      next: (datos) => {
+        this.usuarios = datos;
+        alert('Usuarios cargados: ' + datos.length);
       },
-      error: () => {
-        // Datos de respaldo por si la API falla o no está conectada todavía
-        this.usuarios = [
-          { id: 1, nombre: 'Jader', rol: 'Admin', estado: 'Activo' },
-          { id: 2, nombre: 'Maria', rol: 'Coordinador', estado: 'Activo' },
-          { id: 3, nombre: 'Carlos', rol: 'Supervisor', estado: 'Inactivo' }
-        ];
-        this.aplicarFiltro();
+      error: (error) => {
+        console.error('Error al cargar usuarios:', error);
+        alert('ERROR: No se pudieron cargar los usuarios.');
       }
     });
   }
 
-  filtrar(estado: string): void {
-    this.filtroActual = estado;
-    this.aplicarFiltro();
+  cargarRoles(): void {
+    this.rolService.getRoles().subscribe({
+      next: (datos) => {
+        this.roles = datos;
+        console.log('Roles cargados:', datos);
+      },
+      error: (error) => {
+        console.error('Error al cargar roles:', error);
+        alert('ERROR: No se pudieron cargar los roles.');
+      }
+    });
   }
 
-  aplicarFiltro(): void {
-    if (this.filtroActual === 'todos') {
-      this.usuariosFiltrados = [...this.usuarios];
-    } else {
-      this.usuariosFiltrados = this.usuarios.filter(
-        (u) => u.estado.toLowerCase() === this.filtroActual.toLowerCase()
-      );
-    }
-  }
+  abrirFormulario(usuario?: UsuarioModel): void {
 
-  abrirFormulario(usuario?: Usuario) {
     if (usuario) {
       this.modoEdicion = true;
-      this.usuarioSeleccionadoId = usuario.id;
-      this.usuarioForm = { ...usuario };
+      this.usuarioSeleccionadoId = usuario.id_usuario;
+
+      this.usuarioForm = {
+        ...usuario,
+        password: ''
+      };
+
       return;
     }
 
     this.modoEdicion = false;
     this.usuarioSeleccionadoId = undefined;
-    this.usuarioForm = { nombre: '', rol: 'Admin', estado: 'Activo' };
+
+    this.usuarioForm = {
+      nombre: '',
+      apellido: '',
+      correo: '',
+      tipo_documento: 'CC',
+      numero_documento: '',
+      rol: this.roles.length > 0 ? this.roles[0].id_rol! : 1,
+      password: '',
+      is_active: true,
+      is_staff: false
+    };
   }
 
-  guardarUsuario() {
-    if (!this.usuarioForm.nombre.trim()) {
-      this.sweetAlert.warning('Nombre requerido', 'Escribe el nombre del usuario antes de guardar.');
+  guardarUsuario(): void {
+
+    if (
+      !this.usuarioForm.nombre.trim() ||
+      !this.usuarioForm.apellido.trim() ||
+      !this.usuarioForm.correo.trim() ||
+      !this.usuarioForm.numero_documento.trim()
+    ) {
+      alert('ERROR: Completa los datos obligatorios del usuario.');
       return;
     }
 
     if (this.modoEdicion && this.usuarioSeleccionadoId) {
-      this.usuarioService.actualizarUsuario(this.usuarioSeleccionadoId, this.usuarioForm).subscribe({
-        next: () => {
-          this.sweetAlert.success('Usuario actualizado', `${this.usuarioForm.nombre} se actualizó correctamente.`);
-          this.cargarUsuarios();
-          this.abrirFormulario();
-        },
-        error: () => {
-          // Simulación local si la API no está en línea
-          const index = this.usuarios.findIndex(u => u.id === this.usuarioSeleccionadoId);
-          if (index !== -1) {
-            this.usuarios[index] = { ...this.usuarioForm, id: this.usuarioSeleccionadoId };
+
+      this.usuarioService
+        .actualizarUsuario(
+          this.usuarioSeleccionadoId,
+          this.usuarioForm
+        )
+        .subscribe({
+          next: (usuarioActualizado) => {
+            alert(
+              'USUARIO ACTUALIZADO: ' +
+              usuarioActualizado.nombre
+            );
+
+            this.abrirFormulario();
+            this.cargarUsuarios();
+          },
+          error: (error) => {
+            console.error('Error al actualizar:', error);
+            alert('ERROR: No se pudo actualizar el usuario.');
           }
-          this.sweetAlert.success('Usuario actualizado', `${this.usuarioForm.nombre} se actualizó correctamente.`);
-          this.aplicarFiltro();
-          this.abrirFormulario();
-        }
-      });
+        });
+
     } else {
-      this.usuarioService.crearUsuario(this.usuarioForm).subscribe({
-        next: () => {
-          this.sweetAlert.success('Usuario creado', `${this.usuarioForm.nombre} fue agregado al sistema.`);
-          this.cargarUsuarios();
-          this.abrirFormulario();
-        },
-        error: () => {
-          // Simulación local si la API no está en línea para pruebas rápidas
-          const nuevoId = this.usuarios.length > 0 ? Math.max(...this.usuarios.map(u => u.id || 0)) + 1 : 1;
-          const nuevoUsuario: Usuario = { ...this.usuarioForm, id: nuevoId };
-          this.usuarios.push(nuevoUsuario);
-          this.sweetAlert.success('Usuario creado', `${this.usuarioForm.nombre} fue agregado al sistema.`);
-          this.aplicarFiltro();
-          this.abrirFormulario();
-        }
-      });
+
+      if (!this.usuarioForm.password?.trim()) {
+        alert(
+          'ERROR: La contraseña es obligatoria para crear un usuario.'
+        );
+        return;
+      }
+
+      this.usuarioService
+        .crearUsuario(this.usuarioForm)
+        .subscribe({
+          next: (nuevoUsuario) => {
+            alert(
+              'USUARIO CREADO: ' +
+              nuevoUsuario.nombre
+            );
+
+            this.abrirFormulario();
+            this.cargarUsuarios();
+          },
+          error: (error) => {
+            console.error('Error al crear:', error);
+            alert('ERROR: No se pudo crear el usuario.');
+          }
+        });
     }
   }
 
-  editarUsuario(usuario: Usuario) {
+  editarUsuario(usuario: UsuarioModel): void {
     this.abrirFormulario(usuario);
   }
 
-  eliminarUsuario(usuario: Usuario) {
-    this.sweetAlert
-      .confirm('¿Eliminar usuario?', `¿Desea continuar con la eliminación de ${usuario.nombre}?`)
-      .then((result) => {
-        if (result.isConfirmed) {
-          if (usuario.id) {
-            this.usuarioService.eliminarUsuario(usuario.id).subscribe({
-              next: () => {
-                this.sweetAlert.success('Usuario eliminado', `${usuario.nombre} fue removido del sistema.`);
-                this.cargarUsuarios();
-              },
-              error: () => {
-                // Respaldo local si la API falla
-                this.usuarios = this.usuarios.filter(u => u.id !== usuario.id);
-                this.sweetAlert.success('Usuario eliminado', `${usuario.nombre} fue removido del sistema.`);
-                this.aplicarFiltro();
-              }
-            });
-          }
+  eliminarUsuario(usuario: UsuarioModel): void {
+
+    if (!usuario.id_usuario) {
+      alert('ERROR: El usuario no tiene ID.');
+      return;
+    }
+
+    const confirmar = confirm(
+      '¿Desea eliminar el usuario ' +
+      usuario.nombre +
+      '?'
+    );
+
+    if (!confirmar) {
+      return;
+    }
+
+    this.usuarioService
+      .eliminarUsuario(usuario.id_usuario)
+      .subscribe({
+        next: () => {
+          alert(
+            'USUARIO ELIMINADO: ' +
+            usuario.nombre
+          );
+
+          this.cargarUsuarios();
+        },
+        error: (error) => {
+          console.error('Error al eliminar:', error);
+          alert('ERROR: No se pudo eliminar el usuario.');
         }
       });
   }

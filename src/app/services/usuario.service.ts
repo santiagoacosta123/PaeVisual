@@ -1,37 +1,36 @@
 import { Injectable } from '@angular/core';
-import { Observable, of } from 'rxjs';
-import { Usuario } from '../models/usuario.model';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { UsuarioModel } from '../models/usuario.model';
 
-@Injectable({ providedIn: 'root' })
+@Injectable({
+  providedIn: 'root'
+})
 export class UsuarioService {
-  private usuarios: Usuario[] = [
-    { id: 1, nombre: 'Jader', rol: 'Admin', estado: 'Activo' },
-    { id: 2, nombre: 'Maria', rol: 'Coordinador', estado: 'Activo' },
-    { id: 3, nombre: 'Carlos', rol: 'Supervisor', estado: 'Inactivo' },
-    { id: 4, nombre: 'Ana', rol: 'Jefa', estado: 'Activo' }
-  ];
 
-  getUsuarios(): Observable<Usuario[]> {
-    return of(this.usuarios);
+private apiUrl = 'https://backend-sirae-pyim.onrender.com/api/usuarios/';  constructor(private http: HttpClient) {}
+
+  getUsuarios(): Observable<UsuarioModel[]> {
+    return this.http.get<UsuarioModel[]>(this.apiUrl);
   }
 
-  crearUsuario(usuario: Usuario): Observable<Usuario> {
-    const nuevoUsuario = { ...usuario, id: Date.now() };
-    this.usuarios.push(nuevoUsuario);
-    return of(nuevoUsuario);
+  crearUsuario(usuario: UsuarioModel): Observable<UsuarioModel> {
+    return this.http.post<UsuarioModel>(this.apiUrl, usuario);
   }
 
-  actualizarUsuario(id: number, usuario: Usuario): Observable<Usuario> {
-    const index = this.usuarios.findIndex((u) => u.id === id);
-    if (index !== -1) {
-      this.usuarios[index] = { ...usuario, id };
-      return of(this.usuarios[index]);
-    }
-    return of(usuario);
+  actualizarUsuario(
+    id: number,
+    usuario: UsuarioModel
+  ): Observable<UsuarioModel> {
+    return this.http.put<UsuarioModel>(
+      `${this.apiUrl}${id}/`,
+      usuario
+    );
   }
 
-  eliminarUsuario(id: number): Observable<boolean> {
-    this.usuarios = this.usuarios.filter((u) => u.id !== id);
-    return of(true);
+  eliminarUsuario(id: number): Observable<void> {
+    return this.http.delete<void>(
+      `${this.apiUrl}${id}/`
+    );
   }
 }

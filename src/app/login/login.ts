@@ -1,7 +1,13 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  FormBuilder,
+  FormGroup,
+  ReactiveFormsModule,
+  Validators
+} from '@angular/forms';
 import { Router } from '@angular/router';
+import { AuthService } from '../services/auth.service';
 
 @Component({
   selector: 'app-login',
@@ -19,7 +25,8 @@ export class Login {
 
   constructor(
     private fb: FormBuilder,
-    private router: Router
+    private router: Router,
+    private authService: AuthService
   ) {
     this.loginForm = this.fb.group({
       correo: ['', [Validators.required, Validators.email]],
@@ -48,18 +55,32 @@ export class Login {
     }
 
     this.cargando = true;
+
     const { correo, clave } = this.loginForm.value;
 
-    // Validación simulada directamente aquí (sin servicio aparte)
-    setTimeout(() => {
-      this.cargando = false;
+    this.authService.login(correo, clave).subscribe({
+      next: (response) => {
 
-      if (correo === 'admin@pae.com' && clave === '123456') {
-        localStorage.setItem('pae_token', 'token-simulado-123');
+        // Guardar los tokens reales enviados por Django
+        this.authService.guardarTokens(response);
+
+        this.cargando = false;
+
+        // Ir al inicio después de iniciar sesión correctamente
         this.router.navigate(['/inicio']);
-      } else {
-        this.errorMensaje = 'Correo o contraseña incorrectos';
+      },
+
+      error: (error) => {
+        this.cargando = false;
+
+        if (error.status === 401) {
+          this.errorMensaje = 'Correo o contraseña incorrectos';
+        } else {
+          this.errorMensaje = 'No se pudo conectar con el servidor';
+        }
+
+        console.error('Error de login:', error);
       }
-    }, 800);
+    });
   }
 }

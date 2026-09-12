@@ -1,36 +1,30 @@
 import { Injectable } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
 import { RolModel } from '../models/rol.model';
 
-@Injectable({ providedIn: 'root' })
+@Injectable({
+  providedIn: 'root'
+})
 export class RolService {
-  private roles: RolModel[] = [
-    { id: 1, nombre: 'Administrador', descripcion: 'Control total', estado: 'Activo' },
-    { id: 2, nombre: 'Coordinador', descripcion: 'Registra inventario', estado: 'Activo' },
-    { id: 3, nombre: 'Jefa', descripcion: 'Selecciona menú', estado: 'Activo' }
-  ];
+
+  private apiUrl = 'https://backend-sirae-pyim.onrender.com/api/roles/';
+
+  constructor(private http: HttpClient) {}
 
   getRoles(): Observable<RolModel[]> {
-    return of(this.roles);
+    return this.http.get<RolModel[]>(this.apiUrl);
   }
 
   crearRol(rol: RolModel): Observable<RolModel> {
-    const nuevo = { ...rol, id: Date.now() };
-    this.roles.push(nuevo);
-    return of(nuevo);
+    return this.http.post<RolModel>(this.apiUrl, rol);
   }
 
   actualizarRol(id: number, rol: RolModel): Observable<RolModel> {
-    const index = this.roles.findIndex((r) => r.id === id);
-    if (index !== -1) {
-      this.roles[index] = { ...rol, id };
-      return of(this.roles[index]);
-    }
-    return of(rol);
+    return this.http.put<RolModel>(`${this.apiUrl}${id}/`, rol);
   }
 
-  eliminarRol(id: number): Observable<boolean> {
-    this.roles = this.roles.filter((r) => r.id !== id);
-    return of(true);
+  eliminarRol(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}${id}/`);
   }
 }
