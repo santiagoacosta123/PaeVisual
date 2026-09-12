@@ -10,7 +10,6 @@
   color: #1a1a1a;
 }
 
-/* Cabecera con borde amarillo de 2px */
 .section-header-banner {
   background: #ffffff;
   border-radius: 16px;
@@ -58,7 +57,6 @@
   background: #e0a116;
 }
 
-/* Tarjeta de Formulario */
 .form-card {
   background: #ffffff;
   border-radius: 16px;
@@ -139,7 +137,6 @@
   cursor: pointer;
 }
 
-/* Tabla */
 .table-card {
   background: #ffffff;
   border-radius: 16px;

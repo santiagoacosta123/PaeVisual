@@ -8,13 +8,13 @@ import {
 } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-login',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule],
-  templateUrl: './login.html',
-  styleUrls: ['./login.css']
+  templateUrl: './login.html'
 })
 export class Login {
 
@@ -56,30 +56,44 @@ export class Login {
 
     this.cargando = true;
 
-    const { correo, clave } = this.loginForm.value;
+    const credenciales = {
+      correo: this.loginForm.value.correo,
+      clave: this.loginForm.value.clave
+    };
 
-    this.authService.login(correo, clave).subscribe({
-      next: (response) => {
-
-        // Guardar los tokens reales enviados por Django
-        this.authService.guardarTokens(response);
-
+    this.authService.login(credenciales).subscribe({
+      next: (respuesta: any) => {
         this.cargando = false;
 
-        // Ir al inicio después de iniciar sesión correctamente
-        this.router.navigate(['/inicio']);
+        this.authService.guardarSesion(respuesta);
+
+        Swal.fire({
+          icon: 'success',
+          title: '¡Bienvenido!',
+          text: 'Has iniciado sesión correctamente.',
+          timer: 1500,
+          showConfirmButton: false
+        }).then(() => {
+          this.router.navigate(['/inicio']);
+        });
       },
 
-      error: (error) => {
+      error: (error: any) => {
         this.cargando = false;
 
-        if (error.status === 401) {
-          this.errorMensaje = 'Correo o contraseña incorrectos';
+        if (error?.error?.detail) {
+          this.errorMensaje = error.error.detail;
+        } else if (typeof error?.error === 'object') {
+          this.errorMensaje = 'Correo o contraseña incorrectos.';
         } else {
-          this.errorMensaje = 'No se pudo conectar con el servidor';
+          this.errorMensaje = 'No se pudo conectar con el servidor.';
         }
 
-        console.error('Error de login:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Error de acceso',
+          text: this.errorMensaje
+        });
       }
     });
   }

@@ -13,8 +13,8 @@ interface LoginResponse {
   providedIn: 'root'
 })
 export class AuthService {
-
   private apiUrl = 'https://backend-sirae-pyim.onrender.com/api/auth/login/';
+  
   private readonly ACCESS_TOKEN = 'access_token';
   private readonly REFRESH_TOKEN = 'refresh_token';
   private readonly USUARIO = 'usuario';
@@ -24,10 +24,12 @@ export class AuthService {
     private router: Router
   ) {}
 
-  login(correo: string, clave: string): Observable<LoginResponse> {
+  login(credenciales: { correo: string; clave: string }): Observable<LoginResponse> {
+    console.log('POST LOGIN:', credenciales);
+
     return this.http.post<LoginResponse>(this.apiUrl, {
-      correo: correo,
-      password: clave
+      correo: credenciales.correo,
+      password: credenciales.clave
     });
   }
 
