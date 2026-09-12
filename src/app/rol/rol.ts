@@ -1,7 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { SweetAlertService } from '../sweet-alert.service';
+import { RolService } from '../services/rol.service';
+import { RolModel } from '../models/rol.model';
 
 @Component({
   standalone: true,
@@ -10,19 +11,41 @@ import { SweetAlertService } from '../sweet-alert.service';
   styleUrls: ['./rol.css'],
   templateUrl: './rol.html',
 })
-export class Rol {
-  roles = [
-    { nombre: 'Administrador', descripcion: 'Control total', estado: 'Activo' },
-    { nombre: 'Coordinador', descripcion: 'Registra inventario', estado: 'Activo' },
-    { nombre: 'Jefa', descripcion: 'Selecciona menú', estado: 'Activo' }
-  ];
+export class Rol implements OnInit {
+
+  roles: RolModel[] = [];
 
   modoEdicion = false;
-  rolForm = { nombre: '', descripcion: '', estado: 'Activo' };
 
-  constructor(private sweetAlert: SweetAlertService) {}
+  rolForm: RolModel = {
+    nombre: '',
+    descripcion: ''
+  };
 
-  abrirFormulario(rol?: { nombre: string; descripcion: string; estado: string }) {
+  constructor(
+    private rolService: RolService
+  ) {}
+
+  ngOnInit(): void {
+    this.cargarRoles();
+  }
+
+  cargarRoles(): void {
+    this.rolService.getRoles().subscribe({
+      next: (datos) => {
+        this.roles = datos;
+
+        alert('Roles cargados: ' + datos.length);
+      },
+      error: (error) => {
+        console.error('Error al cargar roles:', error);
+        alert('ERROR: No se pudieron cargar los roles.');
+      }
+    });
+  }
+
+  abrirFormulario(rol?: RolModel): void {
+
     if (rol) {
       this.modoEdicion = true;
       this.rolForm = { ...rol };
@@ -30,40 +53,140 @@ export class Rol {
     }
 
     this.modoEdicion = false;
-    this.rolForm = { nombre: '', descripcion: '', estado: 'Activo' };
+
+    this.rolForm = {
+      nombre: '',
+      descripcion: ''
+    };
   }
 
-  guardarRol() {
-    if (!this.rolForm.nombre.trim() || !this.rolForm.descripcion.trim()) {
-      this.sweetAlert.warning('Datos incompletos', 'Completa el nombre y la descripción del rol.');
+  guardarRol(): void {
+
+    if (
+      !this.rolForm.nombre.trim() ||
+      !this.rolForm.descripcion.trim()
+    ) {
+      alert(
+        'ERROR: Completa el nombre y la descripción del rol.'
+      );
       return;
     }
 
-    if (this.modoEdicion) {
-      const index = this.roles.findIndex((r) => r.nombre === this.rolForm.nombre);
-      if (index >= 0) {
-        this.roles[index] = { ...this.rolForm };
-        this.sweetAlert.success('Rol actualizado', `${this.rolForm.nombre} fue actualizado.`);
-      }
-    } else {
-      this.roles.push({ ...this.rolForm });
-      this.sweetAlert.success('Rol creado', `${this.rolForm.nombre} fue agregado correctamente.`);
-    }
+    if (this.modoEdicion && this.rolForm.id_rol) {
 
-    this.abrirFormulario();
+      this.rolService
+        .actualizarRol(
+          this.rolForm.id_rol,
+          this.rolForm
+        )
+        .subscribe({
+
+          next: (rolActualizado) => {
+
+            alert(
+              'ROL ACTUALIZADO: ' +
+              rolActualizado.nombre
+            );
+
+            this.abrirFormulario();
+            this.cargarRoles();
+          },
+
+          error: (error) => {
+
+            console.error(
+              'Error al actualizar:',
+              error
+            );
+
+            alert(
+              'ERROR: No se pudo actualizar el rol.'
+            );
+          }
+        });
+
+    } else {
+      this.rolService
+        .crearRol(this.rolForm)
+        .subscribe({
+
+          next: (nuevoRol) => {
+
+            alert(
+              'ROL CREADO: ' +
+              nuevoRol.nombre
+            );
+
+            this.abrirFormulario();
+            this.cargarRoles();
+          },
+
+          error: (error) => {
+
+            console.error(
+              'Error al crear:',
+              error
+            );
+
+            alert(
+              'ERROR: No se pudo crear el rol.'
+            );
+          }
+        });
+    }
   }
 
-  editarRol(rol: { nombre: string; descripcion: string; estado: string }) {
+  editarRol(rol: RolModel): void {
+
+    alert(
+      'Editando rol: ' +
+      rol.nombre
+    );
+
     this.abrirFormulario(rol);
   }
 
-  eliminarRol(rol: { nombre: string }) {
-    this.sweetAlert
-      .confirm('¿Eliminar rol?', `¿Desea remover el rol ${rol.nombre}?`)
-      .then((result) => {
-        if (result.isConfirmed) {
-          this.roles = this.roles.filter((r) => r.nombre !== rol.nombre);
-          this.sweetAlert.success('Rol eliminado', `${rol.nombre} fue quitado exitosamente.`);
+  eliminarRol(rol: RolModel): void {
+
+    if (!rol.id_rol) {
+      alert('ERROR: El rol no tiene ID.');
+      return;
+    }
+
+    const confirmar = confirm(
+      '¿Desea eliminar el rol ' +
+      rol.nombre +
+      '?'
+    );
+
+    if (!confirmar) {
+      return;
+    }
+
+    this.rolService
+      .eliminarRol(rol.id_rol)
+      .subscribe({
+
+        next: () => {
+
+          alert(
+            'ROL ELIMINADO: ' +
+            rol.nombre
+          );
+
+          this.cargarRoles();
+        },
+
+        error: (error) => {
+
+          console.error(
+            'Error al eliminar:',
+            error
+          );
+
+          alert(
+            'ERROR: No se pudo eliminar el rol.'
+          );
         }
       });
   }

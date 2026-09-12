@@ -1,6 +1,5 @@
 export interface RolModel {
-  id?: number;
+  id_rol?: number;
   nombre: string;
   descripcion: string;
-  estado: string;
 }

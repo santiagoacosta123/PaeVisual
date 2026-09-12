@@ -1,113 +1,196 @@
 <div class="usuarios-container">
-  
-  <!-- BARRA DE ACCIÓN Y FILTROS -->
-  <div class="action-bar">
-    <div class="filter-tabs">
-      <button 
-        type="button" 
-        class="filter-btn" 
-        [class.active]="filtroActual === 'todos'" 
-        (click)="filtrar('todos')">
-        Todos
-      </button>
-      <button 
-        type="button" 
-        class="filter-btn" 
-        [class.active]="filtroActual === 'Activo'" 
-        (click)="filtrar('Activo')">
-        Activos
-      </button>
-      <button 
-        type="button" 
-        class="filter-btn" 
-        [class.active]="filtroActual === 'Inactivo'" 
-        (click)="filtrar('Inactivo')">
-        Inactivos
-      </button>
-    </div>
-  </div>
 
-  <!-- FORMULARIO DE REGISTRO / EDICIÓN -->
   <div class="card-form-container">
+
     <div class="form-header">
-      <h3 class="form-title">{{ modoEdicion ? 'Editar usuario' : 'Registrar usuario' }}</h3>
-      <p class="form-subtitle">Complete los campos para añadir o modificar un miembro en el sistema.</p>
+      <h3 class="form-title">
+        {{ modoEdicion ? 'Editar usuario' : 'Registrar usuario' }}
+      </h3>
+
+      <p class="form-subtitle">
+        Complete los datos del usuario.
+      </p>
     </div>
-    
+
     <div class="form-grid">
-      <!-- Input de Nombre -->
+
       <div class="input-group">
-        <input 
-          type="text" 
-          [(ngModel)]="usuarioForm.nombre" 
-          placeholder="Nombre completo" 
-          class="form-input" 
+        <input
+          type="text"
+          [(ngModel)]="usuarioForm.nombre"
+          placeholder="Nombre"
+          class="form-input"
         />
       </div>
-      
-      <!-- Selector de Rol -->
+
       <div class="input-group">
-        <select [(ngModel)]="usuarioForm.rol" class="form-input">
-          <option value="" disabled selected>Seleccione el rol</option>
-          <option value="Admin">Admin</option>
-          <option value="Coordinador">Coordinador</option>
-          <option value="Supervisor">Supervisor</option>
+        <input
+          type="text"
+          [(ngModel)]="usuarioForm.apellido"
+          placeholder="Apellido"
+          class="form-input"
+        />
+      </div>
+
+      <div class="input-group">
+        <input
+          type="email"
+          [(ngModel)]="usuarioForm.correo"
+          placeholder="Correo"
+          class="form-input"
+        />
+      </div>
+
+      <div class="input-group">
+        <select
+          [(ngModel)]="usuarioForm.tipo_documento"
+          class="form-input"
+        >
+          <option value="CC">Cédula de ciudadanía</option>
+          <option value="TI">Tarjeta de identidad</option>
+          <option value="CE">Cédula de extranjería</option>
         </select>
       </div>
 
-      <!-- Selector de Estado -->
       <div class="input-group">
-        <select [(ngModel)]="usuarioForm.estado" class="form-input">
-          <option value="" disabled selected>Estado inicial</option>
-          <option value="Activo">Activo</option>
-          <option value="Inactivo">Inactivo</option>
+        <input
+          type="text"
+          [(ngModel)]="usuarioForm.numero_documento"
+          placeholder="Número de documento"
+          class="form-input"
+        />
+      </div>
+
+      <div class="input-group">
+        <select
+          [(ngModel)]="usuarioForm.rol"
+          class="form-input"
+        >
+          <option
+            *ngFor="let rol of roles"
+            [ngValue]="rol.id_rol"
+          >
+            {{ rol.nombre }}
+          </option>
         </select>
       </div>
 
-      <!-- Botón Guardar / Actualizar -->
+      <div class="input-group">
+        <input
+          type="password"
+          [(ngModel)]="usuarioForm.password"
+          placeholder="Contraseña"
+          class="form-input"
+        />
+      </div>
+
+      <div class="input-group">
+        <select
+          [(ngModel)]="usuarioForm.is_active"
+          class="form-input"
+        >
+          <option [ngValue]="true">Activo</option>
+          <option [ngValue]="false">Inactivo</option>
+        </select>
+      </div>
+
       <div class="form-action">
-        <button type="button" class="btn-primary" (click)="guardarUsuario()">
+        <button
+          type="button"
+          class="btn-primary"
+          (click)="guardarUsuario()"
+        >
           {{ modoEdicion ? 'Actualizar usuario' : 'Guardar usuario' }}
         </button>
       </div>
+
     </div>
   </div>
 
-  <!-- TABLA DE USUARIOS -->
   <div class="table-card">
+
     <div class="table-header-title">
-      <h4>Usuarios Registrados</h4>
+      <h4>Usuarios registrados</h4>
     </div>
+
     <table class="custom-table">
+
       <thead>
         <tr>
           <th>Nombre</th>
+          <th>Correo</th>
+          <th>Documento</th>
           <th>Rol</th>
           <th>Estado</th>
-          <th class="text-right">Acciones</th>
+          <th>Acciones</th>
         </tr>
       </thead>
+
       <tbody>
-        <tr *ngFor="let usuario of usuariosFiltrados">
-          <td class="font-medium">{{ usuario.nombre }}</td>
-          <td><span class="role-text">{{ usuario.rol }}</span></td>
+
+        <tr *ngFor="let usuario of usuarios">
+
+          <td class="font-medium">
+            {{ usuario.nombre }} {{ usuario.apellido }}
+          </td>
+
           <td>
-            <span class="status-badge" [ngClass]="usuario.estado === 'Activo' ? 'active' : 'inactive'">
-              {{ usuario.estado }}
+            {{ usuario.correo }}
+          </td>
+
+          <td>
+            {{ usuario.tipo_documento }}
+            {{ usuario.numero_documento }}
+          </td>
+
+          <td>
+            {{ usuario.rol }}
+          </td>
+
+          <td>
+            <span
+              class="status-badge"
+              [ngClass]="usuario.is_active ? 'active' : 'inactive'"
+            >
+              {{ usuario.is_active ? 'Activo' : 'Inactivo' }}
             </span>
           </td>
+
           <td class="actions-cell">
-            <button class="btn-action edit" (click)="editarUsuario(usuario)">Editar</button>
-            <button class="btn-action delete" (click)="eliminarUsuario(usuario)">Eliminar</button>
+
+            <button
+              type="button"
+              class="btn-action edit"
+              (click)="editarUsuario(usuario)"
+            >
+              Editar
+            </button>
+
+            <button
+              type="button"
+              class="btn-action delete"
+              (click)="eliminarUsuario(usuario)"
+            >
+              Eliminar
+            </button>
+
+          </td>
+
+        </tr>
+
+        <tr *ngIf="usuarios.length === 0">
+          <td
+            colspan="6"
+            style="padding: 24px; text-align: center; color: #64748b;"
+          >
+            No hay usuarios registrados.
           </td>
         </tr>
-        <tr *ngIf="usuariosFiltrados.length === 0">
-          <td colspan="4" style="padding: 24px; text-align: center; color: #64748b;">
-            No hay usuarios registrados en esta categoría.
-          </td>
-        </tr>
+
       </tbody>
+
     </table>
+
   </div>
 
 </div>
