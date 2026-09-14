@@ -30,6 +30,16 @@
         <span class="material-symbols-outlined" style="font-size:20px; color:#777;">package</span>
         Productos
       </a>
+      <a routerLink="unidades-medida" routerLinkActive="active-link"
+         style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; text-decoration:none; color:#333; font-size:14px; font-weight:500;">
+        <span class="material-symbols-outlined" style="font-size:20px; color:#777;">straighten</span>
+        Unidades
+      </a>
+      <a routerLink="reporte-inventario" routerLinkActive="active-link"
+         style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; text-decoration:none; color:#333; font-size:14px; font-weight:500;">
+        <span class="material-symbols-outlined" style="font-size:20px; color:#777;">inventory_2</span>
+        Reporte Inventario
+      </a>
       <a routerLink="reportes" routerLinkActive="active-link"
          style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; text-decoration:none; color:#333; font-size:14px; font-weight:500;">
         <span class="material-symbols-outlined" style="font-size:20px; color:#777;">bar_chart</span>
@@ -78,15 +88,12 @@
 
       <!-- Vista: Mi perfil -->
       <div *ngIf="vistaActual === 'perfil'">
-        <!-- Encabezado -->
         <div style="display:flex; align-items:center; justify-content:space-between; padding:16px 18px 12px; border-bottom:1px solid #f0f0f0;">
           <span style="font-size:15px; font-weight:700; color:#333;">Mi perfil</span>
           <button type="button" (click)="cerrarPanel()" style="background:none; border:none; cursor:pointer; color:#777; display:flex;">
             <span class="material-symbols-outlined" style="font-size:20px;">close</span>
           </button>
         </div>
-
-        <!-- Datos del usuario -->
         <div style="display:flex; align-items:center; gap:14px; padding:16px 18px; border-bottom:1px solid #f0f0f0;">
           <div style="width:56px; height:56px; border-radius:50%; background:#f0f0f0; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
             <span class="material-symbols-outlined" style="font-size:32px; color:#777;">account_circle</span>
@@ -98,7 +105,6 @@
             <p style="font-size:13px; color:#777; margin:2px 0;">{{ perfil.telefono }}</p>
           </div>
         </div>
-
         <div>
           <button type="button" (click)="irA('editar')"
             style="display:flex; align-items:center; justify-content:space-between; width:100%; padding:14px 18px; background:none; border:none; border-bottom:1px solid #f0f0f0; cursor:pointer; font-size:14px; font-weight:500; color:#333;">
@@ -108,7 +114,6 @@
             </div>
             <span class="material-symbols-outlined" style="font-size:18px; color:#aaa;">chevron_right</span>
           </button>
-
           <button type="button" (click)="irA('password')"
             style="display:flex; align-items:center; justify-content:space-between; width:100%; padding:14px 18px; background:none; border:none; cursor:pointer; font-size:14px; font-weight:500; color:#333;">
             <div style="display:flex; align-items:center; gap:12px;">
@@ -186,18 +191,14 @@
           </button>
         </div>
       </div>
-
     </div>
 
-    <!-- Backdrop para cerrar el panel al hacer clic fuera -->
-    <div *ngIf="mostrarPerfil" (click)="cerrarPanel()"
-      style="position:fixed; inset:0; z-index:99;"></div>
+    <div *ngIf="mostrarPerfil" (click)="cerrarPanel()" style="position:fixed; inset:0; z-index:99;"></div>
 
     <router-outlet></router-outlet>
   </main>
 </div>
 
-<!-- Estilos para el enlace activo del menú -->
 <style>
   .active-link {
     background: #f4b41f !important;
@@ -210,4 +211,4 @@
   aside a:hover:not(.active-link) {
     background: #fff8e1;
   }
-</style>
+</style>

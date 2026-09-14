@@ -13,7 +13,7 @@ export interface UnidadMedida {
 })
 export class UnidadMedidaService {
 
-  private readonly apiUrl = 'http://127.0.0.1:8000/api/unidades_medida/';
+  private readonly apiUrl = 'https://backend-sirae-pyim.onrender.com/api/unidades_medida/';
 
   constructor(private http: HttpClient) {}
 

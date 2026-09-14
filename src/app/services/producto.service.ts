@@ -7,10 +7,10 @@ import { Observable } from 'rxjs';
 })
 export class ProductoService {
 
-  private apiInventario = 'http://127.0.0.1:8000/api/inventario/';
-  private apiIngredientes = 'http://127.0.0.1:8000/api/ingredientes/';
-  private apiUnidades = 'http://127.0.0.1:8000/api/unidades_medida/';
-  private apiCategorias = 'http://127.0.0.1:8000/api/categorias-inventario/';
+  private apiInventario = 'https://backend-sirae-pyim.onrender.com/api/inventario/';
+  private apiIngredientes = 'https://backend-sirae-pyim.onrender.com/api/ingredientes/';
+  private apiUnidades = 'https://backend-sirae-pyim.onrender.com/api/unidades_medida/';
+  private apiCategorias = 'https://backend-sirae-pyim.onrender.com/api/categorias-inventario/';
 
   constructor(private http: HttpClient) {}
 
@@ -27,17 +27,12 @@ export class ProductoService {
 
   actualizarProducto(id: number, producto: any): Observable<any> {
     console.log('➡️ PUT:', `${this.apiInventario}${id}/`, producto);
-    return this.http.put<any>(
-      `${this.apiInventario}${id}/`,
-      producto
-    );
+    return this.http.put<any>(`${this.apiInventario}${id}/`, producto);
   }
 
   eliminarProducto(id: number): Observable<any> {
     console.log('➡️ DELETE:', `${this.apiInventario}${id}/`);
-    return this.http.delete<any>(
-      `${this.apiInventario}${id}/`
-    );
+    return this.http.delete<any>(`${this.apiInventario}${id}/`);
   }
 
   // INGREDIENTES
