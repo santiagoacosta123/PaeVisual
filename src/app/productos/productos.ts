@@ -38,6 +38,7 @@ export class Productos implements OnInit {
 
   mostrarFormulario = false;
   modoEdicion = false;
+  editandoId: any = null; // Sincronizado con tu HTML
   indiceEdicion: number | null = null;
 
   // Formularios unificados
@@ -52,6 +53,7 @@ export class Productos implements OnInit {
   };
 
   movimientoForm: any = {
+    id_movimiento_inventario: null,
     id_ingrediente: '',
     tipo_movimiento: 'ENTRADA',
     cantidad: null,
@@ -60,6 +62,7 @@ export class Productos implements OnInit {
   };
 
   gramajeForm: any = {
+    id_gramaje: null,
     id_ingrediente: '',
     id_grado: 1,
     cantidad_gramaje: null,
@@ -72,13 +75,13 @@ export class Productos implements OnInit {
   ngOnInit(): void {
     // Datos iniciales de prueba
     this.inventario = [
-      { id_inventario: 1, nombre_ingrediente: 'Arroz Diana', nombre_categoria: 'Granos y Cereales', marca_ingrediente: 'Diana', cantidad_actual: 50, stock_minimo: 10, nombre_unidad: 'Kilogramos' }
+      { id_inventario: 1, nombre_ingrediente: 'Arroz Diana', id_categoria_inventario: 1, nombre_categoria: 'Granos y Cereales', marca_ingrediente: 'Diana', cantidad_actual: 50, stock_minimo: 10, id_unidad_medida: 1, nombre_unidad: 'Kilogramos' }
     ];
     this.movimientosInventario = [
-      { id_movimiento_inventario: 1, nombre_ingrediente: 'Arroz Diana', tipo_movimiento: 'ENTRADA', fecha: '2026-09-14', cantidad: 50, observaciones: 'Stock inicial', nombre_unidad: 'Kilogramos' }
+      { id_movimiento_inventario: 1, id_ingrediente: 1, nombre_ingrediente: 'Arroz Diana', tipo_movimiento: 'ENTRADA', fecha: '2026-09-14', cantidad: 50, observaciones: 'Stock inicial', id_unidad_medida: 1, nombre_unidad: 'Kilogramos' }
     ];
     this.gramajes = [
-      { id_gramaje: 1, nombre_ingrediente: 'Arroz Diana', cantidad_gramaje: 250, nombre_unidad: 'Gramos', descripcion: 'Porción estándar por plato' }
+      { id_gramaje: 1, id_ingrediente: 1, nombre_ingrediente: 'Arroz Diana', cantidad_gramaje: 250, id_unidad_medida: 2, nombre_unidad: 'Gramos', descripcion: 'Porción estándar por plato' }
     ];
   }
 
@@ -87,13 +90,43 @@ export class Productos implements OnInit {
     this.cerrarFormulario();
   }
 
-  abrirFormulario(): void {
+  abrirFormulario(item: any = null): void {
     this.mostrarFormulario = true;
-    this.modoEdicion = false;
+    
+    if (item) {
+      this.modoEdicion = true;
+      this.editandoId = true; // Activa el cambio de texto en el botón del HTML
+      
+      if (this.pestanaActiva === 'inventario') {
+        this.indiceEdicion = this.inventario.indexOf(item);
+        this.itemForm = { ...item };
+      } else if (this.pestanaActiva === 'movimientos') {
+        this.indiceEdicion = this.movimientosInventario.indexOf(item);
+        this.movimientoForm = { ...item };
+      } else if (this.pestanaActiva === 'gramajes') {
+        this.indiceEdicion = this.gramajes.indexOf(item);
+        this.gramajeForm = { ...item };
+      }
+    } else {
+      this.modoEdicion = false;
+      this.editandoId = null;
+      this.indiceEdicion = null;
+      this.limpiarFormularios();
+    }
   }
 
   cerrarFormulario(): void {
     this.mostrarFormulario = false;
+    this.modoEdicion = false;
+    this.editandoId = null;
+    this.indiceEdicion = null;
+    this.limpiarFormularios();
+  }
+
+  limpiarFormularios(): void {
+    this.itemForm = { id_inventario: null, nombre_ingrediente: '', id_categoria_inventario: '', marca_ingrediente: '', cantidad_actual: null, stock_minimo: null, id_unidad_medida: '' };
+    this.movimientoForm = { id_movimiento_inventario: null, id_ingrediente: '', tipo_movimiento: 'ENTRADA', cantidad: null, observaciones: '', id_unidad_medida: '' };
+    this.gramajeForm = { id_gramaje: null, id_ingrediente: '', id_grado: 1, cantidad_gramaje: null, id_unidad_medida: '', descripcion: '' };
   }
 
   guardarTodo(): void {
@@ -104,14 +137,23 @@ export class Productos implements OnInit {
       }
       const cat = this.categoriasInventario.find(c => c.id_categoria_inventario == this.itemForm.id_categoria_inventario);
       const um = this.unidadesMedida.find(u => u.id_unidad_medida == this.itemForm.id_unidad_medida);
-      
-      this.inventario.push({
-        ...this.itemForm,
-        id_inventario: this.inventario.length + 1,
-        nombre_categoria: cat ? cat.nombre_categoria : 'General',
-        nombre_unidad: um ? um.nombre : 'Unidad'
-      });
-      this.sweetAlert.success('Guardado', 'Insumo agregado al inventario.');
+
+      if (this.modoEdicion && this.indiceEdicion !== null && this.indiceEdicion > -1) {
+        this.inventario[this.indiceEdicion] = {
+          ...this.itemForm,
+          nombre_categoria: cat ? cat.nombre_categoria : 'General',
+          nombre_unidad: um ? um.nombre : 'Unidad'
+        };
+        this.sweetAlert.success('Actualizado', 'Insumo modificado con éxito.');
+      } else {
+        this.inventario.push({
+          ...this.itemForm,
+          id_inventario: this.inventario.length + 1,
+          nombre_categoria: cat ? cat.nombre_categoria : 'General',
+          nombre_unidad: um ? um.nombre : 'Unidad'
+        });
+        this.sweetAlert.success('Guardado', 'Insumo agregado al inventario.');
+      }
     } 
     else if (this.pestanaActiva === 'movimientos') {
       if (!this.movimientoForm.id_ingrediente || !this.movimientoForm.cantidad) {
@@ -121,14 +163,23 @@ export class Productos implements OnInit {
       const ing = this.ingredientesDisponibles.find(i => i.id_ingrediente == this.movimientoForm.id_ingrediente);
       const um = this.unidadesMedida.find(u => u.id_unidad_medida == this.movimientoForm.id_unidad_medida);
 
-      this.movimientosInventario.push({
-        ...this.movimientoForm,
-        id_movimiento_inventario: this.movimientosInventario.length + 1,
-        nombre_ingrediente: ing ? ing.nombre_ingrediente : 'Ingrediente',
-        fecha: new Date().toISOString().split('T')[0],
-        nombre_unidad: um ? um.nombre : 'Unidad'
-      });
-      this.sweetAlert.success('Registrado', 'Movimiento de inventario guardado.');
+      if (this.modoEdicion && this.indiceEdicion !== null && this.indiceEdicion > -1) {
+        this.movimientosInventario[this.indiceEdicion] = {
+          ...this.movimientoForm,
+          nombre_ingrediente: ing ? ing.nombre_ingrediente : 'Ingrediente',
+          nombre_unidad: um ? um.nombre : 'Unidad'
+        };
+        this.sweetAlert.success('Actualizado', 'Movimiento modificado con éxito.');
+      } else {
+        this.movimientosInventario.push({
+          ...this.movimientoForm,
+          id_movimiento_inventario: this.movimientosInventario.length + 1,
+          nombre_ingrediente: ing ? ing.nombre_ingrediente : 'Ingrediente',
+          fecha: new Date().toISOString().split('T')[0],
+          nombre_unidad: um ? um.nombre : 'Unidad'
+        });
+        this.sweetAlert.success('Registrado', 'Movimiento de inventario guardado.');
+      }
     }
     else if (this.pestanaActiva === 'gramajes') {
       if (!this.gramajeForm.id_ingrediente || !this.gramajeForm.cantidad_gramaje) {
@@ -138,13 +189,22 @@ export class Productos implements OnInit {
       const ing = this.ingredientesDisponibles.find(i => i.id_ingrediente == this.gramajeForm.id_ingrediente);
       const um = this.unidadesMedida.find(u => u.id_unidad_medida == this.gramajeForm.id_unidad_medida);
 
-      this.gramajes.push({
-        ...this.gramajeForm,
-        id_gramaje: this.gramajes.length + 1,
-        nombre_ingrediente: ing ? ing.nombre_ingrediente : 'Ingrediente',
-        nombre_unidad: um ? um.nombre : 'Gramos'
-      });
-      this.sweetAlert.success('Registrado', 'Gramaje guardado correctamente.');
+      if (this.modoEdicion && this.indiceEdicion !== null && this.indiceEdicion > -1) {
+        this.gramajes[this.indiceEdicion] = {
+          ...this.gramajeForm,
+          nombre_ingrediente: ing ? ing.nombre_ingrediente : 'Ingrediente',
+          nombre_unidad: um ? um.nombre : 'Gramos'
+        };
+        this.sweetAlert.success('Actualizado', 'Gramaje modificado con éxito.');
+      } else {
+        this.gramajes.push({
+          ...this.gramajeForm,
+          id_gramaje: this.gramajes.length + 1,
+          nombre_ingrediente: ing ? ing.nombre_ingrediente : 'Ingrediente',
+          nombre_unidad: um ? um.nombre : 'Gramos'
+        });
+        this.sweetAlert.success('Registrado', 'Gramaje guardado correctamente.');
+      }
     }
 
     this.cerrarFormulario();

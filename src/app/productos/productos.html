@@ -29,7 +29,9 @@
     <div class="flex items-center justify-between pb-4 mb-5 border-b border-slate-100">
       <div class="flex items-center gap-2">
         <span class="material-symbols-outlined text-[#FAB41F]">edit_square</span>
-        <h3 class="text-sm font-black text-slate-800 uppercase tracking-wider">Formulario de Registro ({{ pestanaActiva }})</h3>
+        <h3 class="text-sm font-black text-slate-800 uppercase tracking-wider">
+          {{ editandoId ? 'Editar Registro' : 'Formulario de Registro' }} ({{ pestanaActiva }})
+        </h3>
       </div>
       <button type="button" (click)="cerrarFormulario()" class="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center transition cursor-pointer">
         <span class="material-symbols-outlined text-[20px]">close</span>
@@ -126,11 +128,13 @@
     <!-- Botones de formulario -->
     <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-100">
       <button type="button" (click)="cerrarFormulario()" class="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50 transition cursor-pointer">Cancelar</button>
-      <button type="button" (click)="guardarTodo()" class="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition cursor-pointer">Guardar registro</button>
+      <button type="button" (click)="guardarTodo()" class="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition cursor-pointer">
+        {{ editandoId ? 'Actualizar registro' : 'Guardar registro' }}
+      </button>
     </div>
   </div>
 
-  <!-- Tablas de Visualización con el estilo limpio original -->
+  <!-- Tablas de Visualización -->
   <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
     
     <!-- Tabla 1: Inventario -->
@@ -154,9 +158,14 @@
             <td class="px-6 py-4 font-black text-amber-600">{{ item.stock_minimo }}</td>
             <td class="px-6 py-4 text-slate-600">{{ item.nombre_unidad }}</td>
             <td class="px-6 py-4 text-center">
-              <button (click)="eliminarItem(inventario, item)" class="w-8 h-8 rounded-lg hover:bg-red-50 text-red-500 transition flex items-center justify-center mx-auto cursor-pointer" title="Eliminar">
-                <span class="material-symbols-outlined text-[18px]">delete</span>
-              </button>
+              <div class="flex items-center justify-center gap-1">
+                <button (click)="abrirFormulario(item)" class="w-8 h-8 rounded-lg hover:bg-amber-50 text-amber-600 transition flex items-center justify-center cursor-pointer" title="Editar">
+                  <span class="material-symbols-outlined text-[18px]">edit</span>
+                </button>
+                <button (click)="eliminarItem(inventario, item)" class="w-8 h-8 rounded-lg hover:bg-red-50 text-red-500 transition flex items-center justify-center cursor-pointer" title="Eliminar">
+                  <span class="material-symbols-outlined text-[18px]">delete</span>
+                </button>
+              </div>
             </td>
           </tr>
         </tbody>
@@ -188,9 +197,14 @@
             <td class="px-6 py-4 text-slate-500">{{ mov.fecha }}</td>
             <td class="px-6 py-4 text-slate-600">{{ mov.observaciones }}</td>
             <td class="px-6 py-4 text-center">
-              <button (click)="eliminarItem(movimientosInventario, mov)" class="w-8 h-8 rounded-lg hover:bg-red-50 text-red-500 transition flex items-center justify-center mx-auto cursor-pointer">
-                <span class="material-symbols-outlined text-[18px]">delete</span>
-              </button>
+              <div class="flex items-center justify-center gap-1">
+                <button (click)="abrirFormulario(mov)" class="w-8 h-8 rounded-lg hover:bg-amber-50 text-amber-600 transition flex items-center justify-center cursor-pointer" title="Editar">
+                  <span class="material-symbols-outlined text-[18px]">edit</span>
+                </button>
+                <button (click)="eliminarItem(movimientosInventario, mov)" class="w-8 h-8 rounded-lg hover:bg-red-50 text-red-500 transition flex items-center justify-center cursor-pointer" title="Eliminar">
+                  <span class="material-symbols-outlined text-[18px]">delete</span>
+                </button>
+              </div>
             </td>
           </tr>
         </tbody>
@@ -201,7 +215,7 @@
     <div *ngIf="pestanaActiva === 'gramajes'" class="overflow-x-auto">
       <table class="w-full text-xs text-left">
         <thead class="bg-slate-50/70 text-slate-500 font-black uppercase tracking-wider border-b border-slate-200/60">
-          <tr>
+          `<tr>
             <th class="px-6 py-4">Ingrediente</th>
             <th class="px-6 py-4">Cantidad Gramaje</th>
             <th class="px-6 py-4">Unidad</th>
@@ -216,9 +230,14 @@
             <td class="px-6 py-4 text-slate-600">{{ gram.nombre_unidad }}</td>
             <td class="px-6 py-4 text-slate-600">{{ gram.descripcion }}</td>
             <td class="px-6 py-4 text-center">
-              <button (click)="eliminarItem(gramajes, gram)" class="w-8 h-8 rounded-lg hover:bg-red-50 text-red-500 transition flex items-center justify-center mx-auto cursor-pointer">
-                <span class="material-symbols-outlined text-[18px]">delete</span>
-              </button>
+              <div class="flex items-center justify-center gap-1">
+                <button (click)="abrirFormulario(gram)" class="w-8 h-8 rounded-lg hover:bg-amber-50 text-amber-600 transition flex items-center justify-center cursor-pointer" title="Editar">
+                  <span class="material-symbols-outlined text-[18px]">edit</span>
+                </button>
+                <button (click)="eliminarItem(gramajes, gram)" class="w-8 h-8 rounded-lg hover:bg-red-50 text-red-500 transition flex items-center justify-center cursor-pointer" title="Eliminar">
+                  <span class="material-symbols-outlined text-[18px]`">delete</span>
+                </button>
+              </div>
             </td>
           </tr>
         </tbody>
@@ -226,5 +245,4 @@
     </div>
 
   </div>
-
 </div>
