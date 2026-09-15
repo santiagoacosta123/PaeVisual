@@ -1,0 +1,283 @@
+<div class="entregas-container">
+  
+  <!-- Encabezado del módulo -->
+  <div class="header-section">
+    <div>
+      <h2>Gestión de Entregas PAE</h2>
+      <p>Control de registros de la tabla de entregas del sistema.</p>
+    </div>
+    <button type="button" (click)="abrirModalCrear()" class="btn-primary">
+      <span class="material-symbols-outlined" style="font-size:18px;">add</span>
+      Nueva Entrega
+    </button>
+  </div>
+
+  <!-- Barra de búsqueda -->
+  <div class="filter-card">
+    <div class="search-box">
+      <span class="material-symbols-outlined" style="color:#777; font-size:20px;">search</span>
+      <input type="text" [(ngModel)]="filtroBusqueda" placeholder="Buscar por ID de entrega, fecha o ID de supervisor..." />
+    </div>
+  </div>
+
+  <!-- Tabla de registros -->
+  <div class="table-card">
+    <table>
+      <thead>
+        <tr>
+          <th>ID Entrega</th>
+          <th>Fecha</th>
+          <th>ID Usuario Supervisor</th>
+          <th style="text-align: center;">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of entregasFiltradas">
+          <td style="font-weight: 600; color: #333;">#{{ item.id_entrega }}</td>
+          <td>{{ item.fecha }}</td>
+          <td>
+            <span class="badge badge-info">ID: {{ item.id_usuario_supervisor }}</span>
+          </td>
+          <td style="text-align: center;">
+            <div style="display: flex; gap: 8px; justify-content: center;">
+              <button type="button" (click)="abrirModalEditar(item)" class="btn-icon" title="Editar">
+                <span class="material-symbols-outlined" style="font-size:18px; color:#2196f3;">edit</span>
+              </button>
+              <button type="button" (click)="eliminarEntrega(item.id_entrega)" class="btn-icon" title="Eliminar">
+                <span class="material-symbols-outlined" style="font-size:18px; color:#e53935;">delete</span>
+              </button>
+            </div>
+          </td>
+        </tr>
+        <tr *ngIf="entregasFiltradas.length === 0">
+          <td colspan="4" style="text-align: center; padding: 24px; color: #777;">
+            No se encontraron registros de entregas.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- MODAL DE CREACIÓN / EDICIÓN -->
+  <div *ngIf="modalAbierto" class="modal-backdrop">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>{{ modoEdicion ? 'Editar Registro de Entrega' : 'Registrar Nueva Entrega' }}</h3>
+        <button type="button" (click)="cerrarModal()" class="btn-close">
+          <span class="material-symbols-outlined" style="font-size:20px;">close</span>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Fecha de la Entrega</label>
+          <input type="date" [(ngModel)]="entregaActual.fecha" />
+        </div>
+
+        <div class="form-group">
+          <label>ID Usuario Supervisor</label>
+          <input type="number" [(ngModel)]="entregaActual.id_usuario_supervisor" placeholder="Ej. 101" />
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" (click)="cerrarModal()" class="btn-secondary">Cancelar</button>
+        <button type="button" (click)="guardarEntrega()" class="btn-primary">
+          {{ modoEdicion ? 'Guardar Cambios' : 'Registrar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ESTILOS INTEGRADOS DENTRO DEL HTML -->
+<style>
+  .entregas-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    font-family: 'Roboto', sans-serif;
+  }
+  .header-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #fff;
+    padding: 18px 24px;
+    border-radius: 10px;
+    border: 1px solid #e0e0e0;
+  }
+  .header-section h2 { font-size: 20px; font-weight: 700; color: #333; margin: 0; }
+  .header-section p { font-size: 13px; color: #777; margin: 4px 0 0; }
+  
+  .filter-card {
+    display: flex;
+    gap: 16px;
+    background: #fff;
+    padding: 16px 24px;
+    border-radius: 10px;
+    border: 1px solid #e0e0e0;
+  }
+  .search-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 0 12px;
+    background: #fafafa;
+  }
+  .search-box input {
+    border: none;
+    background: none;
+    outline: none;
+    width: 100%;
+    padding: 10px 0;
+    font-size: 14px;
+  }
+  
+  .table-card {
+    background: #fff;
+    border-radius: 10px;
+    border: 1px solid #e0e0e0;
+    overflow: hidden;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 14px;
+  }
+  th {
+    background: #fafafa;
+    color: #555;
+    font-weight: 600;
+    padding: 14px 18px;
+    border-bottom: 1px solid #e0e0e0;
+  }
+  td {
+    padding: 14px 18px;
+    border-bottom: 1px solid #f0f0f0;
+    color: #444;
+  }
+  tr:hover { background: #fdfdfd; }
+
+  .btn-primary {
+    background: #f4b41f;
+    color: #333;
+    font-weight: 700;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 16px;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-primary:hover { background: #e0a316; }
+
+  .btn-secondary {
+    background: #e0e0e0;
+    color: #333;
+    font-weight: 600;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 16px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .btn-secondary:hover { background: #d0d0d0; }
+
+  .btn-icon {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .btn-icon:hover { background: #f0f0f0; }
+
+  .badge-info {
+    background: #e3f2fd;
+    color: #1565c0;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-block;
+  }
+
+  /* Modal Flotante */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+  .modal-content {
+    background: #fff;
+    width: 420px;
+    max-width: 90%;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid #eee;
+  }
+  .modal-header h3 { margin: 0; font-size: 16px; font-weight: 700; color: #333; }
+  .btn-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #777;
+    display: flex;
+  }
+  .modal-body {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .form-group label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #666;
+  }
+  .form-group input {
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: 'Roboto', sans-serif;
+    outline: none;
+  }
+  .modal-footer {
+    padding: 14px 20px;
+    border-top: 1px solid #eee;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    background: #fafafa;
+  }
+</style>

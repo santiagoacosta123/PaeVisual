@@ -1,0 +1,237 @@
+<div class="space-y-6 p-2">
+  
+  <!-- Encabezado y Pestañas -->
+  <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+    <div>
+      <span class="text-[11px] font-black uppercase tracking-widest text-amber-600 bg-amber-50 px-2.5 py-1 rounded-md border border-amber-200/60">Módulo Operativo PAE</span>
+      <h1 class="text-2xl font-black tracking-tight text-slate-800 mt-2">Menús, Platos y Preparaciones</h1>
+      <p class="text-xs text-slate-400 mt-0.5">Planificación nutricional, gestión de platos y asignación de turnos a manipuladoras.</p>
+    </div>
+
+    <div class="flex items-center gap-1.5 bg-slate-100/80 p-1.5 rounded-xl border border-slate-200/60 self-start lg:self-auto">
+      <button type="button" (click)="cambiarPestana('menus')" [class]="pestanaActiva === 'menus' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'" class="px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer">Menús</button>
+      <button type="button" (click)="cambiarPestana('platos')" [class]="pestanaActiva === 'platos' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'" class="px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer">Platos</button>
+      <button type="button" (click)="cambiarPestana('preparaciones')" [class]="pestanaActiva === 'preparaciones' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'" class="px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer">Preparaciones</button>
+    </div>
+  </div>
+
+  <!-- Botón Nuevo -->
+  <div class="flex justify-end">
+    <button type="button" (click)="abrirFormulario()" class="bg-[#FAB41F] hover:bg-[#e2a21b] px-5 py-2.5 rounded-xl font-black text-slate-900 shadow-sm transition-all duration-200 text-xs flex items-center gap-2 cursor-pointer border border-amber-300/80 active:scale-95">
+      <span class="material-symbols-outlined text-[18px]">add_box</span>
+      {{ pestanaActiva === 'menus' ? 'Nuevo Menú' : pestanaActiva === 'platos' ? 'Nuevo Plato' : 'Asignar Preparación' }}
+    </button>
+  </div>
+
+  <!-- Formulario -->
+  <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200 transition-all duration-300" *ngIf="mostrarFormulario">
+    <div class="flex items-center justify-between pb-4 mb-5 border-b border-slate-100">
+      <div class="flex items-center gap-2">
+        <span class="material-symbols-outlined text-[#FAB41F]">edit_square</span>
+        <h3 class="text-sm font-black text-slate-800 uppercase tracking-wider">{{ esEdicion ? 'Editar' : 'Registrar' }} {{ pestanaActiva === 'menus' ? 'Menú' : (pestanaActiva === 'platos' ? 'Plato' : 'Preparación') }}</h3>
+      </div>
+      <button type="button" (click)="cerrarFormulario()" class="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center transition cursor-pointer">
+        <span class="material-symbols-outlined text-[20px]">close</span>
+      </button>
+    </div>
+
+    <!-- Inputs Menús -->
+    <div *ngIf="pestanaActiva === 'menus'" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div>
+        <label class="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">Jornada</label>
+        <select [(ngModel)]="menuForm.id_jornada" name="id_jornada" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#FAB41F] focus:outline-none transition">
+          <option *ngFor="let jor of jornadas" [value]="jor.id_jornada">{{ jor.nombre_jornada }}</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">Fecha</label>
+        <input type="date" [(ngModel)]="menuForm.fecha" name="fecha" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#FAB41F] focus:outline-none transition">
+      </div>
+      <div>
+        <label class="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">Niños Presentes</label>
+        <input type="number" [(ngModel)]="menuForm.ninos_presentes" name="ninos_presentes" placeholder="Ej. 150" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#FAB41F] focus:outline-none transition">
+      </div>
+      <div>
+        <label class="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">Contrato PAE</label>
+        <select [(ngModel)]="menuForm.id_contrato" name="id_contrato" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#FAB41F] focus:outline-none transition">
+          <option *ngFor="let con of contratos" [value]="con.id_contrato">{{ con.numero_cor }} - {{ con.institucion }}</option>
+        </select>
+      </div>
+      <div class="sm:col-span-2">
+        <label class="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">Información Nutricional</label>
+        <input type="text" [(ngModel)]="menuForm.informacion_nutricional" name="informacion_nutricional" placeholder="Detalles de calorías y componentes..." class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#FAB41F] focus:outline-none transition">
+      </div>
+    </div>
+
+    <!-- Inputs Platos -->
+    <div *ngIf="pestanaActiva === 'platos'" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div>
+        <label class="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">Sección de Menú</label>
+        <select [(ngModel)]="platoForm.id_seccion" name="id_seccion" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#FAB41F] focus:outline-none transition">
+          <option *ngFor="let sec of seccionesMenu" [value]="sec.id_seccion">{{ sec.nombre_seccion }}</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">Nombre del Plato</label>
+        <input type="text" [(ngModel)]="platoForm.nombre_plato" name="nombre_plato" placeholder="Ej. Seco de Pollo" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#FAB41F] focus:outline-none transition">
+      </div>
+      <div>
+        <label class="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">Componente</label>
+        <input type="text" [(ngModel)]="platoForm.componente" name="componente" placeholder="Ej. Proteína / Cereal" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#FAB41F] focus:outline-none transition">
+      </div>
+    </div>
+
+    <!-- Inputs Preparaciones -->
+    <div *ngIf="pestanaActiva === 'preparaciones'" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div>
+        <label class="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">Menú</label>
+        <select [(ngModel)]="preparacionForm.id_menu" name="id_menu" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#FAB41F] focus:outline-none transition">
+          <option *ngFor="let m of menus" [value]="m.id_menu">Menú #{{ m.id_menu }} ({{ m.fecha }})</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">Plato</label>
+        <select [(ngModel)]="preparacionForm.id_plato" name="id_plato" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#FAB41F] focus:outline-none transition">
+          <option *ngFor="let p of platos" [value]="p.id_plato">{{ p.nombre_plato }}</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">Usuario Manipuladora</label>
+        <select [(ngModel)]="preparacionForm.id_usuario_manipuladora" name="id_usuario_manipuladora" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#FAB41F] focus:outline-none transition">
+          <option *ngFor="let man of usuariosManipuladoras" [value]="man.id_usuario_manipuladora">{{ man.nombre }}</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">Fecha Programada</label>
+        <input type="date" [(ngModel)]="preparacionForm.fecha" name="fecha" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#FAB41F] focus:outline-none transition">
+      </div>
+      <div>
+        <label class="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">Hora Programada</label>
+        <input type="time" [(ngModel)]="preparacionForm.hora_programada" name="hora_programada" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#FAB41F] focus:outline-none transition">
+      </div>
+      <div>
+        <label class="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">Observaciones</label>
+        <input type="text" [(ngModel)]="preparacionForm.observaciones" name="observaciones" placeholder="Instrucciones especiales..." class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#FAB41F] focus:outline-none transition">
+      </div>
+    </div>
+
+    <!-- Botones Formulario -->
+    <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-100">
+      <button type="button" (click)="cerrarFormulario()" class="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50 transition cursor-pointer">Cancelar</button>
+      <button type="button" (click)="guardarTodo()" class="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition cursor-pointer">{{ esEdicion ? 'Actualizar registro' : 'Guardar registro' }}</button>
+    </div>
+  </div>
+
+  <!-- Tablas -->
+  <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
+    
+    <!-- Tabla Menús -->
+    <div *ngIf="pestanaActiva === 'menus'" class="overflow-x-auto">
+      <table class="w-full text-xs text-left">
+        <thead class="bg-slate-50/70 text-slate-500 font-black uppercase tracking-wider border-b border-slate-200/60">
+          <tr>
+            <th class="px-6 py-4">Jornada</th>
+            <th class="px-6 py-4">Fecha</th>
+            <th class="px-6 py-4">Niños Presentes</th>
+            <th class="px-6 py-4">Institución / Contrato</th>
+            <th class="px-6 py-4">Info Nutricional</th>
+            <th class="px-6 py-4 text-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          <tr *ngFor="let m of menus" class="hover:bg-slate-50/50 transition-colors">
+            <td class="px-6 py-4 font-bold text-slate-800">{{ m.nombre_jornada }}</td>
+            <td class="px-6 py-4 text-slate-600">{{ m.fecha }}</td>
+            <td class="px-6 py-4 font-extrabold text-slate-800">{{ m.ninos_presentes }}</td>
+            <td class="px-6 py-4 text-slate-600">{{ m.institucion }}</td>
+            <td class="px-6 py-4 text-slate-500 italic">{{ m.informacion_nutricional }}</td>
+            <td class="px-6 py-4 text-center">
+              <div class="flex items-center justify-center gap-1">
+                <button (click)="abrirEdicion(m)" class="w-8 h-8 rounded-lg hover:bg-amber-50 text-amber-600 transition flex items-center justify-center cursor-pointer" title="Editar">
+                  <span class="material-symbols-outlined text-[18px]">edit</span>
+                </button>
+                <button (click)="eliminarItem(menus, m)" class="w-8 h-8 rounded-lg hover:bg-red-50 text-red-500 transition flex items-center justify-center cursor-pointer" title="Eliminar">
+                  <span class="material-symbols-outlined text-[18px]">delete</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Tabla Platos -->
+    <div *ngIf="pestanaActiva === 'platos'" class="overflow-x-auto">
+      <table class="w-full text-xs text-left">
+        <thead class="bg-slate-50/70 text-slate-500 font-black uppercase tracking-wider border-b border-slate-200/60">
+          <tr>
+            <th class="px-6 py-4">Sección</th>
+            <th class="px-6 py-4">Nombre del Plato</th>
+            <th class="px-6 py-4">Componente</th>
+            <th class="px-6 py-4 text-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          <tr *ngFor="let p of platos" class="hover:bg-slate-50/50 transition-colors">
+            <td class="px-6 py-4 font-bold text-slate-800">{{ p.nombre_seccion }}</td>
+            <td class="px-6 py-4 font-extrabold text-amber-600">{{ p.nombre_plato }}</td>
+            <td class="px-6 py-4 text-slate-600">{{ p.componente }}</td>
+            <td class="px-6 py-4 text-center">
+              <div class="flex items-center justify-center gap-1">
+                <button (click)="abrirEdicion(p)" class="w-8 h-8 rounded-lg hover:bg-amber-50 text-amber-600 transition flex items-center justify-center cursor-pointer" title="Editar">
+                  <span class="material-symbols-outlined text-[18px]">edit</span>
+                </button>
+                <button (click)="eliminarItem(platos, p)" class="w-8 h-8 rounded-lg hover:bg-red-50 text-red-500 transition flex items-center justify-center cursor-pointer" title="Eliminar">
+                  <span class="material-symbols-outlined text-[18px]">delete</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Tabla Preparaciones -->
+    <div *ngIf="pestanaActiva === 'preparaciones'" class="overflow-x-auto">
+      <table class="w-full text-xs text-left">
+        <thead class="bg-slate-50/70 text-slate-500 font-black uppercase tracking-wider border-b border-slate-200/60">
+          <tr>
+            <th class="px-6 py-4">Menú</th>
+            <th class="px-6 py-4">Plato</th>
+            <th class="px-6 py-4">Manipuladora</th>
+            <th class="px-6 py-4">Programación</th>
+            <th class="px-6 py-4">Estado</th>
+            <th class="px-6 py-4">Observaciones</th>
+            <th class="px-6 py-4 text-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          <tr *ngFor="let prep of preparacionesAsignadas" class="hover:bg-slate-50/50 transition-colors">
+            <td class="px-6 py-4 font-bold text-slate-800">{{ prep.nombre_menu }}</td>
+            <td class="px-6 py-4 text-slate-700 font-semibold">{{ prep.nombre_plato }}</td>
+            <td class="px-6 py-4 text-slate-800 font-extrabold">{{ prep.manipuladora }}</td>
+            <td class="px-6 py-4 text-slate-500">{{ prep.fecha }} ({{ prep.hora_programada }})</td>
+            <td class="px-6 py-4">
+              <span class="px-2.5 py-1 rounded-md text-[10px] font-black border bg-amber-50 text-amber-700 border-amber-200">
+                {{ prep.estado_preparacion }}
+              </span>
+            </td>
+            <td class="px-6 py-4 text-slate-600">{{ prep.observaciones }}</td>
+            <td class="px-6 py-4 text-center">
+              <div class="flex items-center justify-center gap-1">
+                <button (click)="abrirEdicion(prep)" class="w-8 h-8 rounded-lg hover:bg-amber-50 text-amber-600 transition flex items-center justify-center cursor-pointer" title="Editar">
+                  <span class="material-symbols-outlined text-[18px]">edit</span>
+                </button>
+                <button (click)="eliminarItem(preparacionesAsignadas, prep)" class="w-8 h-8 rounded-lg hover:bg-red-50 text-red-500 transition flex items-center justify-center cursor-pointer" title="Eliminar">
+                  <span class="material-symbols-outlined text-[18px]">delete</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+</div>

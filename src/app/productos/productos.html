@@ -1,192 +1,228 @@
-<div class="productos-container">
-
-  <div class="section-header-banner">
-    <div class="header-titles">
-      <h2 class="section-title">Productos</h2>
-      <p class="section-subtitle">Gestión de productos e inventario</p>
+<div class="space-y-6 p-2">
+  
+  <!-- Encabezado de Módulo y Pestañas -->
+  <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+    <div>
+      <span class="text-[11px] font-black uppercase tracking-widest text-amber-600 bg-amber-50 px-2.5 py-1 rounded-md border border-amber-200/60">Módulo SIRAE</span>
+      <h1 class="text-2xl font-black tracking-tight text-slate-800 mt-2">Inventario y Conexiones</h1>
+      <p class="text-xs text-slate-400 mt-0.5">Gestión completa de inventarios, movimientos y gramajes relacionados.</p>
     </div>
 
-    <button
-      type="button"
-      class="btn-primary-action"
-      (click)="abrirFormulario()">
-      Agregar producto
+    <!-- Pestañas de Navegación -->
+    <div class="flex items-center gap-1.5 bg-slate-100/80 p-1.5 rounded-xl border border-slate-200/60 self-start lg:self-auto">
+      <button type="button" (click)="cambiarPestana('inventario')" [class]="pestanaActiva === 'inventario' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'" class="px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer">Inventario</button>
+      <button type="button" (click)="cambiarPestana('movimientos')" [class]="pestanaActiva === 'movimientos' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'" class="px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer">Movimientos</button>
+      <button type="button" (click)="cambiarPestana('gramajes')" [class]="pestanaActiva === 'gramajes' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'" class="px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer">Gramajes</button>
+    </div>
+  </div>
+
+  <!-- Botón de Acción Principal -->
+  <div class="flex justify-end">
+    <button type="button" (click)="abrirFormulario()" class="bg-[#FAB41F] hover:bg-[#e2a21b] px-5 py-2.5 rounded-xl font-black text-slate-900 shadow-sm transition-all duration-200 text-xs flex items-center gap-2 cursor-pointer border border-amber-300/80 active:scale-95">
+      <span class="material-symbols-outlined text-[18px]">add_box</span>
+      {{ pestanaActiva === 'inventario' ? 'Nuevo Insumo' : pestanaActiva === 'movimientos' ? 'Registrar Movimiento' : 'Registrar Gramaje' }}
     </button>
   </div>
 
-  <!-- FORMULARIO -->
-  <div class="form-card" *ngIf="mostrarFormulario">
-
-    <div class="form-grid">
-
-      <div class="form-group">
-        <label>Nombre del producto</label>
-
-        <input
-          type="text"
-          class="form-control"
-          [(ngModel)]="productoForm.nombre"
-          placeholder="Ingrese el nombre del producto">
+  <!-- Formulario Desplegable Estilizado -->
+  <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200 transition-all duration-300" *ngIf="mostrarFormulario">
+    <div class="flex items-center justify-between pb-4 mb-5 border-b border-slate-100">
+      <div class="flex items-center gap-2">
+        <span class="material-symbols-outlined text-[#FAB41F]">edit_square</span>
+        <h3 class="text-sm font-black text-slate-800 uppercase tracking-wider">Formulario de Registro ({{ pestanaActiva }})</h3>
       </div>
-
-      <div class="form-group">
-        <label>Categoría</label>
-
-        <input
-          type="text"
-          class="form-control"
-          [(ngModel)]="productoForm.categoria"
-          placeholder="Ingrese la categoría">
-      </div>
-
-      <div class="form-group">
-        <label>Stock</label>
-
-        <input
-          type="text"
-          class="form-control"
-          [(ngModel)]="productoForm.stock"
-          placeholder="Ingrese el stock">
-      </div>
-
-      <div class="form-group">
-        <label>Unidad de medida</label>
-
-        <input
-          type="text"
-          class="form-control"
-          [(ngModel)]="productoForm.unidad"
-          placeholder="Ej: Kilogramos">
-      </div>
-
-      <div class="form-group">
-        <label>Porcentaje</label>
-
-        <input
-          type="text"
-          class="form-control"
-          [(ngModel)]="productoForm.porcentaje"
-          placeholder="Ej: 100%">
-      </div>
-
+      <button type="button" (click)="cerrarFormulario()" class="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center transition cursor-pointer">
+        <span class="material-symbols-outlined text-[20px]">close</span>
+      </button>
     </div>
 
-    <div class="form-actions">
-
-      <button
-        type="button"
-        class="btn-save"
-        (click)="guardarProducto()">
-
-        {{ modoEdicion ? 'Actualizar producto' : 'Guardar producto' }}
-
-      </button>
-
-      <button
-        type="button"
-        class="btn-cancel"
-        (click)="cerrarFormulario()">
-
-        Cancelar
-
-      </button>
-
+    <!-- Inputs Inventario -->
+    <div *ngIf="pestanaActiva === 'inventario'" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div>
+        <label class="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">Nombre Ingrediente</label>
+        <input type="text" [(ngModel)]="itemForm.nombre_ingrediente" placeholder="Ej. Lentejas" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#FAB41F] focus:outline-none transition">
+      </div>
+      <div>
+        <label class="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">Categoría</label>
+        <select [(ngModel)]="itemForm.id_categoria_inventario" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#FAB41F] focus:outline-none transition">
+          <option *ngFor="let cat of categoriasInventario" [value]="cat.id_categoria_inventario">{{ cat.nombre_categoria }}</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">Marca</label>
+        <input type="text" [(ngModel)]="itemForm.marca_ingrediente" placeholder="Ej. Roa" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#FAB41F] focus:outline-none transition">
+      </div>
+      <div>
+        <label class="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">Cantidad Actual</label>
+        <input type="number" [(ngModel)]="itemForm.cantidad_actual" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#FAB41F] focus:outline-none transition">
+      </div>
+      <div>
+        <label class="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">Stock Mínimo</label>
+        <input type="number" [(ngModel)]="itemForm.stock_minimo" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#FAB41F] focus:outline-none transition">
+      </div>
+      <div>
+        <label class="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">Unidad de Medida</label>
+        <select [(ngModel)]="itemForm.id_unidad_medida" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#FAB41F] focus:outline-none transition">
+          <option *ngFor="let um of unidadesMedida" [value]="um.id_unidad_medida">{{ um.nombre }}</option>
+        </select>
+      </div>
     </div>
 
+    <!-- Inputs Movimientos -->
+    <div *ngIf="pestanaActiva === 'movimientos'" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div>
+        <label class="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">Ingrediente</label>
+        <select [(ngModel)]="movimientoForm.id_ingrediente" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#FAB41F] focus:outline-none transition">
+          <option *ngFor="let ing of ingredientesDisponibles" [value]="ing.id_ingrediente">{{ ing.nombre_ingrediente }}</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">Tipo Movimiento</label>
+        <select [(ngModel)]="movimientoForm.tipo_movimiento" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#FAB41F] focus:outline-none transition">
+          <option value="ENTRADA">ENTRADA</option>
+          <option value="SALIDA">SALIDA</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">Cantidad</label>
+        <input type="number" [(ngModel)]="movimientoForm.cantidad" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#FAB41F] focus:outline-none transition">
+      </div>
+      <div>
+        <label class="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">Unidad</label>
+        <select [(ngModel)]="movimientoForm.id_unidad_medida" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#FAB41F] focus:outline-none transition">
+          <option *ngFor="let um of unidadesMedida" [value]="um.id_unidad_medida">{{ um.nombre }}</option>
+        </select>
+      </div>
+      <div class="sm:col-span-2">
+        <label class="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">Observaciones</label>
+        <input type="text" [(ngModel)]="movimientoForm.observaciones" placeholder="Motivo del movimiento..." class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#FAB41F] focus:outline-none transition">
+      </div>
+    </div>
+
+    <!-- Inputs Gramajes -->
+    <div *ngIf="pestanaActiva === 'gramajes'" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div>
+        <label class="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">Ingrediente</label>
+        <select [(ngModel)]="gramajeForm.id_ingrediente" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#FAB41F] focus:outline-none transition">
+          <option *ngFor="let ing of ingredientesDisponibles" [value]="ing.id_ingrediente">{{ ing.nombre_ingrediente }}</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">Cantidad Gramaje</label>
+        <input type="number" [(ngModel)]="gramajeForm.cantidad_gramaje" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#FAB41F] focus:outline-none transition">
+      </div>
+      <div>
+        <label class="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">Unidad</label>
+        <select [(ngModel)]="gramajeForm.id_unidad_medida" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#FAB41F] focus:outline-none transition">
+          <option *ngFor="let um of unidadesMedida" [value]="um.id_unidad_medida">{{ um.nombre }}</option>
+        </select>
+      </div>
+      <div class="sm:col-span-3">
+        <label class="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">Descripción</label>
+        <input type="text" [(ngModel)]="gramajeForm.descripcion" placeholder="Detalle del gramaje..." class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#FAB41F] focus:outline-none transition">
+      </div>
+    </div>
+
+    <!-- Botones de formulario -->
+    <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-100">
+      <button type="button" (click)="cerrarFormulario()" class="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50 transition cursor-pointer">Cancelar</button>
+      <button type="button" (click)="guardarTodo()" class="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition cursor-pointer">Guardar registro</button>
+    </div>
   </div>
 
-  <!-- TABLA -->
-  <div class="table-card">
-
-    <div class="table-responsive">
-
-      <table class="custom-data-table">
-
-        <thead>
+  <!-- Tablas de Visualización con el estilo limpio original -->
+  <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
+    
+    <!-- Tabla 1: Inventario -->
+    <div *ngIf="pestanaActiva === 'inventario'" class="overflow-x-auto">
+      <table class="w-full text-xs text-left">
+        <thead class="bg-slate-50/70 text-slate-500 font-black uppercase tracking-wider border-b border-slate-200/60">
           <tr>
-            <th>Producto</th>
-            <th>Categoría</th>
-            <th>Stock</th>
-            <th>Unidad</th>
-            <th>Porcentaje</th>
-            <th>Acciones</th>
+            <th class="px-6 py-4">Ingrediente</th>
+            <th class="px-6 py-4">Categoría</th>
+            <th class="px-6 py-4">Cantidad Actual</th>
+            <th class="px-6 py-4">Stock Mínimo</th>
+            <th class="px-6 py-4">Unidad</th>
+            <th class="px-6 py-4 text-center">Acciones</th>
           </tr>
         </thead>
-
-        <tbody>
-
-          <tr *ngFor="let p of productos">
-
-            <td>
-              <span class="product-name">
-                {{ p.nombre || p.nombre_ingrediente || 'Sin nombre' }}
-              </span>
+        <tbody class="divide-y divide-slate-100">
+          <tr *ngFor="let item of inventario" class="hover:bg-slate-50/50 transition-colors">
+            <td class="px-6 py-4 font-bold text-slate-800">{{ item.nombre_ingrediente }}</td>
+            <td class="px-6 py-4 text-slate-600">{{ item.nombre_categoria }}</td>
+            <td class="px-6 py-4 font-extrabold text-slate-800">{{ item.cantidad_actual }}</td>
+            <td class="px-6 py-4 font-black text-amber-600">{{ item.stock_minimo }}</td>
+            <td class="px-6 py-4 text-slate-600">{{ item.nombre_unidad }}</td>
+            <td class="px-6 py-4 text-center">
+              <button (click)="eliminarItem(inventario, item)" class="w-8 h-8 rounded-lg hover:bg-red-50 text-red-500 transition flex items-center justify-center mx-auto cursor-pointer" title="Eliminar">
+                <span class="material-symbols-outlined text-[18px]">delete</span>
+              </button>
             </td>
-
-            <td>
-              <span class="category-badge">
-                {{ p.categoria || p.nombre_categoria || 'Sin categoría' }}
-              </span>
-            </td>
-
-            <td>
-              {{ p.stock ?? p.cantidad_actual ?? '0' }}
-            </td>
-
-            <td>
-              <span class="unit-badge">
-                {{ p.unidad || p.nombre_unidad || 'Sin unidad' }}
-              </span>
-            </td>
-
-            <td>
-              <span class="percentage-badge">
-                {{ p.porcentaje || '100%' }}
-              </span>
-            </td>
-
-            <td>
-
-              <div class="action-buttons-clean">
-
-                <button
-                  type="button"
-                  class="btn-icon-only edit"
-                  title="Editar"
-                  (click)="editarProducto(p)">
-                  ✏️
-                </button>
-
-                <button
-                  type="button"
-                  class="btn-icon-only delete"
-                  title="Eliminar"
-                  (click)="eliminarProducto(p)">
-                  🗑️
-                </button>
-
-              </div>
-
-            </td>
-
           </tr>
-
-          <tr *ngIf="productos.length === 0">
-
-            <td
-              colspan="6"
-              class="no-results">
-
-              No hay productos registrados.
-
-            </td>
-
-          </tr>
-
         </tbody>
-
       </table>
+    </div>
 
+    <!-- Tabla 2: Movimientos -->
+    <div *ngIf="pestanaActiva === 'movimientos'" class="overflow-x-auto">
+      <table class="w-full text-xs text-left">
+        <thead class="bg-slate-50/70 text-slate-500 font-black uppercase tracking-wider border-b border-slate-200/60">
+          <tr>
+            <th class="px-6 py-4">Ingrediente</th>
+            <th class="px-6 py-4">Tipo</th>
+            <th class="px-6 py-4">Cantidad</th>
+            <th class="px-6 py-4">Fecha</th>
+            <th class="px-6 py-4">Observaciones</th>
+            <th class="px-6 py-4 text-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          <tr *ngFor="let mov of movimientosInventario" class="hover:bg-slate-50/50 transition-colors">
+            <td class="px-6 py-4 font-bold text-slate-800">{{ mov.nombre_ingrediente }}</td>
+            <td class="px-6 py-4">
+              <span [class]="mov.tipo_movimiento === 'ENTRADA' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'" class="px-2.5 py-1 rounded-md text-[10px] font-black border">
+                {{ mov.tipo_movimiento }}
+              </span>
+            </td>
+            <td class="px-6 py-4 font-extrabold text-slate-800">{{ mov.cantidad }} {{ mov.nombre_unidad }}</td>
+            <td class="px-6 py-4 text-slate-500">{{ mov.fecha }}</td>
+            <td class="px-6 py-4 text-slate-600">{{ mov.observaciones }}</td>
+            <td class="px-6 py-4 text-center">
+              <button (click)="eliminarItem(movimientosInventario, mov)" class="w-8 h-8 rounded-lg hover:bg-red-50 text-red-500 transition flex items-center justify-center mx-auto cursor-pointer">
+                <span class="material-symbols-outlined text-[18px]">delete</span>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Tabla 3: Gramajes -->
+    <div *ngIf="pestanaActiva === 'gramajes'" class="overflow-x-auto">
+      <table class="w-full text-xs text-left">
+        <thead class="bg-slate-50/70 text-slate-500 font-black uppercase tracking-wider border-b border-slate-200/60">
+          <tr>
+            <th class="px-6 py-4">Ingrediente</th>
+            <th class="px-6 py-4">Cantidad Gramaje</th>
+            <th class="px-6 py-4">Unidad</th>
+            <th class="px-6 py-4">Descripción</th>
+            <th class="px-6 py-4 text-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          <tr *ngFor="let gram of gramajes" class="hover:bg-slate-50/50 transition-colors">
+            <td class="px-6 py-4 font-bold text-slate-800">{{ gram.nombre_ingrediente }}</td>
+            <td class="px-6 py-4 font-extrabold text-amber-600">{{ gram.cantidad_gramaje }}</td>
+            <td class="px-6 py-4 text-slate-600">{{ gram.nombre_unidad }}</td>
+            <td class="px-6 py-4 text-slate-600">{{ gram.descripcion }}</td>
+            <td class="px-6 py-4 text-center">
+              <button (click)="eliminarItem(gramajes, gram)" class="w-8 h-8 rounded-lg hover:bg-red-50 text-red-500 transition flex items-center justify-center mx-auto cursor-pointer">
+                <span class="material-symbols-outlined text-[18px]">delete</span>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
   </div>
