@@ -1,0 +1,271 @@
+<div class="container mt-4">
+  <h2>Gestión del Programa de Alimentación Escolar (PAE)</h2>
+
+  <!-- Pestañas de navegación -->
+  <ul class="nav nav-tabs mt-3">
+    <li class="nav-item">
+      <button class="nav-link" [class.active]="pestanaActiva === 'contratos'" (click)="cambiarPestana('contratos')">Contratos</button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" [class.active]="pestanaActiva === 'menus'" (click)="cambiarPestana('menus')">Menús</button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" [class.active]="pestanaActiva === 'platos'" (click)="cambiarPestana('platos')">Platos</button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" [class.active]="pestanaActiva === 'preparaciones'" (click)="cambiarPestana('preparaciones')">Preparaciones Asignadas</button>
+    </li>
+  </ul>
+
+  <div class="card mt-3 p-3">
+    <!-- Botón para abrir formulario de creación -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h4>Listado de {{ pestanaActiva | titlecase }}</h4>
+      <button class="btn btn-primary" (click)="abrirFormulario()">Nuevo {{ pestanaActiva | titlecase }}</button>
+    </div>
+
+    <!-- SECCIÓN: CONTRATOS -->
+    <div *ngIf="pestanaActiva === 'contratos'">
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nro Cor</th>
+            <th>Institución</th>
+            <th>Zona</th>
+            <th>Fechas</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let c of contratos">
+            <td>{{ c.id_contrato }}</td>
+            <td>{{ c.numero_cor }}</td>
+            <td>{{ c.institucion }}</td>
+            <td>{{ c.zona }}</td>
+            <td>{{ c.fecha_inicio }} al {{ c.fecha_fin }}</td>
+            <td>{{ c.estado }}</td>
+            <td>
+              <button class="btn btn-sm btn-warning me-2" (click)="abrirEdicion(c)">Editar</button>
+              <button class="btn btn-sm btn-danger" (click)="eliminarItem(contratos, c)">Eliminar</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- SECCIÓN: MENÚS -->
+    <div *ngIf="pestanaActiva === 'menus'">
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Institución</th>
+            <th>Jornada</th>
+            <th>Fecha</th>
+            <th>Niños Presentes</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let m of menus">
+            <td>{{ m.id_menu }}</td>
+            <td>{{ m.institucion }}</td>
+            <td>{{ m.nombre_jornada }}</td>
+            <td>{{ m.fecha }}</td>
+            <td>{{ m.ninos_presentes }}</td>
+            <td>{{ m.estado }}</td>
+            <td>
+              <button class="btn btn-sm btn-warning me-2" (click)="abrirEdicion(m)">Editar</button>
+              <button class="btn btn-sm btn-danger" (click)="eliminarItem(menus, m)">Eliminar</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- SECCIÓN: PLATOS -->
+    <div *ngIf="pestanaActiva === 'platos'">
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Sección</th>
+            <th>Nombre del Plato</th>
+            <th>Componente</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let p of platos">
+            <td>{{ p.id_plato }}</td>
+            <td>{{ p.nombre_seccion }}</td>
+            <td>{{ p.nombre_plato }}</td>
+            <td>{{ p.componente }}</td>
+            <td>
+              <button class="btn btn-sm btn-warning me-2" (click)="abrirEdicion(p)">Editar</button>
+              <button class="btn btn-sm btn-danger" (click)="eliminarItem(platos, p)">Eliminar</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- SECCIÓN: PREPARACIONES ASIGNADAS -->
+    <div *ngIf="pestanaActiva === 'preparaciones'">
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Menú</th>
+            <th>Plato</th>
+            <th>Manipuladora</th>
+            <th>Fecha / Hora</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let pa of preparacionesAsignadas">
+            <td>{{ pa.id_preparacion_asignada }}</td>
+            <td>{{ pa.nombre_menu }}</td>
+            <td>{{ pa.nombre_plato }}</td>
+            <td>{{ pa.manipuladora }}</td>
+            <td>{{ pa.fecha }} ({{ pa.hora_programada }})</td>
+            <td>{{ pa.estado_preparacion }}</td>
+            <td>
+              <button class="btn btn-sm btn-warning me-2" (click)="abrirEdicion(pa)">Editar</button>
+              <button class="btn btn-sm btn-danger" (click)="eliminarItem(preparacionesAsignadas, pa)">Eliminar</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- FORMULARIO DINÁMICO -->
+  <div *ngIf="mostrarFormulario" class="card mt-4 p-4 border-primary">
+    <h3>{{ esEdicion ? 'Editar' : 'Crear' }} {{ pestanaActiva | titlecase }}</h3>
+    
+    <form (ngSubmit)="guardarTodo()">
+
+      <!-- Formulario Contratos -->
+      <div *ngIf="pestanaActiva === 'contratos'">
+        <div class="mb-3">
+          <label class="form-label">Número COR:</label>
+          <input type="text" class="form-control" [(ngModel)]="contratoForm.numero_cor" name="numero_cor" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Institución:</label>
+          <input type="text" class="form-control" [(ngModel)]="contratoForm.institucion" name="institucion" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Zona:</label>
+          <input type="text" class="form-control" [(ngModel)]="contratoForm.zona" name="zona">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Fecha Inicio:</label>
+          <input type="date" class="form-control" [(ngModel)]="contratoForm.fecha_inicio" name="fecha_inicio">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Fecha Fin:</label>
+          <input type="date" class="form-control" [(ngModel)]="contratoForm.fecha_fin" name="fecha_fin">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Estado:</label>
+          <select class="form-control" [(ngModel)]="contratoForm.estado" name="estado">
+            <option value="ACTIVO">ACTIVO</option>
+            <option value="INACTIVO">INACTIVO</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Formulario Menús -->
+      <div *ngIf="pestanaActiva === 'menus'">
+        <div class="mb-3">
+          <label class="form-label">Contrato:</label>
+          <select class="form-control" [(ngModel)]="menuForm.id_contrato" name="id_contrato">
+            <option *ngFor="let c of contratos" [value]="c.id_contrato">{{ c.institucion }}</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Jornada:</label>
+          <select class="form-control" [(ngModel)]="menuForm.id_jornada" name="id_jornada">
+            <option *ngFor="let j of jornadas" [value]="j.id_jornada">{{ j.nombre_jornada }}</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Fecha:</label>
+          <input type="date" class="form-control" [(ngModel)]="menuForm.fecha" name="fecha">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Niños Presentes:</label>
+          <input type="number" class="form-control" [(ngModel)]="menuForm.ninos_presentes" name="ninos_presentes">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Información Nutricional:</label>
+          <input type="text" class="form-control" [(ngModel)]="menuForm.informacion_nutricional" name="informacion_nutricional">
+        </div>
+      </div>
+
+      <!-- Formulario Platos -->
+      <div *ngIf="pestanaActiva === 'platos'">
+        <div class="mb-3">
+          <label class="form-label">Sección:</label>
+          <select class="form-control" [(ngModel)]="platoForm.id_seccion" name="id_seccion">
+            <option *ngFor="let s of seccionesMenu" [value]="s.id_seccion">{{ s.nombre_seccion }}</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Nombre del Plato:</label>
+          <input type="text" class="form-control" [(ngModel)]="platoForm.nombre_plato" name="nombre_plato" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Componente:</label>
+          <input type="text" class="form-control" [(ngModel)]="platoForm.componente" name="componente">
+        </div>
+      </div>
+
+      <!-- Formulario Preparaciones Asignadas -->
+      <div *ngIf="pestanaActiva === 'preparaciones'">
+        <div class="mb-3">
+          <label class="form-label">Menú:</label>
+          <select class="form-control" [(ngModel)]="preparacionForm.id_menu" name="id_menu">
+            <option *ngFor="let m of menus" [value]="m.id_menu">Menú #{{ m.id_menu }} ({{ m.fecha }})</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Plato:</label>
+          <select class="form-control" [(ngModel)]="preparacionForm.id_plato" name="id_plato">
+            <option *ngFor="let p of platos" [value]="p.id_plato">{{ p.nombre_plato }}</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Manipuladora:</label>
+          <select class="form-control" [(ngModel)]="preparacionForm.id_usuario_manipuladora" name="id_usuario_manipuladora">
+            <option *ngFor="let u of usuariosManipuladoras" [value]="u.id_usuario_manipuladora">{{ u.nombre }}</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Fecha:</label>
+          <input type="date" class="form-control" [(ngModel)]="preparacionForm.fecha" name="fecha">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Hora Programada:</label>
+          <input type="time" class="form-control" [(ngModel)]="preparacionForm.hora_programada" name="hora_programada">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Observaciones:</label>
+          <input type="text" class="form-control" [(ngModel)]="preparacionForm.observaciones" name="observaciones">
+        </div>
+      </div>
+
+      <!-- Botones -->
+      <button type="submit" class="btn btn-success me-2">Guardar</button>
+      <button type="button" class="btn btn-secondary" (click)="cerrarFormulario()">Cancelar</button>
+
+    </form>
+  </div>
+</div>

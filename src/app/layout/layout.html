@@ -20,6 +20,14 @@
         <span class="material-symbols-outlined" style="font-size:20px; color:#777;">people</span>
         Usuarios
       </a>
+      
+      <!-- OPCIÓN DE CONTRATOS AÑADIDA AQUÍ -->
+      <a routerLink="contratos" routerLinkActive="active-link"
+         style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; text-decoration:none; color:#333; font-size:14px; font-weight:500;">
+        <span class="material-symbols-outlined" style="font-size:20px; color:#777;">description</span>
+        Contratos
+      </a>
+
       <a routerLink="rol" routerLinkActive="active-link"
          style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; text-decoration:none; color:#333; font-size:14px; font-weight:500;">
         <span class="material-symbols-outlined" style="font-size:20px; color:#777;">shield</span>
@@ -28,12 +36,27 @@
       <a routerLink="productos" routerLinkActive="active-link"
          style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; text-decoration:none; color:#333; font-size:14px; font-weight:500;">
         <span class="material-symbols-outlined" style="font-size:20px; color:#777;">package</span>
-        Productos
+        Productos (Inventario)
       </a>
       <a routerLink="unidades-medida" routerLinkActive="active-link"
          style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; text-decoration:none; color:#333; font-size:14px; font-weight:500;">
         <span class="material-symbols-outlined" style="font-size:20px; color:#777;">straighten</span>
         Unidades
+      </a>
+      <a routerLink="menus" routerLinkActive="active-link"
+         style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; text-decoration:none; color:#333; font-size:14px; font-weight:500;">
+        <span class="material-symbols-outlined" style="font-size:20px; color:#777;">restaurant_menu</span>
+        Menús
+      </a>
+      <a routerLink="asistencia" routerLinkActive="active-link"
+         style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; text-decoration:none; color:#333; font-size:14px; font-weight:500;">
+        <span class="material-symbols-outlined" style="font-size:20px; color:#777;">fact_check</span>
+        Asistencia
+      </a>
+      <a routerLink="entregas" routerLinkActive="active-link"
+         style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; text-decoration:none; color:#333; font-size:14px; font-weight:500;">
+        <span class="material-symbols-outlined" style="font-size:20px; color:#777;">local_shipping</span>
+        Entregas
       </a>
       <a routerLink="reporte-inventario" routerLinkActive="active-link"
          style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; text-decoration:none; color:#333; font-size:14px; font-weight:500;">
@@ -63,7 +86,7 @@
   </aside>
 
   <!-- Contenido principal -->
-  <main style="flex:1; padding:24px; position:relative;">
+  <main style="flex:1; padding:24px; position:relative; overflow-y: auto;">
 
     <!-- Barra superior -->
     <div style="background:#fff; border:1px solid #e0e0e0; border-radius:10px; padding:12px 20px; display:flex; align-items:center; justify-content:space-between; margin-bottom:24px;">
@@ -82,123 +105,91 @@
       </div>
     </div>
 
+    <!-- AQUÍ SE CARGAN LAS VISTAS HIJAS (INICIO, CONTRATOS, PRODUCTOS, ETC.) -->
+    <router-outlet></router-outlet>
+
     <!-- Panel de perfil desplegable -->
     <div *ngIf="mostrarPerfil"
       style="position:absolute; top:80px; right:24px; width:300px; background:#fff; border:1px solid #e0e0e0; border-radius:10px; box-shadow:0 4px 16px rgba(0,0,0,0.10); z-index:100; overflow:hidden;">
-
-      <!-- Vista: Mi perfil -->
-      <div *ngIf="vistaActual === 'perfil'">
-        <div style="display:flex; align-items:center; justify-content:space-between; padding:16px 18px 12px; border-bottom:1px solid #f0f0f0;">
-          <span style="font-size:15px; font-weight:700; color:#333;">Mi perfil</span>
-          <button type="button" (click)="cerrarPanel()" style="background:none; border:none; cursor:pointer; color:#777; display:flex;">
-            <span class="material-symbols-outlined" style="font-size:20px;">close</span>
-          </button>
-        </div>
-        <div style="display:flex; align-items:center; gap:14px; padding:16px 18px; border-bottom:1px solid #f0f0f0;">
-          <div style="width:56px; height:56px; border-radius:50%; background:#f0f0f0; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-            <span class="material-symbols-outlined" style="font-size:32px; color:#777;">account_circle</span>
-          </div>
-          <div>
-            <p style="font-size:15px; font-weight:700; color:#333; margin:0;">{{ perfil.nombre }}</p>
-            <p style="font-size:13px; color:#777; margin:2px 0;">{{ perfil.sede }}</p>
-            <p style="font-size:13px; color:#777; margin:2px 0;">{{ perfil.correo }}</p>
-            <p style="font-size:13px; color:#777; margin:2px 0;">{{ perfil.telefono }}</p>
-          </div>
+      
+      <div style="padding:16px; background:#fafafa; border-bottom:1px solid #eee; display:flex; align-items:center; gap:12px;">
+        <div style="width:40px; height:40px; border-radius:50%; background:#f4b41f; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:bold;">
+          {{ perfil.nombre.charAt(0) }}
         </div>
         <div>
-          <button type="button" (click)="irA('editar')"
-            style="display:flex; align-items:center; justify-content:space-between; width:100%; padding:14px 18px; background:none; border:none; border-bottom:1px solid #f0f0f0; cursor:pointer; font-size:14px; font-weight:500; color:#333;">
-            <div style="display:flex; align-items:center; gap:12px;">
-              <span class="material-symbols-outlined" style="font-size:20px; color:#777;">manage_accounts</span>
-              Editar perfil
-            </div>
-            <span class="material-symbols-outlined" style="font-size:18px; color:#aaa;">chevron_right</span>
-          </button>
-          <button type="button" (click)="irA('password')"
-            style="display:flex; align-items:center; justify-content:space-between; width:100%; padding:14px 18px; background:none; border:none; cursor:pointer; font-size:14px; font-weight:500; color:#333;">
-            <div style="display:flex; align-items:center; gap:12px;">
-              <span class="material-symbols-outlined" style="font-size:20px; color:#777;">lock</span>
-              Cambiar contraseña
-            </div>
-            <span class="material-symbols-outlined" style="font-size:18px; color:#aaa;">chevron_right</span>
-          </button>
+          <h4 style="margin:0; font-size:14px; color:#333;">{{ perfil.nombre }}</h4>
+          <p style="margin:0; font-size:12px; color:#777;">{{ perfil.sede }}</p>
         </div>
       </div>
 
-      <!-- Vista: Editar perfil -->
-      <div *ngIf="vistaActual === 'editar'">
-        <div style="display:flex; align-items:center; gap:10px; padding:16px 18px 12px; border-bottom:1px solid #f0f0f0;">
-          <button type="button" (click)="irA('perfil')" style="background:none; border:none; cursor:pointer; display:flex; align-items:center; color:#777; padding:0;">
-            <span class="material-symbols-outlined" style="font-size:20px;">arrow_back</span>
-          </button>
-          <span style="font-size:15px; font-weight:700; color:#333;">Editar perfil</span>
-        </div>
-        <div style="padding:16px 18px; display:flex; flex-direction:column; gap:12px;">
-          <div>
-            <label style="font-size:12px; font-weight:600; color:#777; display:block; margin-bottom:4px;">Nombre</label>
-            <input type="text" [(ngModel)]="editForm.nombre"
-              style="width:100%; padding:8px 10px; border:1px solid #ddd; border-radius:6px; font-size:14px; font-family:'Roboto',sans-serif; box-sizing:border-box; outline:none;" />
-          </div>
-          <div>
-            <label style="font-size:12px; font-weight:600; color:#777; display:block; margin-bottom:4px;">Sede</label>
-            <input type="text" [(ngModel)]="editForm.sede"
-              style="width:100%; padding:8px 10px; border:1px solid #ddd; border-radius:6px; font-size:14px; font-family:'Roboto',sans-serif; box-sizing:border-box; outline:none;" />
-          </div>
-          <div>
-            <label style="font-size:12px; font-weight:600; color:#777; display:block; margin-bottom:4px;">Correo</label>
-            <input type="email" [(ngModel)]="editForm.correo"
-              style="width:100%; padding:8px 10px; border:1px solid #ddd; border-radius:6px; font-size:14px; font-family:'Roboto',sans-serif; box-sizing:border-box; outline:none;" />
-          </div>
-          <div>
-            <label style="font-size:12px; font-weight:600; color:#777; display:block; margin-bottom:4px;">Teléfono</label>
-            <input type="text" [(ngModel)]="editForm.telefono"
-              style="width:100%; padding:8px 10px; border:1px solid #ddd; border-radius:6px; font-size:14px; font-family:'Roboto',sans-serif; box-sizing:border-box; outline:none;" />
-          </div>
-          <button type="button" (click)="guardarPerfil()"
-            style="background:#f4b41f; color:#333; font-weight:700; font-family:'Roboto',sans-serif; border:none; border-radius:6px; padding:10px; font-size:14px; cursor:pointer; width:100%; margin-top:4px;">
-            Guardar cambios
-          </button>
-        </div>
+      <div style="padding:8px; display:flex; flex-direction:column; gap:4px;">
+        <button type="button" (click)="irA('perfil')"
+          [style.background]="vistaActual === 'perfil' ? '#fff8e1' : 'transparent'"
+          style="display:flex; align-items:center; gap:10px; padding:10px; border:none; border-radius:6px; cursor:pointer; width:100%; text-align:left; font-size:13px; color:#333;">
+          <span class="material-symbols-outlined" style="font-size:18px; color:#666;">badge</span>
+          Ver Perfil
+        </button>
+        <button type="button" (click)="irA('editar')"
+          [style.background]="vistaActual === 'editar' ? '#fff8e1' : 'transparent'"
+          style="display:flex; align-items:center; gap:10px; padding:10px; border:none; border-radius:6px; cursor:pointer; width:100%; text-align:left; font-size:13px; color:#333;">
+          <span class="material-symbols-outlined" style="font-size:18px; color:#666;">edit</span>
+          Editar Perfil
+        </button>
+        <button type="button" (click)="irA('password')"
+          [style.background]="vistaActual === 'password' ? '#fff8e1' : 'transparent'"
+          style="display:flex; align-items:center; gap:10px; padding:10px; border:none; border-radius:6px; cursor:pointer; width:100%; text-align:left; font-size:13px; color:#333;">
+          <span class="material-symbols-outlined" style="font-size:18px; color:#666;">lock</span>
+          Cambiar Contraseña
+        </button>
       </div>
 
-      <!-- Vista: Cambiar contraseña -->
-      <div *ngIf="vistaActual === 'password'">
-        <div style="display:flex; align-items:center; gap:10px; padding:16px 18px 12px; border-bottom:1px solid #f0f0f0;">
-          <button type="button" (click)="irA('perfil')" style="background:none; border:none; cursor:pointer; display:flex; align-items:center; color:#777; padding:0;">
-            <span class="material-symbols-outlined" style="font-size:20px;">arrow_back</span>
-          </button>
-          <span style="font-size:15px; font-weight:700; color:#333;">Cambiar contraseña</span>
+      <div style="padding:16px; border-top:1px solid #eee; background:#fff;">
+        <div *ngIf="vistaActual === 'perfil'">
+          <p style="font-size:13px; margin:6px 0; color:#555;"><strong>Correo:</strong> {{ perfil.correo }}</p>
+          <p style="font-size:13px; margin:6px 0; color:#555;"><strong>Teléfono:</strong> {{ perfil.telefono }}</p>
         </div>
-        <div style="padding:16px 18px; display:flex; flex-direction:column; gap:12px;">
-          <div>
-            <label style="font-size:12px; font-weight:600; color:#777; display:block; margin-bottom:4px;">Contraseña actual</label>
-            <input type="password" [(ngModel)]="passwordForm.actual"
-              style="width:100%; padding:8px 10px; border:1px solid #ddd; border-radius:6px; font-size:14px; font-family:'Roboto',sans-serif; box-sizing:border-box; outline:none;" />
+
+        <div *ngIf="vistaActual === 'editar'" style="display:flex; flex-direction:column; gap:10px;">
+          <div style="display:flex; flex-direction:column; gap:4px;">
+            <label style="font-size:11px; font-weight:600; color:#666;">Nombre</label>
+            <input type="text" [(ngModel)]="editForm.nombre" style="padding:8px; border:1px solid #ddd; border-radius:6px; font-size:13px;" />
           </div>
-          <div>
-            <label style="font-size:12px; font-weight:600; color:#777; display:block; margin-bottom:4px;">Nueva contraseña</label>
-            <input type="password" [(ngModel)]="passwordForm.nueva"
-              style="width:100%; padding:8px 10px; border:1px solid #ddd; border-radius:6px; font-size:14px; font-family:'Roboto',sans-serif; box-sizing:border-box; outline:none;" />
+          <div style="display:flex; flex-direction:column; gap:4px;">
+            <label style="font-size:11px; font-weight:600; color:#666;">Correo</label>
+            <input type="email" [(ngModel)]="editForm.correo" style="padding:8px; border:1px solid #ddd; border-radius:6px; font-size:13px;" />
           </div>
-          <div>
-            <label style="font-size:12px; font-weight:600; color:#777; display:block; margin-bottom:4px;">Confirmar contraseña</label>
-            <input type="password" [(ngModel)]="passwordForm.confirmar"
-              style="width:100%; padding:8px 10px; border:1px solid #ddd; border-radius:6px; font-size:14px; font-family:'Roboto',sans-serif; box-sizing:border-box; outline:none;" />
+          <div style="display:flex; flex-direction:column; gap:4px;">
+            <label style="font-size:11px; font-weight:600; color:#666;">Teléfono</label>
+            <input type="text" [(ngModel)]="editForm.telefono" style="padding:8px; border:1px solid #ddd; border-radius:6px; font-size:13px;" />
           </div>
-          <button type="button" (click)="guardarPassword()"
-            style="background:#f4b41f; color:#333; font-weight:700; font-family:'Roboto',sans-serif; border:none; border-radius:6px; padding:10px; font-size:14px; cursor:pointer; width:100%; margin-top:4px;">
-            Cambiar contraseña
-          </button>
+          <button type="button" (click)="guardarPerfil()" style="background:#f4b41f; color:#333; font-weight:700; border:none; border-radius:6px; padding:8px; cursor:pointer; font-size:13px; margin-top:4px;">Guardar Cambios</button>
+        </div>
+
+        <div *ngIf="vistaActual === 'password'" style="display:flex; flex-direction:column; gap:10px;">
+          <div style="display:flex; flex-direction:column; gap:4px;">
+            <label style="font-size:11px; font-weight:600; color:#666;">Contraseña Actual</label>
+            <input type="password" [(ngModel)]="passwordForm.actual" style="padding:8px; border:1px solid #ddd; border-radius:6px; font-size:13px;" />
+          </div>
+          <div style="display:flex; flex-direction:column; gap:4px;">
+            <label style="font-size:11px; font-weight:600; color:#666;">Nueva Contraseña</label>
+            <input type="password" [(ngModel)]="passwordForm.nueva" style="padding:8px; border:1px solid #ddd; border-radius:6px; font-size:13px;" />
+          </div>
+          <div style="display:flex; flex-direction:column; gap:4px;">
+            <label style="font-size:11px; font-weight:600; color:#666;">Confirmar Contraseña</label>
+            <input type="password" [(ngModel)]="passwordForm.confirmar" style="padding:8px; border:1px solid #ddd; border-radius:6px; font-size:13px;" />
+          </div>
+          <button type="button" (click)="guardarPassword()" style="background:#f4b41f; color:#333; font-weight:700; border:none; border-radius:6px; padding:8px; cursor:pointer; font-size:13px; margin-top:4px;">Actualizar Contraseña</button>
         </div>
       </div>
     </div>
 
+    <!-- Fondo transparente para cerrar el panel al hacer clic afuera -->
     <div *ngIf="mostrarPerfil" (click)="cerrarPanel()" style="position:fixed; inset:0; z-index:99;"></div>
 
-    <router-outlet></router-outlet>
   </main>
 </div>
 
+<!-- ESTILOS GENERALES -->
 <style>
   .active-link {
     background: #f4b41f !important;

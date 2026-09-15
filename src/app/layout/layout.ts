@@ -1,94 +1,141 @@
 import { Component } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { SweetAlertService } from '../sweet-alert.service';
+import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-layout',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, FormsModule, CommonModule],
+  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, FormsModule],
   templateUrl: './layout.html',
-  styleUrls: ['./layout.css']
+  styleUrls: ['./layout.css'] // Si tu hoja de estilos está integrada en el HTML o en un archivo .css aparte
 })
 export class LayoutComponent {
+  // Estado para el modal de ingredientes
+  modalAbierto: boolean = false;
+  modoEdicion: boolean = false;
+  filtroBusqueda: string = '';
 
-  // Panel de perfil
-  mostrarPerfil = false;
-  vistaActual: 'perfil' | 'editar' | 'password' = 'perfil';
+  // Modelo del ingrediente actual (para crear o editar)
+  ingredienteActual: any = {
+    id: null,
+    nombre: '',
+    categoria: '',
+    unidad_medida: '',
+    imagen: '',
+    descripcion: ''
+  };
+
+  // Lista de ingredientes de ejemplo (puedes conectarla con tu servicio backend)
+  ingredientes: any[] = [
+    {
+      id: 1,
+      nombre: 'Arroz blanco',
+      categoria: 'Granos y Cereales',
+      unidad_medida: 'Kilogramos (kg)',
+      imagen: 'https://via.placeholder.com/40',
+      descripcion: 'Arroz de primera calidad para almuerzos PAE.'
+    }
+  ];
+
+  get ingredientesFiltrados() {
+    if (!this.filtroBusqueda) return this.ingredientes;
+    const texto = this.filtroBusqueda.toLowerCase();
+    return this.ingredientes.filter(item => 
+      item.nombre.toLowerCase().includes(texto) ||
+      item.categoria.toLowerCase().includes(texto) ||
+      item.unidad_medida.toLowerCase().includes(texto)
+    );
+  }
+
+  abrirModalCrear() {
+    this.modoEdicion = false;
+    this.ingredienteActual = { id: null, nombre: '', categoria: '', unidad_medida: '', imagen: '', descripcion: '' };
+    this.modalAbierto = true;
+  }
+
+  abrirModalEditar(item: any) {
+    this.modoEdicion = true;
+    this.ingredienteActual = { ...item };
+    this.modalAbierto = true;
+  }
+
+  cerrarModal() {
+    this.modalAbierto = false;
+  }
+
+  guardarIngrediente() {
+    if (this.modoEdicion) {
+      const index = this.ingredientes.findIndex(i => i.id === this.ingredienteActual.id);
+      if (index !== -1) {
+        this.ingredientes[index] = { ...this.ingredienteActual };
+      }
+    } else {
+      this.ingredienteActual.id = Date.now();
+      this.ingredientes.push({ ...this.ingredienteActual });
+    }
+    this.cerrarModal();
+  }
+
+  eliminarIngrediente(id: number) {
+    this.ingredientes = this.ingredientes.filter(i => i.id !== id);
+  }
+
+  // Estado y métodos del perfil de usuario desplegable
+  mostrarPerfil: boolean = false;
+  vistaActual: string = 'perfil';
 
   perfil = {
-    nombre: 'Administrador',
-    sede: 'Sede La Simmonds',
-    correo: 'admin@pae.com',
-    telefono: '300 123 4567'
+    nombre: 'Administrador PAE',
+    sede: 'Sede Principal Popayán',
+    correo: 'admin.pae@colombia.gov.co',
+    telefono: '+57 300 1234567'
   };
 
   editForm = { ...this.perfil };
-
-  passwordForm = {
-    actual: '',
-    nueva: '',
-    confirmar: ''
-  };
-
-  constructor(private sweetAlert: SweetAlertService) {}
+  passwordForm = { actual: '', nueva: '', confirmar: '' };
 
   togglePerfil() {
     this.mostrarPerfil = !this.mostrarPerfil;
-    this.vistaActual = 'perfil';
   }
 
   cerrarPanel() {
     this.mostrarPerfil = false;
-    this.vistaActual = 'perfil';
   }
 
-  irA(vista: 'perfil' | 'editar' | 'password') {
+  irA(vista: string) {
     this.vistaActual = vista;
     if (vista === 'editar') {
       this.editForm = { ...this.perfil };
-    }
-    if (vista === 'password') {
-      this.passwordForm = { actual: '', nueva: '', confirmar: '' };
     }
   }
 
   guardarPerfil() {
     this.perfil = { ...this.editForm };
+    alert('Perfil actualizado correctamente.');
     this.vistaActual = 'perfil';
-    this.sweetAlert.success('Perfil actualizado', 'Los datos se guardaron correctamente.');
   }
 
   guardarPassword() {
-    if (!this.passwordForm.actual) {
-      this.sweetAlert.error('Error', 'Ingresa tu contraseña actual.');
-      return;
-    }
-    if (this.passwordForm.nueva.length < 6) {
-      this.sweetAlert.error('Error', 'La nueva contraseña debe tener mínimo 6 caracteres.');
+    if (!this.passwordForm.actual || !this.passwordForm.nueva || !this.passwordForm.confirmar) {
+      alert('Por favor completa todos los campos.');
       return;
     }
     if (this.passwordForm.nueva !== this.passwordForm.confirmar) {
-      this.sweetAlert.error('Error', 'Las contraseñas no coinciden.');
+      alert('Las nuevas contraseñas no coinciden.');
       return;
     }
+    alert('Contraseña actualizada con éxito.');
+    this.passwordForm = { actual: '', nueva: '', confirmar: '' };
     this.vistaActual = 'perfil';
-    this.sweetAlert.success('Contraseña actualizada', 'Tu contraseña fue cambiada correctamente.');
-  }
-
-  cerrarSesion() {
-    this.mostrarPerfil = false;
-    this.sweetAlert
-      .confirm('¿Cerrar sesión?', 'Se cerrará la sesión del administrador.')
-      .then((result) => {
-        if (result.isConfirmed) {
-          this.sweetAlert.success('Sesión cerrada', 'Has salido correctamente.');
-        }
-      });
   }
 
   configurar() {
-    this.sweetAlert.info('Configuración', 'La configuración del sistema estará disponible pronto.');
+    console.log('Navegando a configuración general');
   }
-}
+
+  cerrarSesion() {
+    console.log('Cerrando sesión...');
+    // Aquí puedes agregar la redirección al login
+  }
+}

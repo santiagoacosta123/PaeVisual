@@ -1,61 +1,68 @@
 <div class="space-y-6">
-  <!-- Encabezado -->
-  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+  
+  <!-- Encabezado Principal con botones interactivos -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
     <div>
       <h1 class="text-2xl font-black text-slate-800">Reporte de Inventario</h1>
       <p class="text-sm text-slate-500 mt-1">Monitoreo de existencias y distribución por estado de productos</p>
     </div>
-    <div class="flex gap-2">
-      <button type="button" (click)="verReporte()" class="border border-slate-300 hover:bg-slate-50 px-4 py-2 rounded-2xl text-slate-700 font-semibold transition">
+    <div class="flex items-center gap-3">
+      <!-- Botón Ver Reporte -->
+      <button type="button" (click)="seleccionarEstado(null)" class="border border-slate-200 hover:bg-slate-50 px-4 py-2.5 rounded-xl text-slate-700 font-semibold text-sm transition shadow-2xs cursor-pointer">
         Ver reporte
       </button>
-      <button type="button" (click)="descargarReporte()" class="bg-[#FAB41F] hover:bg-[#e2a21b] px-4 py-2 rounded-2xl font-bold text-slate-900 shadow-sm transition">
+      <!-- Botón Descargar (Lanza la impresión limpia ocultando menús) -->
+      <button type="button" onclick="window.print()" class="bg-[#FAB41F] hover:bg-[#e2a21b] px-4 py-2.5 rounded-xl font-bold text-slate-900 shadow-sm transition text-sm flex items-center gap-2 cursor-pointer">
+        <span class="material-symbols-outlined text-[18px]">download</span>
         Descargar
       </button>
     </div>
   </div>
 
-  <!-- Sección de Gráfica y Tarjetas de Porcentaje -->
+  <!-- Sección de Gráfica y Tarjetas Interactivas -->
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    
     <!-- Contenedor del Gráfico -->
-    <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col items-center">
-      <div class="w-full flex justify-between items-center mb-4">
+    <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col justify-between">
+      <div class="w-full flex justify-between items-center mb-2">
         <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
-          <span class="material-symbols-outlined text-[#FAB41F]">pie_chart</span>
+          <span class="p-2 rounded-xl bg-amber-50 text-[#FAB41F] material-symbols-outlined text-lg">pie_chart</span>
           Distribución de Stock
         </h3>
-        <span class="text-xs font-medium text-slate-400">Total: {{ totalProductos }} productos</span>
+        <span class="text-xs font-semibold bg-slate-100 text-slate-600 px-3 py-1 rounded-full">Total: {{ totalProductos }} productos</span>
       </div>
 
       <!-- Canvas de Chart.js -->
-      <div class="relative w-full max-w-sm h-64 my-2 flex justify-center items-center">
+      <div class="relative w-full max-w-xs h-56 mx-auto my-2 flex justify-center items-center">
         <canvas #chartCanvas></canvas>
       </div>
 
-      <p class="text-xs text-slate-500 mt-3 text-center">
-        💡 <span class="font-medium">Tip:</span> Haz clic sobre cualquier sección del gráfico o en las tarjetas para filtrar los productos.
-      </p>
+      <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-center gap-1.5 text-xs text-slate-500 text-center">
+        <span class="material-symbols-outlined text-amber-500 text-[16px]">lightbulb</span>
+        <span><strong class="text-slate-700">Tip:</strong> Haz clic sobre cualquier sección del gráfico o tarjeta para filtrar el listado.</span>
+      </div>
     </div>
 
-    <!-- Tarjetas Interactivas de Estados con Porcentajes -->
-    <div class="flex flex-col gap-3 justify-center">
+    <!-- Tarjetas Interactivas de Estados -->
+    <div class="flex flex-col gap-3 justify-between">
+      
       <!-- Poco stock -->
       <button
         type="button"
         (click)="seleccionarEstado('Poco stock')"
         [class.ring-2]="estadoSeleccionado === 'Poco stock'"
         [class.ring-red-500]="estadoSeleccionado === 'Poco stock'"
-        class="w-full text-left bg-white hover:bg-red-50/60 p-4 rounded-2xl border border-slate-200 shadow-sm transition transform active:scale-[0.99] cursor-pointer">
+        class="w-full text-left bg-white hover:bg-red-50/40 p-4 rounded-2xl border border-slate-200/80 shadow-2xs transition transform active:scale-[0.99] cursor-pointer flex flex-col justify-between h-full">
         <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <span class="w-3.5 h-3.5 rounded-full bg-red-500 inline-block"></span>
+          <div class="flex items-center gap-2.5">
+            <span class="w-3.5 h-3.5 rounded-full bg-red-500 inline-block shadow-2xs"></span>
             <span class="font-bold text-slate-800 text-sm">Poco stock</span>
           </div>
           <span class="text-lg font-black text-red-600">{{ getPorcentajePorEstado('Poco stock') }}%</span>
         </div>
-        <div class="mt-2 flex items-center justify-between text-xs text-slate-500">
+        <div class="mt-3 flex items-center justify-between text-xs text-slate-500 pt-2 border-t border-slate-100">
           <span>{{ getCantidadPorEstado('Poco stock') }} de {{ totalProductos }} productos</span>
-          <span class="font-medium text-red-600">Revisar stock &rarr;</span>
+          <span class="font-bold text-red-600 flex items-center gap-1">Revisar stock &rarr;</span>
         </div>
       </button>
 
@@ -65,17 +72,17 @@
         (click)="seleccionarEstado('Disponible')"
         [class.ring-2]="estadoSeleccionado === 'Disponible'"
         [class.ring-emerald-500]="estadoSeleccionado === 'Disponible'"
-        class="w-full text-left bg-white hover:bg-emerald-50/60 p-4 rounded-2xl border border-slate-200 shadow-sm transition transform active:scale-[0.99] cursor-pointer">
+        class="w-full text-left bg-white hover:bg-emerald-50/40 p-4 rounded-2xl border border-slate-200/80 shadow-2xs transition transform active:scale-[0.99] cursor-pointer flex flex-col justify-between h-full">
         <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <span class="w-3.5 h-3.5 rounded-full bg-emerald-500 inline-block"></span>
+          <div class="flex items-center gap-2.5">
+            <span class="w-3.5 h-3.5 rounded-full bg-emerald-500 inline-block shadow-2xs"></span>
             <span class="font-bold text-slate-800 text-sm">Disponible</span>
           </div>
           <span class="text-lg font-black text-emerald-600">{{ getPorcentajePorEstado('Disponible') }}%</span>
         </div>
-        <div class="mt-2 flex items-center justify-between text-xs text-slate-500">
+        <div class="mt-3 flex items-center justify-between text-xs text-slate-500 pt-2 border-t border-slate-100">
           <span>{{ getCantidadPorEstado('Disponible') }} de {{ totalProductos }} productos</span>
-          <span class="font-medium text-emerald-600">Ver lista &rarr;</span>
+          <span class="font-bold text-emerald-600 flex items-center gap-1">Ver lista &rarr;</span>
         </div>
       </button>
 
@@ -85,37 +92,40 @@
         (click)="seleccionarEstado('Suficiente')"
         [class.ring-2]="estadoSeleccionado === 'Suficiente'"
         [class.ring-amber-500]="estadoSeleccionado === 'Suficiente'"
-        class="w-full text-left bg-white hover:bg-amber-50/60 p-4 rounded-2xl border border-slate-200 shadow-sm transition transform active:scale-[0.99] cursor-pointer">
+        class="w-full text-left bg-white hover:bg-amber-50/40 p-4 rounded-2xl border border-slate-200/80 shadow-2xs transition transform active:scale-[0.99] cursor-pointer flex flex-col justify-between h-full">
         <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <span class="w-3.5 h-3.5 rounded-full bg-[#FAB41F] inline-block"></span>
+          <div class="flex items-center gap-2.5">
+            <span class="w-3.5 h-3.5 rounded-full bg-[#FAB41F] inline-block shadow-2xs"></span>
             <span class="font-bold text-slate-800 text-sm">Suficiente</span>
           </div>
           <span class="text-lg font-black text-amber-600">{{ getPorcentajePorEstado('Suficiente') }}%</span>
         </div>
-        <div class="mt-2 flex items-center justify-between text-xs text-slate-500">
+        <div class="mt-3 flex items-center justify-between text-xs text-slate-500 pt-2 border-t border-slate-100">
           <span>{{ getCantidadPorEstado('Suficiente') }} de {{ totalProductos }} productos</span>
-          <span class="font-medium text-amber-600">Ver lista &rarr;</span>
+          <span class="font-bold text-amber-600 flex items-center gap-1">Ver lista &rarr;</span>
         </div>
       </button>
+
     </div>
   </div>
 
-  <!-- Tabla de Productos Filtrados -->
+  <!-- Tabla de Productos Filtrados con Barras de Progreso Dinámicas -->
   <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-    <div class="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/50">
+    
+    <!-- Barra superior de la tabla -->
+    <div class="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/60">
       <div class="flex items-center gap-3">
         <h3 class="text-base font-bold text-slate-800">
-          Productos
+          Listado de Productos
           <span *ngIf="estadoSeleccionado" class="font-normal text-slate-500">
-            con estado:
+            filtrados por estado:
             <span class="font-bold text-slate-800">"{{ estadoSeleccionado }}"</span>
           </span>
           <span *ngIf="!estadoSeleccionado" class="font-normal text-slate-500">
-            (Todos)
+            (General)
           </span>
         </h3>
-        <span class="text-xs bg-slate-200 text-slate-700 px-2.5 py-0.5 rounded-full font-bold">
+        <span class="text-xs bg-amber-100 text-amber-800 px-3 py-1 rounded-full font-extrabold">
           {{ productosFiltrados.length }}
         </span>
       </div>
@@ -124,7 +134,7 @@
         *ngIf="estadoSeleccionado"
         type="button"
         (click)="seleccionarEstado(null)"
-        class="text-xs font-semibold text-slate-600 hover:text-slate-900 bg-white border border-slate-300 hover:bg-slate-100 px-3 py-1.5 rounded-xl transition flex items-center gap-1 self-start sm:self-auto">
+        class="text-xs font-semibold text-slate-600 hover:text-slate-900 bg-white border border-slate-200 hover:bg-slate-100 px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 self-start sm:self-auto shadow-2xs cursor-pointer">
         <span class="material-symbols-outlined text-[16px]">close</span>
         Mostrar todos
       </button>
@@ -133,35 +143,86 @@
     <!-- Tabla -->
     <div class="overflow-x-auto">
       <table class="w-full text-sm">
-        <thead class="bg-[#FAB41F] text-slate-900 font-bold">
+        <thead class="bg-slate-100/80 text-slate-700 font-bold border-b border-slate-200">
           <tr>
             <th class="p-4 text-left">Producto</th>
             <th class="p-4 text-left">Categoría</th>
-            <th class="p-4 text-center">Stock</th>
+            <th class="p-4 text-left">Stock</th>
             <th class="p-4 text-center">Estado</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-100">
-          <tr *ngFor="let producto of productosFiltrados" class="hover:bg-slate-50 transition">
+          <tr *ngFor="let producto of productosFiltrados" class="hover:bg-slate-50/80 transition">
             <td class="p-4 font-semibold text-slate-800">{{ producto.nombre }}</td>
             <td class="p-4 text-slate-600">{{ producto.categoria }}</td>
-            <td class="p-4 text-center font-bold text-slate-700">{{ producto.stock }}</td>
+            
+            <!-- Columna de Stock con Barra de Progreso -->
+            <td class="p-4">
+              <div class="flex items-center gap-3">
+                <span class="font-bold text-slate-700 w-8 text-right">{{ producto.stock }}</span>
+                <div class="flex-1 max-w-[120px] bg-slate-100 rounded-full h-2 overflow-hidden">
+                  <div class="h-full rounded-full transition-all duration-500"
+                       [style.width.%]="(producto.stock / 60) * 100"
+                       [ngClass]="{
+                         'bg-red-500': producto.estado === 'Poco stock',
+                         'bg-emerald-500': producto.estado === 'Disponible',
+                         'bg-[#FAB41F]': producto.estado === 'Suficiente'
+                       }">
+                  </div>
+                </div>
+              </div>
+            </td>
+
             <td class="p-4 text-center">
               <span
-                class="px-3 py-1 rounded-full text-xs font-bold border inline-block"
+                class="px-3.5 py-1 rounded-full text-xs font-bold border inline-block shadow-2xs"
                 [ngClass]="coloresPorEstado[producto.estado].badge">
                 {{ producto.estado }}
               </span>
             </td>
           </tr>
+
           <tr *ngIf="productosFiltrados.length === 0">
-            <td colspan="4" class="p-8 text-center text-slate-400">
-              No hay productos con este estado.
+            <td colspan="4" class="p-10 text-center text-slate-400">
+              <div class="flex flex-col items-center justify-center gap-2">
+                <span class="material-symbols-outlined text-3xl text-slate-300">inventory_2</span>
+                <span>No hay productos registrados con este estado.</span>
+              </div>
             </td>
           </tr>
         </tbody>
       </table>
     </div>
+
   </div>
+
 </div>
 
+<!-- Estilos de impresión para ocultar menús laterales y barras de navegación al descargar -->
+<style>
+  @media print {
+    button, 
+    .grid.grid-cols-1.lg\:grid-cols-3, 
+    header, 
+    nav, 
+    aside,
+    div[class*="w-64"], 
+    div[class*="fixed"] {
+      display: none !important;
+    }
+    
+    body, html {
+      background: white !important;
+      color: black !important;
+      width: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+
+    .shadow-sm, .border, .rounded-2xl {
+      box-shadow: none !important;
+      border: none !important;
+      border-radius: 0 !important;
+    }
+  }
+</style>

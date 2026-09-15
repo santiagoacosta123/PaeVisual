@@ -5,6 +5,7 @@ import { Login } from './login/login';
 import { LayoutComponent } from './layout/layout';
 import { InicioComponent } from './inicio/inicio';
 import { UsuariosComponent } from './usuarios/usuarios';
+import { ContratosComponent } from './contratos/contratos';
 import { CrearUsuarioComponent } from './crear-usuario/crear-usuario';
 import { Rol } from './rol/rol';
 import { Productos } from './productos/productos';
@@ -12,6 +13,9 @@ import { NuevoProducto } from './nuevo-producto/nuevo-producto';
 import { Reportes } from './reportes/reportes';
 import { ReporteInventario } from './reporte-inventario/reporte-inventario';
 import { UnidadesMedidaComponent } from './unidades-medida/unidades-medida';
+import { MenusComponent } from './menus/menus';
+import { AsistenciaComponent } from './asistencia/asistencia';
+import { EntregasComponent } from './entregas/entregas';
 
 export const routes: Routes = [
 
@@ -39,6 +43,11 @@ export const routes: Routes = [
       {
         path: 'usuarios',
         component: UsuariosComponent
+      },
+
+      {
+        path: 'contratos',
+        component: ContratosComponent
       },
 
       {
@@ -74,6 +83,21 @@ export const routes: Routes = [
       {
         path: 'unidades-medida',
         component: UnidadesMedidaComponent
+      },
+
+      {
+        path: 'menus',
+        component: MenusComponent
+      },
+
+      {
+        path: 'asistencia',
+        component: AsistenciaComponent
+      },
+
+      {
+        path: 'entregas',
+        component: EntregasComponent
       }
     ]
   },
@@ -83,4 +107,3 @@ export const routes: Routes = [
     redirectTo: 'login'
   }
 ];
-
