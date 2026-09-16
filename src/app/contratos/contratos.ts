@@ -1,71 +1,43 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
 
 @Component({
   selector: 'app-contratos',
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './contratos.html',
-  styleUrls: ['./contratos.css']
+  styles: []
 })
 export class ContratosComponent implements OnInit {
 
+  private http = inject(HttpClient);
+  private apiUrl = 'http://localhost:8000/api/contratos';
+
   pestanaActiva: string = 'contratos';
-
-  // Listas principales
-  contratos: any[] = [];
-  menus: any[] = [];
-  platos: any[] = [];
-  preparacionesAsignadas: any[] = [];
-
-  // Catálogos y datos para los selects
-  jornadas: any[] = [
-    { id_jornada: 1, nombre_jornada: 'Jornada Mañana' },
-    { id_jornada: 2, nombre_jornada: 'Jornada Tarde' }
-  ];
-
-  usuariosManipuladoras: any[] = [
-    { id_usuario_manipuladora: 1, nombre: 'Ana Gómez' },
-    { id_usuario_manipuladora: 2, nombre: 'Carmen Rosa' }
-  ];
-
-  seccionesMenu: any[] = [
-    { id_seccion: 1, nombre_seccion: 'Desayuno' },
-    { id_seccion: 2, nombre_seccion: 'Almuerzo' },
-    { id_seccion: 3, nombre_seccion: 'Merienda' }
-  ];
-
-  // Control de interfaz
   mostrarFormulario: boolean = false;
   esEdicion: boolean = false;
 
-  // Modelos de formularios
+  contratos: any[] = [];
+  preparaciones: any[] = [];
+
+  menus: any[] = [];
+  platos: any[] = [];
+  usuariosManipuladoras: any[] = [];
+  turnos: any[] = [
+    { id_turno: 1, nombre_turno: 'Mañana' },
+    { id_turno: 2, nombre_turno: 'Tarde' }
+  ];
+
   contratoForm: any = {
     id_contrato: null,
     numero_cor: '',
     institucion: '',
     zona: '',
-    fecha_inicio: '',
-    fecha_fin: '',
-    estado: 'ACTIVO'
-  };
-
-  menuForm: any = {
-    id_menu: null,
-    id_jornada: '',
-    fecha: '',
-    ninos_presentes: null,
     estado: 'ACTIVO',
-    informacion_nutricional: '',
-    id_contrato: ''
-  };
-
-  platoForm: any = {
-    id_plato: null,
-    id_seccion: '',
-    nombre_plato: '',
-    componente: ''
+    fecha_inicio: '',
+    fecha_fin: ''
   };
 
   preparacionForm: any = {
@@ -73,6 +45,7 @@ export class ContratosComponent implements OnInit {
     id_menu: '',
     id_plato: '',
     id_usuario_manipuladora: '',
+    id_turno: '',
     fecha: '',
     hora_programada: '',
     estado_preparacion: 'PENDIENTE',
@@ -80,124 +53,64 @@ export class ContratosComponent implements OnInit {
   };
 
   ngOnInit(): void {
-    this.contratos = [
-      {
-        id_contrato: 1,
-        numero_cor: 'COR-2026-001',
-        institucion: 'Institución Educativa Central',
-        zona: 'Urbana',
-        fecha_inicio: '2026-02-01',
-        fecha_fin: '2026-11-30',
-        estado: 'ACTIVO'
-      }
-    ];
-
-    this.menus = [
-      {
-        id_menu: 1,
-        id_jornada: 1,
-        id_contrato: 1,
-        nombre_jornada: 'Jornada Mañana',
-        fecha: '2026-09-15',
-        ninos_presentes: 150,
-        estado: 'ACTIVO',
-        informacion_nutricional: 'Alto en proteínas y carbohidratos',
-        institucion: 'Institución Educativa Central'
-      }
-    ];
-
-    this.platos = [
-      {
-        id_plato: 1,
-        id_seccion: 2,
-        nombre_seccion: 'Almuerzo',
-        nombre_plato: 'Seco de Pollo con Arroz',
-        componente: 'Proteína y Cereal'
-      }
-    ];
-
-    this.preparacionesAsignadas = [
-      {
-        id_preparacion_asignada: 1,
-        id_menu: 1,
-        id_plato: 1,
-        id_usuario_manipuladora: 1,
-        nombre_menu: 'Menú #1 (15/09)',
-        nombre_plato: 'Seco de Pollo con Arroz',
-        manipuladora: 'Ana Gómez',
-        fecha: '2026-09-15',
-        hora_programada: '06:30',
-        estado_preparacion: 'PENDIENTE',
-        observaciones: 'Lavar bien los vegetales'
-      }
-    ];
+    this.cargarDatosIniciales();
   }
 
-  cambiarPestana(pestana: string): void {
+  cargarDatosIniciales() {
+    console.log('Cargando contratos desde:', this.apiUrl);
+    this.http.get<any[]>(this.apiUrl).subscribe({
+      next: (data) => {
+        console.log('Contratos cargados con éxito:', data);
+        this.contratos = data;
+      },
+      error: (err) => {
+        console.error('Error al conectar con la API (GET):', err);
+      }
+    });
+  }
+
+  cambiarPestana(pestana: string) {
     this.pestanaActiva = pestana;
-    this.cerrarFormulario();
   }
 
-  abrirFormulario(): void {
+  abrirFormulario() {
     this.esEdicion = false;
-    this.resetFormularios();
+    this.limpiarFormularios();
     this.mostrarFormulario = true;
   }
 
-  abrirEdicion(item: any): void {
+  abrirEdicion(item: any) {
     this.esEdicion = true;
+    this.mostrarFormulario = true;
 
     if (this.pestanaActiva === 'contratos') {
       this.contratoForm = { ...item };
-    } else if (this.pestanaActiva === 'menus') {
-      this.menuForm = { ...item };
-    } else if (this.pestanaActiva === 'platos') {
-      this.platoForm = { ...item };
     } else if (this.pestanaActiva === 'preparaciones') {
       this.preparacionForm = { ...item };
     }
-
-    this.mostrarFormulario = true;
   }
 
-  cerrarFormulario(): void {
+  cerrarFormulario() {
     this.mostrarFormulario = false;
-    this.resetFormularios();
+    this.limpiarFormularios();
   }
 
-  resetFormularios(): void {
+  limpiarFormularios() {
     this.contratoForm = {
       id_contrato: null,
       numero_cor: '',
       institucion: '',
       zona: '',
-      fecha_inicio: '',
-      fecha_fin: '',
-      estado: 'ACTIVO'
-    };
-
-    this.menuForm = {
-      id_menu: null,
-      id_jornada: '',
-      fecha: '',
-      ninos_presentes: null,
       estado: 'ACTIVO',
-      informacion_nutricional: '',
-      id_contrato: ''
+      fecha_inicio: '',
+      fecha_fin: ''
     };
-
-    this.platoForm = {
-      id_plato: null,
-      id_seccion: '',
-      nombre_plato: '',
-      componente: ''
-    };
-
     this.preparacionForm = {
       id_preparacion_asignada: null,
       id_menu: '',
       id_plato: '',
       id_usuario_manipuladora: '',
+      id_turno: '',
       fecha: '',
       hora_programada: '',
       estado_preparacion: 'PENDIENTE',
@@ -205,95 +118,65 @@ export class ContratosComponent implements OnInit {
     };
   }
 
-  guardarTodo(): void {
+  guardarTodo() {
     if (this.pestanaActiva === 'contratos') {
       if (this.esEdicion) {
-        const index = this.contratos.findIndex(c => c.id_contrato === this.contratoForm.id_contrato);
-        if (index > -1) {
-          this.contratos[index] = { ...this.contratoForm };
-        }
-      } else {
-        this.contratos.push({
-          ...this.contratoForm,
-          id_contrato: this.contratos.length > 0 ? Math.max(...this.contratos.map(c => c.id_contrato)) + 1 : 1
+        console.log('Actualizando contrato ID:', this.contratoForm.id_contrato);
+        this.http.put(`${this.apiUrl}${this.contratoForm.id_contrato}/`, this.contratoForm).subscribe({
+          next: (contratoActualizado: any) => {
+            console.log('Contrato actualizado:', contratoActualizado);
+            const index = this.contratos.findIndex(c => c.id_contrato === contratoActualizado.id_contrato);
+            if (index !== -1) this.contratos[index] = contratoActualizado;
+            this.cerrarFormulario();
+          },
+          error: (err) => {
+            console.error('Error en PUT:', err);
+            alert('Error al actualizar el contrato. Revisa la consola.');
+          }
         });
-      }
-    } else if (this.pestanaActiva === 'menus') {
-      const jor = this.jornadas.find(j => j.id_jornada == this.menuForm.id_jornada);
-      const con = this.contratos.find(c => c.id_contrato == this.menuForm.id_contrato);
-
-      if (this.esEdicion) {
-        const index = this.menus.findIndex(m => m.id_menu === this.menuForm.id_menu);
-        if (index > -1) {
-          this.menus[index] = {
-            ...this.menuForm,
-            nombre_jornada: jor ? jor.nombre_jornada : 'General',
-            institucion: con ? con.institucion : 'Contrato General'
-          };
-        }
       } else {
-        this.menus.push({
-          ...this.menuForm,
-          id_menu: this.menus.length > 0 ? Math.max(...this.menus.map(m => m.id_menu)) + 1 : 1,
-          nombre_jornada: jor ? jor.nombre_jornada : 'General',
-          institucion: con ? con.institucion : 'Contrato General'
-        });
-      }
-    } else if (this.pestanaActiva === 'platos') {
-      const sec = this.seccionesMenu.find(s => s.id_seccion == this.platoForm.id_seccion);
-
-      if (this.esEdicion) {
-        const index = this.platos.findIndex(p => p.id_plato === this.platoForm.id_plato);
-        if (index > -1) {
-          this.platos[index] = {
-            ...this.platoForm,
-            nombre_seccion: sec ? sec.nombre_seccion : 'General'
-          };
-        }
-      } else {
-        this.platos.push({
-          ...this.platoForm,
-          id_plato: this.platos.length > 0 ? Math.max(...this.platos.map(p => p.id_plato)) + 1 : 1,
-          nombre_seccion: sec ? sec.nombre_seccion : 'General'
+        console.log('Enviando nuevo contrato:', this.contratoForm);
+        this.http.post<any>(this.apiUrl, this.contratoForm).subscribe({
+          next: (nuevoContrato) => {
+            console.log('Contrato creado con éxito:', nuevoContrato);
+            this.contratos.push(nuevoContrato);
+            this.cerrarFormulario();
+          },
+          error: (err) => {
+            console.error('Error en POST:', err);
+            alert('Error al guardar el contrato. Revisa la consola (F12).');
+          }
         });
       }
     } else if (this.pestanaActiva === 'preparaciones') {
-      const man = this.usuariosManipuladoras.find(m => m.id_usuario_manipuladora == this.preparacionForm.id_usuario_manipuladora);
-      const menuObj = this.menus.find(m => m.id_menu == this.preparacionForm.id_menu);
-      const platoObj = this.platos.find(p => p.id_plato == this.preparacionForm.id_plato);
-
       if (this.esEdicion) {
-        const index = this.preparacionesAsignadas.findIndex(pa => pa.id_preparacion_asignada === this.preparacionForm.id_preparacion_asignada);
-        if (index > -1) {
-          this.preparacionesAsignadas[index] = {
-            ...this.preparacionForm,
-            nombre_menu: menuObj ? `Menú #${menuObj.id_menu} (${menuObj.fecha})` : `Menú #${this.preparacionForm.id_menu}`,
-            nombre_plato: platoObj ? platoObj.nombre_plato : 'Plato Seleccionado',
-            manipuladora: man ? man.nombre : 'Sin asignar'
-          };
-        }
+        const index = this.preparaciones.findIndex(p => p.id_preparacion_asignada === this.preparacionForm.id_preparacion_asignada);
+        if (index !== -1) this.preparaciones[index] = { ...this.preparacionForm };
       } else {
-        const nuevoId = this.preparacionesAsignadas.length > 0
-          ? Math.max(...this.preparacionesAsignadas.map(pa => pa.id_preparacion_asignada)) + 1
-          : 1;
-
-        this.preparacionesAsignadas.push({
-          ...this.preparacionForm,
-          id_preparacion_asignada: nuevoId,
-          nombre_menu: menuObj ? `Menú #${menuObj.id_menu} (${menuObj.fecha})` : `Menú #${this.preparacionForm.id_menu}`,
-          nombre_plato: platoObj ? platoObj.nombre_plato : 'Plato Seleccionado',
-          manipuladora: man ? man.nombre : 'Sin asignar'
-        });
+        const nuevaPrep = { ...this.preparacionForm, id_preparacion_asignada: Date.now() };
+        this.preparaciones.push(nuevaPrep);
       }
+      this.cerrarFormulario();
     }
-
-    this.cerrarFormulario();
   }
 
-  eliminarItem(lista: any[], item: any): void {
-    const index = lista.indexOf(item);
-    if (index > -1) {
-      lista.splice(index, 1);
+  eliminarItem(lista: any[], item: any) {
+    if (lista === this.contratos) {
+      console.log('Eliminando contrato ID:', item.id_contrato);
+      this.http.delete(`${this.apiUrl}${item.id_contrato}/`).subscribe({
+        next: () => {
+          console.log('Contrato eliminado correctamente');
+          const index = lista.indexOf(item);
+          if (index > -1) lista.splice(index, 1);
+        },
+        error: (err) => {
+          console.error('Error en DELETE:', err);
+          alert('Error al eliminar el contrato.');
+        }
+      });
+    } else {
+      const index = lista.indexOf(item);
+      if (index > -1) lista.splice(index, 1);
     }
   }
 }
