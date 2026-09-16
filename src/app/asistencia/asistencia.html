@@ -1,72 +1,181 @@
 <div style="background:#fff; border:1px solid #e0e0e0; border-radius:10px; padding:24px; font-family:'Roboto',sans-serif;">
 
   <!-- Encabezado del Módulo -->
-  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:1px solid #eee; padding-bottom:15px;">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:1px solid #eee; padding-bottom:15px; flex-wrap:wrap; gap:10px;">
     <div>
-      <h2 style="font-size:20px; font-weight:700; color:#333; margin:0;">Control de Asistencia Diaria</h2>
-      <p style="font-size:13px; color:#777; margin:4px 0 0 0;">Gestión de la tabla asistencia_diaria vinculada a grados y manipulador jefe.</p>
+      <h2 style="font-size:20px; font-weight:700; color:#333; margin:0;">Módulo de Asistencia y Grados</h2>
+      <p style="font-size:13px; color:#777; margin:4px 0 0 0;">Gestión de asistencia diaria y administración de grados escolares.</p>
     </div>
-    <button type="button" (click)="guardarAsistencia()"
-      style="background:#f4b41f; color:#333; font-weight:700; border:none; border-radius:6px; padding:10px 16px; font-size:14px; cursor:pointer; display:flex; align-items:center; gap:8px;">
-      <span class="material-symbols-outlined" style="font-size:18px;">save</span>
-      Guardar en Base de Datos
-    </button>
-  </div>
-
-  <!-- Barra de Filtros (Fecha y Grados) -->
-  <div style="display:flex; gap:15px; margin-bottom:20px; flex-wrap:wrap;">
-    <div style="flex:1; min-width:200px;">
-      <label style="font-size:12px; font-weight:600; color:#777; display:block; margin-bottom:4px;">Fecha</label>
-      <input type="date" [(ngModel)]="fecha_registro"
-        style="width:100%; padding:8px 10px; border:1px solid #ddd; border-radius:6px; font-size:14px; outline:none; box-sizing:border-box;" />
-    </div>
-
-    <div style="flex:1; min-width:200px;">
-      <label style="font-size:12px; font-weight:600; color:#777; display:block; margin-bottom:4px;">Filtrar por Grado</label>
-      <select [(ngModel)]="id_grado_seleccionado"
-        style="width:100%; padding:8px 10px; border:1px solid #ddd; border-radius:6px; font-size:14px; outline:none; background:#fff; box-sizing:border-box;">
-        <option value="todos">Todos los grados</option>
-        <option *ngFor="let g of grados" [value]="g.id_grado">{{ g.nombre_grado }}</option>
-      </select>
-    </div>
-
-    <div style="flex:2; min-width:250px;">
-      <label style="font-size:12px; font-weight:600; color:#777; display:block; margin-bottom:4px;">Buscar Estudiante</label>
-      <input type="text" [(ngModel)]="filtroBusqueda" placeholder="Escribe el nombre..."
-        style="width:100%; padding:8px 10px; border:1px solid #ddd; border-radius:6px; font-size:14px; outline:none; box-sizing:border-box;" />
+    
+    <!-- Pestañas internas para alternar entre Asistencia y Gestión de Grados -->
+    <div style="display:flex; background:#f3f4f6; padding:4px; border-radius:8px; gap:4px;">
+      <button type="button" (click)="cambiarPestanaAsistencia('asistencia')"
+        [style.background]="pestanaAsistenciaActiva === 'asistencia' ? '#111827' : 'transparent'"
+        [style.color]="pestanaAsistenciaActiva === 'asistencia' ? '#fff' : '#4b5563'"
+        style="border:none; border-radius:6px; padding:8px 14px; font-size:13px; font-weight:600; cursor:pointer;">
+        Asistencia Diaria
+      </button>
+      <button type="button" (click)="cambiarPestanaAsistencia('grados')"
+        [style.background]="pestanaAsistenciaActiva === 'grados' ? '#111827' : 'transparent'"
+        [style.color]="pestanaAsistenciaActiva === 'grados' ? '#fff' : '#4b5563'"
+        style="border:none; border-radius:6px; padding:8px 14px; font-size:13px; font-weight:600; cursor:pointer;">
+        Gestionar Grados
+      </button>
     </div>
   </div>
 
-  <!-- Tabla que refleja asistencia_diaria -->
-  <div style="overflow-x:auto;">
-    <table style="width:100%; border-collapse:collapse; text-align:left; font-size:14px;">
-      <thead>
-        <tr style="background:#f9f9f9; border-bottom:2px solid #e0e0e0; color:#555;">
-          <th style="padding:12px;">Estudiante (Nombre Completo)</th>
-          <th style="padding:12px;">ID Grado</th>
-          <th style="padding:12px; text-align:center;">Asistió / Presente</th>
-          <th style="padding:12px; text-align:center;">Valor (ninos_presentes)</th>
-          <th style="padding:12px;">Observaciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let est of estudiantesFiltrados" style="border-bottom:1px solid #eee;">
-          <td style="padding:12px; font-weight:500; color:#333;">{{ est.nombre_completo }}</td>
-          <td style="padding:12px; color:#555;">{{ est.id_grado }}</td>
-          <td style="padding:12px; text-align:center;">
-            <input type="checkbox" [checked]="est.asistio" (change)="toggleAsistencia(est)"
-              style="width:18px; height:18px; cursor:pointer;" />
-          </td>
-          <td style="padding:12px; text-align:center; font-weight:bold; color:#2e7d32;">
-            {{ est.ninos_presentes }}
-          </td>
-          <td style="padding:12px;">
-            <input type="text" [(ngModel)]="est.observaciones" placeholder="Nota..."
-              style="width:100%; padding:6px 8px; border:1px solid #ddd; border-radius:4px; font-size:13px; outline:none; box-sizing:border-box;" />
-          </td>
-        </tr>
-      </tbody>
-    </table>
+  <!-- VISTA 1: ASISTENCIA DIARIA -->
+  <div *ngIf="pestanaAsistenciaActiva === 'asistencia'">
+    
+    <!-- Botón de guardar asistencia -->
+    <div style="display:flex; justify-content:flex-end; margin-bottom:20px;">
+      <button type="button" (click)="guardarAsistencia()"
+        style="background:#f4b41f; color:#333; font-weight:700; border:none; border-radius:6px; padding:10px 16px; font-size:14px; cursor:pointer; display:flex; align-items:center; gap:8px;">
+        <span class="material-symbols-outlined" style="font-size:18px;">save</span>
+        Guardar en Base de Datos
+      </button>
+    </div>
+
+    <!-- Barra de Filtros -->
+    <div style="display:flex; gap:15px; margin-bottom:20px; flex-wrap:wrap;">
+      <div style="flex:1; min-width:200px;">
+        <label style="font-size:12px; font-weight:600; color:#777; display:block; margin-bottom:4px;">Fecha</label>
+        <input type="date" [(ngModel)]="fecha_registro"
+          style="width:100%; padding:8px 10px; border:1px solid #ddd; border-radius:6px; font-size:14px; outline:none; box-sizing:border-box;" />
+      </div>
+
+      <div style="flex:1; min-width:200px;">
+        <label style="font-size:12px; font-weight:600; color:#777; display:block; margin-bottom:4px;">Filtrar por Grado</label>
+        <select [(ngModel)]="id_grado_seleccionado"
+          style="width:100%; padding:8px 10px; border:1px solid #ddd; border-radius:6px; font-size:14px; outline:none; background:#fff; box-sizing:border-box;">
+          <option value="todos">Todos los grados</option>
+          <option *ngFor="let g of grados" [value]="g.id_grado">{{ g.nombre_grado }} ({{ g.jornada }})</option>
+        </select>
+      </div>
+
+      <div style="flex:2; min-width:250px;">
+        <label style="font-size:12px; font-weight:600; color:#777; display:block; margin-bottom:4px;">Buscar Estudiante</label>
+        <input type="text" [(ngModel)]="filtroBusqueda" placeholder="Escribe el nombre..."
+          style="width:100%; padding:8px 10px; border:1px solid #ddd; border-radius:6px; font-size:14px; outline:none; box-sizing:border-box;" />
+      </div>
+    </div>
+
+    <!-- Tabla de Asistencia -->
+    <div style="overflow-x:auto;">
+      <table style="width:100%; border-collapse:collapse; text-align:left; font-size:14px;">
+        <thead>
+          <tr style="background:#f9f9f9; border-bottom:2px solid #e0e0e0; color:#555;">
+            <th style="padding:12px;">Estudiante (Nombre Completo)</th>
+            <th style="padding:12px;">Grado y Jornada</th>
+            <th style="padding:12px; text-align:center;">Asistió / Presente</th>
+            <th style="padding:12px; text-align:center;">Valor (ninos_presentes)</th>
+            <th style="padding:12px;">Observaciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let est of estudiantesFiltrados" style="border-bottom:1px solid #eee;">
+            <td style="padding:12px; font-weight:500; color:#333;">{{ est.nombre_completo }}</td>
+            <td style="padding:12px; color:#555;">{{ obtenerInfoGrado(est.id_grado) }}</td>
+            <td style="padding:12px; text-align:center;">
+              <input type="checkbox" [checked]="est.asistio" (change)="toggleAsistencia(est)"
+                style="width:18px; height:18px; cursor:pointer;" />
+            </td>
+            <td style="padding:12px; text-align:center; font-weight:bold; color:#2e7d32;">
+              {{ est.ninos_presentes }}
+            </td>
+            <td style="padding:12px;">
+              <input type="text" [(ngModel)]="est.observaciones" placeholder="Nota..."
+                style="width:100%; padding:6px 8px; border:1px solid #ddd; border-radius:4px; font-size:13px; outline:none; box-sizing:border-box;" />
+            </td>
+          </tr>
+          <tr *ngIf="estudiantesFiltrados.length === 0">
+            <td colspan="5" style="text-align:center; padding:20px; color:#777;">No se encontraron estudiantes con los filtros seleccionados.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <!-- VISTA 2: GESTIÓN DE GRADOS -->
+  <div *ngIf="pestanaAsistenciaActiva === 'grados'">
+    
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+      <h3 style="font-size:16px; font-weight:600; color:#333; margin:0;">Lista de Grados Escolares</h3>
+      <button type="button" (click)="abrirFormularioGrado()"
+        style="background:#2563eb; color:#fff; font-weight:600; border:none; border-radius:6px; padding:9px 14px; font-size:14px; cursor:pointer; display:flex; align-items:center; gap:6px;">
+        <span class="material-symbols-outlined" style="font-size:18px;">add_circle</span>
+        Nuevo Grado
+      </button>
+    </div>
+
+    <!-- Formulario Modal / Desplegable para Grados -->
+    <div *ngIf="mostrarFormularioGrado" style="background:#f9fafb; border:1px solid #e5e7eb; border-radius:8px; padding:20px; margin-bottom:20px;">
+      <h4 style="font-size:15px; font-weight:600; color:#1f2937; margin-top:0; margin-bottom:15px;">
+        {{ modoEdicionGrado ? 'Editar Grado' : 'Crear Nuevo Grado' }}
+      </h4>
+      
+      <div style="display:flex; gap:15px; flex-wrap:wrap; margin-bottom:15px;">
+        <div style="flex:2; min-width:220px;">
+          <label style="font-size:12px; font-weight:600; color:#4b5563; display:block; margin-bottom:4px;">Nombre del Grado</label>
+          <input type="text" [(ngModel)]="gradoForm.nombre_grado" placeholder="Ej. Grado 103"
+            style="width:100%; padding:8px 10px; border:1px solid #d1d5db; border-radius:6px; font-size:14px; outline:none; background:#fff; box-sizing:border-box;" />
+        </div>
+
+        <div style="flex:1; min-width:200px;">
+          <label style="font-size:12px; font-weight:600; color:#4b5563; display:block; margin-bottom:4px;">Jornada</label>
+          <select [(ngModel)]="gradoForm.jornada"
+            style="width:100%; padding:8px 10px; border:1px solid #d1d5db; border-radius:6px; font-size:14px; outline:none; background:#fff; box-sizing:border-box;">
+            <option value="Mañana">Mañana</option>
+            <option value="Tarde">Tarde</option>
+            <option value="Única">Única</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:10px;">
+        <button type="button" (click)="cerrarFormularioGrado()"
+          style="background:#e5e7eb; color:#374151; font-weight:500; border:none; border-radius:6px; padding:8px 14px; font-size:14px; cursor:pointer;">
+          Cancelar
+        </button>
+        <button type="button" (click)="guardarGrado()"
+          style="background:#10b981; color:#fff; font-weight:600; border:none; border-radius:6px; padding:8px 16px; font-size:14px; cursor:pointer;">
+          {{ modoEdicionGrado ? 'Actualizar Grado' : 'Guardar Grado' }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Tabla de Grados -->
+    <div style="overflow-x:auto;">
+      <table style="width:100%; border-collapse:collapse; text-align:left; font-size:14px;">
+        <thead>
+          <tr style="background:#f9f9f9; border-bottom:2px solid #e0e0e0; color:#555;">
+            <th style="padding:12px;">ID</th>
+            <th style="padding:12px;">Nombre del Grado</th>
+            <th style="padding:12px;">Jornada</th>
+            <th style="padding:12px; text-align:center;">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let g of grados" style="border-bottom:1px solid #eee;">
+            <td style="padding:12px; color:#555;">{{ g.id_grado }}</td>
+            <td style="padding:12px; font-weight:500; color:#333;">{{ g.nombre_grado }}</td>
+            <td style="padding:12px; color:#555;">{{ g.jornada }}</td>
+            <td style="padding:12px; text-align:center; display:flex; justify-content:center; gap:8px;">
+              <button type="button" (click)="abrirFormularioGrado(g)"
+                style="background:transparent; border:none; cursor:pointer; color:#2563eb;" title="Editar">
+                <span class="material-symbols-outlined" style="font-size:18px;">edit</span>
+              </button>
+              <button type="button" (click)="eliminarGrado(g)"
+                style="background:transparent; border:none; cursor:pointer; color:#dc2626;" title="Eliminar">
+                <span class="material-symbols-outlined" style="font-size:18px;">delete</span>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
   </div>
 
 </div>

@@ -1,271 +1,225 @@
-<div class="container mt-4">
-  <h2>Gestión del Programa de Alimentación Escolar (PAE)</h2>
-
-  <!-- Pestañas de navegación -->
-  <ul class="nav nav-tabs mt-3">
-    <li class="nav-item">
-      <button class="nav-link" [class.active]="pestanaActiva === 'contratos'" (click)="cambiarPestana('contratos')">Contratos</button>
-    </li>
-    <li class="nav-item">
-      <button class="nav-link" [class.active]="pestanaActiva === 'menus'" (click)="cambiarPestana('menus')">Menús</button>
-    </li>
-    <li class="nav-item">
-      <button class="nav-link" [class.active]="pestanaActiva === 'platos'" (click)="cambiarPestana('platos')">Platos</button>
-    </li>
-    <li class="nav-item">
-      <button class="nav-link" [class.active]="pestanaActiva === 'preparaciones'" (click)="cambiarPestana('preparaciones')">Preparaciones Asignadas</button>
-    </li>
-  </ul>
-
-  <div class="card mt-3 p-3">
-    <!-- Botón para abrir formulario de creación -->
-    <div class="d-flex justify-content-between align-items-center mb-3">
-      <h4>Listado de {{ pestanaActiva | titlecase }}</h4>
-      <button class="btn btn-primary" (click)="abrirFormulario()">Nuevo {{ pestanaActiva | titlecase }}</button>
+<div class="space-y-6 p-4 sm:p-6 bg-slate-50 min-h-screen">
+  
+  <!-- Encabezado Principal -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+    <div>
+      <h1 class="text-2xl font-black text-slate-800">Sistema PAE - Módulo de Gestión</h1>
+      <p class="text-sm text-slate-500 mt-1">Administración de contratos y registros del sistema</p>
     </div>
-
-    <!-- SECCIÓN: CONTRATOS -->
-    <div *ngIf="pestanaActiva === 'contratos'">
-      <table class="table table-striped">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Nro Cor</th>
-            <th>Institución</th>
-            <th>Zona</th>
-            <th>Fechas</th>
-            <th>Estado</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let c of contratos">
-            <td>{{ c.id_contrato }}</td>
-            <td>{{ c.numero_cor }}</td>
-            <td>{{ c.institucion }}</td>
-            <td>{{ c.zona }}</td>
-            <td>{{ c.fecha_inicio }} al {{ c.fecha_fin }}</td>
-            <td>{{ c.estado }}</td>
-            <td>
-              <button class="btn btn-sm btn-warning me-2" (click)="abrirEdicion(c)">Editar</button>
-              <button class="btn btn-sm btn-danger" (click)="eliminarItem(contratos, c)">Eliminar</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- SECCIÓN: MENÚS -->
-    <div *ngIf="pestanaActiva === 'menus'">
-      <table class="table table-striped">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Institución</th>
-            <th>Jornada</th>
-            <th>Fecha</th>
-            <th>Niños Presentes</th>
-            <th>Estado</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let m of menus">
-            <td>{{ m.id_menu }}</td>
-            <td>{{ m.institucion }}</td>
-            <td>{{ m.nombre_jornada }}</td>
-            <td>{{ m.fecha }}</td>
-            <td>{{ m.ninos_presentes }}</td>
-            <td>{{ m.estado }}</td>
-            <td>
-              <button class="btn btn-sm btn-warning me-2" (click)="abrirEdicion(m)">Editar</button>
-              <button class="btn btn-sm btn-danger" (click)="eliminarItem(menus, m)">Eliminar</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- SECCIÓN: PLATOS -->
-    <div *ngIf="pestanaActiva === 'platos'">
-      <table class="table table-striped">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Sección</th>
-            <th>Nombre del Plato</th>
-            <th>Componente</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let p of platos">
-            <td>{{ p.id_plato }}</td>
-            <td>{{ p.nombre_seccion }}</td>
-            <td>{{ p.nombre_plato }}</td>
-            <td>{{ p.componente }}</td>
-            <td>
-              <button class="btn btn-sm btn-warning me-2" (click)="abrirEdicion(p)">Editar</button>
-              <button class="btn btn-sm btn-danger" (click)="eliminarItem(platos, p)">Eliminar</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- SECCIÓN: PREPARACIONES ASIGNADAS -->
-    <div *ngIf="pestanaActiva === 'preparaciones'">
-      <table class="table table-striped">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Menú</th>
-            <th>Plato</th>
-            <th>Manipuladora</th>
-            <th>Fecha / Hora</th>
-            <th>Estado</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let pa of preparacionesAsignadas">
-            <td>{{ pa.id_preparacion_asignada }}</td>
-            <td>{{ pa.nombre_menu }}</td>
-            <td>{{ pa.nombre_plato }}</td>
-            <td>{{ pa.manipuladora }}</td>
-            <td>{{ pa.fecha }} ({{ pa.hora_programada }})</td>
-            <td>{{ pa.estado_preparacion }}</td>
-            <td>
-              <button class="btn btn-sm btn-warning me-2" (click)="abrirEdicion(pa)">Editar</button>
-              <button class="btn btn-sm btn-danger" (click)="eliminarItem(preparacionesAsignadas, pa)">Eliminar</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+    <div>
+      <button type="button" (click)="abrirFormulario()" class="bg-[#FAB41F] hover:bg-[#e2a21b] px-4 py-2.5 rounded-xl font-bold text-slate-900 shadow-sm transition text-sm flex items-center gap-2 cursor-pointer border border-amber-300">
+        <span class="material-symbols-outlined text-[18px]">add_circle</span>
+        Nuevo Registro
+      </button>
     </div>
   </div>
 
-  <!-- FORMULARIO DINÁMICO -->
-  <div *ngIf="mostrarFormulario" class="card mt-4 p-4 border-primary">
-    <h3>{{ esEdicion ? 'Editar' : 'Crear' }} {{ pestanaActiva | titlecase }}</h3>
+  <!-- Navegación por Pestañas -->
+  <div class="flex flex-wrap gap-2 border-b border-slate-200 pb-3">
+    <button (click)="cambiarPestana('contratos')" [class]="pestanaActiva === 'contratos' ? 'bg-[#FAB41F] text-slate-900 font-bold border-amber-300 shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border-slate-200'" class="px-5 py-2.5 rounded-xl text-sm transition border cursor-pointer flex items-center gap-2">
+      <span class="material-symbols-outlined text-[18px]">description</span>
+      Contratos
+    </button>
+    <button (click)="cambiarPestana('preparaciones')" [class]="pestanaActiva === 'preparaciones' ? 'bg-[#FAB41F] text-slate-900 font-bold border-amber-300 shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border-slate-200'" class="px-5 py-2.5 rounded-xl text-sm transition border cursor-pointer flex items-center gap-2">
+      <span class="material-symbols-outlined text-[18px]">restaurant</span>
+      Preparaciones
+    </button>
+  </div>
+
+  <!-- CONTENIDO DE LAS TABLAS -->
+  <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
     
-    <form (ngSubmit)="guardarTodo()">
+    <!-- TABLA 1: CONTRATOS -->
+    <div *ngIf="pestanaActiva === 'contratos'" class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-slate-100 text-slate-700 font-extrabold border-b border-slate-200">
+          <tr>
+            <th class="p-4 text-left">ID</th>
+            <th class="p-4 text-left">Nro Contrato</th>
+            <th class="p-4 text-left">Institución</th>
+            <th class="p-4 text-left">Zona</th>
+            <th class="p-4 text-left">Fechas</th>
+            <th class="p-4 text-center">Estado</th>
+            <th class="p-4 text-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-200">
+          <tr *ngIf="contratos.length === 0">
+            <td colspan="7" class="p-8 text-center text-slate-400 font-medium">No hay contratos registrados.</td>
+          </tr>
+          <tr *ngFor="let c of contratos" class="hover:bg-amber-50/30 transition">
+            <td class="p-4 font-bold text-slate-800">{{ c.id_contrato }}</td>
+            <td class="p-4 font-bold text-slate-800">{{ c.numero_cor }}</td>
+            <td class="p-4 text-slate-600">{{ c.institucion }}</td>
+            <td class="p-4 text-slate-600">{{ c.zona }}</td>
+            <td class="p-4 text-slate-600 text-xs font-semibold">{{ c.fecha_inicio }} al {{ c.fecha_fin }}</td>
+            <td class="p-4 text-center">
+              <span class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">{{ c.estado }}</span>
+            </td>
+            <td class="p-4 text-center">
+              <div class="flex items-center justify-center gap-2">
+                <button type="button" (click)="abrirEdicion(c)" class="text-slate-500 hover:text-[#FAB41F] transition p-1 cursor-pointer" title="Editar"><span class="material-symbols-outlined text-[20px]">edit</span></button>
+                <button type="button" (click)="eliminarItem(contratos, c)" class="text-slate-500 hover:text-red-600 transition p-1 cursor-pointer" title="Eliminar"><span class="material-symbols-outlined text-[20px]">delete</span></button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
-      <!-- Formulario Contratos -->
-      <div *ngIf="pestanaActiva === 'contratos'">
-        <div class="mb-3">
-          <label class="form-label">Número COR:</label>
-          <input type="text" class="form-control" [(ngModel)]="contratoForm.numero_cor" name="numero_cor" required>
-        </div>
-        <div class="mb-3">
-          <label class="form-label">Institución:</label>
-          <input type="text" class="form-control" [(ngModel)]="contratoForm.institucion" name="institucion" required>
-        </div>
-        <div class="mb-3">
-          <label class="form-label">Zona:</label>
-          <input type="text" class="form-control" [(ngModel)]="contratoForm.zona" name="zona">
-        </div>
-        <div class="mb-3">
-          <label class="form-label">Fecha Inicio:</label>
-          <input type="date" class="form-control" [(ngModel)]="contratoForm.fecha_inicio" name="fecha_inicio">
-        </div>
-        <div class="mb-3">
-          <label class="form-label">Fecha Fin:</label>
-          <input type="date" class="form-control" [(ngModel)]="contratoForm.fecha_fin" name="fecha_fin">
-        </div>
-        <div class="mb-3">
-          <label class="form-label">Estado:</label>
-          <select class="form-control" [(ngModel)]="contratoForm.estado" name="estado">
-            <option value="ACTIVO">ACTIVO</option>
-            <option value="INACTIVO">INACTIVO</option>
-          </select>
-        </div>
-      </div>
+    <!-- TABLA 2: PREPARACIONES -->
+    <div *ngIf="pestanaActiva === 'preparaciones'" class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-slate-100 text-slate-700 font-extrabold border-b border-slate-200">
+          <tr>
+            <th class="p-4 text-left">ID</th>
+            <th class="p-4 text-left">Menú</th>
+            <th class="p-4 text-left">Manipuladora</th>
+            <th class="p-4 text-left">Turno</th>
+            <th class="p-4 text-left">Fecha y Hora</th>
+            <th class="p-4 text-center">Estado</th>
+            <th class="p-4 text-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-200">
+          <tr *ngIf="preparaciones.length === 0">
+            <td colspan="7" class="p-8 text-center text-slate-400 font-medium">No hay preparaciones asignadas.</td>
+          </tr>
+          <tr *ngFor="let p of preparaciones" class="hover:bg-amber-50/30 transition">
+            <td class="p-4 font-bold text-slate-800">{{ p.id_preparacion_asignada }}</td>
+            <td class="p-4 text-slate-600">Menú #{{ p.id_menu }}</td>
+            <td class="p-4 text-slate-600">{{ p.id_usuario_manipuladora }}</td>
+            <td class="p-4 text-slate-600 font-semibold">{{ p.id_turno }}</td>
+            <td class="p-4 text-slate-600 text-xs">{{ p.fecha }} - {{ p.hora_programada }}</td>
+            <td class="p-4 text-center">
+              <span class="px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300">{{ p.estado_preparacion }}</span>
+            </td>
+            <td class="p-4 text-center">
+              <div class="flex items-center justify-center gap-2">
+                <button type="button" (click)="abrirEdicion(p)" class="text-slate-500 hover:text-[#FAB41F] transition p-1 cursor-pointer" title="Editar"><span class="material-symbols-outlined text-[20px]">edit</span></button>
+                <button type="button" (click)="eliminarItem(preparaciones, p)" class="text-slate-500 hover:text-red-600 transition p-1 cursor-pointer" title="Eliminar"><span class="material-symbols-outlined text-[20px]">delete</span></button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
-      <!-- Formulario Menús -->
-      <div *ngIf="pestanaActiva === 'menus'">
-        <div class="mb-3">
-          <label class="form-label">Contrato:</label>
-          <select class="form-control" [(ngModel)]="menuForm.id_contrato" name="id_contrato">
-            <option *ngFor="let c of contratos" [value]="c.id_contrato">{{ c.institucion }}</option>
-          </select>
-        </div>
-        <div class="mb-3">
-          <label class="form-label">Jornada:</label>
-          <select class="form-control" [(ngModel)]="menuForm.id_jornada" name="id_jornada">
-            <option *ngFor="let j of jornadas" [value]="j.id_jornada">{{ j.nombre_jornada }}</option>
-          </select>
-        </div>
-        <div class="mb-3">
-          <label class="form-label">Fecha:</label>
-          <input type="date" class="form-control" [(ngModel)]="menuForm.fecha" name="fecha">
-        </div>
-        <div class="mb-3">
-          <label class="form-label">Niños Presentes:</label>
-          <input type="number" class="form-control" [(ngModel)]="menuForm.ninos_presentes" name="ninos_presentes">
-        </div>
-        <div class="mb-3">
-          <label class="form-label">Información Nutricional:</label>
-          <input type="text" class="form-control" [(ngModel)]="menuForm.informacion_nutricional" name="informacion_nutricional">
-        </div>
-      </div>
-
-      <!-- Formulario Platos -->
-      <div *ngIf="pestanaActiva === 'platos'">
-        <div class="mb-3">
-          <label class="form-label">Sección:</label>
-          <select class="form-control" [(ngModel)]="platoForm.id_seccion" name="id_seccion">
-            <option *ngFor="let s of seccionesMenu" [value]="s.id_seccion">{{ s.nombre_seccion }}</option>
-          </select>
-        </div>
-        <div class="mb-3">
-          <label class="form-label">Nombre del Plato:</label>
-          <input type="text" class="form-control" [(ngModel)]="platoForm.nombre_plato" name="nombre_plato" required>
-        </div>
-        <div class="mb-3">
-          <label class="form-label">Componente:</label>
-          <input type="text" class="form-control" [(ngModel)]="platoForm.componente" name="componente">
-        </div>
-      </div>
-
-      <!-- Formulario Preparaciones Asignadas -->
-      <div *ngIf="pestanaActiva === 'preparaciones'">
-        <div class="mb-3">
-          <label class="form-label">Menú:</label>
-          <select class="form-control" [(ngModel)]="preparacionForm.id_menu" name="id_menu">
-            <option *ngFor="let m of menus" [value]="m.id_menu">Menú #{{ m.id_menu }} ({{ m.fecha }})</option>
-          </select>
-        </div>
-        <div class="mb-3">
-          <label class="form-label">Plato:</label>
-          <select class="form-control" [(ngModel)]="preparacionForm.id_plato" name="id_plato">
-            <option *ngFor="let p of platos" [value]="p.id_plato">{{ p.nombre_plato }}</option>
-          </select>
-        </div>
-        <div class="mb-3">
-          <label class="form-label">Manipuladora:</label>
-          <select class="form-control" [(ngModel)]="preparacionForm.id_usuario_manipuladora" name="id_usuario_manipuladora">
-            <option *ngFor="let u of usuariosManipuladoras" [value]="u.id_usuario_manipuladora">{{ u.nombre }}</option>
-          </select>
-        </div>
-        <div class="mb-3">
-          <label class="form-label">Fecha:</label>
-          <input type="date" class="form-control" [(ngModel)]="preparacionForm.fecha" name="fecha">
-        </div>
-        <div class="mb-3">
-          <label class="form-label">Hora Programada:</label>
-          <input type="time" class="form-control" [(ngModel)]="preparacionForm.hora_programada" name="hora_programada">
-        </div>
-        <div class="mb-3">
-          <label class="form-label">Observaciones:</label>
-          <input type="text" class="form-control" [(ngModel)]="preparacionForm.observaciones" name="observaciones">
-        </div>
-      </div>
-
-      <!-- Botones -->
-      <button type="submit" class="btn btn-success me-2">Guardar</button>
-      <button type="button" class="btn btn-secondary" (click)="cerrarFormulario()">Cancelar</button>
-
-    </form>
   </div>
+
+  <!-- MODAL DINÁMICO -->
+  <div *ngIf="mostrarFormulario" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-2xl overflow-hidden">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between px-6 py-4 bg-slate-50 border-b border-slate-200">
+        <h3 class="text-lg font-black text-slate-800">
+          {{ esEdicion ? 'Editar' : 'Nuevo' }} 
+          <span class="text-[#FAB41F] uppercase">{{ pestanaActiva }}</span>
+        </h3>
+        <button type="button" (click)="cerrarFormulario()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-6 space-y-4">
+        
+        <!-- FORMULARIO: CONTRATOS -->
+        <div *ngIf="pestanaActiva === 'contratos'" class="space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-extrabold text-slate-600 uppercase mb-1">Nro Contrato</label>
+              <input type="text" [(ngModel)]="contratoForm.numero_cor" placeholder="Ej: COR-2026-001" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#FAB41F] focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-extrabold text-slate-600 uppercase mb-1">Institución</label>
+              <input type="text" [(ngModel)]="contratoForm.institucion" placeholder="Nombre de la institución" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#FAB41F] focus:outline-none">
+            </div>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-extrabold text-slate-600 uppercase mb-1">Zona</label>
+              <input type="text" [(ngModel)]="contratoForm.zona" placeholder="Urbana / Rural" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#FAB41F] focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-extrabold text-slate-600 uppercase mb-1">Estado</label>
+              <select [(ngModel)]="contratoForm.estado" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#FAB41F] focus:outline-none bg-white">
+                <option value="ACTIVO">ACTIVO</option>
+                <option value="INACTIVO">INACTIVO</option>
+              </select>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-extrabold text-slate-600 uppercase mb-1">Fecha Inicio</label>
+              <input type="date" [(ngModel)]="contratoForm.fecha_inicio" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#FAB41F] focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-extrabold text-slate-600 uppercase mb-1">Fecha Fin</label>
+              <input type="date" [(ngModel)]="contratoForm.fecha_fin" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#FAB41F] focus:outline-none">
+            </div>
+          </div>
+        </div>
+
+        <!-- FORMULARIO: PREPARACIONES -->
+        <div *ngIf="pestanaActiva === 'preparaciones'" class="space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-extrabold text-slate-600 uppercase mb-1">Menú ID</label>
+              <input type="number" [(ngModel)]="preparacionForm.id_menu" placeholder="ID del menú" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#FAB41F] focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-extrabold text-slate-600 uppercase mb-1">Plato ID</label>
+              <input type="number" [(ngModel)]="preparacionForm.id_plato" placeholder="ID del plato" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#FAB41F] focus:outline-none">
+            </div>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-extrabold text-slate-600 uppercase mb-1">Manipuladora ID</label>
+              <input type="number" [(ngModel)]="preparacionForm.id_usuario_manipuladora" placeholder="ID manipuladora" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#FAB41F] focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-extrabold text-slate-600 uppercase mb-1">Turno</label>
+              <select [(ngModel)]="preparacionForm.id_turno" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#FAB41F] focus:outline-none bg-white">
+                <option value="">Seleccione Turno</option>
+                <option *ngFor="let t of turnos" [value]="t.id_turno">{{ t.nombre_turno }}</option>
+              </select>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-extrabold text-slate-600 uppercase mb-1">Fecha</label>
+              <input type="date" [(ngModel)]="preparacionForm.fecha" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#FAB41F] focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-extrabold text-slate-600 uppercase mb-1">Hora Programada</label>
+              <input type="time" [(ngModel)]="preparacionForm.hora_programada" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#FAB41F] focus:outline-none">
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-extrabold text-slate-600 uppercase mb-1">Estado de Preparación</label>
+            <select [(ngModel)]="preparacionForm.estado_preparacion" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#FAB41F] focus:outline-none bg-white">
+              <option value="PENDIENTE">PENDIENTE</option>
+              <option value="EN PROCESO">EN PROCESO</option>
+              <option value="FINALIZADO">FINALIZADO</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-extrabold text-slate-600 uppercase mb-1">Observaciones</label>
+            <textarea [(ngModel)]="preparacionForm.observaciones" rows="2" placeholder="Observaciones adicionales..." class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#FAB41F] focus:outline-none"></textarea>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="flex items-center justify-end gap-3 px-6 py-4 bg-slate-50 border-t border-slate-200">
+        <button type="button" (click)="cerrarFormulario()" class="px-4 py-2 rounded-xl border border-slate-300 bg-white text-slate-700 font-semibold text-sm hover:bg-slate-100 cursor-pointer">Cancelar</button>
+        <button type="button" (click)="guardarTodo()" class="px-5 py-2 rounded-xl bg-[#FAB41F] hover:bg-amber-500 text-slate-900 font-bold text-sm shadow-sm cursor-pointer">Guardar Registro</button>
+      </div>
+
+    </div>
+  </div>
+
 </div>

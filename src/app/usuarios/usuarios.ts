@@ -51,9 +51,11 @@ export class UsuariosComponent implements OnInit {
     this.usuarioService.getUsuarios().subscribe({
       next: (datos: any[]) => {
         this.usuarios = datos;
+        console.log("Usuarios cargados correctamente:", datos);
       },
       error: (error) => {
         console.error('Error al cargar usuarios:', error);
+        this.sweetAlert.error('Error', 'No se pudieron cargar los usuarios del sistema.');
       }
     });
   }
@@ -109,7 +111,11 @@ export class UsuariosComponent implements OnInit {
     this.mostrarModal = true;
     if (usuario) {
       this.modoEdicion = true;
+      // Probamos todas las formas posibles en que Django suele nombrar la llave primaria
       this.usuarioSeleccionadoId = usuario.id_usuario || usuario.id || usuario.pk || usuario.user_id;
+
+      console.log("Editando usuario - ID detectado:", this.usuarioSeleccionadoId, "Objeto completo:", usuario);
+
       const rolValor = typeof usuario.rol === 'object' ? (usuario.rol?.id_rol || usuario.rol?.id || usuario.rol?.pk) : usuario.rol;
 
       this.usuarioForm = { 
@@ -119,6 +125,7 @@ export class UsuariosComponent implements OnInit {
       };
       return;
     }
+    
     this.modoEdicion = false;
     this.usuarioSeleccionadoId = undefined;
     
@@ -141,13 +148,33 @@ export class UsuariosComponent implements OnInit {
     this.mostrarModal = false;
   }
 
+  private formatearMensajeError(err: any): string {
+    console.error("Objeto de error recibido de la API:", err);
+    if (err.error) {
+      if (typeof err.error === 'string' && err.error.includes('<!doctype html>')) {
+        return 'Error 500: Django falló internamente. Revisa la terminal negra donde corre tu backend para ver el rastro exacto del error.';
+      }
+      if (typeof err.error === 'object') {
+        const primerCampo = Object.keys(err.error)[0];
+        const detalle = err.error[primerCampo];
+        if (Array.isArray(detalle)) {
+          return `${primerCampo.replace(/_/g, ' ')}: ${detalle[0]}`;
+        } else if (typeof detalle === 'string') {
+          return detalle;
+        }
+      } else if (typeof err.error === 'string') {
+        return err.error;
+      }
+    }
+    return 'Ocurrió un error inesperado en el servidor.';
+  }
+
   guardarUsuario(): void {
     if (!this.usuarioForm.nombre || !this.usuarioForm.apellido || !this.usuarioForm.correo || !this.usuarioForm.numero_documento) {
       this.sweetAlert.warning('Campos incompletos', 'Por favor llena todos los campos obligatorios.');
       return;
     }
 
-    // Aseguramos que el rol viaje estrictamente como número para Django
     const datosEnviar = {
       ...this.usuarioForm,
       rol: Number(this.usuarioForm.rol)
@@ -158,6 +185,8 @@ export class UsuariosComponent implements OnInit {
         delete datosEnviar.password;
       }
 
+      console.log(`Enviando PUT a actualizarUsuario con ID [${this.usuarioSeleccionadoId}]:`, datosEnviar);
+
       this.usuarioService.actualizarUsuario(this.usuarioSeleccionadoId, datosEnviar).subscribe({
         next: () => {
           this.sweetAlert.success('¡Actualizado!', 'El usuario se actualizó correctamente.');
@@ -165,8 +194,8 @@ export class UsuariosComponent implements OnInit {
           this.cargarUsuarios();
         },
         error: (err) => {
-          console.error('Error al actualizar:', err);
-          this.sweetAlert.error('Error', 'No se pudo actualizar el usuario.');
+          const mensajeError = this.formatearMensajeError(err);
+          this.sweetAlert.error('Error de Servidor', mensajeError);
         }
       });
     } else {
@@ -175,6 +204,8 @@ export class UsuariosComponent implements OnInit {
         return;
       }
 
+      console.log("Enviando POST a crearUsuario:", datosEnviar);
+
       this.usuarioService.crearUsuario(datosEnviar).subscribe({
         next: () => {
           this.sweetAlert.success('¡Creado!', 'El usuario se registró correctamente.');
@@ -182,8 +213,8 @@ export class UsuariosComponent implements OnInit {
           this.cargarUsuarios();
         },
         error: (err) => {
-          console.error('Error al crear:', err);
-          this.sweetAlert.error('Error', 'No se pudo registrar el usuario.');
+          const mensajeError = this.formatearMensajeError(err);
+          this.sweetAlert.error('Error de Servidor', mensajeError);
         }
       });
     }
@@ -195,9 +226,10 @@ export class UsuariosComponent implements OnInit {
 
   eliminarUsuario(usuario: any): void {
     const id = usuario.id_usuario || usuario.id || usuario.pk || usuario.user_id;
-    
+    console.log("Intentando eliminar usuario. ID detectado:", id, "Usuario:", usuario);
+
     if (!id) {
-      this.sweetAlert.error('Error', 'Este usuario no tiene un ID válido.');
+      this.sweetAlert.error('Error', 'Este usuario no tiene un ID válido para eliminar.');
       return;
     }
 
@@ -210,8 +242,8 @@ export class UsuariosComponent implements OnInit {
               this.cargarUsuarios();
             },
             error: (err) => {
-              console.error('Error al eliminar:', err);
-              this.sweetAlert.error('Error', 'No se pudo eliminar el usuario.');
+              const mensajeError = this.formatearMensajeError(err);
+              this.sweetAlert.error('Error de Servidor', mensajeError);
             }
           });
         }
