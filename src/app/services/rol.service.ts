@@ -8,8 +8,7 @@ import { RolModel } from '../models/rol.model';
 })
 export class RolService {
 
-  private apiUrl = 'https://backend-sirae-pyim.onrender.com/api/roles/';
-
+  private apiUrl = 'https://backend-sirae-t9zi.onrender.com/api/roles/';
   constructor(private http: HttpClient) {}
 
   getRoles(): Observable<RolModel[]> {
