@@ -7,8 +7,10 @@ import { UsuarioModel } from '../models/usuario.model';
   providedIn: 'root'
 })
 export class UsuarioService {
+  private apiUrl = 'http://127.0.0.1:8000/api/usuarios/';  
 
-private apiUrl = 'https://backend-sirae-t9zi.onrender.com/api/usuarios/';  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) {}
+
   getUsuarios(): Observable<UsuarioModel[]> {
     return this.http.get<UsuarioModel[]>(this.apiUrl);
   }

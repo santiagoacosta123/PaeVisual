@@ -5,7 +5,7 @@
 
     <!-- Logo -->
     <div class="mb-6">
-      <img src="/sirae-logo.png" alt="Logo SIRAE" style="max-width:140px;" />
+      <img src="/sirae-logo.png" alt="Logo SIRAE" style="max-width:140px; display:block;" />
     </div>
 
     <!-- Navegación -->
@@ -20,14 +20,6 @@
         <span class="material-symbols-outlined" style="font-size:20px; color:#777;">people</span>
         Usuarios
       </a>
-      
-      <!-- OPCIÓN DE CONTRATOS AÑADIDA AQUÍ -->
-      <a routerLink="contratos" routerLinkActive="active-link"
-         style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; text-decoration:none; color:#333; font-size:14px; font-weight:500;">
-        <span class="material-symbols-outlined" style="font-size:20px; color:#777;">description</span>
-        Contratos
-      </a>
-
       <a routerLink="rol" routerLinkActive="active-link"
          style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; text-decoration:none; color:#333; font-size:14px; font-weight:500;">
         <span class="material-symbols-outlined" style="font-size:20px; color:#777;">shield</span>
@@ -42,26 +34,6 @@
          style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; text-decoration:none; color:#333; font-size:14px; font-weight:500;">
         <span class="material-symbols-outlined" style="font-size:20px; color:#777;">straighten</span>
         Unidades
-      </a>
-      <a routerLink="menus" routerLinkActive="active-link"
-         style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; text-decoration:none; color:#333; font-size:14px; font-weight:500;">
-        <span class="material-symbols-outlined" style="font-size:20px; color:#777;">restaurant_menu</span>
-        Menús
-      </a>
-      <a routerLink="asistencia" routerLinkActive="active-link"
-         style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; text-decoration:none; color:#333; font-size:14px; font-weight:500;">
-        <span class="material-symbols-outlined" style="font-size:20px; color:#777;">fact_check</span>
-        Asistencia
-      </a>
-      <a routerLink="entregas" routerLinkActive="active-link"
-         style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; text-decoration:none; color:#333; font-size:14px; font-weight:500;">
-        <span class="material-symbols-outlined" style="font-size:20px; color:#777;">local_shipping</span>
-        Entregas
-      </a>
-      <a routerLink="reporte-inventario" routerLinkActive="active-link"
-         style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; text-decoration:none; color:#333; font-size:14px; font-weight:500;">
-        <span class="material-symbols-outlined" style="font-size:20px; color:#777;">inventory_2</span>
-        Reporte Inventario
       </a>
       <a routerLink="reportes" routerLinkActive="active-link"
          style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; text-decoration:none; color:#333; font-size:14px; font-weight:500;">
@@ -105,7 +77,7 @@
       </div>
     </div>
 
-    <!-- AQUÍ SE CARGAN LAS VISTAS HIJAS (INICIO, CONTRATOS, PRODUCTOS, ETC.) -->
+    <!-- AQUÍ SE CARGAN LAS VISTAS HIJAS -->
     <router-outlet></router-outlet>
 
     <!-- Panel de perfil desplegable -->
@@ -183,7 +155,7 @@
       </div>
     </div>
 
-    <!-- Fondo transparente para cerrar el panel al hacer clic afuera -->
+    <!-- Fondo transparente para cerrar el panel -->
     <div *ngIf="mostrarPerfil" (click)="cerrarPanel()" style="position:fixed; inset:0; z-index:99;"></div>
 
   </main>

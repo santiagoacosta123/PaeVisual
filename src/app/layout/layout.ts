@@ -8,79 +8,9 @@ import { FormsModule } from '@angular/forms';
   standalone: true,
   imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, FormsModule],
   templateUrl: './layout.html',
-  styleUrls: ['./layout.css'] // Si tu hoja de estilos está integrada en el HTML o en un archivo .css aparte
+  styleUrls: ['./layout.css']
 })
 export class LayoutComponent {
-  // Estado para el modal de ingredientes
-  modalAbierto: boolean = false;
-  modoEdicion: boolean = false;
-  filtroBusqueda: string = '';
-
-  // Modelo del ingrediente actual (para crear o editar)
-  ingredienteActual: any = {
-    id: null,
-    nombre: '',
-    categoria: '',
-    unidad_medida: '',
-    imagen: '',
-    descripcion: ''
-  };
-
-  // Lista de ingredientes de ejemplo (puedes conectarla con tu servicio backend)
-  ingredientes: any[] = [
-    {
-      id: 1,
-      nombre: 'Arroz blanco',
-      categoria: 'Granos y Cereales',
-      unidad_medida: 'Kilogramos (kg)',
-      imagen: 'https://via.placeholder.com/40',
-      descripcion: 'Arroz de primera calidad para almuerzos PAE.'
-    }
-  ];
-
-  get ingredientesFiltrados() {
-    if (!this.filtroBusqueda) return this.ingredientes;
-    const texto = this.filtroBusqueda.toLowerCase();
-    return this.ingredientes.filter(item => 
-      item.nombre.toLowerCase().includes(texto) ||
-      item.categoria.toLowerCase().includes(texto) ||
-      item.unidad_medida.toLowerCase().includes(texto)
-    );
-  }
-
-  abrirModalCrear() {
-    this.modoEdicion = false;
-    this.ingredienteActual = { id: null, nombre: '', categoria: '', unidad_medida: '', imagen: '', descripcion: '' };
-    this.modalAbierto = true;
-  }
-
-  abrirModalEditar(item: any) {
-    this.modoEdicion = true;
-    this.ingredienteActual = { ...item };
-    this.modalAbierto = true;
-  }
-
-  cerrarModal() {
-    this.modalAbierto = false;
-  }
-
-  guardarIngrediente() {
-    if (this.modoEdicion) {
-      const index = this.ingredientes.findIndex(i => i.id === this.ingredienteActual.id);
-      if (index !== -1) {
-        this.ingredientes[index] = { ...this.ingredienteActual };
-      }
-    } else {
-      this.ingredienteActual.id = Date.now();
-      this.ingredientes.push({ ...this.ingredienteActual });
-    }
-    this.cerrarModal();
-  }
-
-  eliminarIngrediente(id: number) {
-    this.ingredientes = this.ingredientes.filter(i => i.id !== id);
-  }
-
   // Estado y métodos del perfil de usuario desplegable
   mostrarPerfil: boolean = false;
   vistaActual: string = 'perfil';
@@ -136,6 +66,6 @@ export class LayoutComponent {
 
   cerrarSesion() {
     console.log('Cerrando sesión...');
-    // Aquí puedes agregar la redirección al login
+    // Aquí puedes agregar la redirección al login cuando lo configures
   }
 }

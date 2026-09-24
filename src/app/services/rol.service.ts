@@ -8,7 +8,7 @@ import { RolModel } from '../models/rol.model';
 })
 export class RolService {
 
-  private apiUrl = 'https://backend-sirae-t9zi.onrender.com/api/roles/';
+  private apiUrl = 'http://127.0.0.1:8000/api/roles/';
   constructor(private http: HttpClient) {}
 
   getRoles(): Observable<RolModel[]> {

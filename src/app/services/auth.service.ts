@@ -13,7 +13,7 @@ interface LoginResponse {
   providedIn: 'root'
 })
 export class AuthService {
-  private apiUrl = 'https://backend-sirae-t9zi.onrender.com/api/auth/login/';  
+  private apiUrl = 'http://127.0.0.1:8000/api/auth/login/';  
   private readonly ACCESS_TOKEN = 'access_token';
   private readonly REFRESH_TOKEN = 'refresh_token';
   private readonly USUARIO = 'usuario';
@@ -24,7 +24,7 @@ export class AuthService {
   ) {}
 
   login(credenciales: { correo: string; clave: string }): Observable<LoginResponse> {
-    console.log('POST LOGIN:', credenciales);
+    console.log('POST LOGIN LOCAL:', credenciales);
 
     return this.http.post<LoginResponse>(this.apiUrl, {
       correo: credenciales.correo,
