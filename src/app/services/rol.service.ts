@@ -9,7 +9,6 @@ import { RolModel } from '../models/rol.model';
 export class RolService {
 
   private apiUrl = 'https://backend-sirae-pyim.onrender.com/api/roles/';
-
   constructor(private http: HttpClient) {}
 
   // Método auxiliar para obtener las cabeceras HTTP con el Token JWT

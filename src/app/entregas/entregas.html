@@ -1,283 +1,141 @@
-<div class="entregas-container">
-  
-  <!-- Encabezado del módulo -->
-  <div class="header-section">
-    <div>
-      <h2>Gestión de Entregas PAE</h2>
-      <p>Control de registros de la tabla de entregas del sistema.</p>
-    </div>
-    <button type="button" (click)="abrirModalCrear()" class="btn-primary">
-      <span class="material-symbols-outlined" style="font-size:18px;">add</span>
-      Nueva Entrega
-    </button>
-  </div>
+<div class="flex flex-col gap-5 relative font-sans">
 
-  <!-- Barra de búsqueda -->
-  <div class="filter-card">
-    <div class="search-box">
-      <span class="material-symbols-outlined" style="color:#777; font-size:20px;">search</span>
-      <input type="text" [(ngModel)]="filtroBusqueda" placeholder="Buscar por ID de entrega, fecha o ID de supervisor..." />
-    </div>
-  </div>
+  <!-- Contenedor Principal en Tarjeta Blanca -->
+  <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs">
 
-  <!-- Tabla de registros -->
-  <div class="table-card">
-    <table>
-      <thead>
-        <tr>
-          <th>ID Entrega</th>
-          <th>Fecha</th>
-          <th>ID Usuario Supervisor</th>
-          <th style="text-align: center;">Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let item of entregasFiltradas">
-          <td style="font-weight: 600; color: #333;">#{{ item.id_entrega }}</td>
-          <td>{{ item.fecha }}</td>
-          <td>
-            <span class="badge badge-info">ID: {{ item.id_usuario_supervisor }}</span>
-          </td>
-          <td style="text-align: center;">
-            <div style="display: flex; gap: 8px; justify-content: center;">
-              <button type="button" (click)="abrirModalEditar(item)" class="btn-icon" title="Editar">
-                <span class="material-symbols-outlined" style="font-size:18px; color:#2196f3;">edit</span>
-              </button>
-              <button type="button" (click)="eliminarEntrega(item.id_entrega)" class="btn-icon" title="Eliminar">
-                <span class="material-symbols-outlined" style="font-size:18px; color:#e53935;">delete</span>
-              </button>
-            </div>
-          </td>
-        </tr>
-        <tr *ngIf="entregasFiltradas.length === 0">
-          <td colspan="4" style="text-align: center; padding: 24px; color: #777;">
-            No se encontraron registros de entregas.
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-
-  <!-- MODAL DE CREACIÓN / EDICIÓN -->
-  <div *ngIf="modalAbierto" class="modal-backdrop">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3>{{ modoEdicion ? 'Editar Registro de Entrega' : 'Registrar Nueva Entrega' }}</h3>
-        <button type="button" (click)="cerrarModal()" class="btn-close">
-          <span class="material-symbols-outlined" style="font-size:20px;">close</span>
-        </button>
+    <!-- Encabezado con Título, Buscador y Botón -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
+      <div>
+        <h3 class="text-base font-bold text-slate-900 m-0">Gestión de Entregas PAE</h3>
+        <p class="text-xs text-slate-500 m-0">Control de registros y supervisión de entregas del sistema.</p>
       </div>
 
-      <div class="modal-body">
-        <div class="form-group">
-          <label>Fecha de la Entrega</label>
-          <input type="date" [(ngModel)]="entregaActual.fecha" />
+      <div class="flex flex-wrap items-center gap-2">
+        <!-- Buscador -->
+        <div class="flex items-center gap-2 bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 min-w-[260px]">
+          <svg class="w-4 h-4 text-slate-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" [(ngModel)]="filtroBusqueda" placeholder="Buscar por ID, fecha o supervisor..." class="border-none bg-transparent outline-none text-xs text-slate-900 w-full placeholder-slate-400">
         </div>
 
-        <div class="form-group">
-          <label>ID Usuario Supervisor</label>
-          <input type="number" [(ngModel)]="entregaActual.id_usuario_supervisor" placeholder="Ej. 101" />
+        <!-- Botón Nueva Entrega -->
+        <button type="button" (click)="abrirModalCrear()" class="bg-amber-400 hover:bg-amber-500 text-amber-950 font-semibold px-4 py-2 rounded-xl text-xs transition cursor-pointer whitespace-nowrap inline-flex items-center gap-1.5 shadow-2xs">
+          <span>+ Nueva entrega</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Tabla de Entregas -->
+    <div class="overflow-x-auto">
+      <table class="w-full border-collapse text-left text-xs">
+        <thead>
+          <tr class="border-b border-slate-200 text-slate-500 font-semibold">
+            <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase w-32">ID ENTREGA</th>
+            <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase">FECHA DE ENTREGA</th>
+            <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase">ID SUPERVISOR</th>
+            <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase text-right">ACCIONES</th>
+          </tr>
+        </thead>
+        <tbody class="text-slate-900">
+          <tr *ngFor="let item of entregasFiltradas" class="border-b border-slate-100 hover:bg-slate-50/50 transition">
+            <!-- ID Entrega -->
+            <td class="py-3 px-3 font-bold text-slate-900">
+              #{{ item.id_entrega }}
+            </td>
+
+            <!-- Fecha -->
+            <td class="py-3 px-3 text-slate-600 font-medium">
+              {{ item.fecha }}
+            </td>
+
+            <!-- Supervisor -->
+            <td class="py-3 px-3">
+              <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-800 border border-blue-200 inline-block">
+                Supervisor ID: {{ item.id_usuario_supervisor }}
+              </span>
+            </td>
+
+            <!-- Acciones -->
+            <td class="py-3 px-3 text-right">
+              <div class="flex items-center justify-end gap-1.5">
+                <button type="button" (click)="abrirModalEditar(item)" class="w-8 h-8 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-300 text-slate-600 hover:text-slate-900 inline-flex items-center justify-center transition cursor-pointer" title="Editar">
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                  </svg>
+                </button>
+                <button type="button" (click)="eliminarEntrega(item.id_entrega)" class="w-8 h-8 rounded-lg bg-slate-50 hover:bg-rose-50 border border-slate-300 text-slate-600 hover:text-rose-600 inline-flex items-center justify-center transition cursor-pointer" title="Eliminar">
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    <line x1="10" y1="11" x2="10" y2="17"></line>
+                    <line x1="14" y1="11" x2="14" y2="17"></line>
+                  </svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Estado vacío -->
+          <tr *ngIf="entregasFiltradas.length === 0">
+            <td colspan="4" class="py-6 px-3 text-center text-slate-400 italic">
+              No se encontraron registros de entregas.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pie de tabla: Paginación -->
+    <div class="flex items-center justify-between pt-3.5 mt-3.5 border-t border-slate-100 text-xs text-slate-500">
+      <span>Mostrando {{ entregasFiltradas.length }} de {{ entregas.length }} registros</span>
+      <div class="flex items-center gap-1.5">
+        <button type="button" class="w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 inline-flex items-center justify-center cursor-pointer">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        </button>
+        <span class="w-7 h-7 rounded-lg bg-slate-900 text-white font-semibold inline-flex items-center justify-center text-xs">1</span>
+        <button type="button" class="w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 inline-flex items-center justify-center cursor-pointer">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- MODAL DE CREACIÓN / EDICIÓN DE ENTREGA -->
+  <div *ngIf="modalAbierto" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+    <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xl w-full max-w-sm max-h-[90vh] overflow-y-auto space-y-4">
+      
+      <!-- Encabezado del Modal -->
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <h3 class="text-base font-bold text-slate-900 m-0">
+          {{ modoEdicion ? 'EDITAR ENTREGA' : 'NUEVA ENTREGA' }}
+        </h3>
+        <button type="button" (click)="cerrarModal()" class="text-slate-400 hover:text-slate-600 text-lg cursor-pointer bg-transparent border-none">✕</button>
+      </div>
+
+      <!-- Campos del formulario -->
+      <div class="flex flex-col gap-3.5 text-xs">
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1.5">Fecha de la Entrega *</label>
+          <input type="date" [(ngModel)]="entregaActual.fecha" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500">
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1.5">ID Usuario Supervisor *</label>
+          <input type="number" [(ngModel)]="entregaActual.id_usuario_supervisor" placeholder="Ej. 101" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500">
         </div>
       </div>
 
-      <div class="modal-footer">
-        <button type="button" (click)="cerrarModal()" class="btn-secondary">Cancelar</button>
-        <button type="button" (click)="guardarEntrega()" class="btn-primary">
-          {{ modoEdicion ? 'Guardar Cambios' : 'Registrar' }}
-        </button>
+      <!-- Pie del Modal -->
+      <div class="flex items-center justify-end gap-3 pt-3.5 border-t border-slate-100">
+        <button type="button" (click)="cerrarModal()" class="bg-white border border-slate-300 text-slate-700 font-semibold px-4 py-2 rounded-xl text-xs hover:bg-slate-50 transition cursor-pointer">Cancelar</button>
+        <button type="button" (click)="guardarEntrega()" class="bg-slate-900 hover:bg-slate-800 text-white font-semibold px-4 py-2 rounded-xl text-xs transition cursor-pointer shadow-2xs">{{ modoEdicion ? 'Actualizar' : 'Guardar' }}</button>
       </div>
+
     </div>
   </div>
 
 </div>
-
-<!-- ESTILOS INTEGRADOS DENTRO DEL HTML -->
-<style>
-  .entregas-container {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    font-family: 'Roboto', sans-serif;
-  }
-  .header-section {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: #fff;
-    padding: 18px 24px;
-    border-radius: 10px;
-    border: 1px solid #e0e0e0;
-  }
-  .header-section h2 { font-size: 20px; font-weight: 700; color: #333; margin: 0; }
-  .header-section p { font-size: 13px; color: #777; margin: 4px 0 0; }
-  
-  .filter-card {
-    display: flex;
-    gap: 16px;
-    background: #fff;
-    padding: 16px 24px;
-    border-radius: 10px;
-    border: 1px solid #e0e0e0;
-  }
-  .search-box {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex: 1;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    padding: 0 12px;
-    background: #fafafa;
-  }
-  .search-box input {
-    border: none;
-    background: none;
-    outline: none;
-    width: 100%;
-    padding: 10px 0;
-    font-size: 14px;
-  }
-  
-  .table-card {
-    background: #fff;
-    border-radius: 10px;
-    border: 1px solid #e0e0e0;
-    overflow: hidden;
-  }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    text-align: left;
-    font-size: 14px;
-  }
-  th {
-    background: #fafafa;
-    color: #555;
-    font-weight: 600;
-    padding: 14px 18px;
-    border-bottom: 1px solid #e0e0e0;
-  }
-  td {
-    padding: 14px 18px;
-    border-bottom: 1px solid #f0f0f0;
-    color: #444;
-  }
-  tr:hover { background: #fdfdfd; }
-
-  .btn-primary {
-    background: #f4b41f;
-    color: #333;
-    font-weight: 700;
-    border: none;
-    border-radius: 6px;
-    padding: 10px 16px;
-    font-size: 14px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .btn-primary:hover { background: #e0a316; }
-
-  .btn-secondary {
-    background: #e0e0e0;
-    color: #333;
-    font-weight: 600;
-    border: none;
-    border-radius: 6px;
-    padding: 10px 16px;
-    font-size: 14px;
-    cursor: pointer;
-  }
-  .btn-secondary:hover { background: #d0d0d0; }
-
-  .btn-icon {
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 6px;
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .btn-icon:hover { background: #f0f0f0; }
-
-  .badge-info {
-    background: #e3f2fd;
-    color: #1565c0;
-    padding: 4px 10px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 600;
-    display: inline-block;
-  }
-
-  /* Modal Flotante */
-  .modal-backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.4);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-  }
-  .modal-content {
-    background: #fff;
-    width: 420px;
-    max-width: 90%;
-    border-radius: 10px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-  }
-  .modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px 20px;
-    border-bottom: 1px solid #eee;
-  }
-  .modal-header h3 { margin: 0; font-size: 16px; font-weight: 700; color: #333; }
-  .btn-close {
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: #777;
-    display: flex;
-  }
-  .modal-body {
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-  }
-  .form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-  .form-group label {
-    font-size: 12px;
-    font-weight: 600;
-    color: #666;
-  }
-  .form-group input {
-    padding: 10px 12px;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    font-size: 14px;
-    font-family: 'Roboto', sans-serif;
-    outline: none;
-  }
-  .modal-footer {
-    padding: 14px 20px;
-    border-top: 1px solid #eee;
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    background: #fafafa;
-  }
-</style>

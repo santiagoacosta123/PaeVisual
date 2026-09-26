@@ -125,9 +125,9 @@ export class UsuariosComponent implements OnInit {
       nombre: '',
       apellido: '',
       correo: '',
-      tipo_documento: 'CC',
+      tipo_documento: '',
       numero_documento: '',
-      rol: this.roles.length > 0 ? this.roles[0].id_rol : '',
+      rol: '',
       password: '',
       is_active: true
     };

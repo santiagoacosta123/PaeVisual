@@ -3,8 +3,9 @@
   <div class="flex-1 flex justify-center items-center bg-white p-8">
     <div class="w-full max-w-md">
       
+      <!-- Logo SIRAE en color negro -->
       <div class="mb-6 text-left">
-        <img src="/sirae-logo.png" alt="Logo SIRAE" class="h-12 w-auto" />
+        <img src="/sirae-logo.png" alt="Logo SIRAE" class="h-12 w-auto brightness-0" />
       </div>
       
       <div class="mb-8">
@@ -61,7 +62,8 @@
           {{ errorMensaje }}
         </div>
 
-        <button type="submit" class="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors cursor-pointer disabled:bg-teal-200 disabled:cursor-not-allowed mt-2" [disabled]="cargando">
+        <!-- Botón amarillo corporativo -->
+        <button type="submit" class="w-full py-3 bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed mt-2" [disabled]="cargando">
           <span *ngIf="!cargando">Ingresar al sistema</span>
           <span *ngIf="cargando" class="inline-block">Verificando...</span>
         </button>
@@ -70,6 +72,7 @@
     </div>
   </div>
 
+  <!-- LADO DERECHO ORIGINAL -->
   <div class="hidden md:flex flex-1 bg-gray-100 justify-center items-center p-8">
     <img src="/vegetales-frame.png" alt="Vegetales SIRAE" class="w-full h-full object-cover rounded-2xl" />
   </div>

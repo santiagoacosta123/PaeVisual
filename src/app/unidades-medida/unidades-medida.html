@@ -1,101 +1,125 @@
-<h1 class="font-black text-2xl mb-4">Unidades de Medida</h1>
-<div class="bg-white p-6 rounded-[16px] shadow mb-6">
-  <div class="flex items-center justify-between mb-4">
-    <h2 class="text-xl font-black">
-      {{ modoEdicion ? 'Actualizar unidad' : 'Registrar unidad' }}
-    </h2>
-    <button
-      *ngIf="modoEdicion"
-      type="button"
-      (click)="cancelarEdicion()"
-      class="border px-3 py-1 rounded-lg text-sm hover:bg-slate-50"
-    >
-      Cancelar
-    </button>
-  </div>
+<div class="flex flex-col gap-5 relative font-sans">
 
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <div>
-      <label class="block text-xs font-bold text-slate-600 mb-1">Nombre de la unidad *</label>
-      <input
-        type="text"
-        [(ngModel)]="unidadForm.nombre"
-        name="nombre"
-        class="border p-3 rounded-[16px] w-full"
-        placeholder="Ej: Kilogramo"
-      />
+  <!-- Formulario de Registro / Edición con estilo Contratos -->
+  <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs">
+    <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+      <div>
+        <h3 class="text-base font-bold text-slate-900 m-0">
+          {{ modoEdicion ? 'Actualizar Unidad de Medida' : 'Registrar Unidad de Medida' }}
+        </h3>
+        <p class="text-xs text-slate-500 m-0">
+          {{ modoEdicion ? 'Modifique los campos correspondientes de la unidad seleccionada.' : 'Ingrese el nombre y abreviatura de la nueva unidad para los insumos.' }}
+        </p>
+      </div>
+
+      <button *ngIf="modoEdicion" type="button" (click)="cancelarEdicion()" class="bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-semibold px-3 py-1.5 rounded-xl text-xs transition cursor-pointer">
+        Cancelar edición
+      </button>
     </div>
-    <div>
-      <label class="block text-xs font-bold text-slate-600 mb-1">Abreviatura</label>
-      <input
-        type="text"
-        [(ngModel)]="unidadForm.abreviatura"
-        name="abreviatura"
-        class="border p-3 rounded-[16px] w-full"
-        placeholder="Ej: kg"
-      />
+
+    <!-- Inputs -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4 text-xs">
+      <div>
+        <label class="block font-semibold text-slate-700 mb-1.5">Nombre de la Unidad *</label>
+        <input [(ngModel)]="unidadForm.nombre" type="text" placeholder="Ingresa el nombre de la unidad" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500">
+      </div>
+
+      <div>
+        <label class="block font-semibold text-slate-700 mb-1.5">Abreviatura *</label>
+        <input [(ngModel)]="unidadForm.abreviatura" type="text" placeholder="Ingresa la abreviatura" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500">
+      </div>
+    </div>
+
+    <!-- Botón de guardar -->
+    <div class="flex justify-end gap-2">
+      <button type="button" (click)="guardarUnidad()" class="bg-amber-400 hover:bg-amber-500 text-amber-950 font-semibold px-5 py-2 rounded-xl text-xs transition cursor-pointer whitespace-nowrap shadow-2xs">
+        {{ modoEdicion ? 'Actualizar unidad' : '+ Guardar unidad' }}
+      </button>
     </div>
   </div>
 
-  <div class="flex justify-end mt-4">
-    <button
-      type="button"
-      (click)="guardarUnidad()"
-      class="bg-[#FAB41F] px-6 py-2 rounded-[16px] font-bold text-slate-900 hover:opacity-90"
-    >
-      {{ modoEdicion ? 'Actualizar' : 'Guardar' }}
-    </button>
+  <!-- Tarjeta con Tabla de Unidades de Medida -->
+  <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs">
+    <div class="mb-4">
+      <h3 class="text-base font-bold text-slate-900 m-0">Catálogo de Unidades Registradas</h3>
+      <p class="text-xs text-slate-500 m-0">Listado general de unidades de medida configuradas en el sistema.</p>
+    </div>
+
+    <!-- Tabla -->
+    <div class="overflow-x-auto">
+      <table class="w-full border-collapse text-left text-xs">
+        <thead>
+          <tr class="border-b border-slate-200 text-slate-500 font-semibold">
+            <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase w-24">ID</th>
+            <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase">NOMBRE DE LA UNIDAD</th>
+            <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase">ABREVIATURA</th>
+            <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase text-right">ACCIONES</th>
+          </tr>
+        </thead>
+        <tbody class="text-slate-900">
+          <tr *ngFor="let unidad of unidades" class="border-b border-slate-100 hover:bg-slate-50/50 transition">
+            <!-- ID -->
+            <td class="py-3 px-3 font-bold text-slate-500">
+              #{{ unidad.id_unidad_medida }}
+            </td>
+
+            <!-- Nombre -->
+            <td class="py-3 px-3 font-semibold text-slate-900">
+              {{ unidad.nombre }}
+            </td>
+
+            <!-- Abreviatura -->
+            <td class="py-3 px-3">
+              <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600 border border-slate-200 inline-block">
+                {{ unidad.abreviatura || 'N/A' }}
+              </span>
+            </td>
+
+            <!-- Acciones -->
+            <td class="py-3 px-3 text-right">
+              <div class="flex items-center justify-end gap-1.5">
+                <button type="button" (click)="editarUnidad(unidad)" class="w-8 h-8 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-300 text-slate-600 hover:text-slate-900 inline-flex items-center justify-center transition cursor-pointer" title="Editar">
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                  </svg>
+                </button>
+                <button type="button" (click)="eliminarUnidad(unidad)" class="w-8 h-8 rounded-lg bg-slate-50 hover:bg-rose-50 border border-slate-300 text-slate-600 hover:text-rose-600 inline-flex items-center justify-center transition cursor-pointer" title="Eliminar">
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    <line x1="10" y1="11" x2="10" y2="17"></line>
+                    <line x1="14" y1="11" x2="14" y2="17"></line>
+                  </svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Estado vacío -->
+          <tr *ngIf="unidades.length === 0">
+            <td colspan="4" class="py-6 px-3 text-center text-slate-400 italic">
+              No hay unidades de medida registradas.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pie de tabla: Paginación -->
+    <div class="flex items-center justify-between pt-3.5 mt-3.5 border-t border-slate-100 text-xs text-slate-500">
+      <span>Mostrando {{ unidades.length }} registros</span>
+      <div class="flex items-center gap-1.5">
+        <button type="button" class="w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 inline-flex items-center justify-center cursor-pointer">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        </button>
+        <span class="w-7 h-7 rounded-lg bg-slate-900 text-white font-semibold inline-flex items-center justify-center text-xs">1</span>
+        <button type="button" class="w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 inline-flex items-center justify-center cursor-pointer">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        </button>
+      </div>
+    </div>
+
   </div>
-</div>
 
-<div class="bg-white rounded-[16px] shadow overflow-hidden">
-  <table class="w-full text-sm">
-    <thead class="bg-[#FAB41F] font-bold text-slate-900">
-      <tr>
-        <th class="p-4 text-left">ID</th>
-        <th class="p-4 text-left">Nombre de Unidad</th>
-        <th class="p-4 text-left">Abreviatura</th>
-        <th class="p-4 text-center">Acciones</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr *ngFor="let unidad of unidades" class="border-t hover:bg-slate-50">
-        <td class="p-4 font-bold text-slate-500">
-          #{{ unidad.id_unidad_medida }}
-        </td>
-        <td class="p-4 font-semibold text-slate-800">
-          {{ unidad.nombre }}
-        </td>
-        <td class="p-4">
-          <span class="bg-amber-100 text-amber-800 px-3 py-1 rounded-full font-bold text-xs">
-            {{ unidad.abreviatura || 'N/A' }}
-          </span>
-        </td>
-        <td class="p-4 text-center">
-          <div class="flex justify-center gap-2">
-            <button
-              type="button"
-              (click)="editarUnidad(unidad)"
-              class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold hover:bg-slate-100"
-            >
-              ✏️ Editar
-            </button>
-            <button
-              type="button"
-              (click)="eliminarUnidad(unidad)"
-              class="rounded-lg border border-red-200 bg-red-50 px-3 py-1 text-xs font-semibold text-red-600 hover:bg-red-100"
-            >
-              🗑️ Eliminar
-            </button>
-          </div>
-        </td>
-      </tr>
-
-      <tr *ngIf="unidades.length === 0">
-        <td colspan="4" class="p-6 text-center text-slate-400">
-          No hay unidades de medida registradas.
-        </td>
-      </tr>
-    </tbody>
-  </table>
 </div>
