@@ -63,7 +63,7 @@ export class SiraeService {
   }
 
   // SECCIONES DE MENÚ
-  private seccionesMenuUrl = 'https://backend-sirae-pyim.onrender.com/api/secciones_menu/'; // Asegúrate de que esta URL sea la correcta según tu backend
+  private seccionesMenuUrl = 'https://backend-sirae-pyim.onrender.com/api/secciones_menu/';
 
   getSeccionesMenu(): Observable<any[]> {
     return this.http.get<any[]>(this.seccionesMenuUrl);
@@ -82,7 +82,7 @@ export class SiraeService {
   }
 
   // CONTRATOS - SECCION MENÚ (Relación)
-  private contratosSeccionMenuUrl = 'https://backend-sirae-pyim.onrender.com/api/contrato_seccion_menu/'; // Intentando con singular
+  private contratosSeccionMenuUrl = 'https://backend-sirae-pyim.onrender.com/api/contratos-secciones-menu/';
 
   getContratosSeccionMenu(contratoId?: number): Observable<any[]> {
     const url = contratoId ? `${this.contratosSeccionMenuUrl}?contrato=${contratoId}` : this.contratosSeccionMenuUrl;

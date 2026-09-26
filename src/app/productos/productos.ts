@@ -53,7 +53,6 @@ export class Productos implements OnInit {
   modoEdicion = false;
   editandoId: any = null;
   indiceEdicion: number | null = null;
-  itemSeleccionado: any = null;
 
   // Formulario de inventario
   itemForm: any = {

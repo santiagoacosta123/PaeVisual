@@ -1,100 +1,127 @@
-<div class="contrato-detail-wrapper">
-  <!-- Header Premium -->
-  <div class="premium-header">
-    <div class="header-overlay"></div>
-    <div class="header-content">
-      <button class="btn-retroceder" (click)="volver()">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="19" y1="12" x2="5" y2="12"></line>
-          <polyline points="12 19 5 12 12 5"></polyline>
+<div class="productos-container"
+  style="background-color: #f8fafc; padding: 24px; font-family: 'Inter', system-ui, sans-serif; min-height: 100vh;">
+
+  <!-- Cabecera y Botón de Guardar Principal -->
+  <div class="header-section" style="margin-bottom: 24px;">
+    <button class="btn-volver" (click)="volver()"
+      style="background: none; border: none; color: #475569; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-size: 13px; padding: 0;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 18 9 12 15 6"></polyline>
+      </svg>
+      Volver a contratos
+    </button>
+
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 16px;">
+      <h2
+        style="margin: 0; font-size: 22px; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 12px;">
+        Contrato {{ contrato?.numero_cor || contrato?.codigo || 'COR-000' }}
+        <span
+          style="background: #dcfce7; color: #166534; font-size: 11px; padding: 4px 12px; border-radius: 20px; font-weight: 600;">
+          {{ contrato?.estado || 'Activo' }}
+        </span>
+      </h2>
+
+      <!-- Botón Guardar / Finalizar -->
+      <button class="btn-primary" (click)="guardarTodo()"
+        style="background: #2563eb; color: #ffffff; padding: 10px 20px; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 13px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+          <polyline points="17 21 17 13 7 13 7 21"></polyline>
+          <polyline points="7 3 7 8 15 8"></polyline>
         </svg>
-        <span>Volver a Contratos</span>
+        Guardar y finalizar
       </button>
-      
-      <div class="header-titles">
-        <span class="badge-contrato">CONTRATO ACTIVO</span>
-        <h1 class="main-title">Configuración de Menús</h1>
-        <p class="sub-title">Gestiona las jornadas y raciones alimentarias asignadas al contrato #{{ contratoId }}</p>
-      </div>
     </div>
   </div>
 
-  <div class="main-content-area">
-    <div *ngIf="pestanaActiva === 'jornadas'" class="dynamic-layout">
-      
-      <!-- Listado de Jornadas (Glass Card) -->
-      <div class="glass-panel left-panel">
-        <div class="panel-header">
-          <h3>Jornadas Disponibles</h3>
-          <p>Selecciona una jornada para configurar sus raciones.</p>
-        </div>
-        
-        <div class="modern-list">
-          <div *ngFor="let jornada of jornadas" 
-               class="modern-card-item" 
-               [class.active-item]="jornadaSeleccionada?.id_jornada === jornada.id_jornada || jornadaSeleccionada?.id === jornada.id"
-               (click)="seleccionarJornada(jornada)">
-            <div class="card-icon" [ngClass]="{'morning': jornada.nombre?.toLowerCase().includes('mañana') || jornada.nombre_jornada?.toLowerCase().includes('mañana'), 'afternoon': jornada.nombre?.toLowerCase().includes('tarde') || jornada.nombre_jornada?.toLowerCase().includes('tarde')}">
-              <svg *ngIf="jornada.nombre?.toLowerCase().includes('mañana') || jornada.nombre_jornada?.toLowerCase().includes('mañana')" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="M4.93 4.93l1.41 1.41"></path><path d="M17.66 17.66l1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="M6.34 17.66l-1.41 1.41"></path><path d="M19.07 4.93l-1.41 1.41"></path></svg>
-              <svg *ngIf="jornada.nombre?.toLowerCase().includes('tarde') || jornada.nombre_jornada?.toLowerCase().includes('tarde')" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 18a5 5 0 0 0-10 0"></path><line x1="12" y1="2" x2="12" y2="9"></line><line x1="4.22" y1="10.22" x2="5.64" y2="11.64"></line><line x1="1" y1="18" x2="3" y2="18"></line><line x1="21" y1="18" x2="23" y2="18"></line><line x1="18.36" y1="11.64" x2="19.78" y2="10.22"></line><line x1="23" y1="22" x2="1" y2="22"></line><polyline points="8 6 12 2 16 6"></polyline></svg>
-              <svg *ngIf="!jornada.nombre?.toLowerCase().includes('mañana') && !jornada.nombre?.toLowerCase().includes('tarde') && !jornada.nombre_jornada?.toLowerCase().includes('mañana') && !jornada.nombre_jornada?.toLowerCase().includes('tarde')" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-            </div>
-            <div class="card-text">
-              <span class="card-title">{{ jornada.nombre_jornada || jornada.nombre }}</span>
-              <span class="card-subtitle">Configurar menú</span>
-            </div>
-            <div class="card-arrow">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-            </div>
+  <!-- Contenido en Cascada (Sin Pestañas) -->
+  <div style="display: flex; flex-direction: column; gap: 24px; max-width: 800px;">
+
+    <!-- 1. INFORMACIÓN DEL CONTRATO -->
+    <div
+      style="background: #ffffff; border-radius: 16px; padding: 24px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+      <h3 style="margin-top: 0; margin-bottom: 24px; font-size: 16px; font-weight: 700; color: #0f172a;">Información del
+        contrato</h3>
+      <div style="display: flex; flex-direction: column; gap: 18px;">
+        <div>
+          <label
+            style="display: block; font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 4px; letter-spacing: 0.5px;">INSTITUCIÓN</label>
+          <div style="font-weight: 600; color: #1e293b; font-size: 14px;">{{ contrato?.institucion || 'Cargando...' }}
           </div>
         </div>
-      </div>
-
-      <!-- Configuración de Secciones -->
-      <div class="glass-panel right-panel slide-in" *ngIf="jornadaSeleccionada">
-        <div class="panel-header">
-          <h3>Opciones: {{ jornadaSeleccionada.nombre_jornada || jornadaSeleccionada.nombre }}</h3>
-          <p>Habilita los servicios alimentarios correspondientes a esta jornada.</p>
+        <div>
+          <label
+            style="display: block; font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 4px; letter-spacing: 0.5px;">ZONA</label>
+          <div style="font-weight: 600; color: #1e293b; font-size: 14px;">{{ contrato?.zona || 'Cargando...' }}</div>
         </div>
-
-        <div class="toggle-grid">
-          <div *ngFor="let seccion of seccionesPorJornada" class="premium-toggle-card">
-            <div class="toggle-info">
-              <div class="icon-wrapper">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"></path><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path><line x1="6" y1="1" x2="6" y2="4"></line><line x1="10" y1="1" x2="10" y2="4"></line><line x1="14" y1="1" x2="14" y2="4"></line></svg>
-              </div>
-              <div class="toggle-texts">
-                <span class="toggle-name">{{ seccion.nombre_seccion || seccion.nombre }}</span>
-                <span class="toggle-status" [class.enabled]="estaSeccionAsignada(seccion.id_seccion || seccion.id)">
-                  {{ estaSeccionAsignada(seccion.id_seccion || seccion.id) ? 'Habilitado' : 'Inactivo' }}
-                </span>
-              </div>
-            </div>
-            <div class="premium-switch-wrapper">
-              <label class="premium-switch">
-                <input type="checkbox" 
-                       [checked]="estaSeccionAsignada(seccion.id_seccion || seccion.id)" 
-                       (change)="toggleSeccionMenu(seccion.id_seccion || seccion.id, $event)">
-                <span class="slider-neon"></span>
-              </label>
-            </div>
+        <div style="display: flex; gap: 40px;">
+          <div>
+            <label
+              style="display: block; font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 4px; letter-spacing: 0.5px;">FECHA
+              INICIO</label>
+            <div style="font-weight: 600; color: #1e293b; font-size: 14px;">{{ contrato?.fechaInicio ||
+              contrato?.fecha_inicio || '--/--/----' }}</div>
           </div>
-
-          <div *ngIf="seccionesPorJornada.length === 0" class="premium-empty-state">
-            <div class="empty-icon">🍽️</div>
-            <h4>Sin opciones de menú</h4>
-            <p>No se encontraron secciones creadas para esta jornada en el sistema central.</p>
+          <div>
+            <label
+              style="display: block; font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 4px; letter-spacing: 0.5px;">FECHA
+              FIN</label>
+            <div style="font-weight: 600; color: #1e293b; font-size: 14px;">{{ contrato?.fechaFin || contrato?.fecha_fin
+              || '--/--/----' }}</div>
           </div>
         </div>
-      </div>
-
-      <div class="glass-panel empty-selection" *ngIf="!jornadaSeleccionada">
-        <div class="pulse-ring">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+        <div>
+          <label
+            style="display: block; font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 4px; letter-spacing: 0.5px;">CONDICIONES</label>
+          <div style="font-weight: 500; color: #334155; font-size: 13px; line-height: 1.5;">Alimentación completa según
+            lo establecido por el programa PAE.</div>
         </div>
-        <p>Selecciona una jornada del panel izquierdo<br>para visualizar y configurar su menú.</p>
       </div>
-
     </div>
+
+    <!-- 2. JORNADAS HABILITADAS -->
+    <div
+      style="background: #ffffff; border-radius: 16px; padding: 24px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+      <h3 style="margin-top: 0; margin-bottom: 24px; font-size: 16px; font-weight: 700; color: #0f172a;">Jornadas
+        habilitadas</h3>
+      <div style="display: flex; flex-direction: column; gap: 16px;">
+        <label *ngFor="let j of jornadas"
+          style="display: flex; align-items: center; gap: 12px; cursor: pointer; user-select: none;">
+          <input type="checkbox" [checked]="j.habilitada" (change)="toggleJornada(j, $event)"
+            style="width: 20px; height: 20px; accent-color: #0f172a; cursor: pointer; border-radius: 4px;">
+          <span style="font-size: 14px; color: #334155; font-weight: 600;">{{ j.nombre_jornada || j.nombre }}</span>
+        </label>
+
+        <div *ngIf="jornadas.length === 0" style="color: #64748b; font-size: 13px; font-style: italic;">
+          Cargando jornadas...
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. SECCIONES DE MENÚ (AUTOMÁTICAS SEGÚN LA JORNADA) -->
+    <div
+      style="background: #ffffff; border-radius: 16px; padding: 24px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+      <h3 style="margin-top: 0; margin-bottom: 24px; font-size: 16px; font-weight: 700; color: #0f172a;">Servicios
+        (secciones) incluidas</h3>
+
+      <div style="display: flex; flex-direction: column; gap: 16px;">
+        <label *ngFor="let s of seccionesFiltradasPorJornadasHabilitadas()"
+          style="display: flex; align-items: center; gap: 12px; cursor: pointer; user-select: none;">
+          <input type="checkbox" [checked]="estaSeccionAsignada(s.id_seccion || s.id)"
+            (change)="toggleSeccionMenu(s.id_seccion || s.id, $event)"
+            style="width: 20px; height: 20px; accent-color: #2563eb; cursor: pointer; border-radius: 4px;">
+          <span style="font-size: 14px; color: #334155; font-weight: 600;">{{ s.nombre_seccion || s.nombre }}</span>
+        </label>
+
+        <div *ngIf="seccionesFiltradasPorJornadasHabilitadas().length === 0"
+          style="color: #64748b; font-size: 13px; background: #f8fafc; padding: 16px; border-radius: 8px; border: 1px dashed #cbd5e1; text-align: center;">
+          Habilita una jornada arriba para ver los servicios y opciones de menú correspondientes.
+        </div>
+      </div>
+    </div>
+
   </div>
+
 </div>
