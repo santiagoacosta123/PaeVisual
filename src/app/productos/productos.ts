@@ -1,7 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SweetAlertService } from '../sweet-alert.service';
+import { ProductoService } from '../services/producto.service';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 
 @Component({
   standalone: true,
@@ -57,9 +60,7 @@ export class Productos implements OnInit {
   // Formulario de inventario
   itemForm: any = {
     id_inventario: null,
-    nombre_ingrediente: '',
-    id_categoria_inventario: '',
-    marca_ingrediente: '',
+    id_ingrediente: '',
     cantidad_actual: null,
     stock_minimo: null,
     id_unidad_medida: ''
@@ -85,49 +86,64 @@ export class Productos implements OnInit {
     descripcion: ''
   };
 
-  constructor(private sweetAlert: SweetAlertService) {}
+  constructor(
+    private sweetAlert: SweetAlertService,
+    private cdr: ChangeDetectorRef,
+    private productoService: ProductoService
+  ) {}
 
   ngOnInit(): void {
-    this.inventario = [
-      {
-        id_inventario: 1,
-        nombre_ingrediente: 'Arroz Diana',
-        id_categoria_inventario: 1,
-        nombre_categoria: 'Granos y Cereales',
-        marca_ingrediente: 'Diana',
-        cantidad_actual: 50,
-        stock_minimo: 10,
-        id_unidad_medida: 1,
-        nombre_unidad: 'Kilogramos',
-        expandido: false
-      }
-    ];
+    this.cargarDatos();
+  }
 
-    this.movimientosInventario = [
-      {
-        id_movimiento_inventario: 1,
-        id_ingrediente: 1,
-        nombre_ingrediente: 'Arroz Diana',
-        tipo_movimiento: 'ENTRADA',
-        fecha: '2026-09-14',
-        cantidad: 50,
-        observaciones: 'Stock inicial',
-        id_unidad_medida: 1,
-        nombre_unidad: 'Kilogramos'
-      }
-    ];
+  cargarDatos(): void {
+    forkJoin({
+      ingredientes: this.productoService.getIngredientes().pipe(catchError(() => of([]))),
+      categorias: this.productoService.getCategorias().pipe(catchError(() => of([]))),
+      unidades: this.productoService.getUnidades().pipe(catchError(() => of([]))),
+      inventario: this.productoService.getProductos().pipe(catchError(() => of([]))),
+      movimientos: this.productoService.getMovimientos().pipe(catchError(() => of([])))
+    }).subscribe({
+      next: (res: any) => {
+        // Asignar catálogos
+        this.ingredientesDisponibles = Array.isArray(res.ingredientes) ? res.ingredientes : (res.ingredientes.results || []);
+        this.categoriasInventario = Array.isArray(res.categorias) ? res.categorias : (res.categorias.results || []);
+        this.unidadesMedida = Array.isArray(res.unidades) ? res.unidades : (res.unidades.results || []);
 
-    this.gramajes = [
-      {
-        id_gramaje: 1,
-        id_ingrediente: 1,
-        nombre_ingrediente: 'Arroz Diana',
-        cantidad_gramaje: 250,
-        id_unidad_medida: 2,
-        nombre_unidad: 'Gramos',
-        descripcion: 'Porción estándar por plato'
-      }
-    ];
+        const rawInventario = Array.isArray(res.inventario) ? res.inventario : (res.inventario.results || []);
+        const rawMovimientos = Array.isArray(res.movimientos) ? res.movimientos : (res.movimientos.results || []);
+
+        // Mapear inventario con nombres de ingredientes, categorías y unidades
+        this.inventario = rawInventario.map((inv: any) => {
+          const ing = this.ingredientesDisponibles.find(i => i.id_ingrediente == inv.id_ingrediente);
+          const cat = ing ? this.categoriasInventario.find(c => c.id_categoria_inventario == ing.id_categoria_inventario) : null;
+          const um = this.unidadesMedida.find(u => u.id_unidad_medida == inv.id_unidad_medida);
+
+          return {
+            ...inv,
+            nombre_ingrediente: ing ? ing.nombre_ingrediente : 'Desconocido',
+            marca_ingrediente: ing ? ing.marca_ingrediente : '',
+            nombre_categoria: cat ? cat.nombre_categoria : 'Sin categoría',
+            nombre_unidad: um ? um.nombre_unidad : ''
+          };
+        });
+
+        // Mapear movimientos
+        this.movimientosInventario = rawMovimientos.map((mov: any) => {
+          const ing = this.ingredientesDisponibles.find(i => i.id_ingrediente == mov.id_ingrediente);
+          const um = this.unidadesMedida.find(u => u.id_unidad_medida == mov.id_unidad_medida);
+
+          return {
+            ...mov,
+            nombre_ingrediente: ing ? ing.nombre_ingrediente : 'Desconocido',
+            nombre_unidad: um ? um.nombre_unidad : ''
+          };
+        });
+
+        this.cdr.detectChanges();
+      },
+      error: (err) => console.error('Error cargando los datos del módulo productos:', err)
+    });
   }
 
   // Getters para el filtrado en tiempo real según la pestaña y texto ingresado
@@ -160,11 +176,16 @@ export class Productos implements OnInit {
     );
   }
 
-  cambiarPestana(pestana: string): void {
+  seleccionarPestana(pestana: string): void {
     this.pestanaActiva = pestana;
     this.filtroBusqueda = ''; // Limpia la búsqueda al cambiar de pestaña
     this.cerrarFormulario();
     this.cerrarDetalles();
+    this.cdr.detectChanges();
+  }
+
+  cambiarPestana(pestana: string): void {
+    this.seleccionarPestana(pestana);
   }
 
   verDetalles(item: any): void {
@@ -200,6 +221,7 @@ export class Productos implements OnInit {
       this.indiceEdicion = null;
       this.limpiarFormularios();
     }
+    this.cdr.detectChanges();
   }
 
   cerrarFormulario(): void {
@@ -208,14 +230,13 @@ export class Productos implements OnInit {
     this.editandoId = null;
     this.indiceEdicion = null;
     this.limpiarFormularios();
+    this.cdr.detectChanges();
   }
 
   limpiarFormularios(): void {
     this.itemForm = {
       id_inventario: null,
-      nombre_ingrediente: '',
-      id_categoria_inventario: '',
-      marca_ingrediente: '',
+      id_ingrediente: '',
       cantidad_actual: null,
       stock_minimo: null,
       id_unidad_medida: ''
@@ -240,31 +261,31 @@ export class Productos implements OnInit {
     };
   }
 
-  guardarTodo(): void {
+  guardarInventario(): void {
     if (this.pestanaActiva === 'inventario') {
-      if (!this.itemForm.nombre_ingrediente || this.itemForm.cantidad_actual === null) {
+      if (!this.itemForm.id_ingrediente || this.itemForm.cantidad_actual === null) {
         this.sweetAlert.warning('Campos incompletos', 'Llene los campos obligatorios del inventario.');
         return;
       }
 
-      const cat = this.categoriasInventario.find(c => c.id_categoria_inventario == this.itemForm.id_categoria_inventario);
-      const um = this.unidadesMedida.find(u => u.id_unidad_medida == this.itemForm.id_unidad_medida);
-
-      if (this.modoEdicion && this.indiceEdicion !== null && this.indiceEdicion > -1) {
-        this.inventario[this.indiceEdicion] = {
-          ...this.itemForm,
-          nombre_categoria: cat ? cat.nombre_categoria : 'General',
-          nombre_unidad: um ? um.nombre_unidad : 'Unidad'
-        };
-        this.sweetAlert.success('Actualizado', 'Insumo modificado con éxito.');
-      } else {
-        this.inventario.push({
-          ...this.itemForm,
-          id_inventario: this.inventario.length + 1,
-          nombre_categoria: cat ? cat.nombre_categoria : 'General',
-          nombre_unidad: um ? um.nombre_unidad : 'Unidad'
+      if (this.modoEdicion && this.itemForm.id_inventario) {
+        this.productoService.actualizarProducto(this.itemForm.id_inventario, this.itemForm).subscribe({
+          next: () => {
+            this.sweetAlert.success('Actualizado', 'Insumo modificado con éxito.');
+            this.cargarDatos();
+            this.cerrarFormulario();
+          },
+          error: (err) => this.sweetAlert.error('Error', 'No se pudo actualizar el inventario.')
         });
-        this.sweetAlert.success('Guardado', 'Insumo agregado al inventario.');
+      } else {
+        this.productoService.crearProducto(this.itemForm).subscribe({
+          next: () => {
+            this.sweetAlert.success('Guardado', 'Nuevo insumo agregado al inventario.');
+            this.cargarDatos();
+            this.cerrarFormulario();
+          },
+          error: (err) => this.sweetAlert.error('Error', 'No se pudo crear el insumo.')
+        });
       }
     } else if (this.pestanaActiva === 'movimientos') {
       if (!this.movimientoForm.id_ingrediente || !this.movimientoForm.cantidad) {
@@ -272,64 +293,52 @@ export class Productos implements OnInit {
         return;
       }
 
-      const ing = this.ingredientesDisponibles.find(i => i.id_ingrediente == this.movimientoForm.id_ingrediente);
-      const um = this.unidadesMedida.find(u => u.id_unidad_medida == this.movimientoForm.id_unidad_medida);
-
-      if (this.modoEdicion && this.indiceEdicion !== null && this.indiceEdicion > -1) {
-        this.movimientosInventario[this.indiceEdicion] = {
-          ...this.movimientoForm,
-          nombre_ingrediente: ing ? ing.nombre_ingrediente : 'Ingrediente',
-          nombre_unidad: um ? um.nombre_unidad : 'Unidad'
-        };
-        this.sweetAlert.success('Actualizado', 'Movimiento modificado con éxito.');
+      if (this.modoEdicion && this.movimientoForm.id_movimiento_inventario) {
+        this.sweetAlert.warning('No soportado', 'Editar movimientos directamente no está permitido por seguridad. Considere anular y crear uno nuevo.');
       } else {
-        this.movimientosInventario.push({
-          ...this.movimientoForm,
-          id_movimiento_inventario: this.movimientosInventario.length + 1,
-          nombre_ingrediente: ing ? ing.nombre_ingrediente : 'Ingrediente',
-          fecha: new Date().toISOString().split('T')[0],
-          nombre_unidad: um ? um.nombre_unidad : 'Unidad'
+        this.productoService.crearMovimiento(this.movimientoForm).subscribe({
+          next: () => {
+            this.sweetAlert.success('Registrado', 'Movimiento de inventario guardado.');
+            this.cargarDatos();
+            this.cerrarFormulario();
+          },
+          error: (err) => this.sweetAlert.error('Error', 'No se pudo registrar el movimiento.')
         });
-        this.sweetAlert.success('Registrado', 'Movimiento de inventario guardado.');
       }
     } else if (this.pestanaActiva === 'gramajes') {
-      if (!this.gramajeForm.id_ingrediente || !this.gramajeForm.cantidad_gramaje) {
-        this.sweetAlert.warning('Campos incompletos', 'Complete los datos del gramaje.');
-        return;
-      }
-
-      const ing = this.ingredientesDisponibles.find(i => i.id_ingrediente == this.gramajeForm.id_ingrediente);
-      const um = this.unidadesMedida.find(u => u.id_unidad_medida == this.gramajeForm.id_unidad_medida);
-
-      if (this.modoEdicion && this.indiceEdicion !== null && this.indiceEdicion > -1) {
-        this.gramajes[this.indiceEdicion] = {
-          ...this.gramajeForm,
-          nombre_ingrediente: ing ? ing.nombre_ingrediente : 'Ingrediente',
-          nombre_unidad: um ? um.nombre_unidad : 'Gramos'
-        };
-        this.sweetAlert.success('Actualizado', 'Gramaje modificado con éxito.');
-      } else {
-        this.gramajes.push({
-          ...this.gramajeForm,
-          id_gramaje: this.gramajes.length + 1,
-          nombre_ingrediente: ing ? ing.nombre_ingrediente : 'Ingrediente',
-          nombre_unidad: um ? um.nombre_unidad : 'Gramos'
-        });
-        this.sweetAlert.success('Registrado', 'Gramaje guardado correctamente.');
-      }
+      this.sweetAlert.success('Simulado', 'La funcionalidad de gramajes será conectada al backend próximamente.');
+      this.cerrarFormulario();
     }
-
-    this.cerrarFormulario();
   }
 
   eliminarItem(lista: any[], item: any): void {
     this.sweetAlert.confirm('¿Eliminar?', '¿Desea eliminar este registro?', 'Sí, eliminar').then((res: any) => {
       if (res.isConfirmed) {
-        const index = lista.indexOf(item);
-        if (index > -1) {
-          lista.splice(index, 1);
+        if (this.pestanaActiva === 'inventario') {
+          this.productoService.eliminarProducto(item.id_inventario).subscribe({
+            next: () => {
+              this.sweetAlert.success('Eliminado', 'El registro fue borrado.');
+              this.cargarDatos();
+            },
+            error: () => this.sweetAlert.error('Error', 'No se pudo eliminar el inventario.')
+          });
+        } else if (this.pestanaActiva === 'movimientos') {
+          this.productoService.eliminarMovimiento(item.id_movimiento_inventario).subscribe({
+            next: () => {
+              this.sweetAlert.success('Eliminado', 'El movimiento fue borrado.');
+              this.cargarDatos();
+            },
+            error: () => this.sweetAlert.error('Error', 'No se pudo eliminar el movimiento.')
+          });
+        } else {
+          // gramajes simulado
+          const index = lista.indexOf(item);
+          if (index > -1) {
+            lista.splice(index, 1);
+          }
+          this.sweetAlert.success('Eliminado', 'Registro borrado con éxito.');
+          this.cdr.detectChanges();
         }
-        this.sweetAlert.success('Eliminado', 'Registro borrado con éxito.');
       }
     });
   }
