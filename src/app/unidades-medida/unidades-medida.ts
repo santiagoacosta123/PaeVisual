@@ -20,7 +20,7 @@ export class UnidadesMedidaComponent implements OnInit {
   idSeleccionado: number | null = null;
 
   unidadForm = {
-    nombre_unidad: '',
+    nombre: '',
     abreviatura: ''
   };
 
@@ -54,7 +54,7 @@ export class UnidadesMedidaComponent implements OnInit {
   }
 
   guardarUnidad(): void {
-    if (!this.unidadForm.nombre_unidad.trim()) {
+    if (!this.unidadForm.nombre.trim()) {
       this.sweetAlert.warning(
         'Campo obligatorio',
         'Por favor ingresa el nombre de la unidad.'
@@ -84,7 +84,7 @@ export class UnidadesMedidaComponent implements OnInit {
         next: (creada: any) => {
           this.sweetAlert.success(
             'Unidad creada',
-            `La unidad "${creada.nombre_unidad}" fue registrada con éxito.`
+            `La unidad "${creada.nombre}" fue registrada con éxito.`
           );
           this.limpiarFormulario();
           this.cargarUnidades();
@@ -101,7 +101,7 @@ export class UnidadesMedidaComponent implements OnInit {
     this.modoEdicion = true;
     this.idSeleccionado = unidad.id_unidad_medida;
     this.unidadForm = {
-      nombre_unidad: unidad.nombre_unidad,
+      nombre: unidad.nombre,
       abreviatura: unidad.abreviatura || ''
     };
   }
@@ -114,7 +114,7 @@ export class UnidadesMedidaComponent implements OnInit {
 
   limpiarFormulario(): void {
     this.unidadForm = {
-      nombre_unidad: '',
+      nombre: '',
       abreviatura: ''
     };
   }
@@ -124,7 +124,7 @@ export class UnidadesMedidaComponent implements OnInit {
     this.sweetAlert
       .confirm(
         '¿Eliminar unidad?',
-        `¿Estás seguro de eliminar "${unidad.nombre_unidad}"?`,
+        `¿Estás seguro de eliminar "${unidad.nombre}"?`,
         'Sí, eliminar'
       )
       .then((resultado) => {

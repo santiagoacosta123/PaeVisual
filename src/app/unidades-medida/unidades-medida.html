@@ -16,7 +16,7 @@
 
   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
     <input
-      [(ngModel)]="unidadForm.nombre_unidad"
+      [(ngModel)]="unidadForm.nombre"
       class="border p-3 rounded-[16px]"
       placeholder="Nombre de la unidad (ej: Kilogramo)"
     />
@@ -54,7 +54,7 @@
           #{{ unidad.id_unidad_medida }}
         </td>
         <td class="p-4 font-semibold text-slate-800">
-          {{ unidad.nombre_unidad }}
+          {{ unidad.nombre }}
         </td>
         <td class="p-4">
           <span class="bg-amber-100 text-amber-800 px-3 py-1 rounded-full font-bold text-xs">

@@ -8,10 +8,10 @@ import { Observable } from 'rxjs';
 export class ProductoService {
 
   
- private apiInventario = 'https://backend-sirae-t9zi.onrender.com/api/inventario/';
-  private apiIngredientes = 'https://backend-sirae-t9zi.onrender.com/api/ingredientes/';
-  private apiUnidades = 'https://backend-sirae-t9zi.onrender.com/api/unidades_medida/';
-  private apiCategorias = 'https://backend-sirae-t9zi.onrender.com/api/categorias-inventario/';
+ private apiInventario = 'https://backend-sirae-pyim.onrender.com/api/inventario/';
+  private apiIngredientes = 'https://backend-sirae-pyim.onrender.com/api/ingredientes/';
+  private apiUnidades = 'https://backend-sirae-pyim.onrender.com/api/unidades_medida/';
+  private apiCategorias = 'https://backend-sirae-pyim.onrender.com/api/categorias-inventario/';
   constructor(private http: HttpClient) {}
 
   // INVENTARIO

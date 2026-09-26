@@ -67,17 +67,18 @@
     <div *ngIf="pestanaActiva === 'platos'" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       <div>
         <label class="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">Sección de Menú</label>
-        <select [(ngModel)]="platoForm.id_seccion" name="id_seccion" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#FAB41F] focus:outline-none transition">
+        <select [(ngModel)]="platoForm.id_seccion" name="id_seccion" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-600 focus:bg-white focus:ring-2 focus:ring-[#FAB41F] focus:outline-none transition">
+          <option value="" disabled selected>Seleccione una sección...</option>
           <option *ngFor="let sec of seccionesMenu" [value]="sec.id_seccion">{{ sec.nombre_seccion }}</option>
         </select>
       </div>
       <div>
         <label class="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">Nombre del Plato</label>
-        <input type="text" [(ngModel)]="platoForm.nombre_plato" name="nombre_plato" placeholder="Ej. Seco de Pollo" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#FAB41F] focus:outline-none transition">
+        <input type="text" [(ngModel)]="platoForm.nombre_plato" name="nombre_plato" placeholder="Ej. Seco de Pollo" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-600 focus:bg-white focus:ring-2 focus:ring-[#FAB41F] focus:outline-none transition">
       </div>
       <div>
         <label class="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">Componente</label>
-        <input type="text" [(ngModel)]="platoForm.componente" name="componente" placeholder="Ej. Proteína / Cereal" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#FAB41F] focus:outline-none transition">
+        <input type="text" [(ngModel)]="platoForm.componente" name="componente" placeholder="Ej. Proteína / Cereal" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-600 focus:bg-white focus:ring-2 focus:ring-[#FAB41F] focus:outline-none transition">
       </div>
     </div>
 
@@ -173,11 +174,14 @@
         </thead>
         <tbody class="divide-y divide-slate-100">
           <tr *ngFor="let p of platos" class="hover:bg-slate-50/50 transition-colors">
-            <td class="px-6 py-4 font-bold text-slate-800">{{ p.nombre_seccion }}</td>
+            <td class="px-6 py-4 font-bold text-slate-800">{{ getNombreSeccion(p.id_seccion) }}</td>
             <td class="px-6 py-4 font-extrabold text-amber-600">{{ p.nombre_plato }}</td>
             <td class="px-6 py-4 text-slate-600">{{ p.componente }}</td>
             <td class="px-6 py-4 text-center">
               <div class="flex items-center justify-center gap-1">
+                <button (click)="abrirDetalle(p)" class="w-8 h-8 rounded-lg hover:bg-blue-50 text-blue-500 transition flex items-center justify-center cursor-pointer" title="Ver Detalles">
+                  <span class="material-symbols-outlined text-[18px]">visibility</span>
+                </button>
                 <button (click)="abrirEdicion(p)" class="w-8 h-8 rounded-lg hover:bg-amber-50 text-amber-600 transition flex items-center justify-center cursor-pointer" title="Editar">
                   <span class="material-symbols-outlined text-[18px]">edit</span>
                 </button>
@@ -232,6 +236,90 @@
       </table>
     </div>
 
+  </div>
+
+  <!-- Modal Detalle Plato -->
+  <div *ngIf="mostrarDetallePlato" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-3xl flex flex-col max-h-[90vh] overflow-hidden border border-slate-200">
+      
+      <!-- Header Modal -->
+      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center text-amber-600">
+            <span class="material-symbols-outlined">restaurant</span>
+          </div>
+          <div>
+            <h2 class="text-lg font-black text-slate-800">Detalles de Preparación</h2>
+            <p class="text-xs font-semibold text-slate-500">{{ platoSeleccionado?.nombre_plato }} - {{ platoSeleccionado?.componente }}</p>
+          </div>
+        </div>
+        <button (click)="cerrarDetalle()" class="w-8 h-8 rounded-lg hover:bg-slate-200 text-slate-500 flex items-center justify-center transition cursor-pointer">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <!-- Body Modal -->
+      <div class="p-6 overflow-y-auto space-y-6 bg-white flex-1">
+        
+        <!-- Formulario Detalle -->
+        <div class="bg-slate-50 p-5 rounded-xl border border-slate-200">
+          <h3 class="text-[11px] font-black uppercase tracking-wider text-slate-500 mb-4">Agregar Detalle</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+            <div>
+              <label class="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1">ID Menú</label>
+              <input type="number" [(ngModel)]="detalleForm.id_menu" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#FAB41F]">
+            </div>
+            <div>
+              <label class="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1">Porción/Niño</label>
+              <input type="number" [(ngModel)]="detalleForm.porcion_por_nino" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#FAB41F]">
+            </div>
+            <div>
+              <label class="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1">Total a Preparar</label>
+              <input type="number" [(ngModel)]="detalleForm.total_a_preparar" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#FAB41F]">
+            </div>
+            <div>
+              <label class="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1">Unidad</label>
+              <input type="text" [(ngModel)]="detalleForm.unidad_total" placeholder="Ej. L, kg" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#FAB41F]">
+            </div>
+          </div>
+          <div class="mt-4 flex justify-end">
+            <button (click)="guardarDetalle()" class="bg-[#FAB41F] text-slate-900 font-bold px-4 py-2 rounded-lg text-xs hover:bg-[#e2a21b] transition">Guardar Detalle</button>
+          </div>
+        </div>
+
+        <!-- Lista de Detalles -->
+        <div>
+          <h3 class="text-[11px] font-black uppercase tracking-wider text-slate-500 mb-3">Detalles Registrados</h3>
+          <div class="overflow-x-auto rounded-xl border border-slate-200">
+            <table class="w-full text-xs text-left">
+              <thead class="bg-slate-50 text-slate-500 font-black uppercase tracking-wider">
+                <tr>
+                  <th class="px-4 py-3">ID Menú</th>
+                  <th class="px-4 py-3">Porción / Niño</th>
+                  <th class="px-4 py-3">Total Preparar</th>
+                  <th class="px-4 py-3 text-center">Acciones</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 bg-white">
+                <tr *ngIf="detallesPlato.length === 0">
+                  <td colspan="4" class="px-4 py-6 text-center text-slate-400 italic">No hay detalles registrados para este plato.</td>
+                </tr>
+                <tr *ngFor="let det of detallesPlato" class="hover:bg-slate-50/50">
+                  <td class="px-4 py-3 font-bold">Menú #{{ det.id_menu }}</td>
+                  <td class="px-4 py-3">{{ det.porcion_por_nino }}</td>
+                  <td class="px-4 py-3 font-semibold text-amber-600">{{ det.total_a_preparar }} {{ det.unidad_total }}</td>
+                  <td class="px-4 py-3 text-center">
+                    <button (click)="eliminarDetalle(det.id_detalle_plato)" class="text-red-500 hover:text-red-700 transition" title="Eliminar">
+                      <span class="material-symbols-outlined text-[16px]">delete</span>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
 </div>

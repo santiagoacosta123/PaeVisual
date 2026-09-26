@@ -8,7 +8,7 @@ import { UsuarioModel } from '../models/usuario.model';
 })
 export class UsuarioService {
 
-private apiUrl = 'https://backend-sirae-t9zi.onrender.com/api/usuarios/';  constructor(private http: HttpClient) {}
+private apiUrl = 'https://backend-sirae-pyim.onrender.com/api/usuarios/';  constructor(private http: HttpClient) {}
   getUsuarios(): Observable<UsuarioModel[]> {
     return this.http.get<UsuarioModel[]>(this.apiUrl);
   }

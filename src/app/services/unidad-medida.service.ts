@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 
 export interface UnidadMedida {
   id_unidad_medida?: number;
-  nombre_unidad: string;
+  nombre: string;
   abreviatura?: string;
 }
 
@@ -13,8 +13,8 @@ export interface UnidadMedida {
 })
 export class UnidadMedidaService {
 
-  private readonly apiUrl = 'https://backend-sirae-t9zi.onrender.com/api/unidades_medida/';
-
+  private readonly apiUrl = 'https://backend-sirae-pyim.onrender.com/api/unidades_medida/';
+  
   constructor(private http: HttpClient) {}
 
   getUnidades(): Observable<UnidadMedida[]> {
@@ -22,7 +22,7 @@ export class UnidadMedidaService {
   }
 
   getUnidad(id: number): Observable<UnidadMedida> {
-    return this.http.get<UnidadMedida>(`${this.apiUrl}${id}/`);
+    return this.http.get<UnidadMedida>("/");
   }
 
   crearUnidad(unidad: UnidadMedida): Observable<UnidadMedida> {
@@ -30,10 +30,11 @@ export class UnidadMedidaService {
   }
 
   actualizarUnidad(id: number, unidad: UnidadMedida): Observable<UnidadMedida> {
-    return this.http.put<UnidadMedida>(`${this.apiUrl}${id}/`, unidad);
+    return this.http.put<UnidadMedida>("/", unidad);
   }
 
   eliminarUnidad(id: number): Observable<any> {
-    return this.http.delete<any>(`${this.apiUrl}${id}/`);
+    return this.http.delete<any>("/");
   }
 }
+

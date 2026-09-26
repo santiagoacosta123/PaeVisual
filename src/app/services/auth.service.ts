@@ -13,7 +13,7 @@ interface LoginResponse {
   providedIn: 'root'
 })
 export class AuthService {
-  private apiUrl = 'https://backend-sirae-t9zi.onrender.com/api/auth/login/';  
+  private apiUrl = 'https://backend-sirae-pyim.onrender.com/api/auth/login/';  
   private readonly ACCESS_TOKEN = 'access_token';
   private readonly REFRESH_TOKEN = 'refresh_token';
   private readonly USUARIO = 'usuario';
