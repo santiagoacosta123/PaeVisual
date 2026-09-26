@@ -19,73 +19,29 @@ export class Productos implements OnInit {
   movimientosInventario: any[] = [];
   gramajes: any[] = [];
 
-  // Categorías escritas directamente en el código
+  // Categorías de prueba
   categoriasInventario: any[] = [
-    {
-      id_categoria_inventario: 1,
-      nombre_categoria: 'Granos y Cereales'
-    },
-    {
-      id_categoria_inventario: 2,
-      nombre_categoria: 'Proteínas y Carnes'
-    },
-    {
-      id_categoria_inventario: 3,
-      nombre_categoria: 'Abarrotes'
-    },
-    {
-      id_categoria_inventario: 4,
-      nombre_categoria: 'Frutas y Verduras'
-    }
+    { id_categoria_inventario: 1, nombre_categoria: 'Granos y Cereales' },
+    { id_categoria_inventario: 2, nombre_categoria: 'Proteínas y Carnes' },
+    { id_categoria_inventario: 3, nombre_categoria: 'Abarrotes' },
+    { id_categoria_inventario: 4, nombre_categoria: 'Frutas y Verduras' }
   ];
 
-  // Unidades escritas directamente en el código
+  // Unidades de medida de prueba
   unidadesMedida: any[] = [
-    {
-      id_unidad_medida: 1,
-      nombre_unidad: 'Kilogramos',
-      abreviatura: 'kg'
-    },
-    {
-      id_unidad_medida: 2,
-      nombre_unidad: 'Gramos',
-      abreviatura: 'g'
-    },
-    {
-      id_unidad_medida: 3,
-      nombre_unidad: 'Litros',
-      abreviatura: 'L'
-    },
-    {
-      id_unidad_medida: 4,
-      nombre_unidad: 'Mililitros',
-      abreviatura: 'ml'
-    },
-    {
-      id_unidad_medida: 5,
-      nombre_unidad: 'Unidades',
-      abreviatura: 'und'
-    }
+    { id_unidad_medida: 1, nombre_unidad: 'Kilogramos', abreviatura: 'kg' },
+    { id_unidad_medida: 2, nombre_unidad: 'Gramos', abreviatura: 'g' },
+    { id_unidad_medida: 3, nombre_unidad: 'Litros', abreviatura: 'L' },
+    { id_unidad_medida: 4, nombre_unidad: 'Mililitros', abreviatura: 'ml' },
+    { id_unidad_medida: 5, nombre_unidad: 'Unidades', abreviatura: 'und' }
   ];
 
-  // Ingredientes escritos directamente en el código
+  // Ingredientes disponibles
   ingredientesDisponibles: any[] = [
-    {
-      id_ingrediente: 1,
-      nombre_ingrediente: 'Arroz Diana'
-    },
-    {
-      id_ingrediente: 2,
-      nombre_ingrediente: 'Pechuga de Pollo'
-    },
-    {
-      id_ingrediente: 3,
-      nombre_ingrediente: 'Frijol'
-    },
-    {
-      id_ingrediente: 4,
-      nombre_ingrediente: 'Lentejas'
-    }
+    { id_ingrediente: 1, nombre_ingrediente: 'Arroz Diana' },
+    { id_ingrediente: 2, nombre_ingrediente: 'Pechuga de Pollo' },
+    { id_ingrediente: 3, nombre_ingrediente: 'Frijol' },
+    { id_ingrediente: 4, nombre_ingrediente: 'Lentejas' }
   ];
 
   mostrarFormulario = false;
@@ -127,7 +83,6 @@ export class Productos implements OnInit {
   constructor(private sweetAlert: SweetAlertService) {}
 
   ngOnInit(): void {
-    // Datos iniciales de prueba para inventario
     this.inventario = [
       {
         id_inventario: 1,
@@ -142,7 +97,6 @@ export class Productos implements OnInit {
       }
     ];
 
-    // Datos iniciales de prueba para movimientos
     this.movimientosInventario = [
       {
         id_movimiento_inventario: 1,
@@ -157,7 +111,6 @@ export class Productos implements OnInit {
       }
     ];
 
-    // Datos iniciales de prueba para gramajes
     this.gramajes = [
       {
         id_gramaje: 1,
@@ -241,190 +194,80 @@ export class Productos implements OnInit {
 
   guardarTodo(): void {
     if (this.pestanaActiva === 'inventario') {
-      if (
-        !this.itemForm.nombre_ingrediente ||
-        this.itemForm.cantidad_actual === null
-      ) {
-        this.sweetAlert.warning(
-          'Campos incompletos',
-          'Llene los campos obligatorios del inventario.'
-        );
+      if (!this.itemForm.nombre_ingrediente || this.itemForm.cantidad_actual === null) {
+        this.sweetAlert.warning('Campos incompletos', 'Llene los campos obligatorios del inventario.');
         return;
       }
 
-      const cat = this.categoriasInventario.find(
-        c =>
-          c.id_categoria_inventario ==
-          this.itemForm.id_categoria_inventario
-      );
+      const cat = this.categoriasInventario.find(c => c.id_categoria_inventario == this.itemForm.id_categoria_inventario);
+      const um = this.unidadesMedida.find(u => u.id_unidad_medida == this.itemForm.id_unidad_medida);
 
-      const um = this.unidadesMedida.find(
-        u =>
-          u.id_unidad_medida ==
-          this.itemForm.id_unidad_medida
-      );
-
-      if (
-        this.modoEdicion &&
-        this.indiceEdicion !== null &&
-        this.indiceEdicion > -1
-      ) {
+      if (this.modoEdicion && this.indiceEdicion !== null && this.indiceEdicion > -1) {
         this.inventario[this.indiceEdicion] = {
           ...this.itemForm,
-          nombre_categoria: cat
-            ? cat.nombre_categoria
-            : 'General',
-          nombre_unidad: um
-            ? um.nombre_unidad
-            : 'Unidad'
+          nombre_categoria: cat ? cat.nombre_categoria : 'General',
+          nombre_unidad: um ? um.nombre_unidad : 'Unidad'
         };
-
-        this.sweetAlert.success(
-          'Actualizado',
-          'Insumo modificado con éxito.'
-        );
+        this.sweetAlert.success('Actualizado', 'Insumo modificado con éxito.');
       } else {
         this.inventario.push({
           ...this.itemForm,
           id_inventario: this.inventario.length + 1,
-          nombre_categoria: cat
-            ? cat.nombre_categoria
-            : 'General',
-          nombre_unidad: um
-            ? um.nombre_unidad
-            : 'Unidad'
+          nombre_categoria: cat ? cat.nombre_categoria : 'General',
+          nombre_unidad: um ? um.nombre_unidad : 'Unidad'
         });
-
-        this.sweetAlert.success(
-          'Guardado',
-          'Insumo agregado al inventario.'
-        );
+        this.sweetAlert.success('Guardado', 'Insumo agregado al inventario.');
       }
-    }
-
-    else if (this.pestanaActiva === 'movimientos') {
-      if (
-        !this.movimientoForm.id_ingrediente ||
-        !this.movimientoForm.cantidad
-      ) {
-        this.sweetAlert.warning(
-          'Campos incompletos',
-          'Complete los datos del movimiento.'
-        );
+    } else if (this.pestanaActiva === 'movimientos') {
+      if (!this.movimientoForm.id_ingrediente || !this.movimientoForm.cantidad) {
+        this.sweetAlert.warning('Campos incompletos', 'Complete los datos del movimiento.');
         return;
       }
 
-      const ing = this.ingredientesDisponibles.find(
-        i =>
-          i.id_ingrediente ==
-          this.movimientoForm.id_ingrediente
-      );
+      const ing = this.ingredientesDisponibles.find(i => i.id_ingrediente == this.movimientoForm.id_ingrediente);
+      const um = this.unidadesMedida.find(u => u.id_unidad_medida == this.movimientoForm.id_unidad_medida);
 
-      const um = this.unidadesMedida.find(
-        u =>
-          u.id_unidad_medida ==
-          this.movimientoForm.id_unidad_medida
-      );
-
-      if (
-        this.modoEdicion &&
-        this.indiceEdicion !== null &&
-        this.indiceEdicion > -1
-      ) {
+      if (this.modoEdicion && this.indiceEdicion !== null && this.indiceEdicion > -1) {
         this.movimientosInventario[this.indiceEdicion] = {
           ...this.movimientoForm,
-          nombre_ingrediente: ing
-            ? ing.nombre_ingrediente
-            : 'Ingrediente',
-          nombre_unidad: um
-            ? um.nombre_unidad
-            : 'Unidad'
+          nombre_ingrediente: ing ? ing.nombre_ingrediente : 'Ingrediente',
+          nombre_unidad: um ? um.nombre_unidad : 'Unidad'
         };
-
-        this.sweetAlert.success(
-          'Actualizado',
-          'Movimiento modificado con éxito.'
-        );
+        this.sweetAlert.success('Actualizado', 'Movimiento modificado con éxito.');
       } else {
         this.movimientosInventario.push({
           ...this.movimientoForm,
-          id_movimiento_inventario:
-            this.movimientosInventario.length + 1,
-          nombre_ingrediente: ing
-            ? ing.nombre_ingrediente
-            : 'Ingrediente',
+          id_movimiento_inventario: this.movimientosInventario.length + 1,
+          nombre_ingrediente: ing ? ing.nombre_ingrediente : 'Ingrediente',
           fecha: new Date().toISOString().split('T')[0],
-          nombre_unidad: um
-            ? um.nombre_unidad
-            : 'Unidad'
+          nombre_unidad: um ? um.nombre_unidad : 'Unidad'
         });
-
-        this.sweetAlert.success(
-          'Registrado',
-          'Movimiento de inventario guardado.'
-        );
+        this.sweetAlert.success('Registrado', 'Movimiento de inventario guardado.');
       }
-    }
-
-    else if (this.pestanaActiva === 'gramajes') {
-      if (
-        !this.gramajeForm.id_ingrediente ||
-        !this.gramajeForm.cantidad_gramaje
-      ) {
-        this.sweetAlert.warning(
-          'Campos incompletos',
-          'Complete los datos del gramaje.'
-        );
+    } else if (this.pestanaActiva === 'gramajes') {
+      if (!this.gramajeForm.id_ingrediente || !this.gramajeForm.cantidad_gramaje) {
+        this.sweetAlert.warning('Campos incompletos', 'Complete los datos del gramaje.');
         return;
       }
 
-      const ing = this.ingredientesDisponibles.find(
-        i =>
-          i.id_ingrediente ==
-          this.gramajeForm.id_ingrediente
-      );
+      const ing = this.ingredientesDisponibles.find(i => i.id_ingrediente == this.gramajeForm.id_ingrediente);
+      const um = this.unidadesMedida.find(u => u.id_unidad_medida == this.gramajeForm.id_unidad_medida);
 
-      const um = this.unidadesMedida.find(
-        u =>
-          u.id_unidad_medida ==
-          this.gramajeForm.id_unidad_medida
-      );
-
-      if (
-        this.modoEdicion &&
-        this.indiceEdicion !== null &&
-        this.indiceEdicion > -1
-      ) {
+      if (this.modoEdicion && this.indiceEdicion !== null && this.indiceEdicion > -1) {
         this.gramajes[this.indiceEdicion] = {
           ...this.gramajeForm,
-          nombre_ingrediente: ing
-            ? ing.nombre_ingrediente
-            : 'Ingrediente',
-          nombre_unidad: um
-            ? um.nombre_unidad
-            : 'Gramos'
+          nombre_ingrediente: ing ? ing.nombre_ingrediente : 'Ingrediente',
+          nombre_unidad: um ? um.nombre_unidad : 'Gramos'
         };
-
-        this.sweetAlert.success(
-          'Actualizado',
-          'Gramaje modificado con éxito.'
-        );
+        this.sweetAlert.success('Actualizado', 'Gramaje modificado con éxito.');
       } else {
         this.gramajes.push({
           ...this.gramajeForm,
           id_gramaje: this.gramajes.length + 1,
-          nombre_ingrediente: ing
-            ? ing.nombre_ingrediente
-            : 'Ingrediente',
-          nombre_unidad: um
-            ? um.nombre_unidad
-            : 'Gramos'
+          nombre_ingrediente: ing ? ing.nombre_ingrediente : 'Ingrediente',
+          nombre_unidad: um ? um.nombre_unidad : 'Gramos'
         });
-
-        this.sweetAlert.success(
-          'Registrado',
-          'Gramaje guardado correctamente.'
-        );
+        this.sweetAlert.success('Registrado', 'Gramaje guardado correctamente.');
       }
     }
 
@@ -432,25 +275,14 @@ export class Productos implements OnInit {
   }
 
   eliminarItem(lista: any[], item: any): void {
-    this.sweetAlert
-      .confirm(
-        '¿Eliminar?',
-        '¿Desea eliminar este registro?',
-        'Sí, eliminar'
-      )
-      .then((res: any) => {
-        if (res.isConfirmed) {
-          const index = lista.indexOf(item);
-
-          if (index > -1) {
-            lista.splice(index, 1);
-          }
-
-          this.sweetAlert.success(
-            'Eliminado',
-            'Registro borrado con éxito.'
-          );
+    this.sweetAlert.confirm('¿Eliminar?', '¿Desea eliminar este registro?', 'Sí, eliminar').then((res: any) => {
+      if (res.isConfirmed) {
+        const index = lista.indexOf(item);
+        if (index > -1) {
+          lista.splice(index, 1);
         }
-      });
+        this.sweetAlert.success('Eliminado', 'Registro borrado con éxito.');
+      }
+    });
   }
 }
