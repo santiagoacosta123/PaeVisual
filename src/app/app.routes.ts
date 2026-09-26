@@ -16,6 +16,7 @@ import { UnidadesMedidaComponent } from './unidades-medida/unidades-medida';
 import { MenusComponent } from './menus/menus';
 import { AsistenciaComponent } from './asistencia/asistencia';
 import { EntregasComponent } from './entregas/entregas';
+import { ContratoDetalleComponent } from './contrato-detalle/contrato-detalle';
 
 export const routes: Routes = [
 
@@ -48,6 +49,11 @@ export const routes: Routes = [
       {
         path: 'contratos',
         component: ContratosComponent
+      },
+
+      {
+        path: 'contratos/:id/detalle',
+        component: ContratoDetalleComponent
       },
 
       {

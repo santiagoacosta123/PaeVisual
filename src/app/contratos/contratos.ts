@@ -1,6 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+import { SiraeService } from '../services/contratos_pae.service';
 
 @Component({
   selector: 'app-gestion-contratos',
@@ -9,43 +11,103 @@ import { FormsModule } from '@angular/forms';
   templateUrl: './contratos.html',
   styleUrls: ['./contratos.css']
 })
-export class ContratosComponent {
-  pestanaActiva: string = 'contratos';
+export class ContratosComponent implements OnInit {
 
-  // Barras de búsqueda independientes
-  filtroBusquedaContratos: string = '';
-  filtroBusquedaTareas: string = '';
-  filtroBusquedaJornadas: string = '';
-  filtroBusquedaSecciones: string = '';
+  constructor(
+    private router: Router,
+    private siraeService: SiraeService,
+    private cdr: ChangeDetectorRef // <--- Inyectado para forzar renderizado inmediato
+  ) { }
 
-  // Estados de modales
-  modalContratoAbierto: boolean = false;
-  modoEdicionContrato: boolean = false;
+  ngOnInit() {
+    this.cargarContratos();
+    this.cargarDatosMaestros();
+  }
 
-  modalTareaAbierto: boolean = false;
-  modoEdicionTarea: boolean = false;
+  cargarContratos() {
+    this.siraeService.getContratos().subscribe({
+      next: (data: any) => {
+        // Soporta array directo o respuesta paginada con .results
+        const lista = Array.isArray(data) ? data : (data.results || []);
 
-  modalJornadaAbierto: boolean = false;
-  modoEdicionJornada: boolean = false;
+        this.contratos = lista.map((c: any) => ({
+          id: c.id_contrato || c.id,
+          codigo: c.numero_cor || c.codigo,
+          institucion: c.institucion,
+          fechaInicio: c.fecha_inicio,
+          fechaFin: c.fecha_fin,
+          estado: c.estado,
+          zona: c.zona,
+          expandido: false
+        }));
 
-  modalSeccionAbierto: boolean = false;
-  modoEdicionSeccion: boolean = false;
+        this.cdr.detectChanges(); // <--- Fuerza a Angular a pintar la tabla al instante
+      },
+      error: (error) => {
+        console.error('Error al cargar contratos desde la API', error);
+      }
+    });
+  }
 
-  contratoActual: any = { 
-    id: null, 
-    codigo: '', 
-    institucion: '', 
-    fechaInicio: '2026-01-01', 
-    fechaFin: '2026-12-31', 
-    estado: 'Activo' 
-  };
+  cargarDatosMaestros() {
+    this.siraeService.getJornadas().subscribe({
+      next: (datos: any) => {
+        const res = Array.isArray(datos) ? datos : (datos.results || []);
+        this.jornadas = res.map((j: any) => ({
+          id: j.id_jornada || j.id,
+          nombre: j.nombre_jornada || j.nombre,
+          estado: 'Activa'
+        }));
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.warn('Usando jornadas de prueba temporalmente', err);
+        this.cdr.detectChanges();
+      }
+    });
 
-  tareaActual: any = {
+    this.siraeService.getSeccionesMenu().subscribe({
+      next: (datos: any) => {
+        const res = Array.isArray(datos) ? datos : (datos.results || []);
+        this.secciones = res.map((s: any) => ({
+          id: s.id_seccion || s.id,
+          nombre: s.nombre_seccion || s.nombre,
+          jornada: s.jornada,
+          estado: 'Activa'
+        }));
+        this.cdr.detectChanges();
+      },
+      error: (err) => console.warn('Usando secciones de prueba temporalmente', err)
+    });
+  }
+
+  pestanaActiva = 'contratos';
+
+  filtroBusquedaContratos = '';
+  filtroBusquedaJornadas = '';
+  filtroBusquedaSecciones = '';
+  filtroBusquedaTurnos = '';
+
+  modalContratoAbierto = false;
+  modoEdicionContrato = false;
+
+  modalJornadaAbierto = false;
+  modoEdicionJornada = false;
+
+  modalSeccionAbierto = false;
+  modoEdicionSeccion = false;
+
+  modalTurnoAbierto = false;
+  modoEdicionTurno = false;
+
+  contratoActual: any = {
     id: null,
-    tarea: '',
-    responsable: '',
-    fechaLimite: '',
-    estado: 'Pendiente'
+    codigo: '',
+    institucion: '',
+    fechaInicio: '2026-01-01',
+    fechaFin: '2026-12-31',
+    estado: 'Activo',
+    zona: ''
   };
 
   jornadaActual: any = {
@@ -61,117 +123,87 @@ export class ContratosComponent {
     estado: 'Activa'
   };
 
-  // Lista de contratos
-  contratos = [
-    { 
-      id: 1, 
-      codigo: 'COR-2026-001', 
-      institucion: 'I.E. San Agustín', 
-      fechaInicio: '2026-01-01', 
-      fechaFin: '2026-12-31', 
-      estado: 'Activo',
-      expandido: false,
-      tareas: [
-        { id: 101, tarea: 'Supervisión de raciones PAE', responsable: 'Carlos Pérez', fechaLimite: '2026-04-10', estado: 'Pendiente' },
-        { id: 102, tarea: 'Revisión de inventario inicial', responsable: 'Ana Gómez', fechaLimite: '2026-01-05', estado: 'Completado' }
-      ]
-    },
-    { 
-      id: 2, 
-      codigo: 'COR-2026-002', 
-      institucion: 'I.E. Simón Bolívar', 
-      fechaInicio: '2026-02-15', 
-      fechaFin: '2026-11-15', 
-      estado: 'Activo',
-      expandido: false,
-      tareas: [
-        { id: 103, tarea: 'Auditoría de entregas de alimentos', responsable: 'Luisa Martínez', fechaLimite: '2026-05-20', estado: 'En proceso' }
-      ]
-    }
-  ];
+  turnoActual: any = {
+    id: null,
+    nombre: '',
+    horaInicio: '',
+    horaFin: ''
+  };
 
-  jornadas = [
-    { id: 1, nombre: 'Mañana', estado: 'Activa' },
-    { id: 2, nombre: 'Tarde', estado: 'Activa' }
-  ];
-
-  secciones = [
-    { id: 1, nombre: 'Desayuno', jornada: 'Mañana', estado: 'Activa' },
-    { id: 2, nombre: 'Almuerzo', jornada: 'Tarde', estado: 'Activa' },
-    { id: 3, nombre: 'Merienda', jornada: 'Mañana', estado: 'Activa' },
-    { id: 4, nombre: 'Refrigerio', jornada: 'Tarde', estado: 'Activa' }
-  ];
-
-  // Getter para todas las tareas centralizadas de la pestaña Asignar Tareas
-  get todasLasTareas() {
-    let lista: any[] = [];
-    this.contratos.forEach(c => {
-      c.tareas.forEach(t => {
-        lista.push({ ...t, institucion: c.institucion, contratoCodigo: c.codigo });
-      });
-    });
-    return lista;
-  }
-
-  get tareasFiltradas() {
-    return this.todasLasTareas.filter(t => 
-      t.tarea.toLowerCase().includes(this.filtroBusquedaTareas.toLowerCase()) ||
-      t.responsable.toLowerCase().includes(this.filtroBusquedaTareas.toLowerCase()) ||
-      t.institucion.toLowerCase().includes(this.filtroBusquedaTareas.toLowerCase())
-    );
-  }
+  contratos: any[] = [];
+  jornadas: any[] = [];
+  secciones: any[] = [];
+  turnos: any[] = [];
 
   get contratosFiltrados() {
-    return this.contratos.filter(c => 
-      c.codigo.toLowerCase().includes(this.filtroBusquedaContratos.toLowerCase()) ||
-      c.institucion.toLowerCase().includes(this.filtroBusquedaContratos.toLowerCase())
+    const filtro = this.filtroBusquedaContratos.toLowerCase();
+    return this.contratos.filter(c =>
+      (c.codigo && c.codigo.toLowerCase().includes(filtro)) ||
+      (c.institucion && c.institucion.toLowerCase().includes(filtro))
     );
   }
 
   get jornadasFiltradas() {
-    return this.jornadas.filter(j =>
-      j.nombre.toLowerCase().includes(this.filtroBusquedaJornadas.toLowerCase())
-    );
+    const filtro = this.filtroBusquedaJornadas.toLowerCase();
+    return this.jornadas.filter(j => j.nombre && j.nombre.toLowerCase().includes(filtro));
   }
 
   get seccionesFiltradas() {
+    const filtro = this.filtroBusquedaSecciones.toLowerCase();
     return this.secciones.filter(s =>
-      s.nombre.toLowerCase().includes(this.filtroBusquedaSecciones.toLowerCase()) ||
-      s.jornada.toLowerCase().includes(this.filtroBusquedaSecciones.toLowerCase())
+      (s.nombre && s.nombre.toLowerCase().includes(filtro)) ||
+      (s.jornada && String(s.jornada).toLowerCase().includes(filtro))
+    );
+  }
+
+  get turnosFiltrados() {
+    const filtro = this.filtroBusquedaTurnos.toLowerCase();
+    return this.turnos.filter(t =>
+      (t.nombre && t.nombre.toLowerCase().includes(filtro)) ||
+      (t.horaInicio && t.horaInicio.includes(filtro)) ||
+      (t.horaFin && t.horaFin.includes(filtro))
     );
   }
 
   seleccionarPestana(pestana: string) {
     this.pestanaActiva = pestana;
+    this.cdr.detectChanges();
   }
 
   toggleExpandir(contrato: any) {
     contrato.expandido = !contrato.expandido;
   }
 
-  // --- MODAL CONTRATOS ---
+  // CONTRATOS
+
+  configurarContrato(contratoId: number) {
+    this.router.navigate(['/contratos', contratoId, 'detalle']);
+  }
+
   abrirModalContrato(contrato?: any) {
     if (contrato) {
       this.modoEdicionContrato = true;
       this.contratoActual = { ...contrato };
     } else {
       this.modoEdicionContrato = false;
-      this.contratoActual = { 
-        id: Date.now(), 
-        codigo: 'COR-2026-00' + (this.contratos.length + 1), 
-        institucion: '', 
-        fechaInicio: '2026-01-01', 
-        fechaFin: '2026-12-31', 
+      this.contratoActual = {
+        id: null,
+        codigo: 'COR-2026-00' + (this.contratos.length + 1),
+        institucion: '',
+        zona: '',
+        fechaInicio: '2026-01-01',
+        fechaFin: '2026-12-31',
         estado: 'Activo',
-        expandido: false,
-        tareas: []
+        expandido: false
       };
     }
     this.modalContratoAbierto = true;
+    this.cdr.detectChanges();
   }
 
   cerrarModalContrato() {
     this.modalContratoAbierto = false;
+    this.cdr.detectChanges();
   }
 
   guardarContrato() {
@@ -179,93 +211,65 @@ export class ContratosComponent {
       alert('Por favor, ingresa el nombre de la institución.');
       return;
     }
+
+    const payload = {
+      numero_cor: this.contratoActual.codigo,
+      institucion: this.contratoActual.institucion,
+      zona: this.contratoActual.zona,
+      fecha_inicio: this.contratoActual.fechaInicio,
+      fecha_fin: this.contratoActual.fechaFin,
+      estado: this.contratoActual.estado
+    };
+
     if (this.modoEdicionContrato) {
-      const index = this.contratos.findIndex(c => c.id === this.contratoActual.id);
-      if (index !== -1) {
-        this.contratos[index] = { ...this.contratoActual, tareas: this.contratos[index].tareas, expandido: this.contratos[index].expandido };
-      }
+      this.siraeService.actualizarContrato(this.contratoActual.id, payload).subscribe({
+        next: () => {
+          this.cargarContratos();
+          this.cerrarModalContrato();
+        },
+        error: (err) => console.error('Error al actualizar contrato', err)
+      });
     } else {
-      this.contratos.push({ ...this.contratoActual });
+      this.siraeService.crearContrato(payload).subscribe({
+        next: () => {
+          this.cargarContratos();
+          this.cerrarModalContrato();
+        },
+        error: (err) => console.error('Error al crear contrato', err)
+      });
     }
-    this.cerrarModalContrato();
   }
 
   eliminarContrato(id: number) {
     if (confirm('¿Estás seguro de que deseas eliminar este contrato?')) {
-      this.contratos = this.contratos.filter(c => c.id !== id);
+      this.siraeService.eliminarContrato(id).subscribe({
+        next: () => this.cargarContratos(),
+        error: (err) => console.error('Error al eliminar contrato', err)
+      });
     }
   }
 
-  // --- MODAL TAREAS ---
-  abrirModalTarea(tarea?: any) {
-    if (tarea) {
-      this.modoEdicionTarea = true;
-      this.tareaActual = { ...tarea };
-    } else {
-      this.modoEdicionTarea = false;
-      this.tareaActual = {
-        id: Date.now(),
-        tarea: '',
-        responsable: '',
-        fechaLimite: new Date().toISOString().split('T')[0],
-        estado: 'Pendiente',
-        contratoId: this.contratos.length > 0 ? this.contratos[0].id : null
-      };
-    }
-    this.modalTareaAbierto = true;
-  }
+  // JORNADAS
 
-  cerrarModalTarea() {
-    this.modalTareaAbierto = false;
-  }
-
-  guardarTarea() {
-    if (!this.tareaActual.tarea || !this.tareaActual.responsable) {
-      alert('Por favor, completa la descripción de la tarea y el responsable.');
-      return;
-    }
-
-    if (this.modoEdicionTarea) {
-      // Buscar y actualizar dentro del contrato correspondiente
-      for (let c of this.contratos) {
-        const tIndex = c.tareas.findIndex((t: any) => t.id === this.tareaActual.id);
-        if (tIndex !== -1) {
-          c.tareas[tIndex] = { ...this.tareaActual };
-          break;
-        }
-      }
-    } else {
-      // Agregar al contrato seleccionado o al primero por defecto
-      const contratoDestino = this.contratos.find(c => c.id == Number(this.tareaActual.contratoId)) || this.contratos[0];
-      if (contratoDestino) {
-        contratoDestino.tareas.push({ ...this.tareaActual });
-      }
-    }
-    this.cerrarModalTarea();
-  }
-
-  eliminarTarea(idTarea: number) {
-    if (confirm('¿Estás seguro de eliminar esta tarea?')) {
-      for (let c of this.contratos) {
-        c.tareas = c.tareas.filter((t: any) => t.id !== idTarea);
-      }
-    }
-  }
-
-  // --- MODAL JORNADAS ---
   abrirModalJornada(jornada?: any) {
     if (jornada) {
       this.modoEdicionJornada = true;
       this.jornadaActual = { ...jornada };
     } else {
       this.modoEdicionJornada = false;
-      this.jornadaActual = { id: Date.now(), nombre: '', estado: 'Activa' };
+      this.jornadaActual = {
+        id: Date.now(),
+        nombre: '',
+        estado: 'Activa'
+      };
     }
     this.modalJornadaAbierto = true;
+    this.cdr.detectChanges();
   }
 
   cerrarModalJornada() {
     this.modalJornadaAbierto = false;
+    this.cdr.detectChanges();
   }
 
   guardarJornada() {
@@ -273,63 +277,97 @@ export class ContratosComponent {
       alert('Por favor, ingresa el nombre de la jornada.');
       return;
     }
+
+    const payload = { nombre_jornada: this.jornadaActual.nombre };
+
     if (this.modoEdicionJornada) {
-      const index = this.jornadas.findIndex(j => j.id === this.jornadaActual.id);
-      if (index !== -1) {
-        this.jornadas[index] = { ...this.jornadaActual };
-      }
+      this.siraeService.actualizarJornada(this.jornadaActual.id, payload).subscribe({
+        next: () => {
+          this.cargarDatosMaestros();
+          this.cerrarModalJornada();
+        },
+        error: (err) => console.error('Error al actualizar jornada', err)
+      });
     } else {
-      this.jornadas.push({ ...this.jornadaActual });
+      this.siraeService.crearJornada(payload).subscribe({
+        next: () => {
+          this.cargarDatosMaestros();
+          this.cerrarModalJornada();
+        },
+        error: (err) => console.error('Error al crear jornada', err)
+      });
     }
-    this.cerrarModalJornada();
   }
 
   eliminarJornada(id: number) {
     if (confirm('¿Estás seguro de que deseas eliminar esta jornada?')) {
-      this.jornadas = this.jornadas.filter(j => j.id !== id);
+      this.siraeService.eliminarJornada(id).subscribe({
+        next: () => this.cargarDatosMaestros(),
+        error: (err) => console.error('Error al eliminar jornada', err)
+      });
     }
   }
 
-  // --- MODAL SECCIONES ---
+  // SECCIONES
+
   abrirModalSeccion(seccion?: any) {
     if (seccion) {
       this.modoEdicionSeccion = true;
       this.seccionActual = { ...seccion };
     } else {
       this.modoEdicionSeccion = false;
-      this.seccionActual = { 
-        id: Date.now(), 
-        nombre: '', 
-        jornada: this.jornadas.length > 0 ? this.jornadas[0].nombre : '', 
-        estado: 'Activa' 
+      this.seccionActual = {
+        id: Date.now(),
+        nombre: '',
+        jornada: this.jornadas.length ? this.jornadas[0].nombre : '',
+        estado: 'Activa'
       };
     }
     this.modalSeccionAbierto = true;
+    this.cdr.detectChanges();
   }
 
   cerrarModalSeccion() {
     this.modalSeccionAbierto = false;
+    this.cdr.detectChanges();
   }
 
   guardarSeccion() {
-    if (!this.seccionActual.nombre) {
-      alert('Por favor, ingresa el nombre de la sección.');
+    if (!this.seccionActual.nombre || !this.seccionActual.jornada) {
+      alert('Por favor, ingresa el nombre de la sección y selecciona la jornada.');
       return;
     }
+
+    const payload = {
+      nombre_seccion: this.seccionActual.nombre,
+      jornada: this.seccionActual.jornada
+    };
+
     if (this.modoEdicionSeccion) {
-      const index = this.secciones.findIndex(s => s.id === this.seccionActual.id);
-      if (index !== -1) {
-        this.secciones[index] = { ...this.seccionActual };
-      }
+      this.siraeService.actualizarSeccionMenu(this.seccionActual.id, payload).subscribe({
+        next: () => {
+          this.cargarDatosMaestros();
+          this.cerrarModalSeccion();
+        },
+        error: (err) => console.error('Error al actualizar sección', err)
+      });
     } else {
-      this.secciones.push({ ...this.seccionActual });
+      this.siraeService.crearSeccionMenu(payload).subscribe({
+        next: () => {
+          this.cargarDatosMaestros();
+          this.cerrarModalSeccion();
+        },
+        error: (err) => console.error('Error al crear sección', err)
+      });
     }
-    this.cerrarModalSeccion();
   }
 
   eliminarSeccion(id: number) {
     if (confirm('¿Estás seguro de que deseas eliminar esta sección?')) {
-      this.secciones = this.secciones.filter(s => s.id !== id);
+      this.siraeService.eliminarSeccionMenu(id).subscribe({
+        next: () => this.cargarDatosMaestros(),
+        error: (err) => console.error('Error al eliminar sección', err)
+      });
     }
   }
 }
