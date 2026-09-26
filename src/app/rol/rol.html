@@ -35,9 +35,7 @@
         <div class="flex items-center gap-4">
           <div class="w-14 h-14 rounded-2xl bg-amber-50 text-[#e0a316] border border-amber-100 flex flex-col items-center justify-center font-black shadow-2xs shrink-0">
             <span class="text-xs uppercase tracking-tight text-slate-400 font-extrabold">ID</span>
-            <span class="text-sm">#{{ r.id_rol }}</span>
-          </div>
-          <div>
+            <span class="text-sm">#{{ r.id_rol }}</span>          <div>
             <div class="flex items-center gap-2">
               <span class="px-3 py-1 rounded-xl text-xs font-bold bg-amber-50 text-[#b58111] border border-amber-200 shadow-2xs">
                 {{ r.nombre }}
@@ -49,7 +47,6 @@
           </div>
         </div>
 
-       
         <div class="flex items-center justify-between md:justify-end gap-3 border-t md:border-t-0 pt-3 md:pt-0 border-slate-100">
           
           <span class="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs flex items-center gap-1.5">
@@ -76,7 +73,7 @@
 
   </div>
 
-  
+  <!-- MODAL DE CREACIÓN / EDICIÓN DE ROLES -->
   <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-2xs p-4 overflow-y-auto" *ngIf="mostrarModal">
     <div class="bg-white rounded-3xl shadow-xl border border-slate-100 w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-150">
       
