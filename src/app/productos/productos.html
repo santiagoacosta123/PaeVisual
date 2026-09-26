@@ -1,403 +1,297 @@
-<div class="productos-container">
-  <!-- Cabecera y Navegación de Pestañas -->
-  <div class="header-section">
-    <h2>Gestión de Inventario y Productos</h2>
-    <button class="btn-primary" (click)="abrirFormulario()">
-      <i class="fas fa-plus"></i> Nuevo Registro
-    </button>
-  </div>
-
-  <div class="tabs-nav">
-    <button [class.active]="pestanaActiva === 'inventario'" (click)="cambiarPestana('inventario')">
-      Inventario Actual
-    </button>
-    <button [class.active]="pestanaActiva === 'movimientos'" (click)="cambiarPestana('movimientos')">
-      Movimientos
-    </button>
-    <button [class.active]="pestanaActiva === 'gramajes'" (click)="cambiarPestana('gramajes')">
-      Gramajes / Recetas
-    </button>
-  </div>
-
-  <!-- Contenido de las Pestañas -->
-  <div class="tab-content">
-    
-    <!-- 1. PESTAÑA INVENTARIO -->
-    <div *ngIf="pestanaActiva === 'inventario'" class="table-responsive">
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Ingrediente</th>
-            <th>Categoría</th>
-            <th>Marca</th>
-            <th>Cantidad Actual</th>
-            <th>Stock Mínimo</th>
-            <th>Unidad</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let item of inventario">
-            <td>{{ item.nombre_ingrediente }}</td>
-            <td>{{ item.nombre_categoria }}</td>
-            <td>{{ item.marca_ingrediente || 'N/A' }}</td>
-            <td [class.text-danger]="item.cantidad_actual <= item.stock_minimo">
-              {{ item.cantidad_actual }}
-            </td>
-            <td>{{ item.stock_minimo }}</td>
-            <td>{{ item.nombre_unidad }}</td>
-            <td>
-              <button class="btn-icon" (click)="abrirFormulario(item)" title="Editar"><i class="fas fa-edit"></i></button>
-              <button class="btn-icon text-danger" (click)="eliminarItem(inventario, item)" title="Eliminar"><i class="fas fa-trash"></i></button>
-            </td>
-          </tr>
-          <tr *ngIf="inventario.length === 0">
-            <td colspan="7" class="text-center">No hay registros en el inventario.</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- 2. PESTAÑA MOVIMIENTOS -->
-    <div *ngIf="pestanaActiva === 'movimientos'" class="table-responsive">
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Fecha</th>
-            <th>Ingrediente</th>
-            <th>Tipo</th>
-            <th>Cantidad</th>
-            <th>Unidad</th>
-            <th>Observaciones</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let mov of movimientosInventario">
-            <td>{{ mov.fecha }}</td>
-            <td>{{ mov.nombre_ingrediente }}</td>
-            <td>
-              <span class="badge" [class.badge-success]="mov.tipo_movimiento === 'ENTRADA'" [class.badge-danger]="mov.tipo_movimiento === 'SALIDA'">
-                {{ mov.tipo_movimiento }}
-              </span>
-            </td>
-            <td>{{ mov.cantidad }}</td>
-            <td>{{ mov.nombre_unidad }}</td>
-            <td>{{ mov.observaciones || 'Sin observaciones' }}</td>
-            <td>
-              <button class="btn-icon" (click)="abrirFormulario(mov)" title="Editar"><i class="fas fa-edit"></i></button>
-              <button class="btn-icon text-danger" (click)="eliminarItem(movimientosInventario, mov)" title="Eliminar"><i class="fas fa-trash"></i></button>
-            </td>
-          </tr>
-          <tr *ngIf="movimientosInventario.length === 0">
-            <td colspan="7" class="text-center">No hay movimientos registrados.</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- 3. PESTAÑA GRAMAJES -->
-    <div *ngIf="pestanaActiva === 'gramajes'" class="table-responsive">
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Ingrediente</th>
-            <th>Cantidad</th>
-            <th>Unidad</th>
-            <th>Descripción / Uso</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let gramaje of gramajes">
-            <td>{{ gramaje.nombre_ingrediente }}</td>
-            <td>{{ gramaje.cantidad_gramaje }}</td>
-            <td>{{ gramaje.nombre_unidad }}</td>
-            <td>{{ gramaje.descripcion || 'N/A' }}</td>
-            <td>
-              <button class="btn-icon" (click)="abrirFormulario(gramaje)" title="Editar"><i class="fas fa-edit"></i></button>
-              <button class="btn-icon text-danger" (click)="eliminarItem(gramajes, gramaje)" title="Eliminar"><i class="fas fa-trash"></i></button>
-            </td>
-          </tr>
-          <tr *ngIf="gramajes.length === 0">
-            <td colspan="5" class="text-center">No hay gramajes registrados.</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-
-  <!-- MODAL / FORMULARIO FLOTANTE -->
-  <div *ngIf="mostrarFormulario" class="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-2xl border border-slate-200 shadow-xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+<div style="display:flex; flex-direction:column; gap:18px; position:relative; font-family: system-ui, -apple-system, sans-serif;">
       
-      <!-- Cabecera del Modal -->
-      <div class="px-6 py-4 bg-slate-50 border-b border-slate-200/80 flex items-center justify-between">
-        <h3 class="font-black text-slate-900 text-sm uppercase tracking-wider flex items-center gap-2">
-          <span class="material-symbols-outlined text-amber-500 text-[20px]">
-            {{ modoEdicion ? 'edit_note' : 'add_circle' }}
-          </span>
-          {{ modoEdicion ? 'Editar Registro' : ('Nuevo ' + (pestanaActiva | titlecase)) }}
-        </h3>
-        <button (click)="cerrarFormulario()" class="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/50 flex items-center justify-center transition cursor-pointer">
-          <span class="material-symbols-outlined text-[20px]">close</span>
-        </button>
-      </div>
+  <!-- Barra de Pestañas Superior -->
+  <div style="display:inline-flex; background:#f1f5f9; padding:5px; border-radius:16px; border:1px solid #e2e8f0; align-self:flex-start; gap:4px; flex-wrap: wrap;">
+    <button type="button" (click)="seleccionarPestana('inventario')"
+      [style.background]="pestanaActiva === 'inventario' ? '#0f172a' : 'transparent'"
+      [style.color]="pestanaActiva === 'inventario' ? '#ffffff' : '#475569'"
+      [style.font-weight]="pestanaActiva === 'inventario' ? '600' : '500'"
+      style="border:none; padding:9px 16px; border-radius:12px; font-size:13px; cursor:pointer;">Inventario Actual</button>
 
-      <!-- Cuerpo del Formulario según la pestaña activa -->
-      <div class="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+    <button type="button" (click)="seleccionarPestana('movimientos')"
+      [style.background]="pestanaActiva === 'movimientos' ? '#0f172a' : 'transparent'"
+      [style.color]="pestanaActiva === 'movimientos' ? '#ffffff' : '#475569'"
+      [style.font-weight]="pestanaActiva === 'movimientos' ? '600' : '500'"
+      style="border:none; padding:9px 16px; border-radius:12px; font-size:13px; cursor:pointer;">Movimientos</button>
 
-        <!-- Formulario: INVENTARIO -->
-        <div *ngIf="pestanaActiva === 'inventario'" class="space-y-4 text-xs">
+    <button type="button" (click)="seleccionarPestana('gramajes')"
+      [style.background]="pestanaActiva === 'gramajes' ? '#0f172a' : 'transparent'"
+      [style.color]="pestanaActiva === 'gramajes' ? '#ffffff' : '#475569'"
+      [style.font-weight]="pestanaActiva === 'gramajes' ? '600' : '500'"
+      style="border:none; padding:9px 16px; border-radius:12px; font-size:13px; cursor:pointer;">Gramajes / Recetas</button>
+  </div>
+
+  <!-- Contenido Dinámico -->
+  <div [ngSwitch]="pestanaActiva">
+    
+    <!-- INVENTARIO ACTUAL -->
+    <div *ngSwitchCase="'inventario'" style="display:flex; flex-direction:column; gap:16px;">
+      <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:16px; padding:20px; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+        <!-- Encabezado -->
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px; margin-bottom:18px;">
           <div>
-            <label class="block font-bold text-slate-700 mb-1">Nombre del Ingrediente *</label>
-            <input type="text" [(ngModel)]="itemForm.nombre_ingrediente" placeholder="Ej. Arroz Diana" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-slate-400 font-medium">
+            <h3 style="font-size:16px; font-weight:700; color:#0f172a; margin:0 0 4px 0;">Inventario Actual</h3>
+            <p style="font-size:12px; color:#64748b; margin:0;">Insumos, marcas y stock disponible.</p>
           </div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label class="block font-bold text-slate-700 mb-1">Categoría</label>
-              <select [(ngModel)]="itemForm.id_categoria_inventario" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-slate-400 font-medium">
-                <option value="" disabled>Seleccione categoría</option>
-                <option *ngFor="let cat of categoriasInventario" [value]="cat.id_categoria_inventario">{{ cat.nombre_categoria }}</option>
-              </select>
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <div style="display:flex; align-items:center; gap:8px; background:#f8fafc; border:1px solid #cbd5e1; border-radius:10px; padding:6px 12px; min-width:220px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input type="text" [(ngModel)]="filtroBusqueda" placeholder="Buscar..." style="border:none; background:transparent; outline:none; font-size:13px; width:100%; color:#0f172a;">
             </div>
-            <div>
-              <label class="block font-bold text-slate-700 mb-1">Marca</label>
-              <input type="text" [(ngModel)]="itemForm.marca_ingrediente" placeholder="Ej. Diana" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-slate-400 font-medium">
-            </div>
-          </div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label class="block font-bold text-slate-700 mb-1">Cantidad Actual *</label>
-              <input type="number" [(ngModel)]="itemForm.cantidad_actual" placeholder="0" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-slate-400 font-medium">
-            </div>
-            <div>
-              <label class="block font-bold text-slate-700 mb-1">Stock Mínimo</label>
-              <input type="number" [(ngModel)]="itemForm.stock_minimo" placeholder="0" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-slate-400 font-medium">
-            </div>
-          </div>
-          <div>
-            <label class="block font-bold text-slate-700 mb-1">Unidad de Medida</label>
-            <select [(ngModel)]="itemForm.id_unidad_medida" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-slate-400 font-medium">
-              <option value="" disabled>Seleccione unidad</option>
-              <option *ngFor="let um of unidadesMedida" [value]="um.id_unidad_medida">{{ um.nombre_unidad }} ({{ um.abreviatura }})</option>
-            </select>
+            <button type="button" (click)="abrirFormulario()" style="background:#facc15; color:#713f12; border:none; border-radius:10px; padding:9px 16px; font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap;">
+              + Nuevo Insumo
+            </button>
           </div>
         </div>
 
-        <!-- Formulario: MOVIMIENTOS -->
-        <div *ngIf="pestanaActiva === 'movimientos'" class="space-y-4 text-xs">
+        <div style="overflow-x:auto;">
+          <table style="width:100%; border-collapse:collapse; text-align:left; font-size:13px; min-width:650px;">
+            <thead>
+              <tr style="border-bottom:2px solid #f1f5f9; color:#64748b;">
+                <th style="padding:12px 16px; font-weight:600;">Ingrediente</th>
+                <th style="padding:12px 16px; font-weight:600;">Categoría</th>
+                <th style="padding:12px 16px; font-weight:600;">Marca</th>
+                <th style="padding:12px 16px; font-weight:600;">Cant. Actual</th>
+                <th style="padding:12px 16px; font-weight:600;">Unidad</th>
+                <th style="padding:12px 16px; font-weight:600; text-align:right;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of inventarioFiltrado" style="border-bottom:1px solid #f1f5f9; transition:background 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                <td style="padding:12px 16px; color:#0f172a; font-weight:600;">{{ item.nombre_ingrediente }}</td>
+                <td style="padding:12px 16px; color:#475569;">{{ item.nombre_categoria }}</td>
+                <td style="padding:12px 16px; color:#475569;">{{ item.marca_ingrediente || 'N/A' }}</td>
+                <td style="padding:12px 16px;">
+                  <span [style.color]="item.cantidad_actual <= item.stock_minimo ? '#dc2626' : '#059669'" [style.background]="item.cantidad_actual <= item.stock_minimo ? '#fee2e2' : '#d1fae5'" style="font-weight:700; padding:4px 8px; border-radius:6px;">{{ item.cantidad_actual }}</span>
+                </td>
+                <td style="padding:12px 16px; color:#475569;">{{ item.nombre_unidad }}</td>
+                <td style="padding:12px 16px; text-align:right;">
+                  <button type="button" (click)="abrirFormulario(item)" style="background:transparent; border:none; cursor:pointer; padding:4px; color:#3b82f6;" title="Editar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
+                  <button type="button" (click)="eliminarItem(inventario, item)" style="background:transparent; border:none; cursor:pointer; padding:4px; color:#ef4444; margin-left:8px;" title="Eliminar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2 2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+                </td>
+              </tr>
+              <tr *ngIf="inventarioFiltrado.length === 0">
+                <td colspan="6" style="padding:24px; text-align:center; color:#64748b;">No hay registros disponibles.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- MOVIMIENTOS -->
+    <div *ngSwitchCase="'movimientos'" style="display:flex; flex-direction:column; gap:16px;">
+      <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:16px; padding:20px; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+        <!-- Encabezado -->
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px; margin-bottom:18px;">
           <div>
-            <label class="block font-bold text-slate-700 mb-1">Ingrediente *</label>
-            <select [(ngModel)]="movimientoForm.id_ingrediente" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-slate-400 font-medium">
-              <option value="" disabled>Seleccione ingrediente</option>
-              <option *ngFor="let ing of ingredientesDisponibles" [value]="ing.id_ingrediente">{{ ing.nombre_ingrediente }}</option>
+            <h3 style="font-size:16px; font-weight:700; color:#0f172a; margin:0 0 4px 0;">Movimientos de inventario</h3>
+            <p style="font-size:12px; color:#64748b; margin:0;">Registro de entradas y salidas de insumos.</p>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <div style="display:flex; align-items:center; gap:8px; background:#f8fafc; border:1px solid #cbd5e1; border-radius:10px; padding:6px 12px; min-width:220px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input type="text" [(ngModel)]="filtroBusqueda" placeholder="Buscar movimiento..." style="border:none; background:transparent; outline:none; font-size:13px; width:100%; color:#0f172a;">
+            </div>
+            <button type="button" (click)="abrirFormulario()" style="background:#facc15; color:#713f12; border:none; border-radius:10px; padding:9px 16px; font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap;">
+              + Nuevo Movimiento
+            </button>
+          </div>
+        </div>
+
+        <div style="overflow-x:auto;">
+          <table style="width:100%; border-collapse:collapse; text-align:left; font-size:13px; min-width:650px;">
+            <thead>
+              <tr style="border-bottom:2px solid #f1f5f9; color:#64748b;">
+                <th style="padding:12px 16px; font-weight:600;">Fecha</th>
+                <th style="padding:12px 16px; font-weight:600;">Ingrediente</th>
+                <th style="padding:12px 16px; font-weight:600;">Tipo</th>
+                <th style="padding:12px 16px; font-weight:600;">Cantidad</th>
+                <th style="padding:12px 16px; font-weight:600;">Unidad</th>
+                <th style="padding:12px 16px; font-weight:600; text-align:right;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let mov of movimientosFiltrados" style="border-bottom:1px solid #f1f5f9; transition:background 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                <td style="padding:12px 16px; color:#475569;">{{ mov.fecha }}</td>
+                <td style="padding:12px 16px; color:#0f172a; font-weight:600;">{{ mov.nombre_ingrediente }}</td>
+                <td style="padding:12px 16px;">
+                  <span [style.background]="mov.tipo_movimiento === 'ENTRADA' ? '#dcfce7' : '#fee2e2'" [style.color]="mov.tipo_movimiento === 'ENTRADA' ? '#166534' : '#991b1b'" style="padding:4px 8px; border-radius:6px; font-weight:600; font-size:11px;">{{ mov.tipo_movimiento }}</span>
+                </td>
+                <td style="padding:12px 16px; font-weight:600; color:#1e293b;">{{ mov.cantidad }}</td>
+                <td style="padding:12px 16px; color:#475569;">{{ mov.nombre_unidad }}</td>
+                <td style="padding:12px 16px; text-align:right;">
+                  <button type="button" (click)="abrirFormulario(mov)" style="background:transparent; border:none; cursor:pointer; padding:4px; color:#3b82f6;" title="Editar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
+                  <button type="button" (click)="eliminarItem(movimientosInventario, mov)" style="background:transparent; border:none; cursor:pointer; padding:4px; color:#ef4444; margin-left:8px;" title="Eliminar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2 2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+                </td>
+              </tr>
+              <tr *ngIf="movimientosFiltrados.length === 0">
+                <td colspan="6" style="padding:24px; text-align:center; color:#64748b;">No hay registros disponibles.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- GRAMAJES -->
+    <div *ngSwitchCase="'gramajes'" style="display:flex; flex-direction:column; gap:16px;">
+      <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:16px; padding:20px; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+        <!-- Encabezado -->
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px; margin-bottom:18px;">
+          <div>
+            <h3 style="font-size:16px; font-weight:700; color:#0f172a; margin:0 0 4px 0;">Gramajes de preparación</h3>
+            <p style="font-size:12px; color:#64748b; margin:0;">Proporciones y recetas para ingredientes.</p>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <div style="display:flex; align-items:center; gap:8px; background:#f8fafc; border:1px solid #cbd5e1; border-radius:10px; padding:6px 12px; min-width:220px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input type="text" [(ngModel)]="filtroBusqueda" placeholder="Buscar..." style="border:none; background:transparent; outline:none; font-size:13px; width:100%; color:#0f172a;">
+            </div>
+            <button type="button" (click)="abrirFormulario()" style="background:#facc15; color:#713f12; border:none; border-radius:10px; padding:9px 16px; font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap;">
+              + Nuevo Gramaje
+            </button>
+          </div>
+        </div>
+
+        <div style="overflow-x:auto;">
+          <table style="width:100%; border-collapse:collapse; text-align:left; font-size:13px; min-width:650px;">
+            <thead>
+              <tr style="border-bottom:2px solid #f1f5f9; color:#64748b;">
+                <th style="padding:12px 16px; font-weight:600;">Ingrediente</th>
+                <th style="padding:12px 16px; font-weight:600;">Cantidad</th>
+                <th style="padding:12px 16px; font-weight:600;">Unidad</th>
+                <th style="padding:12px 16px; font-weight:600;">Descripción</th>
+                <th style="padding:12px 16px; font-weight:600; text-align:right;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let gramaje of gramajesFiltrados" style="border-bottom:1px solid #f1f5f9; transition:background 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                <td style="padding:12px 16px; color:#0f172a; font-weight:600;">{{ gramaje.nombre_ingrediente }}</td>
+                <td style="padding:12px 16px; font-weight:700; color:#1e293b;">{{ gramaje.cantidad_gramaje }}</td>
+                <td style="padding:12px 16px; color:#475569;">{{ gramaje.nombre_unidad }}</td>
+                <td style="padding:12px 16px; color:#64748b;">{{ gramaje.descripcion || 'N/A' }}</td>
+                <td style="padding:12px 16px; text-align:right;">
+                  <button type="button" (click)="abrirFormulario(gramaje)" style="background:transparent; border:none; cursor:pointer; padding:4px; color:#3b82f6;" title="Editar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
+                  <button type="button" (click)="eliminarItem(gramajes, gramaje)" style="background:transparent; border:none; cursor:pointer; padding:4px; color:#ef4444; margin-left:8px;" title="Eliminar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2 2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+                </td>
+              </tr>
+              <tr *ngIf="gramajesFiltrados.length === 0">
+                <td colspan="5" style="padding:24px; text-align:center; color:#64748b;">No hay registros disponibles.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL / FORMULARIO FLOTANTE ÚNICO ESTILIZADO -->
+  <div *ngIf="mostrarFormulario" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.4); backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; z-index:9999; padding:20px;">
+    <div style="background:#ffffff; border-radius:16px; width:100%; max-width:480px; box-shadow:0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1); overflow:hidden; display:flex; flex-direction:column; max-height:90vh;">
+      
+      <!-- Cabecera -->
+      <div style="padding:16px 20px; background:#f8fafc; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
+        <h3 style="margin:0; font-size:14px; font-weight:800; color:#0f172a; text-transform:uppercase; letter-spacing:0.5px;">
+          {{ modoEdicion ? 'Editar Registro' : ('Nuevo ' + (pestanaActiva | titlecase)) }}
+        </h3>
+        <button (click)="cerrarFormulario()" style="background:transparent; border:none; color:#94a3b8; cursor:pointer; padding:4px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+      </div>
+
+      <!-- Cuerpo -->
+      <div style="padding:20px; overflow-y:auto; display:flex; flex-direction:column; gap:16px; font-size:13px; color:#334155;">
+        
+        <!-- Formularios condicionales -->
+        <ng-container *ngIf="pestanaActiva === 'inventario'">
+          <div style="display:flex; flex-direction:column; gap:6px;">
+            <label style="font-weight:600; font-size:12px; color:#475569;">Ingrediente / Insumo</label>
+            <select [(ngModel)]="itemForm.id_ingrediente" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e1; outline:none; background:#ffffff;">
+              <option value="">Seleccione...</option>
+              <option *ngFor="let i of ingredientesDisponibles" [value]="i.id_ingrediente">{{i.nombre_ingrediente}}</option>
             </select>
           </div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label class="block font-bold text-slate-700 mb-1">Tipo de Movimiento</label>
-              <select [(ngModel)]="movimientoForm.tipo_movimiento" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-slate-400 font-medium">
+
+          <div style="display:flex; gap:16px;">
+            <div style="display:flex; flex-direction:column; gap:6px; flex:1;">
+              <label style="font-weight:600; font-size:12px; color:#475569;">Cantidad Actual</label>
+              <input type="number" [(ngModel)]="itemForm.cantidad_actual" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e1; outline:none;">
+            </div>
+            <div style="display:flex; flex-direction:column; gap:6px; flex:1;">
+              <label style="font-weight:600; font-size:12px; color:#475569;">Unidad</label>
+              <select [(ngModel)]="itemForm.id_unidad_medida" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e1; outline:none; background:#ffffff;">
+                <option value="">Seleccione...</option>
+                <option *ngFor="let u of unidadesMedida" [value]="u.id_unidad_medida">{{u.nombre_unidad}}</option>
+              </select>
+            </div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:6px;">
+            <label style="font-weight:600; font-size:12px; color:#475569;">Stock Mínimo</label>
+            <input type="number" [(ngModel)]="itemForm.stock_minimo" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e1; outline:none;">
+          </div>
+        </ng-container>
+
+        <ng-container *ngIf="pestanaActiva === 'movimientos'">
+          <div style="display:flex; flex-direction:column; gap:6px;">
+            <label style="font-weight:600; font-size:12px; color:#475569;">Ingrediente</label>
+            <select [(ngModel)]="movimientoForm.id_ingrediente" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e1; outline:none; background:#ffffff;">
+              <option value="">Seleccione...</option>
+              <option *ngFor="let i of ingredientesDisponibles" [value]="i.id_ingrediente">{{i.nombre_ingrediente}}</option>
+            </select>
+          </div>
+          <div style="display:flex; gap:16px;">
+            <div style="display:flex; flex-direction:column; gap:6px; flex:1;">
+              <label style="font-weight:600; font-size:12px; color:#475569;">Tipo</label>
+              <select [(ngModel)]="movimientoForm.tipo_movimiento" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e1; outline:none; background:#ffffff;">
                 <option value="ENTRADA">ENTRADA</option>
                 <option value="SALIDA">SALIDA</option>
               </select>
             </div>
-            <div>
-              <label class="block font-bold text-slate-700 mb-1">Cantidad *</label>
-              <input type="number" [(ngModel)]="movimientoForm.cantidad" placeholder="0" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-slate-400 font-medium">
+            <div style="display:flex; flex-direction:column; gap:6px; flex:1;">
+              <label style="font-weight:600; font-size:12px; color:#475569;">Cantidad</label>
+              <input type="number" [(ngModel)]="movimientoForm.cantidad" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e1; outline:none;">
             </div>
           </div>
-          <div>
-            <label class="block font-bold text-slate-700 mb-1">Unidad de Medida</label>
-            <select [(ngModel)]="movimientoForm.id_unidad_medida" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-slate-400 font-medium">
-              <option value="" disabled>Seleccione unidad</option>
-              <option *ngFor="let um of unidadesMedida" [value]="um.id_unidad_medida">{{ um.nombre_unidad }}</option>
-            </select>
+          <div style="display:flex; flex-direction:column; gap:6px;">
+            <label style="font-weight:600; font-size:12px; color:#475569;">Observaciones</label>
+            <textarea [(ngModel)]="movimientoForm.observaciones" rows="2" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e1; outline:none; resize:none;"></textarea>
           </div>
-          <div>
-            <label class="block font-bold text-slate-700 mb-1">Observaciones</label>
-            <textarea [(ngModel)]="movimientoForm.observaciones" rows="3" placeholder="Detalle del movimiento..." class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-slate-400 font-medium"></textarea>
-          </div>
-        </div>
+        </ng-container>
 
-        <!-- Formulario: GRAMAJES -->
-        <div *ngIf="pestanaActiva === 'gramajes'" class="space-y-4 text-xs">
-          <div>
-            <label class="block font-bold text-slate-700 mb-1">Ingrediente *</label>
-            <select [(ngModel)]="gramajeForm.id_ingrediente" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-slate-400 font-medium">
-              <option value="" disabled>Seleccione ingrediente</option>
-              <option *ngFor="let ing of ingredientesDisponibles" [value]="ing.id_ingrediente">{{ ing.nombre_ingrediente }}</option>
-            </select>
-          </div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label class="block font-bold text-slate-700 mb-1">Cantidad Gramaje *</label>
-              <input type="number" [(ngModel)]="gramajeForm.cantidad_gramaje" placeholder="0" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-slate-400 font-medium">
-            </div>
-            <div>
-              <label class="block font-bold text-slate-700 mb-1">Unidad de Medida</label>
-              <select [(ngModel)]="gramajeForm.id_unidad_medida" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-slate-400 font-medium">
-                <option value="" disabled>Seleccione unidad</option>
-                <option *ngFor="let um of unidadesMedida" [value]="um.id_unidad_medida">{{ um.nombre_unidad }}</option>
-              </select>
-            </div>
-          </div>
-          <div>
-            <label class="block font-bold text-slate-700 mb-1">Descripción</label>
-            <textarea [(ngModel)]="gramajeForm.descripcion" rows="3" placeholder="Porción estándar por plato..." class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-slate-400 font-medium"></textarea>
-          </div>
-        </div>
-
-      </div>
-
-      <!-- Pie del Modal -->
-      <div class="px-6 py-4 bg-slate-50 border-t border-slate-200/80 flex items-center justify-end gap-3">
-        <button (click)="cerrarFormulario()" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-200/60 transition cursor-pointer">
-          Cancelar
-        </button>
-        <button (click)="guardarTodo()" class="bg-slate-900 hover:bg-slate-800 text-white font-black px-5 py-2.5 rounded-xl text-xs transition cursor-pointer shadow-xs">
-          {{ modoEdicion ? 'Actualizar Registro' : 'Guardar Registro' }}
-        </button>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- MODAL / FORMULARIO FLOTANTE -->
-  <div class="modal-overlay" *ngIf="mostrarFormulario">
-    <div class="modal-card">
-      <div class="modal-header">
-        <h3>{{ modoEdicion ? 'Editar Registro' : 'Nuevo Registro' }} ({{ pestanaActiva | uppercase }})</h3>
-        <button class="close-btn" (click)="cerrarFormulario()">&times;</button>
-      </div>
-
-      <div class="modal-body">
-        
-        <!-- FORMULARIO INVENTARIO -->
-        <form *ngIf="pestanaActiva === 'inventario'" (ngSubmit)="guardarTodo()">
-          <div class="form-group">
-            <label>Nombre del Ingrediente *</label>
-            <input type="text" [(ngModel)]="itemForm.nombre_ingrediente" name="nombre_ingrediente" class="form-control" required />
-          </div>
-          <div class="form-group">
-            <label>Categoría</label>
-            <select [(ngModel)]="itemForm.id_categoria_inventario" name="id_categoria_inventario" class="form-control">
+        <ng-container *ngIf="pestanaActiva === 'gramajes'">
+          <div style="display:flex; flex-direction:column; gap:6px;">
+            <label style="font-weight:600; font-size:12px; color:#475569;">Ingrediente</label>
+            <select [(ngModel)]="gramajeForm.id_ingrediente" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e1; outline:none; background:#ffffff;">
               <option value="">Seleccione...</option>
-              <option *ngFor="let cat of categoriasInventario" [value]="cat.id_categoria_inventario">
-                {{ cat.nombre_categoria }}
-              </option>
+              <option *ngFor="let i of ingredientesDisponibles" [value]="i.id_ingrediente">{{i.nombre_ingrediente}}</option>
             </select>
           </div>
-          <div class="form-group">
-            <label>Marca</label>
-            <input type="text" [(ngModel)]="itemForm.marca_ingrediente" name="marca_ingrediente" class="form-control" />
-          </div>
-          <div class="form-row">
-            <div class="form-group half">
-              <label>Cantidad Actual *</label>
-              <input type="number" [(ngModel)]="itemForm.cantidad_actual" name="cantidad_actual" class="form-control" required />
+          <div style="display:flex; gap:16px;">
+            <div style="display:flex; flex-direction:column; gap:6px; flex:1;">
+              <label style="font-weight:600; font-size:12px; color:#475569;">Cantidad</label>
+              <input type="number" [(ngModel)]="gramajeForm.cantidad_gramaje" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e1; outline:none;">
             </div>
-            <div class="form-group half">
-              <label>Stock Mínimo</label>
-              <input type="number" [(ngModel)]="itemForm.stock_minimo" name="stock_minimo" class="form-control" />
-            </div>
-          </div>
-          <div class="form-group">
-            <label>Unidad de Medida</label>
-            <select [(ngModel)]="itemForm.id_unidad_medida" name="id_unidad_medida" class="form-control">
-              <option value="">Seleccione...</option>
-              <option *ngFor="let um of unidadesMedida" [value]="um.id_unidad_medida">
-                {{ um.nombre_unidad }} ({{ um.abreviatura }})
-              </option>
-            </select>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn-secondary" (click)="cerrarFormulario()">Cancelar</button>
-            <button type="submit" class="btn-primary">Guardar</button>
-          </div>
-        </form>
-
-        <!-- FORMULARIO MOVIMIENTOS -->
-        <form *ngIf="pestanaActiva === 'movimientos'" (ngSubmit)="guardarTodo()">
-          <div class="form-group">
-            <label>Ingrediente *</label>
-            <select [(ngModel)]="movimientoForm.id_ingrediente" name="id_ingrediente" class="form-control" required>
-              <option value="">Seleccione ingrediente...</option>
-              <option *ngFor="let ing of ingredientesDisponibles" [value]="ing.id_ingrediente">
-                {{ ing.nombre_ingrediente }}
-              </option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Tipo de Movimiento *</label>
-            <select [(ngModel)]="movimientoForm.tipo_movimiento" name="tipo_movimiento" class="form-control" required>
-              <option value="ENTRADA">ENTRADA</option>
-              <option value="SALIDA">SALIDA</option>
-            </select>
-          </div>
-          <div class="form-row">
-            <div class="form-group half">
-              <label>Cantidad *</label>
-              <input type="number" [(ngModel)]="movimientoForm.cantidad" name="cantidad" class="form-control" required />
-            </div>
-            <div class="form-group half">
-              <label>Unidad de Medida</label>
-              <select [(ngModel)]="movimientoForm.id_unidad_medida" name="id_unidad_medida" class="form-control">
+            <div style="display:flex; flex-direction:column; gap:6px; flex:1;">
+              <label style="font-weight:600; font-size:12px; color:#475569;">Unidad</label>
+              <select [(ngModel)]="gramajeForm.id_unidad_medida" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e1; outline:none; background:#ffffff;">
                 <option value="">Seleccione...</option>
-                <option *ngFor="let um of unidadesMedida" [value]="um.id_unidad_medida">
-                  {{ um.nombre_unidad }}
-                </option>
+                <option *ngFor="let u of unidadesMedida" [value]="u.id_unidad_medida">{{u.nombre_unidad}}</option>
               </select>
             </div>
           </div>
-          <div class="form-group">
-            <label>Observaciones</label>
-            <textarea [(ngModel)]="movimientoForm.observaciones" name="observaciones" class="form-control" rows="2"></textarea>
+          <div style="display:flex; flex-direction:column; gap:6px;">
+            <label style="font-weight:600; font-size:12px; color:#475569;">Descripción</label>
+            <textarea [(ngModel)]="gramajeForm.descripcion" rows="2" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e1; outline:none; resize:none;"></textarea>
           </div>
-          <div class="modal-footer">
-            <button type="button" class="btn-secondary" (click)="cerrarFormulario()">Cancelar</button>
-            <button type="submit" class="btn-primary">Guardar</button>
-          </div>
-        </form>
-
-        <!-- FORMULARIO GRAMAJES -->
-        <form *ngIf="pestanaActiva === 'gramajes'" (ngSubmit)="guardarTodo()">
-          <div class="form-group">
-            <label>Ingrediente *</label>
-            <select [(ngModel)]="gramajeForm.id_ingrediente" name="id_ingrediente" class="form-control" required>
-              <option value="">Seleccione ingrediente...</option>
-              <option *ngFor="let ing of ingredientesDisponibles" [value]="ing.id_ingrediente">
-                {{ ing.nombre_ingrediente }}
-              </option>
-            </select>
-          </div>
-          <div class="form-row">
-            <div class="form-group half">
-              <label>Cantidad de Gramaje *</label>
-              <input type="number" [(ngModel)]="gramajeForm.cantidad_gramaje" name="cantidad_gramaje" class="form-control" required />
-            </div>
-            <div class="form-group half">
-              <label>Unidad de Medida</label>
-              <select [(ngModel)]="gramajeForm.id_unidad_medida" name="id_unidad_medida" class="form-control">
-                <option value="">Seleccione...</option>
-                <option *ngFor="let um of unidadesMedida" [value]="um.id_unidad_medida">
-                  {{ um.nombre_unidad }}
-                </option>
-              </select>
-            </div>
-          </div>
-          <div class="form-group">
-            <label>Descripción / Comentarios</label>
-            <textarea [(ngModel)]="gramajeForm.descripcion" name="descripcion" class="form-control" rows="2"></textarea>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn-secondary" (click)="cerrarFormulario()">Cancelar</button>
-            <button type="submit" class="btn-primary">Guardar</button>
-          </div>
-        </form>
+        </ng-container>
 
       </div>
+
+      <!-- Footer Modal -->
+      <div style="padding:16px 20px; background:#f8fafc; border-top:1px solid #e2e8f0; display:flex; justify-content:flex-end; gap:12px;">
+        <button type="button" (click)="cerrarFormulario()" style="padding:9px 16px; border-radius:10px; border:1px solid #cbd5e1; background:#ffffff; color:#475569; font-weight:600; font-size:13px; cursor:pointer;">Cancelar</button>
+        <button type="button" (click)="guardarInventario()" style="padding:9px 16px; border-radius:10px; border:none; background:#2563eb; color:#ffffff; font-weight:600; font-size:13px; cursor:pointer;">{{ modoEdicion ? 'Actualizar' : 'Guardar' }}</button>
+      </div>
+
     </div>
   </div>
 

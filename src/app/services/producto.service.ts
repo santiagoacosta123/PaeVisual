@@ -52,4 +52,19 @@ private apiInventario = 'https://backend-sirae-pyim.onrender.com/api/inventario/
     console.log('➡️ GET:', this.apiCategorias);
     return this.http.get<any>(this.apiCategorias);
   }
+
+  // MOVIMIENTOS
+  private apiMovimientos = 'https://backend-sirae-pyim.onrender.com/api/movimientos_inventario/';
+  
+  getMovimientos(): Observable<any> {
+    return this.http.get<any>(this.apiMovimientos);
+  }
+
+  crearMovimiento(movimiento: any): Observable<any> {
+    return this.http.post<any>(this.apiMovimientos, movimiento);
+  }
+
+  eliminarMovimiento(id: number): Observable<any> {
+    return this.http.delete<any>(`${this.apiMovimientos}${id}/`);
+  }
 }
