@@ -14,11 +14,13 @@ export class Productos implements OnInit {
   // Pestaña activa: inventario | movimientos | gramajes
   pestanaActiva: string = 'inventario';
 
+  
   // Variable para el funcionamiento de la barra de búsqueda
   filtroBusqueda: string = '';
 
   // Tablas principales
   inventario: any[] = [];
+  itemSeleccionado: any = null;
   movimientosInventario: any[] = [];
   gramajes: any[] = [];
 
