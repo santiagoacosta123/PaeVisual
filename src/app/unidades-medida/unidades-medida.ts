@@ -17,7 +17,7 @@ export class UnidadesMedidaComponent implements OnInit {
   cargando = false;
   modoEdicion = false;
   idSeleccionado: number | null = null;
-  mostrarModal = false; // Añadido por si usas modal como en roles/usuarios
+  mostrarModal = false;
 
   unidadForm = {
     nombre: '',
@@ -27,7 +27,7 @@ export class UnidadesMedidaComponent implements OnInit {
   constructor(
     private unidadService: UnidadMedidaService,
     private sweetAlert: SweetAlertService,
-    private cdr: ChangeDetectorRef // <--- 1. Inyectamos ChangeDetectorRef igual que en roles y usuarios
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -41,10 +41,8 @@ export class UnidadesMedidaComponent implements OnInit {
       next: (data: any) => {
         this.cargando = false;
         
-        // 2. Normalización robusta igual que en Roles/Usuarios
         const unidadesApi = Array.isArray(data) ? data : (data?.results || data?.data || data?.unidades || []);
         
-        // Mapeo para asegurar compatibilidad de nombres de ID en el backend
         this.unidades = unidadesApi.map((u: any) => ({
           ...u,
           id_unidad_medida: u.id_unidad_medida || u.id || u.pk,
@@ -53,7 +51,7 @@ export class UnidadesMedidaComponent implements OnInit {
         }));
 
         console.log('Unidades procesadas:', this.unidades);
-        this.cdr.detectChanges(); // <--- 3. Forzamos la actualización de la vista de Angular
+        this.cdr.detectChanges();
       },
       error: (error) => {
         this.cargando = false;

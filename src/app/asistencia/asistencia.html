@@ -1,181 +1,262 @@
-<div style="background:#fff; border:1px solid #e0e0e0; border-radius:10px; padding:24px; font-family:'Roboto',sans-serif;">
+<div class="flex flex-col gap-5 relative font-sans">
 
-  <!-- Encabezado del Módulo -->
-  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:1px solid #eee; padding-bottom:15px; flex-wrap:wrap; gap:10px;">
-    <div>
-      <h2 style="font-size:20px; font-weight:700; color:#333; margin:0;">Módulo de Asistencia y Grados</h2>
-      <p style="font-size:13px; color:#777; margin:4px 0 0 0;">Gestión de asistencia diaria y administración de grados escolares.</p>
-    </div>
-    
-    <!-- Pestañas internas para alternar entre Asistencia y Gestión de Grados -->
-    <div style="display:flex; background:#f3f4f6; padding:4px; border-radius:8px; gap:4px;">
-      <button type="button" (click)="cambiarPestanaAsistencia('asistencia')"
-        [style.background]="pestanaAsistenciaActiva === 'asistencia' ? '#111827' : 'transparent'"
-        [style.color]="pestanaAsistenciaActiva === 'asistencia' ? '#fff' : '#4b5563'"
-        style="border:none; border-radius:6px; padding:8px 14px; font-size:13px; font-weight:600; cursor:pointer;">
-        Asistencia Diaria
-      </button>
-      <button type="button" (click)="cambiarPestanaAsistencia('grados')"
-        [style.background]="pestanaAsistenciaActiva === 'grados' ? '#111827' : 'transparent'"
-        [style.color]="pestanaAsistenciaActiva === 'grados' ? '#fff' : '#4b5563'"
-        style="border:none; border-radius:6px; padding:8px 14px; font-size:13px; font-weight:600; cursor:pointer;">
-        Gestionar Grados
-      </button>
-    </div>
+  <!-- Barra de Pestañas Superior (Estilo idéntico a Contratos) -->
+  <div class="inline-flex bg-slate-100 p-1 rounded-2xl border border-slate-200 self-start gap-1">
+    <button type="button" (click)="cambiarPestanaAsistencia('asistencia')"
+      [class]="pestanaAsistenciaActiva === 'asistencia' ? 'bg-slate-900 text-white font-semibold shadow-xs' : 'bg-transparent text-slate-600 hover:text-slate-900 font-medium'"
+      class="px-4 py-2 rounded-xl text-xs transition cursor-pointer">
+      Asistencia por Grados
+    </button>
+
+    <button type="button" (click)="cambiarPestanaAsistencia('grados')"
+      [class]="pestanaAsistenciaActiva === 'grados' ? 'bg-slate-900 text-white font-semibold shadow-xs' : 'bg-transparent text-slate-600 hover:text-slate-900 font-medium'"
+      class="px-4 py-2 rounded-xl text-xs transition cursor-pointer">
+      Gestionar Grados
+    </button>
   </div>
 
-  <!-- VISTA 1: ASISTENCIA DIARIA -->
-  <div *ngIf="pestanaAsistenciaActiva === 'asistencia'">
-    
-    <!-- Botón de guardar asistencia -->
-    <div style="display:flex; justify-content:flex-end; margin-bottom:20px;">
-      <button type="button" (click)="guardarAsistencia()"
-        style="background:#f4b41f; color:#333; font-weight:700; border:none; border-radius:6px; padding:10px 16px; font-size:14px; cursor:pointer; display:flex; align-items:center; gap:8px;">
-        <span class="material-symbols-outlined" style="font-size:18px;">save</span>
-        Guardar en Base de Datos
-      </button>
-    </div>
+  <!-- VISTA 1: ASISTENCIA POR GRADOS -->
+  <div *ngIf="pestanaAsistenciaActiva === 'asistencia'" class="flex flex-col gap-4">
+    <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs">
 
-    <!-- Barra de Filtros -->
-    <div style="display:flex; gap:15px; margin-bottom:20px; flex-wrap:wrap;">
-      <div style="flex:1; min-width:200px;">
-        <label style="font-size:12px; font-weight:600; color:#777; display:block; margin-bottom:4px;">Fecha</label>
-        <input type="date" [(ngModel)]="fecha_registro"
-          style="width:100%; padding:8px 10px; border:1px solid #ddd; border-radius:6px; font-size:14px; outline:none; box-sizing:border-box;" />
-      </div>
-
-      <div style="flex:1; min-width:200px;">
-        <label style="font-size:12px; font-weight:600; color:#777; display:block; margin-bottom:4px;">Filtrar por Grado</label>
-        <select [(ngModel)]="id_grado_seleccionado"
-          style="width:100%; padding:8px 10px; border:1px solid #ddd; border-radius:6px; font-size:14px; outline:none; background:#fff; box-sizing:border-box;">
-          <option value="todos">Todos los grados</option>
-          <option *ngFor="let g of grados" [value]="g.id_grado">{{ g.nombre_grado }} ({{ g.jornada }})</option>
-        </select>
-      </div>
-
-      <div style="flex:2; min-width:250px;">
-        <label style="font-size:12px; font-weight:600; color:#777; display:block; margin-bottom:4px;">Buscar Estudiante</label>
-        <input type="text" [(ngModel)]="filtroBusqueda" placeholder="Escribe el nombre..."
-          style="width:100%; padding:8px 10px; border:1px solid #ddd; border-radius:6px; font-size:14px; outline:none; box-sizing:border-box;" />
-      </div>
-    </div>
-
-    <!-- Tabla de Asistencia -->
-    <div style="overflow-x:auto;">
-      <table style="width:100%; border-collapse:collapse; text-align:left; font-size:14px;">
-        <thead>
-          <tr style="background:#f9f9f9; border-bottom:2px solid #e0e0e0; color:#555;">
-            <th style="padding:12px;">Estudiante (Nombre Completo)</th>
-            <th style="padding:12px;">Grado y Jornada</th>
-            <th style="padding:12px; text-align:center;">Asistió / Presente</th>
-            <th style="padding:12px; text-align:center;">Valor (ninos_presentes)</th>
-            <th style="padding:12px;">Observaciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let est of estudiantesFiltrados" style="border-bottom:1px solid #eee;">
-            <td style="padding:12px; font-weight:500; color:#333;">{{ est.nombre_completo }}</td>
-            <td style="padding:12px; color:#555;">{{ obtenerInfoGrado(est.id_grado) }}</td>
-            <td style="padding:12px; text-align:center;">
-              <input type="checkbox" [checked]="est.asistio" (change)="toggleAsistencia(est)"
-                style="width:18px; height:18px; cursor:pointer;" />
-            </td>
-            <td style="padding:12px; text-align:center; font-weight:bold; color:#2e7d32;">
-              {{ est.ninos_presentes }}
-            </td>
-            <td style="padding:12px;">
-              <input type="text" [(ngModel)]="est.observaciones" placeholder="Nota..."
-                style="width:100%; padding:6px 8px; border:1px solid #ddd; border-radius:4px; font-size:13px; outline:none; box-sizing:border-box;" />
-            </td>
-          </tr>
-          <tr *ngIf="estudiantesFiltrados.length === 0">
-            <td colspan="5" style="text-align:center; padding:20px; color:#777;">No se encontraron estudiantes con los filtros seleccionados.</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-  </div>
-
-  <!-- VISTA 2: GESTIÓN DE GRADOS -->
-  <div *ngIf="pestanaAsistenciaActiva === 'grados'">
-    
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-      <h3 style="font-size:16px; font-weight:600; color:#333; margin:0;">Lista de Grados Escolares</h3>
-      <button type="button" (click)="abrirFormularioGrado()"
-        style="background:#2563eb; color:#fff; font-weight:600; border:none; border-radius:6px; padding:9px 14px; font-size:14px; cursor:pointer; display:flex; align-items:center; gap:6px;">
-        <span class="material-symbols-outlined" style="font-size:18px;">add_circle</span>
-        Nuevo Grado
-      </button>
-    </div>
-
-    <!-- Formulario Modal / Desplegable para Grados -->
-    <div *ngIf="mostrarFormularioGrado" style="background:#f9fafb; border:1px solid #e5e7eb; border-radius:8px; padding:20px; margin-bottom:20px;">
-      <h4 style="font-size:15px; font-weight:600; color:#1f2937; margin-top:0; margin-bottom:15px;">
-        {{ modoEdicionGrado ? 'Editar Grado' : 'Crear Nuevo Grado' }}
-      </h4>
-      
-      <div style="display:flex; gap:15px; flex-wrap:wrap; margin-bottom:15px;">
-        <div style="flex:2; min-width:220px;">
-          <label style="font-size:12px; font-weight:600; color:#4b5563; display:block; margin-bottom:4px;">Nombre del Grado</label>
-          <input type="text" [(ngModel)]="gradoForm.nombre_grado" placeholder="Ej. Grado 103"
-            style="width:100%; padding:8px 10px; border:1px solid #d1d5db; border-radius:6px; font-size:14px; outline:none; background:#fff; box-sizing:border-box;" />
+      <!-- Encabezado y Acciones -->
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
+        <div>
+          <h3 class="text-base font-bold text-slate-900 m-0">Control de Asistencia Diaria por Grados</h3>
+          <p class="text-xs text-slate-500 m-0">Registro consolidado de raciones y asistencia de estudiantes por curso escolar.</p>
         </div>
 
-        <div style="flex:1; min-width:200px;">
-          <label style="font-size:12px; font-weight:600; color:#4b5563; display:block; margin-bottom:4px;">Jornada</label>
-          <select [(ngModel)]="gradoForm.jornada"
-            style="width:100%; padding:8px 10px; border:1px solid #d1d5db; border-radius:6px; font-size:14px; outline:none; background:#fff; box-sizing:border-box;">
-            <option value="Mañana">Mañana</option>
-            <option value="Tarde">Tarde</option>
-            <option value="Única">Única</option>
+        <div class="flex flex-wrap items-center gap-2">
+          <!-- Filtro de Fecha -->
+          <div class="flex items-center gap-1.5 bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-700">
+            <span class="font-semibold text-slate-500">Fecha:</span>
+            <input type="date" [(ngModel)]="fecha_registro" class="border-none bg-transparent outline-none text-xs text-slate-900">
+          </div>
+
+          <!-- Filtro por Jornada -->
+          <select [(ngModel)]="filtroJornada" class="bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 outline-none cursor-pointer">
+            <option value="todas">Todas las Jornadas</option>
+            <option value="Mañana">Jornada Mañana</option>
+            <option value="Tarde">Jornada Tarde</option>
+          </select>
+
+          <!-- Botón Guardar Asistencia -->
+          <button type="button" (click)="guardarAsistencia()" class="bg-amber-400 hover:bg-amber-500 text-amber-950 font-semibold px-4 py-2 rounded-xl text-xs transition cursor-pointer whitespace-nowrap inline-flex items-center gap-1.5 shadow-2xs">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+            Guardar asistencia
+          </button>
+        </div>
+      </div>
+
+      <!-- Resumen Estadístico Rápido -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center justify-between">
+          <div>
+            <span class="text-[11px] font-semibold text-slate-500 block">Total Niños Esperados</span>
+            <span class="text-xl font-extrabold text-slate-900">{{ totalEsperados }}</span>
+          </div>
+          <span class="text-xs bg-slate-200 text-slate-700 font-bold px-2.5 py-1 rounded-lg">Matriculados</span>
+        </div>
+
+        <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-center justify-between">
+          <div>
+            <span class="text-[11px] font-semibold text-emerald-800 block">Asistieron Hoy</span>
+            <span class="text-xl font-extrabold text-emerald-900">{{ totalAsistieron }}</span>
+          </div>
+          <span class="text-xs bg-emerald-200 text-emerald-900 font-bold px-2.5 py-1 rounded-lg">Presentes</span>
+        </div>
+
+        <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center justify-between">
+          <div>
+            <span class="text-[11px] font-semibold text-amber-800 block">% Asistencia General</span>
+            <span class="text-xl font-extrabold text-amber-900">{{ porcentajeGeneral }}%</span>
+          </div>
+          <span class="text-xs bg-amber-200 text-amber-900 font-bold px-2.5 py-1 rounded-lg">Cumplimiento</span>
+        </div>
+      </div>
+
+      <!-- Tabla de Asistencia por Grados -->
+      <div class="overflow-x-auto">
+        <table class="w-full border-collapse text-left text-xs">
+          <thead>
+            <tr class="border-b border-slate-200 text-slate-500 font-semibold">
+              <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase">GRADO ESCOLAR</th>
+              <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase">JORNADA</th>
+              <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase w-44">NIÑOS ESPERADOS</th>
+              <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase w-44">ASISTIERON HOY</th>
+              <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase text-center w-36">% ASISTENCIA</th>
+            </tr>
+          </thead>
+          <tbody class="text-slate-900">
+            <tr *ngFor="let g of gradosFiltrados" class="border-b border-slate-100 hover:bg-slate-50/50 transition">
+              <!-- Nombre del Grado -->
+              <td class="py-3 px-3 font-semibold text-slate-900">
+                <span class="inline-flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-slate-900 inline-block"></span>
+                  {{ g.nombre_grado }}
+                </span>
+              </td>
+
+              <!-- Jornada -->
+              <td class="py-3 px-3">
+                <span [class]="g.jornada === 'Mañana' ? 'bg-amber-100 text-amber-900 border-amber-200' : 'bg-blue-100 text-blue-900 border-blue-200'" class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold border inline-block">
+                  {{ g.jornada }}
+                </span>
+              </td>
+
+              <!-- Niños Esperados (Editable) -->
+              <td class="py-3 px-3">
+                <div class="flex items-center gap-1.5">
+                  <input type="number" [(ngModel)]="g.ninos_esperados" min="0" class="w-24 px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-slate-500 text-center">
+                  <span class="text-slate-400 text-[11px]">niños</span>
+                </div>
+              </td>
+
+              <!-- Niños que Asistieron ese día (Editable) -->
+              <td class="py-3 px-3">
+                <div class="flex items-center gap-1.5">
+                  <input type="number" [(ngModel)]="g.ninos_asistieron" min="0" class="w-24 px-2.5 py-1.5 bg-emerald-50 border border-emerald-300 rounded-lg text-xs font-bold text-emerald-900 outline-none focus:bg-white focus:border-emerald-500 text-center">
+                  <span class="text-slate-400 text-[11px]">asistieron</span>
+                </div>
+              </td>
+
+              <!-- Porcentaje de Asistencia Calculado -->
+              <td class="py-3 px-3 text-center">
+                <div class="flex flex-col items-center gap-1">
+                  <span [class]="(g.ninos_esperados > 0 && (g.ninos_asistieron / g.ninos_esperados >= 0.8)) ? 'text-emerald-700 font-extrabold' : 'text-amber-700 font-extrabold'" class="text-xs">
+                    {{ (g.ninos_esperados > 0 ? (g.ninos_asistieron / g.ninos_esperados * 100) : 0) | number:'1.0-0' }}%
+                  </span>
+                  <div class="w-20 bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                    <div class="h-full rounded-full transition-all duration-300"
+                      [class]="(g.ninos_esperados > 0 && (g.ninos_asistieron / g.ninos_esperados >= 0.8)) ? 'bg-emerald-500' : 'bg-amber-400'"
+                      [style.width.%]="g.ninos_esperados > 0 ? (g.ninos_asistieron / g.ninos_esperados * 100) : 0">
+                    </div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+
+            <tr *ngIf="gradosFiltrados.length === 0">
+              <td colspan="5" class="py-6 px-3 text-center text-slate-400 italic">
+                No se encontraron grados registrados para la jornada seleccionada.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pie de tabla con botón final de confirmación -->
+      <div class="flex items-center justify-between pt-3.5 mt-3.5 border-t border-slate-100 text-xs text-slate-500">
+        <span>Mostrando {{ gradosFiltrados.length }} grados registrados</span>
+        <button type="button" (click)="guardarAsistencia()" class="bg-slate-900 hover:bg-slate-800 text-white font-semibold px-5 py-2 rounded-xl text-xs transition cursor-pointer shadow-2xs">
+          Confirmar y Guardar Asistencia
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- VISTA 2: GESTIONAR GRADOS -->
+  <div *ngIf="pestanaAsistenciaActiva === 'grados'" class="flex flex-col gap-4">
+    <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs">
+
+      <!-- Encabezado -->
+      <div class="flex items-center justify-between gap-3 mb-4">
+        <div>
+          <h3 class="text-base font-bold text-slate-900 m-0">Catálogo de Grados Escolares</h3>
+          <p class="text-xs text-slate-500 m-0">Administración de grados, jornadas y cupos base vinculados al PAE.</p>
+        </div>
+
+        <button type="button" (click)="abrirFormularioGrado()" class="bg-amber-400 hover:bg-amber-500 text-amber-950 font-semibold px-4 py-2 rounded-xl text-xs transition cursor-pointer whitespace-nowrap inline-flex items-center gap-1.5 shadow-2xs">
+          <span>+ Nuevo grado</span>
+        </button>
+      </div>
+
+      <!-- Tabla de Grados -->
+      <div class="overflow-x-auto">
+        <table class="w-full border-collapse text-left text-xs">
+          <thead>
+            <tr class="border-b border-slate-200 text-slate-500 font-semibold">
+              <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase w-20">ID</th>
+              <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase">NOMBRE DEL GRADO</th>
+              <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase">JORNADA</th>
+              <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase">NIÑOS ESPERADOS BASE</th>
+              <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase text-right">ACCIONES</th>
+            </tr>
+          </thead>
+          <tbody class="text-slate-900">
+            <tr *ngFor="let g of grados" class="border-b border-slate-100 hover:bg-slate-50/50 transition">
+              <td class="py-3 px-3 font-bold text-slate-500">#{{ g.id_grado }}</td>
+              <td class="py-3 px-3 font-semibold text-slate-900">{{ g.nombre_grado }}</td>
+              <td class="py-3 px-3">
+                <span [class]="g.jornada === 'Mañana' ? 'bg-amber-100 text-amber-900 border-amber-200' : 'bg-blue-100 text-blue-900 border-blue-200'" class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold border inline-block">
+                  {{ g.jornada }}
+                </span>
+              </td>
+              <td class="py-3 px-3 font-bold text-slate-900">{{ g.ninos_esperados }} estudiantes</td>
+              <td class="py-3 px-3 text-right">
+                <div class="flex items-center justify-end gap-1.5">
+                  <button type="button" (click)="abrirFormularioGrado(g)" class="w-8 h-8 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-300 text-slate-600 hover:text-slate-900 inline-flex items-center justify-center transition cursor-pointer" title="Editar">
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                  </button>
+                  <button type="button" (click)="eliminarGrado(g)" class="w-8 h-8 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-300 text-slate-600 hover:text-slate-900 inline-flex items-center justify-center transition cursor-pointer" title="Eliminar">
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="3 6 5 6 21 6"></polyline>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                      <line x1="10" y1="11" x2="10" y2="17"></line>
+                      <line x1="14" y1="11" x2="14" y2="17"></line>
+                    </svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL DE CREACIÓN / EDICIÓN DE GRADO -->
+  <div *ngIf="mostrarFormularioGrado" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+    <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xl w-full max-w-md space-y-4">
+      
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <h3 class="text-base font-bold text-slate-900 m-0">
+          {{ modoEdicionGrado ? 'EDITAR GRADO' : 'NUEVO GRADO' }}
+        </h3>
+        <button type="button" (click)="cerrarFormularioGrado()" class="text-slate-400 hover:text-slate-600 text-lg cursor-pointer bg-transparent border-none">✕</button>
+      </div>
+
+      <div class="flex flex-col gap-3.5 text-xs">
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1.5">Nombre del Grado *</label>
+          <input type="text" [(ngModel)]="gradoForm.nombre_grado" placeholder="Ej. Grado 1°, Transición..." class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500">
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1.5">Jornada *</label>
+          <select [(ngModel)]="gradoForm.jornada" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500 cursor-pointer">
+            <option value="Mañana">Jornada Mañana</option>
+            <option value="Tarde">Jornada Tarde</option>
           </select>
         </div>
+
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1.5">Niños Esperados Base</label>
+          <input type="number" [(ngModel)]="gradoForm.ninos_esperados" min="0" placeholder="Ej. 40" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500">
+        </div>
       </div>
 
-      <div style="display:flex; justify-content:flex-end; gap:10px;">
-        <button type="button" (click)="cerrarFormularioGrado()"
-          style="background:#e5e7eb; color:#374151; font-weight:500; border:none; border-radius:6px; padding:8px 14px; font-size:14px; cursor:pointer;">
-          Cancelar
-        </button>
-        <button type="button" (click)="guardarGrado()"
-          style="background:#10b981; color:#fff; font-weight:600; border:none; border-radius:6px; padding:8px 16px; font-size:14px; cursor:pointer;">
-          {{ modoEdicionGrado ? 'Actualizar Grado' : 'Guardar Grado' }}
-        </button>
+      <div class="flex items-center justify-end gap-3 pt-3.5 border-t border-slate-100">
+        <button type="button" (click)="cerrarFormularioGrado()" class="bg-white border border-slate-300 text-slate-700 font-semibold px-4 py-2 rounded-xl text-xs hover:bg-slate-50 transition cursor-pointer">Cancelar</button>
+        <button type="button" (click)="guardarGrado()" class="bg-slate-900 hover:bg-slate-800 text-white font-semibold px-4 py-2 rounded-xl text-xs transition cursor-pointer shadow-2xs">Guardar Grado</button>
       </div>
-    </div>
 
-    <!-- Tabla de Grados -->
-    <div style="overflow-x:auto;">
-      <table style="width:100%; border-collapse:collapse; text-align:left; font-size:14px;">
-        <thead>
-          <tr style="background:#f9f9f9; border-bottom:2px solid #e0e0e0; color:#555;">
-            <th style="padding:12px;">ID</th>
-            <th style="padding:12px;">Nombre del Grado</th>
-            <th style="padding:12px;">Jornada</th>
-            <th style="padding:12px; text-align:center;">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let g of grados" style="border-bottom:1px solid #eee;">
-            <td style="padding:12px; color:#555;">{{ g.id_grado }}</td>
-            <td style="padding:12px; font-weight:500; color:#333;">{{ g.nombre_grado }}</td>
-            <td style="padding:12px; color:#555;">{{ g.jornada }}</td>
-            <td style="padding:12px; text-align:center; display:flex; justify-content:center; gap:8px;">
-              <button type="button" (click)="abrirFormularioGrado(g)"
-                style="background:transparent; border:none; cursor:pointer; color:#2563eb;" title="Editar">
-                <span class="material-symbols-outlined" style="font-size:18px;">edit</span>
-              </button>
-              <button type="button" (click)="eliminarGrado(g)"
-                style="background:transparent; border:none; cursor:pointer; color:#dc2626;" title="Eliminar">
-                <span class="material-symbols-outlined" style="font-size:18px;">delete</span>
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
     </div>
-
   </div>
 
 </div>
