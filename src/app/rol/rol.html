@@ -1,116 +1,136 @@
-<div class="space-y-6">
-  
-  <!-- Encabezado Principal -->
-  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-md border border-slate-200">
-    <div>
-      <h1 class="text-2xl font-black text-slate-800">Gestión de Roles</h1>
-      <p class="text-sm text-slate-500 mt-1">Configuración y administración de perfiles de acceso para el sistema SIRAE</p>
-    </div>
-    <div class="flex items-center gap-3">
-      <!-- Botón para abrir modal de creación -->
-      <button type="button" (click)="abrirFormulario()" class="bg-[#FAB41F] hover:bg-[#e2a21b] px-4 py-2.5 rounded-xl font-bold text-slate-900 shadow-sm transition text-sm flex items-center gap-2 cursor-pointer border border-amber-300">
-        <span class="material-symbols-outlined text-[18px]">security</span>
-        Nuevo Rol
+<div class="flex flex-col gap-5 relative font-sans">
+
+  <!-- Contenedor Principal en Tarjeta Blanca -->
+  <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs">
+
+    <!-- Encabezado con Título y Botón -->
+    <div class="flex items-center justify-between gap-3 mb-4">
+      <div>
+        <h3 class="text-base font-bold text-slate-900 m-0">Gestión de Roles</h3>
+        <p class="text-xs text-slate-500 m-0">Configuración y administración de perfiles de acceso para el sistema PAE.</p>
+      </div>
+
+      <!-- Botón Nuevo Rol -->
+      <button type="button" (click)="abrirFormulario()" class="bg-amber-400 hover:bg-amber-500 text-amber-950 font-semibold px-4 py-2 rounded-xl text-xs transition cursor-pointer whitespace-nowrap inline-flex items-center gap-1.5 shadow-2xs">
+        <span>+ Nuevo rol</span>
       </button>
     </div>
-  </div>
 
-  <!-- Tarjetas de Estadísticas / Resumen -->
-  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
-      <div>
-        <p class="text-xs font-extrabold text-slate-400 uppercase tracking-wider">Total Roles Registrados</p>
-        <h3 class="text-2xl font-black text-slate-800 mt-1">{{ roles.length }}</h3>
-      </div>
-      <div class="p-3 bg-amber-50 text-[#FAB41F] border border-amber-200 rounded-2xl">
-        <span class="material-symbols-outlined text-2xl">admin_panel_settings</span>
-      </div>
-    </div>
-    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
-      <div>
-        <p class="text-xs font-extrabold text-slate-400 uppercase tracking-wider">Estado del Sistema</p>
-        <h3 class="text-xl font-black text-emerald-600 mt-1">Sincronizado</h3>
-      </div>
-      <div class="p-3 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-2xl">
-        <span class="material-symbols-outlined text-2xl">check_circle</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- Tabla de Roles -->
-  <div class="bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden">
-    <div class="p-5 border-b border-slate-200 bg-slate-50/80">
-      <h3 class="text-sm font-black text-slate-700 uppercase tracking-wider">Listado de Perfiles</h3>
-    </div>
-
+    <!-- Tabla de Roles -->
     <div class="overflow-x-auto">
-      <table class="w-full text-sm">
-        <thead class="bg-slate-100 text-slate-700 font-extrabold border-b border-slate-200">
-          <tr>
-            <th class="p-4 text-left">ID</th>
-            <th class="p-4 text-left">Nombre del Rol</th>
-            <th class="p-4 text-left">Descripción</th>
-            <th class="p-4 text-center">Acciones</th>
+      <table class="w-full border-collapse text-left text-xs">
+        <thead>
+          <tr class="border-b border-slate-200 text-slate-500 font-semibold">
+            <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase w-20">ID</th>
+            <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase">NOMBRE DEL ROL</th>
+            <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase">DESCRIPCIÓN</th>
+            <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase">ESTADO</th>
+            <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase text-right">ACCIONES</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-slate-200">
-          <tr *ngIf="roles.length === 0">
-            <td colspan="4" class="p-8 text-center text-slate-400 font-medium">No se encontraron roles registrados.</td>
-          </tr>
-          <tr *ngFor="let r of roles" class="hover:bg-amber-50/30 transition">
-            <td class="p-4 font-bold text-slate-600">#{{ r.id_rol }}</td>
-            <td class="p-4 font-bold text-slate-800">
-              <span class="px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-300">
+        <tbody class="text-slate-900">
+          <tr *ngFor="let r of roles" class="border-b border-slate-100 hover:bg-slate-50/50 transition">
+            <!-- ID -->
+            <td class="py-3 px-3 font-bold text-slate-500">
+              #{{ r.id_rol }}
+            </td>
+
+            <!-- Nombre del Rol -->
+            <td class="py-3 px-3">
+              <span class="px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-900 border border-amber-200 inline-block">
                 {{ r.nombre }}
               </span>
             </td>
-            <td class="p-4 text-slate-600">{{ r.descripcion }}</td>
-            <td class="p-4 text-center">
-              <div class="flex items-center justify-center gap-2">
-                <!-- Botón Editar limpio -->
-                <button type="button" (click)="editarRol(r)" class="text-slate-500 hover:text-[#FAB41F] transition p-1 cursor-pointer" title="Editar">
-                  <span class="material-symbols-outlined text-[20px]">edit</span>
+
+            <!-- Descripción -->
+            <td class="py-3 px-3 text-slate-600 max-w-xs">
+              {{ r.descripcion || 'Sin descripción detallada para este perfil PAE.' }}
+            </td>
+
+            <!-- Estado -->
+            <td class="py-3 px-3">
+              <span class="bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full text-[11px] font-semibold inline-flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span>
+                Activo
+              </span>
+            </td>
+
+            <!-- Acciones -->
+            <td class="py-3 px-3 text-right">
+              <div class="flex items-center justify-end gap-1.5">
+                <button type="button" (click)="editarRol(r)" class="w-8 h-8 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-300 text-slate-600 hover:text-slate-900 inline-flex items-center justify-center transition cursor-pointer" title="Editar">
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                  </svg>
                 </button>
-                <!-- Botón Eliminar limpio -->
-                <button type="button" (click)="eliminarRol(r)" class="text-slate-500 hover:text-red-600 transition p-1 cursor-pointer" title="Eliminar">
-                  <span class="material-symbols-outlined text-[20px]">delete</span>
+                <button type="button" (click)="eliminarRol(r)" class="w-8 h-8 rounded-lg bg-slate-50 hover:bg-rose-50 border border-slate-300 text-slate-600 hover:text-rose-600 inline-flex items-center justify-center transition cursor-pointer" title="Eliminar">
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    <line x1="10" y1="11" x2="10" y2="17"></line>
+                    <line x1="14" y1="11" x2="14" y2="17"></line>
+                  </svg>
                 </button>
               </div>
+            </td>
+          </tr>
+
+          <!-- Estado vacío -->
+          <tr *ngIf="roles.length === 0">
+            <td colspan="5" class="py-6 px-3 text-center text-slate-400 italic">
+              No se encontraron roles registrados.
             </td>
           </tr>
         </tbody>
       </table>
     </div>
-  </div>
 
-  <!-- MODAL DE CREACIÓN / EDICIÓN DE ROLES -->
-  <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4 overflow-y-auto" *ngIf="mostrarModal">
-    <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-150">
-      
-      <!-- Modal Header -->
-      <div class="flex items-center justify-between px-6 py-4 bg-slate-50 border-b border-slate-200">
-        <h3 class="text-lg font-black text-slate-800">{{ modoEdicion ? 'Editar Rol' : 'Registrar Nuevo Rol' }}</h3>
-        <button type="button" (click)="cerrarFormulario()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer">
-          <span class="material-symbols-outlined">close</span>
+    <!-- Pie de tabla: Paginación -->
+    <div class="flex items-center justify-between pt-3.5 mt-3.5 border-t border-slate-100 text-xs text-slate-500">
+      <span>Mostrando {{ roles.length }} registros</span>
+      <div class="flex items-center gap-1.5">
+        <button type="button" class="w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 inline-flex items-center justify-center cursor-pointer">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        </button>
+        <span class="w-7 h-7 rounded-lg bg-slate-900 text-white font-semibold inline-flex items-center justify-center text-xs">1</span>
+        <button type="button" class="w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 inline-flex items-center justify-center cursor-pointer">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
         </button>
       </div>
+    </div>
 
-      <!-- Modal Body -->
-      <div class="p-6 space-y-4">
+  </div>
+
+  <!-- MODAL DE CREACIÓN / EDICIÓN DE ROL -->
+  <div *ngIf="mostrarModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+    <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto space-y-4">
+      
+      <!-- Encabezado del Modal -->
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <h3 class="text-base font-bold text-slate-900 m-0">
+          {{ modoEdicion ? 'EDITAR ROL' : 'NUEVO ROL' }}
+        </h3>
+        <button type="button" (click)="cerrarFormulario()" class="text-slate-400 hover:text-slate-600 text-lg cursor-pointer bg-transparent border-none">✕</button>
+      </div>
+
+      <!-- Campos del formulario -->
+      <div class="flex flex-col gap-3.5 text-xs">
         <div>
-          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nombre del Rol</label>
-          <input type="text" [(ngModel)]="rolForm.nombre" placeholder="Ej. Administrador, Supervisor..." class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#FAB41F] focus:outline-none">
+          <label class="block font-semibold text-slate-700 mb-1.5">Nombre del Rol *</label>
+          <input type="text" [(ngModel)]="rolForm.nombre" name="nombre" placeholder="Ej. Administrador PAE, Coordinador..." class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500">
         </div>
+
         <div>
-          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Descripción</label>
-          <textarea [(ngModel)]="rolForm.descripcion" rows="3" placeholder="Detalle las funciones de este perfil..." class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#FAB41F] focus:outline-none"></textarea>
+          <label class="block font-semibold text-slate-700 mb-1.5">Descripción *</label>
+          <textarea [(ngModel)]="rolForm.descripcion" name="descripcion" rows="3" placeholder="Detalle las funciones del rol dentro del sistema PAE..." class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500 resize-y"></textarea>
         </div>
       </div>
 
-      <!-- Modal Footer -->
-      <div class="flex items-center justify-end gap-3 px-6 py-4 bg-slate-50 border-t border-slate-200">
-        <button type="button" (click)="cerrarFormulario()" class="px-4 py-2 rounded-xl border border-slate-300 bg-white text-slate-700 font-semibold text-sm hover:bg-slate-100 cursor-pointer">Cancelar</button>
-        <button type="button" (click)="guardarRol()" class="px-5 py-2 rounded-xl bg-[#FAB41F] hover:bg-amber-500 text-slate-900 font-bold text-sm shadow-sm cursor-pointer">Guardar Rol</button>
+      <!-- Pie del Modal -->
+      <div class="flex items-center justify-end gap-3 pt-3.5 border-t border-slate-100">
+        <button type="button" (click)="cerrarFormulario()" class="bg-white border border-slate-300 text-slate-700 font-semibold px-4 py-2 rounded-xl text-xs hover:bg-slate-50 transition cursor-pointer">Cancelar</button>
+        <button type="button" (click)="guardarRol()" class="bg-slate-900 hover:bg-slate-800 text-white font-semibold px-4 py-2 rounded-xl text-xs transition cursor-pointer shadow-2xs">Guardar Rol</button>
       </div>
 
     </div>

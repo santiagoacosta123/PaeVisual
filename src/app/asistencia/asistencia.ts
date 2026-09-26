@@ -11,11 +11,9 @@ import { FormsModule } from '@angular/forms';
 })
 export class AsistenciaComponent {
   
-  // Campos de control general
-  id_grado_seleccionado: string = 'todos';
   fecha_registro: string = new Date().toISOString().split('T')[0];
   id_usuario_manipuladorajefe: number = 1; 
-  filtroBusqueda: string = '';
+  filtroJornada: string = 'todas';
 
   // Control de pestañas internas: 'asistencia' | 'grados'
   pestanaAsistenciaActiva: string = 'asistencia';
@@ -28,23 +26,24 @@ export class AsistenciaComponent {
   gradoForm: any = {
     id_grado: null,
     nombre_grado: '',
-    jornada: 'Mañana'
+    jornada: 'Mañana',
+    ninos_esperados: 40,
+    ninos_asistieron: 0
   };
 
-  // Catálogo de grados con su respectiva jornada
+  // Lista de grados de Primero a Once con cantidad esperada y asistentes
   grados = [
-    { id_grado: 1, nombre_grado: 'Grado 101', jornada: 'Mañana' },
-    { id_grado: 2, nombre_grado: 'Grado 102', jornada: 'Tarde' },
-    { id_grado: 3, nombre_grado: 'Grado 201', jornada: 'Mañana' }
-  ];
-
-  // Lista de estudiantes fijos vinculados a los grados
-  estudiantes = [
-    { id: 1, nombre_completo: 'Carlos Andrés Pérez', id_grado: 1, asistio: true, ninos_presentes: 1, observaciones: 'Ninguna' },
-    { id: 2, nombre_completo: 'María Alejandra Gómez', id_grado: 1, asistio: true, ninos_presentes: 1, observaciones: 'Ninguna' },
-    { id: 3, nombre_completo: 'Juan José Rodríguez', id_grado: 2, asistio: false, ninos_presentes: 0, observaciones: 'Inasistencia injustificada' },
-    { id: 4, nombre_completo: 'Ana Sofia Martínez', id_grado: 3, asistio: true, ninos_presentes: 1, observaciones: 'Llegó tarde' },
-    { id: 5, nombre_completo: 'Luis Fernando Torres', id_grado: 3, asistio: true, ninos_presentes: 1, observaciones: 'Ninguna' }
+    { id_grado: 1, nombre_grado: 'Primero (1°)', jornada: 'Mañana', ninos_esperados: 40, ninos_asistieron: 30 },
+    { id_grado: 2, nombre_grado: 'Segundo (2°)', jornada: 'Mañana', ninos_esperados: 38, ninos_asistieron: 25 },
+    { id_grado: 3, nombre_grado: 'Tercero (3°)', jornada: 'Mañana', ninos_esperados: 35, ninos_asistieron: 32 },
+    { id_grado: 4, nombre_grado: 'Cuarto (4°)', jornada: 'Mañana', ninos_esperados: 42, ninos_asistieron: 39 },
+    { id_grado: 5, nombre_grado: 'Quinto (5°)', jornada: 'Mañana', ninos_esperados: 40, ninos_asistieron: 37 },
+    { id_grado: 6, nombre_grado: 'Sexto (6°)', jornada: 'Tarde', ninos_esperados: 45, ninos_asistieron: 40 },
+    { id_grado: 7, nombre_grado: 'Séptimo (7°)', jornada: 'Tarde', ninos_esperados: 42, ninos_asistieron: 38 },
+    { id_grado: 8, nombre_grado: 'Octavo (8°)', jornada: 'Tarde', ninos_esperados: 38, ninos_asistieron: 34 },
+    { id_grado: 9, nombre_grado: 'Noveno (9°)', jornada: 'Tarde', ninos_esperados: 36, ninos_asistieron: 30 },
+    { id_grado: 10, nombre_grado: 'Décimo (10°)', jornada: 'Tarde', ninos_esperados: 35, ninos_asistieron: 33 },
+    { id_grado: 11, nombre_grado: 'Once (11°)', jornada: 'Tarde', ninos_esperados: 34, ninos_asistieron: 30 }
   ];
 
   cambiarPestanaAsistencia(pestana: string): void {
@@ -52,19 +51,26 @@ export class AsistenciaComponent {
     this.cerrarFormularioGrado();
   }
 
-  // Función para traducir el ID del grado al formato legible "Nombre Grado (Jornada)"
-  obtenerInfoGrado(idGrado: number): string {
-    const gradoEncontrado = this.grados.find(g => g.id_grado == idGrado);
-    return gradoEncontrado ? `${gradoEncontrado.nombre_grado} (${gradoEncontrado.jornada})` : 'Sin asignar';
+  // Filtrar según la jornada seleccionada
+  get gradosFiltrados() {
+    if (this.filtroJornada === 'todas') {
+      return this.grados;
+    }
+    return this.grados.filter(g => g.jornada.toLowerCase() === this.filtroJornada.toLowerCase());
   }
 
-  // Filtrar según el grado seleccionado y la barra de búsqueda
-  get estudiantesFiltrados() {
-    return this.estudiantes.filter(est => {
-      const coincideGrado = this.id_grado_seleccionado === 'todos' || est.id_grado.toString() === this.id_grado_seleccionado.toString();
-      const coincideBusqueda = est.nombre_completo.toLowerCase().includes(this.filtroBusqueda.toLowerCase());
-      return coincideGrado && coincideBusqueda;
-    });
+  // Totales calculados para resumen
+  get totalEsperados(): number {
+    return this.gradosFiltrados.reduce((acc, g) => acc + (Number(g.ninos_esperados) || 0), 0);
+  }
+
+  get totalAsistieron(): number {
+    return this.gradosFiltrados.reduce((acc, g) => acc + (Number(g.ninos_asistieron) || 0), 0);
+  }
+
+  get porcentajeGeneral(): number {
+    if (this.totalEsperados === 0) return 0;
+    return Math.round((this.totalAsistieron / this.totalEsperados) * 100);
   }
 
   // Gestión de Grados
@@ -77,7 +83,7 @@ export class AsistenciaComponent {
     } else {
       this.modoEdicionGrado = false;
       this.indiceEdicionGrado = null;
-      this.gradoForm = { id_grado: null, nombre_grado: '', jornada: 'Mañana' };
+      this.gradoForm = { id_grado: null, nombre_grado: '', jornada: 'Mañana', ninos_esperados: 35, ninos_asistieron: 0 };
     }
   }
 
@@ -85,7 +91,7 @@ export class AsistenciaComponent {
     this.mostrarFormularioGrado = false;
     this.modoEdicionGrado = false;
     this.indiceEdicionGrado = null;
-    this.gradoForm = { id_grado: null, nombre_grado: '', jornada: 'Mañana' };
+    this.gradoForm = { id_grado: null, nombre_grado: '', jornada: 'Mañana', ninos_esperados: 35, ninos_asistieron: 0 };
   }
 
   guardarGrado(): void {
@@ -110,13 +116,7 @@ export class AsistenciaComponent {
   }
 
   eliminarGrado(grado: any): void {
-    const enUso = this.estudiantes.some(e => e.id_grado === grado.id_grado);
-    if (enUso) {
-      alert('No se puede eliminar este grado porque tiene estudiantes asociados.');
-      return;
-    }
-
-    if (confirm(`¿Desea eliminar el grado ${grado.nombre_grado}?`)) {
+    if (confirm(`¿Desea eliminar el ${grado.nombre_grado}?`)) {
       const index = this.grados.indexOf(grado);
       if (index > -1) {
         this.grados.splice(index, 1);
@@ -125,26 +125,23 @@ export class AsistenciaComponent {
     }
   }
 
-  // Cambiar asistencia y actualizar el indicador ninos_presentes (1 o 0)
-  toggleAsistencia(estudiante: any) {
-    estudiante.asistio = !estudiante.asistio;
-    estudiante.ninos_presentes = estudiante.asistio ? 1 : 0;
-  }
-
-  // Guardar datos listos para enviar a tu API de Django (tabla asistencia_diaria)
+  // Guardar asistencia diaria por grados
   guardarAsistencia() {
     const payloadAsistencia = {
       fecha: this.fecha_registro,
       id_usuario_manipuladorajefe: this.id_usuario_manipuladorajefe,
-      registros: this.estudiantes.map(e => ({
-        id_estudiante: e.id,
-        id_grado: e.id_grado,
-        ninos_presentes: e.ninos_presentes,
-        observaciones: e.observaciones
+      total_esperados: this.totalEsperados,
+      total_asistieron: this.totalAsistieron,
+      registros: this.grados.map(g => ({
+        id_grado: g.id_grado,
+        nombre_grado: g.nombre_grado,
+        jornada: g.jornada,
+        ninos_esperados: Number(g.ninos_esperados) || 0,
+        ninos_asistieron: Number(g.ninos_asistieron) || 0
       }))
     };
 
-    console.log('Datos preparados para la BD (asistencia_diaria):', payloadAsistencia);
-    alert('¡Registro de asistencia diaria guardado correctamente en el sistema!');
+    console.log('Datos preparados para la BD (asistencia_diaria por grados):', payloadAsistencia);
+    alert('¡Registro de asistencia diaria por grados guardado correctamente en el sistema!');
   }
 }

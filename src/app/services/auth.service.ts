@@ -24,7 +24,7 @@ export class AuthService {
   ) {}
 
   login(credenciales: { correo: string; clave: string }): Observable<LoginResponse> {
-    console.log('POST LOGIN:', credenciales);
+    console.log('POST LOGIN LOCAL:', credenciales);
 
     return this.http.post<LoginResponse>(this.apiUrl, {
       correo: credenciales.correo,

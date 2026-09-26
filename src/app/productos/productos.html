@@ -1,248 +1,526 @@
-<div class="space-y-6 p-2">
-  
-  <!-- Encabezado de Módulo y Pestañas -->
-  <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-    <div>
-      <span class="text-[11px] font-black uppercase tracking-widest text-amber-600 bg-amber-50 px-2.5 py-1 rounded-md border border-amber-200/60">Módulo SIRAE</span>
-      <h1 class="text-2xl font-black tracking-tight text-slate-800 mt-2">Inventario y Conexiones</h1>
-      <p class="text-xs text-slate-400 mt-0.5">Gestión completa de inventarios, movimientos y gramajes relacionados.</p>
-    </div>
+<div class="flex flex-col gap-5 relative font-sans">
 
-    <!-- Pestañas de Navegación -->
-    <div class="flex items-center gap-1.5 bg-slate-100/80 p-1.5 rounded-xl border border-slate-200/60 self-start lg:self-auto">
-      <button type="button" (click)="cambiarPestana('inventario')" [class]="pestanaActiva === 'inventario' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'" class="px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer">Inventario</button>
-      <button type="button" (click)="cambiarPestana('movimientos')" [class]="pestanaActiva === 'movimientos' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'" class="px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer">Movimientos</button>
-      <button type="button" (click)="cambiarPestana('gramajes')" [class]="pestanaActiva === 'gramajes' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'" class="px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer">Gramajes</button>
-    </div>
-  </div>
+  <!-- Barra de Pestañas Superior (Estilo idéntico a Contratos) -->
+  <div class="inline-flex bg-slate-100 p-1 rounded-2xl border border-slate-200 self-start gap-1">
+    <button type="button" (click)="cambiarPestana('inventario')"
+      [class]="pestanaActiva === 'inventario' ? 'bg-slate-900 text-white font-semibold shadow-xs' : 'bg-transparent text-slate-600 hover:text-slate-900 font-medium'"
+      class="px-4 py-2 rounded-xl text-xs transition cursor-pointer">
+      Inventario
+    </button>
 
-  <!-- Botón de Acción Principal -->
-  <div class="flex justify-end">
-    <button type="button" (click)="abrirFormulario()" class="bg-[#FAB41F] hover:bg-[#e2a21b] px-5 py-2.5 rounded-xl font-black text-slate-900 shadow-sm transition-all duration-200 text-xs flex items-center gap-2 cursor-pointer border border-amber-300/80 active:scale-95">
-      <span class="material-symbols-outlined text-[18px]">add_box</span>
-      {{ pestanaActiva === 'inventario' ? 'Nuevo Insumo' : pestanaActiva === 'movimientos' ? 'Registrar Movimiento' : 'Registrar Gramaje' }}
+    <button type="button" (click)="cambiarPestana('movimientos')"
+      [class]="pestanaActiva === 'movimientos' ? 'bg-slate-900 text-white font-semibold shadow-xs' : 'bg-transparent text-slate-600 hover:text-slate-900 font-medium'"
+      class="px-4 py-2 rounded-xl text-xs transition cursor-pointer">
+      Movimientos
+    </button>
+
+    <button type="button" (click)="cambiarPestana('gramajes')"
+      [class]="pestanaActiva === 'gramajes' ? 'bg-slate-900 text-white font-semibold shadow-xs' : 'bg-transparent text-slate-600 hover:text-slate-900 font-medium'"
+      class="px-4 py-2 rounded-xl text-xs transition cursor-pointer">
+      Gramajes
     </button>
   </div>
 
-  <!-- Formulario Desplegable Estilizado -->
-  <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200 transition-all duration-300" *ngIf="mostrarFormulario">
-    <div class="flex items-center justify-between pb-4 mb-5 border-b border-slate-100">
-      <div class="flex items-center gap-2">
-        <span class="material-symbols-outlined text-[#FAB41F]">edit_square</span>
-        <h3 class="text-sm font-black text-slate-800 uppercase tracking-wider">
-          {{ editandoId ? 'Editar Registro' : 'Formulario de Registro' }} ({{ pestanaActiva }})
+  <!-- PESTAÑA 1: INVENTARIO -->
+  <div *ngIf="pestanaActiva === 'inventario'" class="flex flex-col gap-4">
+    <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs">
+
+      <!-- Encabezado -->
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
+        <div>
+          <h3 class="text-base font-bold text-slate-900 m-0">Control de Inventario</h3>
+          <p class="text-xs text-slate-500 m-0">Existencias de insumos, materias primas y alimentos del programa.</p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <!-- Buscador -->
+          <div class="flex items-center gap-2 bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 min-w-[240px]">
+            <svg class="w-4 h-4 text-slate-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" [(ngModel)]="filtroBusqueda" placeholder="Buscar por ingrediente, categoría..." class="border-none bg-transparent outline-none text-xs text-slate-900 w-full placeholder-slate-400">
+          </div>
+
+          <!-- Botón Registrar Insumo -->
+          <button type="button" (click)="abrirFormulario()" class="bg-amber-400 hover:bg-amber-500 text-amber-950 font-semibold px-4 py-2 rounded-xl text-xs transition cursor-pointer whitespace-nowrap inline-flex items-center gap-1.5 shadow-2xs">
+            <span>+ Registrar Insumo</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Tabla de Inventario -->
+      <div class="overflow-x-auto">
+        <table class="w-full border-collapse text-left text-xs">
+          <thead>
+            <tr class="border-b border-slate-200 text-slate-500 font-semibold">
+              <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase">INGREDIENTE / INSUMO</th>
+              <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase">CATEGORÍA</th>
+              <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase">STOCK ACTUAL</th>
+              <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase">STOCK MÍNIMO</th>
+              <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase">UNIDAD</th>
+              <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase text-right">ACCIONES</th>
+            </tr>
+          </thead>
+          <tbody class="text-slate-900">
+            <ng-container *ngFor="let item of inventarioFiltrado">
+              <tr class="border-b border-slate-100 hover:bg-slate-50/50 transition">
+                <!-- Nombre Insumo -->
+                <td class="py-3 px-3 font-semibold text-slate-900">
+                  {{ item.nombre_ingrediente }}
+                  <span *ngIf="item.marca_ingrediente" class="block text-[11px] text-slate-500 font-normal">Marca: {{ item.marca_ingrediente }}</span>
+                </td>
+
+                <!-- Categoría -->
+                <td class="py-3 px-3">
+                  <span class="bg-slate-100 text-slate-600 px-2.5 py-0.5 rounded-full text-[11px] font-semibold">
+                    {{ item.nombre_categoria }}
+                  </span>
+                </td>
+
+                <!-- Cantidad Actual -->
+                <td class="py-3 px-3">
+                  <span class="font-bold text-slate-900 text-sm">
+                    {{ item.cantidad_actual }}
+                  </span>
+                </td>
+
+                <!-- Stock Mínimo -->
+                <td class="py-3 px-3 text-slate-500">
+                  {{ item.stock_minimo }}
+                </td>
+
+                <!-- Unidad -->
+                <td class="py-3 px-3 text-slate-600">
+                  {{ item.nombre_unidad }}
+                </td>
+
+                <!-- Acciones -->
+                <td class="py-3 px-3 text-right">
+                  <div class="flex items-center justify-end gap-1.5">
+                    <button type="button" (click)="abrirFormulario(item)" class="w-8 h-8 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-300 text-slate-600 hover:text-slate-900 inline-flex items-center justify-center transition cursor-pointer" title="Editar">
+                      <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                      </svg>
+                    </button>
+                    <button type="button" (click)="eliminarItem(inventario, item)" class="w-8 h-8 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-300 text-slate-600 hover:text-slate-900 inline-flex items-center justify-center transition cursor-pointer" title="Eliminar">
+                      <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        <line x1="10" y1="11" x2="10" y2="17"></line>
+                        <line x1="14" y1="11" x2="14" y2="17"></line>
+                      </svg>
+                    </button>
+                    <button type="button" (click)="item.expandido = !item.expandido" [class.rotate-180]="item.expandido" class="w-8 h-8 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-300 text-slate-600 hover:text-slate-900 inline-flex items-center justify-center transition duration-200 cursor-pointer" title="Ver movimientos y gramajes">
+                      <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- Fila Desplegable con Movimientos y Gramajes asociados -->
+              <tr *ngIf="item.expandido">
+                <td colspan="6" class="px-3 pb-4 pt-1">
+                  <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col gap-4">
+                    
+                    <!-- Movimientos del Insumo -->
+                    <div>
+                      <h5 class="text-xs font-bold text-slate-900 uppercase tracking-wider mb-2">Movimientos Registrados</h5>
+                      <div class="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+                        <table class="w-full border-collapse text-left text-xs">
+                          <thead>
+                            <tr class="border-b border-slate-200 text-slate-500 font-semibold bg-slate-100/70">
+                              <th class="py-2 px-3 text-[11px] tracking-wider uppercase">TIPO</th>
+                              <th class="py-2 px-3 text-[11px] tracking-wider uppercase">CANTIDAD</th>
+                              <th class="py-2 px-3 text-[11px] tracking-wider uppercase">FECHA</th>
+                              <th class="py-2 px-3 text-[11px] tracking-wider uppercase">OBSERVACIONES</th>
+                            </tr>
+                          </thead>
+                          <tbody class="text-slate-900">
+                            <ng-container *ngFor="let mov of movimientosInventario">
+                              <tr *ngIf="mov.id_ingrediente === item.id_ingrediente || mov.nombre_ingrediente === item.nombre_ingrediente" class="border-b border-slate-100 hover:bg-slate-50/50">
+                                <td class="py-2.5 px-3">
+                                  <span [class]="mov.tipo_movimiento === 'ENTRADA' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'" class="px-2 py-0.5 rounded-full text-[10px] font-bold">
+                                    {{ mov.tipo_movimiento }}
+                                  </span>
+                                </td>
+                                <td class="py-2.5 px-3 font-semibold">{{ mov.cantidad }} {{ mov.nombre_unidad }}</td>
+                                <td class="py-2.5 px-3 text-slate-500">{{ mov.fecha }}</td>
+                                <td class="py-2.5 px-3 text-slate-500">{{ mov.observaciones || 'Sin observaciones' }}</td>
+                              </tr>
+                            </ng-container>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    <!-- Gramajes del Insumo -->
+                    <div>
+                      <h5 class="text-xs font-bold text-slate-900 uppercase tracking-wider mb-2">Gramajes Específicos</h5>
+                      <div class="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+                        <table class="w-full border-collapse text-left text-xs">
+                          <thead>
+                            <tr class="border-b border-slate-200 text-slate-500 font-semibold bg-slate-100/70">
+                              <th class="py-2 px-3 text-[11px] tracking-wider uppercase">CANTIDAD GRAMAJE</th>
+                              <th class="py-2 px-3 text-[11px] tracking-wider uppercase">DESCRIPCIÓN</th>
+                            </tr>
+                          </thead>
+                          <tbody class="text-slate-900">
+                            <ng-container *ngFor="let gram of gramajes">
+                              <tr *ngIf="gram.id_ingrediente === item.id_ingrediente || gram.nombre_ingrediente === item.nombre_ingrediente" class="border-b border-slate-100 hover:bg-slate-50/50">
+                                <td class="py-2.5 px-3 font-semibold">{{ gram.cantidad_gramaje }} {{ gram.nombre_unidad }}</td>
+                                <td class="py-2.5 px-3 text-slate-500">{{ gram.descripcion || 'Sin descripción' }}</td>
+                              </tr>
+                            </ng-container>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                  </div>
+                </td>
+              </tr>
+            </ng-container>
+
+            <tr *ngIf="inventarioFiltrado.length === 0">
+              <td colspan="6" class="p-6 text-center text-slate-400 italic">No se encontraron insumos en el inventario.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pie de tabla: Paginación -->
+      <div class="flex items-center justify-between pt-3.5 mt-3.5 border-t border-slate-100 text-xs text-slate-500">
+        <span>Mostrando {{ inventarioFiltrado.length }} de {{ inventario.length }} registros</span>
+        <div class="flex items-center gap-1.5">
+          <button type="button" class="w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 inline-flex items-center justify-center cursor-pointer transition">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+          </button>
+          <span class="w-7 h-7 rounded-lg bg-slate-900 text-white font-semibold inline-flex items-center justify-center text-xs">1</span>
+          <button type="button" class="w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 inline-flex items-center justify-center cursor-pointer transition">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- PESTAÑA 2: MOVIMIENTOS -->
+  <div *ngIf="pestanaActiva === 'movimientos'" class="flex flex-col gap-4">
+    <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs">
+
+      <!-- Encabezado -->
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
+        <div>
+          <h3 class="text-base font-bold text-slate-900 m-0">Registro de Movimientos</h3>
+          <p class="text-xs text-slate-500 m-0">Historial de entradas y salidas de inventario registradas en bodega.</p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="flex items-center gap-2 bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 min-w-[240px]">
+            <svg class="w-4 h-4 text-slate-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" [(ngModel)]="filtroBusqueda" placeholder="Buscar por ingrediente u observación..." class="border-none bg-transparent outline-none text-xs text-slate-900 w-full placeholder-slate-400">
+          </div>
+
+          <button type="button" (click)="abrirFormulario()" class="bg-amber-400 hover:bg-amber-500 text-amber-950 font-semibold px-4 py-2 rounded-xl text-xs transition cursor-pointer whitespace-nowrap inline-flex items-center gap-1.5 shadow-2xs">
+            <span>+ Registrar Movimiento</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Tabla de Movimientos -->
+      <div class="overflow-x-auto">
+        <table class="w-full border-collapse text-left text-xs">
+          <thead>
+            <tr class="border-b border-slate-200 text-slate-500 font-semibold">
+              <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase">TIPO</th>
+              <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase">INGREDIENTE AFECTADO</th>
+              <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase">CANTIDAD</th>
+              <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase">FECHA</th>
+              <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase">OBSERVACIONES</th>
+              <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase text-right">ACCIONES</th>
+            </tr>
+          </thead>
+          <tbody class="text-slate-900">
+            <tr *ngFor="let mov of movimientosFiltrados" class="border-b border-slate-100 hover:bg-slate-50/50 transition">
+              <td class="py-3 px-3">
+                <span [class]="mov.tipo_movimiento === 'ENTRADA' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold">
+                  {{ mov.tipo_movimiento }}
+                </span>
+              </td>
+              <td class="py-3 px-3 font-semibold text-slate-900">{{ mov.nombre_ingrediente }}</td>
+              <td class="py-3 px-3 font-bold text-slate-900">{{ mov.cantidad }} {{ mov.nombre_unidad }}</td>
+              <td class="py-3 px-3 text-slate-500">{{ mov.fecha }}</td>
+              <td class="py-3 px-3 text-slate-500">{{ mov.observaciones || 'Sin observaciones' }}</td>
+              <td class="py-3 px-3 text-right">
+                <div class="flex items-center justify-end gap-1.5">
+                  <button type="button" (click)="abrirFormulario(mov)" class="w-8 h-8 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-300 text-slate-600 hover:text-slate-900 inline-flex items-center justify-center transition cursor-pointer" title="Editar">
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                  </button>
+                  <button type="button" (click)="eliminarItem(movimientosInventario, mov)" class="w-8 h-8 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-300 text-slate-600 hover:text-slate-900 inline-flex items-center justify-center transition cursor-pointer" title="Eliminar">
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="3 6 5 6 21 6"></polyline>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                      <line x1="10" y1="11" x2="10" y2="17"></line>
+                      <line x1="14" y1="11" x2="14" y2="17"></line>
+                    </svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="movimientosFiltrados.length === 0">
+              <td colspan="6" class="p-6 text-center text-slate-400 italic">No se encontraron movimientos registrados.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pie de tabla: Paginación -->
+      <div class="flex items-center justify-between pt-3.5 mt-3.5 border-t border-slate-100 text-xs text-slate-500">
+        <span>Mostrando {{ movimientosFiltrados.length }} de {{ movimientosInventario.length }} registros</span>
+        <div class="flex items-center gap-1.5">
+          <button type="button" class="w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 inline-flex items-center justify-center cursor-pointer transition">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+          </button>
+          <span class="w-7 h-7 rounded-lg bg-slate-900 text-white font-semibold inline-flex items-center justify-center text-xs">1</span>
+          <button type="button" class="w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 inline-flex items-center justify-center cursor-pointer transition">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- PESTAÑA 3: GRAMAJES -->
+  <div *ngIf="pestanaActiva === 'gramajes'" class="flex flex-col gap-4">
+    <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs">
+
+      <!-- Encabezado -->
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
+        <div>
+          <h3 class="text-base font-bold text-slate-900 m-0">Gramajes Específicos</h3>
+          <p class="text-xs text-slate-500 m-0">Definición de porciones estándar de insumos por ración servida.</p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="flex items-center gap-2 bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 min-w-[240px]">
+            <svg class="w-4 h-4 text-slate-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" [(ngModel)]="filtroBusqueda" placeholder="Buscar por ingrediente o descripción..." class="border-none bg-transparent outline-none text-xs text-slate-900 w-full placeholder-slate-400">
+          </div>
+
+          <button type="button" (click)="abrirFormulario()" class="bg-amber-400 hover:bg-amber-500 text-amber-950 font-semibold px-4 py-2 rounded-xl text-xs transition cursor-pointer whitespace-nowrap inline-flex items-center gap-1.5 shadow-2xs">
+            <span>+ Registrar Gramaje</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Tabla de Gramajes -->
+      <div class="overflow-x-auto">
+        <table class="w-full border-collapse text-left text-xs">
+          <thead>
+            <tr class="border-b border-slate-200 text-slate-500 font-semibold">
+              <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase">INGREDIENTE</th>
+              <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase">CANTIDAD GRAMAJE</th>
+              <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase">DESCRIPCIÓN</th>
+              <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase text-right">ACCIONES</th>
+            </tr>
+          </thead>
+          <tbody class="text-slate-900">
+            <tr *ngFor="let gram of gramajesFiltrados" class="border-b border-slate-100 hover:bg-slate-50/50 transition">
+              <td class="py-3 px-3 font-semibold text-slate-900">{{ gram.nombre_ingrediente }}</td>
+              <td class="py-3 px-3">
+                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-800 border border-slate-200 inline-block">
+                  {{ gram.cantidad_gramaje }} {{ gram.nombre_unidad }}
+                </span>
+              </td>
+              <td class="py-3 px-3 text-slate-500">{{ gram.descripcion || 'Sin descripción' }}</td>
+              <td class="py-3 px-3 text-right">
+                <div class="flex items-center justify-end gap-1.5">
+                  <button type="button" (click)="abrirFormulario(gram)" class="w-8 h-8 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-300 text-slate-600 hover:text-slate-900 inline-flex items-center justify-center transition cursor-pointer" title="Editar">
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                  </button>
+                  <button type="button" (click)="eliminarItem(gramajes, gram)" class="w-8 h-8 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-300 text-slate-600 hover:text-slate-900 inline-flex items-center justify-center transition cursor-pointer" title="Eliminar">
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="3 6 5 6 21 6"></polyline>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                      <line x1="10" y1="11" x2="10" y2="17"></line>
+                      <line x1="14" y1="11" x2="14" y2="17"></line>
+                    </svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="gramajesFiltrados.length === 0">
+              <td colspan="4" class="p-6 text-center text-slate-400 italic">No se encontraron gramajes registrados.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pie de tabla: Paginación -->
+      <div class="flex items-center justify-between pt-3.5 mt-3.5 border-t border-slate-100 text-xs text-slate-500">
+        <span>Mostrando {{ gramajesFiltrados.length }} de {{ gramajes.length }} registros</span>
+        <div class="flex items-center gap-1.5">
+          <button type="button" class="w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 inline-flex items-center justify-center cursor-pointer transition">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+          </button>
+          <span class="w-7 h-7 rounded-lg bg-slate-900 text-white font-semibold inline-flex items-center justify-center text-xs">1</span>
+          <button type="button" class="w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 inline-flex items-center justify-center cursor-pointer transition">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL DE CREACIÓN / EDICIÓN FLOTANTE (Estilo Contratos) -->
+  <div *ngIf="mostrarFormulario" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+    <div class="bg-white w-full max-w-lg rounded-2xl p-6 shadow-xl border border-slate-200 flex flex-col gap-4 max-h-[90vh] overflow-y-auto">
+      
+      <!-- Encabezado del Modal -->
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">
+          {{ modoEdicion ? 'EDITAR REGISTRO' : ('NUEVO ' + (pestanaActiva === 'inventario' ? 'INSUMO' : (pestanaActiva === 'movimientos' ? 'MOVIMIENTO' : 'GRAMAJE'))) }}
         </h3>
+        <button type="button" (click)="cerrarFormulario()" class="text-slate-400 hover:text-slate-600 text-lg cursor-pointer">✕</button>
       </div>
-      <button type="button" (click)="cerrarFormulario()" class="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center transition cursor-pointer">
-        <span class="material-symbols-outlined text-[20px]">close</span>
-      </button>
-    </div>
 
-    <!-- Inputs Inventario -->
-    <div *ngIf="pestanaActiva === 'inventario'" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      <div>
-        <label class="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">Nombre Ingrediente</label>
-        <input type="text" [(ngModel)]="itemForm.nombre_ingrediente" placeholder="Ej. Lentejas" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#FAB41F] focus:outline-none transition">
-      </div>
-      <div>
-        <label class="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">Categoría</label>
-        <select [(ngModel)]="itemForm.id_categoria_inventario" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#FAB41F] focus:outline-none transition">
-          <option *ngFor="let cat of categoriasInventario" [value]="cat.id_categoria_inventario">{{ cat.nombre_categoria }}</option>
-        </select>
-      </div>
-      <div>
-        <label class="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">Marca</label>
-        <input type="text" [(ngModel)]="itemForm.marca_ingrediente" placeholder="Ej. Roa" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#FAB41F] focus:outline-none transition">
-      </div>
-      <div>
-        <label class="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">Cantidad Actual</label>
-        <input type="number" [(ngModel)]="itemForm.cantidad_actual" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#FAB41F] focus:outline-none transition">
-      </div>
-      <div>
-        <label class="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">Stock Mínimo</label>
-        <input type="number" [(ngModel)]="itemForm.stock_minimo" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#FAB41F] focus:outline-none transition">
-      </div>
-      <div>
-        <label class="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">Unidad de Medida</label>
-        <select [(ngModel)]="itemForm.id_unidad_medida" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#FAB41F] focus:outline-none transition">
-          <option *ngFor="let um of unidadesMedida" [value]="um.id_unidad_medida">{{ um.nombre }}</option>
-        </select>
-      </div>
-    </div>
+      <!-- Formulario: INVENTARIO -->
+      <div *ngIf="pestanaActiva === 'inventario'" class="flex flex-col gap-3.5 text-xs">
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1.5">Nombre del Ingrediente *</label>
+          <input type="text" [(ngModel)]="itemForm.nombre_ingrediente" placeholder="Ej. Arroz Diana" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500">
+        </div>
 
-    <!-- Inputs Movimientos -->
-    <div *ngIf="pestanaActiva === 'movimientos'" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      <div>
-        <label class="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">Ingrediente</label>
-        <select [(ngModel)]="movimientoForm.id_ingrediente" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#FAB41F] focus:outline-none transition">
-          <option *ngFor="let ing of ingredientesDisponibles" [value]="ing.id_ingrediente">{{ ing.nombre_ingrediente }}</option>
-        </select>
-      </div>
-      <div>
-        <label class="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">Tipo Movimiento</label>
-        <select [(ngModel)]="movimientoForm.tipo_movimiento" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#FAB41F] focus:outline-none transition">
-          <option value="ENTRADA">ENTRADA</option>
-          <option value="SALIDA">SALIDA</option>
-        </select>
-      </div>
-      <div>
-        <label class="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">Cantidad</label>
-        <input type="number" [(ngModel)]="movimientoForm.cantidad" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#FAB41F] focus:outline-none transition">
-      </div>
-      <div>
-        <label class="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">Unidad</label>
-        <select [(ngModel)]="movimientoForm.id_unidad_medida" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#FAB41F] focus:outline-none transition">
-          <option *ngFor="let um of unidadesMedida" [value]="um.id_unidad_medida">{{ um.nombre }}</option>
-        </select>
-      </div>
-      <div class="sm:col-span-2">
-        <label class="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">Observaciones</label>
-        <input type="text" [(ngModel)]="movimientoForm.observaciones" placeholder="Motivo del movimiento..." class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#FAB41F] focus:outline-none transition">
-      </div>
-    </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1.5">Categoría</label>
+            <select [(ngModel)]="itemForm.id_categoria_inventario" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500">
+              <option value="" disabled selected>Seleccione categoría</option>
+              <option *ngFor="let cat of categoriasInventario" [value]="cat.id_categoria_inventario">{{ cat.nombre_categoria }}</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1.5">Marca</label>
+            <input type="text" [(ngModel)]="itemForm.marca_ingrediente" placeholder="Ej. Diana" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500">
+          </div>
+        </div>
 
-    <!-- Inputs Gramajes -->
-    <div *ngIf="pestanaActiva === 'gramajes'" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      <div>
-        <label class="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">Ingrediente</label>
-        <select [(ngModel)]="gramajeForm.id_ingrediente" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#FAB41F] focus:outline-none transition">
-          <option *ngFor="let ing of ingredientesDisponibles" [value]="ing.id_ingrediente">{{ ing.nombre_ingrediente }}</option>
-        </select>
-      </div>
-      <div>
-        <label class="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">Cantidad Gramaje</label>
-        <input type="number" [(ngModel)]="gramajeForm.cantidad_gramaje" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#FAB41F] focus:outline-none transition">
-      </div>
-      <div>
-        <label class="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">Unidad</label>
-        <select [(ngModel)]="gramajeForm.id_unidad_medida" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#FAB41F] focus:outline-none transition">
-          <option *ngFor="let um of unidadesMedida" [value]="um.id_unidad_medida">{{ um.nombre }}</option>
-        </select>
-      </div>
-      <div class="sm:col-span-3">
-        <label class="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">Descripción</label>
-        <input type="text" [(ngModel)]="gramajeForm.descripcion" placeholder="Detalle del gramaje..." class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#FAB41F] focus:outline-none transition">
-      </div>
-    </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1.5">Cantidad Actual *</label>
+            <input type="number" [(ngModel)]="itemForm.cantidad_actual" placeholder="0" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1.5">Stock Mínimo</label>
+            <input type="number" [(ngModel)]="itemForm.stock_minimo" placeholder="0" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500">
+          </div>
+        </div>
 
-    <!-- Botones de formulario -->
-    <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-100">
-      <button type="button" (click)="cerrarFormulario()" class="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50 transition cursor-pointer">Cancelar</button>
-      <button type="button" (click)="guardarTodo()" class="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition cursor-pointer">
-        {{ editandoId ? 'Actualizar registro' : 'Guardar registro' }}
-      </button>
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1.5">Unidad de Medida</label>
+          <select [(ngModel)]="itemForm.id_unidad_medida" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500">
+            <option value="" disabled selected>Seleccione unidad</option>
+            <option *ngFor="let um of unidadesMedida" [value]="um.id_unidad_medida">{{ um.nombre_unidad }} ({{ um.abreviatura }})</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Formulario: MOVIMIENTOS -->
+      <div *ngIf="pestanaActiva === 'movimientos'" class="flex flex-col gap-3.5 text-xs">
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1.5">Ingrediente *</label>
+          <select [(ngModel)]="movimientoForm.id_ingrediente" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500">
+            <option value="" disabled selected>Seleccione ingrediente</option>
+            <option *ngFor="let ing of ingredientesDisponibles" [value]="ing.id_ingrediente">{{ ing.nombre_ingrediente }}</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1.5">Tipo de Movimiento</label>
+            <select [(ngModel)]="movimientoForm.tipo_movimiento" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500">
+              <option value="ENTRADA">ENTRADA</option>
+              <option value="SALIDA">SALIDA</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1.5">Cantidad *</label>
+            <input type="number" [(ngModel)]="movimientoForm.cantidad" placeholder="0" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500">
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1.5">Unidad de Medida</label>
+          <select [(ngModel)]="movimientoForm.id_unidad_medida" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500">
+            <option value="" disabled selected>Seleccione unidad</option>
+            <option *ngFor="let um of unidadesMedida" [value]="um.id_unidad_medida">{{ um.nombre_unidad }} ({{ um.abreviatura }})</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1.5">Observaciones</label>
+          <textarea [(ngModel)]="movimientoForm.observaciones" rows="3" placeholder="Detalle del movimiento..." class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500 resize-y"></textarea>
+        </div>
+      </div>
+
+      <!-- Formulario: GRAMAJES -->
+      <div *ngIf="pestanaActiva === 'gramajes'" class="flex flex-col gap-3.5 text-xs">
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1.5">Ingrediente *</label>
+          <select [(ngModel)]="gramajeForm.id_ingrediente" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500">
+            <option value="" disabled selected>Seleccione ingrediente</option>
+            <option *ngFor="let ing of ingredientesDisponibles" [value]="ing.id_ingrediente">{{ ing.nombre_ingrediente }}</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1.5">Cantidad Gramaje *</label>
+            <input type="number" [(ngModel)]="gramajeForm.cantidad_gramaje" placeholder="0" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1.5">Unidad de Medida</label>
+            <select [(ngModel)]="gramajeForm.id_unidad_medida" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500">
+              <option value="" disabled selected>Seleccione unidad</option>
+              <option *ngFor="let um of unidadesMedida" [value]="um.id_unidad_medida">{{ um.nombre_unidad }} ({{ um.abreviatura }})</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1.5">Descripción</label>
+          <textarea [(ngModel)]="gramajeForm.descripcion" rows="3" placeholder="Porción estándar por plato..." class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500 resize-y"></textarea>
+        </div>
+      </div>
+
+      <!-- Pie del Modal -->
+      <div class="flex justify-end gap-2 pt-3 border-t border-slate-100 mt-2">
+        <button type="button" (click)="cerrarFormulario()" class="bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-semibold px-4 py-2 rounded-xl text-xs transition cursor-pointer">
+          Cancelar
+        </button>
+        <button type="button" (click)="guardarTodo()" class="bg-slate-900 hover:bg-slate-800 text-white font-semibold px-5 py-2 rounded-xl text-xs transition cursor-pointer shadow-2xs">
+          {{ modoEdicion ? 'Actualizar Registro' : 'Guardar Registro' }}
+        </button>
+      </div>
+
     </div>
   </div>
 
-  <!-- Tablas de Visualización -->
-  <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
-    
-    <!-- Tabla 1: Inventario -->
-    <div *ngIf="pestanaActiva === 'inventario'" class="overflow-x-auto">
-      <table class="w-full text-xs text-left">
-        <thead class="bg-slate-50/70 text-slate-500 font-black uppercase tracking-wider border-b border-slate-200/60">
-          <tr>
-            <th class="px-6 py-4">Ingrediente</th>
-            <th class="px-6 py-4">Categoría</th>
-            <th class="px-6 py-4">Cantidad Actual</th>
-            <th class="px-6 py-4">Stock Mínimo</th>
-            <th class="px-6 py-4">Unidad</th>
-            <th class="px-6 py-4 text-center">Acciones</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-100">
-          <tr *ngFor="let item of inventario" class="hover:bg-slate-50/50 transition-colors">
-            <td class="px-6 py-4 font-bold text-slate-800">{{ item.nombre_ingrediente }}</td>
-            <td class="px-6 py-4 text-slate-600">{{ item.nombre_categoria }}</td>
-            <td class="px-6 py-4 font-extrabold text-slate-800">{{ item.cantidad_actual }}</td>
-            <td class="px-6 py-4 font-black text-amber-600">{{ item.stock_minimo }}</td>
-            <td class="px-6 py-4 text-slate-600">{{ item.nombre_unidad }}</td>
-            <td class="px-6 py-4 text-center">
-              <div class="flex items-center justify-center gap-1">
-                <button (click)="abrirFormulario(item)" class="w-8 h-8 rounded-lg hover:bg-amber-50 text-amber-600 transition flex items-center justify-center cursor-pointer" title="Editar">
-                  <span class="material-symbols-outlined text-[18px]">edit</span>
-                </button>
-                <button (click)="eliminarItem(inventario, item)" class="w-8 h-8 rounded-lg hover:bg-red-50 text-red-500 transition flex items-center justify-center cursor-pointer" title="Eliminar">
-                  <span class="material-symbols-outlined text-[18px]">delete</span>
-                </button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Tabla 2: Movimientos -->
-    <div *ngIf="pestanaActiva === 'movimientos'" class="overflow-x-auto">
-      <table class="w-full text-xs text-left">
-        <thead class="bg-slate-50/70 text-slate-500 font-black uppercase tracking-wider border-b border-slate-200/60">
-          <tr>
-            <th class="px-6 py-4">Ingrediente</th>
-            <th class="px-6 py-4">Tipo</th>
-            <th class="px-6 py-4">Cantidad</th>
-            <th class="px-6 py-4">Fecha</th>
-            <th class="px-6 py-4">Observaciones</th>
-            <th class="px-6 py-4 text-center">Acciones</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-100">
-          <tr *ngFor="let mov of movimientosInventario" class="hover:bg-slate-50/50 transition-colors">
-            <td class="px-6 py-4 font-bold text-slate-800">{{ mov.nombre_ingrediente }}</td>
-            <td class="px-6 py-4">
-              <span [class]="mov.tipo_movimiento === 'ENTRADA' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'" class="px-2.5 py-1 rounded-md text-[10px] font-black border">
-                {{ mov.tipo_movimiento }}
-              </span>
-            </td>
-            <td class="px-6 py-4 font-extrabold text-slate-800">{{ mov.cantidad }} {{ mov.nombre_unidad }}</td>
-            <td class="px-6 py-4 text-slate-500">{{ mov.fecha }}</td>
-            <td class="px-6 py-4 text-slate-600">{{ mov.observaciones }}</td>
-            <td class="px-6 py-4 text-center">
-              <div class="flex items-center justify-center gap-1">
-                <button (click)="abrirFormulario(mov)" class="w-8 h-8 rounded-lg hover:bg-amber-50 text-amber-600 transition flex items-center justify-center cursor-pointer" title="Editar">
-                  <span class="material-symbols-outlined text-[18px]">edit</span>
-                </button>
-                <button (click)="eliminarItem(movimientosInventario, mov)" class="w-8 h-8 rounded-lg hover:bg-red-50 text-red-500 transition flex items-center justify-center cursor-pointer" title="Eliminar">
-                  <span class="material-symbols-outlined text-[18px]">delete</span>
-                </button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Tabla 3: Gramajes -->
-    <div *ngIf="pestanaActiva === 'gramajes'" class="overflow-x-auto">
-      <table class="w-full text-xs text-left">
-        <thead class="bg-slate-50/70 text-slate-500 font-black uppercase tracking-wider border-b border-slate-200/60">
-          `<tr>
-            <th class="px-6 py-4">Ingrediente</th>
-            <th class="px-6 py-4">Cantidad Gramaje</th>
-            <th class="px-6 py-4">Unidad</th>
-            <th class="px-6 py-4">Descripción</th>
-            <th class="px-6 py-4 text-center">Acciones</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-100">
-          <tr *ngFor="let gram of gramajes" class="hover:bg-slate-50/50 transition-colors">
-            <td class="px-6 py-4 font-bold text-slate-800">{{ gram.nombre_ingrediente }}</td>
-            <td class="px-6 py-4 font-extrabold text-amber-600">{{ gram.cantidad_gramaje }}</td>
-            <td class="px-6 py-4 text-slate-600">{{ gram.nombre_unidad }}</td>
-            <td class="px-6 py-4 text-slate-600">{{ gram.descripcion }}</td>
-            <td class="px-6 py-4 text-center">
-              <div class="flex items-center justify-center gap-1">
-                <button (click)="abrirFormulario(gram)" class="w-8 h-8 rounded-lg hover:bg-amber-50 text-amber-600 transition flex items-center justify-center cursor-pointer" title="Editar">
-                  <span class="material-symbols-outlined text-[18px]">edit</span>
-                </button>
-                <button (click)="eliminarItem(gramajes, gram)" class="w-8 h-8 rounded-lg hover:bg-red-50 text-red-500 transition flex items-center justify-center cursor-pointer" title="Eliminar">
-                  <span class="material-symbols-outlined text-[18px]`">delete</span>
-                </button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-  </div>
 </div>
