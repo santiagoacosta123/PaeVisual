@@ -1,224 +1,513 @@
-<div class="space-y-6 p-4 sm:p-6 bg-slate-50 min-h-screen">
-  
-  <!-- Encabezado Principal -->
-  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-    <div>
-      <h1 class="text-2xl font-black text-slate-800">Sistema PAE - Módulo de Gestión</h1>
-      <p class="text-sm text-slate-500 mt-1">Administración de contratos y registros del sistema</p>
-    </div>
-    <div>
-      <button type="button" (click)="abrirFormulario()" class="bg-[#FAB41F] hover:bg-[#e2a21b] px-4 py-2.5 rounded-xl font-bold text-slate-900 shadow-sm transition text-sm flex items-center gap-2 cursor-pointer border border-amber-300">
-        <span class="material-symbols-outlined text-[18px]">add_circle</span>
-        Nuevo Registro
-      </button>
-    </div>
-  </div>
-
-  <!-- Navegación por Pestañas -->
-  <div class="flex flex-wrap gap-2 border-b border-slate-200 pb-3">
-    <button (click)="cambiarPestana('contratos')" [class]="pestanaActiva === 'contratos' ? 'bg-[#FAB41F] text-slate-900 font-bold border-amber-300 shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border-slate-200'" class="px-5 py-2.5 rounded-xl text-sm transition border cursor-pointer flex items-center gap-2">
-      <span class="material-symbols-outlined text-[18px]">description</span>
-      Contratos
-    </button>
-    <button (click)="cambiarPestana('preparaciones')" [class]="pestanaActiva === 'preparaciones' ? 'bg-[#FAB41F] text-slate-900 font-bold border-amber-300 shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border-slate-200'" class="px-5 py-2.5 rounded-xl text-sm transition border cursor-pointer flex items-center gap-2">
-      <span class="material-symbols-outlined text-[18px]">restaurant</span>
-      Preparaciones
-    </button>
-  </div>
-
-  <!-- CONTENIDO DE LAS TABLAS -->
-  <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-    
-    <!-- TABLA 1: CONTRATOS -->
-    <div *ngIf="pestanaActiva === 'contratos'" class="overflow-x-auto">
-      <table class="w-full text-sm">
-        <thead class="bg-slate-100 text-slate-700 font-extrabold border-b border-slate-200">
-          <tr>
-            <th class="p-4 text-left">ID</th>
-            <th class="p-4 text-left">Nro Contrato</th>
-            <th class="p-4 text-left">Institución</th>
-            <th class="p-4 text-left">Zona</th>
-            <th class="p-4 text-left">Fechas</th>
-            <th class="p-4 text-center">Estado</th>
-            <th class="p-4 text-center">Acciones</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-200">
-          <tr *ngIf="contratos.length === 0">
-            <td colspan="7" class="p-8 text-center text-slate-400 font-medium">No hay contratos registrados.</td>
-          </tr>
-          <tr *ngFor="let c of contratos" class="hover:bg-amber-50/30 transition">
-            <td class="p-4 font-bold text-slate-800">{{ c.id_contrato }}</td>
-            <td class="p-4 font-bold text-slate-800">{{ c.numero_cor }}</td>
-            <td class="p-4 text-slate-600">{{ c.institucion }}</td>
-            <td class="p-4 text-slate-600">{{ c.zona }}</td>
-            <td class="p-4 text-slate-600 text-xs font-semibold">{{ c.fecha_inicio }} al {{ c.fecha_fin }}</td>
-            <td class="p-4 text-center">
-              <span class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">{{ c.estado }}</span>
-            </td>
-            <td class="p-4 text-center">
-              <div class="flex items-center justify-center gap-2">
-                <button type="button" (click)="abrirEdicion(c)" class="text-slate-500 hover:text-[#FAB41F] transition p-1 cursor-pointer" title="Editar"><span class="material-symbols-outlined text-[20px]">edit</span></button>
-                <button type="button" (click)="eliminarItem(contratos, c)" class="text-slate-500 hover:text-red-600 transition p-1 cursor-pointer" title="Eliminar"><span class="material-symbols-outlined text-[20px]">delete</span></button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- TABLA 2: PREPARACIONES -->
-    <div *ngIf="pestanaActiva === 'preparaciones'" class="overflow-x-auto">
-      <table class="w-full text-sm">
-        <thead class="bg-slate-100 text-slate-700 font-extrabold border-b border-slate-200">
-          <tr>
-            <th class="p-4 text-left">ID</th>
-            <th class="p-4 text-left">Menú</th>
-            <th class="p-4 text-left">Manipuladora</th>
-            <th class="p-4 text-left">Turno</th>
-            <th class="p-4 text-left">Fecha y Hora</th>
-            <th class="p-4 text-center">Estado</th>
-            <th class="p-4 text-center">Acciones</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-200">
-          <tr *ngIf="preparaciones.length === 0">
-            <td colspan="7" class="p-8 text-center text-slate-400 font-medium">No hay preparaciones asignadas.</td>
-          </tr>
-          <tr *ngFor="let p of preparaciones" class="hover:bg-amber-50/30 transition">
-            <td class="p-4 font-bold text-slate-800">{{ p.id_preparacion_asignada }}</td>
-            <td class="p-4 text-slate-600">Menú #{{ p.id_menu }}</td>
-            <td class="p-4 text-slate-600">{{ p.id_usuario_manipuladora }}</td>
-            <td class="p-4 text-slate-600 font-semibold">{{ p.id_turno }}</td>
-            <td class="p-4 text-slate-600 text-xs">{{ p.fecha }} - {{ p.hora_programada }}</td>
-            <td class="p-4 text-center">
-              <span class="px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300">{{ p.estado_preparacion }}</span>
-            </td>
-            <td class="p-4 text-center">
-              <div class="flex items-center justify-center gap-2">
-                <button type="button" (click)="abrirEdicion(p)" class="text-slate-500 hover:text-[#FAB41F] transition p-1 cursor-pointer" title="Editar"><span class="material-symbols-outlined text-[20px]">edit</span></button>
-                <button type="button" (click)="eliminarItem(preparaciones, p)" class="text-slate-500 hover:text-red-600 transition p-1 cursor-pointer" title="Eliminar"><span class="material-symbols-outlined text-[20px]">delete</span></button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-  </div>
-
-  <!-- MODAL DINÁMICO -->
-  <div *ngIf="mostrarFormulario" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4 overflow-y-auto">
-    <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-2xl overflow-hidden">
+<div style="display:flex; flex-direction:column; gap:18px; position:relative; font-family: system-ui, -apple-system, sans-serif;">
       
-      <!-- Modal Header -->
-      <div class="flex items-center justify-between px-6 py-4 bg-slate-50 border-b border-slate-200">
-        <h3 class="text-lg font-black text-slate-800">
-          {{ esEdicion ? 'Editar' : 'Nuevo' }} 
-          <span class="text-[#FAB41F] uppercase">{{ pestanaActiva }}</span>
-        </h3>
-        <button type="button" (click)="cerrarFormulario()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer">
-          <span class="material-symbols-outlined">close</span>
+  <!-- Barra de Pestañas Superior -->
+  <div style="display:inline-flex; background:#f1f5f9; padding:5px; border-radius:16px; border:1px solid #e2e8f0; align-self:flex-start; gap:4px;">
+    <button type="button" (click)="seleccionarPestana('contratos')"
+      [style.background]="pestanaActiva === 'contratos' ? '#0f172a' : 'transparent'"
+      [style.color]="pestanaActiva === 'contratos' ? '#ffffff' : '#475569'"
+      [style.font-weight]="pestanaActiva === 'contratos' ? '600' : '500'"
+      style="border:none; padding:9px 16px; border-radius:12px; font-size:13px; cursor:pointer;">Contratos</button>
+
+    <button type="button" (click)="seleccionarPestana('tareas')"
+      [style.background]="pestanaActiva === 'tareas' ? '#0f172a' : 'transparent'"
+      [style.color]="pestanaActiva === 'tareas' ? '#ffffff' : '#475569'"
+      [style.font-weight]="pestanaActiva === 'tareas' ? '600' : '500'"
+      style="border:none; padding:9px 16px; border-radius:12px; font-size:13px; cursor:pointer;">Asignar Tareas</button>
+
+    <button type="button" (click)="seleccionarPestana('jornadas')"
+      [style.background]="pestanaActiva === 'jornadas' ? '#0f172a' : 'transparent'"
+      [style.color]="pestanaActiva === 'jornadas' ? '#ffffff' : '#475569'"
+      [style.font-weight]="pestanaActiva === 'jornadas' ? '600' : '500'"
+      style="border:none; padding:9px 16px; border-radius:12px; font-size:13px; cursor:pointer;">Jornadas</button>
+
+    <button type="button" (click)="seleccionarPestana('secciones')"
+      [style.background]="pestanaActiva === 'secciones' ? '#0f172a' : 'transparent'"
+      [style.color]="pestanaActiva === 'secciones' ? '#ffffff' : '#475569'"
+      [style.font-weight]="pestanaActiva === 'secciones' ? '600' : '500'"
+      style="border:none; padding:9px 16px; border-radius:12px; font-size:13px; cursor:pointer;">Secciones</button>
+  </div>
+
+  <!-- Contenido Dinámico -->
+  <div [ngSwitch]="pestanaActiva">
+    
+    <!-- CONTRATOS -->
+    <div *ngSwitchCase="'contratos'" style="display:flex; flex-direction:column; gap:16px;">
+
+      <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:16px; padding:20px; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+
+        <!-- Encabezado -->
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px; margin-bottom:18px;">
+          <div>
+            <h3 style="font-size:16px; font-weight:700; color:#0f172a; margin:0 0 4px 0;">Contratos recientes</h3>
+            <p style="font-size:12px; color:#64748b; margin:0;">Últimos contratos registrados en la plataforma.</p>
+          </div>
+
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <div style="display:flex; align-items:center; gap:8px; background:#f8fafc; border:1px solid #cbd5e1; border-radius:10px; padding:6px 12px; min-width:220px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input type="text" [(ngModel)]="filtroBusquedaContratos" placeholder="Buscar contrato..." style="border:none; background:transparent; outline:none; font-size:13px; width:100%; color:#0f172a;">
+            </div>
+
+            <button type="button" (click)="abrirModalContrato()" style="background:#facc15; color:#713f12; border:none; border-radius:10px; padding:9px 16px; font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap;">
+              + Agregar contrato
+            </button>
+
+            <button type="button" style="background:#064e3b; color:#ffffff; border:none; border-radius:10px; padding:9px 16px; font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap;">
+              Ver todos
+            </button>
+          </div>
+        </div>
+
+        <!-- Tabla de contratos -->
+        <table style="width:100%; border-collapse:collapse; text-align:left; font-size:13px;">
+          <thead>
+            <tr style="border-bottom:1px solid #e2e8f0; color:#64748b; font-weight:600;">
+              <th style="padding:10px 12px; font-size:11px; letter-spacing:0.5px;">N° CONTRATO</th>
+              <th style="padding:10px 12px; font-size:11px; letter-spacing:0.5px;">INSTITUCIÓN</th>
+              <th style="padding:10px 12px; font-size:11px; letter-spacing:0.5px;">FECHA INICIO</th>
+              <th style="padding:10px 12px; font-size:11px; letter-spacing:0.5px;">FECHA FIN</th>
+              <th style="padding:10px 12px; font-size:11px; letter-spacing:0.5px;">ESTADO</th>
+              <th style="padding:10px 12px; font-size:11px; letter-spacing:0.5px; text-align:right;">ACCIONES</th>
+            </tr>
+          </thead>
+          <tbody style="color:#0f172a;">
+            <ng-container *ngFor="let c of contratosFiltrados">
+              <tr style="border-bottom:1px solid #f1f5f9;">
+                <td style="padding:12px;">
+                  <span style="display:inline-flex; align-items:center; gap:8px; font-weight:700;">
+                    <span style="width:8px; height:8px; border-radius:50%; display:inline-block;"
+                      [style.background]="c.estado === 'Activo' ? '#10b981' : (c.estado === 'Finalizado' ? '#94a3b8' : '#ef4444')"></span>
+                    {{ c.codigo }}
+                  </span>
+                </td>
+                <td style="padding:12px; color:#0f172a; font-weight:600;">{{ c.institucion }}</td>
+                <td style="padding:12px; color:#64748b;">{{ c.fechaInicio }}</td>
+                <td style="padding:12px; color:#64748b;">{{ c.fechaFin }}</td>
+                <td style="padding:12px;">
+                  <span style="padding:3px 10px; border-radius:12px; font-size:11px; font-weight:600;"
+                    [style.background]="c.estado === 'Activo' ? '#dcfce7' : (c.estado === 'Finalizado' ? '#f1f5f9' : '#fee2e2')"
+                    [style.color]="c.estado === 'Activo' ? '#166534' : (c.estado === 'Finalizado' ? '#475569' : '#991b1b')">
+                    {{ c.estado }}
+                  </span>
+                </td>
+                <td style="padding:12px; text-align:right;">
+                  <div style="display:flex; gap:6px; justify-content:flex-end; align-items:center;">
+                    <button type="button" (click)="abrirModalContrato(c)" style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; color:#475569;" title="Editar">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                    </button>
+                    <button type="button" (click)="eliminarContrato(c.id)" style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; color:#475569;" title="Eliminar">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                    </button>
+                    <button type="button" (click)="toggleExpandir(c)" style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; color:#475569; transition:transform 0.2s;" [style.transform]="c.expandido ? 'rotate(180deg)' : 'rotate(0deg)'">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+
+              <tr *ngIf="c.expandido">
+                <td colspan="6" style="padding:0 12px 16px 12px;">
+                  <div style="display:flex; flex-direction:column; gap:16px;">
+                    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:14px 16px;">
+                      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap:12px; font-size:12px;">
+                        <div>
+                          <span style="display:block; color:#64748b; font-weight:600; font-size:10px; letter-spacing:0.5px; margin-bottom:2px;">N° CONTRATO</span>
+                          <span style="color:#0f172a; font-weight:700;">{{ c.codigo }}</span>
+                        </div>
+                        <div>
+                          <span style="display:block; color:#64748b; font-weight:600; font-size:10px; letter-spacing:0.5px; margin-bottom:2px;">INSTITUCIÓN</span>
+                          <span style="color:#0f172a; font-weight:700;">{{ c.institucion }}</span>
+                        </div>
+                        <div>
+                          <span style="display:block; color:#64748b; font-weight:600; font-size:10px; letter-spacing:0.5px; margin-bottom:2px;">FECHA INICIO</span>
+                          <span style="color:#0f172a; font-weight:700;">{{ c.fechaInicio }}</span>
+                        </div>
+                        <div>
+                          <span style="display:block; color:#64748b; font-weight:600; font-size:10px; letter-spacing:0.5px; margin-bottom:2px;">FECHA FIN</span>
+                          <span style="color:#0f172a; font-weight:700;">{{ c.fechaFin }}</span>
+                        </div>
+                        <div>
+                          <span style="display:block; color:#64748b; font-weight:600; font-size:10px; letter-spacing:0.5px; margin-bottom:2px;">ESTADO</span>
+                          <span style="color:#166534; font-weight:700;">{{ c.estado }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            </ng-container>
+
+            <tr *ngIf="contratosFiltrados.length === 0">
+              <td colspan="6" style="padding:20px; text-align:center; color:#94a3b8; font-style:italic;">No se encontraron contratos registrados.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Pie: paginación -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:14px; padding-top:14px; border-top:1px solid #f1f5f9;">
+          <span style="font-size:12px; color:#64748b;">Mostrando {{ contratosFiltrados.length }} de {{ contratos.length }} registros</span>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <button type="button" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; color:#64748b;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            </button>
+            <span style="background:#0f172a; color:#ffffff; border-radius:8px; width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; font-size:12px; font-weight:600;">1</span>
+            <button type="button" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; color:#64748b;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ASIGNAR TAREAS (Módulo Completo) -->
+    <div *ngSwitchCase="'tareas'" style="display:flex; flex-direction:column; gap:16px;">
+      
+      <!-- Cabecera con Buscador y Botón -->
+      <div style="display:flex; justify-content:space-between; align-items:center; background:#ffffff; border:1px solid #e2e8f0; border-radius:16px; padding:20px; flex-wrap:wrap; gap:12px;">
+        <div style="flex:1; min-width:240px;">
+          <h3 style="font-size:15px; font-weight:700; color:#0f172a; margin:0 0 4px 0;">Gestión y Asignación de Tareas</h3>
+          <p style="font-size:12px; color:#64748b; margin:0;">Administra las actividades y sus responsables por institución.</p>
+        </div>
+
+        <!-- Buscador de Tareas -->
+        <div style="display:flex; align-items:center; gap:8px; background:#f8fafc; border:1px solid #cbd5e1; border-radius:10px; padding:6px 12px; min-width:260px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <input type="text" [(ngModel)]="filtroBusquedaTareas" placeholder="Buscar tarea o responsable..." style="border:none; background:transparent; outline:none; font-size:13px; width:100%; color:#0f172a;">
+        </div>
+
+        <button type="button" (click)="abrirModalTarea()" style="background:#facc15; color:#713f12; border:none; border-radius:10px; padding:9px 16px; font-size:13px; font-weight:600; cursor:pointer;">
+          + Asignar Tarea
         </button>
       </div>
 
-      <!-- Modal Body -->
-      <div class="p-6 space-y-4">
-        
-        <!-- FORMULARIO: CONTRATOS -->
-        <div *ngIf="pestanaActiva === 'contratos'" class="space-y-4">
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs font-extrabold text-slate-600 uppercase mb-1">Nro Contrato</label>
-              <input type="text" [(ngModel)]="contratoForm.numero_cor" placeholder="Ej: COR-2026-001" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#FAB41F] focus:outline-none">
+      <!-- Tarjeta Contenedora de la Tabla -->
+      <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:16px; padding:20px; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+        <table style="width:100%; border-collapse:collapse; text-align:left; font-size:13px;">
+          <thead>
+            <tr style="border-bottom:1px solid #e2e8f0; color:#64748b; font-weight:600;">
+              <th style="padding:10px 12px;">TAREA / ACTIVIDAD</th>
+              <th style="padding:10px 12px;">INSTITUCIÓN</th>
+              <th style="padding:10px 12px;">RESPONSABLE</th>
+              <th style="padding:10px 12px;">FECHA LÍMITE</th>
+              <th style="padding:10px 12px;">ESTADO</th>
+              <th style="padding:10px 12px; text-align:right;">ACCIONES</th>
+            </tr>
+          </thead>
+          <tbody style="color:#0f172a;">
+            <tr *ngFor="let t of tareasFiltradas" style="border-bottom:1px solid #f1f5f9;">
+              <td style="padding:12px; font-weight:600; color:#0f172a;">{{ t.tarea }}</td>
+              <td style="padding:12px; color:#2563eb; font-weight:500;">{{ t.institucion }}</td>
+              <td style="padding:12px; color:#334155;">{{ t.responsable }}</td>
+              <td style="padding:12px; color:#64748b;">{{ t.fechaLimite }}</td>
+              <td style="padding:12px;">
+                <span style="padding:3px 10px; border-radius:12px; font-size:11px; font-weight:600;"
+                  [style.background]="t.estado === 'Completado' ? '#dcfce7' : (t.estado === 'En proceso' ? '#dbeafe' : '#fef9c3')"
+                  [style.color]="t.estado === 'Completado' ? '#166534' : (t.estado === 'En proceso' ? '#1e40af' : '#854d0e')">
+                  {{ t.estado }}
+                </span>
+              </td>
+              <td style="padding:12px; text-align:right;">
+                <div style="display:flex; gap:6px; justify-content:flex-end; align-items:center;">
+                  <!-- Botón Editar -->
+                  <button type="button" (click)="abrirModalTarea(t)" style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; color:#475569;" title="Editar">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                  </button>
+                  <!-- Botón Eliminar -->
+                  <button type="button" (click)="eliminarTarea(t.id)" style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; color:#475569;" title="Eliminar">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="tareasFiltradas.length === 0">
+              <td colspan="6" style="padding:20px; text-align:center; color:#94a3b8; font-style:italic;">No se encontraron tareas registradas.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+    <!-- JORNADAS -->
+    <div *ngSwitchCase="'jornadas'" style="display:flex; flex-direction:column; gap:16px;">
+      <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:16px; padding:20px; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px; margin-bottom:18px;">
+          <h3 style="font-size:16px; font-weight:700; color:#0f172a; margin:0;">Jornadas</h3>
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <div style="display:flex; align-items:center; gap:8px; background:#f8fafc; border:1px solid #cbd5e1; border-radius:10px; padding:6px 12px; min-width:220px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input type="text" [(ngModel)]="filtroBusquedaJornadas" placeholder="Buscar jornada..." style="border:none; background:transparent; outline:none; font-size:13px; width:100%; color:#0f172a;">
             </div>
-            <div>
-              <label class="block text-xs font-extrabold text-slate-600 uppercase mb-1">Institución</label>
-              <input type="text" [(ngModel)]="contratoForm.institucion" placeholder="Nombre de la institución" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#FAB41F] focus:outline-none">
-            </div>
-          </div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs font-extrabold text-slate-600 uppercase mb-1">Zona</label>
-              <input type="text" [(ngModel)]="contratoForm.zona" placeholder="Urbana / Rural" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#FAB41F] focus:outline-none">
-            </div>
-            <div>
-              <label class="block text-xs font-extrabold text-slate-600 uppercase mb-1">Estado</label>
-              <select [(ngModel)]="contratoForm.estado" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#FAB41F] focus:outline-none bg-white">
-                <option value="ACTIVO">ACTIVO</option>
-                <option value="INACTIVO">INACTIVO</option>
-              </select>
-            </div>
-          </div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs font-extrabold text-slate-600 uppercase mb-1">Fecha Inicio</label>
-              <input type="date" [(ngModel)]="contratoForm.fecha_inicio" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#FAB41F] focus:outline-none">
-            </div>
-            <div>
-              <label class="block text-xs font-extrabold text-slate-600 uppercase mb-1">Fecha Fin</label>
-              <input type="date" [(ngModel)]="contratoForm.fecha_fin" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#FAB41F] focus:outline-none">
-            </div>
+            <button type="button" (click)="abrirModalJornada()" style="background:#facc15; color:#713f12; border:none; border-radius:10px; padding:9px 16px; font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap;">
+              + Nueva jornada
+            </button>
           </div>
         </div>
 
-        <!-- FORMULARIO: PREPARACIONES -->
-        <div *ngIf="pestanaActiva === 'preparaciones'" class="space-y-4">
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs font-extrabold text-slate-600 uppercase mb-1">Menú ID</label>
-              <input type="number" [(ngModel)]="preparacionForm.id_menu" placeholder="ID del menú" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#FAB41F] focus:outline-none">
-            </div>
-            <div>
-              <label class="block text-xs font-extrabold text-slate-600 uppercase mb-1">Plato ID</label>
-              <input type="number" [(ngModel)]="preparacionForm.id_plato" placeholder="ID del plato" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#FAB41F] focus:outline-none">
-            </div>
+        <table style="width:100%; border-collapse:collapse; text-align:left; font-size:13px;">
+          <thead>
+            <tr style="border-bottom:1px solid #e2e8f0; color:#64748b; font-weight:600;">
+              <th style="padding:10px 12px; font-size:11px; letter-spacing:0.5px;">NOMBRE</th>
+              <th style="padding:10px 12px; font-size:11px; letter-spacing:0.5px;">ESTADO</th>
+              <th style="padding:10px 12px; font-size:11px; letter-spacing:0.5px; text-align:right;">ACCIONES</th>
+            </tr>
+          </thead>
+          <tbody style="color:#0f172a;">
+            <tr *ngFor="let j of jornadasFiltradas" style="border-bottom:1px solid #f1f5f9;">
+              <td style="padding:12px; font-weight:600;">{{ j.nombre }}</td>
+              <td style="padding:12px;">
+                <span style="padding:3px 10px; border-radius:12px; font-size:11px; font-weight:600;"
+                  [style.background]="j.estado === 'Activa' ? '#dcfce7' : '#fee2e2'"
+                  [style.color]="j.estado === 'Activa' ? '#166534' : '#991b1b'">
+                  {{ j.estado }}
+                </span>
+              </td>
+              <td style="padding:12px; text-align:right;">
+                <div style="display:flex; gap:6px; justify-content:flex-end; align-items:center;">
+                  <button type="button" (click)="abrirModalJornada(j)" style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; color:#475569;" title="Editar">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                  </button>
+                  <button type="button" (click)="eliminarJornada(j.id)" style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; color:#475569;" title="Eliminar">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="jornadasFiltradas.length === 0">
+              <td colspan="3" style="padding:20px; text-align:center; color:#94a3b8; font-style:italic;">No se encontraron jornadas registradas.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:14px; padding-top:14px; border-top:1px solid #f1f5f9;">
+          <span style="font-size:12px; color:#64748b;">Mostrando {{ jornadasFiltradas.length }} de {{ jornadas.length }}</span>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <button type="button" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; color:#64748b;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            </button>
+            <span style="background:#0f172a; color:#ffffff; border-radius:8px; width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; font-size:12px; font-weight:600;">1</span>
+            <button type="button" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; color:#64748b;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </button>
           </div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs font-extrabold text-slate-600 uppercase mb-1">Manipuladora ID</label>
-              <input type="number" [(ngModel)]="preparacionForm.id_usuario_manipuladora" placeholder="ID manipuladora" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#FAB41F] focus:outline-none">
+        </div>
+      </div>
+    </div>
+
+    <!-- SECCIONES -->
+    <div *ngSwitchCase="'secciones'" style="display:flex; flex-direction:column; gap:16px;">
+      <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:16px; padding:20px; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px; margin-bottom:18px;">
+          <h3 style="font-size:16px; font-weight:700; color:#0f172a; margin:0;">Secciones de menú</h3>
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <div style="display:flex; align-items:center; gap:8px; background:#f8fafc; border:1px solid #cbd5e1; border-radius:10px; padding:6px 12px; min-width:220px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input type="text" [(ngModel)]="filtroBusquedaSecciones" placeholder="Buscar sección..." style="border:none; background:transparent; outline:none; font-size:13px; width:100%; color:#0f172a;">
             </div>
-            <div>
-              <label class="block text-xs font-extrabold text-slate-600 uppercase mb-1">Turno</label>
-              <select [(ngModel)]="preparacionForm.id_turno" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#FAB41F] focus:outline-none bg-white">
-                <option value="">Seleccione Turno</option>
-                <option *ngFor="let t of turnos" [value]="t.id_turno">{{ t.nombre_turno }}</option>
-              </select>
-            </div>
-          </div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs font-extrabold text-slate-600 uppercase mb-1">Fecha</label>
-              <input type="date" [(ngModel)]="preparacionForm.fecha" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#FAB41F] focus:outline-none">
-            </div>
-            <div>
-              <label class="block text-xs font-extrabold text-slate-600 uppercase mb-1">Hora Programada</label>
-              <input type="time" [(ngModel)]="preparacionForm.hora_programada" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#FAB41F] focus:outline-none">
-            </div>
-          </div>
-          <div>
-            <label class="block text-xs font-extrabold text-slate-600 uppercase mb-1">Estado de Preparación</label>
-            <select [(ngModel)]="preparacionForm.estado_preparacion" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#FAB41F] focus:outline-none bg-white">
-              <option value="PENDIENTE">PENDIENTE</option>
-              <option value="EN PROCESO">EN PROCESO</option>
-              <option value="FINALIZADO">FINALIZADO</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs font-extrabold text-slate-600 uppercase mb-1">Observaciones</label>
-            <textarea [(ngModel)]="preparacionForm.observaciones" rows="2" placeholder="Observaciones adicionales..." class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#FAB41F] focus:outline-none"></textarea>
+            <button type="button" (click)="abrirModalSeccion()" style="background:#facc15; color:#713f12; border:none; border-radius:10px; padding:9px 16px; font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap;">
+              + Nueva sección
+            </button>
           </div>
         </div>
 
-      </div>
+        <table style="width:100%; border-collapse:collapse; text-align:left; font-size:13px;">
+          <thead>
+            <tr style="border-bottom:1px solid #e2e8f0; color:#64748b; font-weight:600;">
+              <th style="padding:10px 12px; font-size:11px; letter-spacing:0.5px;">NOMBRE DE LA SECCIÓN</th>
+              <th style="padding:10px 12px; font-size:11px; letter-spacing:0.5px;">JORNADA</th>
+              <th style="padding:10px 12px; font-size:11px; letter-spacing:0.5px;">ESTADO</th>
+              <th style="padding:10px 12px; font-size:11px; letter-spacing:0.5px; text-align:right;">ACCIONES</th>
+            </tr>
+          </thead>
+          <tbody style="color:#0f172a;">
+            <tr *ngFor="let s of seccionesFiltradas" style="border-bottom:1px solid #f1f5f9;">
+              <td style="padding:12px; font-weight:600;">{{ s.nombre }}</td>
+              <td style="padding:12px; color:#475569;">{{ s.jornada }}</td>
+              <td style="padding:12px;">
+                <span style="padding:3px 10px; border-radius:12px; font-size:11px; font-weight:600;"
+                  [style.background]="s.estado === 'Activa' ? '#dcfce7' : '#fee2e2'"
+                  [style.color]="s.estado === 'Activa' ? '#166534' : '#991b1b'">
+                  {{ s.estado }}
+                </span>
+              </td>
+              <td style="padding:12px; text-align:right;">
+                <div style="display:flex; gap:6px; justify-content:flex-end; align-items:center;">
+                  <button type="button" (click)="abrirModalSeccion(s)" style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; color:#475569;" title="Editar">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                  </button>
+                  <button type="button" (click)="eliminarSeccion(s.id)" style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; color:#475569;" title="Eliminar">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="seccionesFiltradas.length === 0">
+              <td colspan="4" style="padding:20px; text-align:center; color:#94a3b8; font-style:italic;">No se encontraron secciones registradas.</td>
+            </tr>
+          </tbody>
+        </table>
 
-      <!-- Modal Footer -->
-      <div class="flex items-center justify-end gap-3 px-6 py-4 bg-slate-50 border-t border-slate-200">
-        <button type="button" (click)="cerrarFormulario()" class="px-4 py-2 rounded-xl border border-slate-300 bg-white text-slate-700 font-semibold text-sm hover:bg-slate-100 cursor-pointer">Cancelar</button>
-        <button type="button" (click)="guardarTodo()" class="px-5 py-2 rounded-xl bg-[#FAB41F] hover:bg-amber-500 text-slate-900 font-bold text-sm shadow-sm cursor-pointer">Guardar Registro</button>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:14px; padding-top:14px; border-top:1px solid #f1f5f9;">
+          <span style="font-size:12px; color:#64748b;">Mostrando {{ seccionesFiltradas.length }} de {{ secciones.length }}</span>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <button type="button" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; color:#64748b;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            </button>
+            <span style="background:#0f172a; color:#ffffff; border-radius:8px; width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; font-size:12px; font-weight:600;">1</span>
+            <button type="button" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; color:#64748b;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </button>
+          </div>
+        </div>
       </div>
+    </div>
 
+  </div>
+
+  <!-- ==================== MODAL: JORNADA ==================== -->
+  <div *ngIf="modalJornadaAbierto" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center; z-index:1000;">
+    <div style="background:#ffffff; width:420px; max-width:90%; border-radius:16px; padding:24px; box-shadow:0 10px 25px rgba(0,0,0,0.1); display:flex; flex-direction:column; gap:20px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #f1f5f9; padding-bottom:12px;">
+        <h3 style="font-size:16px; font-weight:700; color:#0f172a; margin:0;">{{ modoEdicionJornada ? 'EDITAR JORNADA' : 'NUEVA JORNADA' }}</h3>
+        <button type="button" (click)="cerrarModalJornada()" style="background:none; border:none; font-size:18px; cursor:pointer; color:#64748b;">✕</button>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:14px;">
+        <div>
+          <label style="font-size:12px; font-weight:600; color:#334155; display:block; margin-bottom:6px;">Nombre *</label>
+          <input type="text" [(ngModel)]="jornadaActual.nombre" placeholder="Ej. Mañana" style="width:100%; padding:10px 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px; outline:none; box-sizing:border-box;">
+        </div>
+        <div>
+          <label style="font-size:12px; font-weight:600; color:#334155; display:block; margin-bottom:6px;">Estado</label>
+          <select [(ngModel)]="jornadaActual.estado" style="width:100%; padding:10px 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px; outline:none; background:#ffffff; box-sizing:border-box;">
+            <option value="Activa">Activa</option>
+            <option value="Inactiva">Inactiva</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:12px; border-top:1px solid #f1f5f9; padding-top:16px;">
+        <button type="button" (click)="cerrarModalJornada()" style="background:#ffffff; border:1px solid #cbd5e1; color:#334155; padding:9px 18px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer;">Cancelar</button>
+        <button type="button" (click)="guardarJornada()" style="background:#0f172a; color:#ffffff; border:none; padding:9px 18px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer;">Guardar Jornada</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: SECCIÓN ==================== -->
+  <div *ngIf="modalSeccionAbierto" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center; z-index:1000;">
+    <div style="background:#ffffff; width:420px; max-width:90%; border-radius:16px; padding:24px; box-shadow:0 10px 25px rgba(0,0,0,0.1); display:flex; flex-direction:column; gap:20px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #f1f5f9; padding-bottom:12px;">
+        <h3 style="font-size:16px; font-weight:700; color:#0f172a; margin:0;">{{ modoEdicionSeccion ? 'EDITAR SECCIÓN' : 'NUEVA SECCIÓN' }}</h3>
+        <button type="button" (click)="cerrarModalSeccion()" style="background:none; border:none; font-size:18px; cursor:pointer; color:#64748b;">✕</button>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:14px;">
+        <div>
+          <label style="font-size:12px; font-weight:600; color:#334155; display:block; margin-bottom:6px;">Nombre de la Sección *</label>
+          <input type="text" [(ngModel)]="seccionActual.nombre" placeholder="Ej. Desayuno" style="width:100%; padding:10px 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px; outline:none; box-sizing:border-box;">
+        </div>
+        <div>
+          <label style="font-size:12px; font-weight:600; color:#334155; display:block; margin-bottom:6px;">Jornada *</label>
+          <select [(ngModel)]="seccionActual.jornada" style="width:100%; padding:10px 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px; outline:none; background:#ffffff; box-sizing:border-box;">
+            <option *ngFor="let j of jornadas" [value]="j.nombre">{{ j.nombre }}</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:12px; font-weight:600; color:#334155; display:block; margin-bottom:6px;">Estado</label>
+          <select [(ngModel)]="seccionActual.estado" style="width:100%; padding:10px 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px; outline:none; background:#ffffff; box-sizing:border-box;">
+            <option value="Activa">Activa</option>
+            <option value="Inactiva">Inactiva</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:12px; border-top:1px solid #f1f5f9; padding-top:16px;">
+        <button type="button" (click)="cerrarModalSeccion()" style="background:#ffffff; border:1px solid #cbd5e1; color:#334155; padding:9px 18px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer;">Cancelar</button>
+        <button type="button" (click)="guardarSeccion()" style="background:#0f172a; color:#ffffff; border:none; padding:9px 18px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer;">Guardar Sección</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: CONTRATO ==================== -->
+  <div *ngIf="modalContratoAbierto" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center; z-index:1000;">
+    <div style="background:#ffffff; width:500px; max-width:90%; border-radius:16px; padding:24px; box-shadow:0 10px 25px rgba(0,0,0,0.1); display:flex; flex-direction:column; gap:20px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #f1f5f9; padding-bottom:12px;">
+        <h3 style="font-size:16px; font-weight:700; color:#0f172a; margin:0;">{{ modoEdicionContrato ? 'EDITAR CONTRATO' : 'NUEVO CONTRATO' }}</h3>
+        <button type="button" (click)="cerrarModalContrato()" style="background:none; border:none; font-size:18px; cursor:pointer; color:#64748b;">✕</button>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:14px;">
+        <div>
+          <label style="font-size:12px; font-weight:600; color:#334155; display:block; margin-bottom:6px;">N° Contrato *</label>
+          <input type="text" [(ngModel)]="contratoActual.codigo" placeholder="Ej. COR-2026-001" style="width:100%; padding:10px 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px; outline:none; box-sizing:border-box;">
+        </div>
+        <div>
+          <label style="font-size:12px; font-weight:600; color:#334155; display:block; margin-bottom:6px;">Institución *</label>
+          <input type="text" [(ngModel)]="contratoActual.institucion" placeholder="Ej. I.E. San Agustín" style="width:100%; padding:10px 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px; outline:none; box-sizing:border-box;">
+        </div>
+        <div style="display:flex; gap:12px;">
+          <div style="flex:1;">
+            <label style="font-size:12px; font-weight:600; color:#334155; display:block; margin-bottom:6px;">Fecha Inicio</label>
+            <input type="date" [(ngModel)]="contratoActual.fechaInicio" style="width:100%; padding:10px 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px; outline:none; box-sizing:border-box;">
+          </div>
+          <div style="flex:1;">
+            <label style="font-size:12px; font-weight:600; color:#334155; display:block; margin-bottom:6px;">Fecha Fin</label>
+            <input type="date" [(ngModel)]="contratoActual.fechaFin" style="width:100%; padding:10px 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px; outline:none; box-sizing:border-box;">
+          </div>
+        </div>
+        <div>
+          <label style="font-size:12px; font-weight:600; color:#334155; display:block; margin-bottom:6px;">Estado</label>
+          <select [(ngModel)]="contratoActual.estado" style="width:100%; padding:10px 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px; outline:none; background:#ffffff; box-sizing:border-box;">
+            <option value="Activo">Activo</option>
+            <option value="Inactivo">Inactivo</option>
+            <option value="Finalizado">Finalizado</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:12px; border-top:1px solid #f1f5f9; padding-top:16px;">
+        <button type="button" (click)="cerrarModalContrato()" style="background:#ffffff; border:1px solid #cbd5e1; color:#334155; padding:9px 18px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer;">Cancelar</button>
+        <button type="button" (click)="guardarContrato()" style="background:#0f172a; color:#ffffff; border:none; padding:9px 18px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer;">Guardar Registro</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: TAREA ==================== -->
+  <div *ngIf="modalTareaAbierto" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center; z-index:1000;">
+    <div style="background:#ffffff; width:500px; max-width:90%; border-radius:16px; padding:24px; box-shadow:0 10px 25px rgba(0,0,0,0.1); display:flex; flex-direction:column; gap:20px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #f1f5f9; padding-bottom:12px;">
+        <h3 style="font-size:16px; font-weight:700; color:#0f172a; margin:0;">{{ modoEdicionTarea ? 'EDITAR TAREA' : 'NUEVA TAREA' }}</h3>
+        <button type="button" (click)="cerrarModalTarea()" style="background:none; border:none; font-size:18px; cursor:pointer; color:#64748b;">✕</button>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:14px;">
+        <div *ngIf="!modoEdicionTarea">
+          <label style="font-size:12px; font-weight:600; color:#334155; display:block; margin-bottom:6px;">Contrato / Institución *</label>
+          <select [(ngModel)]="tareaActual.contratoId" style="width:100%; padding:10px 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px; outline:none; background:#ffffff; box-sizing:border-box;">
+            <option *ngFor="let c of contratos" [value]="c.id">{{ c.codigo }} - {{ c.institucion }}</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:12px; font-weight:600; color:#334155; display:block; margin-bottom:6px;">Descripción de la Tarea *</label>
+          <input type="text" [(ngModel)]="tareaActual.tarea" placeholder="Ej. Supervisión de raciones PAE" style="width:100%; padding:10px 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px; outline:none; box-sizing:border-box;">
+        </div>
+        <div>
+          <label style="font-size:12px; font-weight:600; color:#334155; display:block; margin-bottom:6px;">Responsable *</label>
+          <input type="text" [(ngModel)]="tareaActual.responsable" placeholder="Ej. Carlos Pérez" style="width:100%; padding:10px 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px; outline:none; box-sizing:border-box;">
+        </div>
+        <div>
+          <label style="font-size:12px; font-weight:600; color:#334155; display:block; margin-bottom:6px;">Fecha Límite</label>
+          <input type="date" [(ngModel)]="tareaActual.fechaLimite" style="width:100%; padding:10px 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px; outline:none; box-sizing:border-box;">
+        </div>
+        <div>
+          <label style="font-size:12px; font-weight:600; color:#334155; display:block; margin-bottom:6px;">Estado</label>
+          <select [(ngModel)]="tareaActual.estado" style="width:100%; padding:10px 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px; outline:none; background:#ffffff; box-sizing:border-box;">
+            <option value="Pendiente">Pendiente</option>
+            <option value="En proceso">En proceso</option>
+            <option value="Completado">Completado</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:12px; border-top:1px solid #f1f5f9; padding-top:16px;">
+        <button type="button" (click)="cerrarModalTarea()" style="background:#ffffff; border:1px solid #cbd5e1; color:#334155; padding:9px 18px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer;">Cancelar</button>
+        <button type="button" (click)="guardarTarea()" style="background:#0f172a; color:#ffffff; border:none; padding:9px 18px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer;">Guardar Tarea</button>
+      </div>
     </div>
   </div>
 

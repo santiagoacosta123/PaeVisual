@@ -1,116 +1,106 @@
 <div class="space-y-6">
   
   <!-- Encabezado Principal -->
-  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-md border border-slate-200">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-xs border border-slate-100">
     <div>
-      <h1 class="text-2xl font-black text-slate-800">Gestión de Roles</h1>
-      <p class="text-sm text-slate-500 mt-1">Configuración y administración de perfiles de acceso para el sistema SIRAE</p>
+      <h1 class="text-2xl font-black text-slate-900 tracking-tight">Gestión de Roles</h1>
+      <p class="text-sm text-slate-400 mt-0.5">Configuración y administración de perfiles de acceso para el sistema PAE</p>
     </div>
     <div class="flex items-center gap-3">
-      <!-- Botón para abrir modal de creación -->
-      <button type="button" (click)="abrirFormulario()" class="bg-[#FAB41F] hover:bg-[#e2a21b] px-4 py-2.5 rounded-xl font-bold text-slate-900 shadow-sm transition text-sm flex items-center gap-2 cursor-pointer border border-amber-300">
+      <button type="button" (click)="abrirFormulario()" class="bg-[#e0a316] hover:bg-[#cb9213] px-4 py-2.5 rounded-xl font-bold text-white shadow-sm transition text-sm flex items-center gap-2 cursor-pointer border border-amber-400">
         <span class="material-symbols-outlined text-[18px]">security</span>
         Nuevo Rol
       </button>
     </div>
   </div>
 
-  <!-- Tarjetas de Estadísticas / Resumen -->
-  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
-      <div>
-        <p class="text-xs font-extrabold text-slate-400 uppercase tracking-wider">Total Roles Registrados</p>
-        <h3 class="text-2xl font-black text-slate-800 mt-1">{{ roles.length }}</h3>
-      </div>
-      <div class="p-3 bg-amber-50 text-[#FAB41F] border border-amber-200 rounded-2xl">
-        <span class="material-symbols-outlined text-2xl">admin_panel_settings</span>
-      </div>
-    </div>
-    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
-      <div>
-        <p class="text-xs font-extrabold text-slate-400 uppercase tracking-wider">Estado del Sistema</p>
-        <h3 class="text-xl font-black text-emerald-600 mt-1">Sincronizado</h3>
-      </div>
-      <div class="p-3 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-2xl">
-        <span class="material-symbols-outlined text-2xl">check_circle</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- Tabla de Roles -->
-  <div class="bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden">
-    <div class="p-5 border-b border-slate-200 bg-slate-50/80">
-      <h3 class="text-sm font-black text-slate-700 uppercase tracking-wider">Listado de Perfiles</h3>
+  <!-- Contenedor Principal de la Lista de Roles -->
+  <div class="bg-white rounded-3xl shadow-xs border border-slate-100 p-6 space-y-4">
+    
+    <div class="pb-4 border-b border-slate-100">
+      <h3 class="text-sm font-black text-slate-700 uppercase tracking-wider">Perfiles Registrados en el Sistema PAE</h3>
     </div>
 
-    <div class="overflow-x-auto">
-      <table class="w-full text-sm">
-        <thead class="bg-slate-100 text-slate-700 font-extrabold border-b border-slate-200">
-          <tr>
-            <th class="p-4 text-left">ID</th>
-            <th class="p-4 text-left">Nombre del Rol</th>
-            <th class="p-4 text-left">Descripción</th>
-            <th class="p-4 text-center">Acciones</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-200">
-          <tr *ngIf="roles.length === 0">
-            <td colspan="4" class="p-8 text-center text-slate-400 font-medium">No se encontraron roles registrados.</td>
-          </tr>
-          <tr *ngFor="let r of roles" class="hover:bg-amber-50/30 transition">
-            <td class="p-4 font-bold text-slate-600">#{{ r.id_rol }}</td>
-            <td class="p-4 font-bold text-slate-800">
-              <span class="px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-300">
+    <!-- Lista de Roles estilo Tarjetas -->
+    <div class="space-y-3">
+      
+      <div *ngIf="roles.length === 0" class="p-12 text-center text-slate-400 font-medium bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+        No se encontraron roles registrados.
+      </div>
+
+      <div *ngFor="let r of roles" 
+           class="flex flex-col md:flex-row md:items-center justify-between p-4 rounded-2xl border bg-white border-slate-100 hover:border-slate-200 shadow-2xs transition gap-4">
+        
+        <!-- Izquierda: Bloque ID / Fecha y Nombre -->
+        <div class="flex items-center gap-4">
+          <div class="w-14 h-14 rounded-2xl bg-amber-50 text-[#e0a316] border border-amber-100 flex flex-col items-center justify-center font-black shadow-2xs shrink-0">
+            <span class="text-xs uppercase tracking-tight text-slate-400 font-extrabold">ID</span>
+            <span class="text-sm">#{{ r.id_rol }}</span>          <div>
+            <div class="flex items-center gap-2">
+              <span class="px-3 py-1 rounded-xl text-xs font-bold bg-amber-50 text-[#b58111] border border-amber-200 shadow-2xs">
                 {{ r.nombre }}
               </span>
-            </td>
-            <td class="p-4 text-slate-600">{{ r.descripcion }}</td>
-            <td class="p-4 text-center">
-              <div class="flex items-center justify-center gap-2">
-                <!-- Botón Editar limpio -->
-                <button type="button" (click)="editarRol(r)" class="text-slate-500 hover:text-[#FAB41F] transition p-1 cursor-pointer" title="Editar">
-                  <span class="material-symbols-outlined text-[20px]">edit</span>
-                </button>
-                <!-- Botón Eliminar limpio -->
-                <button type="button" (click)="eliminarRol(r)" class="text-slate-500 hover:text-red-600 transition p-1 cursor-pointer" title="Eliminar">
-                  <span class="material-symbols-outlined text-[20px]">delete</span>
-                </button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+            </div>
+            <p class="text-xs text-slate-400 mt-1 font-medium max-w-md line-clamp-1">
+              {{ r.descripcion || 'Sin descripción detallada para este perfil PAE.' }}
+            </p>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between md:justify-end gap-3 border-t md:border-t-0 pt-3 md:pt-0 border-slate-100">
+          
+          <span class="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            Activo PAE
+          </span>
+
+          <div class="flex items-center gap-1.5 ml-2">
+            <button type="button" (click)="editarRol(r)" class="px-3 py-2 rounded-xl bg-slate-50 hover:bg-amber-50 text-slate-600 hover:text-[#e0a316] transition flex items-center gap-1 text-xs font-bold cursor-pointer border border-slate-200 hover:border-amber-200" title="Editar Rol">
+              <span class="material-symbols-outlined text-[16px]">edit</span>
+              Editar
+            </button>
+            <button type="button" (click)="eliminarRol(r)" class="px-3 py-2 rounded-xl bg-slate-50 hover:bg-red-50 text-slate-600 hover:text-red-600 transition flex items-center gap-1 text-xs font-bold cursor-pointer border border-slate-200 hover:border-red-200" title="Eliminar Rol">
+              <span class="material-symbols-outlined text-[16px]">delete</span>
+              Eliminar
+            </button>
+          </div>
+
+        </div>
+
+      </div>
+
     </div>
+
   </div>
 
   <!-- MODAL DE CREACIÓN / EDICIÓN DE ROLES -->
-  <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4 overflow-y-auto" *ngIf="mostrarModal">
-    <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-150">
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-2xs p-4 overflow-y-auto" *ngIf="mostrarModal">
+    <div class="bg-white rounded-3xl shadow-xl border border-slate-100 w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-150">
       
       <!-- Modal Header -->
-      <div class="flex items-center justify-between px-6 py-4 bg-slate-50 border-b border-slate-200">
-        <h3 class="text-lg font-black text-slate-800">{{ modoEdicion ? 'Editar Rol' : 'Registrar Nuevo Rol' }}</h3>
-        <button type="button" (click)="cerrarFormulario()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer">
-          <span class="material-symbols-outlined">close</span>
+      <div class="flex items-center justify-between px-6 py-5 bg-slate-50/80 border-b border-slate-100">
+        <h3 class="text-lg font-black text-slate-900">{{ modoEdicion ? 'Editar Rol PAE' : 'Registrar Nuevo Rol PAE' }}</h3>
+        <button type="button" (click)="cerrarFormulario()" class="w-8 h-8 rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-slate-600 flex items-center justify-center cursor-pointer transition">
+          <span class="material-symbols-outlined text-sm">close</span>
         </button>
       </div>
 
       <!-- Modal Body -->
       <div class="p-6 space-y-4">
         <div>
-          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nombre del Rol</label>
-          <input type="text" [(ngModel)]="rolForm.nombre" placeholder="Ej. Administrador, Supervisor..." class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#FAB41F] focus:outline-none">
+          <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Nombre del Rol</label>
+          <input type="text" [(ngModel)]="rolForm.nombre" name="nombre" placeholder="Ej. Administrador PAE, Coordinador..." class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-[#e0a316] focus:outline-none">
         </div>
         <div>
-          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Descripción</label>
-          <textarea [(ngModel)]="rolForm.descripcion" rows="3" placeholder="Detalle las funciones de este perfil..." class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#FAB41F] focus:outline-none"></textarea>
+          <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Descripción</label>
+          <textarea [(ngModel)]="rolForm.descripcion" name="descripcion" rows="3" placeholder="Detalle las funciones del rol dentro del sistema PAE..." class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-[#e0a316] focus:outline-none"></textarea>
         </div>
       </div>
 
       <!-- Modal Footer -->
-      <div class="flex items-center justify-end gap-3 px-6 py-4 bg-slate-50 border-t border-slate-200">
-        <button type="button" (click)="cerrarFormulario()" class="px-4 py-2 rounded-xl border border-slate-300 bg-white text-slate-700 font-semibold text-sm hover:bg-slate-100 cursor-pointer">Cancelar</button>
-        <button type="button" (click)="guardarRol()" class="px-5 py-2 rounded-xl bg-[#FAB41F] hover:bg-amber-500 text-slate-900 font-bold text-sm shadow-sm cursor-pointer">Guardar Rol</button>
+      <div class="flex items-center justify-end gap-3 px-6 py-4 bg-slate-50/80 border-t border-slate-100">
+        <button type="button" (click)="cerrarFormulario()" class="px-5 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 font-semibold text-sm hover:bg-slate-50 cursor-pointer transition">Cancelar</button>
+        <button type="button" (click)="guardarRol()" class="px-5 py-2.5 rounded-xl bg-[#e0a316] hover:bg-[#cb9213] text-white font-bold text-sm shadow-sm cursor-pointer transition">Guardar Rol</button>
       </div>
 
     </div>

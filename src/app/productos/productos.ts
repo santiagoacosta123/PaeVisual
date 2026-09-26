@@ -14,6 +14,9 @@ export class Productos implements OnInit {
   // Pestaña activa: inventario | movimientos | gramajes
   pestanaActiva: string = 'inventario';
 
+  // Variable para el funcionamiento de la barra de búsqueda
+  filtroBusqueda: string = '';
+
   // Tablas principales
   inventario: any[] = [];
   movimientosInventario: any[] = [];
@@ -93,7 +96,8 @@ export class Productos implements OnInit {
         cantidad_actual: 50,
         stock_minimo: 10,
         id_unidad_medida: 1,
-        nombre_unidad: 'Kilogramos'
+        nombre_unidad: 'Kilogramos',
+        expandido: false
       }
     ];
 
@@ -124,12 +128,54 @@ export class Productos implements OnInit {
     ];
   }
 
+  // Getters para el filtrado en tiempo real según la pestaña y texto ingresado
+  get inventarioFiltrado() {
+    if (!this.filtroBusqueda.trim()) return this.inventario;
+    const texto = this.filtroBusqueda.toLowerCase();
+    return this.inventario.filter(item => 
+      item.nombre_ingrediente.toLowerCase().includes(texto) ||
+      item.nombre_categoria?.toLowerCase().includes(texto) ||
+      item.marca_ingrediente?.toLowerCase().includes(texto)
+    );
+  }
+
+  get movimientosFiltrados() {
+    if (!this.filtroBusqueda.trim()) return this.movimientosInventario;
+    const texto = this.filtroBusqueda.toLowerCase();
+    return this.movimientosInventario.filter(mov => 
+      mov.nombre_ingrediente?.toLowerCase().includes(texto) ||
+      mov.observaciones?.toLowerCase().includes(texto) ||
+      mov.tipo_movimiento?.toLowerCase().includes(texto)
+    );
+  }
+
+  get gramajesFiltrados() {
+    if (!this.filtroBusqueda.trim()) return this.gramajes;
+    const texto = this.filtroBusqueda.toLowerCase();
+    return this.gramajes.filter(gram => 
+      gram.nombre_ingrediente?.toLowerCase().includes(texto) ||
+      gram.descripcion?.toLowerCase().includes(texto)
+    );
+  }
+
   cambiarPestana(pestana: string): void {
     this.pestanaActiva = pestana;
+    this.filtroBusqueda = ''; // Limpia la búsqueda al cambiar de pestaña
     this.cerrarFormulario();
+    this.cerrarDetalles();
+  }
+
+  verDetalles(item: any): void {
+    this.cerrarFormulario();
+    this.itemSeleccionado = item;
+  }
+
+  cerrarDetalles(): void {
+    this.itemSeleccionado = null;
   }
 
   abrirFormulario(item: any = null): void {
+    this.cerrarDetalles(); 
     this.mostrarFormulario = true;
 
     if (item) {

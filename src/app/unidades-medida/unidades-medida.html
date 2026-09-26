@@ -15,16 +15,26 @@
   </div>
 
   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <input
-      [(ngModel)]="unidadForm.nombre_unidad"
-      class="border p-3 rounded-[16px]"
-      placeholder="Nombre de la unidad (ej: Kilogramo)"
-    />
-    <input
-      [(ngModel)]="unidadForm.abreviatura"
-      class="border p-3 rounded-[16px]"
-      placeholder="Abreviatura (ej: kg)"
-    />
+    <div>
+      <label class="block text-xs font-bold text-slate-600 mb-1">Nombre de la unidad *</label>
+      <input
+        type="text"
+        [(ngModel)]="unidadForm.nombre"
+        name="nombre"
+        class="border p-3 rounded-[16px] w-full"
+        placeholder="Ej: Kilogramo"
+      />
+    </div>
+    <div>
+      <label class="block text-xs font-bold text-slate-600 mb-1">Abreviatura</label>
+      <input
+        type="text"
+        [(ngModel)]="unidadForm.abreviatura"
+        name="abreviatura"
+        class="border p-3 rounded-[16px] w-full"
+        placeholder="Ej: kg"
+      />
+    </div>
   </div>
 
   <div class="flex justify-end mt-4">
@@ -54,7 +64,7 @@
           #{{ unidad.id_unidad_medida }}
         </td>
         <td class="p-4 font-semibold text-slate-800">
-          {{ unidad.nombre_unidad }}
+          {{ unidad.nombre }}
         </td>
         <td class="p-4">
           <span class="bg-amber-100 text-amber-800 px-3 py-1 rounded-full font-bold text-xs">
