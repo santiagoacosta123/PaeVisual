@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RolService } from '../services/rol.service';
@@ -18,7 +18,11 @@ export class Rol implements OnInit {
   mostrarModal = false;
   rolForm: RolModel = { nombre: '', descripcion: '' };
 
-  constructor(private rolService: RolService, private sweetAlert: SweetAlertService) {}
+  constructor(
+    private rolService: RolService, 
+    private sweetAlert: SweetAlertService,
+    private cdr: ChangeDetectorRef // 1. Inyectamos ChangeDetectorRef aquí
+  ) {}
 
   ngOnInit(): void { 
     this.cargarRoles(); 
@@ -26,9 +30,13 @@ export class Rol implements OnInit {
 
   cargarRoles(): void {
     this.rolService.getRoles().subscribe({
-      next: (datos) => { this.roles = datos; },
+      next: (datos) => { 
+        this.roles = Array.isArray(datos) ? datos : (datos as any).results || []; 
+        this.cdr.detectChanges(); // 2. Forzamos a Angular a refrescar la vista inmediatamente
+      },
       error: (err) => {
         console.error('Error al cargar roles:', err);
+        this.sweetAlert.error('Error', 'No se pudieron cargar los roles del sistema.');
       }
     });
   }
@@ -61,7 +69,6 @@ export class Rol implements OnInit {
     };
 
     if (this.modoEdicion && this.rolForm.id_rol) {
-      // Si estamos editando, sí guardamos y cerramos normalmente
       this.rolService.actualizarRol(this.rolForm.id_rol, datosEnviar).subscribe({
         next: () => {
           this.sweetAlert.success('Rol actualizado', 'El rol se actualizó correctamente.');
@@ -74,12 +81,10 @@ export class Rol implements OnInit {
         }
       });
     } else {
-      // Si estamos CREANDO uno nuevo: guardamos, recargamos la tabla y LIMPIAMOS el formulario SIN cerrar el modal
       this.rolService.crearRol(datosEnviar).subscribe({
         next: () => {
           this.cargarRoles();
-          this.rolForm = { nombre: '', descripcion: '' }; // Limpia las cajas para el siguiente
-          // Opcional: una alerta sutil o un aviso de que ya se guardó y puedes seguir escribiendo
+          this.rolForm = { nombre: '', descripcion: '' }; 
           this.sweetAlert.success('¡Guardado!', 'Rol agregado con éxito. Puedes registrar otro.');
         },
         error: (err) => {
@@ -95,11 +100,13 @@ export class Rol implements OnInit {
   }
 
   eliminarRol(rol: RolModel): void {
-    if (!rol.id_rol) return;
+    const idRol = rol.id_rol || (rol as any).id;
+    if (!idRol) return;
+
     this.sweetAlert.confirm('¿Eliminar rol?', `¿Desea eliminar el rol ${rol.nombre}?`, 'Sí, eliminar')
       .then((res: any) => {
         if (res.isConfirmed) {
-          this.rolService.eliminarRol(rol.id_rol!).subscribe({
+          this.rolService.eliminarRol(idRol).subscribe({
             next: () => {
               this.sweetAlert.success('Rol eliminado', 'El rol se eliminó correctamente.');
               this.cargarRoles();
