@@ -14,10 +14,16 @@ export class Productos implements OnInit {
   // Pestaña activa: inventario | movimientos | gramajes
   pestanaActiva: string = 'inventario';
 
+  // Variable para el funcionamiento de la barra de búsqueda
+  filtroBusqueda: string = '';
+
   // Tablas principales
   inventario: any[] = [];
   movimientosInventario: any[] = [];
   gramajes: any[] = [];
+
+  // Elemento seleccionado para ver los detalles en la tarjeta superior
+  itemSeleccionado: any = null;
 
   // Categorías escritas directamente en el código
   categoriasInventario: any[] = [
@@ -138,7 +144,8 @@ export class Productos implements OnInit {
         cantidad_actual: 50,
         stock_minimo: 10,
         id_unidad_medida: 1,
-        nombre_unidad: 'Kilogramos'
+        nombre_unidad: 'Kilogramos',
+        expandido: false
       }
     ];
 
@@ -171,12 +178,54 @@ export class Productos implements OnInit {
     ];
   }
 
+  // Getters para el filtrado en tiempo real según la pestaña y texto ingresado
+  get inventarioFiltrado() {
+    if (!this.filtroBusqueda.trim()) return this.inventario;
+    const texto = this.filtroBusqueda.toLowerCase();
+    return this.inventario.filter(item => 
+      item.nombre_ingrediente.toLowerCase().includes(texto) ||
+      item.nombre_categoria?.toLowerCase().includes(texto) ||
+      item.marca_ingrediente?.toLowerCase().includes(texto)
+    );
+  }
+
+  get movimientosFiltrados() {
+    if (!this.filtroBusqueda.trim()) return this.movimientosInventario;
+    const texto = this.filtroBusqueda.toLowerCase();
+    return this.movimientosInventario.filter(mov => 
+      mov.nombre_ingrediente?.toLowerCase().includes(texto) ||
+      mov.observaciones?.toLowerCase().includes(texto) ||
+      mov.tipo_movimiento?.toLowerCase().includes(texto)
+    );
+  }
+
+  get gramajesFiltrados() {
+    if (!this.filtroBusqueda.trim()) return this.gramajes;
+    const texto = this.filtroBusqueda.toLowerCase();
+    return this.gramajes.filter(gram => 
+      gram.nombre_ingrediente?.toLowerCase().includes(texto) ||
+      gram.descripcion?.toLowerCase().includes(texto)
+    );
+  }
+
   cambiarPestana(pestana: string): void {
     this.pestanaActiva = pestana;
+    this.filtroBusqueda = ''; // Limpia la búsqueda al cambiar de pestaña
     this.cerrarFormulario();
+    this.cerrarDetalles();
+  }
+
+  verDetalles(item: any): void {
+    this.cerrarFormulario();
+    this.itemSeleccionado = item;
+  }
+
+  cerrarDetalles(): void {
+    this.itemSeleccionado = null;
   }
 
   abrirFormulario(item: any = null): void {
+    this.cerrarDetalles(); 
     this.mostrarFormulario = true;
 
     if (item) {
@@ -253,15 +302,11 @@ export class Productos implements OnInit {
       }
 
       const cat = this.categoriasInventario.find(
-        c =>
-          c.id_categoria_inventario ==
-          this.itemForm.id_categoria_inventario
+        c => c.id_categoria_inventario == this.itemForm.id_categoria_inventario
       );
 
       const um = this.unidadesMedida.find(
-        u =>
-          u.id_unidad_medida ==
-          this.itemForm.id_unidad_medida
+        u => u.id_unidad_medida == this.itemForm.id_unidad_medida
       );
 
       if (
@@ -271,12 +316,9 @@ export class Productos implements OnInit {
       ) {
         this.inventario[this.indiceEdicion] = {
           ...this.itemForm,
-          nombre_categoria: cat
-            ? cat.nombre_categoria
-            : 'General',
-          nombre_unidad: um
-            ? um.nombre_unidad
-            : 'Unidad'
+          nombre_categoria: cat ? cat.nombre_categoria : 'General',
+          nombre_unidad: um ? um.nombre_unidad : 'Unidad',
+          expandido: this.inventario[this.indiceEdicion].expandido || false
         };
 
         this.sweetAlert.success(
@@ -287,12 +329,9 @@ export class Productos implements OnInit {
         this.inventario.push({
           ...this.itemForm,
           id_inventario: this.inventario.length + 1,
-          nombre_categoria: cat
-            ? cat.nombre_categoria
-            : 'General',
-          nombre_unidad: um
-            ? um.nombre_unidad
-            : 'Unidad'
+          nombre_categoria: cat ? cat.nombre_categoria : 'General',
+          nombre_unidad: um ? um.nombre_unidad : 'Unidad',
+          expandido: false
         });
 
         this.sweetAlert.success(
@@ -315,15 +354,11 @@ export class Productos implements OnInit {
       }
 
       const ing = this.ingredientesDisponibles.find(
-        i =>
-          i.id_ingrediente ==
-          this.movimientoForm.id_ingrediente
+        i => i.id_ingrediente == this.movimientoForm.id_ingrediente
       );
 
       const um = this.unidadesMedida.find(
-        u =>
-          u.id_unidad_medida ==
-          this.movimientoForm.id_unidad_medida
+        u => u.id_unidad_medida == this.movimientoForm.id_unidad_medida
       );
 
       if (
@@ -333,12 +368,8 @@ export class Productos implements OnInit {
       ) {
         this.movimientosInventario[this.indiceEdicion] = {
           ...this.movimientoForm,
-          nombre_ingrediente: ing
-            ? ing.nombre_ingrediente
-            : 'Ingrediente',
-          nombre_unidad: um
-            ? um.nombre_unidad
-            : 'Unidad'
+          nombre_ingrediente: ing ? ing.nombre_ingrediente : 'Ingrediente',
+          nombre_unidad: um ? um.nombre_unidad : 'Unidad'
         };
 
         this.sweetAlert.success(
@@ -348,15 +379,10 @@ export class Productos implements OnInit {
       } else {
         this.movimientosInventario.push({
           ...this.movimientoForm,
-          id_movimiento_inventario:
-            this.movimientosInventario.length + 1,
-          nombre_ingrediente: ing
-            ? ing.nombre_ingrediente
-            : 'Ingrediente',
+          id_movimiento_inventario: this.movimientosInventario.length + 1,
+          nombre_ingrediente: ing ? ing.nombre_ingrediente : 'Ingrediente',
           fecha: new Date().toISOString().split('T')[0],
-          nombre_unidad: um
-            ? um.nombre_unidad
-            : 'Unidad'
+          nombre_unidad: um ? um.nombre_unidad : 'Unidad'
         });
 
         this.sweetAlert.success(
@@ -379,15 +405,11 @@ export class Productos implements OnInit {
       }
 
       const ing = this.ingredientesDisponibles.find(
-        i =>
-          i.id_ingrediente ==
-          this.gramajeForm.id_ingrediente
+        i => i.id_ingrediente == this.gramajeForm.id_ingrediente
       );
 
       const um = this.unidadesMedida.find(
-        u =>
-          u.id_unidad_medida ==
-          this.gramajeForm.id_unidad_medida
+        u => u.id_unidad_medida == this.gramajeForm.id_unidad_medida
       );
 
       if (
@@ -397,12 +419,8 @@ export class Productos implements OnInit {
       ) {
         this.gramajes[this.indiceEdicion] = {
           ...this.gramajeForm,
-          nombre_ingrediente: ing
-            ? ing.nombre_ingrediente
-            : 'Ingrediente',
-          nombre_unidad: um
-            ? um.nombre_unidad
-            : 'Gramos'
+          nombre_ingrediente: ing ? ing.nombre_ingrediente : 'Ingrediente',
+          nombre_unidad: um ? um.nombre_unidad : 'Gramos'
         };
 
         this.sweetAlert.success(
@@ -413,12 +431,8 @@ export class Productos implements OnInit {
         this.gramajes.push({
           ...this.gramajeForm,
           id_gramaje: this.gramajes.length + 1,
-          nombre_ingrediente: ing
-            ? ing.nombre_ingrediente
-            : 'Ingrediente',
-          nombre_unidad: um
-            ? um.nombre_unidad
-            : 'Gramos'
+          nombre_ingrediente: ing ? ing.nombre_ingrediente : 'Ingrediente',
+          nombre_unidad: um ? um.nombre_unidad : 'Gramos'
         });
 
         this.sweetAlert.success(
@@ -444,6 +458,10 @@ export class Productos implements OnInit {
 
           if (index > -1) {
             lista.splice(index, 1);
+          }
+
+          if (this.itemSeleccionado === item) {
+            this.cerrarDetalles();
           }
 
           this.sweetAlert.success(

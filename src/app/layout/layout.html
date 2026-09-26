@@ -1,56 +1,66 @@
-<div class="flex min-h-screen" style="background:#f5f5f5; font-family:'Roboto',sans-serif;">
+<div class="flex min-h-screen" style="background:#f5f5f5; font-family:'Roboto',sans-serif; overflow:hidden; height:100vh;">
 
   <!-- Sidebar -->
-  <aside style="width:240px; background:#fff; border-right:1px solid #e0e0e0;" class="flex flex-col p-5">
+  <aside style="width:280px; background:#fff; border-right:1px solid #e0e0e0; display:flex; flex-direction:column; padding:24px 20px; box-sizing:border-box; flex-shrink:0;">
 
-    <!-- Logo -->
-    <div class="mb-6">
-      <img src="/sirae-logo.png" alt="Logo SIRAE" style="max-width:140px; display:block;" />
+    <!-- Logo / Marca SIRAE con la imagen real -->
+    <div style="display:flex; align-items:center; gap:12px; margin-bottom:36px;">
+      <img src="sirae-logo.png" alt="Logo SIRAE" style="height:36px; width:auto; object-fit:contain;" />
     </div>
 
+    <!-- Título de sección -->
+    <p style="font-size:13px; font-weight:bold; color:#888888; text-transform:uppercase; letter-spacing:0.8px; margin:0 0 16px 12px;">
+      MENU SIRAE
+    </p>
+
     <!-- Navegación -->
-    <nav class="flex flex-col gap-1 flex-1">
+    <nav class="flex flex-col gap-1 flex-1" style="overflow-y:auto;">
       <a routerLink="inicio" routerLinkActive="active-link"
-         style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; text-decoration:none; color:#333; font-size:14px; font-weight:500;">
-        <span class="material-symbols-outlined" style="font-size:20px; color:#777;">home</span>
+         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
+        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">home</span>
         Inicio
       </a>
+      <a routerLink="contratos" routerLinkActive="active-link"
+         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
+        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">description</span>
+        Contratos
+      </a>
       <a routerLink="usuarios" routerLinkActive="active-link"
-         style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; text-decoration:none; color:#333; font-size:14px; font-weight:500;">
-        <span class="material-symbols-outlined" style="font-size:20px; color:#777;">people</span>
+         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
+        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">people</span>
         Usuarios
       </a>
       <a routerLink="rol" routerLinkActive="active-link"
-         style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; text-decoration:none; color:#333; font-size:14px; font-weight:500;">
-        <span class="material-symbols-outlined" style="font-size:20px; color:#777;">shield</span>
+         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
+        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">shield</span>
         Roles
       </a>
       <a routerLink="productos" routerLinkActive="active-link"
-         style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; text-decoration:none; color:#333; font-size:14px; font-weight:500;">
-        <span class="material-symbols-outlined" style="font-size:20px; color:#777;">package</span>
+         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
+        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">package</span>
         Productos (Inventario)
       </a>
       <a routerLink="unidades-medida" routerLinkActive="active-link"
-         style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; text-decoration:none; color:#333; font-size:14px; font-weight:500;">
-        <span class="material-symbols-outlined" style="font-size:20px; color:#777;">straighten</span>
+         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
+        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">straighten</span>
         Unidades
       </a>
       <a routerLink="reportes" routerLinkActive="active-link"
-         style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; text-decoration:none; color:#333; font-size:14px; font-weight:500;">
-        <span class="material-symbols-outlined" style="font-size:20px; color:#777;">bar_chart</span>
+         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
+        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">bar_chart</span>
         Reportes
       </a>
     </nav>
 
-    <!-- Fondo del sidebar: Configuración y Cerrar sesión -->
-    <div style="border-top:1px solid #e0e0e0; padding-top:12px; margin-top:12px; display:flex; flex-direction:column; gap:6px;">
+    <!-- Parte inferior del sidebar: Configuración y Cerrar sesión -->
+    <div style="border-top:1px solid #eeeeee; padding-top:16px; margin-top:16px; display:flex; flex-direction:column; gap:6px;">
       <button type="button" (click)="configurar()"
-        style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; background:none; border:none; cursor:pointer; color:#555; font-size:14px; font-weight:500; width:100%; text-align:left;">
+        style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px; background:none; border:none; cursor:pointer; color:#555555; font-size:14px; font-weight:500; width:100%; text-align:left;">
         <span class="material-symbols-outlined" style="font-size:20px; color:#777;">settings</span>
         Configuración
       </button>
       <button type="button" (click)="cerrarSesion()"
-        style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; background:none; border:none; cursor:pointer; color:#e53935; font-size:14px; font-weight:500; width:100%; text-align:left;">
+        style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px; background:none; border:none; cursor:pointer; color:#e53935; font-size:14px; font-weight:500; width:100%; text-align:left;">
         <span class="material-symbols-outlined" style="font-size:20px; color:#e53935;">logout</span>
         Cerrar sesión
       </button>
@@ -58,58 +68,72 @@
   </aside>
 
   <!-- Contenido principal -->
-  <main style="flex:1; padding:24px; position:relative; overflow-y: auto;">
+  <main style="flex:1; padding:24px 32px; position:relative; overflow-y:auto; display:flex; flex-direction:column; gap:20px; box-sizing:border-box;">
 
-    <!-- Barra superior -->
-    <div style="background:#fff; border:1px solid #e0e0e0; border-radius:10px; padding:12px 20px; display:flex; align-items:center; justify-content:space-between; margin-bottom:24px;">
-      <div>
-        <p style="font-size:11px; color:#777; text-transform:uppercase; letter-spacing:1px; margin:0;">Panel</p>
-        <h1 style="font-size:18px; font-weight:700; color:#333; margin:0;">Administrador</h1>
+    <!-- Barra superior moderna -->
+    <div style="background:#fff; border:1px solid #e0e0e0; border-radius:14px; padding:12px 24px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 2px 6px rgba(0,0,0,0.02); flex-shrink:0;">
+      
+      <!-- Título de la sección -->
+      <div style="display:flex; align-items:center; gap:16px;">
+        <h1 style="font-size:18px; font-weight:700; color:#1a1a1a; margin:0;">Panel de Control</h1>
       </div>
-      <div style="display:flex; align-items:center; gap:12px;">
-        <button type="button" style="background:none; border:none; cursor:pointer; color:#777; display:flex; align-items:center;">
-          <span class="material-symbols-outlined" style="font-size:22px;">notifications</span>
+
+      <!-- Acciones de la derecha: Notificaciones y Perfil -->
+      <div style="display:flex; align-items:center; gap:16px;">
+        
+        <!-- Botón de Notificaciones -->
+        <button type="button"
+          style="background:#f8f9fc; border:1px solid #eee; border-radius:12px; width:42px; height:42px; display:flex; align-items:center; justify-content:center; cursor:pointer; position:relative; transition:background 0.2s;">
+          <span class="material-symbols-outlined" style="font-size:20px; color:#555;">notifications</span>
+          <span style="position:absolute; top:9px; right:9px; width:8px; height:8px; background:#e0a316; border-radius:50%; border:2px solid #fff;"></span>
         </button>
+
+        <!-- Divisor vertical -->
+        <div style="width:1px; height:28px; background:#eee;"></div>
+
+        <!-- Botón de Perfil con foto, nombre, rol y flecha -->
         <button type="button" (click)="togglePerfil()"
-          style="background:none; border:none; cursor:pointer; color:#777; display:flex; align-items:center;">
-          <span class="material-symbols-outlined" style="font-size:22px;">person</span>
+          style="background:none; border:none; display:flex; align-items:center; gap:12px; cursor:pointer; padding:6px 10px; border-radius:12px; transition:background 0.2s;"
+          class="profile-top-btn">
+          <img src="administrador.png" alt="Avatar" style="width:40px; height:40px; border-radius:50%; object-fit:cover; border:1px solid #e0e0e0;" />
+          <div style="text-align:left; display:flex; flex-direction:column;">
+            <span style="font-size:14px; font-weight:600; color:#1a1a1a; line-height:1.2;">{{ perfil.nombre }}</span>
+            <span style="font-size:11px; color:#888; font-weight:400;">Super Admin</span>
+          </div>
+          <span class="material-symbols-outlined" style="font-size:18px; color:#888; margin-left:4px;">expand_more</span>
         </button>
+
       </div>
     </div>
 
-    <!-- AQUÍ SE CARGAN LAS VISTAS HIJAS -->
-    <router-outlet></router-outlet>
-
-    <!-- Panel de perfil desplegable -->
+    <!-- Panel de perfil desplegable con la imagen real -->
     <div *ngIf="mostrarPerfil"
-      style="position:absolute; top:80px; right:24px; width:300px; background:#fff; border:1px solid #e0e0e0; border-radius:10px; box-shadow:0 4px 16px rgba(0,0,0,0.10); z-index:100; overflow:hidden;">
+      style="position:absolute; top:88px; right:32px; width:320px; background:#fff; border:1px solid #e0e0e0; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,0.12); z-index:100; overflow:hidden;">
       
       <div style="padding:16px; background:#fafafa; border-bottom:1px solid #eee; display:flex; align-items:center; gap:12px;">
-        <div style="width:40px; height:40px; border-radius:50%; background:#f4b41f; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:bold;">
-          {{ perfil.nombre.charAt(0) }}
-        </div>
-        <div>
-          <h4 style="margin:0; font-size:14px; color:#333;">{{ perfil.nombre }}</h4>
-          <p style="margin:0; font-size:12px; color:#777;">{{ perfil.sede }}</p>
+        <img src="administrador.png" alt="Avatar" style="width:44px; height:44px; border-radius:50%; object-fit:cover; border:1px solid #e0e0e0;" />
+        <div style="overflow:hidden;">
+          <h4 style="margin:0; font-size:14px; color:#333; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ perfil.nombre }}</h4>
+          <p style="margin:2px 0 0 0; font-size:12px; color:#777; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ perfil.sede }}</p>
         </div>
       </div>
 
       <div style="padding:8px; display:flex; flex-direction:column; gap:4px;">
         <button type="button" (click)="irA('perfil')"
-          [style.background]="vistaActual === 'perfil' ? '#fff8e1' : 'transparent'"
-          style="display:flex; align-items:center; gap:10px; padding:10px; border:none; border-radius:6px; cursor:pointer; width:100%; text-align:left; font-size:13px; color:#333;">
+          [style.background]="vistaActual === 'perfil' ? '#fcf8ec' : 'transparent'"
+          style="display:flex; align-items:center; gap:10px; padding:10px; border:none; border-radius:8px; cursor:pointer; width:100%; text-align:left; font-size:13px; color:#333;">
           <span class="material-symbols-outlined" style="font-size:18px; color:#666;">badge</span>
           Ver Perfil
         </button>
         <button type="button" (click)="irA('editar')"
-          [style.background]="vistaActual === 'editar' ? '#fff8e1' : 'transparent'"
-          style="display:flex; align-items:center; gap:10px; padding:10px; border:none; border-radius:6px; cursor:pointer; width:100%; text-align:left; font-size:13px; color:#333;">
+          [style.background]="vistaActual === 'editar' ? '#fcf8ec' : 'transparent'"
+          style="display:flex; align-items:center; gap:10px; padding:10px; border:none; border-radius:8px; cursor:pointer; width:100%; text-align:left; font-size:13px; color:#333;">
           <span class="material-symbols-outlined" style="font-size:18px; color:#666;">edit</span>
           Editar Perfil
         </button>
         <button type="button" (click)="irA('password')"
-          [style.background]="vistaActual === 'password' ? '#fff8e1' : 'transparent'"
-          style="display:flex; align-items:center; gap:10px; padding:10px; border:none; border-radius:6px; cursor:pointer; width:100%; text-align:left; font-size:13px; color:#333;">
+          [style.background]="vistaActual === 'password' ? '#fcf8ec' : 'transparent'"
+          style="display:flex; align-items:center; gap:10px; padding:10px; border:none; border-radius:8px; cursor:pointer; width:100%; text-align:left; font-size:13px; color:#333;">
           <span class="material-symbols-outlined" style="font-size:18px; color:#666;">lock</span>
           Cambiar Contraseña
         </button>
@@ -124,33 +148,33 @@
         <div *ngIf="vistaActual === 'editar'" style="display:flex; flex-direction:column; gap:10px;">
           <div style="display:flex; flex-direction:column; gap:4px;">
             <label style="font-size:11px; font-weight:600; color:#666;">Nombre</label>
-            <input type="text" [(ngModel)]="editForm.nombre" style="padding:8px; border:1px solid #ddd; border-radius:6px; font-size:13px;" />
+            <input type="text" [(ngModel)]="editForm.nombre" style="padding:8px; border:1px solid #ddd; border-radius:6px; font-size:13px; outline:none;" />
           </div>
           <div style="display:flex; flex-direction:column; gap:4px;">
             <label style="font-size:11px; font-weight:600; color:#666;">Correo</label>
-            <input type="email" [(ngModel)]="editForm.correo" style="padding:8px; border:1px solid #ddd; border-radius:6px; font-size:13px;" />
+            <input type="email" [(ngModel)]="editForm.correo" style="padding:8px; border:1px solid #ddd; border-radius:6px; font-size:13px; outline:none;" />
           </div>
           <div style="display:flex; flex-direction:column; gap:4px;">
             <label style="font-size:11px; font-weight:600; color:#666;">Teléfono</label>
-            <input type="text" [(ngModel)]="editForm.telefono" style="padding:8px; border:1px solid #ddd; border-radius:6px; font-size:13px;" />
+            <input type="text" [(ngModel)]="editForm.telefono" style="padding:8px; border:1px solid #ddd; border-radius:6px; font-size:13px; outline:none;" />
           </div>
-          <button type="button" (click)="guardarPerfil()" style="background:#f4b41f; color:#333; font-weight:700; border:none; border-radius:6px; padding:8px; cursor:pointer; font-size:13px; margin-top:4px;">Guardar Cambios</button>
+          <button type="button" (click)="guardarPerfil()" style="background:#e0a316; color:#fff; font-weight:600; border:none; border-radius:6px; padding:8px; cursor:pointer; font-size:13px; margin-top:4px;">Guardar Cambios</button>
         </div>
 
         <div *ngIf="vistaActual === 'password'" style="display:flex; flex-direction:column; gap:10px;">
           <div style="display:flex; flex-direction:column; gap:4px;">
             <label style="font-size:11px; font-weight:600; color:#666;">Contraseña Actual</label>
-            <input type="password" [(ngModel)]="passwordForm.actual" style="padding:8px; border:1px solid #ddd; border-radius:6px; font-size:13px;" />
+            <input type="password" [(ngModel)]="passwordForm.actual" style="padding:8px; border:1px solid #ddd; border-radius:6px; font-size:13px; outline:none;" />
           </div>
           <div style="display:flex; flex-direction:column; gap:4px;">
             <label style="font-size:11px; font-weight:600; color:#666;">Nueva Contraseña</label>
-            <input type="password" [(ngModel)]="passwordForm.nueva" style="padding:8px; border:1px solid #ddd; border-radius:6px; font-size:13px;" />
+            <input type="password" [(ngModel)]="passwordForm.nueva" style="padding:8px; border:1px solid #ddd; border-radius:6px; font-size:13px; outline:none;" />
           </div>
           <div style="display:flex; flex-direction:column; gap:4px;">
             <label style="font-size:11px; font-weight:600; color:#666;">Confirmar Contraseña</label>
-            <input type="password" [(ngModel)]="passwordForm.confirmar" style="padding:8px; border:1px solid #ddd; border-radius:6px; font-size:13px;" />
+            <input type="password" [(ngModel)]="passwordForm.confirmar" style="padding:8px; border:1px solid #ddd; border-radius:6px; font-size:13px; outline:none;" />
           </div>
-          <button type="button" (click)="guardarPassword()" style="background:#f4b41f; color:#333; font-weight:700; border:none; border-radius:6px; padding:8px; cursor:pointer; font-size:13px; margin-top:4px;">Actualizar Contraseña</button>
+          <button type="button" (click)="guardarPassword()" style="background:#e0a316; color:#fff; font-weight:600; border:none; border-radius:6px; padding:8px; cursor:pointer; font-size:13px; margin-top:4px;">Actualizar Contraseña</button>
         </div>
       </div>
     </div>
@@ -158,20 +182,49 @@
     <!-- Fondo transparente para cerrar el panel -->
     <div *ngIf="mostrarPerfil" (click)="cerrarPanel()" style="position:fixed; inset:0; z-index:99;"></div>
 
+    <!-- Vistas Hijas Dinámicas (Aquí se carga contratos.html o inicio.html según la ruta) -->
+    <router-outlet></router-outlet>
+
   </main>
 </div>
 
-<!-- ESTILOS GENERALES -->
+<!-- ESTILOS CSS -->
 <style>
   .active-link {
-    background: #f4b41f !important;
-    color: #fff !important;
-    font-weight: 600;
+    background: #fcf8ec !important;
+    color: #e0a316 !important;
+    font-weight: 600 !important;
   }
-  .active-link .material-symbols-outlined {
-    color: #fff !important;
+  
+  .active-link .nav-icon {
+    color: #e0a316 !important;
   }
+
+  .nav-icon {
+    color: #555555;
+  }
+
+  /* Franja lateral derecha con el color #e0a316 */
+  .active-link::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 6px;
+    bottom: 6px;
+    width: 4px;
+    background-color: #e0a316;
+    border-radius: 4px 0 0 4px;
+  }
+
   aside a:hover:not(.active-link) {
-    background: #fff8e1;
+    background: #fffdf5;
+    color: #e0a316;
+  }
+  aside a:hover:not(.active-link) .nav-icon {
+    color: #e0a316;
+  }
+
+  .profile-top-btn:hover {
+    background: #f8f9fc;
   }
 </style>

@@ -11,7 +11,6 @@ import { FormsModule } from '@angular/forms';
 })
 export class AsistenciaComponent {
   
-  // Campos de control general
   id_grado_seleccionado: string = 'todos';
   fecha_registro: string = new Date().toISOString().split('T')[0];
   id_usuario_manipuladorajefe: number = 1; 
