@@ -1,183 +1,160 @@
 <div class="space-y-6">
   
   <!-- Encabezado Principal -->
-  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-md border border-slate-200">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-xs border border-slate-100">
     <div>
-      <h1 class="text-2xl font-black text-slate-800">Gestión de Usuarios</h1>
-      <p class="text-sm text-slate-500 mt-1">Administración de perfiles, roles y accesos del sistema (SIRAE)</p>
+      <h1 class="text-2xl font-black text-slate-900 tracking-tight">Gestión de Usuarios</h1>
+      <p class="text-sm text-slate-400 mt-0.5">Administración de perfiles, roles y accesos del sistema (SIRAE)</p>
     </div>
     <div class="flex items-center gap-3">
-      <button type="button" (click)="abrirFormulario()" class="bg-[#FAB41F] hover:bg-[#e2a21b] px-4 py-2.5 rounded-xl font-bold text-slate-900 shadow-sm transition text-sm flex items-center gap-2 cursor-pointer border border-amber-300">
+      <button type="button" (click)="abrirFormulario()" class="bg-[#e0a316] hover:bg-[#cb9213] px-4 py-2.5 rounded-xl font-bold text-white shadow-sm transition text-sm flex items-center gap-2 cursor-pointer border border-amber-400">
         <span class="material-symbols-outlined text-[18px]">person_add</span>
         Nuevo Usuario
       </button>
-      <button type="button" onclick="window.print()" class="border border-slate-300 hover:bg-slate-100 px-4 py-2.5 rounded-xl text-slate-700 font-semibold text-sm transition shadow-xs cursor-pointer flex items-center gap-2 bg-white">
+      <button type="button" onclick="window.print()" class="border border-slate-200 hover:bg-slate-50 px-4 py-2.5 rounded-xl text-slate-700 font-semibold text-sm transition shadow-2xs cursor-pointer flex items-center gap-2 bg-white">
         <span class="material-symbols-outlined text-[18px]">print</span>
         Reporte
       </button>
     </div>
   </div>
 
-  <!-- Tarjetas de Estadísticas -->
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
-      <div>
-        <p class="text-xs font-extrabold text-slate-400 uppercase tracking-wider">Total Registrados</p>
-        <h3 class="text-2xl font-black text-slate-800 mt-1">{{ usuarios.length }}</h3>
-      </div>
-      <div class="p-3 bg-amber-50 text-[#FAB41F] border border-amber-200 rounded-2xl"><span class="material-symbols-outlined text-2xl">group</span></div>
-    </div>
-    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
-      <div>
-        <p class="text-xs font-extrabold text-slate-400 uppercase tracking-wider">Administradores</p>
-        <h3 class="text-2xl font-black text-blue-600 mt-1">{{ totalAdministradores }}</h3>
-      </div>
-      <div class="p-3 bg-blue-50 text-blue-600 border border-blue-200 rounded-2xl"><span class="material-symbols-outlined text-2xl">admin_panel_settings</span></div>
-    </div>
-    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
-      <div>
-        <p class="text-xs font-extrabold text-slate-400 uppercase tracking-wider">Activos</p>
-        <h3 class="text-2xl font-black text-emerald-600 mt-1">{{ totalActivos }}</h3>
-      </div>
-      <div class="p-3 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-2xl"><span class="material-symbols-outlined text-2xl">check_circle</span></div>
-    </div>
-    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
-      <div>
-        <p class="text-xs font-extrabold text-slate-400 uppercase tracking-wider">Inactivos</p>
-        <h3 class="text-2xl font-black text-red-500 mt-1">{{ totalInactivos }}</h3>
-      </div>
-      <div class="p-3 bg-red-50 text-red-500 border border-red-200 rounded-2xl"><span class="material-symbols-outlined text-2xl">person_off</span></div>
-    </div>
-  </div>
-
-  <!-- Tabla y Filtros -->
-  <div class="bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden">
-    <div class="p-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/80">
+  <!-- Contenedor Principal de Filtros y Listado -->
+  <div class="bg-white rounded-3xl shadow-xs border border-slate-100 p-6 space-y-6">
+    
+    <!-- Barra Superior: Buscador y Filtro de Roles -->
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-100">
       <div class="relative flex-1 max-w-md">
         <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400"><span class="material-symbols-outlined text-lg">search</span></span>
-        <input type="text" [(ngModel)]="filtroTexto" placeholder="Buscar por nombre, documento o correo..." class="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#FAB41F] focus:outline-none">
+        <input type="text" [(ngModel)]="filtroTexto" placeholder="Buscar por nombre, documento o correo..." class="w-full pl-10 pr-4 py-2.5 bg-slate-50/65 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-[#e0a316] focus:outline-none transition">
       </div>
-      <select [(ngModel)]="filtroRol" class="bg-white border border-slate-300 text-slate-700 text-sm rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-[#FAB41F] focus:outline-none">
-        <option value="">Todos los Roles</option>
-        <option *ngFor="let rol of roles" [value]="rol.id_rol || rol.id || rol.pk">{{ rol.nombre_rol || rol.nombre || rol.name }}</option>
-      </select>
+      <div class="flex items-center gap-2">
+        <select [(ngModel)]="filtroRol" class="bg-slate-50/65 border border-slate-200 text-slate-700 text-sm rounded-2xl px-4 py-2.5 focus:ring-2 focus:ring-[#e0a316] focus:outline-none transition font-semibold cursor-pointer">
+          <option value="">Todos los Roles</option>
+          <option *ngFor="let rol of roles" [value]="rol.id_rol || rol.id || rol.pk">{{ rol.nombre_rol || rol.nombre || rol.name }}</option>
+        </select>
+      </div>
     </div>
 
-    <div class="overflow-x-auto">
-      <table class="w-full text-sm">
-        <thead class="bg-slate-100 text-slate-700 font-extrabold border-b border-slate-200">
-          <tr>
-            <th class="p-4 text-left">Usuario / Nombre Completo</th>
-            <th class="p-4 text-left">Documento</th>
-            <th class="p-4 text-left">Correo Electrónico</th>
-            <th class="p-4 text-center">Rol</th>
-            <th class="p-4 text-center">Estado</th>
-            <th class="p-4 text-center">Acciones</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-200">
-          <tr *ngIf="usuariosFiltrados.length === 0">
-            <td colspan="6" class="p-8 text-center text-slate-400 font-medium">No se encontraron usuarios registrados.</td>
-          </tr>
-          <tr *ngFor="let u of usuariosFiltrados" class="hover:bg-amber-50/30 transition">
-            <td class="p-4 font-bold text-slate-800">{{ u.nombre }} {{ u.apellido }}</td>
-            <td class="p-4 text-slate-600">{{ u.numero_documento }}</td>
-            <td class="p-4 text-slate-600">{{ u.correo }}</td>
-            <td class="p-4 text-center">
-              <span class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-300">{{ obtenerNombreRol(u.rol) }}</span>
-            </td>
-            <td class="p-4 text-center">
-              <span [class]="u.is_active ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-red-100 text-red-800 border-red-300'" class="px-3.5 py-1 rounded-full text-xs font-bold border">
-                {{ u.is_active ? 'Activo' : 'Inactivo' }}
-              </span>
-            </td>
-            <td class="p-4 text-center">
-              <div class="flex items-center justify-center gap-2">
-                <button type="button" (click)="editarUsuario(u)" class="text-slate-500 hover:text-[#FAB41F] transition p-1 cursor-pointer" title="Editar">
-                  <span class="material-symbols-outlined text-[20px]">edit</span>
-                </button>
-                <button type="button" (click)="eliminarUsuario(u)" class="text-slate-500 hover:text-red-600 transition p-1 cursor-pointer" title="Eliminar">
-                  <span class="material-symbols-outlined text-[20px]">delete</span>
-                </button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+    <!-- Lista de Tarjetas de Usuarios -->
+    <div class="space-y-3">
+      
+      <div *ngIf="usuariosFiltrados.length === 0" class="p-12 text-center text-slate-400 font-medium bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+        No se encontraron usuarios registrados.
+      </div>
+
+      <div *ngFor="let u of usuariosFiltrados" 
+           [class]="u.is_active ? 'bg-white border-slate-100 hover:border-slate-200' : 'bg-slate-50/70 border-slate-200 opacity-80'"
+           class="flex flex-col md:flex-row md:items-center justify-between p-4 rounded-2xl border shadow-2xs transition gap-4">
+        
+        <div class="flex items-center gap-4">
+          <div [class]="u.is_active ? 'bg-amber-50 text-[#e0a316] border-amber-100' : 'bg-slate-200 text-slate-500 border-slate-300'"
+               class="w-12 h-12 rounded-2xl border flex items-center justify-center font-black text-lg shadow-2xs shrink-0">
+            {{ u.nombre ? u.nombre.charAt(0).toUpperCase() : 'U' }}
+          </div>
+          <div>
+            <h4 class="font-bold text-slate-900 text-base">{{ u.nombre }} {{ u.apellido }}</h4>
+            <div class="flex flex-wrap items-center gap-2 text-xs text-slate-400 mt-1 font-medium">
+              <span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md font-semibold">{{ u.tipo_documento || 'CC' }}: {{ u.numero_documento }}</span>
+              <span>•</span>
+              <span class="text-slate-500">{{ u.correo }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between md:justify-end gap-3 border-t md:border-t-0 pt-3 md:pt-0 border-slate-100">
+          <span class="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-amber-50 text-[#b58111] border border-amber-200 shadow-2xs">
+            {{ obtenerNombreRol(u.rol) }}
+          </span>
+
+          <span [class]="u.is_active ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-600 border-red-200'" class="px-3.5 py-1.5 rounded-xl text-xs font-bold border shadow-2xs flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full" [class]="u.is_active ? 'bg-emerald-500' : 'bg-red-500'"></span>
+            {{ u.is_active ? 'Activo' : 'Inactivo' }}
+          </span>
+
+          <div class="flex items-center gap-1.5 ml-2">
+            <button type="button" (click)="editarUsuario(u)" class="w-9 h-9 rounded-xl bg-slate-50 hover:bg-amber-50 text-slate-500 hover:text-[#e0a316] transition flex items-center justify-center cursor-pointer border border-slate-200 hover:border-amber-200" title="Editar">
+              <span class="material-symbols-outlined text-[18px]">edit</span>
+            </button>
+            <button type="button" (click)="eliminarUsuario(u)" class="w-9 h-9 rounded-xl bg-slate-50 hover:bg-red-50 text-slate-500 hover:text-red-600 transition flex items-center justify-center cursor-pointer border border-slate-200 hover:border-red-200" title="Eliminar">
+              <span class="material-symbols-outlined text-[18px]">delete</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
     </div>
+
   </div>
 
   <!-- MODAL DE CREACIÓN / EDICIÓN -->
-  <div *ngIf="mostrarModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4 overflow-y-auto">
-    <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-150">
+  <div *ngIf="mostrarModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-2xs p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl shadow-xl border border-slate-100 w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-150">
       
-      <!-- Modal Header -->
-      <div class="flex items-center justify-between px-6 py-4 bg-slate-50 border-b border-slate-200">
-        <h3 class="text-lg font-black text-slate-800">{{ modoEdicion ? 'Editar Usuario' : 'Registrar Nuevo Usuario' }}</h3>
-        <button type="button" (click)="cerrarFormulario()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer"><span class="material-symbols-outlined">close</span></button>
+      <div class="flex items-center justify-between px-6 py-5 bg-slate-50/80 border-b border-slate-100">
+        <h3 class="text-lg font-black text-slate-900">{{ modoEdicion ? 'Editar Usuario' : 'Registrar Nuevo Usuario' }}</h3>
+        <button type="button" (click)="cerrarFormulario()" class="w-8 h-8 rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-slate-600 flex items-center justify-center cursor-pointer transition">
+          <span class="material-symbols-outlined text-sm">close</span>
+        </button>
       </div>
 
-      <!-- Modal Body (Formulario) -->
-      <div class="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+      <div class="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nombre</label>
-            <input type="text" [(ngModel)]="usuarioForm.nombre" placeholder="Ej. Carlos" class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#FAB41F] focus:outline-none">
+            <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Nombre</label>
+            <input type="text" [(ngModel)]="usuarioForm.nombre" name="nombre" placeholder="Ej. Carlos" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-[#e0a316] focus:outline-none">
           </div>
           <div>
-            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Apellido</label>
-            <input type="text" [(ngModel)]="usuarioForm.apellido" placeholder="Ej. Pérez" class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#FAB41F] focus:outline-none">
+            <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Apellido</label>
+            <input type="text" [(ngModel)]="usuarioForm.apellido" name="apellido" placeholder="Ej. Pérez" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-[#e0a316] focus:outline-none">
           </div>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Correo Electrónico</label>
-            <input type="email" [(ngModel)]="usuarioForm.correo" placeholder="correo@ejemplo.com" class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#FAB41F] focus:outline-none">
+            <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Correo Electrónico</label>
+            <input type="email" [(ngModel)]="usuarioForm.correo" name="correo" placeholder="correo@ejemplo.com" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-[#e0a316] focus:outline-none">
           </div>
           <div>
-            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Contraseña {{ modoEdicion ? '(Dejar en blanco para no cambiar)' : '' }}</label>
-            <input type="password" [(ngModel)]="usuarioForm.password" placeholder="••••••••" class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#FAB41F] focus:outline-none">
+            <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Contraseña {{ modoEdicion ? '(Opcional)' : '' }}</label>
+            <input type="password" [(ngModel)]="usuarioForm.password" name="password" placeholder="••••••••" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-[#e0a316] focus:outline-none">
           </div>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
-            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Tipo Documento</label>
-            <select [(ngModel)]="usuarioForm.tipo_documento" class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#FAB41F] focus:outline-none">
+            <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Tipo Documento</label>
+            <select [(ngModel)]="usuarioForm.tipo_documento" name="tipo_documento" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-[#e0a316] focus:outline-none cursor-pointer">
               <option value="CC">Cédula de Ciudadanía</option>
-              <option value="TI">Tarjeta de Identidad</option>
               <option value="CE">Cédula de Extranjería</option>
             </select>
           </div>
           <div>
-            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Número Documento</label>
-            <input type="text" [(ngModel)]="usuarioForm.numero_documento" placeholder="12345678" class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#FAB41F] focus:outline-none">
+            <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Número Documento</label>
+            <input type="text" [(ngModel)]="usuarioForm.numero_documento" name="numero_documento" placeholder="12345678" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-[#e0a316] focus:outline-none">
           </div>
           <div>
-            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Rol del Sistema</label>
-            <select [(ngModel)]="usuarioForm.rol" class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#FAB41F] focus:outline-none">
-              <option *ngFor="let rol of roles" [ngValue]="rol.id_rol || rol.id || rol.pk">{{ rol.nombre_rol || rol.nombre || rol.name }}</option>
+            <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Rol del Sistema</label>
+            <select [(ngModel)]="usuarioForm.rol" name="rol" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-[#e0a316] focus:outline-none cursor-pointer">
+              <option value="" disabled selected>Seleccione un rol</option>
+              <option *ngFor="let rol of roles" [ngValue]="rol.id_rol || rol.id || rol.pk">
+                {{ rol.nombre_rol || rol.nombre || rol.name }}
+              </option>
             </select>
           </div>
         </div>
 
         <div class="flex items-center gap-6 pt-2">
-          <label class="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" [(ngModel)]="usuarioForm.is_active" class="w-4 h-4 text-[#FAB41F] rounded border-slate-300 focus:ring-[#FAB41F]">
+          <label class="flex items-center gap-2.5 cursor-pointer">
+            <input type="checkbox" [(ngModel)]="usuarioForm.is_active" name="is_active" class="w-4 h-4 text-[#e0a316] rounded border-slate-300 focus:ring-[#e0a316]">
             <span class="text-sm font-semibold text-slate-700">Usuario Activo</span>
-          </label>
-          <label class="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" [(ngModel)]="usuarioForm.is_staff" class="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500">
-            <span class="text-sm font-semibold text-slate-700">Es Administrador (Staff)</span>
           </label>
         </div>
       </div>
 
-      <!-- Modal Footer -->
-      <div class="flex items-center justify-end gap-3 px-6 py-4 bg-slate-50 border-t border-slate-200">
-        <button type="button" (click)="cerrarFormulario()" class="px-4 py-2 rounded-xl border border-slate-300 bg-white text-slate-700 font-semibold text-sm hover:bg-slate-100 cursor-pointer">Cancelar</button>
-        <button type="button" (click)="guardarUsuario()" class="px-5 py-2 rounded-xl bg-[#FAB41F] hover:bg-amber-500 text-slate-900 font-bold text-sm shadow-sm cursor-pointer">Guardar Usuario</button>
+      <div class="flex items-center justify-end gap-3 px-6 py-4 bg-slate-50/80 border-t border-slate-100">
+        <button type="button" (click)="cerrarFormulario()" class="px-5 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 font-semibold text-sm hover:bg-slate-50 cursor-pointer transition">Cancelar</button>
+        <button type="button" (click)="guardarUsuario()" class="px-5 py-2.5 rounded-xl bg-[#e0a316] hover:bg-[#cb9213] text-white font-bold text-sm shadow-sm cursor-pointer transition">Guardar Usuario</button>
       </div>
 
     </div>

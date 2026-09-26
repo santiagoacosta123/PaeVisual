@@ -15,7 +15,13 @@ import { SweetAlertService } from '../sweet-alert.service';
 export class UsuariosComponent implements OnInit {
 
   usuarios: any[] = [];
-  roles: any[] = [];
+  
+  // Roles iniciales por defecto para garantizar que el selector NUNCA quede vacío
+  roles: any[] = [
+    { id_rol: 1, nombre_rol: 'Administrador' },
+    { id_rol: 2, nombre_rol: 'Coordinador' },
+    { id_rol: 3, nombre_rol: 'Operador' }
+  ];
 
   modoEdicion: boolean = false;
   usuarioSeleccionadoId?: number;
@@ -32,8 +38,7 @@ export class UsuariosComponent implements OnInit {
     numero_documento: '',
     rol: 1,
     password: '',
-    is_active: true,
-    is_staff: false
+    is_active: true
   };
 
   constructor(
@@ -62,11 +67,15 @@ export class UsuariosComponent implements OnInit {
 
   cargarRoles(): void {
     this.rolService.getRoles().subscribe({
-      next: (datos: any[]) => {
-        this.roles = datos;
+      next: (datos: any) => {
+        const rolesApi = Array.isArray(datos) ? datos : (datos.results || datos.data || []);
+        if (rolesApi && rolesApi.length > 0) {
+          this.roles = rolesApi; // Si el backend responde, los sobrescribimos con los de la base de datos
+        }
+        console.log("Roles listos en el sistema:", this.roles);
       },
       error: (error) => {
-        console.error('Error al cargar roles:', error);
+        console.warn('No se pudo conectar con la API de roles, usando roles por defecto:', error);
       }
     });
   }
@@ -96,7 +105,7 @@ export class UsuariosComponent implements OnInit {
   }
 
   get totalAdministradores(): number {
-    return this.usuarios.filter(u => u.is_staff || this.obtenerNombreRol(u.rol).toLowerCase().includes('admin')).length;
+    return this.usuarios.filter(u => this.obtenerNombreRol(u.rol).toLowerCase().includes('admin')).length;
   }
 
   get totalActivos(): number {
@@ -111,10 +120,7 @@ export class UsuariosComponent implements OnInit {
     this.mostrarModal = true;
     if (usuario) {
       this.modoEdicion = true;
-      // Probamos todas las formas posibles en que Django suele nombrar la llave primaria
       this.usuarioSeleccionadoId = usuario.id_usuario || usuario.id || usuario.pk || usuario.user_id;
-
-      console.log("Editando usuario - ID detectado:", this.usuarioSeleccionadoId, "Objeto completo:", usuario);
 
       const rolValor = typeof usuario.rol === 'object' ? (usuario.rol?.id_rol || usuario.rol?.id || usuario.rol?.pk) : usuario.rol;
 
@@ -139,8 +145,7 @@ export class UsuariosComponent implements OnInit {
       numero_documento: '',
       rol: Number(primerRol),
       password: '',
-      is_active: true,
-      is_staff: false
+      is_active: true
     };
   }
 
@@ -152,7 +157,7 @@ export class UsuariosComponent implements OnInit {
     console.error("Objeto de error recibido de la API:", err);
     if (err.error) {
       if (typeof err.error === 'string' && err.error.includes('<!doctype html>')) {
-        return 'Error 500: Django falló internamente. Revisa la terminal negra donde corre tu backend para ver el rastro exacto del error.';
+        return 'Error 500: Django falló internamente. Revisa la terminal negra donde corre tu backend.';
       }
       if (typeof err.error === 'object') {
         const primerCampo = Object.keys(err.error)[0];
@@ -170,8 +175,8 @@ export class UsuariosComponent implements OnInit {
   }
 
   guardarUsuario(): void {
-    if (!this.usuarioForm.nombre || !this.usuarioForm.apellido || !this.usuarioForm.correo || !this.usuarioForm.numero_documento) {
-      this.sweetAlert.warning('Campos incompletos', 'Por favor llena todos los campos obligatorios.');
+    if (!this.usuarioForm.nombre || !this.usuarioForm.apellido || !this.usuarioForm.correo || !this.usuarioForm.numero_documento || !this.usuarioForm.rol) {
+      this.sweetAlert.warning('Campos incompletos', 'Por favor llena todos los campos obligatorios incluyendo el rol.');
       return;
     }
 
@@ -184,8 +189,6 @@ export class UsuariosComponent implements OnInit {
       if (!datosEnviar.password || datosEnviar.password.trim() === '') {
         delete datosEnviar.password;
       }
-
-      console.log(`Enviando PUT a actualizarUsuario con ID [${this.usuarioSeleccionadoId}]:`, datosEnviar);
 
       this.usuarioService.actualizarUsuario(this.usuarioSeleccionadoId, datosEnviar).subscribe({
         next: () => {
@@ -203,8 +206,6 @@ export class UsuariosComponent implements OnInit {
         this.sweetAlert.warning('Contraseña requerida', 'Debes ingresar una contraseña para registrar el usuario.');
         return;
       }
-
-      console.log("Enviando POST a crearUsuario:", datosEnviar);
 
       this.usuarioService.crearUsuario(datosEnviar).subscribe({
         next: () => {
@@ -226,8 +227,6 @@ export class UsuariosComponent implements OnInit {
 
   eliminarUsuario(usuario: any): void {
     const id = usuario.id_usuario || usuario.id || usuario.pk || usuario.user_id;
-    console.log("Intentando eliminar usuario. ID detectado:", id, "Usuario:", usuario);
-
     if (!id) {
       this.sweetAlert.error('Error', 'Este usuario no tiene un ID válido para eliminar.');
       return;
