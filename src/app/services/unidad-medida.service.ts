@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 
 export interface UnidadMedida {
   id_unidad_medida?: number;
-  nombre_unidad: string;
+  nombre: string;
   abreviatura?: string;
 }
 
@@ -13,12 +13,13 @@ export interface UnidadMedida {
 })
 export class UnidadMedidaService {
 
-  private readonly apiUrl = 'https://backend-sirae-t9zi.onrender.com/api/unidades_medida/';
+  private readonly apiUrl = 'https://backend-sirae-pyim.onrender.com/api/unidades_medida/';
 
   constructor(private http: HttpClient) {}
 
-  getUnidades(): Observable<UnidadMedida[]> {
-    return this.http.get<UnidadMedida[]>(this.apiUrl);
+  // Cambiado a <any> para prevenir conflictos si Django devuelve paginación
+  getUnidades(): Observable<any> {
+    return this.http.get<any>(this.apiUrl);
   }
 
   getUnidad(id: number): Observable<UnidadMedida> {
