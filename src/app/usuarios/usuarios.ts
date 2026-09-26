@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { UsuarioService } from '../services/usuario.service';
@@ -16,11 +16,11 @@ export class UsuariosComponent implements OnInit {
 
   usuarios: any[] = [];
   
-  // Roles iniciales por defecto para garantizar que el selector NUNCA quede vacío
+  // Roles fijos que solicitaste para el sistema
   roles: any[] = [
-    { id_rol: 1, nombre_rol: 'Administrador' },
-    { id_rol: 2, nombre_rol: 'Coordinador' },
-    { id_rol: 3, nombre_rol: 'Operador' }
+    { id_rol: 1, nombre_rol: 'Jefa de manipuladora' },
+    { id_rol: 2, nombre_rol: 'ADMIN' },
+    { id_rol: 3, nombre_rol: 'manipuladora' }
   ];
 
   modoEdicion: boolean = false;
@@ -44,7 +44,8 @@ export class UsuariosComponent implements OnInit {
   constructor(
     private usuarioService: UsuarioService,
     private rolService: RolService,
-    private sweetAlert: SweetAlertService
+    private sweetAlert: SweetAlertService,
+    private cdr: ChangeDetectorRef // <--- 1. Inyectamos esto para solucionar el retraso visual
   ) {}
 
   ngOnInit(): void {
@@ -55,7 +56,8 @@ export class UsuariosComponent implements OnInit {
   cargarUsuarios(): void {
     this.usuarioService.getUsuarios().subscribe({
       next: (datos: any[]) => {
-        this.usuarios = datos;
+        this.usuarios = Array.isArray(datos) ? datos : (datos as any).results || [];
+        this.cdr.detectChanges(); // <--- 2. Forzamos el redibujo inmediato en pantalla
         console.log("Usuarios cargados correctamente:", datos);
       },
       error: (error) => {
@@ -70,12 +72,13 @@ export class UsuariosComponent implements OnInit {
       next: (datos: any) => {
         const rolesApi = Array.isArray(datos) ? datos : (datos.results || datos.data || []);
         if (rolesApi && rolesApi.length > 0) {
-          this.roles = rolesApi; // Si el backend responde, los sobrescribimos con los de la base de datos
+          // Opcional: si prefieres los de la BD descomenta la línea de abajo, 
+          // pero si quieres asegurar los 3 fijos, puedes dejar la lista estática de arriba.
+          // this.roles = rolesApi; 
         }
-        console.log("Roles listos en el sistema:", this.roles);
       },
       error: (error) => {
-        console.warn('No se pudo conectar con la API de roles, usando roles por defecto:', error);
+        console.warn('Usando roles predeterminados del sistema');
       }
     });
   }
@@ -104,38 +107,25 @@ export class UsuariosComponent implements OnInit {
     });
   }
 
-  get totalAdministradores(): number {
-    return this.usuarios.filter(u => this.obtenerNombreRol(u.rol).toLowerCase().includes('admin')).length;
-  }
-
-  get totalActivos(): number {
-    return this.usuarios.filter(u => u.is_active).length;
-  }
-
-  get totalInactivos(): number {
-    return this.usuarios.filter(u => !u.is_active).length;
-  }
-
   abrirFormulario(usuario?: any): void {
     this.mostrarModal = true;
+    
     if (usuario) {
       this.modoEdicion = true;
       this.usuarioSeleccionadoId = usuario.id_usuario || usuario.id || usuario.pk || usuario.user_id;
-
       const rolValor = typeof usuario.rol === 'object' ? (usuario.rol?.id_rol || usuario.rol?.id || usuario.rol?.pk) : usuario.rol;
 
       this.usuarioForm = { 
         ...usuario, 
         rol: Number(rolValor) || 1,
-        password: '' 
+        password: '' // Dejamos la contraseña vacía por seguridad al editar
       };
       return;
     }
     
+    // CASO NUEVO USUARIO: Forzamos que los campos nazcan completamente vacíos
     this.modoEdicion = false;
     this.usuarioSeleccionadoId = undefined;
-    
-    const primerRol = this.roles.length > 0 ? (this.roles[0].id_rol || this.roles[0].id || this.roles[0].pk || 1) : 1;
     
     this.usuarioForm = {
       nombre: '',
@@ -143,8 +133,8 @@ export class UsuariosComponent implements OnInit {
       correo: '',
       tipo_documento: 'CC',
       numero_documento: '',
-      rol: Number(primerRol),
-      password: '',
+      rol: 1,
+      password: '', // Vacío para que Chrome no ponga credenciales reales
       is_active: true
     };
   }
@@ -156,9 +146,6 @@ export class UsuariosComponent implements OnInit {
   private formatearMensajeError(err: any): string {
     console.error("Objeto de error recibido de la API:", err);
     if (err.error) {
-      if (typeof err.error === 'string' && err.error.includes('<!doctype html>')) {
-        return 'Error 500: Django falló internamente. Revisa la terminal negra donde corre tu backend.';
-      }
       if (typeof err.error === 'object') {
         const primerCampo = Object.keys(err.error)[0];
         const detalle = err.error[primerCampo];
@@ -187,7 +174,7 @@ export class UsuariosComponent implements OnInit {
 
     if (this.modoEdicion && this.usuarioSeleccionadoId) {
       if (!datosEnviar.password || datosEnviar.password.trim() === '') {
-        delete datosEnviar.password;
+        delete datosEnviar.password; // Si no escriben nueva contraseña, no la mandamos a actualizar
       }
 
       this.usuarioService.actualizarUsuario(this.usuarioSeleccionadoId, datosEnviar).subscribe({

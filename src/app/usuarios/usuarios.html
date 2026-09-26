@@ -28,7 +28,7 @@
         <input type="text" [(ngModel)]="filtroTexto" placeholder="Buscar por nombre, documento o correo..." class="w-full pl-10 pr-4 py-2.5 bg-slate-50/65 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-[#e0a316] focus:outline-none transition">
       </div>
       <div class="flex items-center gap-2">
-        <select [(ngModel)]="filtroRol" class="bg-slate-50/65 border border-slate-200 text-slate-700 text-sm rounded-2xl px-4 py-2.5 focus:ring-2 focus:ring-[#e0a316] focus:outline-none transition font-semibold cursor-pointer">
+        <select [(ngModel)]="filtroRol" class="bg-slate-50/65 border border-slate-200 text-slate-700 text-sm rounded-2xl px-4 py-2.5 focus:ring-2 focus:ring-[#e0a316] focus:outline-none transition font-semibold cursor-pointer accent-[#e0a316]">
           <option value="">Todos los Roles</option>
           <option *ngFor="let rol of roles" [value]="rol.id_rol || rol.id || rol.pk">{{ rol.nombre_rol || rol.nombre || rol.name }}</option>
         </select>
@@ -102,40 +102,40 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Nombre</label>
-            <input type="text" [(ngModel)]="usuarioForm.nombre" name="nombre" placeholder="Ej. Carlos" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-[#e0a316] focus:outline-none">
+            <input type="text" [(ngModel)]="usuarioForm.nombre" name="nombre" autocomplete="off" placeholder="Ej. Carlos" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-[#e0a316] focus:outline-none">
           </div>
           <div>
             <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Apellido</label>
-            <input type="text" [(ngModel)]="usuarioForm.apellido" name="apellido" placeholder="Ej. Pérez" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-[#e0a316] focus:outline-none">
+            <input type="text" [(ngModel)]="usuarioForm.apellido" name="apellido" autocomplete="off" placeholder="Ej. Pérez" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-[#e0a316] focus:outline-none">
           </div>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Correo Electrónico</label>
-            <input type="email" [(ngModel)]="usuarioForm.correo" name="correo" placeholder="correo@ejemplo.com" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-[#e0a316] focus:outline-none">
+            <input type="email" [(ngModel)]="usuarioForm.correo" name="correo" autocomplete="off" placeholder="correo@ejemplo.com" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-[#e0a316] focus:outline-none">
           </div>
           <div>
             <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Contraseña {{ modoEdicion ? '(Opcional)' : '' }}</label>
-            <input type="password" [(ngModel)]="usuarioForm.password" name="password" placeholder="••••••••" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-[#e0a316] focus:outline-none">
+            <input type="password" [(ngModel)]="usuarioForm.password" name="password" autocomplete="new-password" placeholder="••••••••" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-[#e0a316] focus:outline-none">
           </div>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Tipo Documento</label>
-            <select [(ngModel)]="usuarioForm.tipo_documento" name="tipo_documento" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-[#e0a316] focus:outline-none cursor-pointer">
+            <select [(ngModel)]="usuarioForm.tipo_documento" name="tipo_documento" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-[#e0a316] focus:outline-none cursor-pointer accent-[#e0a316]">
               <option value="CC">Cédula de Ciudadanía</option>
               <option value="CE">Cédula de Extranjería</option>
             </select>
           </div>
           <div>
             <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Número Documento</label>
-            <input type="text" [(ngModel)]="usuarioForm.numero_documento" name="numero_documento" placeholder="12345678" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-[#e0a316] focus:outline-none">
+            <input type="text" [(ngModel)]="usuarioForm.numero_documento" name="numero_documento" autocomplete="off" placeholder="12345678" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-[#e0a316] focus:outline-none">
           </div>
           <div>
             <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Rol del Sistema</label>
-            <select [(ngModel)]="usuarioForm.rol" name="rol" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-[#e0a316] focus:outline-none cursor-pointer">
+            <select [(ngModel)]="usuarioForm.rol" name="rol" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-[#e0a316] focus:outline-none cursor-pointer accent-[#e0a316]">
               <option value="" disabled selected>Seleccione un rol</option>
               <option *ngFor="let rol of roles" [ngValue]="rol.id_rol || rol.id || rol.pk">
                 {{ rol.nombre_rol || rol.nombre || rol.name }}
@@ -146,7 +146,7 @@
 
         <div class="flex items-center gap-6 pt-2">
           <label class="flex items-center gap-2.5 cursor-pointer">
-            <input type="checkbox" [(ngModel)]="usuarioForm.is_active" name="is_active" class="w-4 h-4 text-[#e0a316] rounded border-slate-300 focus:ring-[#e0a316]">
+            <input type="checkbox" [(ngModel)]="usuarioForm.is_active" name="is_active" class="w-4 h-4 text-[#e0a316] rounded border-slate-300 focus:ring-[#e0a316] accent-[#e0a316]">
             <span class="text-sm font-semibold text-slate-700">Usuario Activo</span>
           </label>
         </div>
