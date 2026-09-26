@@ -30,7 +30,7 @@
       <div class="flex items-center gap-2">
         <select [(ngModel)]="filtroRol" class="bg-slate-50/65 border border-slate-200 text-slate-700 text-sm rounded-2xl px-4 py-2.5 focus:ring-2 focus:ring-[#e0a316] focus:outline-none transition font-semibold cursor-pointer accent-[#e0a316]">
           <option value="">Todos los Roles</option>
-          <option *ngFor="let rol of roles" [value]="rol.id_rol || rol.id || rol.pk">{{ rol.nombre_rol || rol.nombre || rol.name }}</option>
+          <option *ngFor="let rol of roles" [value]="rol.id_rol">{{ rol.nombre_rol }}</option>
         </select>
       </div>
     </div>
@@ -137,8 +137,8 @@
             <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Rol del Sistema</label>
             <select [(ngModel)]="usuarioForm.rol" name="rol" class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-[#e0a316] focus:outline-none cursor-pointer accent-[#e0a316]">
               <option value="" disabled selected>Seleccione un rol</option>
-              <option *ngFor="let rol of roles" [ngValue]="rol.id_rol || rol.id || rol.pk">
-                {{ rol.nombre_rol || rol.nombre || rol.name }}
+              <option *ngFor="let rol of roles" [ngValue]="rol.id_rol">
+                {{ rol.nombre_rol }}
               </option>
             </select>
           </div>

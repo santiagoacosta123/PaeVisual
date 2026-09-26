@@ -15,13 +15,7 @@ import { SweetAlertService } from '../sweet-alert.service';
 export class UsuariosComponent implements OnInit {
 
   usuarios: any[] = [];
-  
-  // Roles fijos que solicitaste para el sistema
-  roles: any[] = [
-    { id_rol: 1, nombre_rol: 'Jefa de manipuladora' },
-    { id_rol: 2, nombre_rol: 'ADMIN' },
-    { id_rol: 3, nombre_rol: 'manipuladora' }
-  ];
+  roles: any[] = []; // Se llena dinámicamente desde la BD
 
   modoEdicion: boolean = false;
   usuarioSeleccionadoId?: number;
@@ -36,7 +30,7 @@ export class UsuariosComponent implements OnInit {
     correo: '',
     tipo_documento: 'CC',
     numero_documento: '',
-    rol: 1,
+    rol: '',
     password: '',
     is_active: true
   };
@@ -45,20 +39,19 @@ export class UsuariosComponent implements OnInit {
     private usuarioService: UsuarioService,
     private rolService: RolService,
     private sweetAlert: SweetAlertService,
-    private cdr: ChangeDetectorRef // <--- 1. Inyectamos esto para solucionar el retraso visual
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
-    this.cargarUsuarios();
     this.cargarRoles();
+    this.cargarUsuarios();
   }
 
   cargarUsuarios(): void {
     this.usuarioService.getUsuarios().subscribe({
       next: (datos: any[]) => {
         this.usuarios = Array.isArray(datos) ? datos : (datos as any).results || [];
-        this.cdr.detectChanges(); // <--- 2. Forzamos el redibujo inmediato en pantalla
-        console.log("Usuarios cargados correctamente:", datos);
+        this.cdr.detectChanges();
       },
       error: (error) => {
         console.error('Error al cargar usuarios:', error);
@@ -71,14 +64,16 @@ export class UsuariosComponent implements OnInit {
     this.rolService.getRoles().subscribe({
       next: (datos: any) => {
         const rolesApi = Array.isArray(datos) ? datos : (datos.results || datos.data || []);
-        if (rolesApi && rolesApi.length > 0) {
-          // Opcional: si prefieres los de la BD descomenta la línea de abajo, 
-          // pero si quieres asegurar los 3 fijos, puedes dejar la lista estática de arriba.
-          // this.roles = rolesApi; 
-        }
+        // Normalizamos las propiedades para soportar id_rol / id y nombre_rol / nombre
+        this.roles = rolesApi.map((r: any) => ({
+          id_rol: r.id_rol || r.id || r.pk,
+          nombre_rol: r.nombre_rol || r.nombre || r.name
+        }));
+        this.cdr.detectChanges();
       },
       error: (error) => {
-        console.warn('Usando roles predeterminados del sistema');
+        console.error('Error al cargar los roles:', error);
+        this.sweetAlert.error('Atención', 'No se pudieron sincronizar los roles desde la base de datos.');
       }
     });
   }
@@ -86,10 +81,10 @@ export class UsuariosComponent implements OnInit {
   obtenerNombreRol(idRol: any): string {
     if (!idRol) return 'Sin Rol';
     const idBuscado = typeof idRol === 'object' ? (idRol.id_rol || idRol.id || idRol.pk) : idRol;
-    const rolEncontrado = this.roles.find(r => (r.id_rol === idBuscado || r.id === idBuscado || r.pk === idBuscado));
+    const rolEncontrado = this.roles.find(r => r.id_rol == idBuscado);
     if (!rolEncontrado) return typeof idRol === 'object' ? (idRol.nombre_rol || idRol.nombre || 'Rol') : `Rol ID: ${idRol}`;
     
-    return rolEncontrado.nombre_rol || rolEncontrado.nombre || rolEncontrado.name || 'Rol';
+    return rolEncontrado.nombre_rol;
   }
 
   get usuariosFiltrados(): any[] {
@@ -117,13 +112,12 @@ export class UsuariosComponent implements OnInit {
 
       this.usuarioForm = { 
         ...usuario, 
-        rol: Number(rolValor) || 1,
-        password: '' // Dejamos la contraseña vacía por seguridad al editar
+        rol: Number(rolValor) || '',
+        password: '' 
       };
       return;
     }
     
-    // CASO NUEVO USUARIO: Forzamos que los campos nazcan completamente vacíos
     this.modoEdicion = false;
     this.usuarioSeleccionadoId = undefined;
     
@@ -133,8 +127,8 @@ export class UsuariosComponent implements OnInit {
       correo: '',
       tipo_documento: 'CC',
       numero_documento: '',
-      rol: 1,
-      password: '', // Vacío para que Chrome no ponga credenciales reales
+      rol: this.roles.length > 0 ? this.roles[0].id_rol : '',
+      password: '',
       is_active: true
     };
   }
@@ -144,7 +138,6 @@ export class UsuariosComponent implements OnInit {
   }
 
   private formatearMensajeError(err: any): string {
-    console.error("Objeto de error recibido de la API:", err);
     if (err.error) {
       if (typeof err.error === 'object') {
         const primerCampo = Object.keys(err.error)[0];
@@ -174,7 +167,7 @@ export class UsuariosComponent implements OnInit {
 
     if (this.modoEdicion && this.usuarioSeleccionadoId) {
       if (!datosEnviar.password || datosEnviar.password.trim() === '') {
-        delete datosEnviar.password; // Si no escriben nueva contraseña, no la mandamos a actualizar
+        delete datosEnviar.password;
       }
 
       this.usuarioService.actualizarUsuario(this.usuarioSeleccionadoId, datosEnviar).subscribe({

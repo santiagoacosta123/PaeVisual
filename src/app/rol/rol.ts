@@ -21,7 +21,7 @@ export class Rol implements OnInit {
   constructor(
     private rolService: RolService, 
     private sweetAlert: SweetAlertService,
-    private cdr: ChangeDetectorRef // 1. Inyectamos ChangeDetectorRef aquí
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void { 
@@ -31,8 +31,12 @@ export class Rol implements OnInit {
   cargarRoles(): void {
     this.rolService.getRoles().subscribe({
       next: (datos) => { 
-        this.roles = Array.isArray(datos) ? datos : (datos as any).results || []; 
-        this.cdr.detectChanges(); // 2. Forzamos a Angular a refrescar la vista inmediatamente
+        const rolesApi = Array.isArray(datos) ? datos : (datos as any).results || []; 
+        this.roles = rolesApi.map((r: any) => ({
+          ...r,
+          nombre: r.nombre || r.nombre_rol || r.name
+        }));
+        this.cdr.detectChanges(); 
       },
       error: (err) => {
         console.error('Error al cargar roles:', err);
@@ -45,7 +49,7 @@ export class Rol implements OnInit {
     this.mostrarModal = true;
     if (rol) { 
       this.modoEdicion = true; 
-      this.rolForm = { ...rol }; 
+      this.rolForm = { ...rol, nombre: rol.nombre || (rol as any).nombre_rol }; 
       return; 
     }
     this.modoEdicion = false;
@@ -65,7 +69,8 @@ export class Rol implements OnInit {
 
     const datosEnviar = {
       ...this.rolForm,
-      nombre_rol: this.rolForm.nombre
+      nombre: this.rolForm.nombre,
+      nombre_rol: this.rolForm.nombre // Enviamos ambos para compatibilidad total con Django
     };
 
     if (this.modoEdicion && this.rolForm.id_rol) {
