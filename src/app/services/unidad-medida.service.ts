@@ -14,15 +14,16 @@ export interface UnidadMedida {
 export class UnidadMedidaService {
 
   private readonly apiUrl = 'https://backend-sirae-pyim.onrender.com/api/unidades_medida/';
-  
+
   constructor(private http: HttpClient) {}
 
-  getUnidades(): Observable<UnidadMedida[]> {
-    return this.http.get<UnidadMedida[]>(this.apiUrl);
+  // Cambiado a <any> para prevenir conflictos si Django devuelve paginación
+  getUnidades(): Observable<any> {
+    return this.http.get<any>(this.apiUrl);
   }
 
   getUnidad(id: number): Observable<UnidadMedida> {
-    return this.http.get<UnidadMedida>("/");
+    return this.http.get<UnidadMedida>(`${this.apiUrl}${id}/`);
   }
 
   crearUnidad(unidad: UnidadMedida): Observable<UnidadMedida> {
@@ -30,11 +31,10 @@ export class UnidadMedidaService {
   }
 
   actualizarUnidad(id: number, unidad: UnidadMedida): Observable<UnidadMedida> {
-    return this.http.put<UnidadMedida>("/", unidad);
+    return this.http.put<UnidadMedida>(`${this.apiUrl}${id}/`, unidad);
   }
 
   eliminarUnidad(id: number): Observable<any> {
-    return this.http.delete<any>("/");
+    return this.http.delete<any>(`${this.apiUrl}${id}/`);
   }
 }
-
