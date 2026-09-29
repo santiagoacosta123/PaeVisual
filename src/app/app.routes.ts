@@ -1,7 +1,6 @@
 import { Routes } from '@angular/router';
 
-import { Login } from './login/login';
-
+import { LoginComponent } from './login/login'; // <--- Corregido aquí
 import { LayoutComponent } from './layout/layout';
 import { InicioComponent } from './inicio/inicio';
 import { UsuariosComponent } from './usuarios/usuarios';
@@ -10,19 +9,19 @@ import { CrearUsuarioComponent } from './crear-usuario/crear-usuario';
 import { Rol } from './rol/rol';
 import { Productos } from './productos/productos';
 import { NuevoProducto } from './nuevo-producto/nuevo-producto';
-import { Reportes } from './reportes/reportes';
 import { ReporteInventario } from './reporte-inventario/reporte-inventario';
 import { UnidadesMedidaComponent } from './unidades-medida/unidades-medida';
 import { MenusComponent } from './menus/menus';
 import { AsistenciaComponent } from './asistencia/asistencia';
 import { EntregasComponent } from './entregas/entregas';
 import { ContratoDetalleComponent } from './contrato-detalle/contrato-detalle';
+import { NotificacionesComponent } from './notificaciones/notificaciones.component';
 
 export const routes: Routes = [
 
   {
     path: 'login',
-    component: Login
+    component: LoginComponent // <--- Corregido aquí también
   },
 
   {
@@ -77,11 +76,6 @@ export const routes: Routes = [
       },
 
       {
-        path: 'reportes',
-        component: Reportes
-      },
-
-      {
         path: 'reporte-inventario',
         component: ReporteInventario
       },
@@ -104,6 +98,11 @@ export const routes: Routes = [
       {
         path: 'entregas',
         component: EntregasComponent
+      },
+
+      {
+        path: 'notificaciones',
+        component: NotificacionesComponent
       }
     ]
   },
