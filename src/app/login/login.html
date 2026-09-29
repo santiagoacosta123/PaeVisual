@@ -53,28 +53,86 @@
               <svg *ngIf="mostrarClave" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a18.5 18.5 0 0 1 4.22-5.06M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 7 11 7a18.5 18.5 0 0 1-2.16 3.19M14.12 14.12a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
             </button>
           </div>
-          <span class="text-xs text-red-500 mt-1" *ngIf="clave?.invalid && (clave?.dirty || clave?.touched)">
-            Mínimo 6 caracteres
-          </span>
+          <div class="flex justify-between items-center mt-1">
+            <span class="text-xs text-red-500" *ngIf="clave?.invalid && (clave?.dirty || clave?.touched)">
+              Mínimo 6 caracteres
+            </span>
+            <button type="button" (click)="abrirModalRecuperar()" class="text-xs text-amber-600 hover:underline ml-auto bg-transparent border-none cursor-pointer p-0 font-medium">
+              ¿Olvidaste tu contraseña?
+            </button>
+          </div>
         </div>
 
         <div class="bg-red-50 text-red-700 px-4 py-2.5 rounded-md text-xs mb-4 border border-red-200 text-center" *ngIf="errorMensaje">
           {{ errorMensaje }}
         </div>
 
-        <!-- Botón amarillo corporativo -->
+        <!-- Botón amarillo tradicional -->
         <button type="submit" class="w-full py-3 bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed mt-2" [disabled]="cargando">
           <span *ngIf="!cargando">Ingresar al sistema</span>
           <span *ngIf="cargando" class="inline-block">Verificando...</span>
         </button>
 
       </form>
+
+      <!-- Divisor -->
+      <div class="flex items-center my-4">
+        <div class="flex-grow border-t border-gray-200"></div>
+        <span class="px-3 text-xs text-gray-400 uppercase font-medium">o</span>
+        <div class="flex-grow border-t border-gray-200"></div>
+      </div>
+
+      <!-- Botón de Google con ancho completo mediante clases de Tailwind -->
+      <div class="w-full flex justify-center [&>iframe]:w-full [&>div]:w-full">
+        <asl-google-signin-button type="standard" size="large"></asl-google-signin-button>
+      </div>
+
     </div>
   </div>
 
-  <!-- LADO DERECHO ORIGINAL -->
+  <!-- Lado derecho -->
   <div class="hidden md:flex flex-1 bg-gray-100 justify-center items-center p-8">
     <img src="/vegetales-frame.png" alt="Vegetales SIRAE" class="w-full h-full object-cover rounded-2xl" />
   </div>
 
+</div>
+
+<!-- Modal para recuperar contraseña -->
+<div *ngIf="mostrarModalRecuperar" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative animate-fade-in">
+    
+    <h3 class="text-xl font-bold text-gray-800 mb-2">Recuperar Contraseña</h3>
+    <p class="text-xs text-gray-500 mb-6">Ingresa tu correo institucional y te enviaremos las instrucciones para restablecer tu acceso.</p>
+
+    <div class="flex flex-col mb-4">
+      <label for="correoRecuperar" class="text-xs font-semibold text-gray-700 mb-2">Correo electrónico</label>
+      <input 
+        id="correoRecuperar" 
+        type="email" 
+        [(ngModel)]="correoRecuperacion"
+        placeholder="usuario@correo.com" 
+        class="w-full px-3.5 py-3 text-sm border border-gray-300 rounded-lg outline-none bg-gray-50 focus:border-amber-500 focus:bg-white focus:ring-2 focus:ring-amber-500/10 transition-all"
+      />
+    </div>
+
+    <div class="flex justify-end space-x-3 mt-6">
+      <button 
+        type="button" 
+        (click)="cerrarModalRecuperar()" 
+        class="px-4 py-2.5 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors cursor-pointer"
+      >
+        Cancelar
+      </button>
+      <button 
+        type="button" 
+        (click)="enviarCorreoRecuperacion()" 
+        class="px-4 py-2.5 text-sm font-bold text-slate-900 bg-amber-400 hover:bg-amber-500 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+        [disabled]="enviandoRecuperacion"
+      >
+        <span *ngIf="!enviandoRecuperacion">Enviar enlace</span>
+        <span *ngIf="enviandoRecuperacion">Enviando...</span>
+      </button>
+    </div>
+
+  </div>
 </div>
