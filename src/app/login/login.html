@@ -64,7 +64,7 @@
           />
           <button 
             type="button" 
-            class="absolute inset-y-0 right-0 pr-5 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none z-10"
+            class="absolute inset-y-0 right-0 pr-5 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none z-10 cursor-pointer"
             (click)="alternarClave()"
           >
             <svg *ngIf="!mostrarClave" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
@@ -77,7 +77,13 @@
         
         <!-- Olvidaste contraseña -->
         <div class="flex justify-end pt-1 pb-2">
-          <a href="#" class="text-xs text-[#fac94b] font-semibold hover:text-[#e0b443] transition-colors">¿Olvidaste tu contraseña?</a>
+          <button 
+            type="button" 
+            (click)="abrirModalRecuperar()" 
+            class="text-xs text-[#fac94b] font-semibold hover:text-[#e0b443] transition-colors focus:outline-none cursor-pointer"
+          >
+            ¿Olvidaste tu contraseña?
+          </button>
         </div>
 
         <div class="bg-red-50 text-red-700 px-4 py-3 rounded-full text-xs mb-4 border border-red-200 text-center" *ngIf="errorMensaje">
@@ -92,6 +98,19 @@
         </button>
 
       </form>
+
+      <!-- Divisor -->
+      <div class="flex items-center my-4">
+        <div class="flex-grow border-t border-gray-200"></div>
+        <span class="px-3 text-xs text-gray-400 uppercase font-medium">o</span>
+        <div class="flex-grow border-t border-gray-200"></div>
+      </div>
+
+      <!-- Botón de Google con ancho completo mediante clases de Tailwind -->
+      <div class="w-full flex justify-center [&>iframe]:w-full [&>div]:w-full">
+        <asl-google-signin-button type="standard" size="large"></asl-google-signin-button>
+      </div>
+
     </div>
   </div>
 
@@ -109,12 +128,50 @@
     </div>
 
     <!-- Contenedor reservado para el plato en la esquina inferior derecha -->
-    <!-- Este div ocupa la parte inferior derecha y está listo para que pongas la imagen del plato después -->
     <div class="absolute bottom-0 right-0 w-3/4 h-2/3 pointer-events-none flex items-end justify-end">
-      <!-- Ejemplo de cómo iría la imagen: -->
       <!-- <img src="/plato-comida.png" class="w-full h-auto object-contain object-bottom right-0 bottom-0" /> -->
     </div>
     
   </div>
 
+</div>
+
+<!-- Modal para recuperar contraseña -->
+<div *ngIf="mostrarModalRecuperar" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative animate-fade-in">
+    
+    <h3 class="text-xl font-bold text-gray-800 mb-2">Recuperar Contraseña</h3>
+    <p class="text-xs text-gray-500 mb-6">Ingresa tu correo institucional y te enviaremos las instrucciones para restablecer tu acceso.</p>
+
+    <div class="flex flex-col mb-4">
+      <label for="correoRecuperar" class="text-xs font-semibold text-gray-700 mb-2">Correo electrónico</label>
+      <input 
+        id="correoRecuperar" 
+        type="email" 
+        [(ngModel)]="correoRecuperacion"
+        placeholder="usuario@correo.com" 
+        class="w-full px-3.5 py-3 text-sm border border-gray-300 rounded-lg outline-none bg-gray-50 focus:border-amber-500 focus:bg-white focus:ring-2 focus:ring-amber-500/10 transition-all"
+      />
+    </div>
+
+    <div class="flex justify-end space-x-3 mt-6">
+      <button 
+        type="button" 
+        (click)="cerrarModalRecuperar()" 
+        class="px-4 py-2.5 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors cursor-pointer"
+      >
+        Cancelar
+      </button>
+      <button 
+        type="button" 
+        (click)="enviarCorreoRecuperacion()" 
+        class="px-4 py-2.5 text-sm font-bold text-slate-900 bg-amber-400 hover:bg-amber-500 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+        [disabled]="enviandoRecuperacion"
+      >
+        <span *ngIf="!enviandoRecuperacion">Enviar enlace</span>
+        <span *ngIf="enviandoRecuperacion">Enviando...</span>
+      </button>
+    </div>
+
+  </div>
 </div>

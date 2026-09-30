@@ -1,60 +1,82 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import {
-  FormBuilder,
-  FormGroup,
-  ReactiveFormsModule,
-  Validators
-} from '@angular/forms';
+import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
+import { Subscription } from 'rxjs';
+import { SocialAuthService, SocialUser, GoogleSigninButtonModule } from '@abacritt/angularx-social-login';
 import { AuthService } from '../services/auth.service';
-import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
-  templateUrl: './login.html'
+  imports: [
+    CommonModule, 
+    ReactiveFormsModule, 
+    FormsModule, 
+    GoogleSigninButtonModule
+  ],
+  templateUrl: './login.html',
+  styleUrl: './login.css'
 })
-export class Login {
+export class LoginComponent implements OnInit, OnDestroy {
+  private fb = inject(FormBuilder);
+  private authService = inject(AuthService);
+  private router = inject(Router);
+  private socialAuthService = inject(SocialAuthService);
 
-  loginForm: FormGroup;
-  mostrarClave = false;
-  cargando = false;
-  errorMensaje = '';
+  loginForm!: FormGroup;
+  cargando: boolean = false;
+  errorMensaje: string = '';
+  mostrarClave: boolean = false;
 
-  constructor(
-    private fb: FormBuilder,
-    private router: Router,
-    private authService: AuthService
-  ) {
+  // Variables para el modal de recuperación de contraseña
+  mostrarModalRecuperar: boolean = false;
+  correoRecuperacion: string = '';
+  enviandoRecuperacion: boolean = false;
+
+  private authSubscription!: Subscription;
+
+  ngOnInit(): void {
+    // Inicializar el formulario tradicional
     this.loginForm = this.fb.group({
       correo: ['', [Validators.required, Validators.email]],
       clave: ['', [Validators.required, Validators.minLength(6)]]
     });
+
+    // Escuchar el evento de inicio de sesión con Google
+    this.authSubscription = this.socialAuthService.authState.subscribe({
+      next: (user: SocialUser) => {
+        if (user && user.idToken) {
+          this.procesarLoginGoogle(user.idToken);
+        }
+      },
+      error: (err) => {
+        console.error('Error en autenticación de Google:', err);
+      }
+    });
   }
 
-  get correo() {
-    return this.loginForm.get('correo');
+  ngOnDestroy(): void {
+    if (this.authSubscription) {
+      this.authSubscription.unsubscribe();
+    }
   }
 
-  get clave() {
-    return this.loginForm.get('clave');
-  }
+  get correo() { return this.loginForm.get('correo'); }
+  get clave() { return this.loginForm.get('clave'); }
 
   alternarClave(): void {
     this.mostrarClave = !this.mostrarClave;
   }
 
   onSubmit(): void {
-    this.errorMensaje = '';
-
     if (this.loginForm.invalid) {
       this.loginForm.markAllAsTouched();
       return;
     }
 
     this.cargando = true;
+    this.errorMensaje = '';
 
     const credenciales = {
       correo: this.loginForm.value.correo,
@@ -62,38 +84,57 @@ export class Login {
     };
 
     this.authService.login(credenciales).subscribe({
-      next: (respuesta: any) => {
+      next: (response) => {
+        this.authService.guardarSesion(response);
         this.cargando = false;
-
-        this.authService.guardarSesion(respuesta);
-
-        Swal.fire({
-          icon: 'success',
-          title: '¡Bienvenido!',
-          text: 'Has iniciado sesión correctamente.',
-          timer: 1500,
-          showConfirmButton: false
-        }).then(() => {
-          this.router.navigate(['/inicio']);
-        });
+        this.router.navigate(['/dashboard']);
       },
-
-      error: (error: any) => {
+      error: (err) => {
         this.cargando = false;
+        this.errorMensaje = err.error?.detail || 'Credenciales inválidas o error de conexión.';
+      }
+    });
+  }
 
-        if (error?.error?.detail) {
-          this.errorMensaje = error.error.detail;
-        } else if (typeof error?.error === 'object') {
-          this.errorMensaje = 'Correo o contraseña incorrectos.';
-        } else {
-          this.errorMensaje = 'No se pudo conectar con el servidor.';
-        }
+  private procesarLoginGoogle(idToken: string): void {
+    this.cargando = true;
+    this.errorMensaje = '';
 
-        Swal.fire({
-          icon: 'error',
-          title: 'Error de acceso',
-          text: this.errorMensaje
-        });
+    this.authService.loginConGoogle(idToken).subscribe({
+      next: (response) => {
+        this.authService.guardarSesion(response);
+        this.cargando = false;
+        this.router.navigate(['/dashboard']);
+      },
+      error: (err) => {
+        this.cargando = false;
+        this.errorMensaje = err.error?.detail || 'No se pudo iniciar sesión con Google.';
+      }
+    });
+  }
+
+  abrirModalRecuperar(): void {
+    this.mostrarModalRecuperar = true;
+    this.correoRecuperacion = '';
+  }
+
+  cerrarModalRecuperar(): void {
+    this.mostrarModalRecuperar = false;
+  }
+
+  enviarCorreoRecuperacion(): void {
+    if (!this.correoRecuperacion) return;
+
+    this.enviandoRecuperacion = true;
+    this.authService.recuperarContrasena({ correo: this.correoRecuperacion }).subscribe({
+      next: () => {
+        this.enviandoRecuperacion = false;
+        alert('Se han enviado las instrucciones a tu correo.');
+        this.cerrarModalRecuperar();
+      },
+      error: (err) => {
+        this.enviandoRecuperacion = false;
+        alert(err.error?.detail || 'Ocurrió un error al procesar la solicitud.');
       }
     });
   }
