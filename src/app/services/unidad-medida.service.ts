@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface UnidadMedida {
   id_unidad_medida?: number;
@@ -13,7 +14,7 @@ export interface UnidadMedida {
 })
 export class UnidadMedidaService {
 
-  private readonly apiUrl = 'https://backend-sirae-pyim.onrender.com/api/unidades_medida/';
+  private readonly apiUrl = `${environment.apiUrl}/unidades_medida/`;
 
   constructor(private http: HttpClient) {}
 

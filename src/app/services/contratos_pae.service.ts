@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
@@ -8,8 +9,8 @@ import { Observable } from 'rxjs';
 export class SiraeService {
   private http = inject(HttpClient);
 
-  private apiUrl = 'https://backend-sirae-pyim.onrender.com/api/contratos/';
-  private turnosUrl = 'https://backend-sirae-pyim.onrender.com/api/turnos/';
+  private apiUrl = `${environment.apiUrl}/contratos/`;
+  private turnosUrl = `${environment.apiUrl}/turnos/`;
 
   getContratos(): Observable<any[]> {
     return this.http.get<any[]>(this.apiUrl);
@@ -44,7 +45,7 @@ export class SiraeService {
   }
 
   // JORNADAS
-  private jornadasUrl = 'https://backend-sirae-pyim.onrender.com/api/jornadas/';
+  private jornadasUrl = `${environment.apiUrl}/jornadas/`;
 
   getJornadas(): Observable<any[]> {
     return this.http.get<any[]>(this.jornadasUrl);
@@ -63,7 +64,7 @@ export class SiraeService {
   }
 
   // SECCIONES DE MENÚ
-  private seccionesMenuUrl = 'https://backend-sirae-pyim.onrender.com/api/secciones_menu/';
+  private seccionesMenuUrl = `${environment.apiUrl}/secciones_menu/`;
 
   getSeccionesMenu(): Observable<any[]> {
     return this.http.get<any[]>(this.seccionesMenuUrl);
@@ -82,7 +83,7 @@ export class SiraeService {
   }
 
   // CONTRATOS - SECCION MENÚ (Relación)
-  private contratosSeccionMenuUrl = 'https://backend-sirae-pyim.onrender.com/api/contratos-secciones-menu/';
+  private contratosSeccionMenuUrl = `${environment.apiUrl}/contratos-secciones-menu/`;
 
   getContratosSeccionMenu(contratoId?: number): Observable<any[]> {
     const url = contratoId ? `${this.contratosSeccionMenuUrl}?contrato=${contratoId}` : this.contratosSeccionMenuUrl;

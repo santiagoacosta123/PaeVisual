@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
@@ -8,10 +9,10 @@ import { Observable } from 'rxjs';
 export class ProductoService {
 
   
-private apiInventario = 'https://backend-sirae-pyim.onrender.com/api/inventario/';
-  private apiIngredientes = 'https://backend-sirae-pyim.onrender.com/api/ingredientes/';
-  private apiUnidades = 'https://backend-sirae-pyim.onrender.com/api/unidades_medida/';
-  private apiCategorias = 'https://backend-sirae-pyim.onrender.com/api/categorias-inventario/';
+private apiInventario = `${environment.apiUrl}/inventario/`;
+  private apiIngredientes = `${environment.apiUrl}/ingredientes/`;
+  private apiUnidades = `${environment.apiUrl}/unidades_medida/`;
+  private apiCategorias = `${environment.apiUrl}/categorias-inventario/`;
   
   constructor(private http: HttpClient) {}
   // INVENTARIO
@@ -54,7 +55,7 @@ private apiInventario = 'https://backend-sirae-pyim.onrender.com/api/inventario/
   }
 
   // MOVIMIENTOS
-  private apiMovimientos = 'https://backend-sirae-pyim.onrender.com/api/movimientos_inventario/';
+  private apiMovimientos = `${environment.apiUrl}/movimientos-inventario/`;
   
   getMovimientos(): Observable<any> {
     return this.http.get<any>(this.apiMovimientos);
