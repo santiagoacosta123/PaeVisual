@@ -2,12 +2,13 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { UsuarioModel } from '../models/usuario.model';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class UsuarioService {
-  private apiUrl = 'https://backend-sirae-pyim.onrender.com/api/usuarios/';  
+  private apiUrl = `${environment.apiUrl}/usuarios/`;
   private http = inject(HttpClient);
 
   getUsuarios(): Observable<UsuarioModel[]> {

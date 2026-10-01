@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 interface LoginResponse {
   access: string;
@@ -13,8 +14,7 @@ interface LoginResponse {
   providedIn: 'root'
 })
 export class AuthService {
-  // URL base de tu backend en Render
-  private apiBaseUrl = 'https://backend-sirae-pyim.onrender.com/api';  
+  private apiBaseUrl = environment.apiUrl;
   private readonly ACCESS_TOKEN = 'access_token';
   private readonly REFRESH_TOKEN = 'refresh_token';
   private readonly USUARIO = 'usuario';
@@ -25,20 +25,16 @@ export class AuthService {
   ) {}
 
   login(credenciales: { correo: string; clave: string }): Observable<LoginResponse> {
-    console.log('POST LOGIN LOCAL:', credenciales);
-
     return this.http.post<LoginResponse>(`${this.apiBaseUrl}/auth/login/`, {
       correo: credenciales.correo,
       password: credenciales.clave
     });
   }
 
-  // Método para conectar con la recuperación de contraseña
   recuperarContrasena(data: { correo: string }): Observable<any> {
     return this.http.post(`${this.apiBaseUrl}/auth/recuperar-password/`, data);
   }
 
-  // NUEVO: Método para enviar el token de Google al backend
   loginConGoogle(token: string): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(`${this.apiBaseUrl}/auth/google/`, { token });
   }

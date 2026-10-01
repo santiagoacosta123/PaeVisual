@@ -1,12 +1,13 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class DetallePlatosService {
-  private readonly apiUrl = 'https://backend-sirae-pyim.onrender.com/api/detalle_platos/';
+  private readonly apiUrl = `${environment.apiUrl}/detalle_platos/`;
 
   constructor(private http: HttpClient) {}
 
