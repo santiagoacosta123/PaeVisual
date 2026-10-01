@@ -2,13 +2,13 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Notificacion } from './notificacion.model';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class NotificacionService {
-  // Recuerda cambiar esta URL por la de tu backend en Render (ej. https://tu-backend.onrender.com/api/notificaciones)
-  private apiUrl = 'https://backend-sirae-pyim.onrender.com/api/notificaciones/';
+  private apiUrl = `${environment.apiUrl}/notificaciones/`;
 
   constructor(private http: HttpClient) {}
 

@@ -14,6 +14,7 @@ import { UnidadesMedidaComponent } from './unidades-medida/unidades-medida';
 import { MenusComponent } from './menus/menus';
 import { ContratoDetalleComponent } from './contrato-detalle/contrato-detalle';
 import { NotificacionesComponent } from './notificaciones/notificaciones.component';
+import { authGuard } from './services/auth.guard';
 
 export const routes: Routes = [
 
@@ -31,6 +32,7 @@ export const routes: Routes = [
   {
     path: '',
     component: LayoutComponent,
+    canActivate: [authGuard],
     children: [
 
       {
