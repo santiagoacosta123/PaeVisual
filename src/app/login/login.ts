@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -23,6 +23,7 @@ export class LoginComponent implements OnInit, OnDestroy {
   private authService = inject(AuthService);
   private router = inject(Router);
   private socialAuthService = inject(SocialAuthService);
+  private cdr = inject(ChangeDetectorRef);
 
   loginForm!: FormGroup;
   cargando: boolean = false;
@@ -50,7 +51,7 @@ export class LoginComponent implements OnInit, OnDestroy {
           this.procesarLoginGoogle(user.idToken);
         }
       },
-      error: (err) => {
+      error: (err: any) => {
         console.error('Error en autenticación de Google:', err);
       }
     });
@@ -77,6 +78,7 @@ export class LoginComponent implements OnInit, OnDestroy {
 
     this.cargando = true;
     this.errorMensaje = '';
+    this.cdr.detectChanges();
 
     const credenciales = {
       correo: this.loginForm.value.correo,
@@ -87,11 +89,13 @@ export class LoginComponent implements OnInit, OnDestroy {
       next: (response) => {
         this.authService.guardarSesion(response);
         this.cargando = false;
-        this.router.navigate(['/dashboard']);
+        this.cdr.detectChanges();
+        this.router.navigate(['/inicio']);
       },
       error: (err) => {
         this.cargando = false;
-        this.errorMensaje = err.error?.detail || 'Credenciales inválidas o error de conexión.';
+        this.errorMensaje = err.error?.detail || err.error?.message || err.error?.non_field_errors?.[0] || 'Credenciales inválidas o error de conexión.';
+        this.cdr.detectChanges();
       }
     });
   }
@@ -99,16 +103,19 @@ export class LoginComponent implements OnInit, OnDestroy {
   private procesarLoginGoogle(idToken: string): void {
     this.cargando = true;
     this.errorMensaje = '';
+    this.cdr.detectChanges();
 
     this.authService.loginConGoogle(idToken).subscribe({
       next: (response) => {
         this.authService.guardarSesion(response);
         this.cargando = false;
-        this.router.navigate(['/dashboard']);
+        this.cdr.detectChanges();
+        this.router.navigate(['/inicio']);
       },
       error: (err) => {
         this.cargando = false;
-        this.errorMensaje = err.error?.detail || 'No se pudo iniciar sesión con Google.';
+        this.errorMensaje = err.error?.detail || err.error?.message || err.error?.non_field_errors?.[0] || 'No se pudo iniciar sesión con Google.';
+        this.cdr.detectChanges();
       }
     });
   }

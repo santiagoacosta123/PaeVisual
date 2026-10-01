@@ -8,7 +8,7 @@ import { Notificacion } from './notificacion.model';
 })
 export class NotificacionService {
   // Recuerda cambiar esta URL por la de tu backend en Render (ej. https://tu-backend.onrender.com/api/notificaciones)
-  private apiUrl = 'https://TU-BACKEND-EN-RENDER.onrender.com/api/notificaciones'; 
+  private apiUrl = 'https://backend-sirae-pyim.onrender.com/api/notificaciones/';
 
   constructor(private http: HttpClient) {}
 
