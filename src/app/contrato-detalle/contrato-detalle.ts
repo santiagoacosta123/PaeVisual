@@ -18,7 +18,40 @@ export class ContratoDetalleComponent implements OnInit {
   jornadas: any[] = [];
   seccionesMenu: any[] = [];
   contratosSeccionMenu: any[] = [];
-  contrato: any = null;
+  contrato: any = { codigo: '', institucion: '', zona: 'Norte', fecha_inicio: '', fecha_fin: '', estado: 'Activo' };
+  jornadaSeleccionada: any = null;
+  
+  get jornadasHabilitadas() {
+    return this.jornadas.filter(j => j.habilitada);
+  }
+
+  get resumenServiciosPorJornada() {
+    const resumen: any = {};
+    this.jornadasHabilitadas.forEach(j => {
+      const nombre = j.nombre_jornada || j.nombre;
+      const secciones = this.seccionesDeJornada(j);
+      let count = 0;
+      secciones.forEach(s => {
+        if (this.estaSeccionAsignada(s.id_seccion || s.id)) {
+          count++;
+        }
+      });
+      resumen[nombre] = count;
+    });
+    return Object.keys(resumen).map(k => ({ jornada: k, total: resumen[k] }));
+  }
+
+  get totalAsignados() {
+    return this.contratosSeccionMenu.length;
+  }
+
+  get seccionesDeshabilitadasPorFiltro() {
+    if (!this.jornadaSeleccionada) return [];
+    const idJornadaFiltro = this.jornadaSeleccionada.id_jornada || this.jornadaSeleccionada.id;
+    const nombreJornadaFiltro = this.jornadaSeleccionada.nombre_jornada || this.jornadaSeleccionada.nombre;
+    
+    return this.seccionesMenu.filter(s => s.jornada !== idJornadaFiltro && s.jornada !== nombreJornadaFiltro && s.id_jornada !== idJornadaFiltro);
+  }
 
   constructor(
     private route: ActivatedRoute,
@@ -62,10 +95,27 @@ export class ContratoDetalleComponent implements OnInit {
     this.siraeService.getSeccionesMenu().subscribe({
       next: (datos: any) => {
         this.seccionesMenu = Array.isArray(datos) ? datos : (datos.results || []);
+        if (this.seccionesMenu.length === 0) {
+          this.usarSeccionesPrueba();
+        }
         this.cdr.detectChanges();
       },
-      error: (err) => console.error('Error cargando secciones de menú:', err)
+      error: (err) => {
+        console.error('Error cargando secciones de menú:', err);
+        this.usarSeccionesPrueba();
+        this.cdr.detectChanges();
+      }
     });
+  }
+
+  usarSeccionesPrueba() {
+    this.seccionesMenu = [
+      { id: 1, nombre_seccion: 'Desayuno', jornada: 'Mañana' },
+      { id: 2, nombre_seccion: 'Merienda', jornada: 'Mañana' },
+      { id: 3, nombre_seccion: 'Almuerzo', jornada: 'Tarde' },
+      { id: 4, nombre_seccion: 'Refrigerio', jornada: 'Tarde' },
+      { id: 5, nombre_seccion: 'Cena', jornada: 'Tarde' }
+    ];
   }
 
   cargarDetalleContrato() {
@@ -176,6 +226,31 @@ export class ContratoDetalleComponent implements OnInit {
     });
   }
 
+  seleccionarJornadaParaVer(jornada: any) {
+    this.jornadaSeleccionada = jornada;
+    this.cdr.detectChanges();
+  }
+
+  seccionesDeJornada(jornada: any): any[] {
+    if (!jornada) return [];
+    const jName = String(jornada.nombre_jornada || jornada.nombre || '').toLowerCase();
+    const jId = jornada.id_jornada || jornada.id;
+
+    return this.seccionesMenu.filter(s => {
+      // Si la sección pertenece explícitamente a esta jornada por ID o Nombre
+      if (s.jornada === jId || String(s.jornada).toLowerCase() === jName) return true;
+
+      // Filtro visual automático (Mañana/Tarde)
+      const secNombre = String(s.nombre_seccion || s.nombre || '').toLowerCase();
+      if (jName === 'mañana') {
+        return secNombre.includes('desayuno') || secNombre.includes('merienda');
+      } else if (jName === 'tarde') {
+        return secNombre.includes('almuerzo') || secNombre.includes('refrigerio') || secNombre.includes('sena') || secNombre.includes('cena');
+      }
+      return true; // Mostrar el resto por si no tiene asignada jornada específica
+    });
+  }
+
   estaSeccionAsignada(seccionId: number): boolean {
     return this.contratosSeccionMenu.some(rel => {
       const relSecId = typeof rel.id_seccion === 'object' ? (rel.id_seccion?.id_seccion || rel.id_seccion?.id) : rel.id_seccion;
@@ -185,6 +260,19 @@ export class ContratoDetalleComponent implements OnInit {
 
   toggleSeccionMenu(seccionId: number, evento: any) {
     const asignada = evento.target.checked;
+
+    if (this.contratoId === 'nuevo') {
+      if (asignada) {
+        this.contratosSeccionMenu.push({ id_seccion: seccionId });
+      } else {
+        this.contratosSeccionMenu = this.contratosSeccionMenu.filter(rel => {
+          const relSecId = typeof rel.id_seccion === 'object' ? (rel.id_seccion?.id_seccion || rel.id_seccion?.id) : rel.id_seccion;
+          return Number(relSecId) !== Number(seccionId);
+        });
+      }
+      this.cdr.detectChanges();
+      return;
+    }
 
     if (asignada) {
       const payload = {
@@ -220,7 +308,65 @@ export class ContratoDetalleComponent implements OnInit {
   }
 
   guardarTodo() {
-    this.router.navigate(['/contratos']);
+    if (!this.contrato.institucion) {
+      alert('Por favor, ingresa el nombre del contrato/institución.');
+      return;
+    }
+
+    const payload = {
+      numero_cor: this.contrato.codigo || ('COR-2026-' + Math.floor(Math.random() * 1000)),
+      institucion: this.contrato.institucion,
+      zona: this.contrato.zona || 'Norte',
+      fecha_inicio: this.contrato.fecha_inicio || '2026-01-01',
+      fecha_fin: this.contrato.fecha_fin || '2026-12-31',
+      estado: this.contrato.estado || 'Activo'
+    };
+
+    if (this.contratoId === 'nuevo') {
+      this.siraeService.crearContrato(payload).subscribe({
+        next: (res: any) => {
+          const newId = res.id_contrato || res.id || res.pk;
+          
+          if (this.contratosSeccionMenu.length === 0) {
+            this.router.navigate(['/contratos']);
+            return;
+          }
+
+          // Asignar las secciones guardadas en memoria
+          const promesas = this.contratosSeccionMenu.map(rel => {
+            return new Promise((resolve) => {
+              this.siraeService.crearContratoSeccionMenu({
+                id_contrato: newId,
+                id_seccion: rel.id_seccion,
+                estado: 'Activo',
+                valor: 0
+              }).subscribe({
+                next: () => resolve(true),
+                error: () => resolve(false)
+              });
+            });
+          });
+
+          Promise.all(promesas).then(() => {
+            this.router.navigate(['/contratos']);
+          });
+        },
+        error: (err) => {
+          console.error('Error al crear contrato', err);
+          alert('Hubo un error al crear el contrato.');
+        }
+      });
+    } else {
+      this.siraeService.actualizarContrato(Number(this.contratoId), payload).subscribe({
+        next: () => {
+          this.router.navigate(['/contratos']);
+        },
+        error: (err) => {
+          console.error('Error al actualizar contrato', err);
+          alert('Hubo un error al actualizar el contrato.');
+        }
+      });
+    }
   }
 
   volver() {

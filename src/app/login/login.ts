@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, OnInit, ViewChild, inject } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, OnInit, ViewChild, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -47,7 +47,7 @@ export class LoginComponent implements OnInit, AfterViewInit {
   private fb = inject(FormBuilder);
   private authService = inject(AuthService);
   private router = inject(Router);
-
+  private cdr = inject(ChangeDetectorRef);
   @ViewChild('googleButton') googleButton?: ElementRef<HTMLDivElement>;
 
   loginForm!: FormGroup;
@@ -67,7 +67,7 @@ export class LoginComponent implements OnInit, AfterViewInit {
   ngOnInit(): void {
     this.loginForm = this.fb.group({
       correo: ['', [Validators.required, Validators.email]],
-      clave: ['', [Validators.required, Validators.minLength(6)]],
+      clave: ['', [Validators.required, Validators.minLength(6)]]
     });
   }
 
@@ -135,6 +135,7 @@ export class LoginComponent implements OnInit, AfterViewInit {
 
     this.cargando = true;
     this.errorMensaje = '';
+    this.cdr.detectChanges();
 
     const credenciales = {
       correo: this.loginForm.value.correo,
@@ -145,11 +146,13 @@ export class LoginComponent implements OnInit, AfterViewInit {
       next: (response) => {
         this.authService.guardarSesion(response);
         this.cargando = false;
+        this.cdr.detectChanges();
         this.router.navigate(['/inicio']);
       },
       error: (err) => {
         this.cargando = false;
-        this.errorMensaje = err.error?.detail || 'Credenciales inválidas o error de conexión.';
+        this.errorMensaje = err.error?.detail || err.error?.message || err.error?.non_field_errors?.[0] || 'Credenciales inválidas o error de conexión.';
+        this.cdr.detectChanges();
       }
     });
   }
@@ -158,11 +161,13 @@ export class LoginComponent implements OnInit, AfterViewInit {
     this.cargando = true;
     this.errorMensaje = '';
     this.mensajeGoogle = '';
+    this.cdr.detectChanges();
 
     this.authService.loginConGoogle(idToken).subscribe({
       next: (response) => {
         this.authService.guardarSesion(response);
         this.cargando = false;
+        this.cdr.detectChanges();
         this.router.navigate(['/inicio']);
       },
       error: (err) => {
@@ -171,6 +176,7 @@ export class LoginComponent implements OnInit, AfterViewInit {
           || err.error?.tipo_documento
           || err.error?.numero_documento
           || 'No se pudo iniciar sesión con Google.';
+        this.cdr.detectChanges();
       }
     });
   }

@@ -12,8 +12,6 @@ import { NuevoProducto } from './nuevo-producto/nuevo-producto';
 import { ReporteInventario } from './reporte-inventario/reporte-inventario';
 import { UnidadesMedidaComponent } from './unidades-medida/unidades-medida';
 import { MenusComponent } from './menus/menus';
-import { AsistenciaComponent } from './asistencia/asistencia';
-import { EntregasComponent } from './entregas/entregas';
 import { ContratoDetalleComponent } from './contrato-detalle/contrato-detalle';
 import { NotificacionesComponent } from './notificaciones/notificaciones.component';
 import { authGuard } from './services/auth.guard';
@@ -92,15 +90,7 @@ export const routes: Routes = [
         component: MenusComponent
       },
 
-      {
-        path: 'asistencia',
-        component: AsistenciaComponent
-      },
 
-      {
-        path: 'entregas',
-        component: EntregasComponent
-      },
 
       {
         path: 'notificaciones',
