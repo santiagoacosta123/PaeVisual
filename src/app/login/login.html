@@ -9,21 +9,34 @@
     }
   </style>
 
-  <!-- Lado Izquierdo: Formulario -->
-  <!-- Se cambió la alineación para que esté centrado en su mitad y no amontonado a la izquierda -->
-  <div class="w-full md:w-1/2 flex flex-col justify-center items-center p-8 relative z-10">
+  <!-- Lado Izquierdo: Logo y espacio para el plato -->
+  <div class="hidden md:flex w-1/2 flex-col items-center justify-center relative z-10 p-8">
+    
+    <!-- El logo -->
+    <img src="/sirae-logo.png" alt="Logo SIRAE" class="max-w-[75%] w-full h-auto drop-shadow-sm mb-4" />
+    
+    <!-- Texto Alimentando cada dia -->
+    <div class="mt-4 flex items-center gap-4">
+      <div class="w-8 h-[1.5px] bg-[#fac94b]"></div>
+      <p class="text-[#fac94b] text-2xl font-medium tracking-wide italic font-serif">Alimentando cada día</p>
+      <div class="w-8 h-[1.5px] bg-[#fac94b]"></div>
+    </div>
+  </div>
+
+  <!-- Lado Derecho: Formulario -->
+  <div class="w-full md:w-1/2 flex flex-col justify-center items-center p-8 relative z-10 bg-white/40 backdrop-blur-md md:bg-transparent md:backdrop-blur-none">
     
     <!-- Contenedor interno para mantener el ancho proporcionado -->
     <div class="w-full max-w-[420px]">
       
       <div class="mb-10">
         <!-- text-black para igualar el negro del logo, font-bold en lugar de extrabold para que no se vea tan grueso -->
-        <h1 class="text-4xl md:text-5xl font-bold text-black mb-2 tracking-tight leading-tight">
+        <h1 class="text-4xl md:text-5xl font-bold text-black mb-2 tracking-tight leading-tight italic font-serif">
           ¡Bienvenido
           <br>
           <span class="text-[#fac94b]">de nuevo!</span>
         </h1>
-        <p class="text-sm md:text-base text-gray-500 mt-1 font-medium">Inicia sesión para continuar.</p>
+        <p class="text-sm md:text-base text-gray-500 mt-2 font-medium">Inicia sesión para continuar.</p>
       </div>
 
       <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="space-y-5 w-full">
@@ -41,7 +54,7 @@
             formControlName="correo" 
             placeholder="Correo electrónico" 
             autocomplete="email"
-            class="w-full pl-12 pr-5 py-4 text-sm bg-[#f8f9fa] border-none rounded-full outline-none text-black focus:ring-2 focus:ring-[#fac94b] transition-all placeholder-gray-400 font-medium shadow-sm relative z-0"
+            class="w-full pl-12 pr-5 py-4 text-sm bg-white/90 border-none rounded-full outline-none text-black focus:ring-2 focus:ring-[#fac94b] transition-all placeholder-gray-400 font-medium shadow-sm relative z-0"
           />
         </div>
         <span class="text-xs text-red-500 mt-1 block pl-5" *ngIf="correo?.invalid && (correo?.dirty || correo?.touched)">
@@ -60,7 +73,7 @@
             [type]="mostrarClave ? 'text' : 'password'" 
             formControlName="clave" 
             placeholder="Contraseña" 
-            class="w-full pl-12 pr-12 py-4 text-sm bg-[#f8f9fa] border-none rounded-full outline-none text-black focus:ring-2 focus:ring-[#fac94b] transition-all placeholder-gray-400 font-medium shadow-sm relative z-0"
+            class="w-full pl-12 pr-12 py-4 text-sm bg-white/90 border-none rounded-full outline-none text-black focus:ring-2 focus:ring-[#fac94b] transition-all placeholder-gray-400 font-medium shadow-sm relative z-0"
           />
           <button 
             type="button" 
@@ -99,7 +112,7 @@
 
       </form>
 
-      <div class="mt-4 text-center text-xs text-gray-500">
+      <div class="mt-4 text-center text-xs text-gray-500 font-medium">
         Acceso seguro con correo y contraseña
       </div>
 
@@ -117,26 +130,6 @@
       </p>
 
     </div>
-  </div>
-
-  <!-- Lado Derecho: Logo y espacio para el plato -->
-  <div class="hidden md:flex w-1/2 pt-[15vh] pb-12 flex-col items-center justify-start relative z-10">
-    
-    <!-- El logo -->
-    <img src="/sirae-logo.png" alt="Logo SIRAE" class="max-w-[65%] w-full h-auto drop-shadow-sm" />
-    
-    <!-- Texto Alimentando cada dia -->
-    <div class="mt-4 flex items-center gap-4">
-      <div class="w-8 h-[1.5px] bg-[#fac94b]"></div>
-      <p class="text-[#fac94b] text-xl font-medium tracking-wide italic font-serif">Alimentando cada día</p>
-      <div class="w-8 h-[1.5px] bg-[#fac94b]"></div>
-    </div>
-
-    <!-- Contenedor reservado para el plato en la esquina inferior derecha -->
-    <div class="absolute bottom-0 right-0 w-3/4 h-2/3 pointer-events-none flex items-end justify-end">
-      <!-- <img src="/plato-comida.png" class="w-full h-auto object-contain object-bottom right-0 bottom-0" /> -->
-    </div>
-    
   </div>
 
 </div>
