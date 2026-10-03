@@ -108,7 +108,17 @@ export class Productos implements OnInit {
         // Asignar catálogos
         this.ingredientesDisponibles = Array.isArray(res.ingredientes) ? res.ingredientes : (res.ingredientes.results || []);
         this.categoriasInventario = Array.isArray(res.categorias) ? res.categorias : (res.categorias.results || []);
-        this.unidadesMedida = Array.isArray(res.unidades) ? res.unidades : (res.unidades.results || []);
+        const unidadesApi = Array.isArray(res.unidades)
+          ? res.unidades
+          : (res.unidades?.results || res.unidades?.data || []);
+        if (unidadesApi.length > 0) {
+          this.unidadesMedida = unidadesApi.map((unidad: any) => ({
+            ...unidad,
+            id_unidad_medida: unidad.id_unidad_medida ?? unidad.id ?? unidad.pk,
+            nombre_unidad: unidad.nombre_unidad || unidad.nombre || unidad.name || '',
+            abreviatura: unidad.abreviatura || unidad.simbolo || ''
+          }));
+        }
 
         const rawInventario = Array.isArray(res.inventario) ? res.inventario : (res.inventario.results || []);
         const rawMovimientos = Array.isArray(res.movimientos) ? res.movimientos : (res.movimientos.results || []);
@@ -117,26 +127,30 @@ export class Productos implements OnInit {
         this.inventario = rawInventario.map((inv: any) => {
           const ing = this.ingredientesDisponibles.find(i => i.id_ingrediente == inv.id_ingrediente);
           const cat = ing ? this.categoriasInventario.find(c => c.id_categoria_inventario == ing.id_categoria_inventario) : null;
-          const um = this.unidadesMedida.find(u => u.id_unidad_medida == inv.id_unidad_medida);
+          const unidadRef = inv.id_unidad_medida ?? inv.unidad_medida ?? inv.unidad ?? inv.unidad_medida_id;
+          const idUnidad = this.obtenerIdUnidad(unidadRef);
 
           return {
             ...inv,
+            id_unidad_medida: idUnidad,
             nombre_ingrediente: ing ? ing.nombre_ingrediente : 'Desconocido',
             marca_ingrediente: ing ? ing.marca_ingrediente : '',
             nombre_categoria: cat ? cat.nombre_categoria : 'Sin categoría',
-            nombre_unidad: um ? um.nombre_unidad : ''
+            nombre_unidad: this.obtenerNombreUnidad(unidadRef)
           };
         });
 
         // Mapear movimientos
         this.movimientosInventario = rawMovimientos.map((mov: any) => {
           const ing = this.ingredientesDisponibles.find(i => i.id_ingrediente == mov.id_ingrediente);
-          const um = this.unidadesMedida.find(u => u.id_unidad_medida == mov.id_unidad_medida);
+          const unidadRef = mov.id_unidad_medida ?? mov.unidad_medida ?? mov.unidad ?? mov.unidad_medida_id;
+          const idUnidad = this.obtenerIdUnidad(unidadRef);
 
           return {
             ...mov,
+            id_unidad_medida: idUnidad,
             nombre_ingrediente: ing ? ing.nombre_ingrediente : 'Desconocido',
-            nombre_unidad: um ? um.nombre_unidad : ''
+            nombre_unidad: this.obtenerNombreUnidad(unidadRef)
           };
         });
 
@@ -165,6 +179,27 @@ export class Productos implements OnInit {
       mov.observaciones?.toLowerCase().includes(texto) ||
       mov.tipo_movimiento?.toLowerCase().includes(texto)
     );
+  }
+
+  private obtenerIdUnidad(unidad: any): any {
+    if (unidad && typeof unidad === 'object') {
+      return unidad.id_unidad_medida ?? unidad.id ?? unidad.pk;
+    }
+    return unidad;
+  }
+
+  private obtenerNombreUnidad(unidadRef: any): string {
+    const idUnidad = this.obtenerIdUnidad(unidadRef);
+    const unidad = this.unidadesMedida.find(item =>
+      String(item.id_unidad_medida ?? item.id ?? item.pk) === String(idUnidad)
+    );
+    const nombre = unidad?.nombre_unidad || unidad?.nombre || unidad?.name
+      || (typeof unidadRef === 'object' && unidadRef !== null
+        ? unidadRef.nombre_unidad || unidadRef.nombre || unidadRef.name
+        : '');
+    const abreviatura = unidad?.abreviatura || unidad?.simbolo;
+
+    return nombre ? `${nombre}${abreviatura ? ` (${abreviatura})` : ''}` : '';
   }
 
   get gramajesFiltrados() {
@@ -263,7 +298,7 @@ export class Productos implements OnInit {
 
   guardarInventario(): void {
     if (this.pestanaActiva === 'inventario') {
-      if (!this.itemForm.id_ingrediente || this.itemForm.cantidad_actual === null) {
+      if (!this.itemForm.id_ingrediente || this.itemForm.cantidad_actual === null || !this.itemForm.id_unidad_medida) {
         this.sweetAlert.warning('Campos incompletos', 'Llene los campos obligatorios del inventario.');
         return;
       }
@@ -288,7 +323,7 @@ export class Productos implements OnInit {
         });
       }
     } else if (this.pestanaActiva === 'movimientos') {
-      if (!this.movimientoForm.id_ingrediente || !this.movimientoForm.cantidad) {
+      if (!this.movimientoForm.id_ingrediente || !this.movimientoForm.cantidad || !this.movimientoForm.id_unidad_medida) {
         this.sweetAlert.warning('Campos incompletos', 'Complete los datos del movimiento.');
         return;
       }

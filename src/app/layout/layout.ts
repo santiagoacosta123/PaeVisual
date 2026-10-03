@@ -4,6 +4,7 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { NotificacionService } from '../notificaciones/notificacion.service';
 import { Notificacion } from '../notificaciones/notificacion.model';
+import { AuthService } from '../services/auth.service';
 
 @Component({
   selector: 'app-layout',
@@ -22,7 +23,10 @@ export class LayoutComponent implements OnInit {
   listaNotificaciones: Notificacion[] = [];
   notificacionesNoLeidas: number = 0;
 
-  constructor(private notificacionService: NotificacionService) {}
+  constructor(
+    private notificacionService: NotificacionService,
+    private authService: AuthService
+  ) {}
 
   ngOnInit(): void {
     this.cargarNotificacionesHeader();
@@ -109,6 +113,6 @@ export class LayoutComponent implements OnInit {
   }
 
   cerrarSesion(): void {
-    console.log('Cerrando sesión...');
+    this.authService.cerrarSesion();
   }
 }

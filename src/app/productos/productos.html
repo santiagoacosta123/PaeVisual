@@ -14,11 +14,6 @@
       [style.font-weight]="pestanaActiva === 'movimientos' ? '600' : '500'"
       style="border:none; padding:9px 16px; border-radius:12px; font-size:13px; cursor:pointer;">Movimientos</button>
 
-    <button type="button" (click)="seleccionarPestana('gramajes')"
-      [style.background]="pestanaActiva === 'gramajes' ? '#0f172a' : 'transparent'"
-      [style.color]="pestanaActiva === 'gramajes' ? '#ffffff' : '#475569'"
-      [style.font-weight]="pestanaActiva === 'gramajes' ? '600' : '500'"
-      style="border:none; padding:9px 16px; border-radius:12px; font-size:13px; cursor:pointer;">Gramajes / Recetas</button>
   </div>
 
   <!-- Contenido Dinámico -->
@@ -220,7 +215,7 @@
               <label style="font-weight:600; font-size:12px; color:#475569;">Unidad</label>
               <select [(ngModel)]="itemForm.id_unidad_medida" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e1; outline:none; background:#ffffff;">
                 <option value="">Seleccione...</option>
-                <option *ngFor="let u of unidadesMedida" [value]="u.id_unidad_medida">{{u.nombre_unidad}}</option>
+                <option *ngFor="let u of unidadesMedida" [ngValue]="u.id_unidad_medida">{{u.nombre_unidad || u.nombre || u.name}}{{u.abreviatura ? ' (' + u.abreviatura + ')' : ''}}</option>
               </select>
             </div>
           </div>
@@ -250,6 +245,13 @@
               <label style="font-weight:600; font-size:12px; color:#475569;">Cantidad</label>
               <input type="number" [(ngModel)]="movimientoForm.cantidad" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e1; outline:none;">
             </div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:6px;">
+            <label style="font-weight:600; font-size:12px; color:#475569;">Unidad</label>
+            <select [(ngModel)]="movimientoForm.id_unidad_medida" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e1; outline:none; background:#ffffff;">
+              <option [ngValue]="''">Seleccione...</option>
+              <option *ngFor="let u of unidadesMedida" [ngValue]="u.id_unidad_medida">{{u.nombre_unidad || u.nombre || u.name}}{{u.abreviatura ? ' (' + u.abreviatura + ')' : ''}}</option>
+            </select>
           </div>
           <div style="display:flex; flex-direction:column; gap:6px;">
             <label style="font-weight:600; font-size:12px; color:#475569;">Observaciones</label>
