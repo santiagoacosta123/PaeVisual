@@ -134,42 +134,114 @@
 
 </div>
 
-<!-- Modal para recuperar contraseña -->
-<div *ngIf="mostrarModalRecuperar" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-  <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative animate-fade-in">
-    
-    <h3 class="text-xl font-bold text-gray-800 mb-2">Recuperar Contraseña</h3>
-    <p class="text-xs text-gray-500 mb-6">Ingresa tu correo institucional y te enviaremos las instrucciones para restablecer tu acceso.</p>
-
-    <div class="flex flex-col mb-4">
-      <label for="correoRecuperar" class="text-xs font-semibold text-gray-700 mb-2">Correo electrónico</label>
-      <input 
-        id="correoRecuperar" 
-        type="email" 
-        [(ngModel)]="correoRecuperacion"
-        placeholder="usuario@correo.com" 
-        class="w-full px-3.5 py-3 text-sm border border-gray-300 rounded-lg outline-none bg-gray-50 focus:border-amber-500 focus:bg-white focus:ring-2 focus:ring-amber-500/10 transition-all"
-      />
-    </div>
-
-    <div class="flex justify-end space-x-3 mt-6">
-      <button 
-        type="button" 
-        (click)="cerrarModalRecuperar()" 
-        class="px-4 py-2.5 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors cursor-pointer"
+<!-- Modal de recuperación de contraseña -->
+<div *ngIf="mostrarModalRecuperar" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 p-4 backdrop-blur-sm" (click)="cerrarModalRecuperar()">
+  <section
+    class="w-full max-w-2xl overflow-hidden rounded-xl border border-amber-100 bg-white shadow-2xl"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="tituloRecuperacion"
+    (click)="$event.stopPropagation()"
+  >
+    <header class="flex items-start justify-between gap-4 border-b border-amber-100 px-5 py-5 sm:px-8 sm:py-6">
+      <div class="flex min-w-0 items-center gap-4">
+        <img src="/sirae-logo.png" alt="SIRAE" class="hidden h-10 w-auto object-contain sm:block" />
+        <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-800 ring-4 ring-amber-50">
+          <span class="material-symbols-outlined text-3xl" aria-hidden="true">lock</span>
+        </div>
+        <div class="min-w-0">
+          <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-amber-700">Seguridad de cuenta</p>
+          <h2 id="tituloRecuperacion" class="mt-1 text-xl font-bold text-slate-900 sm:text-2xl">Restaurar contraseña</h2>
+          <p class="mt-1 text-sm text-slate-600">Recupera el acceso usando el correo asociado a tu cuenta SIRAE.</p>
+        </div>
+      </div>
+      <button
+        type="button"
+        (click)="cerrarModalRecuperar()"
+        aria-label="Cerrar recuperación"
+        class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-amber-50 hover:text-slate-900"
       >
-        Cancelar
+        <span class="material-symbols-outlined" aria-hidden="true">close</span>
       </button>
-      <button 
-        type="button" 
-        (click)="enviarCorreoRecuperacion()" 
-        class="px-4 py-2.5 text-sm font-bold text-slate-900 bg-amber-400 hover:bg-amber-500 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
-        [disabled]="enviandoRecuperacion"
-      >
-        <span *ngIf="!enviandoRecuperacion">Enviar enlace</span>
-        <span *ngIf="enviandoRecuperacion">Enviando...</span>
-      </button>
-    </div>
+    </header>
 
-  </div>
+    <div class="px-5 py-5 sm:px-8 sm:py-6">
+      <form *ngIf="pasoRecuperacion === 'correo'" [formGroup]="formularioRecuperacion" (ngSubmit)="enviarCorreoRecuperacion()">
+        <div class="space-y-4">
+          <label for="correoRecuperar" class="block text-sm font-semibold text-slate-700">Correo electrónico de usuario</label>
+          <div class="relative">
+            <span class="material-symbols-outlined pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" aria-hidden="true">mail</span>
+            <input
+              id="correoRecuperar"
+              type="email"
+              formControlName="correo"
+              autocomplete="email"
+              placeholder="usuario@correo.com"
+              [attr.aria-invalid]="formularioRecuperacion.get('correo')?.invalid && formularioRecuperacion.get('correo')?.touched"
+              aria-describedby="correoRecuperarError"
+              class="w-full rounded-md border border-slate-300 bg-white py-3.5 pl-12 pr-4 text-sm text-slate-800 outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-200"
+            />
+          </div>
+          <p id="correoRecuperarError" class="text-xs text-red-600" role="alert"
+            *ngIf="formularioRecuperacion.get('correo')?.invalid && formularioRecuperacion.get('correo')?.touched">
+            Ingresa un correo electrónico válido.
+          </p>
+          <p *ngIf="errorRecuperacion" class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
+            {{ errorRecuperacion }}
+          </p>
+          <button
+            type="submit"
+            [disabled]="enviandoRecuperacion || formularioRecuperacion.invalid"
+            class="w-full rounded-md bg-amber-400 px-5 py-3.5 text-base font-bold text-slate-950 transition-colors hover:bg-amber-500 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {{ enviandoRecuperacion ? 'Enviando...' : 'Continuar' }}
+          </button>
+        </div>
+      </form>
+
+      <div *ngIf="pasoRecuperacion === 'confirmacion'" class="rounded-lg border border-emerald-200 bg-emerald-50/60 p-5 sm:p-6" role="status" aria-live="polite">
+        <div class="flex items-start gap-4">
+          <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+            <span class="material-symbols-outlined text-2xl" aria-hidden="true">mark_email_read</span>
+          </div>
+          <div>
+            <h3 class="text-lg font-bold text-slate-900">Revisa tu correo</h3>
+            <p class="mt-2 text-sm leading-6 text-slate-700">
+              {{ mensajeRecuperacion }}
+            </p>
+            <p class="mt-2 break-all text-sm font-semibold text-emerald-800">{{ correoRecuperacionEnmascarado }}</p>
+            <p class="mt-3 text-xs leading-5 text-slate-600">Si no ves el mensaje, revisa la carpeta de spam o correo no deseado.</p>
+          </div>
+        </div>
+      </div>
+
+      <footer class="mt-5 flex flex-col-reverse gap-2 border-t border-amber-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+        <button
+          *ngIf="pasoRecuperacion === 'confirmacion'"
+          type="button"
+          (click)="volverAEditarCorreo()"
+          class="rounded-md border border-amber-600 px-4 py-2.5 text-sm font-semibold text-amber-800 transition-colors hover:bg-amber-50"
+        >
+          Cambiar correo
+        </button>
+        <span *ngIf="pasoRecuperacion === 'correo'"></span>
+        <button
+          *ngIf="pasoRecuperacion === 'confirmacion'"
+          type="button"
+          (click)="cerrarModalRecuperar()"
+          class="rounded-md bg-emerald-700 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-800"
+        >
+          Volver al acceso
+        </button>
+        <button
+          *ngIf="pasoRecuperacion === 'correo'"
+          type="button"
+          (click)="cerrarModalRecuperar()"
+          class="rounded-md px-4 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-amber-50"
+        >
+          Cancelar
+        </button>
+      </footer>
+    </div>
+  </section>
 </div>

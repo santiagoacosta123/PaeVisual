@@ -14,6 +14,8 @@ import { UnidadesMedidaComponent } from './unidades-medida/unidades-medida';
 import { MenusComponent } from './menus/menus';
 import { ContratoDetalleComponent } from './contrato-detalle/contrato-detalle';
 import { NotificacionesComponent } from './notificaciones/notificaciones.component';
+import { PerfilComponent } from './perfil/perfil';
+import { RecuperarPasswordComponent } from './recuperar-password/recuperar-password';
 import { authGuard } from './services/auth.guard';
 
 export const routes: Routes = [
@@ -21,6 +23,11 @@ export const routes: Routes = [
   {
     path: 'login',
     component: LoginComponent // <--- Corregido aquí también
+  },
+
+  {
+    path: 'recuperar-password',
+    component: RecuperarPasswordComponent
   },
 
   {
@@ -95,6 +102,11 @@ export const routes: Routes = [
       {
         path: 'notificaciones',
         component: NotificacionesComponent
+      }
+      ,
+      {
+        path: 'perfil',
+        component: PerfilComponent
       }
     ]
   },

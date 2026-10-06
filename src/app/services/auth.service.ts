@@ -10,6 +10,14 @@ interface LoginResponse {
   usuario?: any;
 }
 
+interface PasswordResetValidationResponse {
+  valido: boolean;
+  mensaje?: string;
+  error?: string;
+  email?: string;
+  nombre_completo?: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -33,6 +41,24 @@ export class AuthService {
 
   recuperarContrasena(data: { correo: string }): Observable<any> {
     return this.http.post(`${this.apiBaseUrl}/auth/recuperar-password/`, data);
+  }
+
+  validarTokenRecuperacion(token: string): Observable<PasswordResetValidationResponse> {
+    return this.http.post<PasswordResetValidationResponse>(
+      `${this.apiBaseUrl}/auth/password-reset/validar-token/`,
+      { token }
+    );
+  }
+
+  confirmarRecuperacionContrasena(data: {
+    token: string;
+    nueva_password: string;
+    confirmar_password: string;
+  }): Observable<{ status: string; mensaje: string }> {
+    return this.http.post<{ status: string; mensaje: string }>(
+      `${this.apiBaseUrl}/auth/password-reset/confirmar/`,
+      data
+    );
   }
 
   loginConGoogle(token: string): Observable<LoginResponse> {

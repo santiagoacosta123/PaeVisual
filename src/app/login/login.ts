@@ -56,9 +56,19 @@ export class LoginComponent implements OnInit, AfterViewInit {
   mostrarClave: boolean = false;
 
   mostrarModalRecuperar: boolean = false;
-  correoRecuperacion: string = '';
   enviandoRecuperacion: boolean = false;
+  mensajeRecuperacion: string = '';
+  errorRecuperacion: string = '';
+  pasoRecuperacion: 'correo' | 'confirmacion' = 'correo';
+  correoSolicitado: string = '';
   mensajeGoogle: string = '';
+  formularioRecuperacion!: FormGroup;
+
+  get correoRecuperacionEnmascarado(): string {
+    const [usuario, dominio] = this.correoSolicitado.split('@');
+    if (!usuario || !dominio) return this.correoSolicitado;
+    return `${usuario.slice(0, 1)}${'*'.repeat(Math.min(usuario.length - 1, 6))}@${dominio}`;
+  }
 
   get googleClientConfigurado(): boolean {
     return Boolean(environment.googleClientId.trim());
@@ -68,6 +78,9 @@ export class LoginComponent implements OnInit, AfterViewInit {
     this.loginForm = this.fb.group({
       correo: ['', [Validators.required, Validators.email]],
       clave: ['', [Validators.required, Validators.minLength(6)]]
+    });
+    this.formularioRecuperacion = this.fb.group({
+      correo: ['', [Validators.required, Validators.email]]
     });
   }
 
@@ -183,26 +196,49 @@ export class LoginComponent implements OnInit, AfterViewInit {
 
   abrirModalRecuperar(): void {
     this.mostrarModalRecuperar = true;
-    this.correoRecuperacion = '';
+    this.pasoRecuperacion = 'correo';
+    this.mensajeRecuperacion = '';
+    this.errorRecuperacion = '';
+    this.correoSolicitado = '';
+    this.formularioRecuperacion.reset({
+      correo: this.loginForm.get('correo')?.value || ''
+    });
   }
 
   cerrarModalRecuperar(): void {
     this.mostrarModalRecuperar = false;
   }
 
+  volverAEditarCorreo(): void {
+    this.pasoRecuperacion = 'correo';
+    this.mensajeRecuperacion = '';
+    this.errorRecuperacion = '';
+  }
+
   enviarCorreoRecuperacion(): void {
-    if (!this.correoRecuperacion) return;
+    if (this.enviandoRecuperacion) return;
+    if (this.formularioRecuperacion.invalid) {
+      this.formularioRecuperacion.markAllAsTouched();
+      return;
+    }
 
     this.enviandoRecuperacion = true;
-    this.authService.recuperarContrasena({ correo: this.correoRecuperacion }).subscribe({
+    this.mensajeRecuperacion = '';
+    this.errorRecuperacion = '';
+    const correo = String(this.formularioRecuperacion.get('correo')?.value || '').trim().toLowerCase();
+
+    this.authService.recuperarContrasena({ correo }).subscribe({
       next: () => {
         this.enviandoRecuperacion = false;
-        alert('Se han enviado las instrucciones a tu correo.');
-        this.cerrarModalRecuperar();
+        this.correoSolicitado = correo;
+        this.pasoRecuperacion = 'confirmacion';
+        this.mensajeRecuperacion = 'Si el correo está registrado, recibirás instrucciones para restablecer tu contraseña.';
+        this.cdr.detectChanges();
       },
-      error: (err) => {
+      error: () => {
         this.enviandoRecuperacion = false;
-        alert(err.error?.detail || 'Ocurrió un error al procesar la solicitud.');
+        this.errorRecuperacion = 'No se pudo procesar la solicitud. Inténtalo de nuevo más tarde.';
+        this.cdr.detectChanges();
       }
     });
   }

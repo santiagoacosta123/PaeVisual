@@ -23,6 +23,10 @@ export class UsuarioService {
     return this.http.put<UsuarioModel>(`${this.apiUrl}${id}/`, usuario);
   }
 
+  actualizarUsuarioParcial(id: number, cambios: Partial<UsuarioModel> & { telefono?: string }): Observable<UsuarioModel> {
+    return this.http.patch<UsuarioModel>(`${this.apiUrl}${id}/`, cambios);
+  }
+
   eliminarUsuario(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}${id}/`);
   }
