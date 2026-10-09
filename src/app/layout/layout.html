@@ -114,7 +114,7 @@
           <img src="administrador.png" alt="Avatar" style="width:40px; height:40px; border-radius:50%; object-fit:cover; border:1px solid #e0e0e0;" />
           <div style="text-align:left; display:flex; flex-direction:column;">
             <span style="font-size:14px; font-weight:600; color:#1a1a1a; line-height:1.2;">{{ perfil.nombre }}</span>
-            <span style="font-size:11px; color:#888; font-weight:400;">Super Admin</span>
+            <span style="font-size:11px; color:#888; font-weight:400;">{{ perfil.rol }}</span>
           </div>
           <span class="material-symbols-outlined" style="font-size:18px; color:#888; margin-left:4px;">expand_more</span>
         </button>
@@ -164,7 +164,7 @@
         <img src="administrador.png" alt="Avatar" style="width:44px; height:44px; border-radius:50%; object-fit:cover; border:1px solid #e0e0e0;" />
         <div style="overflow:hidden;">
           <h4 style="margin:0; font-size:14px; color:#333; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ perfil.nombre }}</h4>
-          <p style="margin:2px 0 0 0; font-size:12px; color:#777; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ perfil.sede }}</p>
+          <p style="margin:2px 0 0 0; font-size:12px; color:#777; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ perfil.rol }}</p>
         </div>
       </div>
 
@@ -192,7 +192,7 @@
       <div style="padding:16px; border-top:1px solid #eee; background:#fff;">
         <div *ngIf="vistaActual === 'perfil'">
           <p style="font-size:13px; margin:6px 0; color:#555;"><strong>Correo:</strong> {{ perfil.correo }}</p>
-          <p style="font-size:13px; margin:6px 0; color:#555;"><strong>Teléfono:</strong> {{ perfil.telefono }}</p>
+          <p style="font-size:13px; margin:6px 0; color:#555;"><strong>Rol:</strong> {{ perfil.rol }}</p>
         </div>
 
         <div *ngIf="vistaActual === 'editar'" style="display:flex; flex-direction:column; gap:10px;">
@@ -203,10 +203,6 @@
           <div style="display:flex; flex-direction:column; gap:4px;">
             <label style="font-size:11px; font-weight:600; color:#666;">Correo</label>
             <input type="email" [(ngModel)]="editForm.correo" style="padding:8px; border:1px solid #ddd; border-radius:6px; font-size:13px; outline:none;" />
-          </div>
-          <div style="display:flex; flex-direction:column; gap:4px;">
-            <label style="font-size:11px; font-weight:600; color:#666;">Teléfono</label>
-            <input type="text" [(ngModel)]="editForm.telefono" style="padding:8px; border:1px solid #ddd; border-radius:6px; font-size:13px; outline:none;" />
           </div>
           <button type="button" (click)="guardarPerfil()" style="background:#e0a316; color:#fff; font-weight:600; border:none; border-radius:6px; padding:8px; cursor:pointer; font-size:13px; margin-top:4px;">Guardar Cambios</button>
         </div>

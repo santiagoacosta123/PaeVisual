@@ -4,6 +4,7 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { NotificacionService } from '../notificaciones/notificacion.service';
 import { Notificacion } from '../notificaciones/notificacion.model';
+import { AuthService } from '../services/auth.service';
 
 @Component({
   selector: 'app-layout',
@@ -22,9 +23,21 @@ export class LayoutComponent implements OnInit {
   listaNotificaciones: Notificacion[] = [];
   notificacionesNoLeidas: number = 0;
 
-  constructor(private notificacionService: NotificacionService) {}
+  constructor(
+    private notificacionService: NotificacionService,
+    private authService: AuthService,
+  ) {}
 
   ngOnInit(): void {
+    const usuario = this.authService.obtenerUsuario();
+    if (usuario) {
+      this.perfil = {
+        nombre: `${usuario.nombre} ${usuario.apellido}`.trim() || usuario.correo,
+        correo: usuario.correo,
+        rol: usuario.rol || 'Sin rol asignado',
+      };
+      this.editForm = { ...this.perfil };
+    }
     this.cargarNotificacionesHeader();
   }
 
@@ -63,10 +76,9 @@ export class LayoutComponent implements OnInit {
   }
 
   perfil = {
-    nombre: 'Administrador PAE',
-    sede: 'Sede Principal Popayán',
-    correo: 'admin.pae@colombia.gov.co',
-    telefono: '+57 300 1234567'
+    nombre: '',
+    correo: '',
+    rol: '',
   };
 
   editForm = { ...this.perfil };
@@ -109,6 +121,6 @@ export class LayoutComponent implements OnInit {
   }
 
   cerrarSesion(): void {
-    console.log('Cerrando sesión...');
+    this.authService.cerrarSesion();
   }
 }

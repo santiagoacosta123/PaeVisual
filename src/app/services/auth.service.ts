@@ -4,10 +4,19 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
-interface LoginResponse {
+export interface LoginResponse {
   access: string;
   refresh: string;
-  usuario?: any;
+  usuario: AuthenticatedUser;
+}
+
+export interface AuthenticatedUser {
+  id_usuario: number;
+  nombre: string;
+  apellido: string;
+  correo: string;
+  numero_documento: string;
+  rol: string | null;
 }
 
 @Injectable({
@@ -31,15 +40,21 @@ export class AuthService {
     });
   }
 
+  rolPermitido(rol: string | null | undefined): boolean {
+    const rolNormalizado = rol
+      ?.normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim()
+      .toLowerCase();
+
+    return rolNormalizado === 'administrador' || rolNormalizado === 'supervisor';
+  }
+
   recuperarContrasena(data: { correo: string }): Observable<any> {
     return this.http.post(`${this.apiBaseUrl}/auth/recuperar-password/`, data);
   }
 
-  loginConGoogle(token: string): Observable<LoginResponse> {
-    return this.http.post<LoginResponse>(`${this.apiBaseUrl}/auth/google/`, { token });
-  }
-
-  guardarSesion(respuesta: any): void {
+  guardarSesion(respuesta: LoginResponse): void {
     if (respuesta.access) {
       localStorage.setItem(this.ACCESS_TOKEN, respuesta.access);
     }
@@ -64,7 +79,7 @@ export class AuthService {
     return localStorage.getItem(this.REFRESH_TOKEN);
   }
 
-  obtenerUsuario(): any | null {
+  obtenerUsuario(): AuthenticatedUser | null {
     const usuario = localStorage.getItem(this.USUARIO);
 
     if (!usuario) {
@@ -72,7 +87,7 @@ export class AuthService {
     }
 
     try {
-      return JSON.parse(usuario);
+      return JSON.parse(usuario) as AuthenticatedUser;
     } catch {
       return null;
     }
@@ -82,12 +97,15 @@ export class AuthService {
     return !!this.obtenerToken();
   }
 
-  cerrarSesion(): void {
+  limpiarSesion(): void {
     localStorage.removeItem(this.ACCESS_TOKEN);
     localStorage.removeItem(this.REFRESH_TOKEN);
     localStorage.removeItem(this.USUARIO);
     localStorage.removeItem('token');
+  }
 
+  cerrarSesion(): void {
+    this.limpiarSesion();
     this.router.navigate(['/login']);
   }
 }

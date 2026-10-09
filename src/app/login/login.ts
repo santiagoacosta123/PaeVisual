@@ -1,36 +1,8 @@
-import { AfterViewInit, Component, ElementRef, OnInit, ViewChild, inject, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
-import { environment } from '../../environments/environment';
-
-interface GoogleCredentialResponse {
-  credential: string;
-}
-
-interface GoogleIdentityServices {
-  accounts: {
-    id: {
-      initialize(options: {
-        client_id: string;
-        callback: (response: GoogleCredentialResponse) => void;
-      }): void;
-      renderButton(element: HTMLElement, options: {
-        theme: 'outline';
-        size: 'large';
-        text: 'continue_with';
-        width: number;
-      }): void;
-    };
-  };
-}
-
-declare global {
-  interface Window {
-    google?: GoogleIdentityServices;
-  }
-}
 
 @Component({
   selector: 'app-login',
@@ -43,12 +15,12 @@ declare global {
   templateUrl: './login.html',
   styleUrl: './login.css',
 })
-export class LoginComponent implements OnInit, AfterViewInit {
+export class LoginComponent implements OnInit {
   private fb = inject(FormBuilder);
   private authService = inject(AuthService);
+  private route = inject(ActivatedRoute);
   private router = inject(Router);
   private cdr = inject(ChangeDetectorRef);
-  @ViewChild('googleButton') googleButton?: ElementRef<HTMLDivElement>;
 
   loginForm!: FormGroup;
   cargando: boolean = false;
@@ -58,66 +30,16 @@ export class LoginComponent implements OnInit, AfterViewInit {
   mostrarModalRecuperar: boolean = false;
   correoRecuperacion: string = '';
   enviandoRecuperacion: boolean = false;
-  mensajeGoogle: string = '';
-
-  get googleClientConfigurado(): boolean {
-    return Boolean(environment.googleClientId.trim());
-  }
 
   ngOnInit(): void {
     this.loginForm = this.fb.group({
       correo: ['', [Validators.required, Validators.email]],
       clave: ['', [Validators.required, Validators.minLength(6)]]
     });
-  }
 
-  ngAfterViewInit(): void {
-    if (this.googleClientConfigurado) {
-      void this.inicializarGoogle();
+    if (this.route.snapshot.queryParamMap.get('acceso') === 'denegado') {
+      this.errorMensaje = 'Esta cuenta no tiene permiso para acceder a esta aplicación.';
     }
-  }
-
-  private async inicializarGoogle(): Promise<void> {
-    try {
-      const google = await this.cargarGoogleIdentity();
-      const elemento = this.googleButton?.nativeElement;
-      if (!elemento) return;
-
-      google.accounts.id.initialize({
-        client_id: environment.googleClientId,
-        callback: (respuesta) => {
-          if (respuesta.credential) {
-            this.procesarLoginGoogle(respuesta.credential);
-          } else {
-            this.mensajeGoogle = 'Google no devolvió un token válido.';
-          }
-        },
-      });
-      google.accounts.id.renderButton(elemento, {
-        theme: 'outline',
-        size: 'large',
-        text: 'continue_with',
-        width: Math.min(360, elemento.clientWidth || 360),
-      });
-    } catch {
-      this.mensajeGoogle = 'No se pudo cargar el acceso de Google. Revisa tu conexión e inténtalo de nuevo.';
-    }
-  }
-
-  private cargarGoogleIdentity(): Promise<GoogleIdentityServices> {
-    if (window.google) return Promise.resolve(window.google);
-
-    return new Promise((resolve, reject) => {
-      const script = document.querySelector<HTMLScriptElement>('#google-identity-script')
-        ?? document.createElement('script');
-      script.id = 'google-identity-script';
-      script.src = 'https://accounts.google.com/gsi/client';
-      script.async = true;
-      script.defer = true;
-      script.onload = () => window.google ? resolve(window.google) : reject();
-      script.onerror = () => reject();
-      if (!script.isConnected) document.head.appendChild(script);
-    });
   }
 
   get correo() { return this.loginForm.get('correo'); }
@@ -144,6 +66,14 @@ export class LoginComponent implements OnInit, AfterViewInit {
 
     this.authService.login(credenciales).subscribe({
       next: (response) => {
+        if (!this.authService.rolPermitido(response.usuario?.rol)) {
+          this.authService.limpiarSesion();
+          this.cargando = false;
+          this.errorMensaje = 'Esta cuenta no tiene permiso para acceder a esta aplicación.';
+          this.cdr.detectChanges();
+          return;
+        }
+
         this.authService.guardarSesion(response);
         this.cargando = false;
         this.cdr.detectChanges();
@@ -152,30 +82,6 @@ export class LoginComponent implements OnInit, AfterViewInit {
       error: (err) => {
         this.cargando = false;
         this.errorMensaje = err.error?.detail || err.error?.message || err.error?.non_field_errors?.[0] || 'Credenciales inválidas o error de conexión.';
-        this.cdr.detectChanges();
-      }
-    });
-  }
-
-  private procesarLoginGoogle(idToken: string): void {
-    this.cargando = true;
-    this.errorMensaje = '';
-    this.mensajeGoogle = '';
-    this.cdr.detectChanges();
-
-    this.authService.loginConGoogle(idToken).subscribe({
-      next: (response) => {
-        this.authService.guardarSesion(response);
-        this.cargando = false;
-        this.cdr.detectChanges();
-        this.router.navigate(['/inicio']);
-      },
-      error: (err) => {
-        this.cargando = false;
-        this.mensajeGoogle = err.error?.detail
-          || err.error?.tipo_documento
-          || err.error?.numero_documento
-          || 'No se pudo iniciar sesión con Google.';
         this.cdr.detectChanges();
       }
     });
