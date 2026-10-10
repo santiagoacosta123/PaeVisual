@@ -1,11 +1,7 @@
 import { Routes } from '@angular/router';
 
-<<<<<<< Updated upstream
 import { LoginComponent } from './login/login'; // <--- Corregido aquí
 import { RecuperarPasswordComponent } from './recuperar-password/recuperar-password';
-=======
-import { LoginComponent } from './login/login';
->>>>>>> Stashed changes
 import { LayoutComponent } from './layout/layout';
 import { InicioComponent } from './inicio/inicio';
 import { UsuariosComponent } from './usuarios/usuarios';
@@ -21,12 +17,16 @@ import { ContratoDetalleComponent } from './contrato-detalle/contrato-detalle';
 import { NotificacionesComponent } from './notificaciones/notificaciones.component';
 import { DashboardSupervisor } from './dashboard-supervisor/dashboard-supervisor';
 import { authGuard } from './services/auth.guard';
+import { roleGuard } from './services/role.guard';
 
 // Importaciones corregidas sin la extensión .component
 import { RegistrarEntregaAlimentosComponent } from './registrar-entrega-alimentos/registrar-entrega-alimentos';
+import { HistorialEntregas } from './historial-entregas/historial-entregas';
 import { EntregasTipoMercadoComponent } from './entregas-tipo-mercado/entregas-tipo-mercado';
 import { SaldosAlmacenComponent } from './saldos-almacen/saldos-almacen';
 import { EntradasAjustesInventarioComponent } from './entradas-ajustes-inventario/entradas-ajustes-inventario';
+import { AsistenciaDiariaComponent } from './asistencia-diaria/asistencia-diaria';
+import { Reportes } from './reportes/reportes';
 
 export const routes: Routes = [
   {
@@ -56,84 +56,130 @@ export const routes: Routes = [
 
       {
         path: 'dashboard-supervisor',
-        component: DashboardSupervisor
+        component: DashboardSupervisor,
+        canActivate: [roleGuard],
+        data: { roles: ['supervisor', 'coordinador', 'coordinador pae'] }
+      },
+
+      {
+        path: 'asistencia-diaria',
+        component: AsistenciaDiariaComponent,
+        canActivate: [roleGuard],
+        data: { roles: ['jefa de manipuladoras', 'jefa manipuladoras', 'jefamanipuladoras'] }
+      },
+
+      {
+        path: 'reportes-consumo',
+        component: Reportes,
+        canActivate: [roleGuard],
+        data: { roles: ['supervisor', 'coordinador', 'coordinador pae', 'administrador', 'admin'] }
       },
 
       /* RUTAS MÓDULOS DE SUPERVISIÓN */
       {
         path: 'registrar-entrega-alimentos',
-        component: RegistrarEntregaAlimentosComponent
+        component: RegistrarEntregaAlimentosComponent,
+        canActivate: [roleGuard],
+        data: { roles: ['supervisor', 'coordinador', 'coordinador pae'] }
       },
 
       {
         path: 'historial-entregas',
-        component: RegistrarEntregaAlimentosComponent   // pantalla nueva: historial + alertas + editar/eliminar
+        component: HistorialEntregas,
+        canActivate: [roleGuard],
+        data: { roles: ['supervisor', 'coordinador', 'coordinador pae'] }
       },
 
       {
         path: 'entregas-tipo-mercado',
-        component: EntregasTipoMercadoComponent
+        component: EntregasTipoMercadoComponent,
+        canActivate: [roleGuard],
+        data: { roles: ['supervisor', 'coordinador', 'coordinador pae'] }
       },
 
       {
         path: 'saldos-almacen',
-        component: SaldosAlmacenComponent
+        component: SaldosAlmacenComponent,
+        canActivate: [roleGuard],
+        data: { roles: ['supervisor', 'coordinador', 'coordinador pae', 'administrador', 'admin'] }
       },
 
       {
         path: 'entradas-ajustes-inventario',
-        component: EntradasAjustesInventarioComponent
+        component: EntradasAjustesInventarioComponent,
+        canActivate: [roleGuard],
+        data: { roles: ['supervisor', 'coordinador', 'coordinador pae', 'administrador', 'admin'] }
       },
 
       /* RUTAS MANTENIDAS DEL SISTEMA */
       {
         path: 'usuarios',
-        component: UsuariosComponent
+        component: UsuariosComponent,
+        canActivate: [roleGuard],
+        data: { roles: ['administrador', 'admin'] }
       },
 
       {
         path: 'contratos',
-        component: ContratosComponent
+        component: ContratosComponent,
+        canActivate: [roleGuard],
+        data: { roles: ['administrador', 'admin'] }
       },
 
       {
         path: 'contratos/:id/detalle',
-        component: ContratoDetalleComponent
+        component: ContratoDetalleComponent,
+        canActivate: [roleGuard],
+        data: { roles: ['administrador', 'admin'] }
       },
 
       {
         path: 'crear-usuario',
-        component: CrearUsuarioComponent
+        component: CrearUsuarioComponent,
+        canActivate: [roleGuard],
+        data: { roles: ['administrador', 'admin'] }
       },
 
       {
         path: 'rol',
-        component: Rol
+        component: Rol,
+        canActivate: [roleGuard],
+        data: { roles: ['administrador', 'admin'] }
       },
 
       {
         path: 'productos',
-        component: Productos
+        component: Productos,
+        canActivate: [roleGuard],
+        data: { roles: ['administrador', 'admin'] }
       },
 
       {
         path: 'nuevo-producto',
-        component: NuevoProducto
+        component: NuevoProducto,
+        canActivate: [roleGuard],
+        data: { roles: ['administrador', 'admin'] }
       },
 
       {
         path: 'reporte-inventario',
-        component: ReporteInventario
+        component: ReporteInventario,
+        canActivate: [roleGuard],
+        data: { roles: ['supervisor', 'coordinador', 'coordinador pae', 'administrador', 'admin'] }
       },
 
       {
         path: 'unidades-medida',
-        component: UnidadesMedidaComponent
+        component: UnidadesMedidaComponent,
+        canActivate: [roleGuard],
+        data: { roles: ['administrador', 'admin'] }
       },
 
       {
         path: 'menus',
-        component: MenusComponent
+        component: MenusComponent,
+        canActivate: [roleGuard],
+        data: { roles: ['jefa de manipuladoras', 'jefa manipuladoras', 'jefamanipuladoras', 'administrador', 'admin'] }
       },
 
       {

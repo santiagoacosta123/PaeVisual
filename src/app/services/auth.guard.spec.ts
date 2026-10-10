@@ -16,7 +16,13 @@ describe('authGuard', () => {
         .trim()
         .toLowerCase();
 
-      return normalized === 'administrador' || normalized === 'supervisor';
+      return normalized === 'administrador'
+        || normalized === 'supervisor'
+        || normalized === 'coordinador'
+        || normalized === 'coordinador pae'
+        || normalized === 'jefa de manipuladoras'
+        || normalized === 'jefa manipuladoras'
+        || normalized === 'jefamanipuladoras';
     },
     limpiarSesion: vi.fn(),
   };
@@ -33,7 +39,7 @@ describe('authGuard', () => {
     });
   });
 
-  it.each(['Administrador', 'Supervisor'])('allows the %s role', (allowedRole) => {
+  it.each(['Administrador', 'Supervisor', 'Jefa de manipuladoras', 'JefaManipuladoras'])('allows the %s role', (allowedRole) => {
     role = allowedRole;
 
     const result = TestBed.runInInjectionContext(() =>
@@ -44,7 +50,18 @@ describe('authGuard', () => {
     expect(authServiceMock.limpiarSesion).not.toHaveBeenCalled();
   });
 
-  it.each(['Manipuladora', 'Jefa de manipuladoras'])('blocks the %s role', (deniedRole) => {
+  it('allows the legacy Coordinator role as Supervisor-equivalent', () => {
+    role = 'Coordinador PAE';
+
+    const result = TestBed.runInInjectionContext(() =>
+      authGuard({} as ActivatedRouteSnapshot, {} as RouterStateSnapshot)
+    );
+
+    expect(result).toBe(true);
+    expect(authServiceMock.limpiarSesion).not.toHaveBeenCalled();
+  });
+
+  it.each(['Manipuladora'])('blocks the %s role', (deniedRole) => {
     role = deniedRole;
 
     const result = TestBed.runInInjectionContext(() =>

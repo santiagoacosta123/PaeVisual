@@ -1,12 +1,15 @@
-import { Component, AfterViewInit, OnDestroy, ViewChild, ElementRef, NgZone } from '@angular/core';
+import { Component, AfterViewInit, OnDestroy, OnInit, ViewChild, ElementRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SweetAlertService } from '../sweet-alert.service';
 import Chart from 'chart.js/auto';
+import { forkJoin } from 'rxjs';
+import { InventarioOperativoService } from '../services/inventario-operativo.service';
 
 export interface ProductoInventario {
   nombre: string;
   categoria: string;
   stock: number;
+  stockMinimo: number;
   estado: 'Poco stock' | 'Disponible' | 'Suficiente';
 }
 
@@ -17,18 +20,13 @@ export interface ProductoInventario {
   styleUrls: ['./reporte-inventario.css'],
   templateUrl: './reporte-inventario.html',
 })
-export class ReporteInventario implements AfterViewInit, OnDestroy {
+export class ReporteInventario implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('chartCanvas') chartCanvas!: ElementRef<HTMLCanvasElement>;
   chart: Chart | null = null;
 
-  productos: ProductoInventario[] = [
-    { nombre: 'Arroz', categoria: 'Grano', stock: 50, estado: 'Suficiente' },
-    { nombre: 'Leche', categoria: 'Lacteo', stock: 20, estado: 'Poco stock' },
-    { nombre: 'Lenteja', categoria: 'Grano', stock: 30, estado: 'Disponible' },
-    { nombre: 'Sal', categoria: 'Condimento', stock: 20, estado: 'Poco stock' },
-    { nombre: 'Tomate', categoria: 'Verdura', stock: 10, estado: 'Poco stock' },
-    { nombre: 'Frijoles', categoria: 'Grano', stock: 35, estado: 'Disponible' }
-  ];
+  productos: ProductoInventario[] = [];
+  cargando = true;
+  errorMensaje = '';
 
   estadosDisponibles: Array<'Poco stock' | 'Disponible' | 'Suficiente'> = [
     'Poco stock',
@@ -64,8 +62,13 @@ export class ReporteInventario implements AfterViewInit, OnDestroy {
 
   constructor(
     private sweetAlert: SweetAlertService,
-    private ngZone: NgZone
+    private ngZone: NgZone,
+    private inventarioService: InventarioOperativoService,
   ) {}
+
+  ngOnInit(): void {
+    this.cargarReporte();
+  }
 
   ngAfterViewInit(): void {
     this.crearGrafico();
@@ -75,6 +78,45 @@ export class ReporteInventario implements AfterViewInit, OnDestroy {
     if (this.chart) {
       this.chart.destroy();
     }
+  }
+
+  cargarReporte(): void {
+    this.cargando = true;
+    this.errorMensaje = '';
+    forkJoin({
+      saldos: this.inventarioService.cargarSaldos(),
+      ingredientes: this.inventarioService.cargarIngredientes(),
+    }).subscribe({
+      next: ({ saldos, ingredientes }) => {
+        this.productos = saldos.map(saldo => {
+          const ingrediente = ingredientes.find(item => item.id === saldo.ingredienteId);
+          const estado = saldo.cantidad <= saldo.stockMinimo
+            ? 'Poco stock'
+            : saldo.cantidad <= saldo.stockMinimo * 2
+              ? 'Disponible'
+              : 'Suficiente';
+          return {
+            nombre: ingrediente?.nombre || `Ingrediente ${saldo.ingredienteId}`,
+            categoria: ingrediente?.categoriaId == null ? 'Sin categoría' : `Categoría ${ingrediente.categoriaId}`,
+            stock: saldo.cantidad,
+            stockMinimo: saldo.stockMinimo,
+            estado,
+          };
+        });
+        this.cargando = false;
+        this.actualizarGrafico();
+      },
+      error: (error) => {
+        console.error('Error al cargar el reporte de inventario:', error);
+        this.cargando = false;
+        this.errorMensaje = error.status === 401
+          ? 'La sesión expiró. Inicia sesión nuevamente para consultar el reporte.'
+          : error.status === 403
+            ? 'Tu usuario no tiene permiso para consultar el reporte.'
+            : 'No se pudieron cargar los datos del reporte. Verifica la conexión e intenta nuevamente.';
+        void this.sweetAlert.error('No se pudo cargar el reporte', this.errorMensaje);
+      },
+    });
   }
 
   get totalProductos(): number {
@@ -176,11 +218,41 @@ export class ReporteInventario implements AfterViewInit, OnDestroy {
     });
   }
 
+  private actualizarGrafico(): void {
+    if (!this.chart) return;
+    this.chart.data.datasets[0].data = this.estadosDisponibles.map(estado => this.getCantidadPorEstado(estado));
+    this.chart.update();
+  }
+
   verReporte() {
-    this.sweetAlert.info('Reporte generado', 'Se actualizó el inventario del día.');
+    this.cargarReporte();
   }
 
   descargarReporte() {
-    this.sweetAlert.success('Descarga exitosa', 'El reporte fue descargado correctamente.');
+    if (this.productos.length === 0) {
+      void this.sweetAlert.warning('No hay datos para exportar', 'No hay saldos de inventario cargados.');
+      return;
+    }
+
+    const filas = [
+      ['Ingrediente', 'Categoría', 'Saldo actual', 'Stock mínimo', 'Estado'],
+      ...this.productos.map(producto => [
+        producto.nombre,
+        producto.categoria,
+        String(producto.stock),
+        String(producto.stockMinimo),
+        producto.estado,
+      ]),
+    ];
+    const contenido = filas
+      .map(fila => fila.map(celda => `"${celda.replace(/"/g, '""')}"`).join(','))
+      .join('\r\n');
+    const url = URL.createObjectURL(new Blob(['\uFEFF', contenido], { type: 'text/csv;charset=utf-8' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'reporte-inventario.csv';
+    link.click();
+    URL.revokeObjectURL(url);
+    void this.sweetAlert.success('Reporte exportado', 'Se descargó el reporte actualizado de inventario.');
   }
 }

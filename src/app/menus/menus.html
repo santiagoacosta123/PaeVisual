@@ -11,13 +11,7 @@
     <button type="button" (click)="cambiarPestana('platos')"
       [class]="pestanaActiva === 'platos' ? 'bg-slate-900 text-white font-semibold shadow-xs' : 'bg-transparent text-slate-600 hover:text-slate-900 font-medium'"
       class="px-4 py-2 rounded-xl text-xs transition cursor-pointer">
-      Platos
-    </button>
-
-    <button type="button" (click)="cambiarPestana('preparaciones')"
-      [class]="pestanaActiva === 'preparaciones' ? 'bg-slate-900 text-white font-semibold shadow-xs' : 'bg-transparent text-slate-600 hover:text-slate-900 font-medium'"
-      class="px-4 py-2 rounded-xl text-xs transition cursor-pointer">
-      Preparaciones
+      {{ esJefa ? 'Seleccionar platos' : 'Platos' }}
     </button>
   </div>
 
@@ -80,7 +74,10 @@
                 </div>
               </td>
             </tr>
-            <tr *ngIf="menus.length === 0">
+            <tr *ngIf="cargandoMenus">
+              <td colspan="6" class="py-6 px-3 text-center text-slate-500">Cargando menús registrados...</td>
+            </tr>
+            <tr *ngIf="!cargandoMenus && menus.length === 0">
               <td colspan="6" class="py-6 px-3 text-center text-slate-400 italic">No se encontraron menús registrados.</td>
             </tr>
           </tbody>
@@ -115,7 +112,7 @@
           <p class="text-xs text-slate-500 m-0">Catálogo de platos organizados por componentes y secciones de menú.</p>
         </div>
 
-        <button type="button" (click)="abrirFormulario()" class="bg-amber-400 hover:bg-amber-500 text-amber-950 font-semibold px-4 py-2 rounded-xl text-xs transition cursor-pointer whitespace-nowrap inline-flex items-center gap-1.5 shadow-2xs">
+        <button *ngIf="esAdministrador" type="button" (click)="abrirFormulario()" class="bg-amber-400 hover:bg-amber-500 text-amber-950 font-semibold px-4 py-2 rounded-xl text-xs transition cursor-pointer whitespace-nowrap inline-flex items-center gap-1.5 shadow-2xs">
           <span>+ Nuevo plato</span>
         </button>
       </div>
@@ -148,13 +145,13 @@
                       <circle cx="12" cy="12" r="3"></circle>
                     </svg>
                   </button>
-                  <button type="button" (click)="abrirEdicion(p)" class="w-8 h-8 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-300 text-slate-600 hover:text-slate-900 inline-flex items-center justify-center transition cursor-pointer" title="Editar">
+                  <button *ngIf="esAdministrador" type="button" (click)="abrirEdicion(p)" class="w-8 h-8 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-300 text-slate-600 hover:text-slate-900 inline-flex items-center justify-center transition cursor-pointer" title="Editar">
                     <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                       <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                     </svg>
                   </button>
-                  <button type="button" (click)="eliminarItem(platos, p)" class="w-8 h-8 rounded-lg bg-slate-50 hover:bg-rose-50 border border-slate-300 text-slate-600 hover:text-rose-600 inline-flex items-center justify-center transition cursor-pointer" title="Eliminar">
+                  <button *ngIf="esAdministrador" type="button" (click)="eliminarItem(platos, p)" class="w-8 h-8 rounded-lg bg-slate-50 hover:bg-rose-50 border border-slate-300 text-slate-600 hover:text-rose-600 inline-flex items-center justify-center transition cursor-pointer" title="Eliminar">
                     <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <polyline points="3 6 5 6 21 6"></polyline>
                       <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
@@ -407,8 +404,13 @@
         <span class="text-[11px] font-bold text-slate-600 uppercase tracking-wider">Agregar Detalle de Porción</span>
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
           <div>
-            <label class="block font-semibold text-slate-500 text-[10px] mb-1">ID Menú</label>
-            <input type="number" [(ngModel)]="detalleForm.id_menu" placeholder="Ej. 1" class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none">
+            <label class="block font-semibold text-slate-500 text-[10px] mb-1">Menú *</label>
+            <select [(ngModel)]="detalleForm.id_menu" class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none">
+              <option value="">Selecciona</option>
+              <option *ngFor="let menu of menus" [value]="menu.id_menu">
+                {{ menu.fecha }} - {{ menu.nombre_jornada }} - {{ menu.institucion }}
+              </option>
+            </select>
           </div>
           <div>
             <label class="block font-semibold text-slate-500 text-[10px] mb-1">Porción/Niño</label>

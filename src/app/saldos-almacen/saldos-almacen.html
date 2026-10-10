@@ -1,1 +1,93 @@
-<p>saldos-almacen works!</p>
+<section class="mx-auto flex w-full max-w-6xl flex-col gap-5">
+  <header class="flex flex-col justify-between gap-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:flex-row sm:items-center">
+    <div>
+      <p class="mb-2 text-xs font-bold uppercase tracking-widest text-amber-700">Operación PAE</p>
+      <h1 class="m-0 text-2xl font-black text-slate-900">Saldos de almacén</h1>
+      <p class="mb-0 mt-2 text-sm text-slate-500">Existencias actuales y alertas calculadas con el stock mínimo.</p>
+    </div>
+    <button type="button" (click)="descargarCsv()"
+      class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-slate-800">
+      <span class="material-symbols-outlined text-[19px]">download</span>
+      Exportar CSV
+    </button>
+  </header>
+
+  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+    <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <p class="m-0 text-xs font-bold uppercase tracking-wide text-slate-500">Productos con saldo</p>
+      <p class="mb-0 mt-2 text-3xl font-black text-slate-900">{{ saldos.length }}</p>
+    </article>
+    <article class="rounded-2xl border border-orange-200 bg-orange-50 p-5 shadow-sm">
+      <p class="m-0 text-xs font-bold uppercase tracking-wide text-orange-700">Productos bajo mínimo</p>
+      <p class="mb-0 mt-2 text-3xl font-black text-orange-900">{{ productosEnAlerta }}</p>
+    </article>
+  </div>
+
+  <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+    <div class="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center">
+      <label class="flex min-w-[220px] flex-1 items-center gap-2 rounded-xl border border-slate-200 px-3 focus-within:border-amber-400">
+        <span class="material-symbols-outlined text-[19px] text-slate-400">search</span>
+        <input [(ngModel)]="filtroTexto" type="search" placeholder="Buscar ingrediente, categoría o unidad"
+          class="w-full border-0 bg-transparent py-2.5 text-sm outline-none placeholder:text-slate-400" />
+      </label>
+      <select [(ngModel)]="filtroCategoria"
+        class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 outline-none focus:border-amber-400">
+        <option value="todas">Todas las categorías</option>
+        <option *ngFor="let categoria of categorias" [value]="categoria">{{ categoria }}</option>
+      </select>
+      <button type="button" (click)="cambiarFiltroAlerta()"
+        class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-bold transition"
+        [ngClass]="soloAlertasStock ? 'border-orange-300 bg-orange-100 text-orange-800' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'">
+        <span class="material-symbols-outlined text-[18px]">warning</span>
+        {{ soloAlertasStock ? 'Ver todo el inventario' : 'Solo alertas' }}
+      </button>
+      <button type="button" (click)="cargarSaldos()" [disabled]="cargando"
+        class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50">
+        <span class="material-symbols-outlined text-[18px]">refresh</span>
+        Actualizar
+      </button>
+    </div>
+
+    <div *ngIf="errorMensaje" role="alert" class="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+      {{ errorMensaje }}
+    </div>
+    <p *ngIf="cargando" role="status" class="py-10 text-center text-sm text-slate-500">Consultando existencias...</p>
+
+    <div *ngIf="!cargando && !errorMensaje" class="overflow-x-auto rounded-xl border border-slate-100">
+      <table class="w-full min-w-[720px] text-left text-sm">
+        <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+          <tr>
+            <th class="px-4 py-3 font-bold">Ingrediente</th>
+            <th class="px-4 py-3 font-bold">Categoría</th>
+            <th class="px-4 py-3 text-right font-bold">Saldo actual</th>
+            <th class="px-4 py-3 text-right font-bold">Stock mínimo</th>
+            <th class="px-4 py-3 text-center font-bold">Estado</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          <tr *ngFor="let saldo of saldosFiltrados" class="hover:bg-slate-50">
+            <td class="px-4 py-3 font-bold text-slate-800">{{ saldo.ingrediente }}</td>
+            <td class="px-4 py-3 text-slate-600">{{ saldo.categoria }}</td>
+            <td class="px-4 py-3 text-right font-bold text-slate-800">{{ saldo.cantidad }} <span class="font-medium text-slate-500">{{ saldo.unidad }}</span></td>
+            <td class="px-4 py-3 text-right text-slate-600">{{ saldo.stockMinimo }}</td>
+            <td class="px-4 py-3 text-center">
+              <span class="inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-bold"
+                [ngClass]="saldo.nivelStock === 'Adecuado' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : saldo.nivelStock === 'Bajo' ? 'border-orange-200 bg-orange-50 text-orange-700' : 'border-red-200 bg-red-50 text-red-700'">
+                <span class="material-symbols-outlined text-[15px]">{{ saldo.nivelStock === 'Adecuado' ? 'check_circle' : 'warning' }}</span>
+                {{ saldo.nivelStock }}
+              </span>
+            </td>
+          </tr>
+          <tr *ngIf="saldosFiltrados.length === 0">
+            <td colspan="5" class="px-4 py-12 text-center text-sm font-medium text-slate-500">
+              {{ saldos.length ? 'No hay saldos que coincidan con los filtros.' : 'No se encontraron saldos registrados.' }}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p *ngIf="!cargando && !errorMensaje" class="mb-0 mt-3 text-xs text-slate-500">
+      Mostrando {{ saldosFiltrados.length }} de {{ saldos.length }} productos.
+    </p>
+  </div>
+</section>

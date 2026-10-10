@@ -17,6 +17,7 @@ export class LayoutComponent implements OnInit {
   // Control de Roles para el Menú Lateral
   rolUsuario: string = '';
   esSupervisor: boolean = false;
+  esJefa: boolean = false;
   esAdministrador: boolean = false;
   esGestor: boolean = false;
 
@@ -29,6 +30,7 @@ export class LayoutComponent implements OnInit {
   listaNotificaciones: Notificacion[] = [];
   notificacionesNoLeidas: number = 0;
 
+  // Estructuras de datos limpias y sin duplicados
   perfil = {
     nombre: '',
     correo: '',
@@ -38,14 +40,14 @@ export class LayoutComponent implements OnInit {
   editForm = { ...this.perfil };
   passwordForm = { actual: '', nueva: '', confirmar: '' };
 
+  passwordProcesando = false;
+  passwordError = '';
+  passwordMensaje = '';
+
   constructor(
     private notificacionService: NotificacionService,
-<<<<<<< Updated upstream
     private authService: AuthService,
     private cdr: ChangeDetectorRef,
-=======
-    private authService: AuthService
->>>>>>> Stashed changes
   ) {}
 
   ngOnInit(): void {
@@ -54,15 +56,20 @@ export class LayoutComponent implements OnInit {
       this.perfil = {
         nombre: `${usuario.nombre || ''} ${usuario.apellido || ''}`.trim() || usuario.correo,
         correo: usuario.correo,
-        rol: usuario.rol || 'Sin rol asignado',
+        rol: this.authService.esSupervisor(usuario.rol)
+          ? 'Supervisor (Coordinador PAE)'
+          : this.authService.esJefa(usuario.rol)
+            ? 'Jefa de manipuladoras'
+          : usuario.rol || 'Sin rol asignado',
       };
       this.editForm = { ...this.perfil };
 
       // Normalizar y evaluar el rol del usuario autenticado
-      this.rolUsuario = String(usuario.rol || '').toLowerCase().trim();
-      
-      this.esSupervisor = this.rolUsuario.includes('supervisor');
-      this.esAdministrador = this.rolUsuario.includes('admin') || this.rolUsuario.includes('administrador');
+      this.rolUsuario = this.authService.normalizarRol(usuario.rol);
+
+      this.esSupervisor = this.authService.esSupervisor(usuario.rol);
+      this.esJefa = this.authService.esJefa(usuario.rol);
+      this.esAdministrador = this.rolUsuario === 'admin' || this.rolUsuario === 'administrador';
       this.esGestor = this.rolUsuario.includes('gestor');
     }
 
@@ -103,21 +110,6 @@ export class LayoutComponent implements OnInit {
     });
   }
 
-<<<<<<< Updated upstream
-  perfil = {
-    nombre: '',
-    correo: '',
-    rol: '',
-  };
-
-  editForm = { ...this.perfil };
-  passwordForm = { actual: '', nueva: '', confirmar: '' };
-  passwordProcesando = false;
-  passwordError = '';
-  passwordMensaje = '';
-
-=======
->>>>>>> Stashed changes
   cerrarPanel(): void {
     this.mostrarPerfil = false;
     this.mostrarNotificaciones = false;

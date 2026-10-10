@@ -3,6 +3,15 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
+export interface Plato {
+  id_plato: number;
+  id_seccion: number | null;
+  nombre_plato: string | null;
+  componente: string | null;
+}
+
+export type PlatoPayload = Omit<Plato, 'id_plato'>;
+
 @Injectable({
   providedIn: 'root'
 })
@@ -11,23 +20,23 @@ export class PlatosService {
 
   constructor(private http: HttpClient) {}
 
-  getPlatos(): Observable<any[]> {
-    return this.http.get<any[]>(this.apiUrl);
+  getPlatos(): Observable<Plato[]> {
+    return this.http.get<Plato[]>(this.apiUrl);
   }
 
-  getPlato(id: number): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}${id}/`);
+  getPlato(id: number): Observable<Plato> {
+    return this.http.get<Plato>(`${this.apiUrl}${id}/`);
   }
 
-  createPlato(plato: any): Observable<any> {
-    return this.http.post<any>(this.apiUrl, plato);
+  createPlato(plato: PlatoPayload): Observable<Plato> {
+    return this.http.post<Plato>(this.apiUrl, plato);
   }
 
-  updatePlato(id: number, plato: any): Observable<any> {
-    return this.http.put<any>(`${this.apiUrl}${id}/`, plato);
+  updatePlato(id: number, plato: PlatoPayload): Observable<Plato> {
+    return this.http.put<Plato>(`${this.apiUrl}${id}/`, plato);
   }
 
-  deletePlato(id: number): Observable<any> {
-    return this.http.delete<any>(`${this.apiUrl}${id}/`);
+  deletePlato(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}${id}/`);
   }
 }

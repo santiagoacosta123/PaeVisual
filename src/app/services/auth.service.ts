@@ -70,13 +70,32 @@ export class AuthService {
   }
 
   rolPermitido(rol: string | null | undefined): boolean {
-    const rolNormalizado = rol
+    const rolNormalizado = this.normalizarRol(rol);
+
+    return rolNormalizado === 'administrador'
+      || rolNormalizado === 'admin'
+      || this.esSupervisor(rol)
+      || this.esJefa(rol);
+  }
+
+  normalizarRol(rol: string | null | undefined): string {
+    return rol
       ?.normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
       .trim()
-      .toLowerCase();
+      .toLowerCase()
+      .replace(/\s+/g, ' ') ?? '';
+  }
 
-    return rolNormalizado === 'administrador' || rolNormalizado === 'supervisor';
+  esSupervisor(rol: string | null | undefined): boolean {
+    const rolNormalizado = this.normalizarRol(rol);
+    return rolNormalizado === 'supervisor'
+      || rolNormalizado === 'coordinador'
+      || rolNormalizado === 'coordinador pae';
+  }
+
+  esJefa(rol: string | null | undefined): boolean {
+    return ['jefa de manipuladoras', 'jefa manipuladoras', 'jefamanipuladoras'].includes(this.normalizarRol(rol));
   }
 
   recuperarContrasena(data: { correo: string }): Observable<PasswordResetResponse> {

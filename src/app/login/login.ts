@@ -82,11 +82,10 @@ export class LoginComponent implements OnInit {
         this.cargando = false;
         this.cdr.detectChanges();
 
-        // Validar si el rol es supervisor usando la propiedad exacta de tu modelo
-        const rol = String(response.usuario?.rol || '').toLowerCase();
-
-        if (rol === 'supervisor') {
+        if (this.authService.esSupervisor(response.usuario?.rol)) {
           this.router.navigate(['/dashboard-supervisor']);
+        } else if (this.authService.esJefa(response.usuario?.rol)) {
+          this.router.navigate(['/asistencia-diaria']);
         } else {
           this.router.navigate(['/inicio']);
         }

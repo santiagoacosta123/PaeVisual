@@ -1,9 +1,13 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 import { PlatosService } from '../services/platos.service';
 import { SeccionesMenuService } from '../services/secciones-menu.service';
 import { DetallePlatosService } from '../services/detalle-platos.service';
+import { MenusService } from '../services/menus.service';
+import { SiraeService } from '../services/contratos_pae.service';
+import { AuthService } from '../services/auth.service';
 import { SweetAlertService } from '../sweet-alert.service';
 
 @Component({
@@ -39,19 +43,12 @@ export class MenusComponent implements OnInit {
   porPagina: number = 10;
 
   // ---------- Catálogos Auxiliares ----------
-  jornadas: any[] = [
-    { id_jornada: 1, nombre_jornada: 'Jornada Mañana' },
-    { id_jornada: 2, nombre_jornada: 'Jornada Tarde' }
-  ];
-
-  contratos: any[] = [
-    { id_contrato: 1, numero_cor: 'COR-2026-001', institucion: 'Institución Educativa Central' }
-  ];
-
-  usuariosManipuladoras: any[] = [
-    { id_usuario_manipuladora: 1, nombre: 'Ana Gómez' },
-    { id_usuario_manipuladora: 2, nombre: 'Carmen Rosa' }
-  ];
+  jornadas: any[] = [];
+  contratos: any[] = [];
+  usuariosManipuladoras: any[] = [];
+  esJefa = false;
+  esAdministrador = false;
+  cargandoMenus = false;
 
   // ---------- Modales y Formularios ----------
   mostrarFormulario: boolean = false;
@@ -82,43 +79,68 @@ export class MenusComponent implements OnInit {
     private platosService: PlatosService,
     private seccionesService: SeccionesMenuService,
     private detallesService: DetallePlatosService,
+    private menusService: MenusService,
+    private catalogosService: SiraeService,
+    private authService: AuthService,
     private sweetAlert: SweetAlertService
   ) {}
 
   ngOnInit(): void {
+    const rol = this.authService.obtenerUsuario()?.rol;
+    this.esJefa = this.authService.esJefa(rol);
+    this.esAdministrador = ['admin', 'administrador'].includes(this.authService.normalizarRol(rol));
     this.cargarDatos();
-
-    this.menus = [{
-      id_menu: 1, id_jornada: 1, id_contrato: 1,
-      nombre_jornada: 'Jornada Mañana', fecha: '2026-09-14',
-      ninos_presentes: 150, estado: 'ACTIVO',
-      informacion_nutricional: 'Alto en proteínas y carbohidratos',
-      institucion: 'Institución Educativa Central'
-    }];
-
-    this.preparacionesAsignadas = [{
-      id_preparacion_asignada: 1, id_menu: 1, id_plato: 1,
-      id_usuario_manipuladora: 1, nombre_menu: 'Menú #1 (14/09)',
-      nombre_plato: 'Seco de Pollo con Arroz', manipuladora: 'Ana Gómez',
-      fecha: '2026-09-14', hora_programada: '06:30',
-      estado_preparacion: 'PENDIENTE', observaciones: 'Lavar bien los vegetales'
-    }];
   }
 
   cargarDatos(): void {
-    this.platosService.getPlatos().subscribe({
-      next: (data) => this.platos = data,
-      error: (err) => console.error('Error al cargar platos:', err)
+    this.cargandoMenus = true;
+    forkJoin({
+      menus: this.menusService.listar(),
+      jornadas: this.catalogosService.getJornadas(),
+      contratos: this.catalogosService.getContratos(),
+    }).subscribe({
+      next: ({ menus, jornadas, contratos }) => {
+        this.jornadas = jornadas;
+        this.contratos = contratos;
+        this.menus = menus.map(menu => ({
+          ...menu,
+          nombre_jornada: jornadas.find(j => Number(j.id_jornada) === menu.id_jornada)?.nombre_jornada || `Jornada ${menu.id_jornada}`,
+          institucion: contratos.find(c => Number(c.id_contrato) === menu.id_contrato)?.institucion || `Contrato ${menu.id_contrato}`,
+        }));
+        this.cargandoMenus = false;
+      },
+      error: (error) => {
+        console.error('Error al cargar menús y catálogos:', error);
+        this.cargandoMenus = false;
+        void this.sweetAlert.error(
+          'No se pudieron cargar los menús',
+          error.status === 403
+            ? 'Tu usuario no tiene permiso para consultar este módulo.'
+            : 'Verifica la conexión e intenta nuevamente.',
+        );
+      },
     });
 
-    this.seccionesMenu = [
-      { id_seccion: 1, nombre_seccion: 'Desayuno' },
-      { id_seccion: 2, nombre_seccion: 'Almuerzo' },
-      { id_seccion: 3, nombre_seccion: 'Merienda' }
-    ];
+    this.platosService.getPlatos().subscribe({
+      next: (data) => this.platos = data,
+      error: (err) => {
+        console.error('Error al cargar platos:', err);
+        void this.sweetAlert.error('No se pudo cargar el catálogo de platos', 'Verifica tu sesión y vuelve a intentarlo.');
+      },
+    });
+
+    this.seccionesService.getSecciones().subscribe({
+      next: (data) => this.seccionesMenu = data,
+      error: (err) => {
+        console.error('Error al cargar secciones de menú:', err);
+        void this.sweetAlert.error('No se pudieron cargar las secciones', 'Verifica la conexión e intenta nuevamente.');
+      },
+    });
   }
 
   cambiarPestana(pestana: string): void {
+    if (this.esJefa && !['menus', 'platos'].includes(pestana)) return;
+    if (pestana === 'preparaciones') return;
     this.pestanaActiva = pestana;
     this.paginaActual = 1;
     this.limpiarFiltros();
@@ -213,12 +235,14 @@ export class MenusComponent implements OnInit {
   //  FORMULARIOS Y MODALES
   // =====================================================
   abrirFormulario(): void {
+    if (this.esJefa && this.pestanaActiva !== 'menus') return;
     this.esEdicion = false;
     this.resetFormularios();
     this.mostrarFormulario = true;
   }
 
   abrirEdicion(item: any): void {
+    if (this.esJefa && this.pestanaActiva !== 'menus') return;
     this.esEdicion = true;
     if (this.pestanaActiva === 'menus') {
       this.menuForm = { ...item };
@@ -243,32 +267,41 @@ export class MenusComponent implements OnInit {
 
   guardarTodo(): void {
     if (this.pestanaActiva === 'menus') {
-      const jornadaObj = this.jornadas.find(j => j.id_jornada == this.menuForm.id_jornada);
-      const contratoObj = this.contratos.find(c => c.id_contrato == this.menuForm.id_contrato);
-
-      if (this.esEdicion) {
-        const index = this.menus.findIndex(m => m.id_menu === this.menuForm.id_menu);
-        if (index !== -1) {
-          this.menus[index] = {
-            ...this.menuForm,
-            nombre_jornada: jornadaObj?.nombre_jornada || 'Jornada',
-            institucion: contratoObj?.institucion || 'Institución'
-          };
-        }
-        this.sweetAlert.success('Menú actualizado', 'El menú fue actualizado correctamente.');
-      } else {
-        const nuevoMenu = {
-          ...this.menuForm,
-          id_menu: Date.now(),
-          nombre_jornada: jornadaObj?.nombre_jornada || 'Jornada',
-          institucion: contratoObj?.institucion || 'Institución'
-        };
-        this.menus.push(nuevoMenu);
-        this.sweetAlert.success('Menú creado', 'El menú fue registrado con éxito.');
+      const idJornada = Number(this.menuForm.id_jornada);
+      const idContrato = Number(this.menuForm.id_contrato);
+      const ninosPresentes = Number(this.menuForm.ninos_presentes);
+      if (!idJornada || !idContrato || !this.menuForm.fecha || !Number.isInteger(ninosPresentes) || ninosPresentes < 0) {
+        void this.sweetAlert.warning('Revisa los datos', 'Selecciona jornada, contrato, fecha y una cantidad válida de niños presentes.');
+        return;
       }
-      this.cerrarFormulario();
+      const payload = {
+        id_jornada: idJornada,
+        fecha: this.menuForm.fecha,
+        ninos_presentes: ninosPresentes,
+        estado: this.menuForm.estado,
+        informacion_nutricional: this.menuForm.informacion_nutricional || '',
+        id_contrato: idContrato,
+      };
+      const request = this.esEdicion
+        ? this.menusService.actualizar(Number(this.menuForm.id_menu), payload)
+        : this.menusService.crear(payload);
+      request.subscribe({
+        next: () => {
+          void this.sweetAlert.success(
+            this.esEdicion ? 'Menú actualizado' : 'Menú creado',
+            this.esEdicion ? 'El menú fue actualizado correctamente.' : 'El menú quedó registrado.',
+          );
+          this.cerrarFormulario();
+          this.cargarDatos();
+        },
+        error: (error) => {
+          console.error('Error al guardar menú:', error);
+          void this.sweetAlert.error('No se pudo guardar el menú', 'Verifica los campos y vuelve a intentarlo.');
+        },
+      });
 
     } else if (this.pestanaActiva === 'platos') {
+      if (!this.esAdministrador) return;
       if (this.esEdicion) {
         this.platosService.updatePlato(this.platoForm.id_plato, this.platoForm).subscribe({
           next: () => {
@@ -324,7 +357,22 @@ export class MenusComponent implements OnInit {
   }
 
   eliminarItem(lista: any[], item: any): void {
-    if (this.pestanaActiva === 'platos') {
+    if (this.esJefa && this.pestanaActiva === 'platos') return;
+    if (this.pestanaActiva === 'menus') {
+      void this.sweetAlert.confirm('¿Eliminar menú?', 'Esta acción no se puede deshacer.', 'Eliminar').then(result => {
+        if (!result.isConfirmed) return;
+        this.menusService.eliminar(Number(item.id_menu)).subscribe({
+          next: () => {
+            this.menus = this.menus.filter(menu => menu.id_menu !== item.id_menu);
+            void this.sweetAlert.success('Menú eliminado', 'El menú fue eliminado correctamente.');
+          },
+          error: (error) => {
+            console.error('Error al eliminar menú:', error);
+            void this.sweetAlert.error('No se pudo eliminar', 'Verifica si el menú tiene registros asociados.');
+          },
+        });
+      });
+    } else if (this.pestanaActiva === 'platos') {
       this.sweetAlert.confirm('¿Eliminar plato?', 'Esta acción no se puede deshacer.', 'Eliminar').then(res => {
         if (res.isConfirmed) {
           this.platosService.deletePlato(item.id_plato).subscribe({
@@ -370,13 +418,33 @@ export class MenusComponent implements OnInit {
   cargarDetallesPlato(idPlato: number): void {
     this.detallesService.getDetalles().subscribe({
       next: (data) => {
-        this.detallesPlato = data.filter((d: any) => d.id_plato === idPlato);
-      }
+        this.detallesPlato = data.filter((d: any) => Number(d.id_plato) === idPlato);
+      },
+      error: (error) => {
+        console.error('Error al cargar los detalles del plato:', error);
+        void this.sweetAlert.error('No se cargaron las porciones', 'Verifica la conexión y vuelve a intentarlo.');
+      },
     });
   }
 
   guardarDetalle(): void {
+    const total = this.detalleForm.total_a_preparar === '' || this.detalleForm.total_a_preparar == null
+      ? Number.NaN
+      : Number(this.detalleForm.total_a_preparar);
+    const porcion = this.detalleForm.porcion_por_nino === '' || this.detalleForm.porcion_por_nino == null
+      ? Number.NaN
+      : Number(this.detalleForm.porcion_por_nino);
+    if (!Number(this.detalleForm.id_menu) || !Number.isFinite(total) || total <= 0
+      || !Number.isFinite(porcion) || porcion <= 0 || !this.detalleForm.unidad_total) {
+      void this.sweetAlert.warning(
+        'Completa los datos del plato',
+        'Selecciona un menú e indica una porción, el total a preparar y su unidad.',
+      );
+      return;
+    }
     this.detalleForm.id_plato = this.platoSeleccionado.id_plato;
+    this.detalleForm.porcion_por_nino = porcion;
+    this.detalleForm.total_a_preparar = total;
     this.detallesService.createDetalle(this.detalleForm).subscribe({
       next: () => {
         this.sweetAlert.success('Detalle agregado', 'Se agregó el detalle al plato.');
@@ -398,7 +466,11 @@ export class MenusComponent implements OnInit {
           next: () => {
             this.sweetAlert.success('Eliminado', 'Detalle eliminado.');
             this.cargarDetallesPlato(this.platoSeleccionado.id_plato);
-          }
+          },
+          error: (error) => {
+            console.error('Error al eliminar el detalle del plato:', error);
+            void this.sweetAlert.error('No se pudo eliminar', 'Verifica tus permisos e intenta nuevamente.');
+          },
         });
       }
     });

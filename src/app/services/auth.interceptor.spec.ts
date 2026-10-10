@@ -2,6 +2,7 @@ import { HttpHandlerFn, HttpRequest, HttpResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { AuthService } from './auth.service';
 import { authInterceptor } from './auth.interceptor';
+import { environment } from '../../environments/environment';
 import { of } from 'rxjs';
 
 describe('authInterceptor', () => {
@@ -27,7 +28,7 @@ describe('authInterceptor', () => {
   it('does not send a stored token to the login endpoint', () => {
     const request = new HttpRequest(
       'POST',
-      'https://backend-sirae-pyim.onrender.com/api/auth/login/',
+      `${environment.apiUrl}/auth/login/`,
       null
     );
 
@@ -39,7 +40,7 @@ describe('authInterceptor', () => {
   it('sends the stored token to protected endpoints', () => {
     const request = new HttpRequest(
       'GET',
-      'https://backend-sirae-pyim.onrender.com/api/usuarios/'
+      `${environment.apiUrl}/entregas/`
     );
 
     TestBed.runInInjectionContext(() => authInterceptor(request, next)).subscribe();

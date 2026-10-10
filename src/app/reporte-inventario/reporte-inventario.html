@@ -8,15 +8,18 @@
     </div>
     <div class="flex items-center gap-3">
       <!-- Botón Ver Reporte -->
-      <button type="button" (click)="seleccionarEstado(null)" class="border border-slate-200 hover:bg-slate-50 px-4 py-2.5 rounded-xl text-slate-700 font-semibold text-sm transition shadow-2xs cursor-pointer">
-        Ver reporte
+      <button type="button" (click)="verReporte()" [disabled]="cargando" class="border border-slate-200 hover:bg-slate-50 px-4 py-2.5 rounded-xl text-slate-700 font-semibold text-sm transition shadow-2xs cursor-pointer disabled:opacity-50">
+        {{ cargando ? 'Cargando...' : 'Actualizar reporte' }}
       </button>
-      <!-- Botón Descargar (Lanza la impresión limpia ocultando menús) -->
-      <button type="button" onclick="window.print()" class="bg-[#FAB41F] hover:bg-[#e2a21b] px-4 py-2.5 rounded-xl font-bold text-slate-900 shadow-sm transition text-sm flex items-center gap-2 cursor-pointer">
+      <button type="button" (click)="descargarReporte()" [disabled]="cargando" class="bg-[#FAB41F] hover:bg-[#e2a21b] px-4 py-2.5 rounded-xl font-bold text-slate-900 shadow-sm transition text-sm flex items-center gap-2 cursor-pointer disabled:opacity-50">
         <span class="material-symbols-outlined text-[18px]">download</span>
         Descargar
       </button>
     </div>
+  </div>
+
+  <div *ngIf="errorMensaje" role="alert" class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+    {{ errorMensaje }}
   </div>
 
   <!-- Sección de Gráfica y Tarjetas Interactivas -->
@@ -182,7 +185,10 @@
             </td>
           </tr>
 
-          <tr *ngIf="productosFiltrados.length === 0">
+          <tr *ngIf="cargando">
+            <td colspan="4" class="p-6 text-center text-slate-500">Cargando datos actualizados de inventario...</td>
+          </tr>
+          <tr *ngIf="!cargando && productosFiltrados.length === 0">
             <td colspan="4" class="p-6 text-center text-slate-400 italic">
               No hay productos registrados con este estado.
             </td>

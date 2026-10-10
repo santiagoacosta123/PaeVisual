@@ -23,13 +23,6 @@
         Inicio
       </a>
 
-      <!-- PANEL SUPERVISOR (Exclusivo Supervisor) -->
-      <a *ngIf="esSupervisor" routerLink="dashboard-supervisor" routerLinkActive="active-link"
-         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
-        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">verified_user</span>
-        Panel Supervisor
-      </a>
-
       <!-- MÓDULOS EXCLUSIVOS DE SUPERVISOR -->
       <a *ngIf="esSupervisor" routerLink="historial-entregas" routerLinkActive="active-link"
          style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
@@ -49,47 +42,71 @@
         Registrar entrega de alimentos
       </a>
 
+      <a *ngIf="esJefa" routerLink="asistencia-diaria" routerLinkActive="active-link"
+         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
+        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">fact_check</span>
+        Registrar asistencia diaria
+      </a>
+
+      <a *ngIf="esJefa || esAdministrador" routerLink="menus" routerLinkActive="active-link"
+         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
+        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">restaurant_menu</span>
+        {{ esJefa ? 'Seleccionar menús' : 'Gestión de menús y platos' }}
+      </a>
+
       <!-- MÓDULOS EXCLUSIVOS DE ADMINISTRADOR -->
-      <a *ngIf="!esAdministrador && !esSupervisor" routerLink="saldos-almacen" routerLinkActive="active-link"
+      <a *ngIf="esSupervisor || esAdministrador" routerLink="saldos-almacen" routerLinkActive="active-link"
          style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
         <span class="material-symbols-outlined nav-icon" style="font-size:20px;">inventory_2</span>
         Consultar y filtrar saldos de almacén
       </a>
 
-      <a *ngIf="!esAdministrador && !esSupervisor" routerLink="entradas-ajustes-inventario" routerLinkActive="active-link"
+      <a *ngIf="esSupervisor || esAdministrador" routerLink="entradas-ajustes-inventario" routerLinkActive="active-link"
          style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
         <span class="material-symbols-outlined nav-icon" style="font-size:20px;">edit_note</span>
         Registrar entradas y ajustes de inventario
       </a>
 
-      <a *ngIf="!esSupervisor" routerLink="contratos" routerLinkActive="active-link"
+      <a *ngIf="esAdministrador" routerLink="contratos" routerLinkActive="active-link"
          style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
         <span class="material-symbols-outlined nav-icon" style="font-size:20px;">description</span>
         Contratos
       </a>
 
-      <a *ngIf="!esSupervisor" routerLink="usuarios" routerLinkActive="active-link"
+      <a *ngIf="esAdministrador" routerLink="usuarios" routerLinkActive="active-link"
          style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
         <span class="material-symbols-outlined nav-icon" style="font-size:20px;">people</span>
         Usuarios
       </a>
 
-      <a *ngIf="!esSupervisor" routerLink="rol" routerLinkActive="active-link"
+      <a *ngIf="esAdministrador" routerLink="rol" routerLinkActive="active-link"
          style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
         <span class="material-symbols-outlined nav-icon" style="font-size:20px;">shield</span>
         Roles
       </a>
 
-      <a *ngIf="!esSupervisor" routerLink="productos" routerLinkActive="active-link"
+      <a *ngIf="esAdministrador" routerLink="productos" routerLinkActive="active-link"
          style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
         <span class="material-symbols-outlined nav-icon" style="font-size:20px;">package</span>
         Productos (Inventario)
       </a>
 
-      <a *ngIf="!esSupervisor" routerLink="unidades-medida" routerLinkActive="active-link"
+      <a *ngIf="esAdministrador" routerLink="unidades-medida" routerLinkActive="active-link"
          style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
         <span class="material-symbols-outlined nav-icon" style="font-size:20px;">straighten</span>
         Unidades
+      </a>
+
+      <a *ngIf="esSupervisor || esAdministrador" routerLink="reporte-inventario" routerLinkActive="active-link"
+         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
+        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">assessment</span>
+        Reporte de inventario
+      </a>
+
+      <a *ngIf="esSupervisor || esAdministrador" routerLink="reportes-consumo" routerLinkActive="active-link"
+         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
+        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">summarize</span>
+        Reporte de consumos / salidas
       </a>
 
     </nav>
