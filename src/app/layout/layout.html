@@ -29,66 +29,81 @@
 
     <!-- Navegación -->
     <nav class="flex flex-col gap-1 flex-1" style="overflow-y:auto;">
+      
+      <!-- INICIO (Para todos) -->
       <a routerLink="inicio" routerLinkActive="active-link"
          style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
         <span class="material-symbols-outlined nav-icon" style="font-size:20px;">home</span>
         Inicio
       </a>
-      <a routerLink="contratos" routerLinkActive="active-link"
+
+      <!-- PANEL SUPERVISOR (Exclusivo Supervisor) -->
+      <a *ngIf="esSupervisor" routerLink="dashboard-supervisor" routerLinkActive="active-link"
+         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
+        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">verified_user</span>
+        Panel Supervisor
+      </a>
+
+      <!-- MÓDULOS EXCLUSIVOS DE SUPERVISOR -->
+      <a *ngIf="esSupervisor" routerLink="historial-entregas" routerLinkActive="active-link"
+         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
+        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">history</span>
+        Historial de entregas
+      </a>
+
+      <a *ngIf="esSupervisor" routerLink="entregas-tipo-mercado" routerLinkActive="active-link"
+         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
+        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">filter_alt</span>
+        Filtro entregas mercado
+      </a>
+
+      <a *ngIf="esSupervisor" routerLink="registrar-entrega-alimentos" routerLinkActive="active-link"
+         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
+        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">local_shipping</span>
+        Registrar entrega de alimentos
+      </a>
+
+      <!-- MÓDULOS EXCLUSIVOS DE ADMINISTRADOR -->
+      <a *ngIf="!esAdministrador && !esSupervisor" routerLink="saldos-almacen" routerLinkActive="active-link"
+         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
+        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">inventory_2</span>
+        Saldos de almacén
+      </a>
+
+      <a *ngIf="!esAdministrador && !esSupervisor" routerLink="entradas-ajustes-inventario" routerLinkActive="active-link"
+         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
+        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">edit_note</span>
+        Ajustes de inventario
+      </a>
+
+      <!-- MÓDULOS DEL SISTEMA (Ocultos para supervisor) -->
+      <a *ngIf="!esSupervisor" routerLink="contratos" routerLinkActive="active-link"
          style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
         <span class="material-symbols-outlined nav-icon" style="font-size:20px;">description</span>
         Contratos
       </a>
-      <a *ngIf="esAdministrador || esGestor" routerLink="usuarios" routerLinkActive="active-link"
+
+      <a *ngIf="!esSupervisor" routerLink="usuarios" routerLinkActive="active-link"
          style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
         <span class="material-symbols-outlined nav-icon" style="font-size:20px;">people</span>
         Usuarios
       </a>
 
-      <a routerLink="ingredientes" routerLinkActive="active-link"
+      <a *ngIf="!esSupervisor" routerLink="ingredientes" routerLinkActive="active-link"
          style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
         <span class="material-symbols-outlined nav-icon" style="font-size:20px;">package</span>
         Inventario
       </a>
 
-      <a routerLink="entregas" routerLinkActive="active-link"
-         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
-        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">local_shipping</span>
-        Entregas
-      </a>
-
-      <a routerLink="reportes" routerLinkActive="active-link"
-         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
-        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">bar_chart</span>
-        Reportes
-      </a>
-
-      <a routerLink="banco-datos" routerLinkActive="active-link"
+      <a *ngIf="!esSupervisor" routerLink="banco-datos" routerLinkActive="active-link"
          style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
         <span class="material-symbols-outlined nav-icon" style="font-size:20px;">database</span>
         Banco de Datos
       </a>
-      <!-- Módulos Ocultos Temporalmente 
-      <a routerLink="menus" routerLinkActive="active-link"
-         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
-        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">restaurant_menu</span>
-        Menús y Platos
-      </a>
-      <a routerLink="asistencia" routerLinkActive="active-link"
-         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
-        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">checklist</span>
-        Asistencia
-      </a>
-      <a routerLink="entregas" routerLinkActive="active-link"
-         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
-        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">local_shipping</span>
-        Entregas
-      </a>
-      <a routerLink="reportes" routerLinkActive="active-link"
-         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
-        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">bar_chart</span>
-        Reportes
-      </a>
+      
+      <!-- Módulos Ocultos Temporalmente -->
+      <!-- 
+      <a routerLink="menus" routerLinkActive="active-link" style="...">...</a> 
       -->
     </nav>
 
