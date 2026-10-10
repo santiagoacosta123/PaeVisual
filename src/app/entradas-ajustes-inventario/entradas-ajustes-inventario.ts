@@ -5,7 +5,7 @@ import { FormsModule } from '@angular/forms';
 @Component({
   selector: 'app-entradas-ajustes-inventario',
   standalone: true,
-  imports: [CommonModule, NgFor, FormsModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './entradas-ajustes-inventario.html',
   styleUrls: ['./entradas-ajustes-inventario.css']
 })

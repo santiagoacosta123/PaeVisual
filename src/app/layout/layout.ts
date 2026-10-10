@@ -55,6 +55,7 @@ export class LayoutComponent implements OnInit {
 
   editForm = { ...this.perfil };
 
+  passwordForm = { actual: '', nueva: '', confirmar: '' };
   passwordProcesando = false;
   passwordError = '';
   passwordMensaje = '';

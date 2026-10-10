@@ -15,7 +15,7 @@ interface SaldoAlmacen {
 @Component({
   selector: 'app-saldos-almacen',
   standalone: true,
-  imports: [CommonModule, NgIf, NgFor, FormsModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './saldos-almacen.html',
   styleUrls: ['./saldos-almacen.css']
 })

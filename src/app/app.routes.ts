@@ -1,11 +1,7 @@
 import { Routes } from '@angular/router';
 
-<<<<<<< Updated upstream
-import { LoginComponent } from './login/login'; // <--- Corregido aquí
-import { RecuperarPasswordComponent } from './recuperar-password/recuperar-password';
-=======
 import { LoginComponent } from './login/login';
->>>>>>> Stashed changes
+import { RecuperarPasswordComponent } from './recuperar-password/recuperar-password';
 import { LayoutComponent } from './layout/layout';
 import { InicioComponent } from './inicio/inicio';
 import { UsuariosComponent } from './usuarios/usuarios';
