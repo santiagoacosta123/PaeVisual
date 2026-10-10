@@ -9,6 +9,8 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const isPublicAuthRequest = [
     '/auth/login',
     '/auth/recuperar-password',
+    '/auth/password-reset/validar-token',
+    '/auth/password-reset/confirmar',
   ].some((path) => requestPath.endsWith(path));
 
   if (token && !isPublicAuthRequest) {

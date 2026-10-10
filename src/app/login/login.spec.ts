@@ -105,4 +105,35 @@ describe('LoginComponent', () => {
     expect(component.errorMensaje).toContain('no tiene permiso');
     expect(component.cargando).toBe(false);
   });
+
+  it('requests a password recovery email for a valid address', () => {
+    authServiceMock.recuperarContrasena.mockReturnValue(of({
+      status: 'success',
+      mensaje: 'Si el correo está registrado, recibirás instrucciones.',
+      debug_link: 'http://localhost:4200/recuperar-password?token=token-de-prueba',
+    }));
+    component.abrirModalRecuperar();
+    component.correoRecuperacion = '  ana@example.com  ';
+
+    component.enviarCorreoRecuperacion();
+
+    expect(authServiceMock.recuperarContrasena).toHaveBeenCalledWith({
+      correo: 'ana@example.com',
+    });
+    expect(component.mensajeRecuperacion).toContain('Modo local');
+    expect(component.enlaceRecuperacionDesarrollo).toBe(
+      'http://localhost:4200/recuperar-password?token=token-de-prueba'
+    );
+    expect(component.enviandoRecuperacion).toBe(false);
+  });
+
+  it('rejects an invalid recovery email without calling the API', () => {
+    component.abrirModalRecuperar();
+    component.correoRecuperacion = 'no-es-un-correo';
+
+    component.enviarCorreoRecuperacion();
+
+    expect(authServiceMock.recuperarContrasena).not.toHaveBeenCalled();
+    expect(component.errorRecuperacion).toContain('válido');
+  });
 });

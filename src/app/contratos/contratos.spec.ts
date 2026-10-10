@@ -1,7 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { ContratosComponent } from './contratos'; 
+import { provideRouter } from '@angular/router';
+import { of } from 'rxjs';
+import { ContratosComponent } from './contratos';
+import { SiraeService } from '../services/contratos_pae.service';
 
 describe('ContratosComponent', () => {
   let component: ContratosComponent;
@@ -11,9 +12,16 @@ describe('ContratosComponent', () => {
     await TestBed.configureTestingModule({
       imports: [ContratosComponent],
       providers: [
-        provideHttpClient(),
-        provideHttpClientTesting() 
-      ]
+        provideRouter([]),
+        {
+          provide: SiraeService,
+          useValue: {
+            getContratos: () => of([]),
+            getJornadas: () => of([]),
+            getSeccionesMenu: () => of([]),
+          },
+        },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(ContratosComponent);

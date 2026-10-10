@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 
 import { LoginComponent } from './login/login'; // <--- Corregido aquí
+import { RecuperarPasswordComponent } from './recuperar-password/recuperar-password';
 import { LayoutComponent } from './layout/layout';
 import { InicioComponent } from './inicio/inicio';
 import { UsuariosComponent } from './usuarios/usuarios';
@@ -21,6 +22,10 @@ export const routes: Routes = [
   {
     path: 'login',
     component: LoginComponent // <--- Corregido aquí también
+  },
+  {
+    path: 'recuperar-password',
+    component: RecuperarPasswordComponent
   },
 
   {

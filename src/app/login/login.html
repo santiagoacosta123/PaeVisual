@@ -134,10 +134,26 @@
         id="correoRecuperar" 
         type="email" 
         [(ngModel)]="correoRecuperacion"
+        name="correoRecuperacion"
         placeholder="usuario@correo.com" 
         class="w-full px-3.5 py-3 text-sm border border-gray-300 rounded-lg outline-none bg-gray-50 focus:border-amber-500 focus:bg-white focus:ring-2 focus:ring-amber-500/10 transition-all"
       />
     </div>
+
+    <p *ngIf="errorRecuperacion" class="text-sm text-red-700 mb-4" role="alert">
+      {{ errorRecuperacion }}
+    </p>
+    <p *ngIf="mensajeRecuperacion" class="text-sm text-green-700 mb-4" role="status">
+      {{ mensajeRecuperacion }}
+    </p>
+    <a
+      *ngIf="enlaceRecuperacionDesarrollo"
+      [href]="enlaceRecuperacionDesarrollo"
+      class="mb-4 block break-all text-sm font-semibold text-amber-700 underline"
+      data-testid="enlace-recuperacion-desarrollo"
+    >
+      Abrir enlace de recuperación
+    </a>
 
     <div class="flex justify-end space-x-3 mt-6">
       <button 
@@ -151,7 +167,7 @@
         type="button" 
         (click)="enviarCorreoRecuperacion()" 
         class="px-4 py-2.5 text-sm font-bold text-slate-900 bg-amber-400 hover:bg-amber-500 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
-        [disabled]="enviandoRecuperacion"
+        [disabled]="enviandoRecuperacion || !!mensajeRecuperacion"
       >
         <span *ngIf="!enviandoRecuperacion">Enviar enlace</span>
         <span *ngIf="enviandoRecuperacion">Enviando...</span>

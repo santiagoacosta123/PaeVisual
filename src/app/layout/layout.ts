@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -26,6 +26,7 @@ export class LayoutComponent implements OnInit {
   constructor(
     private notificacionService: NotificacionService,
     private authService: AuthService,
+    private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit(): void {
@@ -83,6 +84,9 @@ export class LayoutComponent implements OnInit {
 
   editForm = { ...this.perfil };
   passwordForm = { actual: '', nueva: '', confirmar: '' };
+  passwordProcesando = false;
+  passwordError = '';
+  passwordMensaje = '';
 
   cerrarPanel(): void {
     this.mostrarPerfil = false;
@@ -103,17 +107,38 @@ export class LayoutComponent implements OnInit {
   }
 
   guardarPassword(): void {
+    this.passwordError = '';
+    this.passwordMensaje = '';
+
     if (!this.passwordForm.actual || !this.passwordForm.nueva || !this.passwordForm.confirmar) {
-      alert('Por favor completa todos los campos.');
+      this.passwordError = 'Por favor completa todos los campos.';
       return;
     }
     if (this.passwordForm.nueva !== this.passwordForm.confirmar) {
-      alert('Las nuevas contraseñas no coinciden.');
+      this.passwordError = 'Las nuevas contraseñas no coinciden.';
       return;
     }
-    alert('Contraseña actualizada con éxito.');
-    this.passwordForm = { actual: '', nueva: '', confirmar: '' };
-    this.vistaActual = 'perfil';
+
+    this.passwordProcesando = true;
+    this.authService.cambiarContrasena({
+      password_actual: this.passwordForm.actual,
+      nueva_password: this.passwordForm.nueva,
+      confirmar_password: this.passwordForm.confirmar,
+    }).subscribe({
+      next: (response) => {
+        this.passwordProcesando = false;
+        this.passwordMensaje = response.mensaje || 'Contraseña actualizada correctamente.';
+        this.passwordForm = { actual: '', nueva: '', confirmar: '' };
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.passwordProcesando = false;
+        this.passwordError = err.error?.error
+          || err.error?.detail
+          || 'No fue posible actualizar la contraseña. Inténtalo nuevamente.';
+        this.cdr.detectChanges();
+      },
+    });
   }
 
   configurar(): void {

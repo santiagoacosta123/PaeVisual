@@ -30,6 +30,9 @@ export class LoginComponent implements OnInit {
   mostrarModalRecuperar: boolean = false;
   correoRecuperacion: string = '';
   enviandoRecuperacion: boolean = false;
+  errorRecuperacion: string = '';
+  mensajeRecuperacion: string = '';
+  enlaceRecuperacionDesarrollo: string = '';
 
   ngOnInit(): void {
     this.loginForm = this.fb.group({
@@ -90,25 +93,45 @@ export class LoginComponent implements OnInit {
   abrirModalRecuperar(): void {
     this.mostrarModalRecuperar = true;
     this.correoRecuperacion = '';
+    this.errorRecuperacion = '';
+    this.mensajeRecuperacion = '';
+    this.enlaceRecuperacionDesarrollo = '';
   }
 
   cerrarModalRecuperar(): void {
     this.mostrarModalRecuperar = false;
+    this.errorRecuperacion = '';
+    this.mensajeRecuperacion = '';
+    this.enlaceRecuperacionDesarrollo = '';
   }
 
   enviarCorreoRecuperacion(): void {
-    if (!this.correoRecuperacion) return;
+    const correo = this.correoRecuperacion.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
+      this.errorRecuperacion = 'Ingresa un correo electrónico válido.';
+      this.mensajeRecuperacion = '';
+      return;
+    }
 
+    this.errorRecuperacion = '';
+    this.mensajeRecuperacion = '';
     this.enviandoRecuperacion = true;
-    this.authService.recuperarContrasena({ correo: this.correoRecuperacion }).subscribe({
-      next: () => {
+    this.authService.recuperarContrasena({ correo }).subscribe({
+      next: (response) => {
         this.enviandoRecuperacion = false;
-        alert('Se han enviado las instrucciones a tu correo.');
-        this.cerrarModalRecuperar();
+        this.enlaceRecuperacionDesarrollo = response.debug_link || '';
+        this.mensajeRecuperacion = this.enlaceRecuperacionDesarrollo
+          ? 'Modo local: abre este enlace para crear la nueva contraseña.'
+          : response.mensaje
+            || 'Si el correo está registrado, recibirás instrucciones para restablecer la contraseña.';
+        this.cdr.detectChanges();
       },
       error: (err) => {
         this.enviandoRecuperacion = false;
-        alert(err.error?.detail || 'Ocurrió un error al procesar la solicitud.');
+        this.errorRecuperacion = err.error?.error
+          || err.error?.detail
+          || 'Ocurrió un error al procesar la solicitud. Inténtalo nuevamente.';
+        this.cdr.detectChanges();
       }
     });
   }

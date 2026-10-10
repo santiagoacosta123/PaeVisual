@@ -220,7 +220,11 @@
             <label style="font-size:11px; font-weight:600; color:#666;">Confirmar Contraseña</label>
             <input type="password" [(ngModel)]="passwordForm.confirmar" style="padding:8px; border:1px solid #ddd; border-radius:6px; font-size:13px; outline:none;" />
           </div>
-          <button type="button" (click)="guardarPassword()" style="background:#e0a316; color:#fff; font-weight:600; border:none; border-radius:6px; padding:8px; cursor:pointer; font-size:13px; margin-top:4px;">Actualizar Contraseña</button>
+          <p *ngIf="passwordError" role="alert" style="font-size:12px; color:#b91c1c;">{{ passwordError }}</p>
+          <p *ngIf="passwordMensaje" role="status" style="font-size:12px; color:#15803d;">{{ passwordMensaje }}</p>
+          <button type="button" (click)="guardarPassword()" [disabled]="passwordProcesando" [style.opacity]="passwordProcesando ? '0.5' : '1'" style="background:#e0a316; color:#fff; font-weight:600; border:none; border-radius:6px; padding:8px; cursor:pointer; font-size:13px; margin-top:4px;">
+            {{ passwordProcesando ? 'Actualizando...' : 'Actualizar Contraseña' }}
+          </button>
         </div>
       </div>
     </div>
