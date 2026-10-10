@@ -3,9 +3,23 @@
   <!-- Sidebar -->
   <aside style="width:280px; background:#fff; border-right:1px solid #e0e0e0; display:flex; flex-direction:column; padding:24px 20px; box-sizing:border-box; flex-shrink:0;">
 
-    <!-- Logo / Marca SIRAE -->
-    <div style="display:flex; align-items:center; gap:12px; margin-bottom:36px;">
-      <img src="sirae-logo.png" alt="Logo SIRAE" style="height:36px; width:auto; object-fit:contain;" />
+    <!-- Logo / Marca SIRAE con la imagen real -->
+    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; margin-bottom:32px; padding: 10px 0; text-align: center;">
+      <img src="sirae-logo.png" alt="Logo SIRAE" style="height:70px; max-width:100%; object-fit:contain; margin-bottom: 8px;" />
+      
+      <!-- Título principal -->
+      <h2 style="font-family: 'Playfair Display', serif; font-size: 15px; font-weight: 600; color: #334155; margin: 0 0 6px 0; line-height: 1.2; letter-spacing: 0.2px;">
+        Programa de Alimentación Escolar
+      </h2>
+      
+      <!-- Eslogan con líneas doradas -->
+      <div style="display:flex; align-items:center; justify-content:center; gap: 8px;">
+        <div style="width: 16px; height: 1px; background-color: #fac94b;"></div>
+        <p style="font-family: 'Playfair Display', serif; font-size: 13px; font-weight: 500; color: #fac94b; font-style: italic; margin: 0; letter-spacing: 0.5px;">
+          Alimentando cada día
+        </p>
+        <div style="width: 16px; height: 1px; background-color: #fac94b;"></div>
+      </div>
     </div>
 
     <!-- Título de sección -->
@@ -34,13 +48,13 @@
       <a *ngIf="esSupervisor" routerLink="historial-entregas" routerLinkActive="active-link"
          style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
         <span class="material-symbols-outlined nav-icon" style="font-size:20px;">history</span>
-        Consultar historial de entregas
+        Historial de entregas
       </a>
 
       <a *ngIf="esSupervisor" routerLink="entregas-tipo-mercado" routerLinkActive="active-link"
          style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
         <span class="material-symbols-outlined nav-icon" style="font-size:20px;">filter_alt</span>
-        Filtrar entregas por tipo de mercado
+        Filtro entregas mercado
       </a>
 
       <a *ngIf="esSupervisor" routerLink="registrar-entrega-alimentos" routerLinkActive="active-link"
@@ -53,15 +67,16 @@
       <a *ngIf="!esAdministrador && !esSupervisor" routerLink="saldos-almacen" routerLinkActive="active-link"
          style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
         <span class="material-symbols-outlined nav-icon" style="font-size:20px;">inventory_2</span>
-        Consultar y filtrar saldos de almacén
+        Saldos de almacén
       </a>
 
       <a *ngIf="!esAdministrador && !esSupervisor" routerLink="entradas-ajustes-inventario" routerLinkActive="active-link"
          style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
         <span class="material-symbols-outlined nav-icon" style="font-size:20px;">edit_note</span>
-        Registrar entradas y ajustes de inventario
+        Ajustes de inventario
       </a>
 
+      <!-- MÓDULOS DEL SISTEMA (Ocultos para supervisor) -->
       <a *ngIf="!esSupervisor" routerLink="contratos" routerLinkActive="active-link"
          style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
         <span class="material-symbols-outlined nav-icon" style="font-size:20px;">description</span>
@@ -74,33 +89,26 @@
         Usuarios
       </a>
 
-      <a *ngIf="!esSupervisor" routerLink="rol" routerLinkActive="active-link"
-         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
-        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">shield</span>
-        Roles
-      </a>
-
-      <a *ngIf="!esSupervisor" routerLink="productos" routerLinkActive="active-link"
+      <a *ngIf="!esSupervisor" routerLink="ingredientes" routerLinkActive="active-link"
          style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
         <span class="material-symbols-outlined nav-icon" style="font-size:20px;">package</span>
-        Productos (Inventario)
+        Inventario
       </a>
 
-      <a *ngIf="!esSupervisor" routerLink="unidades-medida" routerLinkActive="active-link"
+      <a *ngIf="!esSupervisor" routerLink="banco-datos" routerLinkActive="active-link"
          style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
-        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">straighten</span>
-        Unidades
+        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">database</span>
+        Banco de Datos
       </a>
-
+      
+      <!-- Módulos Ocultos Temporalmente -->
+      <!-- 
+      <a routerLink="menus" routerLinkActive="active-link" style="...">...</a> 
+      -->
     </nav>
 
-    <!-- Configuración y Cerrar sesión -->
+    <!-- Parte inferior del sidebar: Configuración y Cerrar sesión -->
     <div style="border-top:1px solid #eeeeee; padding-top:16px; margin-top:16px; display:flex; flex-direction:column; gap:6px;">
-      <button type="button" (click)="configurar()"
-        style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px; background:none; border:none; cursor:pointer; color:#555555; font-size:14px; font-weight:500; width:100%; text-align:left;">
-        <span class="material-symbols-outlined" style="font-size:20px; color:#777;">settings</span>
-        Configuración
-      </button>
       <button type="button" (click)="cerrarSesion()"
         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px; background:none; border:none; cursor:pointer; color:#e53935; font-size:14px; font-weight:500; width:100%; text-align:left;">
         <span class="material-symbols-outlined" style="font-size:20px; color:#e53935;">logout</span>
@@ -111,25 +119,31 @@
 
   <main style="flex:1; min-width:0; max-width:100%; padding:24px 32px; position:relative; overflow-y:auto; overflow-x:hidden; display:flex; flex-direction:column; gap:20px; box-sizing:border-box;">
 
-    <!-- Barra superior -->
-    <div style="background:#fff; border:1px solid #e0e0e0; border-radius:14px; padding:12px 24px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 2px 6px rgba(0,0,0,0.02); flex-shrink:0;">
+    <!-- Barra superior moderna -->
+    <div style="background:#fff; border:1px solid #f1f5f9; border-radius:16px; padding:16px 32px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 2px 10px rgba(0,0,0,0.02); flex-shrink:0;">
       
+      <!-- Título de la sección -->
       <div style="display:flex; align-items:center; gap:16px;">
-        <h1 style="font-size:18px; font-weight:700; color:#1a1a1a; margin:0;">Panel de Control</h1>
+        <h1 style="font-size:22px; font-weight:700; color:#1a1a1a; margin:0; position:relative;">
+          {{ pageTitle }}
+          <div style="width: 32px; height: 4px; background: #fac94b; border-radius: 2px; margin-top: 4px;"></div>
+        </h1>
       </div>
 
+      <!-- Acciones de la derecha: Notificaciones y Perfil -->
       <div style="display:flex; align-items:center; gap:16px;">
         
-        <!-- Notificaciones -->
+        <!-- Botón de Notificaciones -->
         <button type="button" (click)="toggleNotificaciones()"
           style="background:#f8f9fc; border:1px solid #eee; border-radius:12px; width:42px; height:42px; display:flex; align-items:center; justify-content:center; cursor:pointer; position:relative; transition:background 0.2s;">
           <span class="material-symbols-outlined" style="font-size:20px; color:#555;">notifications</span>
           <span *ngIf="notificacionesNoLeidas > 0" style="position:absolute; top:9px; right:9px; width:8px; height:8px; background:#e0a316; border-radius:50%; border:2px solid #fff;"></span>
         </button>
 
+        <!-- Divisor vertical -->
         <div style="width:1px; height:28px; background:#eee;"></div>
 
-        <!-- Perfil -->
+        <!-- Botón de Perfil con foto, nombre, rol y flecha -->
         <button type="button" (click)="togglePerfil()"
           style="background:none; border:none; display:flex; align-items:center; gap:12px; cursor:pointer; padding:6px 10px; border-radius:12px; transition:background 0.2s;"
           class="profile-top-btn">
@@ -144,7 +158,7 @@
       </div>
     </div>
 
-    <!-- Panel Notificaciones Desplegable -->
+    <!-- Panel de notificaciones desplegable -->
     <div *ngIf="mostrarNotificaciones"
       style="position:absolute; top:88px; right:120px; width:360px; background:#fff; border:1px solid #e0e0e0; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,0.12); z-index:100; overflow:hidden;">
       
@@ -178,7 +192,7 @@
       </div>
     </div>
 
-    <!-- Panel Perfil Desplegable -->
+    <!-- Panel de perfil desplegable con la imagen real -->
     <div *ngIf="mostrarPerfil"
       style="position:absolute; top:88px; right:32px; width:320px; background:#fff; border:1px solid #e0e0e0; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,0.12); z-index:100; overflow:hidden;">
       
@@ -242,57 +256,53 @@
             <label style="font-size:11px; font-weight:600; color:#666;">Confirmar Contraseña</label>
             <input type="password" [(ngModel)]="passwordForm.confirmar" style="padding:8px; border:1px solid #ddd; border-radius:6px; font-size:13px; outline:none;" />
           </div>
-          <p *ngIf="passwordError" role="alert" style="font-size:12px; color:#b91c1c;">{{ passwordError }}</p>
-          <p *ngIf="passwordMensaje" role="status" style="font-size:12px; color:#15803d;">{{ passwordMensaje }}</p>
-          <button type="button" (click)="guardarPassword()" [disabled]="passwordProcesando" [style.opacity]="passwordProcesando ? '0.5' : '1'" style="background:#e0a316; color:#fff; font-weight:600; border:none; border-radius:6px; padding:8px; cursor:pointer; font-size:13px; margin-top:4px;">
-            {{ passwordProcesando ? 'Actualizando...' : 'Actualizar Contraseña' }}
-          </button>
+          <button type="button" (click)="guardarPassword()" style="background:#e0a316; color:#fff; font-weight:600; border:none; border-radius:6px; padding:8px; cursor:pointer; font-size:13px; margin-top:4px;">Actualizar Contraseña</button>
         </div>
       </div>
     </div>
 
-    <!-- Fondo Cierre Paneles -->
+    <!-- Fondo transparente para cerrar los paneles desplegables -->
     <div *ngIf="mostrarPerfil || mostrarNotificaciones" (click)="cerrarPanel()" style="position:fixed; inset:0; z-index:99;"></div>
 
-    <!-- Contenido Dinámico -->
+    <!-- Vistas Hijas Dinámicas -->
     <router-outlet></router-outlet>
 
   </main>
 </div>
 
-<!-- ESTILOS -->
+<!-- ESTILOS CSS -->
 <style>
   .active-link {
-    background: #fcf8ec !important;
-    color: #e0a316 !important;
+    background: #fdf5e6 !important;
+    color: #1a1a1a !important;
     font-weight: 600 !important;
   }
   
   .active-link .nav-icon {
-    color: #e0a316 !important;
+    color: #1a1a1a !important;
   }
 
   .nav-icon {
-    color: #555555;
+    color: #64748b;
   }
 
   .active-link::after {
     content: '';
     position: absolute;
-    right: 0;
+    left: 0;
     top: 6px;
     bottom: 6px;
     width: 4px;
-    background-color: #e0a316;
-    border-radius: 4px 0 0 4px;
+    background-color: #fac94b;
+    border-radius: 0 4px 4px 0;
   }
 
   aside a:hover:not(.active-link) {
-    background: #fffdf5;
-    color: #e0a316;
+    background: #f8fafc;
+    color: #1a1a1a;
   }
   aside a:hover:not(.active-link) .nav-icon {
-    color: #e0a316;
+    color: #1a1a1a;
   }
 
   .profile-top-btn:hover {

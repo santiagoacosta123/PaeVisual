@@ -1,124 +1,138 @@
-<div class="flex h-screen w-screen overflow-hidden font-sans bg-cover bg-center bg-no-repeat" style="background-image: url('/fondo-login.png');">
+<div class="flex h-screen w-screen items-center justify-center font-sans relative overflow-hidden" style="background-color: #fdfaf2;">
+
+  <!-- Fondo Premium: Patrón sutil y degradados dinámicos -->
+  <div class="absolute inset-0 z-0">
+    <div class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-amber-200/40 rounded-full blur-[120px]"></div>
+    <div class="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-[#fac94b]/20 rounded-full blur-[150px]"></div>
+    <!-- Opcional: ruido o textura sutil -->
+    <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.03]"></div>
+  </div>
+
   <style>
-    /* Forzar que el fondo del autocompletado sea del mismo color que el input */
     input:-webkit-autofill,
-    input:-webkit-autofill:hover, 
-    input:-webkit-autofill:focus, 
-    input:-webkit-autofill:active{
-      -webkit-box-shadow: 0 0 0 30px #f8f9fa inset !important;
+    input:-webkit-autofill:hover,
+    input:-webkit-autofill:focus,
+    input:-webkit-autofill:active {
+      -webkit-box-shadow: 0 0 0 30px #ffffff inset !important;
     }
   </style>
 
-  <!-- Lado Izquierdo: Logo y espacio para el plato -->
-  <div class="hidden md:flex w-1/2 flex-col items-center justify-center relative z-10 p-8">
-    
-    <!-- El logo -->
-    <img src="/sirae-logo.png" alt="Logo SIRAE" class="max-w-[75%] w-full h-auto drop-shadow-sm mb-4" />
-    
-    <!-- Texto Alimentando cada dia -->
-    <div class="mt-4 flex items-center gap-4">
-      <div class="w-8 h-[1.5px] bg-[#fac94b]"></div>
-      <p class="text-[#fac94b] text-2xl font-medium tracking-wide italic font-serif">Alimentando cada día</p>
-      <div class="w-8 h-[1.5px] bg-[#fac94b]"></div>
-    </div>
-  </div>
+  <div class="w-full max-w-6xl mx-auto px-6 md:px-12 flex flex-col md:flex-row items-center justify-between relative z-10 gap-12 md:gap-8">
 
-  <!-- Lado Derecho: Formulario -->
-  <div class="w-full md:w-1/2 flex flex-col justify-center items-center p-8 relative z-10 bg-white/40 backdrop-blur-md md:bg-transparent md:backdrop-blur-none">
-    
-    <!-- Contenedor interno para mantener el ancho proporcionado -->
-    <div class="w-full max-w-[420px]">
+    <!-- Lado izquierdo: Logo y Branding -->
+    <div class="w-full md:w-1/2 flex flex-col items-center md:items-start text-center md:text-left drop-shadow-sm md:pl-8">
       
-      <div class="mb-10">
-        <!-- text-black para igualar el negro del logo, font-bold en lugar de extrabold para que no se vea tan grueso -->
-        <h1 class="text-4xl md:text-5xl font-bold text-black mb-2 tracking-tight leading-tight italic font-serif">
-          ¡Bienvenido
-          <br>
-          <span class="text-[#fac94b]">de nuevo!</span>
-        </h1>
-        <p class="text-sm md:text-base text-gray-500 mt-2 font-medium">Inicia sesión para continuar.</p>
+      <img src="/sirae-logo.png" alt="Logo SIRAE" class="w-full max-w-[240px] md:max-w-[280px] h-auto mb-6 transition-transform hover:scale-105 duration-500" />
+
+      <h2 style="font-family: 'Playfair Display', serif;" class="text-[20px] sm:text-[24px] md:text-[26px] lg:text-[30px] text-[#1f2937] font-extrabold mb-5 tracking-tight leading-tight whitespace-nowrap">
+        Programa de Alimentación Escolar
+      </h2>
+
+      <div class="flex items-center justify-center md:justify-start gap-4">
+        <div class="w-12 h-[2px] bg-[#fac94b] rounded-full"></div>
+        <p style="font-family: 'Playfair Display', serif;" class="text-[#fac94b] text-[18px] md:text-[20px] font-medium tracking-wide italic">
+          Alimentando cada día
+        </p>
+        <div class="w-12 h-[2px] bg-[#fac94b] rounded-full"></div>
       </div>
+    </div>
 
-      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="space-y-5 w-full">
+    <!-- Lado derecho: Tarjeta de Login (Efecto Glass/Premium) -->
+    <div class="w-full md:w-1/2 flex justify-center md:justify-end">
+      
+      <div class="w-full max-w-[440px] bg-white/90 backdrop-blur-xl rounded-[2.5rem] shadow-[0_20px_60px_rgba(250,201,75,0.12)] p-10 md:p-12 border border-white relative overflow-hidden">
         
-        <!-- Input Correo -->
-        <div class="relative">
-          <div class="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-gray-500 z-10">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-            </svg>
+        <!-- Reflejo superior sutil -->
+        <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#fac94b] to-transparent opacity-50"></div>
+
+        <!-- Encabezado -->
+        <div class="mb-10 text-center relative z-10">
+          <h1 style="font-family: 'Playfair Display', serif;" class="text-4xl md:text-5xl font-bold text-[#1a1a1a] mb-3 tracking-tight italic">
+            ¡Bienvenido!
+          </h1>
+          <p class="text-[14.5px] text-slate-500 font-medium">
+            Ingresa tus credenciales para continuar.
+          </p>
+        </div>
+
+        <!-- Formulario -->
+        <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="space-y-5 w-full relative z-10">
+
+          <!-- Correo electrónico -->
+          <div class="relative group">
+            <div class="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[#fac94b] transition-colors z-10">
+              <span class="material-symbols-outlined text-[22px]">mail</span>
+            </div>
+
+            <input id="correo" type="email" formControlName="correo" placeholder="Correo electrónico" autocomplete="email"
+              class="w-full pl-14 pr-5 py-4 text-[15px] bg-[#f8fafc] border border-slate-100 rounded-2xl outline-none text-[#1a1a1a] focus:bg-white focus:border-[#fac94b] focus:ring-4 focus:ring-[#fac94b]/15 transition-all placeholder-slate-400 font-medium shadow-inner" />
           </div>
-          <input 
-            id="correo" 
-            type="email" 
-            formControlName="correo" 
-            placeholder="Correo electrónico" 
-            autocomplete="email"
-            class="w-full pl-12 pr-5 py-4 text-sm bg-white/90 border-none rounded-full outline-none text-black focus:ring-2 focus:ring-[#fac94b] transition-all placeholder-gray-400 font-medium shadow-sm relative z-0"
-          />
-        </div>
-        <span class="text-xs text-red-500 mt-1 block pl-5" *ngIf="correo?.invalid && (correo?.dirty || correo?.touched)">
-          Ingresa un correo válido
-        </span>
 
-        <!-- Input Contraseña -->
-        <div class="relative">
-          <div class="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-gray-500 z-10">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-            </svg>
+          <span class="text-[11.5px] text-red-500 font-medium block pl-2 -mt-3"
+            *ngIf="correo?.invalid && (correo?.dirty || correo?.touched)">
+            Ingresa un correo válido
+          </span>
+
+          <!-- Contraseña -->
+          <div class="relative group">
+            <div class="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[#fac94b] transition-colors z-10">
+              <span class="material-symbols-outlined text-[22px]">lock</span>
+            </div>
+
+            <input id="clave" [type]="mostrarClave ? 'text' : 'password'" formControlName="clave" placeholder="Contraseña"
+              autocomplete="current-password"
+              class="w-full pl-14 pr-12 py-4 text-[15px] bg-[#f8fafc] border border-slate-100 rounded-2xl outline-none text-[#1a1a1a] focus:bg-white focus:border-[#fac94b] focus:ring-4 focus:ring-[#fac94b]/15 transition-all placeholder-slate-400 font-medium shadow-inner" />
+
+            <!-- Mostrar u ocultar contraseña -->
+            <button type="button"
+              class="absolute inset-y-0 right-0 pr-5 flex items-center text-slate-400 hover:text-[#fac94b] focus:outline-none z-10 cursor-pointer transition-colors"
+              (click)="alternarClave()" aria-label="Mostrar u ocultar contraseña">
+              <span class="material-symbols-outlined text-[20px]">{{ mostrarClave ? 'visibility_off' : 'visibility' }}</span>
+            </button>
           </div>
-          <input 
-            id="clave" 
-            [type]="mostrarClave ? 'text' : 'password'" 
-            formControlName="clave" 
-            placeholder="Contraseña" 
-            class="w-full pl-12 pr-12 py-4 text-sm bg-white/90 border-none rounded-full outline-none text-black focus:ring-2 focus:ring-[#fac94b] transition-all placeholder-gray-400 font-medium shadow-sm relative z-0"
-          />
-          <button 
-            type="button" 
-            class="absolute inset-y-0 right-0 pr-5 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none z-10 cursor-pointer"
-            (click)="alternarClave()"
-          >
-            <svg *ngIf="!mostrarClave" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-            <svg *ngIf="mostrarClave" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
+
+          <span class="text-[11.5px] text-red-500 font-medium block pl-2 -mt-3" *ngIf="clave?.invalid && (clave?.dirty || clave?.touched)">
+            Mínimo 6 caracteres
+          </span>
+
+          <!-- Recuperar contraseña -->
+          <div class="flex justify-end pb-2">
+            <button type="button" (click)="abrirModalRecuperar()"
+              class="text-[13px] text-slate-500 font-medium hover:text-[#b18a00] transition-colors focus:outline-none cursor-pointer">
+              ¿Olvidaste tu contraseña?
+            </button>
+          </div>
+
+          <!-- Mensaje de error -->
+          <div class="bg-red-50 text-red-700 px-4 py-3 rounded-2xl text-[13px] mb-4 border border-red-100 text-center font-medium shadow-sm"
+            *ngIf="errorMensaje">
+            {{ errorMensaje }}
+          </div>
+
+          <!-- Botón de inicio de sesión -->
+          <button type="submit"
+            class="w-full py-4 bg-gradient-to-r from-[#fac94b] to-[#f4b316] hover:from-[#f5b927] hover:to-[#e5a00d] text-[#1a1a1a] font-bold text-[15.5px] rounded-2xl shadow-[0_8px_20px_rgba(250,201,75,0.35)] hover:shadow-[0_10px_25px_rgba(250,201,75,0.45)] hover:-translate-y-[2px] transition-all duration-300 cursor-pointer disabled:opacity-50 flex items-center justify-center mt-6"
+            [disabled]="cargando">
+
+            <span *ngIf="!cargando" class="tracking-wide">
+              Iniciar Sesión
+            </span>
+            <span *ngIf="cargando" class="tracking-wide">
+              Verificando...
+            </span>
           </button>
-        </div>
-        <span class="text-xs text-red-500 mt-1 block pl-5" *ngIf="clave?.invalid && (clave?.dirty || clave?.touched)">
-          Mínimo 6 caracteres
-        </span>
-        
-        <!-- Olvidaste contraseña -->
-        <div class="flex justify-end pt-1 pb-2">
-          <button 
-            type="button" 
-            (click)="abrirModalRecuperar()" 
-            class="text-xs text-[#fac94b] font-semibold hover:text-[#e0b443] transition-colors focus:outline-none cursor-pointer"
-          >
-            ¿Olvidaste tu contraseña?
-          </button>
+
+        </form>
+
+        <!-- Mensaje de seguridad -->
+        <div class="mt-8 text-center text-[12px] text-slate-400 font-medium flex items-center justify-center gap-1.5">
+          <span class="material-symbols-outlined text-[16px]">verified_user</span>
+          Acceso seguro y encriptado
         </div>
 
-        <div class="bg-red-50 text-red-700 px-4 py-3 rounded-full text-xs mb-4 border border-red-200 text-center" *ngIf="errorMensaje">
-          {{ errorMensaje }}
-        </div>
-
-        <!-- Botón -->
-        <button type="submit" class="w-full py-4 bg-[#fac94b] hover:bg-[#e0b443] text-black font-bold rounded-full shadow-md transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2" [disabled]="cargando">
-          <span *ngIf="!cargando">Iniciar sesión</span>
-          <span *ngIf="cargando">Verificando...</span>
-          <span *ngIf="!cargando" class="text-lg font-black leading-none mt-[1px]">&rarr;</span>
-        </button>
-
-      </form>
-
-      <div class="mt-4 text-center text-xs text-gray-500 font-medium">
-        Acceso seguro con correo y contraseña
       </div>
-
     </div>
   </div>
-
 </div>
 
 <!-- Modal para recuperar contraseña -->
