@@ -134,3 +134,76 @@
     </div>
   </div>
 </div>
+
+<!-- Modal para recuperar contraseña -->
+<div *ngIf="mostrarModalRecuperar" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+  <div class="w-full max-w-[520px] rounded-[26px] bg-white p-8 shadow-[0_18px_45px_rgba(17,24,39,0.12)] relative animate-fade-in">
+    
+    <h3 class="mb-3 text-[2.2rem] font-bold leading-tight text-[#3a3d42]">Recuperar Contraseña</h3>
+    <p class="mb-6 text-[0.96rem] leading-relaxed text-[#5a616b]">
+      Ingresa tu correo institucional y te enviaremos un código para restablecer tu acceso.
+    </p>
+
+    <div class="mb-3 flex flex-col">
+      <label for="correoRecuperar" class="mb-2 text-[0.98rem] font-medium text-[#2f3135]">Correo electrónico</label>
+      <input 
+        id="correoRecuperar" 
+        type="email" 
+        [(ngModel)]="correoRecuperacion"
+        name="correoRecuperacion"
+        placeholder="admin@sirae.com"
+        class="w-full rounded-[10px] border border-[#d7dbe1] bg-[#f8f9fa] px-3.5 py-3.5 text-[0.95rem] text-[#1f2937] outline-none transition-all placeholder:text-[#6b7280] focus:border-[#f1bf49] focus:bg-white focus:ring-4 focus:ring-[#f1bf49]/10"
+      />
+    </div>
+
+    <p *ngIf="errorRecuperacion" class="mb-5 text-[0.95rem] font-medium text-[#dc4f4f]" role="alert">
+      {{ errorRecuperacion }}
+    </p>
+    <p *ngIf="mensajeRecuperacion" class="mb-5 text-[0.95rem] text-green-700" role="status">
+      {{ mensajeRecuperacion }}
+    </p>
+    <p
+      *ngIf="codigoRecuperacionDesarrollo"
+      class="mb-5 rounded-lg bg-amber-50 px-4 py-3 text-center text-lg font-bold tracking-[0.3em] text-slate-800"
+      data-testid="codigo-recuperacion-desarrollo"
+    >
+      {{ codigoRecuperacionDesarrollo }}
+    </p>
+    <a
+      *ngIf="enlaceRecuperacionDesarrollo"
+      [href]="enlaceRecuperacionDesarrollo"
+      class="mb-5 block break-all text-sm font-semibold text-amber-700 underline"
+      data-testid="enlace-recuperacion-desarrollo"
+    >
+      Abrir enlace de recuperación
+    </a>
+
+    <div class="mt-4 flex justify-end gap-3">
+      <button 
+        type="button" 
+        (click)="cerrarModalRecuperar()" 
+        class="min-w-[122px] rounded-[12px] bg-[#e7eaee] px-5 py-3 text-[1.05rem] font-medium text-[#2b2f36] transition-colors hover:bg-[#dfe5ea]"
+      >
+        Cancelar
+      </button>
+      <button
+        *ngIf="mensajeRecuperacion && !enlaceRecuperacionDesarrollo"
+        type="button"
+        (click)="continuarRecuperacion()"
+        class="rounded-[12px] bg-[#e7eaee] px-5 py-3 text-[1.05rem] font-semibold text-[#2b2f36] transition-colors hover:bg-[#dfe5ea]"
+      >
+        Ingresar código
+      </button>
+      <button 
+        type="button" 
+        (click)="enviarCorreoRecuperacion()" 
+        class="min-w-[150px] rounded-[12px] bg-[#f3c451] px-5 py-3 text-[1.05rem] font-bold text-[#1f2937] transition-colors hover:bg-[#eab734] disabled:opacity-50"
+        [disabled]="enviandoRecuperacion || !!mensajeRecuperacion"
+      >
+        <span *ngIf="!enviandoRecuperacion">Enviar código</span>
+        <span *ngIf="enviandoRecuperacion">Enviando...</span>
+      </button>
+    </div>
+
+  </div>
+</div>

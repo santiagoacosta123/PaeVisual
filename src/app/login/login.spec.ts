@@ -105,4 +105,57 @@ describe('LoginComponent', () => {
     expect(component.errorMensaje).toContain('no tiene permiso');
     expect(component.cargando).toBe(false);
   });
+
+  it('requests a password recovery email for a valid address', () => {
+    authServiceMock.recuperarContrasena.mockReturnValue(of({
+      mensaje: 'Si el correo está registrado, recibirás un código de verificación.',
+    }));
+    component.abrirModalRecuperar();
+    component.correoRecuperacion = '  ana@example.com  ';
+
+    component.enviarCorreoRecuperacion();
+
+    expect(authServiceMock.recuperarContrasena).toHaveBeenCalledWith({
+      correo: 'ana@example.com',
+    });
+    expect(component.mensajeRecuperacion).toContain('código');
+    expect(component.enlaceRecuperacionDesarrollo).toBe('');
+    expect(component.enviandoRecuperacion).toBe(false);
+  });
+
+  it('continues to the code verification form with the requested email', () => {
+    const router = TestBed.inject(Router);
+    const navigate = vi.spyOn(router, 'navigate');
+    component.correoRecuperacion = 'ana@example.com';
+
+    component.continuarRecuperacion();
+
+    expect(navigate).toHaveBeenCalledWith(['/recuperar-password'], {
+      queryParams: { correo: 'ana@example.com' },
+    });
+  });
+
+  it('shows the local verification code when the backend uses the console mailer', () => {
+    authServiceMock.recuperarContrasena.mockReturnValue(of({
+      mensaje: 'Si el correo está registrado, recibirás un código de verificación.',
+      debug_code: '123456',
+    }));
+    component.abrirModalRecuperar();
+    component.correoRecuperacion = 'ana@example.com';
+
+    component.enviarCorreoRecuperacion();
+
+    expect(component.codigoRecuperacionDesarrollo).toBe('123456');
+    expect(component.mensajeRecuperacion).toContain('Código de prueba');
+  });
+
+  it('rejects an invalid recovery email without calling the API', () => {
+    component.abrirModalRecuperar();
+    component.correoRecuperacion = 'no-es-un-correo';
+
+    component.enviarCorreoRecuperacion();
+
+    expect(authServiceMock.recuperarContrasena).not.toHaveBeenCalled();
+    expect(component.errorRecuperacion).toContain('válido');
+  });
 });

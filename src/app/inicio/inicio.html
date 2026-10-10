@@ -12,7 +12,8 @@
         <span class="material-symbols-outlined text-[16px] text-slate-400">calendar_today</span>
         <span>{{ fechaActual }}</span>
       </div>
-      <a routerLink="/contratos" class="h-[38px] px-5 inline-flex items-center justify-center gap-2 border-none rounded-lg bg-[#fac94b] text-[#1a1a1a] text-[13px] font-semibold cursor-pointer whitespace-nowrap shadow-[0_2px_6px_rgba(250,201,75,0.3)] transition-all hover:bg-[#f5b927] hover:-translate-y-[1px] no-underline">
+      <!-- Botón exclusivo para Administrador -->
+      <a *ngIf="rolUsuario?.toLowerCase() === 'administrador'" routerLink="/contratos" class="h-[38px] px-5 inline-flex items-center justify-center gap-2 border-none rounded-lg bg-[#fac94b] text-[#1a1a1a] text-[13px] font-semibold cursor-pointer whitespace-nowrap shadow-[0_2px_6px_rgba(250,201,75,0.3)] transition-all hover:bg-[#f5b927] hover:-translate-y-[1px] no-underline">
         <span>Ir a Contratos</span>
         <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
       </a>

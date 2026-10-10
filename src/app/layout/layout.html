@@ -39,7 +39,7 @@
         <span class="material-symbols-outlined nav-icon" style="font-size:20px;">description</span>
         Contratos
       </a>
-      <a routerLink="usuarios" routerLinkActive="active-link"
+      <a *ngIf="esAdministrador || esGestor" routerLink="usuarios" routerLinkActive="active-link"
          style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
         <span class="material-symbols-outlined nav-icon" style="font-size:20px;">people</span>
         Usuarios
@@ -49,6 +49,18 @@
          style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
         <span class="material-symbols-outlined nav-icon" style="font-size:20px;">package</span>
         Inventario
+      </a>
+
+      <a routerLink="entregas" routerLinkActive="active-link"
+         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
+        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">local_shipping</span>
+        Entregas
+      </a>
+
+      <a routerLink="reportes" routerLinkActive="active-link"
+         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
+        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">bar_chart</span>
+        Reportes
       </a>
 
       <a routerLink="banco-datos" routerLinkActive="active-link"

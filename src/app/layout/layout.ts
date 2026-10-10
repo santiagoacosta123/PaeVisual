@@ -1,5 +1,5 @@
 
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   RouterOutlet,
@@ -29,6 +29,12 @@ import { AuthService } from '../services/auth.service';
 })
 export class LayoutComponent implements OnInit {
 
+  // Control de Roles
+  rolUsuario: string = '';
+  esSupervisor: boolean = false;
+  esAdministrador: boolean = false;
+  esGestor: boolean = false;
+
   // Estado del perfil
   mostrarPerfil = false;
   vistaActual = 'perfil';
@@ -49,16 +55,15 @@ export class LayoutComponent implements OnInit {
 
   editForm = { ...this.perfil };
 
-  passwordForm = {
-    actual: '',
-    nueva: '',
-    confirmar: ''
-  };
+  passwordProcesando = false;
+  passwordError = '';
+  passwordMensaje = '';
 
   constructor(
     private notificacionService: NotificacionService,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {
     this.router.events
       .pipe(
@@ -83,6 +88,13 @@ export class LayoutComponent implements OnInit {
       };
 
       this.editForm = { ...this.perfil };
+
+      // Normalizar y evaluar el rol del usuario autenticado
+      this.rolUsuario = String(usuario.rol || '').toLowerCase().trim();
+      
+      this.esSupervisor = this.rolUsuario.includes('supervisor');
+      this.esAdministrador = this.rolUsuario.includes('admin') || this.rolUsuario.includes('administrador');
+      this.esGestor = this.rolUsuario.includes('gestor');
     }
 
     this.cargarNotificacionesHeader();
@@ -173,29 +185,38 @@ export class LayoutComponent implements OnInit {
   }
 
   guardarPassword(): void {
-    if (
-      !this.passwordForm.actual ||
-      !this.passwordForm.nueva ||
-      !this.passwordForm.confirmar
-    ) {
-      alert('Por favor completa todos los campos.');
+    this.passwordError = '';
+    this.passwordMensaje = '';
+
+    if (!this.passwordForm.actual || !this.passwordForm.nueva || !this.passwordForm.confirmar) {
+      this.passwordError = 'Por favor completa todos los campos.';
       return;
     }
-
     if (this.passwordForm.nueva !== this.passwordForm.confirmar) {
-      alert('Las nuevas contraseñas no coinciden.');
+      this.passwordError = 'Las nuevas contraseñas no coinciden.';
       return;
     }
 
-    alert('Contraseña actualizada con éxito.');
-
-    this.passwordForm = {
-      actual: '',
-      nueva: '',
-      confirmar: ''
-    };
-
-    this.vistaActual = 'perfil';
+    this.passwordProcesando = true;
+    this.authService.cambiarContrasena({
+      password_actual: this.passwordForm.actual,
+      nueva_password: this.passwordForm.nueva,
+      confirmar_password: this.passwordForm.confirmar,
+    }).subscribe({
+      next: (response: any) => {
+        this.passwordProcesando = false;
+        this.passwordMensaje = response.mensaje || 'Contraseña actualizada correctamente.';
+        this.passwordForm = { actual: '', nueva: '', confirmar: '' };
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => {
+        this.passwordProcesando = false;
+        this.passwordError = err.error?.error
+          || err.error?.detail
+          || 'No fue posible actualizar la contraseña. Inténtalo nuevamente.';
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   configurar(): void {

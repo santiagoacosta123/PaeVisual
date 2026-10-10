@@ -2,11 +2,14 @@
   "name": "paevisual",
   "version": "0.0.0",
   "scripts": {
-    "ng": "ng",
-    "start": "ng serve",
-    "build": "ng build",
-    "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "ng": "npx -y node@24.15.0 ./node_modules/@angular/cli/bin/ng",
+    "start": "npx -y node@24.15.0 ./node_modules/@angular/cli/bin/ng serve",
+    "build": "npx -y node@24.15.0 ./node_modules/@angular/cli/bin/ng build",
+    "watch": "npx -y node@24.15.0 ./node_modules/@angular/cli/bin/ng build --watch --configuration development",
+    "test": "npx -y node@24.15.0 ./node_modules/@angular/cli/bin/ng test --watch=false --browsers=chromium"
+  },
+  "engines": {
+    "node": ">=22.22.3 || >=24.15.0 || >=26.0.0"
   },
   "private": true,
   "packageManager": "npm@11.19.0",
@@ -26,12 +29,15 @@
     "@angular/build": "^22.1.6",
     "@angular/cli": "^22.1.6",
     "@angular/compiler-cli": "^22.1.0",
+    "@angular/platform-browser-dynamic": "^22.2.2",
     "@tailwindcss/postcss": "^4.1.12",
+    "@vitest/browser-playwright": "^5.0.3",
     "jsdom": "^28.0.0",
+    "playwright": "^1.64.0",
     "postcss": "^8.5.3",
     "prettier": "^3.8.1",
     "tailwindcss": "^4.1.12",
     "typescript": "~6.0.2",
-    "vitest": "^4.0.8"
+    "vitest": "^5.0.3"
   }
 }

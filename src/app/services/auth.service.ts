@@ -19,6 +19,20 @@ export interface AuthenticatedUser {
   rol: string | null;
 }
 
+export interface PasswordResetResponse {
+  status?: string;
+  mensaje?: string;
+  error?: string;
+  debug_link?: string;
+  debug_code?: string;
+}
+
+export interface PasswordResetTokenResponse {
+  valido: boolean;
+  mensaje?: string;
+  error?: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -33,10 +47,25 @@ export class AuthService {
     private router: Router
   ) {}
 
+  private estaDisponibleStorage(): boolean {
+    try {
+      const testKey = '__auth_service_test__';
+      localStorage.setItem(testKey, testKey);
+      localStorage.removeItem(testKey);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   login(credenciales: { correo: string; clave: string }): Observable<LoginResponse> {
+    const correo = (credenciales.correo ?? '').trim();
+    const clave = (credenciales.clave ?? '').trim();
+
     return this.http.post<LoginResponse>(`${this.apiBaseUrl}/auth/login/`, {
-      correo: credenciales.correo,
-      password: credenciales.clave
+      correo,
+      clave,
+      password: clave,
     });
   }
 
@@ -50,11 +79,56 @@ export class AuthService {
     return rolNormalizado === 'administrador' || rolNormalizado === 'supervisor';
   }
 
-  recuperarContrasena(data: { correo: string }): Observable<any> {
-    return this.http.post(`${this.apiBaseUrl}/auth/recuperar-password/`, data);
+  recuperarContrasena(data: { correo: string }): Observable<PasswordResetResponse> {
+    return this.http.post<PasswordResetResponse>(`${this.apiBaseUrl}/auth/recuperar-password/`, data);
+  }
+
+  confirmarRecuperacionCodigo(data: {
+    correo: string;
+    codigo: string;
+    nueva_password: string;
+    confirmar_password: string;
+  }): Observable<PasswordResetResponse> {
+    return this.http.post<PasswordResetResponse>(
+      `${this.apiBaseUrl}/auth/confirmar-recuperacion-password/`,
+      data
+    );
+  }
+
+  validarTokenRecuperacion(token: string): Observable<PasswordResetTokenResponse> {
+    return this.http.post<PasswordResetTokenResponse>(
+      `${this.apiBaseUrl}/auth/password-reset/validar-token/`,
+      { token }
+    );
+  }
+
+  confirmarRecuperacionContrasena(data: {
+    token: string;
+    nueva_password: string;
+    confirmar_password: string;
+  }): Observable<PasswordResetResponse> {
+    return this.http.post<PasswordResetResponse>(
+      `${this.apiBaseUrl}/auth/password-reset/confirmar/`,
+      data
+    );
+  }
+
+  cambiarContrasena(data: {
+    password_actual: string;
+    nueva_password: string;
+    confirmar_password: string;
+  }): Observable<PasswordResetResponse> {
+    return this.http.post<PasswordResetResponse>(
+      `${this.apiBaseUrl}/auth/cambiar-password/`,
+      data
+    );
   }
 
   guardarSesion(respuesta: LoginResponse): void {
+    if (!this.estaDisponibleStorage()) {
+      return;
+    }
+
     if (respuesta.access) {
       localStorage.setItem(this.ACCESS_TOKEN, respuesta.access);
     }
@@ -72,14 +146,26 @@ export class AuthService {
   }
 
   obtenerToken(): string | null {
+    if (!this.estaDisponibleStorage()) {
+      return null;
+    }
+
     return localStorage.getItem(this.ACCESS_TOKEN);
   }
 
   obtenerRefreshToken(): string | null {
+    if (!this.estaDisponibleStorage()) {
+      return null;
+    }
+
     return localStorage.getItem(this.REFRESH_TOKEN);
   }
 
   obtenerUsuario(): AuthenticatedUser | null {
+    if (!this.estaDisponibleStorage()) {
+      return null;
+    }
+
     const usuario = localStorage.getItem(this.USUARIO);
 
     if (!usuario) {
@@ -98,6 +184,10 @@ export class AuthService {
   }
 
   limpiarSesion(): void {
+    if (!this.estaDisponibleStorage()) {
+      return;
+    }
+
     localStorage.removeItem(this.ACCESS_TOKEN);
     localStorage.removeItem(this.REFRESH_TOKEN);
     localStorage.removeItem(this.USUARIO);
