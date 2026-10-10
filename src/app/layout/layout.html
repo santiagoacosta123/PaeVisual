@@ -30,20 +30,16 @@
         <span class="material-symbols-outlined nav-icon" style="font-size:20px;">people</span>
         Usuarios
       </a>
-      <a routerLink="rol" routerLinkActive="active-link"
-         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
-        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">shield</span>
-        Roles
-      </a>
+
       <a routerLink="productos" routerLinkActive="active-link"
          style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
         <span class="material-symbols-outlined nav-icon" style="font-size:20px;">package</span>
-        Productos (Inventario)
+        Inventario
       </a>
-      <a routerLink="unidades-medida" routerLinkActive="active-link"
+      <a routerLink="banco-datos" routerLinkActive="active-link"
          style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
-        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">straighten</span>
-        Unidades
+        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">database</span>
+        Banco de Datos
       </a>
       <!-- Módulos Ocultos Temporalmente 
       <a routerLink="menus" routerLinkActive="active-link"
@@ -91,7 +87,7 @@
       
       <!-- Título de la sección -->
       <div style="display:flex; align-items:center; gap:16px;">
-        <h1 style="font-size:18px; font-weight:700; color:#1a1a1a; margin:0;">Panel de Control</h1>
+        <h1 style="font-size:18px; font-weight:700; color:#1a1a1a; margin:0;">{{ pageTitle }}</h1>
       </div>
 
       <!-- Acciones de la derecha: Notificaciones y Perfil -->

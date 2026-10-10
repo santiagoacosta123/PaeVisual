@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -12,7 +12,9 @@ import { SiraeService } from '../services/contratos_pae.service';
   styleUrls: ['./contrato-detalle.css']
 })
 export class ContratoDetalleComponent implements OnInit {
-  contratoId: string | null = null;
+  @Input() contratoId: string | null = null;
+  @Output() cerrar = new EventEmitter<void>();
+  
   pestanaActiva = 'jornadas'; // 'jornadas', 'secciones', 'turnos'
 
   jornadas: any[] = [];
@@ -20,7 +22,7 @@ export class ContratoDetalleComponent implements OnInit {
   contratosSeccionMenu: any[] = [];
   contrato: any = { codigo: '', institucion: '', zona: 'Norte', fecha_inicio: '', fecha_fin: '', estado: 'Activo' };
   jornadaSeleccionada: any = null;
-  
+
   get jornadasHabilitadas() {
     return this.jornadas.filter(j => j.habilitada);
   }
@@ -49,7 +51,7 @@ export class ContratoDetalleComponent implements OnInit {
     if (!this.jornadaSeleccionada) return [];
     const idJornadaFiltro = this.jornadaSeleccionada.id_jornada || this.jornadaSeleccionada.id;
     const nombreJornadaFiltro = this.jornadaSeleccionada.nombre_jornada || this.jornadaSeleccionada.nombre;
-    
+
     return this.seccionesMenu.filter(s => s.jornada !== idJornadaFiltro && s.jornada !== nombreJornadaFiltro && s.id_jornada !== idJornadaFiltro);
   }
 
@@ -62,7 +64,9 @@ export class ContratoDetalleComponent implements OnInit {
 
   ngOnInit() {
     this.route.paramMap.subscribe(params => {
-      this.contratoId = params.get('id');
+      if (!this.contratoId) {
+        this.contratoId = params.get('id');
+      }
       this.cargarDatosMaestros();
       this.cargarDetalleContrato();
     });
@@ -77,16 +81,12 @@ export class ContratoDetalleComponent implements OnInit {
     // 1. Cargar Jornadas con normalización
     this.siraeService.getJornadas().subscribe({
       next: (datos: any) => {
-        const res = Array.isArray(datos) ? datos : (datos.results || []);
+        const res = Array.isArray(datos) ? datos : (datos.results || datos.data || []);
         this.jornadas = res.map((j: any) => ({ ...j, habilitada: false }));
         this.cdr.detectChanges();
       },
       error: (err) => {
         console.warn('API de jornadas no encontrada o con error, usando datos temporales...', err);
-        this.jornadas = [
-          { id: 1, nombre: 'Mañana', estado: 'Activa', habilitada: false },
-          { id: 2, nombre: 'Tarde', estado: 'Activa', habilitada: false }
-        ];
         this.cdr.detectChanges();
       }
     });
@@ -94,28 +94,14 @@ export class ContratoDetalleComponent implements OnInit {
     // 2. Cargar Secciones de Menú con normalización
     this.siraeService.getSeccionesMenu().subscribe({
       next: (datos: any) => {
-        this.seccionesMenu = Array.isArray(datos) ? datos : (datos.results || []);
-        if (this.seccionesMenu.length === 0) {
-          this.usarSeccionesPrueba();
-        }
+        this.seccionesMenu = Array.isArray(datos) ? datos : (datos.results || datos.data || []);
         this.cdr.detectChanges();
       },
       error: (err) => {
         console.error('Error cargando secciones de menú:', err);
-        this.usarSeccionesPrueba();
         this.cdr.detectChanges();
       }
     });
-  }
-
-  usarSeccionesPrueba() {
-    this.seccionesMenu = [
-      { id: 1, nombre_seccion: 'Desayuno', jornada: 'Mañana' },
-      { id: 2, nombre_seccion: 'Merienda', jornada: 'Mañana' },
-      { id: 3, nombre_seccion: 'Almuerzo', jornada: 'Tarde' },
-      { id: 4, nombre_seccion: 'Refrigerio', jornada: 'Tarde' },
-      { id: 5, nombre_seccion: 'Cena', jornada: 'Tarde' }
-    ];
   }
 
   cargarDetalleContrato() {
@@ -124,7 +110,7 @@ export class ContratoDetalleComponent implements OnInit {
     // Cargar información básica del contrato desde la lista general
     this.siraeService.getContratos().subscribe({
       next: (datos: any) => {
-        const listaContratos = Array.isArray(datos) ? datos : (datos.results || []);
+        const listaContratos = Array.isArray(datos) ? datos : (datos.results || datos.data || []);
         const contratoEncontrado = listaContratos.find((c: any) =>
           String(c.id_contrato || c.id || c.pk) === String(this.contratoId)
         );
@@ -150,7 +136,7 @@ export class ContratoDetalleComponent implements OnInit {
     // Cargar las relaciones de secciones asignadas a este contrato
     this.siraeService.getContratosSeccionMenu(Number(this.contratoId)).subscribe({
       next: (datos: any) => {
-        this.contratosSeccionMenu = Array.isArray(datos) ? datos : (datos.results || []);
+        this.contratosSeccionMenu = Array.isArray(datos) ? datos : (datos.results || datos.data || []);
 
         // Auto-habilitar las jornadas basándose en las secciones que ya tiene asignadas
         setTimeout(() => {
@@ -187,7 +173,7 @@ export class ContratoDetalleComponent implements OnInit {
 
       const seccionesDeEstaJornada = this.seccionesMenu.filter(s => {
         const secNombre = String(s.nombre_seccion || s.nombre || '').toLowerCase();
-        
+
         if (jornadaNombreVal === 'mañana') {
           return secNombre.includes('desayuno') || secNombre.includes('merienda');
         } else if (jornadaNombreVal === 'tarde') {
@@ -211,10 +197,10 @@ export class ContratoDetalleComponent implements OnInit {
 
     return this.seccionesMenu.filter(s => {
       const secNombre = String(s.nombre_seccion || s.nombre || '').toLowerCase();
-      
+
       return jornadasHabilitadas.some(j => {
         const jName = String(j.nombre_jornada || j.nombre || '').toLowerCase();
-        
+
         // Mapeo manual porque el backend devuelve id_jornada: null
         if (jName === 'mañana') {
           return secNombre.includes('desayuno') || secNombre.includes('merienda');
@@ -326,7 +312,7 @@ export class ContratoDetalleComponent implements OnInit {
       this.siraeService.crearContrato(payload).subscribe({
         next: (res: any) => {
           const newId = res.id_contrato || res.id || res.pk;
-          
+
           if (this.contratosSeccionMenu.length === 0) {
             this.router.navigate(['/contratos']);
             return;
@@ -370,6 +356,7 @@ export class ContratoDetalleComponent implements OnInit {
   }
 
   volver() {
+    this.cerrar.emit();
     this.router.navigate(['/contratos']);
   }
 }

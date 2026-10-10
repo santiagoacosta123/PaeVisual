@@ -1,6 +1,8 @@
-<div style="background-color: #f8fafc; min-height: 100vh; padding: 24px; font-family: 'Inter', system-ui, sans-serif; color: #0f172a;">
-  
-  <!-- Encabezado similar al prototipo -->
+<div style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px); display: flex; justify-content: center; align-items: flex-start; z-index: 9999; overflow-y: auto; padding: 40px 20px;">
+  <div style="background-color: #f8fafc; width: 100%; max-width: 1200px; border-radius: 20px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); padding: 32px; font-family: 'Inter', system-ui, sans-serif; color: #0f172a; position: relative;">
+    
+    <!-- Botón X para cerrar (adicional) -->
+    <button (click)="volver()" style="position: absolute; top: 24px; right: 24px; background: none; border: none; font-size: 24px; color: #64748b; cursor: pointer;">&times;</button>
   <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px;">
     <div>
       <span style="font-size: 11px; font-weight: 700; color: #d97706; background: #fef3c7; padding: 4px 8px; border-radius: 4px; letter-spacing: 0.5px;">NUEVO</span>
@@ -50,10 +52,13 @@
           </div>
           <div>
             <label style="display: block; font-size: 12px; font-weight: 600; color: #64748b; margin-bottom: 6px;">Estado</label>
-            <select [(ngModel)]="contrato.estado" style="width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; background: #ffffff; color: #334155; box-sizing: border-box; outline: none;">
-              <option value="Activo">Activo</option>
-              <option value="Inactivo">Inactivo</option>
-            </select>
+            <label style="position: relative; display: inline-flex; items-center; cursor: pointer; align-items: center; margin-top: 4px;">
+              <input type="checkbox" [checked]="contrato.estado === 'Activo'" (change)="contrato.estado = $event.target.checked ? 'Activo' : 'Inactivo'" style="opacity: 0; width: 0; height: 0; position: absolute;">
+              <div style="width: 36px; height: 20px; background-color: {{ contrato.estado === 'Activo' ? '#0f172a' : '#e2e8f0' }}; border-radius: 9999px; position: relative; transition: background-color 0.2s;">
+                <div style="width: 16px; height: 16px; background-color: #ffffff; border-radius: 50%; position: absolute; top: 2px; left: {{ contrato.estado === 'Activo' ? '18px' : '2px' }}; transition: left 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.1);"></div>
+              </div>
+              <span style="margin-left: 12px; font-size: 13px; font-weight: 600; color: #334155;">{{ contrato.estado }}</span>
+            </label>
           </div>
         </div>
       </div>
@@ -177,7 +182,7 @@
       <div style="margin-bottom: 20px;">
         <span style="font-size: 10px; font-weight: 700; color: #94a3b8; letter-spacing: 0.5px; display: block; margin-bottom: 12px;">JORNADAS ACTIVAS</span>
         <div style="display: flex; gap: 8px;">
-          <span *ngFor="let j of jornadasHabilitadas" style="background: #eff6ff; color: #4f46e5; border: 1px solid #c7d2fe; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600;">
+          <span *ngFor="let j of jornadasHabilitadas" style="background: #fef3c7; color: #d97706; border: 1px solid #fde68a; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600;">
             {{ j.nombre_jornada || j.nombre }}
           </span>
           <span *ngIf="jornadasHabilitadas.length === 0" style="font-size: 12px; color: #94a3b8;">Ninguna</span>
@@ -201,5 +206,5 @@
     </div>
 
   </div>
-
+</div>
 </div>

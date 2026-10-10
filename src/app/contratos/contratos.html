@@ -8,21 +8,7 @@
       [style.font-weight]="pestanaActiva === 'contratos' ? '600' : '500'"
       style="border:none; padding:9px 16px; border-radius:12px; font-size:13px; cursor:pointer;">Contratos</button>
 
-
-    <button type="button" (click)="seleccionarPestana('jornadas')"
-      [style.background]="pestanaActiva === 'jornadas' ? '#0f172a' : 'transparent'"
-      [style.color]="pestanaActiva === 'jornadas' ? '#ffffff' : '#475569'"
-      [style.font-weight]="pestanaActiva === 'jornadas' ? '600' : '500'"
-      style="border:none; padding:9px 16px; border-radius:12px; font-size:13px; cursor:pointer;">Jornadas</button>
-
-    <button type="button" (click)="seleccionarPestana('secciones')"
-      [style.background]="pestanaActiva === 'secciones' ? '#0f172a' : 'transparent'"
-      [style.color]="pestanaActiva === 'secciones' ? '#ffffff' : '#475569'"
-      [style.font-weight]="pestanaActiva === 'secciones' ? '600' : '500'"
-      style="border:none; padding:9px 16px; border-radius:12px; font-size:13px; cursor:pointer;">Secciones</button>
-  
-
-    </div>
+  </div>
   <!-- Contenido Dinámico -->
   <div [ngSwitch]="pestanaActiva">
     
@@ -44,7 +30,7 @@
               <input type="text" [(ngModel)]="filtroBusquedaContratos" placeholder="Buscar contrato..." style="border:none; background:transparent; outline:none; font-size:13px; width:100%; color:#0f172a;">
             </div>
 
-            <button type="button" routerLink="/contratos/nuevo/detalle" style="background:#facc15; color:#713f12; border:none; border-radius:10px; padding:9px 16px; font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap; text-decoration:none;">
+            <button type="button" (click)="abrirModalGrandeContrato('nuevo')" style="background:#facc15; color:#713f12; border:none; border-radius:10px; padding:9px 16px; font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap; text-decoration:none;">
               + Nuevo contrato
             </button>
 
@@ -89,7 +75,7 @@
                 <td style="padding:12px; text-align:right;">
                   <div style="display:flex; gap:6px; justify-content:flex-end; align-items:center;">
 
-                    <button type="button" [routerLink]="['/contratos', c.id, 'detalle']" style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; color:#475569;" title="Editar">
+                    <button type="button" (click)="abrirModalGrandeContrato(c.id)" style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; color:#475569;" title="Editar">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                     </button>
                     <button type="button" (click)="eliminarContrato(c.id)" style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; color:#475569;" title="Eliminar">
@@ -159,218 +145,7 @@
           </div>
         </div>
 
-      </div>
-    </div>
-
-
-
-    <!-- JORNADAS -->
-    <div *ngSwitchCase="'jornadas'" style="display:flex; flex-direction:column; gap:16px;">
-      <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:16px; padding:20px; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
-
-        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px; margin-bottom:18px;">
-          <h3 style="font-size:16px; font-weight:700; color:#0f172a; margin:0;">Jornadas</h3>
-          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-            <div style="display:flex; align-items:center; gap:8px; background:#f8fafc; border:1px solid #cbd5e1; border-radius:10px; padding:6px 12px; min-width:220px;">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-              <input type="text" [(ngModel)]="filtroBusquedaJornadas" placeholder="Buscar jornada..." style="border:none; background:transparent; outline:none; font-size:13px; width:100%; color:#0f172a;">
-            </div>
-            <button type="button" (click)="abrirModalJornada()" style="background:#facc15; color:#713f12; border:none; border-radius:10px; padding:9px 16px; font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap;">
-              + Nueva jornada
-            </button>
-          </div>
-        </div>
-
-        <div style="overflow-x:auto;">
-          <table style="width:100%; border-collapse:collapse; text-align:left; font-size:13px; min-width:480px;">
-          <thead>
-            <tr style="border-bottom:1px solid #e2e8f0; color:#64748b; font-weight:600;">
-              <th style="padding:10px 12px; font-size:11px; letter-spacing:0.5px;">NOMBRE</th>
-              <th style="padding:10px 12px; font-size:11px; letter-spacing:0.5px;">ESTADO</th>
-              <th style="padding:10px 12px; font-size:11px; letter-spacing:0.5px; text-align:right;">ACCIONES</th>
-            </tr>
-          </thead>
-          <tbody style="color:#0f172a;">
-            <tr *ngFor="let j of jornadasFiltradas" style="border-bottom:1px solid #f1f5f9;">
-              <td style="padding:12px; font-weight:600;">{{ j.nombre }}</td>
-              <td style="padding:12px;">
-                <span style="padding:3px 10px; border-radius:12px; font-size:11px; font-weight:600;"
-                  [style.background]="j.estado === 'Activa' ? '#dcfce7' : '#fee2e2'"
-                  [style.color]="j.estado === 'Activa' ? '#166534' : '#991b1b'">
-                  {{ j.estado }}
-                </span>
-              </td>
-              <td style="padding:12px; text-align:right;">
-                <div style="display:flex; gap:6px; justify-content:flex-end; align-items:center;">
-                  <button type="button" (click)="abrirModalJornada(j)" style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; color:#475569;" title="Editar">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                  </button>
-                  <button type="button" (click)="eliminarJornada(j.id)" style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; color:#475569;" title="Eliminar">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                  </button>
-                </div>
-              </td>
-            </tr>
-            <tr *ngIf="jornadasFiltradas.length === 0">
-              <td colspan="3" style="padding:20px; text-align:center; color:#94a3b8; font-style:italic;">No se encontraron jornadas registradas.</td>
-            </tr>
-          </tbody>
-        </table>
-        </div>
-
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:14px; padding-top:14px; border-top:1px solid #f1f5f9;">
-          <span style="font-size:12px; color:#64748b;">Mostrando {{ jornadasFiltradas.length }} de {{ jornadas.length }}</span>
-          <div style="display:flex; align-items:center; gap:6px;">
-            <button type="button" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; color:#64748b;">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-            </button>
-            <span style="background:#0f172a; color:#ffffff; border-radius:8px; width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; font-size:12px; font-weight:600;">1</span>
-            <button type="button" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; color:#64748b;">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- SECCIONES -->
-    <div *ngSwitchCase="'secciones'" style="display:flex; flex-direction:column; gap:16px;">
-      <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:16px; padding:20px; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
-
-        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px; margin-bottom:18px;">
-          <h3 style="font-size:16px; font-weight:700; color:#0f172a; margin:0;">Secciones de menú</h3>
-          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-            <div style="display:flex; align-items:center; gap:8px; background:#f8fafc; border:1px solid #cbd5e1; border-radius:10px; padding:6px 12px; min-width:220px;">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-              <input type="text" [(ngModel)]="filtroBusquedaSecciones" placeholder="Buscar sección..." style="border:none; background:transparent; outline:none; font-size:13px; width:100%; color:#0f172a;">
-            </div>
-            <button type="button" (click)="abrirModalSeccion()" style="background:#facc15; color:#713f12; border:none; border-radius:10px; padding:9px 16px; font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap;">
-              + Nueva sección
-            </button>
-          </div>
-        </div>
-
-        <div style="overflow-x:auto;">
-          <table style="width:100%; border-collapse:collapse; text-align:left; font-size:13px; min-width:480px;">
-          <thead>
-            <tr style="border-bottom:1px solid #e2e8f0; color:#64748b; font-weight:600;">
-              <th style="padding:10px 12px; font-size:11px; letter-spacing:0.5px;">NOMBRE DE LA SECCIÓN</th>
-              <th style="padding:10px 12px; font-size:11px; letter-spacing:0.5px;">JORNADA</th>
-              <th style="padding:10px 12px; font-size:11px; letter-spacing:0.5px;">ESTADO</th>
-              <th style="padding:10px 12px; font-size:11px; letter-spacing:0.5px; text-align:right;">ACCIONES</th>
-            </tr>
-          </thead>
-          <tbody style="color:#0f172a;">
-            <tr *ngFor="let s of seccionesFiltradas" style="border-bottom:1px solid #f1f5f9;">
-              <td style="padding:12px; font-weight:600;">{{ s.nombre }}</td>
-              <td style="padding:12px; color:#475569;">{{ s.jornada }}</td>
-              <td style="padding:12px;">
-                <span style="padding:3px 10px; border-radius:12px; font-size:11px; font-weight:600;"
-                  [style.background]="s.estado === 'Activa' ? '#dcfce7' : '#fee2e2'"
-                  [style.color]="s.estado === 'Activa' ? '#166534' : '#991b1b'">
-                  {{ s.estado }}
-                </span>
-              </td>
-              <td style="padding:12px; text-align:right;">
-                <div style="display:flex; gap:6px; justify-content:flex-end; align-items:center;">
-                  <button type="button" (click)="abrirModalSeccion(s)" style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; color:#475569;" title="Editar">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                  </button>
-                  <button type="button" (click)="eliminarSeccion(s.id)" style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; color:#475569;" title="Eliminar">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                  </button>
-                </div>
-              </td>
-            </tr>
-            <tr *ngIf="seccionesFiltradas.length === 0">
-              <td colspan="4" style="padding:20px; text-align:center; color:#94a3b8; font-style:italic;">No se encontraron secciones registradas.</td>
-            </tr>
-          </tbody>
-        </table>
-        </div>
-
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:14px; padding-top:14px; border-top:1px solid #f1f5f9;">
-          <span style="font-size:12px; color:#64748b;">Mostrando {{ seccionesFiltradas.length }} de {{ secciones.length }}</span>
-          <div style="display:flex; align-items:center; gap:6px;">
-            <button type="button" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; color:#64748b;">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-            </button>
-            <span style="background:#0f172a; color:#ffffff; border-radius:8px; width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; font-size:12px; font-weight:600;">1</span>
-            <button type="button" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; color:#64748b;">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-
-
-
-
-
-
-
-  </div>
-
-  <!-- ==================== MODAL: JORNADA ==================== -->
-  <div *ngIf="modalJornadaAbierto" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center; z-index:1000;">
-    <div style="background:#ffffff; width:420px; max-width:90%; border-radius:16px; padding:24px; box-shadow:0 10px 25px rgba(0,0,0,0.1); display:flex; flex-direction:column; gap:20px;">
-      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #f1f5f9; padding-bottom:12px;">
-        <h3 style="font-size:16px; font-weight:700; color:#0f172a; margin:0;">{{ modoEdicionJornada ? 'EDITAR JORNADA' : 'NUEVA JORNADA' }}</h3>
-        <button type="button" (click)="cerrarModalJornada()" style="background:none; border:none; font-size:18px; cursor:pointer; color:#64748b;">✕</button>
-      </div>
-      <div style="display:flex; flex-direction:column; gap:14px;">
-        <div>
-          <label style="font-size:12px; font-weight:600; color:#334155; display:block; margin-bottom:6px;">Nombre *</label>
-          <input type="text" [(ngModel)]="jornadaActual.nombre" placeholder="Ej. Mañana" style="width:100%; padding:10px 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px; outline:none; box-sizing:border-box;">
-        </div>
-        <div>
-          <label style="font-size:12px; font-weight:600; color:#334155; display:block; margin-bottom:6px;">Estado</label>
-          <select [(ngModel)]="jornadaActual.estado" style="width:100%; padding:10px 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px; outline:none; background:#ffffff; box-sizing:border-box;">
-            <option value="Activa">Activa</option>
-            <option value="Inactiva">Inactiva</option>
-          </select>
-        </div>
-      </div>
-      <div style="display:flex; justify-content:flex-end; gap:12px; border-top:1px solid #f1f5f9; padding-top:16px;">
-        <button type="button" (click)="cerrarModalJornada()" style="background:#ffffff; border:1px solid #cbd5e1; color:#334155; padding:9px 18px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer;">Cancelar</button>
-        <button type="button" (click)="guardarJornada()" style="background:#0f172a; color:#ffffff; border:none; padding:9px 18px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer;">Guardar Jornada</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ==================== MODAL: SECCIÓN ==================== -->
-  <div *ngIf="modalSeccionAbierto" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center; z-index:1000;">
-    <div style="background:#ffffff; width:420px; max-width:90%; border-radius:16px; padding:24px; box-shadow:0 10px 25px rgba(0,0,0,0.1); display:flex; flex-direction:column; gap:20px;">
-      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #f1f5f9; padding-bottom:12px;">
-        <h3 style="font-size:16px; font-weight:700; color:#0f172a; margin:0;">{{ modoEdicionSeccion ? 'EDITAR SECCIÓN' : 'NUEVA SECCIÓN' }}</h3>
-        <button type="button" (click)="cerrarModalSeccion()" style="background:none; border:none; font-size:18px; cursor:pointer; color:#64748b;">✕</button>
-      </div>
-      <div style="display:flex; flex-direction:column; gap:14px;">
-        <div>
-          <label style="font-size:12px; font-weight:600; color:#334155; display:block; margin-bottom:6px;">Nombre de la Sección *</label>
-          <input type="text" [(ngModel)]="seccionActual.nombre" placeholder="Ej. Desayuno" style="width:100%; padding:10px 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px; outline:none; box-sizing:border-box;">
-        </div>
-        <div>
-          <label style="font-size:12px; font-weight:600; color:#334155; display:block; margin-bottom:6px;">Jornada *</label>
-          <select [(ngModel)]="seccionActual.jornada" style="width:100%; padding:10px 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px; outline:none; background:#ffffff; box-sizing:border-box;">
-            <option *ngFor="let j of jornadas" [value]="j.nombre">{{ j.nombre }}</option>
-          </select>
-        </div>
-        <div>
-          <label style="font-size:12px; font-weight:600; color:#334155; display:block; margin-bottom:6px;">Estado</label>
-          <select [(ngModel)]="seccionActual.estado" style="width:100%; padding:10px 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px; outline:none; background:#ffffff; box-sizing:border-box;">
-            <option value="Activa">Activa</option>
-            <option value="Inactiva">Inactiva</option>
-          </select>
-        </div>
-      </div>
-      <div style="display:flex; justify-content:flex-end; gap:12px; border-top:1px solid #f1f5f9; padding-top:16px;">
-        <button type="button" (click)="cerrarModalSeccion()" style="background:#ffffff; border:1px solid #cbd5e1; color:#334155; padding:9px 18px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer;">Cancelar</button>
-        <button type="button" (click)="guardarSeccion()" style="background:#0f172a; color:#ffffff; border:none; padding:9px 18px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer;">Guardar Sección</button>
-      </div>
-    </div>
+        </div>  </div>
   </div>
   
 
@@ -406,11 +181,13 @@
         </div>
         <div>
           <label style="font-size:12px; font-weight:600; color:#334155; display:block; margin-bottom:6px;">Estado</label>
-          <select [(ngModel)]="contratoActual.estado" style="width:100%; padding:10px 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px; outline:none; background:#ffffff; box-sizing:border-box;">
-            <option value="Activo">Activo</option>
-            <option value="Inactivo">Inactivo</option>
-            <option value="Finalizado">Finalizado</option>
-          </select>
+          <label style="position: relative; display: inline-flex; cursor: pointer; align-items: center; margin-top: 4px;">
+            <input type="checkbox" [checked]="contratoActual.estado === 'Activo'" (change)="contratoActual.estado = $event.target.checked ? 'Activo' : 'Inactivo'" style="opacity: 0; width: 0; height: 0; position: absolute;">
+            <div style="width: 36px; height: 20px; background-color: {{ contratoActual.estado === 'Activo' ? '#0f172a' : '#e2e8f0' }}; border-radius: 9999px; position: relative; transition: background-color 0.2s;">
+              <div style="width: 16px; height: 16px; background-color: #ffffff; border-radius: 50%; position: absolute; top: 2px; left: {{ contratoActual.estado === 'Activo' ? '18px' : '2px' }}; transition: left 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.1);"></div>
+            </div>
+            <span style="margin-left: 12px; font-size: 13px; font-weight: 600; color: #334155;">{{ contratoActual.estado }}</span>
+          </label>
         </div>
       </div>
       <div style="display:flex; justify-content:flex-end; gap:12px; border-top:1px solid #f1f5f9; padding-top:16px;">
@@ -421,5 +198,7 @@
   </div>
 
 
+  <!-- Modal grande de detalle de contrato -->
+  <app-contrato-detalle *ngIf="modalGrandeAbierto" [contratoId]="contratoIdSeleccionado" (cerrar)="cerrarModalGrandeContrato()"></app-contrato-detalle>
 
 </div>

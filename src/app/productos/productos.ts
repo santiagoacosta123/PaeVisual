@@ -54,6 +54,7 @@ export class Productos implements OnInit {
 
   mostrarFormulario = false;
   modoEdicion = false;
+  modalTipo: string = 'INSUMO'; // INSUMO | ENTRADA | SALIDA
   editandoId: any = null;
   indiceEdicion: number | null = null;
 
@@ -200,27 +201,29 @@ export class Productos implements OnInit {
   abrirFormulario(item: any = null): void {
     this.cerrarDetalles(); 
     this.mostrarFormulario = true;
+    this.modalTipo = 'INSUMO';
 
     if (item) {
       this.modoEdicion = true;
       this.editandoId = true;
-
-      if (this.pestanaActiva === 'inventario') {
-        this.indiceEdicion = this.inventario.indexOf(item);
-        this.itemForm = { ...item };
-      } else if (this.pestanaActiva === 'movimientos') {
-        this.indiceEdicion = this.movimientosInventario.indexOf(item);
-        this.movimientoForm = { ...item };
-      } else if (this.pestanaActiva === 'gramajes') {
-        this.indiceEdicion = this.gramajes.indexOf(item);
-        this.gramajeForm = { ...item };
-      }
+      this.indiceEdicion = this.inventario.indexOf(item);
+      this.itemForm = { ...item };
     } else {
       this.modoEdicion = false;
       this.editandoId = null;
       this.indiceEdicion = null;
       this.limpiarFormularios();
     }
+    this.cdr.detectChanges();
+  }
+
+  abrirModalMovimiento(tipo: string): void {
+    this.cerrarDetalles();
+    this.mostrarFormulario = true;
+    this.modalTipo = tipo;
+    this.modoEdicion = false;
+    this.limpiarFormularios();
+    this.movimientoForm.tipo_movimiento = tipo;
     this.cdr.detectChanges();
   }
 
@@ -262,7 +265,7 @@ export class Productos implements OnInit {
   }
 
   guardarInventario(): void {
-    if (this.pestanaActiva === 'inventario') {
+    if (this.modalTipo === 'INSUMO') {
       if (!this.itemForm.id_ingrediente || this.itemForm.cantidad_actual === null) {
         this.sweetAlert.warning('Campos incompletos', 'Llene los campos obligatorios del inventario.');
         return;
@@ -287,27 +290,20 @@ export class Productos implements OnInit {
           error: (err) => this.sweetAlert.error('Error', 'No se pudo crear el insumo.')
         });
       }
-    } else if (this.pestanaActiva === 'movimientos') {
+    } else if (this.modalTipo === 'ENTRADA' || this.modalTipo === 'SALIDA') {
       if (!this.movimientoForm.id_ingrediente || !this.movimientoForm.cantidad) {
         this.sweetAlert.warning('Campos incompletos', 'Complete los datos del movimiento.');
         return;
       }
 
-      if (this.modoEdicion && this.movimientoForm.id_movimiento_inventario) {
-        this.sweetAlert.warning('No soportado', 'Editar movimientos directamente no está permitido por seguridad. Considere anular y crear uno nuevo.');
-      } else {
-        this.productoService.crearMovimiento(this.movimientoForm).subscribe({
-          next: () => {
-            this.sweetAlert.success('Registrado', 'Movimiento de inventario guardado.');
-            this.cargarDatos();
-            this.cerrarFormulario();
-          },
-          error: (err) => this.sweetAlert.error('Error', 'No se pudo registrar el movimiento.')
-        });
-      }
-    } else if (this.pestanaActiva === 'gramajes') {
-      this.sweetAlert.success('Simulado', 'La funcionalidad de gramajes será conectada al backend próximamente.');
-      this.cerrarFormulario();
+      this.productoService.crearMovimiento(this.movimientoForm).subscribe({
+        next: () => {
+          this.sweetAlert.success('Registrado', 'Movimiento de inventario guardado.');
+          this.cargarDatos();
+          this.cerrarFormulario();
+        },
+        error: (err) => this.sweetAlert.error('Error', 'No se pudo registrar el movimiento.')
+      });
     }
   }
 

@@ -1,161 +1,221 @@
-<div class="flex h-screen w-screen overflow-hidden font-sans bg-cover bg-center bg-no-repeat" style="background-image: url('/fondo-login.png');">
+<div class="flex h-screen w-screen overflow-hidden font-sans bg-cover bg-center bg-no-repeat"
+  style="background-image: url('/fondo-login.png');">
+
   <style>
-    /* Forzar que el fondo del autocompletado sea del mismo color que el input */
+    /* Mantener el fondo del autocompletado igual al de los inputs */
     input:-webkit-autofill,
-    input:-webkit-autofill:hover, 
-    input:-webkit-autofill:focus, 
-    input:-webkit-autofill:active{
+    input:-webkit-autofill:hover,
+    input:-webkit-autofill:focus,
+    input:-webkit-autofill:active {
       -webkit-box-shadow: 0 0 0 30px #f8f9fa inset !important;
     }
   </style>
 
-  <!-- Lado Izquierdo: Logo y espacio para el plato -->
+  <!-- Lado izquierdo: Logo y presentación -->
   <div class="hidden md:flex w-1/2 flex-col items-center justify-center relative z-10 p-8">
-    
-    <!-- El logo -->
-    <img src="/sirae-logo.png" alt="Logo SIRAE" class="max-w-[75%] w-full h-auto drop-shadow-sm mb-4" />
-    
-    <!-- Texto Alimentando cada dia -->
+
+    <img src="/sirae-logo.png" alt="Logo SIRAE" class="max-w-[75%] w-full h-auto drop-shadow-sm mb-2" />
+
+    <h2 class="text-xl md:text-2xl font-semibold text-gray-800 mb-6 tracking-wide">
+      Programa de Alimentación Escolar
+    </h2>
+
     <div class="mt-4 flex items-center gap-4">
       <div class="w-8 h-[1.5px] bg-[#fac94b]"></div>
-      <p class="text-[#fac94b] text-2xl font-medium tracking-wide italic font-serif">Alimentando cada día</p>
+
+      <p class="text-[#fac94b] text-2xl font-medium tracking-wide italic font-serif">
+        Alimentando cada día
+      </p>
+
       <div class="w-8 h-[1.5px] bg-[#fac94b]"></div>
     </div>
   </div>
 
-  <!-- Lado Derecho: Formulario -->
-  <div class="w-full md:w-1/2 flex flex-col justify-center items-center p-8 relative z-10 bg-white/40 backdrop-blur-md md:bg-transparent md:backdrop-blur-none">
-    
-    <!-- Contenedor interno para mantener el ancho proporcionado -->
-    <div class="w-full max-w-[420px]">
-      
-      <div class="mb-10">
-        <!-- text-black para igualar el negro del logo, font-bold en lugar de extrabold para que no se vea tan grueso -->
+  <!-- Lado derecho: Formulario -->
+  <div
+    class="w-full md:w-1/2 flex flex-col justify-center items-center p-8 relative z-10 md:bg-transparent md:backdrop-blur-none">
+
+    <!-- Tarjeta de inicio de sesión -->
+    <div class="w-full max-w-[460px] bg-[#fdfcf8] rounded-[2.5rem] shadow-lg p-10 md:p-12 border border-gray-100">
+
+      <!-- Encabezado -->
+      <div class="mb-8 text-center">
+
         <h1 class="text-4xl md:text-5xl font-bold text-black mb-2 tracking-tight leading-tight italic font-serif">
           ¡Bienvenido
-          <br>
+          <br />
           <span class="text-[#fac94b]">de nuevo!</span>
         </h1>
-        <p class="text-sm md:text-base text-gray-500 mt-2 font-medium">Inicia sesión para continuar.</p>
+
+        <p class="text-sm md:text-base text-gray-500 mt-2 font-medium">
+          Inicia sesión para continuar.
+        </p>
+
       </div>
 
+      <!-- Formulario -->
       <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="space-y-5 w-full">
-        
-        <!-- Input Correo -->
+
+        <!-- Correo electrónico -->
         <div class="relative">
-          <div class="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-gray-500 z-10">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+
+          <div class="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-[#fac94b] z-10">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+              stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
             </svg>
           </div>
-          <input 
-            id="correo" 
-            type="email" 
-            formControlName="correo" 
-            placeholder="Correo electrónico" 
-            autocomplete="email"
-            class="w-full pl-12 pr-5 py-4 text-sm bg-white/90 border-none rounded-full outline-none text-black focus:ring-2 focus:ring-[#fac94b] transition-all placeholder-gray-400 font-medium shadow-sm relative z-0"
-          />
+
+          <input id="correo" type="email" formControlName="correo" placeholder="Correo electrónico" autocomplete="email"
+            class="w-full pl-14 pr-5 py-4 text-base bg-transparent border-2 border-gray-100 rounded-full outline-none text-black focus:border-[#fac94b] focus:ring-0 transition-all placeholder-gray-400 font-medium relative z-0" />
+
         </div>
-        <span class="text-xs text-red-500 mt-1 block pl-5" *ngIf="correo?.invalid && (correo?.dirty || correo?.touched)">
+
+        <!-- Validación del correo -->
+        <span class="text-xs text-red-500 mt-1 block pl-5"
+          *ngIf="correo?.invalid && (correo?.dirty || correo?.touched)">
           Ingresa un correo válido
         </span>
 
-        <!-- Input Contraseña -->
+        <!-- Contraseña -->
         <div class="relative">
-          <div class="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-gray-500 z-10">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+
+          <div class="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-[#fac94b] z-10">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+              stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
             </svg>
           </div>
-          <input 
-            id="clave" 
-            [type]="mostrarClave ? 'text' : 'password'" 
-            formControlName="clave" 
-            placeholder="Contraseña" 
-            class="w-full pl-12 pr-12 py-4 text-sm bg-white/90 border-none rounded-full outline-none text-black focus:ring-2 focus:ring-[#fac94b] transition-all placeholder-gray-400 font-medium shadow-sm relative z-0"
-          />
-          <button 
-            type="button" 
+
+          <input id="clave" [type]="mostrarClave ? 'text' : 'password'" formControlName="clave" placeholder="Contraseña"
+            autocomplete="current-password"
+            class="w-full pl-14 pr-12 py-4 text-base bg-transparent border-2 border-gray-100 rounded-full outline-none text-black focus:border-[#fac94b] focus:ring-0 transition-all placeholder-gray-400 font-medium relative z-0" />
+
+          <!-- Mostrar u ocultar contraseña -->
+          <button type="button"
             class="absolute inset-y-0 right-0 pr-5 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none z-10 cursor-pointer"
-            (click)="alternarClave()"
-          >
-            <svg *ngIf="!mostrarClave" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-            <svg *ngIf="mostrarClave" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
+            (click)="alternarClave()" aria-label="Mostrar u ocultar contraseña">
+
+            <!-- Icono: contraseña oculta -->
+            <svg *ngIf="!mostrarClave" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+              viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
+
+            <!-- Icono: contraseña visible -->
+            <svg *ngIf="mostrarClave" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+              stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+            </svg>
+
           </button>
         </div>
+
+        <!-- Validación de contraseña -->
         <span class="text-xs text-red-500 mt-1 block pl-5" *ngIf="clave?.invalid && (clave?.dirty || clave?.touched)">
           Mínimo 6 caracteres
         </span>
-        
-        <!-- Olvidaste contraseña -->
+
+        <!-- Recuperar contraseña -->
         <div class="flex justify-end pt-1 pb-2">
-          <button 
-            type="button" 
-            (click)="abrirModalRecuperar()" 
-            class="text-xs text-[#fac94b] font-semibold hover:text-[#e0b443] transition-colors focus:outline-none cursor-pointer"
-          >
+
+          <button type="button" (click)="abrirModalRecuperar()"
+            class="text-xs text-[#fac94b] font-semibold hover:text-[#e0b443] transition-colors focus:outline-none cursor-pointer">
             ¿Olvidaste tu contraseña?
           </button>
+
         </div>
 
-        <div class="bg-red-50 text-red-700 px-4 py-3 rounded-full text-xs mb-4 border border-red-200 text-center" *ngIf="errorMensaje">
+        <!-- Mensaje de error -->
+        <div class="bg-red-50 text-red-700 px-4 py-3 rounded-full text-xs mb-4 border border-red-200 text-center"
+          *ngIf="errorMensaje">
           {{ errorMensaje }}
         </div>
 
-        <!-- Botón -->
-        <button type="submit" class="w-full py-4 bg-[#fac94b] hover:bg-[#e0b443] text-black font-bold rounded-full shadow-md transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2" [disabled]="cargando">
-          <span *ngIf="!cargando">Iniciar sesión</span>
-          <span *ngIf="cargando">Verificando...</span>
-          <span *ngIf="!cargando" class="text-lg font-black leading-none mt-[1px]">&rarr;</span>
+        <!-- Botón de inicio de sesión -->
+        <button type="submit"
+          class="w-full py-4 bg-[#fac94b] hover:bg-[#e0b443] text-black font-semibold rounded-full shadow-sm transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2 mt-4"
+          [disabled]="cargando">
+
+          <span *ngIf="!cargando" class="text-xl leading-none">
+            &rarr;
+          </span>
+
+          <span *ngIf="!cargando" class="text-base">
+            Iniciar sesión
+          </span>
+
+          <span *ngIf="cargando" class="text-base">
+            Verificando...
+          </span>
+
         </button>
 
       </form>
 
+      <!-- Mensaje de seguridad: sin acceso con Google -->
       <div class="mt-4 text-center text-xs text-gray-500 font-medium">
         Acceso seguro con correo y contraseña
       </div>
 
     </div>
   </div>
-
 </div>
 
 <!-- Modal para recuperar contraseña -->
-<div *ngIf="mostrarModalRecuperar" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-  <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative animate-fade-in">
-    
-    <h3 class="text-xl font-bold text-gray-800 mb-2">Recuperar Contraseña</h3>
-    <p class="text-xs text-gray-500 mb-6">Ingresa tu correo institucional y te enviaremos las instrucciones para restablecer tu acceso.</p>
+<div *ngIf="mostrarModalRecuperar"
+  class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
 
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative animate-fade-in">
+
+    <h3 class="text-xl font-bold text-gray-800 mb-2">
+      Recuperar Contraseña
+    </h3>
+
+    <p class="text-xs text-gray-500 mb-6">
+      Ingresa tu correo institucional y te enviaremos las instrucciones para restablecer tu acceso.
+    </p>
+
+    <!-- Correo para recuperar contraseña -->
     <div class="flex flex-col mb-4">
-      <label for="correoRecuperar" class="text-xs font-semibold text-gray-700 mb-2">Correo electrónico</label>
-      <input 
-        id="correoRecuperar" 
-        type="email" 
-        [(ngModel)]="correoRecuperacion"
-        placeholder="usuario@correo.com" 
-        class="w-full px-3.5 py-3 text-sm border border-gray-300 rounded-lg outline-none bg-gray-50 focus:border-amber-500 focus:bg-white focus:ring-2 focus:ring-amber-500/10 transition-all"
-      />
+
+      <label for="correoRecuperar" class="text-xs font-semibold text-gray-700 mb-2">
+        Correo electrónico
+      </label>
+
+      <input id="correoRecuperar" type="email" [(ngModel)]="correoRecuperacion" placeholder="usuario@correo.com"
+        autocomplete="email"
+        class="w-full px-3.5 py-3 text-sm border border-gray-300 rounded-lg outline-none bg-gray-50 focus:border-amber-500 focus:bg-white focus:ring-2 focus:ring-amber-500/10 transition-all" />
+
     </div>
 
+    <!-- Botones del modal -->
     <div class="flex justify-end space-x-3 mt-6">
-      <button 
-        type="button" 
-        (click)="cerrarModalRecuperar()" 
-        class="px-4 py-2.5 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors cursor-pointer"
-      >
+
+      <button type="button" (click)="cerrarModalRecuperar()"
+        class="px-4 py-2.5 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors cursor-pointer">
         Cancelar
       </button>
-      <button 
-        type="button" 
-        (click)="enviarCorreoRecuperacion()" 
+
+      <button type="button" (click)="enviarCorreoRecuperacion()"
         class="px-4 py-2.5 text-sm font-bold text-slate-900 bg-amber-400 hover:bg-amber-500 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
-        [disabled]="enviandoRecuperacion"
-      >
-        <span *ngIf="!enviandoRecuperacion">Enviar enlace</span>
-        <span *ngIf="enviandoRecuperacion">Enviando...</span>
+        [disabled]="enviandoRecuperacion">
+
+        <span *ngIf="!enviandoRecuperacion">
+          Enviar enlace
+        </span>
+
+        <span *ngIf="enviandoRecuperacion">
+          Enviando...
+        </span>
+
       </button>
+
     </div>
 
   </div>

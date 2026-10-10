@@ -30,11 +30,6 @@
         <button type="button" (click)="abrirFormulario()" class="bg-amber-400 hover:bg-amber-500 text-amber-950 font-semibold px-4 py-2 rounded-xl text-xs transition cursor-pointer whitespace-nowrap inline-flex items-center gap-1.5 shadow-2xs">
           <span>+ Nuevo usuario</span>
         </button>
-
-        <!-- Botón Imprimir / Reporte -->
-        <button type="button" onclick="window.print()" class="bg-slate-900 hover:bg-slate-800 text-white font-semibold px-4 py-2 rounded-xl text-xs transition cursor-pointer whitespace-nowrap shadow-2xs">
-          Reporte
-        </button>
       </div>
     </div>
 
@@ -197,8 +192,11 @@
         </div>
 
         <div class="flex items-center gap-2 pt-1">
-          <input type="checkbox" [(ngModel)]="usuarioForm.is_active" id="usuarioActivoCheck" class="w-4 h-4 rounded border-slate-300 text-slate-900 cursor-pointer accent-slate-900">
-          <label for="usuarioActivoCheck" class="font-semibold text-slate-700 cursor-pointer">Usuario Activo</label>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" [(ngModel)]="usuarioForm.is_active" class="sr-only peer">
+            <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-slate-900"></div>
+            <span class="ml-3 font-semibold text-slate-700 text-xs">Usuario Activo</span>
+          </label>
         </div>
       </div>
 

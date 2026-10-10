@@ -15,6 +15,7 @@ import { MenusComponent } from './menus/menus';
 import { ContratoDetalleComponent } from './contrato-detalle/contrato-detalle';
 import { NotificacionesComponent } from './notificaciones/notificaciones.component';
 import { authGuard } from './services/auth.guard';
+import { BancoDatosComponent } from './banco-datos/banco-datos';
 
 export const routes: Routes = [
 
@@ -95,6 +96,10 @@ export const routes: Routes = [
       {
         path: 'notificaciones',
         component: NotificacionesComponent
+      },
+      {
+        path: 'banco-datos',
+        component: BancoDatosComponent
       }
     ]
   },

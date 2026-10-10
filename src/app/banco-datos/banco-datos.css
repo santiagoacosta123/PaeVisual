@@ -1,0 +1,874 @@
+/* =========================================================
+   BANCO DE DATOS
+   Diseño limpio / institucional
+   ========================================================= */
+
+.banco-datos-page {
+  min-height: 100%;
+  padding: 42px 52px 60px;
+  background: #f7f7f5;
+  color: #292929;
+  box-sizing: border-box;
+}
+
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+.bd-header {
+  max-width: 1180px;
+  margin: 0 auto 30px;
+
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 30px;
+}
+
+.bd-header-info {
+  min-width: 0;
+}
+
+.bd-eyebrow {
+  display: block;
+  margin-bottom: 9px;
+
+  color: #b18a00;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+}
+
+.bd-title {
+  margin: 0;
+
+  color: #292929;
+  font-size: 34px;
+  line-height: 1.15;
+  font-weight: 500;
+  letter-spacing: -0.8px;
+}
+
+.bd-subtitle {
+  margin: 10px 0 0;
+
+  color: #858580;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+
+/* =========================================================
+   BOTÓN NUEVO
+   ========================================================= */
+
+.bd-new-button {
+  height: 42px;
+  padding: 0 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: none;
+  border-radius: 10px;
+  background: #facc15;
+  color: #713f12;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.bd-new-button:hover {
+  background: #eab308;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.bd-new-button .material-symbols-outlined {
+  font-size: 18px;
+}
+
+
+/* =========================================================
+   TABS
+   ========================================================= */
+
+.bd-tabs {
+  max-width: 1180px;
+  margin: 0 auto 30px;
+
+  min-height: 64px;
+  padding: 5px;
+
+  display: flex;
+  align-items: center;
+  gap: 2px;
+
+  background: #ffffff;
+
+  border: 1px solid #e5e3dc;
+  border-radius: 15px;
+
+  box-sizing: border-box;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.bd-tabs::-webkit-scrollbar {
+  height: 6px;
+}
+.bd-tabs::-webkit-scrollbar-thumb {
+  background-color: #dcdcdc;
+  border-radius: 10px;
+}
+
+.bd-tab {
+  flex-shrink: 0;
+  height: 52px;
+  padding: 0 25px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 0;
+  border-radius: 10px;
+
+  background: transparent;
+  color: #777770;
+
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+
+  cursor: pointer;
+
+  transition:
+    color .18s ease,
+    background .18s ease;
+}
+
+.bd-tab:hover {
+  color: #292929;
+  background: #faf9f5;
+}
+
+.bd-tab.active {
+  background: #f6c400;
+  color: #202020;
+  font-weight: 650;
+}
+
+
+/* =========================================================
+   SECCIÓN
+   ========================================================= */
+
+.bd-section {
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+
+/* =========================================================
+   HEADER DE SECCIÓN
+   ========================================================= */
+
+.bd-section-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+
+  margin-bottom: 18px;
+}
+
+.bd-section-icon {
+  width: 48px;
+  height: 48px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex: 0 0 48px;
+
+  border-radius: 12px;
+
+  background: #fff4c7;
+  color: #c49a00;
+}
+
+.bd-section-icon .material-symbols-outlined {
+  font-size: 24px;
+}
+
+.bd-section-header h2 {
+  margin: 0;
+
+  color: #30302e;
+
+  font-size: 21px;
+  font-weight: 500;
+  letter-spacing: -0.2px;
+}
+
+.bd-section-header p {
+  margin: 4px 0 0;
+
+  color: #898983;
+
+  font-size: 13px;
+}
+
+
+/* =========================================================
+   CONTENEDOR TABLA
+   ========================================================= */
+
+.bd-table-container {
+  overflow: hidden;
+
+  background: #ffffff;
+
+  border: 1px solid #e4e2dc;
+  border-radius: 16px;
+}
+
+
+/* =========================================================
+   TOOLBAR
+   ========================================================= */
+
+.bd-table-toolbar {
+  min-height: 82px;
+  padding: 17px 20px;
+
+  display: flex;
+  align-items: center;
+
+  border-bottom: 1px solid #e9e7e1;
+  box-sizing: border-box;
+}
+
+.bd-search {
+  width: 400px;
+  max-width: 100%;
+  height: 48px;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  padding: 0 14px;
+
+  border: 1px solid #e2e0d9;
+  border-radius: 10px;
+
+  background: #ffffff;
+
+  box-sizing: border-box;
+}
+
+.bd-search:focus-within {
+  border-color: #c9a500;
+}
+
+.bd-search .material-symbols-outlined {
+  color: #969690;
+  font-size: 21px;
+}
+
+.bd-search input {
+  width: 100%;
+
+  border: 0;
+  outline: none;
+
+  background: transparent;
+
+  color: #333;
+
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.bd-search input::placeholder {
+  color: #aaa9a3;
+}
+
+
+/* =========================================================
+   TABLA
+   ========================================================= */
+
+.bd-table-scroll {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.bd-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  font-size: 14px;
+}
+
+.bd-table thead {
+  background: #fafaf8;
+}
+
+.bd-table th {
+  height: 44px;
+  padding: 0 21px;
+
+  text-align: left;
+  white-space: nowrap;
+
+  color: #989790;
+
+  font-size: 11px;
+  font-weight: 700;
+
+  text-transform: uppercase;
+  letter-spacing: .55px;
+
+  border-bottom: 1px solid #e7e5df;
+}
+
+.bd-table td {
+  height: 72px;
+  padding: 0 21px;
+
+  color: #575751;
+
+  border-bottom: 1px solid #eceae5;
+}
+
+.bd-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.bd-table tbody tr {
+  transition: background .15s ease;
+}
+
+.bd-table tbody tr:hover {
+  background: #fcfcfa;
+}
+
+.bd-cell-value {
+  color: #4c4c47;
+  font-size: 14px;
+}
+
+.bd-actions-header {
+  width: 100px;
+  text-align: right !important;
+}
+
+.bd-actions {
+  width: 100px;
+
+  text-align: right;
+  white-space: nowrap;
+}
+
+
+/* =========================================================
+   BOTONES DE ACCIONES
+   ========================================================= */
+
+.bd-action {
+  width: 34px;
+  height: 34px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  margin-left: 4px;
+
+  border: 0;
+  border-radius: 8px;
+
+  background: transparent;
+
+  cursor: pointer;
+
+  transition:
+    background .15s ease,
+    color .15s ease;
+}
+
+.bd-action .material-symbols-outlined {
+  font-size: 18px;
+}
+
+.bd-action.edit {
+  color: #73736d;
+}
+
+.bd-action.edit:hover {
+  background: #f1f1ed;
+  color: #333;
+}
+
+.bd-action.delete {
+  color: #99928a;
+}
+
+.bd-action.delete:hover {
+  background: #fff0ee;
+  color: #b34b43;
+}
+
+
+/* =========================================================
+   EMPTY STATE
+   ========================================================= */
+
+.bd-empty {
+  min-height: 350px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  padding: 40px;
+
+  text-align: center;
+}
+
+.bd-empty>.material-symbols-outlined {
+  width: 58px;
+  height: 58px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  margin-bottom: 16px;
+
+  border-radius: 50%;
+
+  background: #fff5cc;
+  color: #b99100;
+
+  font-size: 28px;
+}
+
+.bd-empty h3 {
+  margin: 0 0 7px;
+
+  color: #343431;
+
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.bd-empty p {
+  margin: 0 0 20px;
+
+  color: #8b8b84;
+
+  font-size: 14px;
+}
+
+.bd-empty-button {
+  height: 42px;
+  padding: 0 17px;
+
+  border: 1px solid #d8c46c;
+  border-radius: 8px;
+
+  background: #fffdf2;
+  color: #806600;
+
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+
+/* =========================================================
+   SKELETON
+   ========================================================= */
+
+.bd-loading {
+  padding: 0 20px;
+}
+
+.bd-skeleton-row {
+  height: 72px;
+
+  display: grid;
+  grid-template-columns: 1fr 1.5fr .5fr .7fr;
+
+  align-items: center;
+  gap: 20px;
+
+  border-bottom: 1px solid #eceae5;
+}
+
+.bd-skeleton {
+  height: 12px;
+
+  border-radius: 6px;
+
+  background: #eeeeea;
+
+  animation: skeletonPulse 1.4s ease-in-out infinite;
+}
+
+.skeleton-sm {
+  width: 55px;
+}
+
+.skeleton-md {
+  width: 80px;
+}
+
+.skeleton-lg {
+  width: 120px;
+}
+
+.skeleton-xl {
+  width: 180px;
+}
+
+@keyframes skeletonPulse {
+
+  0%,
+  100% {
+    opacity: .55;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+
+/* =========================================================
+   MODAL
+   ========================================================= */
+
+.bd-modal-overlay {
+  position: fixed;
+  inset: 0;
+
+  z-index: 1000;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 25px;
+
+  background: rgba(25, 25, 23, .38);
+
+  backdrop-filter: blur(2px);
+}
+
+.bd-modal {
+  width: 100%;
+  max-width: 650px;
+  max-height: 90vh;
+
+  display: flex;
+  flex-direction: column;
+
+  overflow: hidden;
+
+  background: #ffffff;
+
+  border-radius: 16px;
+
+  box-shadow: 0 20px 60px rgba(0, 0, 0, .15);
+
+  animation: modalIn .18s ease-out;
+}
+
+@keyframes modalIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+
+/* MODAL HEADER */
+
+.bd-modal-header {
+  min-height: 82px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 0 25px;
+
+  border-bottom: 1px solid #e9e7e1;
+}
+
+.bd-modal-eyebrow {
+  display: block;
+
+  margin-bottom: 4px;
+
+  color: #b18a00;
+
+  font-size: 10px;
+  font-weight: 700;
+
+  letter-spacing: 1px;
+}
+
+.bd-modal-header h2 {
+  margin: 0;
+
+  color: #2e2e2b;
+
+  font-size: 21px;
+  font-weight: 500;
+}
+
+.bd-modal-close {
+  width: 38px;
+  height: 38px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 0;
+  border-radius: 8px;
+
+  background: transparent;
+  color: #777770;
+
+  cursor: pointer;
+}
+
+.bd-modal-close:hover {
+  background: #f5f5f2;
+  color: #333;
+}
+
+
+/* MODAL BODY */
+
+.bd-modal-body {
+  padding: 25px;
+
+  overflow-y: auto;
+}
+
+.bd-modal-description {
+  margin: 0 0 24px;
+
+  color: #777770;
+
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+
+/* FORMULARIO */
+
+.bd-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.bd-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.bd-form-group label {
+  color: #55554f;
+
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.bd-input {
+  width: 100%;
+  height: 44px;
+
+  padding: 0 12px;
+
+  box-sizing: border-box;
+
+  border: 1px solid #dedcd5;
+  border-radius: 8px;
+
+  outline: none;
+
+  background: #ffffff;
+  color: #353532;
+
+  font-family: inherit;
+  font-size: 14px;
+
+  transition: border-color .15s ease;
+}
+
+.bd-input:focus {
+  border-color: #c5a000;
+}
+
+.bd-input::placeholder {
+  color: #aaa9a3;
+}
+
+
+/* MODAL FOOTER */
+
+.bd-modal-footer {
+  min-height: 75px;
+
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+
+  padding: 0 25px;
+
+  border-top: 1px solid #e9e7e1;
+}
+
+.bd-cancel {
+  height: 42px;
+  padding: 0 17px;
+
+  border: 1px solid #dedcd5;
+  border-radius: 8px;
+
+  background: #ffffff;
+  color: #55554f;
+
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+.bd-cancel:hover {
+  background: #f7f7f4;
+}
+
+.bd-save {
+  height: 42px;
+  padding: 0 18px;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+
+  border: 0;
+  border-radius: 8px;
+
+  background: #f6c400;
+  color: #202020;
+
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 650;
+
+  cursor: pointer;
+}
+
+.bd-save:hover {
+  background: #eab900;
+}
+
+.bd-save .material-symbols-outlined {
+  font-size: 18px;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 900px) {
+
+  .banco-datos-page {
+    padding: 30px 25px 45px;
+  }
+
+  .bd-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .bd-new-button {
+    width: 100%;
+  }
+
+  .bd-tabs {
+    overflow-x: auto;
+  }
+
+  .bd-tab {
+    flex: 0 0 auto;
+  }
+
+}
+
+
+@media (max-width: 650px) {
+
+  .banco-datos-page {
+    padding: 25px 15px 40px;
+  }
+
+  .bd-title {
+    font-size: 28px;
+  }
+
+  .bd-tabs {
+    border-radius: 12px;
+  }
+
+  .bd-tab {
+    padding: 0 17px;
+    font-size: 13px;
+  }
+
+  .bd-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .bd-modal-overlay {
+    padding: 12px;
+  }
+
+  .bd-modal {
+    max-height: 94vh;
+  }
+
+  .bd-modal-footer {
+    padding: 0 18px;
+  }
+
+}
