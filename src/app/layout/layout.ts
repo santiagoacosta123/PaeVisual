@@ -14,6 +14,12 @@ import { AuthService } from '../services/auth.service';
   styleUrls: ['./layout.css']
 })
 export class LayoutComponent implements OnInit {
+  // Control de Roles para el Menú Lateral
+  rolUsuario: string = '';
+  esSupervisor: boolean = false;
+  esAdministrador: boolean = false;
+  esGestor: boolean = false;
+
   // Estado y métodos del perfil de usuario desplegable
   mostrarPerfil: boolean = false;
   vistaActual: string = 'perfil';
@@ -23,22 +29,43 @@ export class LayoutComponent implements OnInit {
   listaNotificaciones: Notificacion[] = [];
   notificacionesNoLeidas: number = 0;
 
+  perfil = {
+    nombre: '',
+    correo: '',
+    rol: '',
+  };
+
+  editForm = { ...this.perfil };
+  passwordForm = { actual: '', nueva: '', confirmar: '' };
+
   constructor(
     private notificacionService: NotificacionService,
+<<<<<<< Updated upstream
     private authService: AuthService,
     private cdr: ChangeDetectorRef,
+=======
+    private authService: AuthService
+>>>>>>> Stashed changes
   ) {}
 
   ngOnInit(): void {
     const usuario = this.authService.obtenerUsuario();
     if (usuario) {
       this.perfil = {
-        nombre: `${usuario.nombre} ${usuario.apellido}`.trim() || usuario.correo,
+        nombre: `${usuario.nombre || ''} ${usuario.apellido || ''}`.trim() || usuario.correo,
         correo: usuario.correo,
         rol: usuario.rol || 'Sin rol asignado',
       };
       this.editForm = { ...this.perfil };
+
+      // Normalizar y evaluar el rol del usuario autenticado
+      this.rolUsuario = String(usuario.rol || '').toLowerCase().trim();
+      
+      this.esSupervisor = this.rolUsuario.includes('supervisor');
+      this.esAdministrador = this.rolUsuario.includes('admin') || this.rolUsuario.includes('administrador');
+      this.esGestor = this.rolUsuario.includes('gestor');
     }
+
     this.cargarNotificacionesHeader();
   }
 
@@ -76,6 +103,7 @@ export class LayoutComponent implements OnInit {
     });
   }
 
+<<<<<<< Updated upstream
   perfil = {
     nombre: '',
     correo: '',
@@ -88,6 +116,8 @@ export class LayoutComponent implements OnInit {
   passwordError = '';
   passwordMensaje = '';
 
+=======
+>>>>>>> Stashed changes
   cerrarPanel(): void {
     this.mostrarPerfil = false;
     this.mostrarNotificaciones = false;

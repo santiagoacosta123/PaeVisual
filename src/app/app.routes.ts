@@ -1,7 +1,11 @@
 import { Routes } from '@angular/router';
 
+<<<<<<< Updated upstream
 import { LoginComponent } from './login/login'; // <--- Corregido aquí
 import { RecuperarPasswordComponent } from './recuperar-password/recuperar-password';
+=======
+import { LoginComponent } from './login/login';
+>>>>>>> Stashed changes
 import { LayoutComponent } from './layout/layout';
 import { InicioComponent } from './inicio/inicio';
 import { UsuariosComponent } from './usuarios/usuarios';
@@ -15,13 +19,19 @@ import { UnidadesMedidaComponent } from './unidades-medida/unidades-medida';
 import { MenusComponent } from './menus/menus';
 import { ContratoDetalleComponent } from './contrato-detalle/contrato-detalle';
 import { NotificacionesComponent } from './notificaciones/notificaciones.component';
+import { DashboardSupervisor } from './dashboard-supervisor/dashboard-supervisor';
 import { authGuard } from './services/auth.guard';
 
-export const routes: Routes = [
+// Importaciones corregidas sin la extensión .component
+import { RegistrarEntregaAlimentosComponent } from './registrar-entrega-alimentos/registrar-entrega-alimentos';
+import { EntregasTipoMercadoComponent } from './entregas-tipo-mercado/entregas-tipo-mercado';
+import { SaldosAlmacenComponent } from './saldos-almacen/saldos-almacen';
+import { EntradasAjustesInventarioComponent } from './entradas-ajustes-inventario/entradas-ajustes-inventario';
 
+export const routes: Routes = [
   {
     path: 'login',
-    component: LoginComponent // <--- Corregido aquí también
+    component: LoginComponent
   },
   {
     path: 'recuperar-password',
@@ -39,12 +49,43 @@ export const routes: Routes = [
     component: LayoutComponent,
     canActivate: [authGuard],
     children: [
-
       {
         path: 'inicio',
         component: InicioComponent
       },
 
+      {
+        path: 'dashboard-supervisor',
+        component: DashboardSupervisor
+      },
+
+      /* RUTAS MÓDULOS DE SUPERVISIÓN */
+      {
+        path: 'registrar-entrega-alimentos',
+        component: RegistrarEntregaAlimentosComponent
+      },
+
+      {
+        path: 'historial-entregas',
+        component: RegistrarEntregaAlimentosComponent   // pantalla nueva: historial + alertas + editar/eliminar
+      },
+
+      {
+        path: 'entregas-tipo-mercado',
+        component: EntregasTipoMercadoComponent
+      },
+
+      {
+        path: 'saldos-almacen',
+        component: SaldosAlmacenComponent
+      },
+
+      {
+        path: 'entradas-ajustes-inventario',
+        component: EntradasAjustesInventarioComponent
+      },
+
+      /* RUTAS MANTENIDAS DEL SISTEMA */
       {
         path: 'usuarios',
         component: UsuariosComponent
@@ -94,8 +135,6 @@ export const routes: Routes = [
         path: 'menus',
         component: MenusComponent
       },
-
-
 
       {
         path: 'notificaciones',

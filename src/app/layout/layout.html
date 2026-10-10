@@ -3,7 +3,7 @@
   <!-- Sidebar -->
   <aside style="width:280px; background:#fff; border-right:1px solid #e0e0e0; display:flex; flex-direction:column; padding:24px 20px; box-sizing:border-box; flex-shrink:0;">
 
-    <!-- Logo / Marca SIRAE con la imagen real -->
+    <!-- Logo / Marca SIRAE -->
     <div style="display:flex; align-items:center; gap:12px; margin-bottom:36px;">
       <img src="sirae-logo.png" alt="Logo SIRAE" style="height:36px; width:auto; object-fit:contain;" />
     </div>
@@ -15,61 +15,86 @@
 
     <!-- Navegación -->
     <nav class="flex flex-col gap-1 flex-1" style="overflow-y:auto;">
+      
+      <!-- INICIO (Para todos) -->
       <a routerLink="inicio" routerLinkActive="active-link"
          style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
         <span class="material-symbols-outlined nav-icon" style="font-size:20px;">home</span>
         Inicio
       </a>
-      <a routerLink="contratos" routerLinkActive="active-link"
+
+      <!-- PANEL SUPERVISOR (Exclusivo Supervisor) -->
+      <a *ngIf="esSupervisor" routerLink="dashboard-supervisor" routerLinkActive="active-link"
+         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
+        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">verified_user</span>
+        Panel Supervisor
+      </a>
+
+      <!-- MÓDULOS EXCLUSIVOS DE SUPERVISOR -->
+      <a *ngIf="esSupervisor" routerLink="historial-entregas" routerLinkActive="active-link"
+         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
+        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">history</span>
+        Consultar historial de entregas
+      </a>
+
+      <a *ngIf="esSupervisor" routerLink="entregas-tipo-mercado" routerLinkActive="active-link"
+         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
+        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">filter_alt</span>
+        Filtrar entregas por tipo de mercado
+      </a>
+
+      <a *ngIf="esSupervisor" routerLink="registrar-entrega-alimentos" routerLinkActive="active-link"
+         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
+        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">local_shipping</span>
+        Registrar entrega de alimentos
+      </a>
+
+      <!-- MÓDULOS EXCLUSIVOS DE ADMINISTRADOR -->
+      <a *ngIf="!esAdministrador && !esSupervisor" routerLink="saldos-almacen" routerLinkActive="active-link"
+         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
+        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">inventory_2</span>
+        Consultar y filtrar saldos de almacén
+      </a>
+
+      <a *ngIf="!esAdministrador && !esSupervisor" routerLink="entradas-ajustes-inventario" routerLinkActive="active-link"
+         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
+        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">edit_note</span>
+        Registrar entradas y ajustes de inventario
+      </a>
+
+      <a *ngIf="!esSupervisor" routerLink="contratos" routerLinkActive="active-link"
          style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
         <span class="material-symbols-outlined nav-icon" style="font-size:20px;">description</span>
         Contratos
       </a>
-      <a routerLink="usuarios" routerLinkActive="active-link"
+
+      <a *ngIf="!esSupervisor" routerLink="usuarios" routerLinkActive="active-link"
          style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
         <span class="material-symbols-outlined nav-icon" style="font-size:20px;">people</span>
         Usuarios
       </a>
-      <a routerLink="rol" routerLinkActive="active-link"
+
+      <a *ngIf="!esSupervisor" routerLink="rol" routerLinkActive="active-link"
          style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
         <span class="material-symbols-outlined nav-icon" style="font-size:20px;">shield</span>
         Roles
       </a>
-      <a routerLink="productos" routerLinkActive="active-link"
+
+      <a *ngIf="!esSupervisor" routerLink="productos" routerLinkActive="active-link"
          style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
         <span class="material-symbols-outlined nav-icon" style="font-size:20px;">package</span>
         Productos (Inventario)
       </a>
-      <a routerLink="unidades-medida" routerLinkActive="active-link"
+
+      <a *ngIf="!esSupervisor" routerLink="unidades-medida" routerLinkActive="active-link"
          style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
         <span class="material-symbols-outlined nav-icon" style="font-size:20px;">straighten</span>
         Unidades
       </a>
-      <!-- Módulos Ocultos Temporalmente 
-      <a routerLink="menus" routerLinkActive="active-link"
-         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
-        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">restaurant_menu</span>
-        Menús y Platos
-      </a>
-      <a routerLink="asistencia" routerLinkActive="active-link"
-         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
-        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">checklist</span>
-        Asistencia
-      </a>
-      <a routerLink="entregas" routerLinkActive="active-link"
-         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
-        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">local_shipping</span>
-        Entregas
-      </a>
-      <a routerLink="reportes" routerLinkActive="active-link"
-         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
-        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">bar_chart</span>
-        Reportes
-      </a>
-      -->
+
     </nav>
 
-    <!-- Parte inferior del sidebar: Configuración y Cerrar sesión -->
+    <!-- Configuración y Cerrar sesión -->
     <div style="border-top:1px solid #eeeeee; padding-top:16px; margin-top:16px; display:flex; flex-direction:column; gap:6px;">
       <button type="button" (click)="configurar()"
         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px; background:none; border:none; cursor:pointer; color:#555555; font-size:14px; font-weight:500; width:100%; text-align:left;">
@@ -86,28 +111,25 @@
 
   <main style="flex:1; min-width:0; max-width:100%; padding:24px 32px; position:relative; overflow-y:auto; overflow-x:hidden; display:flex; flex-direction:column; gap:20px; box-sizing:border-box;">
 
-    <!-- Barra superior moderna -->
+    <!-- Barra superior -->
     <div style="background:#fff; border:1px solid #e0e0e0; border-radius:14px; padding:12px 24px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 2px 6px rgba(0,0,0,0.02); flex-shrink:0;">
       
-      <!-- Título de la sección -->
       <div style="display:flex; align-items:center; gap:16px;">
         <h1 style="font-size:18px; font-weight:700; color:#1a1a1a; margin:0;">Panel de Control</h1>
       </div>
 
-      <!-- Acciones de la derecha: Notificaciones y Perfil -->
       <div style="display:flex; align-items:center; gap:16px;">
         
-        <!-- Botón de Notificaciones -->
+        <!-- Notificaciones -->
         <button type="button" (click)="toggleNotificaciones()"
           style="background:#f8f9fc; border:1px solid #eee; border-radius:12px; width:42px; height:42px; display:flex; align-items:center; justify-content:center; cursor:pointer; position:relative; transition:background 0.2s;">
           <span class="material-symbols-outlined" style="font-size:20px; color:#555;">notifications</span>
           <span *ngIf="notificacionesNoLeidas > 0" style="position:absolute; top:9px; right:9px; width:8px; height:8px; background:#e0a316; border-radius:50%; border:2px solid #fff;"></span>
         </button>
 
-        <!-- Divisor vertical -->
         <div style="width:1px; height:28px; background:#eee;"></div>
 
-        <!-- Botón de Perfil con foto, nombre, rol y flecha -->
+        <!-- Perfil -->
         <button type="button" (click)="togglePerfil()"
           style="background:none; border:none; display:flex; align-items:center; gap:12px; cursor:pointer; padding:6px 10px; border-radius:12px; transition:background 0.2s;"
           class="profile-top-btn">
@@ -122,7 +144,7 @@
       </div>
     </div>
 
-    <!-- Panel de notificaciones desplegable -->
+    <!-- Panel Notificaciones Desplegable -->
     <div *ngIf="mostrarNotificaciones"
       style="position:absolute; top:88px; right:120px; width:360px; background:#fff; border:1px solid #e0e0e0; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,0.12); z-index:100; overflow:hidden;">
       
@@ -156,7 +178,7 @@
       </div>
     </div>
 
-    <!-- Panel de perfil desplegable con la imagen real -->
+    <!-- Panel Perfil Desplegable -->
     <div *ngIf="mostrarPerfil"
       style="position:absolute; top:88px; right:32px; width:320px; background:#fff; border:1px solid #e0e0e0; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,0.12); z-index:100; overflow:hidden;">
       
@@ -229,16 +251,16 @@
       </div>
     </div>
 
-    <!-- Fondo transparente para cerrar los paneles desplegables -->
+    <!-- Fondo Cierre Paneles -->
     <div *ngIf="mostrarPerfil || mostrarNotificaciones" (click)="cerrarPanel()" style="position:fixed; inset:0; z-index:99;"></div>
 
-    <!-- Vistas Hijas Dinámicas -->
+    <!-- Contenido Dinámico -->
     <router-outlet></router-outlet>
 
   </main>
 </div>
 
-<!-- ESTILOS CSS -->
+<!-- ESTILOS -->
 <style>
   .active-link {
     background: #fcf8ec !important;
