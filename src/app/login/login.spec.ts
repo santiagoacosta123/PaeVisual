@@ -146,7 +146,7 @@ describe('LoginComponent', () => {
     component.enviarCorreoRecuperacion();
 
     expect(component.codigoRecuperacionDesarrollo).toBe('123456');
-    expect(component.mensajeRecuperacion).toContain('Modo local');
+    expect(component.mensajeRecuperacion).toContain('Código de prueba');
   });
 
   it('rejects an invalid recovery email without calling the API', () => {

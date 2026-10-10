@@ -131,7 +131,7 @@ export class LoginComponent implements OnInit {
         this.enlaceRecuperacionDesarrollo = response.debug_link || '';
         this.codigoRecuperacionDesarrollo = response.debug_code || '';
         this.mensajeRecuperacion = this.codigoRecuperacionDesarrollo
-          ? 'Modo local: usa este código para cambiar tu contraseña.'
+          ? 'Código de prueba: úsalo para cambiar tu contraseña.'
           : this.enlaceRecuperacionDesarrollo
           ? 'Modo local: abre este enlace para crear la nueva contraseña.'
           : response.mensaje
