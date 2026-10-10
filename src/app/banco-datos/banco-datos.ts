@@ -21,7 +21,7 @@ import { SweetAlertService } from '../sweet-alert.service';
 type TipoCampo = 'text' | 'textarea' | 'number' | 'time' | 'select';
 
 /** Tablas que alimentan listas desplegables de otras tablas. */
-type FuenteRelacion = 'jornadas' | 'unidades_medida' | 'ingredientes';
+type FuenteRelacion = 'jornadas' | 'unidades_medida' | 'ingredientes' | 'categorias_inventario' | 'grados';
 
 interface CampoConfig {
   name: string;
@@ -73,6 +73,14 @@ const FUENTES: Record<
   ingredientes: {
     id: 'id_ingrediente',
     etiqueta: r => r.nombre_ingrediente ?? r.nombre ?? ''
+  },
+  categorias_inventario: {
+    id: 'id_categoria_inventario',
+    etiqueta: r => r.nombre_categoria ?? r.nombre ?? ''
+  },
+  grados: {
+    id: 'id_grado',
+    etiqueta: r => r.nombre_grado ?? r.nombre ?? ''
   }
 };
 
@@ -138,12 +146,22 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
     },
     {
       id: 'tipos_mercado',
-      nombre: 'Mercados',
+      nombre: 'Tipos Mercado',
       singular: 'tipo de mercado',
       icon: 'storefront',
       idField: 'id_tipo_mercado',
       campos: [
         { name: 'nombre_tipo', label: 'Tipo de mercado', type: 'text', required: true, placeholder: 'Ej: Perecederos' }
+      ]
+    },
+    {
+      id: 'categorias_inventario',
+      nombre: 'Categorías Inv.',
+      singular: 'categoría',
+      icon: 'category',
+      idField: 'id_categoria_inventario',
+      campos: [
+        { name: 'nombre_categoria', label: 'Nombre categoría', type: 'text', required: true, placeholder: 'Ej: Lácteos' }
       ]
     },
     {
@@ -176,7 +194,11 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       icon: 'kitchen',
       idField: 'id_ingrediente',
       campos: [
-        { name: 'nombre_ingrediente', label: 'Nombre del ingrediente', type: 'text', required: true }
+        { name: 'nombre_ingrediente', label: 'Nombre del ingrediente', type: 'text', required: true },
+        { name: 'id_categoria_inventario', label: 'Categoría', type: 'select', required: true, source: 'categorias_inventario' },
+        { name: 'id_unidad_medida', label: 'Unidad de medida', type: 'select', required: true, source: 'unidades_medida' },
+        { name: 'marca_ingrediente', label: 'Marca', type: 'text', required: false },
+        { name: 'descripcion', label: 'Descripción', type: 'textarea', required: false }
       ]
     },
     {
@@ -184,22 +206,12 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       nombre: 'Gramajes',
       singular: 'gramaje',
       icon: 'scale',
-      idField: 'id_gramaje',
+      idField: 'id_gramage',
       campos: [
         { name: 'id_ingrediente', label: 'Ingrediente', type: 'select', required: true, source: 'ingredientes' },
-        { name: 'cantidad_gramaje', label: 'Cantidad por porción', type: 'number', required: true },
+        { name: 'id_grado', label: 'Grado', type: 'select', required: true, source: 'grados' },
+        { name: 'cantidad_gramage', label: 'Cantidad por porción', type: 'number', required: true },
         { name: 'id_unidad_medida', label: 'Unidad de medida', type: 'select', required: true, source: 'unidades_medida' },
-        { name: 'descripcion', label: 'Descripción', type: 'textarea' }
-      ]
-    },
-    {
-      id: 'recetas',
-      nombre: 'Recetas',
-      singular: 'receta',
-      icon: 'menu_book',
-      idField: 'id_receta',
-      campos: [
-        { name: 'nombre_receta', label: 'Nombre de la receta', type: 'text', required: true },
         { name: 'descripcion', label: 'Descripción', type: 'textarea' }
       ]
     }
@@ -217,11 +229,12 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
   /** Mensaje cuando la carga FALLA (distinto de "no hay registros"). */
   errorCarga: string | null = null;
 
-  /** Opciones de las listas desplegables, por tabla de origen. */
   opciones: Record<string, OpcionRelacion[]> = {
     jornadas: [],
     unidades_medida: [],
-    ingredientes: []
+    ingredientes: [],
+    categorias_inventario: [],
+    grados: []
   };
 
   mostrarModal = false;
@@ -249,6 +262,8 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
     this.cargarFuente('jornadas');
     this.cargarFuente('unidades_medida');
     this.cargarFuente('ingredientes');
+    this.cargarFuente('categorias_inventario');
+    this.cargarFuente('grados');
   }
 
   ngOnDestroy(): void {
@@ -333,7 +348,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
 
   /** Si cambió una tabla que alimenta selects, refresca sus opciones. */
   private refrescarFuenteSiAplica(): void {
-    if (this.tabActual === 'jornadas' || this.tabActual === 'unidades_medida' || this.tabActual === 'ingredientes') {
+    if (this.tabActual === 'jornadas' || this.tabActual === 'unidades_medida' || this.tabActual === 'ingredientes' || this.tabActual === 'categorias_inventario') {
       this.cargarFuente(this.tabActual as FuenteRelacion);
     }
   }

@@ -50,9 +50,11 @@ export class ContratoDetalleComponent implements OnInit {
   get seccionesDeshabilitadasPorFiltro() {
     if (!this.jornadaSeleccionada) return [];
     const idJornadaFiltro = this.jornadaSeleccionada.id_jornada || this.jornadaSeleccionada.id;
-    const nombreJornadaFiltro = this.jornadaSeleccionada.nombre_jornada || this.jornadaSeleccionada.nombre;
 
-    return this.seccionesMenu.filter(s => s.jornada !== idJornadaFiltro && s.jornada !== nombreJornadaFiltro && s.id_jornada !== idJornadaFiltro);
+    return this.seccionesMenu.filter(s => {
+      const sJornadaId = (typeof s.id_jornada === 'object' && s.id_jornada !== null) ? (s.id_jornada.id_jornada || s.id_jornada.id) : (s.id_jornada || s.jornada);
+      return sJornadaId !== idJornadaFiltro;
+    });
   }
 
   constructor(
@@ -169,17 +171,11 @@ export class ContratoDetalleComponent implements OnInit {
 
     // Si se deshabilita la jornada, quitamos las secciones correspondientes
     if (!jornada.habilitada) {
-      const jornadaNombreVal = String(jornada.nombre_jornada || jornada.nombre || '').toLowerCase();
+      const jId = jornada.id_jornada || jornada.id;
 
       const seccionesDeEstaJornada = this.seccionesMenu.filter(s => {
-        const secNombre = String(s.nombre_seccion || s.nombre || '').toLowerCase();
-
-        if (jornadaNombreVal === 'mañana') {
-          return secNombre.includes('desayuno') || secNombre.includes('merienda');
-        } else if (jornadaNombreVal === 'tarde') {
-          return secNombre.includes('almuerzo') || secNombre.includes('refrigerio') || secNombre.includes('sena') || secNombre.includes('cena');
-        }
-        return false;
+        const sJornadaId = (typeof s.id_jornada === 'object' && s.id_jornada !== null) ? (s.id_jornada.id_jornada || s.id_jornada.id) : (s.id_jornada || s.jornada);
+        return sJornadaId === jId;
       });
 
       seccionesDeEstaJornada.forEach(seccion => {
@@ -196,18 +192,11 @@ export class ContratoDetalleComponent implements OnInit {
     const jornadasHabilitadas = this.jornadas.filter(j => j.habilitada);
 
     return this.seccionesMenu.filter(s => {
-      const secNombre = String(s.nombre_seccion || s.nombre || '').toLowerCase();
+      const sJornadaId = (typeof s.id_jornada === 'object' && s.id_jornada !== null) ? (s.id_jornada.id_jornada || s.id_jornada.id) : (s.id_jornada || s.jornada);
 
       return jornadasHabilitadas.some(j => {
-        const jName = String(j.nombre_jornada || j.nombre || '').toLowerCase();
-
-        // Mapeo manual porque el backend devuelve id_jornada: null
-        if (jName === 'mañana') {
-          return secNombre.includes('desayuno') || secNombre.includes('merienda');
-        } else if (jName === 'tarde') {
-          return secNombre.includes('almuerzo') || secNombre.includes('refrigerio') || secNombre.includes('sena') || secNombre.includes('cena');
-        }
-        return true; // Si es otra jornada, mostrar todo temporalmente
+        const jId = j.id_jornada || j.id;
+        return sJornadaId === jId;
       });
     });
   }
@@ -219,21 +208,11 @@ export class ContratoDetalleComponent implements OnInit {
 
   seccionesDeJornada(jornada: any): any[] {
     if (!jornada) return [];
-    const jName = String(jornada.nombre_jornada || jornada.nombre || '').toLowerCase();
     const jId = jornada.id_jornada || jornada.id;
 
     return this.seccionesMenu.filter(s => {
-      // Si la sección pertenece explícitamente a esta jornada por ID o Nombre
-      if (s.jornada === jId || String(s.jornada).toLowerCase() === jName) return true;
-
-      // Filtro visual automático (Mañana/Tarde)
-      const secNombre = String(s.nombre_seccion || s.nombre || '').toLowerCase();
-      if (jName === 'mañana') {
-        return secNombre.includes('desayuno') || secNombre.includes('merienda');
-      } else if (jName === 'tarde') {
-        return secNombre.includes('almuerzo') || secNombre.includes('refrigerio') || secNombre.includes('sena') || secNombre.includes('cena');
-      }
-      return true; // Mostrar el resto por si no tiene asignada jornada específica
+      const sJornadaId = (typeof s.id_jornada === 'object' && s.id_jornada !== null) ? (s.id_jornada.id_jornada || s.id_jornada.id) : (s.id_jornada || s.jornada);
+      return sJornadaId === jId;
     });
   }
 

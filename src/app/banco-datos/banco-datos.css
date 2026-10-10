@@ -5,10 +5,14 @@
 
 .banco-datos-page {
   min-height: 100%;
-  padding: 42px 52px 60px;
-  background: #f7f7f5;
-  color: #292929;
+  padding: 0; /* Remove double padding from main layout */
+  background: transparent;
+  color: #1a1a1a;
   box-sizing: border-box;
+  font-family: 'Inter', system-ui, sans-serif;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 
@@ -17,13 +21,19 @@
    ========================================================= */
 
 .bd-header {
-  max-width: 1180px;
-  margin: 0 auto 30px;
+  width: 100%;
+  margin: 0;
 
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
-  gap: 30px;
+  gap: 20px;
+  
+  padding: 20px 24px;
+  background: linear-gradient(135deg, #fffcf0 0%, #ffffff 100%);
+  border: 1px solid #f2ead0;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(250, 201, 75, 0.05);
 }
 
 .bd-header-info {
@@ -32,30 +42,26 @@
 
 .bd-eyebrow {
   display: block;
-  margin-bottom: 9px;
+  margin-bottom: 6px;
 
   color: #b18a00;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 1.2px;
+  letter-spacing: 1px;
 }
 
 .bd-title {
   margin: 0;
-
-  color: #292929;
-  font-size: 34px;
-  line-height: 1.15;
-  font-weight: 500;
-  letter-spacing: -0.8px;
+  color: #1a1a1a;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
 }
 
 .bd-subtitle {
-  margin: 10px 0 0;
-
-  color: #858580;
-  font-size: 15px;
-  line-height: 1.5;
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 13px;
 }
 
 
@@ -64,30 +70,28 @@
    ========================================================= */
 
 .bd-new-button {
-  height: 42px;
+  height: 38px;
   padding: 0 20px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   border: none;
-  border-radius: 10px;
-  background: #facc15;
-  color: #713f12;
+  border-radius: 8px;
+  background: #fac94b;
+  color: #1a1a1a;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 6px rgba(250, 201, 75, 0.3);
   transition: all 0.2s ease;
   flex-shrink: 0;
-  align-self: center;
 }
 
 .bd-new-button:hover {
-  background: #eab308;
+  background: #f5b927;
   transform: translateY(-1px);
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 
 .bd-new-button .material-symbols-outlined {
@@ -100,20 +104,20 @@
    ========================================================= */
 
 .bd-tabs {
-  max-width: 1180px;
-  margin: 0 auto 30px;
+  width: 100%;
+  margin: 0;
 
-  min-height: 64px;
-  padding: 5px;
+  min-height: 52px;
+  padding: 6px;
 
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 6px;
 
   background: #ffffff;
-
-  border: 1px solid #e5e3dc;
-  border-radius: 15px;
+  border: 1px solid #f1f5f9;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.02);
 
   box-sizing: border-box;
   overflow-x: auto;
@@ -130,49 +134,51 @@
 
 .bd-tab {
   flex-shrink: 0;
-  height: 52px;
-  padding: 0 25px;
+  height: 38px;
+  padding: 0 16px;
 
   display: inline-flex;
   align-items: center;
   justify-content: center;
 
   border: 0;
-  border-radius: 10px;
+  border-radius: 8px;
 
   background: transparent;
-  color: #777770;
+  color: #64748b;
 
   font-family: inherit;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
 
   cursor: pointer;
-
-  transition:
-    color .18s ease,
-    background .18s ease;
+  transition: all 0.2s ease;
 }
 
 .bd-tab:hover {
-  color: #292929;
-  background: #faf9f5;
+  color: #1a1a1a;
+  background: #f8fafc;
 }
 
 .bd-tab.active {
-  background: #f6c400;
-  color: #202020;
-  font-weight: 650;
+  background: #fac94b;
+  color: #1a1a1a;
+  font-weight: 600;
 }
 
 
 /* =========================================================
-   SECCIÓN
+   SECCIÓN (Contenedor principal de tabla)
    ========================================================= */
 
 .bd-section {
-  max-width: 1180px;
-  margin: 0 auto;
+  width: 100%;
+  margin: 0;
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 24px;
+  border: 1px solid #f1f5f9;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.02);
 }
 
 
@@ -183,46 +189,25 @@
 .bd-section-header {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 16px;
 
-  margin-bottom: 18px;
+  margin-bottom: 24px;
 }
 
 .bd-section-icon {
-  width: 48px;
-  height: 48px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  flex: 0 0 48px;
-
-  border-radius: 12px;
-
-  background: #fff4c7;
-  color: #c49a00;
-}
-
-.bd-section-icon .material-symbols-outlined {
-  font-size: 24px;
+  display: none; /* Removed as requested */
 }
 
 .bd-section-header h2 {
   margin: 0;
-
-  color: #30302e;
-
-  font-size: 21px;
-  font-weight: 500;
-  letter-spacing: -0.2px;
+  color: #1a1a1a;
+  font-size: 22px;
+  font-weight: 700;
 }
 
 .bd-section-header p {
-  margin: 4px 0 0;
-
-  color: #898983;
-
+  margin: 6px 0 0;
+  color: #64748b;
   font-size: 13px;
 }
 
@@ -233,11 +218,9 @@
 
 .bd-table-container {
   overflow: hidden;
-
-  background: #ffffff;
-
-  border: 1px solid #e4e2dc;
-  border-radius: 16px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
 }
 
 
@@ -328,7 +311,7 @@
   padding: 0 21px;
 
   text-align: left;
-  white-space: nowrap;
+  white-space: normal;
 
   color: #989790;
 

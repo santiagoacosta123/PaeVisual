@@ -1,38 +1,39 @@
 <div class="flex flex-col gap-5 relative font-sans">
 
-  <!-- Contenedor Principal en Tarjeta Blanca -->
-  <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs">
-
-    <!-- Encabezado con Título, Buscador, Filtro y Botones -->
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
-      <div>
-        <h3 class="text-base font-bold text-slate-900 m-0">Gestión de Usuarios</h3>
-        <p class="text-xs text-slate-500 m-0">Administración de perfiles, roles y accesos del sistema (SIRAE).</p>
-      </div>
-
-      <div class="flex flex-wrap items-center gap-2">
-        <!-- Buscador -->
-        <div class="flex items-center gap-2 bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 min-w-[240px]">
-          <svg class="w-4 h-4 text-slate-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="11" cy="11" r="8"></circle>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-          </svg>
-          <input type="text" [(ngModel)]="filtroTexto" placeholder="Buscar por nombre, doc o correo..." class="border-none bg-transparent outline-none text-xs text-slate-900 w-full placeholder-slate-400">
-        </div>
-
-        <!-- Filtro por Rol -->
-        <select [(ngModel)]="filtroRol" class="bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 outline-none cursor-pointer">
-          <option value="">Todos los Roles</option>
-          <option *ngFor="let rol of roles" [value]="rol.id_rol">{{ rol.nombre_rol }}</option>
-        </select>
-
-        <!-- Botón Nuevo Usuario -->
-        <button type="button" (click)="abrirFormulario()" class="bg-amber-400 hover:bg-amber-500 text-amber-950 font-semibold px-4 py-2 rounded-xl text-xs transition cursor-pointer whitespace-nowrap inline-flex items-center gap-1.5 shadow-2xs">
-          <span>+ Nuevo usuario</span>
-        </button>
-      </div>
+  <!-- ===================== CABECERA PRINCIPAL ===================== -->
+  <header class="w-full flex items-center justify-between gap-5 px-6 py-5 rounded-xl border border-[#f2ead0] shadow-[0_4px_15px_rgba(250,201,75,0.05)]" style="background: linear-gradient(135deg, #fffcf0 0%, #ffffff 100%);">
+    <div>
+      <h1 class="m-0 text-[#1a1a1a] text-[22px] font-bold tracking-[-0.5px]">Gestión de Usuarios</h1>
+      <p class="m-0 mt-1 text-slate-500 text-[13px]">Administración de perfiles, roles y accesos del sistema (SIRAE).</p>
     </div>
 
+    <!-- Filtros y Botón -->
+    <div class="flex flex-wrap items-center gap-3">
+      <!-- Buscador -->
+      <div class="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-2 min-w-[240px] shadow-sm">
+        <svg class="w-4 h-4 text-slate-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input type="text" [(ngModel)]="filtroTexto" placeholder="Buscar por nombre, doc o correo..." class="border-none bg-transparent outline-none text-[13px] text-slate-900 w-full placeholder-slate-400">
+      </div>
+
+      <!-- Filtro Rol -->
+      <select [(ngModel)]="filtroRol" class="bg-white border border-slate-200 rounded-lg px-3 py-2 text-[13px] text-slate-700 outline-none cursor-pointer shadow-sm">
+        <option value="">Todos los Roles</option>
+        <option *ngFor="let rol of roles" [value]="rol.id_rol">{{ rol.nombre_rol }}</option>
+      </select>
+
+      <!-- Botón Nuevo Usuario -->
+      <button type="button" (click)="abrirFormulario()" class="h-[38px] px-5 inline-flex items-center justify-center gap-2 border-none rounded-lg bg-[#fac94b] text-[#1a1a1a] text-[13px] font-semibold cursor-pointer whitespace-nowrap shadow-[0_2px_6px_rgba(250,201,75,0.3)] transition-all hover:bg-[#f5b927] hover:-translate-y-[1px]">
+        <span class="material-symbols-outlined text-[18px]">add</span>
+        <span>Añadir usuario</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ===================== CONTENIDO / TABLA ===================== -->
+  <section class="w-full bg-white rounded-xl p-6 border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
     <!-- Tabla de Usuarios -->
     <div class="overflow-x-auto">
       <table class="w-full border-collapse text-left text-xs">
@@ -128,85 +129,84 @@
         </button>
       </div>
     </div>
+  </section>
 
-  </div>
-
-  <!-- MODAL DE CREACIÓN / EDICIÓN (Con Tailwind y estilo Contratos) -->
-  <div *ngIf="mostrarModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-    <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto space-y-4">
-      
-      <!-- Encabezado del Modal -->
-      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-        <h3 class="text-base font-bold text-slate-900 m-0">
-          {{ modoEdicion ? 'EDITAR USUARIO' : 'NUEVO USUARIO' }}
-        </h3>
-        <button type="button" (click)="cerrarFormulario()" class="text-slate-400 hover:text-slate-600 text-lg cursor-pointer bg-transparent border-none">✕</button>
+  <!-- MODAL DE CREACIÓN / EDICIÓN ESTILO BANCO DATOS -->
+  <div class="bd-modal-overlay" *ngIf="mostrarModal" (click)="cerrarFormulario()">
+    <form class="bd-modal" role="dialog" aria-modal="true" (click)="$event.stopPropagation()" autocomplete="off">
+      <div class="bd-modal-header">
+        <div>
+          <span class="bd-modal-eyebrow">USUARIO</span>
+          <h2>{{ modoEdicion ? 'Editar Usuario' : 'Nuevo Usuario' }}</h2>
+        </div>
+        <button type="button" class="bd-modal-close" (click)="cerrarFormulario()">
+          <span class="material-symbols-outlined" aria-hidden="true">close</span>
+        </button>
       </div>
 
-      <!-- Campos del formulario -->
-      <div class="flex flex-col gap-3.5 text-xs">
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label class="block font-semibold text-slate-700 mb-1.5">Nombre *</label>
-            <input type="text" [(ngModel)]="usuarioForm.nombre" placeholder="Ingresa tu nombre" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500">
+      <div class="bd-modal-body">
+        <p class="bd-modal-description">Completa los datos del perfil de acceso.</p>
+        
+        <div class="bd-form-grid">
+          <div class="bd-form-group">
+            <label>Nombre <span style="color: #ef4444">*</span></label>
+            <input type="text" class="bd-input" [(ngModel)]="usuarioForm.nombre" name="nombre" placeholder="Ingresa tu nombre" required>
           </div>
-          <div>
-            <label class="block font-semibold text-slate-700 mb-1.5">Apellido *</label>
-            <input type="text" [(ngModel)]="usuarioForm.apellido" placeholder="Ingresa tu apellido" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500">
+          <div class="bd-form-group">
+            <label>Apellido <span style="color: #ef4444">*</span></label>
+            <input type="text" class="bd-input" [(ngModel)]="usuarioForm.apellido" name="apellido" placeholder="Ingresa tu apellido" required>
           </div>
-        </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label class="block font-semibold text-slate-700 mb-1.5">Correo Electrónico *</label>
-            <input type="email" [(ngModel)]="usuarioForm.correo" placeholder="Ingresa tu correo electrónico" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500">
+          <div class="bd-form-group">
+            <label>Correo Electrónico <span style="color: #ef4444">*</span></label>
+            <input type="email" class="bd-input" [(ngModel)]="usuarioForm.correo" name="correo" placeholder="admin@sirae.com" autocomplete="new-password" required>
           </div>
-          <div>
-            <label class="block font-semibold text-slate-700 mb-1.5">Contraseña {{ modoEdicion ? '(Opcional)' : '*' }}</label>
-            <input type="password" [(ngModel)]="usuarioForm.password" placeholder="Ingresa tu contraseña" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500">
+          <div class="bd-form-group">
+            <label>Contraseña <span *ngIf="!modoEdicion" style="color: #ef4444">*</span></label>
+            <input type="password" class="bd-input" [(ngModel)]="usuarioForm.password" name="password" placeholder="{{ modoEdicion ? 'Opcional para no cambiarla' : '••••••••' }}" autocomplete="new-password">
           </div>
-        </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label class="block font-semibold text-slate-700 mb-1.5">Tipo de Documento</label>
-            <select [(ngModel)]="usuarioForm.tipo_documento" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500 cursor-pointer">
-              <option value="" disabled selected>Selecciona el tipo de documento</option>
-              <option value="CC">Cédula de Ciudadanía (CC)</option>
-              <option value="CE">Cédula de Extranjería (CE)</option>
-              <option value="TI">Tarjeta de Identidad (TI)</option>
+          <div class="bd-form-group">
+            <label>Tipo de Documento</label>
+            <select class="bd-input" [(ngModel)]="usuarioForm.tipo_documento" name="tipo_documento">
+              <option value="" disabled>Seleccione...</option>
+              <option value="CC">Cédula de Ciudadanía</option>
+              <option value="CE">Cédula de Extranjería</option>
+              <option value="TI">Tarjeta de Identidad</option>
             </select>
           </div>
-          <div>
-            <label class="block font-semibold text-slate-700 mb-1.5">Número de Documento *</label>
-            <input type="text" [(ngModel)]="usuarioForm.numero_documento" placeholder="Ingresa tu número de documento" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500">
+          <div class="bd-form-group">
+            <label>Número de Documento <span style="color: #ef4444">*</span></label>
+            <input type="text" class="bd-input" [(ngModel)]="usuarioForm.numero_documento" name="numero_documento" placeholder="Ingresa número">
+          </div>
+
+          <div class="bd-form-group" style="grid-column: 1 / -1">
+            <label>Rol del Sistema <span style="color: #ef4444">*</span></label>
+            <select class="bd-input" [(ngModel)]="usuarioForm.rol" name="rol" required>
+              <option value="" disabled>Selecciona un rol...</option>
+              <option *ngFor="let rol of roles" [ngValue]="rol.id_rol">{{ rol.nombre_rol }}</option>
+            </select>
+          </div>
+
+          <div class="bd-form-group" style="grid-column: 1 / -1; flex-direction: row; align-items: center; gap: 8px; margin-top: 5px;">
+            <label style="position: relative; display: inline-flex; cursor: pointer; align-items: center; margin: 0;">
+              <input type="checkbox" [(ngModel)]="usuarioForm.is_active" name="is_active" style="opacity: 0; width: 0; height: 0; position: absolute;">
+              <div style="width: 36px; height: 20px; background-color: {{ usuarioForm.is_active ? '#0f172a' : '#e2e8f0' }}; border-radius: 9999px; position: relative; transition: background-color 0.2s;">
+                <div style="width: 16px; height: 16px; background-color: #ffffff; border-radius: 50%; position: absolute; top: 2px; left: {{ usuarioForm.is_active ? '18px' : '2px' }}; transition: left 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.1);"></div>
+              </div>
+            </label>
+            <span style="font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 0;">Usuario Activo</span>
           </div>
         </div>
-
-        <div>
-          <label class="block font-semibold text-slate-700 mb-1.5">Rol del Sistema *</label>
-          <select [(ngModel)]="usuarioForm.rol" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500 cursor-pointer">
-            <option value="" disabled selected>Selecciona un rol...</option>
-            <option *ngFor="let rol of roles" [ngValue]="rol.id_rol">{{ rol.nombre_rol }}</option>
-          </select>
-        </div>
-
-        <div class="flex items-center gap-2 pt-1">
-          <label class="relative inline-flex items-center cursor-pointer">
-            <input type="checkbox" [(ngModel)]="usuarioForm.is_active" class="sr-only peer">
-            <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-slate-900"></div>
-            <span class="ml-3 font-semibold text-slate-700 text-xs">Usuario Activo</span>
-          </label>
-        </div>
       </div>
 
-      <!-- Pie del Modal -->
-      <div class="flex items-center justify-end gap-3 pt-3.5 border-t border-slate-100">
-        <button type="button" (click)="cerrarFormulario()" class="bg-white border border-slate-300 text-slate-700 font-semibold px-4 py-2 rounded-xl text-xs hover:bg-slate-50 transition cursor-pointer">Cancelar</button>
-        <button type="button" (click)="guardarUsuario()" class="bg-slate-900 hover:bg-slate-800 text-white font-semibold px-4 py-2 rounded-xl text-xs transition cursor-pointer shadow-2xs">Guardar Usuario</button>
+      <div class="bd-modal-footer">
+        <button type="button" class="bd-cancel" (click)="cerrarFormulario()">Cancelar</button>
+        <button type="button" class="bd-save" (click)="guardarUsuario()">
+          {{ modoEdicion ? 'Actualizar' : 'Guardar' }} Usuario
+        </button>
       </div>
-
-    </div>
+    </form>
   </div>
 
 </div>

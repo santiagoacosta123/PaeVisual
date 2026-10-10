@@ -9,10 +9,10 @@ import { environment } from '../../environments/environment';
 export class ProductoService {
 
   
-private apiInventario = `${environment.apiUrl}/inventario/`;
+  private apiInventario = `${environment.apiUrl}/inventario/`;
   private apiIngredientes = `${environment.apiUrl}/ingredientes/`;
   private apiUnidades = `${environment.apiUrl}/unidades_medida/`;
-  private apiCategorias = `${environment.apiUrl}/categorias-inventario/`;
+  private apiCategorias = `${environment.apiUrl}/categorias_inventario/`;
   
   constructor(private http: HttpClient) {}
   // INVENTARIO
@@ -54,18 +54,25 @@ private apiInventario = `${environment.apiUrl}/inventario/`;
     return this.http.get<any>(this.apiCategorias);
   }
 
-  // MOVIMIENTOS
-  private apiMovimientos = `${environment.apiUrl}/movimientos-inventario/`;
+  // ENTRADAS
+  private apiEntradas = `${environment.apiUrl}/entradas-inventario/`;
   
-  getMovimientos(): Observable<any> {
-    return this.http.get<any>(this.apiMovimientos);
+  getEntradas(): Observable<any> {
+    return this.http.get<any>(this.apiEntradas);
   }
 
-  crearMovimiento(movimiento: any): Observable<any> {
-    return this.http.post<any>(this.apiMovimientos, movimiento);
+  crearEntrada(entrada: any): Observable<any> {
+    return this.http.post<any>(this.apiEntradas, entrada);
   }
 
-  eliminarMovimiento(id: number): Observable<any> {
-    return this.http.delete<any>(`${this.apiMovimientos}${id}/`);
+  // SALIDAS
+  private apiSalidas = `${environment.apiUrl}/salidas-inventario/`;
+
+  getSalidas(): Observable<any> {
+    return this.http.get<any>(this.apiSalidas);
+  }
+
+  crearSalida(salida: any): Observable<any> {
+    return this.http.post<any>(this.apiSalidas, salida);
   }
 }

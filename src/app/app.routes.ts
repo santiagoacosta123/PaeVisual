@@ -7,11 +7,12 @@ import { UsuariosComponent } from './usuarios/usuarios';
 import { ContratosComponent } from './contratos/contratos';
 import { CrearUsuarioComponent } from './crear-usuario/crear-usuario';
 import { Rol } from './rol/rol';
-import { Productos } from './productos/productos';
+import { Ingredientes } from './ingredientes/ingredientes';
 import { NuevoProducto } from './nuevo-producto/nuevo-producto';
 import { ReporteInventario } from './reporte-inventario/reporte-inventario';
 import { UnidadesMedidaComponent } from './unidades-medida/unidades-medida';
 import { MenusComponent } from './menus/menus';
+import { EntradasInventario } from './entradas-inventario/entradas-inventario';
 import { ContratoDetalleComponent } from './contrato-detalle/contrato-detalle';
 import { NotificacionesComponent } from './notificaciones/notificaciones.component';
 import { authGuard } from './services/auth.guard';
@@ -67,8 +68,8 @@ export const routes: Routes = [
       },
 
       {
-        path: 'productos',
-        component: Productos
+        path: 'ingredientes',
+        component: Ingredientes
       },
 
       {
@@ -100,6 +101,10 @@ export const routes: Routes = [
       {
         path: 'banco-datos',
         component: BancoDatosComponent
+      },
+      {
+        path: 'entradas-inventario',
+        component: EntradasInventario
       }
     ]
   },

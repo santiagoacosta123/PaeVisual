@@ -4,8 +4,22 @@
   <aside style="width:280px; background:#fff; border-right:1px solid #e0e0e0; display:flex; flex-direction:column; padding:24px 20px; box-sizing:border-box; flex-shrink:0;">
 
     <!-- Logo / Marca SIRAE con la imagen real -->
-    <div style="display:flex; align-items:center; gap:12px; margin-bottom:36px;">
-      <img src="sirae-logo.png" alt="Logo SIRAE" style="height:36px; width:auto; object-fit:contain;" />
+    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; margin-bottom:32px; padding: 10px 0; text-align: center;">
+      <img src="sirae-logo.png" alt="Logo SIRAE" style="height:70px; max-width:100%; object-fit:contain; margin-bottom: 8px;" />
+      
+      <!-- Título principal -->
+      <h2 style="font-family: 'Playfair Display', serif; font-size: 15px; font-weight: 600; color: #334155; margin: 0 0 6px 0; line-height: 1.2; letter-spacing: 0.2px;">
+        Programa de Alimentación Escolar
+      </h2>
+      
+      <!-- Eslogan con líneas doradas -->
+      <div style="display:flex; align-items:center; justify-content:center; gap: 8px;">
+        <div style="width: 16px; height: 1px; background-color: #fac94b;"></div>
+        <p style="font-family: 'Playfair Display', serif; font-size: 13px; font-weight: 500; color: #fac94b; font-style: italic; margin: 0; letter-spacing: 0.5px;">
+          Alimentando cada día
+        </p>
+        <div style="width: 16px; height: 1px; background-color: #fac94b;"></div>
+      </div>
     </div>
 
     <!-- Título de sección -->
@@ -31,11 +45,12 @@
         Usuarios
       </a>
 
-      <a routerLink="productos" routerLinkActive="active-link"
+      <a routerLink="ingredientes" routerLinkActive="active-link"
          style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
         <span class="material-symbols-outlined nav-icon" style="font-size:20px;">package</span>
         Inventario
       </a>
+
       <a routerLink="banco-datos" routerLinkActive="active-link"
          style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px 0 0 12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500; position:relative; transition:all 0.2s;">
         <span class="material-symbols-outlined nav-icon" style="font-size:20px;">database</span>
@@ -67,11 +82,6 @@
 
     <!-- Parte inferior del sidebar: Configuración y Cerrar sesión -->
     <div style="border-top:1px solid #eeeeee; padding-top:16px; margin-top:16px; display:flex; flex-direction:column; gap:6px;">
-      <button type="button" (click)="configurar()"
-        style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px; background:none; border:none; cursor:pointer; color:#555555; font-size:14px; font-weight:500; width:100%; text-align:left;">
-        <span class="material-symbols-outlined" style="font-size:20px; color:#777;">settings</span>
-        Configuración
-      </button>
       <button type="button" (click)="cerrarSesion()"
         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px; background:none; border:none; cursor:pointer; color:#e53935; font-size:14px; font-weight:500; width:100%; text-align:left;">
         <span class="material-symbols-outlined" style="font-size:20px; color:#e53935;">logout</span>
@@ -83,11 +93,14 @@
   <main style="flex:1; min-width:0; max-width:100%; padding:24px 32px; position:relative; overflow-y:auto; overflow-x:hidden; display:flex; flex-direction:column; gap:20px; box-sizing:border-box;">
 
     <!-- Barra superior moderna -->
-    <div style="background:#fff; border:1px solid #e0e0e0; border-radius:14px; padding:12px 24px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 2px 6px rgba(0,0,0,0.02); flex-shrink:0;">
+    <div style="background:#fff; border:1px solid #f1f5f9; border-radius:16px; padding:16px 32px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 2px 10px rgba(0,0,0,0.02); flex-shrink:0;">
       
       <!-- Título de la sección -->
       <div style="display:flex; align-items:center; gap:16px;">
-        <h1 style="font-size:18px; font-weight:700; color:#1a1a1a; margin:0;">{{ pageTitle }}</h1>
+        <h1 style="font-size:22px; font-weight:700; color:#1a1a1a; margin:0; position:relative;">
+          {{ pageTitle }}
+          <div style="width: 32px; height: 4px; background: #fac94b; border-radius: 2px; margin-top: 4px;"></div>
+        </h1>
       </div>
 
       <!-- Acciones de la derecha: Notificaciones y Perfil -->
@@ -233,36 +246,36 @@
 <!-- ESTILOS CSS -->
 <style>
   .active-link {
-    background: #fcf8ec !important;
-    color: #e0a316 !important;
+    background: #fdf5e6 !important;
+    color: #1a1a1a !important;
     font-weight: 600 !important;
   }
   
   .active-link .nav-icon {
-    color: #e0a316 !important;
+    color: #1a1a1a !important;
   }
 
   .nav-icon {
-    color: #555555;
+    color: #64748b;
   }
 
   .active-link::after {
     content: '';
     position: absolute;
-    right: 0;
+    left: 0;
     top: 6px;
     bottom: 6px;
     width: 4px;
-    background-color: #e0a316;
-    border-radius: 4px 0 0 4px;
+    background-color: #fac94b;
+    border-radius: 0 4px 4px 0;
   }
 
   aside a:hover:not(.active-link) {
-    background: #fffdf5;
-    color: #e0a316;
+    background: #f8fafc;
+    color: #1a1a1a;
   }
   aside a:hover:not(.active-link) .nav-icon {
-    color: #e0a316;
+    color: #1a1a1a;
   }
 
   .profile-top-btn:hover {

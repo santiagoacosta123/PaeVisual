@@ -91,10 +91,10 @@ export class LayoutComponent implements OnInit {
   actualizarTitulo(url: string): void {
     const routeTitles: { [key: string]: string } = {
       '/inicio': 'Inicio',
-      '/contratos': 'Contratos',
-      '/usuarios': 'Usuarios',
-      '/rol': 'Roles',
-      '/productos': 'Inventario',
+      '/contratos': 'Gestión de Contratos',
+      '/usuarios': 'Gestión de Usuarios',
+      '/rol': 'Gestión de Roles',
+      '/ingredientes': 'Gestión de Inventario',
       '/banco-datos': 'Banco de Datos',
       '/crear-usuario': 'Crear Usuario',
       '/nuevo-producto': 'Nuevo Producto',
