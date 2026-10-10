@@ -1,0 +1,135 @@
+<div class="bd-container">
+
+  <!-- Header -->
+  <div class="bd-header">
+    <div class="bd-title-container">
+      <h1 class="bd-title">Entradas de Inventario (Supervisor)</h1>
+      <p class="bd-subtitle">Registro de ingreso de alimentos e insumos al almacén</p>
+    </div>
+    
+    <div class="bd-header-actions">
+      <button class="bd-btn-primary" (click)="abrirModalNuevaEntrada()">
+        <span class="material-symbols-outlined">add</span>
+        Registrar Entrada
+      </button>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="bd-table-scroll">
+    <table class="bd-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Fecha</th>
+          <th>Ingrediente</th>
+          <th>Cantidad Ingresada</th>
+          <th>Unidad</th>
+          <th>Observaciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let entrada of entradas">
+          <td>
+            <span class="bd-cell-value">#{{ entrada.id_entrada || entrada.id }}</span>
+          </td>
+          <td>
+            <span class="bd-cell-value">{{ (entrada.fecha | date:'shortDate') || 'Hoy' }}</span>
+          </td>
+          <td>
+            <span class="bd-cell-value" style="font-weight: 500;">{{ obtenerNombreIngrediente(entrada.id_ingrediente) }}</span>
+          </td>
+          <td>
+            <span class="bd-cell-value" style="color: #2e7d32; font-weight: 600;">+ {{ entrada.cantidad }}</span>
+          </td>
+          <td>
+            <span class="bd-cell-value">{{ obtenerNombreUnidad(entrada.id_unidad_medida) }}</span>
+          </td>
+          <td>
+            <span class="bd-cell-value" style="color: #666; font-size: 12px;">{{ entrada.observaciones || 'Ninguna' }}</span>
+          </td>
+        </tr>
+        <tr *ngIf="entradas.length === 0">
+          <td colspan="6">
+            <div class="bd-empty">
+              <span class="material-symbols-outlined">inventory_2</span>
+              <h3>No hay entradas recientes</h3>
+              <p>Aquí se reflejarán los ingresos al almacén registrados por el Supervisor.</p>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+
+  <!-- MODAL PARA REGISTRAR ENTRADA -->
+  <div class="bd-modal-overlay" *ngIf="mostrarModal" (click)="cerrarModal()">
+    <form
+      #formulario="ngForm"
+      class="bd-modal"
+      style="width: 500px;"
+      (click)="$event.stopPropagation()"
+      (ngSubmit)="guardarEntrada()">
+
+      <div class="bd-modal-header">
+        <h3 class="bd-modal-title">Registrar Nueva Entrada</h3>
+        <button type="button" class="bd-modal-close" (click)="cerrarModal()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div class="bd-modal-body">
+        <p style="font-size: 13px; color: #666; margin-bottom: 20px;">
+          Selecciona el ingrediente y la cantidad ingresada. El stock se sumará automáticamente.
+        </p>
+
+        <!-- Ingrediente -->
+        <div class="bd-form-group">
+          <label class="bd-label">Ingrediente <span style="color:red">*</span></label>
+          <select name="ingrediente" class="bd-input" [(ngModel)]="formEntrada.id_ingrediente" required>
+            <option [ngValue]="null" disabled>Seleccione un ingrediente...</option>
+            <option *ngFor="let ing of ingredientes" [ngValue]="ing.id_ingrediente || ing.id">
+              {{ ing.nombre_ingrediente || ing.nombre }}
+            </option>
+          </select>
+        </div>
+
+        <div style="display: flex; gap: 16px;">
+          <!-- Cantidad -->
+          <div class="bd-form-group" style="flex: 1;">
+            <label class="bd-label">Cantidad <span style="color:red">*</span></label>
+            <input type="number" name="cantidad" class="bd-input" [(ngModel)]="formEntrada.cantidad" required min="0.01" step="0.01">
+          </div>
+
+          <!-- Unidad de Medida -->
+          <div class="bd-form-group" style="flex: 1;">
+            <label class="bd-label">Unidad <span style="color:red">*</span></label>
+            <select name="unidad" class="bd-input" [(ngModel)]="formEntrada.id_unidad_medida" required>
+              <option [ngValue]="null" disabled>Seleccione...</option>
+              <option *ngFor="let uni of unidades" [ngValue]="uni.id_unidad_medida || uni.id">
+                {{ uni.nombre_unidad || uni.nombre }} ({{ uni.abreviatura }})
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Observaciones -->
+        <div class="bd-form-group">
+          <label class="bd-label">Observaciones</label>
+          <textarea name="observaciones" class="bd-input" [(ngModel)]="formEntrada.observaciones" rows="2" placeholder="Opcional..."></textarea>
+        </div>
+      </div>
+
+      <div class="bd-modal-footer">
+        <button type="button" class="bd-btn-secondary" (click)="cerrarModal()" [disabled]="guardando">
+          Cancelar
+        </button>
+        <button type="submit" class="bd-btn-primary" [disabled]="formulario.invalid || guardando">
+          {{ guardando ? 'Guardando...' : 'Registrar Entrada' }}
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>

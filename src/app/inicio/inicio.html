@@ -1,29 +1,32 @@
 <div class="flex flex-col gap-5 relative font-sans">
 
-  <!-- Banner de Bienvenida -->
-  <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+  <!-- ===================== CABECERA PRINCIPAL ===================== -->
+  <header class="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-5 px-6 py-5 rounded-xl border border-[#f2ead0] shadow-[0_4px_15px_rgba(250,201,75,0.05)]" style="background: linear-gradient(135deg, #fffcf0 0%, #ffffff 100%);">
     <div>
-      <span class="text-[11px] font-bold text-amber-800 bg-amber-100 border border-amber-200 px-2.5 py-0.5 rounded-full uppercase tracking-wider">Panel Principal</span>
-      <h2 class="text-xl font-extrabold text-slate-900 mt-2 mb-0.5">¡Bienvenido, {{ nombreUsuario }}!</h2>
-      <p class="text-xs text-slate-500 m-0">Resumen general y estado operativo de la plataforma SIRAE.</p>
+      <h1 class="m-0 text-[#1a1a1a] text-[22px] font-bold tracking-[-0.5px]">¡Bienvenido, {{ nombreUsuario }}!</h1>
+      <p class="m-0 mt-1 text-slate-500 text-[13px]">{{ rolUsuario }} · Resumen general y estado operativo de la plataforma SIRAE.</p>
     </div>
 
-    <div class="flex items-center gap-2 flex-wrap">
-      <span class="text-xs font-semibold text-slate-600 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl">
-        📅 {{ fechaActual }}
-      </span>
-      <a routerLink="/contratos" class="bg-amber-400 hover:bg-amber-500 text-amber-950 font-semibold px-4 py-2 rounded-xl text-xs transition cursor-pointer inline-flex items-center gap-1.5 shadow-2xs">
-        Ir a Contratos
+    <div class="flex items-center gap-3 flex-wrap">
+      <div class="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-2 shadow-sm text-[13px] text-slate-700 font-medium">
+        <span class="material-symbols-outlined text-[16px] text-slate-400">calendar_today</span>
+        <span>{{ fechaActual }}</span>
+      </div>
+      <!-- Botón exclusivo para Administrador -->
+      <a *ngIf="rolUsuario?.toLowerCase() === 'administrador'" routerLink="/contratos" class="h-[38px] px-5 inline-flex items-center justify-center gap-2 border-none rounded-lg bg-[#fac94b] text-[#1a1a1a] text-[13px] font-semibold cursor-pointer whitespace-nowrap shadow-[0_2px_6px_rgba(250,201,75,0.3)] transition-all hover:bg-[#f5b927] hover:-translate-y-[1px] no-underline">
+        <span>Ir a Contratos</span>
+        <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
       </a>
     </div>
-  </div>
+  </header>
 
-  <div class="flex flex-col items-center justify-center py-24 text-center mt-8 bg-white border border-dashed border-slate-300 rounded-2xl">
-    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mb-4">
-      <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
-    </svg>
-    <h3 class="text-lg font-bold text-slate-800 mb-2">Panel de métricas en construcción</h3>
-    <p class="text-sm text-slate-500 max-w-md">Próximamente encontrarás aquí las métricas y gráficos de los procesos del PAE.</p>
-  </div>
+  <!-- ===================== CONTENIDO / MÉTRICAS ===================== -->
+  <section class="w-full bg-white rounded-xl p-6 border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+    <div class="flex flex-col items-center justify-center py-20 text-center border border-dashed border-slate-200 rounded-xl bg-slate-50/50">
+      <span class="material-symbols-outlined text-[48px] text-slate-300 mb-4">analytics</span>
+      <h3 class="m-0 text-[#1a1a1a] text-[16px] font-bold">Panel de métricas en construcción</h3>
+      <p class="m-0 mt-2 text-[13px] text-slate-500 max-w-md">Próximamente encontrarás aquí las métricas y gráficos de los procesos del PAE.</p>
+    </div>
+  </section>
 
 </div>

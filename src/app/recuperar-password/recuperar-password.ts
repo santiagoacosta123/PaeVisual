@@ -1,99 +1,128 @@
+import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../services/auth.service';
-
-type EstadoRestablecimiento = 'validando' | 'formulario' | 'exito' | 'error';
 
 @Component({
   selector: 'app-recuperar-password',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './recuperar-password.html',
 })
 export class RecuperarPasswordComponent implements OnInit {
-  private fb = inject(FormBuilder);
-  private authService = inject(AuthService);
-  private route = inject(ActivatedRoute);
-  private router = inject(Router);
+  private readonly authService = inject(AuthService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly cdr = inject(ChangeDetectorRef);
 
-  estado: EstadoRestablecimiento = 'validando';
-  token = '';
-  nombreUsuario = '';
-  correoUsuario = '';
-  mensajeError = '';
-  enviando = false;
-  mostrarContrasenas = false;
-
-  formulario = this.fb.nonNullable.group({
-    nueva_password: ['', [Validators.required, Validators.minLength(6)]],
-    confirmar_password: ['', Validators.required],
-  });
+  token: string | null = null;
+  correo = '';
+  codigo = '';
+  modoCodigo = false;
+  nuevaPassword = '';
+  confirmarPassword = '';
+  verificandoToken = true;
+  tokenValido = false;
+  procesando = false;
+  completado = false;
+  errorMensaje = '';
 
   ngOnInit(): void {
-    this.token = this.route.snapshot.queryParamMap.get('token')?.trim() || '';
-    if (!this.token) {
-      this.mostrarError('El enlace no contiene un token de recuperación. Solicita uno nuevo.');
+    this.token = this.route.snapshot.queryParamMap.get('token');
+    if (this.token) {
+      this.validarToken(this.token);
       return;
     }
 
-    this.authService.validarTokenRecuperacion(this.token).subscribe({
-      next: (respuesta) => {
-        if (!respuesta.valido) {
-          this.mostrarError(respuesta.error || 'El enlace no es válido. Solicita uno nuevo.');
-          return;
+    this.correo = this.route.snapshot.queryParamMap.get('correo')?.trim() ?? '';
+    if (this.correo) {
+      this.modoCodigo = true;
+      this.verificandoToken = false;
+      this.tokenValido = true;
+      return;
+    }
+
+    this.verificandoToken = false;
+    this.errorMensaje = 'El enlace no contiene un token ni un correo para verificar el código. Solicita una recuperación nueva.';
+  }
+
+  private validarToken(token: string): void {
+    this.authService.validarTokenRecuperacion(token).subscribe({
+      next: (response) => {
+        this.verificandoToken = false;
+        this.tokenValido = response.valido;
+        if (!response.valido) {
+          this.errorMensaje = response.error || 'El enlace de recuperación no es válido.';
         }
-        this.nombreUsuario = respuesta.nombre_completo || '';
-        this.correoUsuario = respuesta.email || '';
-        this.estado = 'formulario';
+        this.cdr.detectChanges();
       },
-      error: (error) => this.mostrarError(
-        error?.error?.error || error?.error?.detail || 'El enlace venció o no es válido. Solicita uno nuevo.'
-      ),
+      error: (err) => {
+        this.verificandoToken = false;
+        this.errorMensaje = err.error?.error
+          || err.error?.detail
+          || 'El enlace de recuperación venció o no es válido. Solicita uno nuevo.';
+        this.cdr.detectChanges();
+      },
     });
   }
 
   restablecerContrasena(): void {
-    if (this.enviando) return;
-    if (this.formulario.invalid) {
-      this.formulario.markAllAsTouched();
+    this.errorMensaje = '';
+
+    if (!this.tokenValido || (!this.token && (!this.correo || !/^\d{6}$/.test(this.codigo)))) {
+      this.errorMensaje = this.modoCodigo
+        ? 'Ingresa el código de seis dígitos enviado a tu correo.'
+        : 'El enlace de recuperación no es válido. Solicita uno nuevo.';
       return;
     }
 
-    const { nueva_password, confirmar_password } = this.formulario.getRawValue();
-    if (nueva_password !== confirmar_password) {
-      this.mensajeError = 'Las contraseñas no coinciden. Verifica ambos campos.';
+    const longitudMinima = this.modoCodigo ? 8 : 6;
+    if (this.nuevaPassword.length < longitudMinima) {
+      this.errorMensaje = `La contraseña debe tener al menos ${longitudMinima} caracteres.`;
       return;
     }
 
-    this.enviando = true;
-    this.mensajeError = '';
-    this.authService.confirmarRecuperacionContrasena({
-      token: this.token,
-      nueva_password,
-      confirmar_password,
-    }).subscribe({
+    if (this.nuevaPassword !== this.confirmarPassword) {
+      this.errorMensaje = 'Las contraseñas no coinciden.';
+      return;
+    }
+
+    this.procesando = true;
+    const solicitud = this.token
+      ? this.authService.confirmarRecuperacionContrasena({
+          token: this.token,
+          nueva_password: this.nuevaPassword,
+          confirmar_password: this.confirmarPassword,
+        })
+      : this.authService.confirmarRecuperacionCodigo({
+          correo: this.correo,
+          codigo: this.codigo,
+          nueva_password: this.nuevaPassword,
+          confirmar_password: this.confirmarPassword,
+        });
+
+    solicitud.subscribe({
       next: () => {
-        this.enviando = false;
-        this.estado = 'exito';
-        this.formulario.reset();
+        this.procesando = false;
+        this.completado = true;
+        this.codigo = '';
+        this.nuevaPassword = '';
+        this.confirmarPassword = '';
+        this.cdr.detectChanges();
       },
-      error: (error) => {
-        this.enviando = false;
-        this.mensajeError = error?.error?.error
-          || error?.error?.detail
-          || 'No se pudo cambiar la contraseña. Solicita un nuevo enlace e inténtalo otra vez.';
+      error: (err) => {
+        this.procesando = false;
+        const error = err.error?.error || err.error?.detail;
+        this.errorMensaje = Array.isArray(error)
+          ? error.join(' ')
+          : error || 'No fue posible cambiar la contraseña. Verifica el código e inténtalo otra vez.';
+        this.cdr.detectChanges();
       },
     });
   }
 
-  volverAlLogin(): void {
-    void this.router.navigate(['/login']);
-  }
-
-  private mostrarError(mensaje: string): void {
-    this.mensajeError = mensaje;
-    this.estado = 'error';
+  irAlLogin(): void {
+    this.router.navigate(['/login']);
   }
 }

@@ -1,6 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router'; // Importante para la navegación con botones
+import { AuthService } from '../services/auth.service';
 
 @Component({
   selector: 'app-inicio',
@@ -10,7 +11,13 @@ import { RouterModule } from '@angular/router'; // Importante para la navegació
   styleUrls: ['./inicio.css']
 })
 export class InicioComponent {
-  nombreUsuario = 'Administrador';
+  private authService = inject(AuthService);
+  nombreUsuario = this.obtenerNombreUsuario();
+  rolUsuario = this.authService.obtenerUsuario()?.rol || 'Sin rol asignado';
   fechaActual = new Intl.DateTimeFormat('es-CO', { dateStyle: 'full' }).format(new Date());
 
+  private obtenerNombreUsuario(): string {
+    const usuario = this.authService.obtenerUsuario();
+    return usuario ? `${usuario.nombre} ${usuario.apellido}`.trim() || usuario.correo : '';
+  }
 }

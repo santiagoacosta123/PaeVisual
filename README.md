@@ -44,6 +44,20 @@ To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use th
 ng test
 ```
 
+## Password recovery
+
+Recovery uses a six-digit code that expires after 10 minutes. For local
+development, run `python manage.py migrate` in the backend before starting it.
+With Django's console email backend, the local response shows the code in the
+recovery dialog; production must use SMTP to deliver the code by email.
+
+The backend must be deployed with the updated password-reset routes. In
+production, add the frontend origin to `CORS_ALLOWED_ORIGINS` and
+`CSRF_TRUSTED_ORIGINS`, and configure SMTP with `EMAIL_HOST_USER`,
+`EMAIL_HOST_PASSWORD`, and `DEFAULT_FROM_EMAIL`. Render deployment variables
+are intentionally left for the deployment owner to set; do not use `localhost`
+or the example domain for production.
+
 ## Running end-to-end tests
 
 For end-to-end (e2e) testing, run:

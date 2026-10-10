@@ -7,9 +7,17 @@ export const authGuard: CanActivateFn = () => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
-  if (authService.estaAutenticado()) {
+  const estaAutenticado = authService.estaAutenticado();
+
+  if (estaAutenticado && authService.rolPermitido(authService.obtenerUsuario()?.rol)) {
     return true;
   }
 
-  return router.createUrlTree(['/login']);
+  if (estaAutenticado) {
+    authService.limpiarSesion();
+  }
+
+  return router.createUrlTree(['/login'], {
+    queryParams: estaAutenticado ? { acceso: 'denegado' } : undefined,
+  });
 };

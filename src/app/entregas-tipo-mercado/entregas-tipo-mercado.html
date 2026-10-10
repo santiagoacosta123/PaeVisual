@@ -1,0 +1,144 @@
+<div class="flex flex-col gap-6 relative w-full" style="font-family: 'Roboto', sans-serif;">
+
+  <!-- Tarjeta principal -->
+  <div class="bg-white border border-slate-200/80 rounded-[24px] p-5 sm:p-7 shadow-sm">
+
+    <!-- Encabezado -->
+    <div class="rounded-[16px] px-5 py-4 mb-6 flex items-center justify-between border" style="background-color: rgba(244, 180, 31, 0.1); border-color: rgba(244, 180, 31, 0.3);">
+      <div>
+        <h2 class="text-slate-900 font-bold text-lg m-0 tracking-tight flex items-center gap-2.5">
+          <span class="material-symbols-outlined text-[22px]" style="color: #F4B41F;">filter_alt</span>
+          Filtrar entregas por tipo de mercado
+        </h2>
+        <p class="text-xs text-slate-500 font-medium m-0 mt-1 pl-[34px]">Clasifica las recepciones entre granos y productos perecederos.</p>
+      </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-end gap-4 mb-6">
+
+      <!-- [Filtrar por Mercado] -->
+      <div class="flex flex-col w-full sm:w-auto gap-1.5 relative">
+        <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider pl-1">Mercado</label>
+        <button type="button" (click)="menuAbierto = !menuAbierto"
+          class="px-4 py-2.5 rounded-xl border bg-white text-[13px] font-bold text-slate-700 flex items-center justify-between gap-2 shadow-2xs transition cursor-pointer w-full sm:w-64 whitespace-nowrap"
+          [ngClass]="mercadoSel !== 'Todas' ? 'border-[#F4B41F] ring-1 ring-[#F4B41F]/50' : 'border-slate-200 hover:bg-slate-50'">
+          <span class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-[18px]" [style.color]="mercadoSel !== 'Todas' ? '#F4B41F' : '#94a3b8'">filter_list</span>
+            {{ mercadoSel === 'Todas' ? 'Filtrar por Mercado' : (mercadoSel === 'Granos' ? 'Granos / No perecederos' : 'Perecederos') }}
+          </span>
+          <span class="material-symbols-outlined text-[18px] text-slate-400">{{ menuAbierto ? 'expand_less' : 'expand_more' }}</span>
+        </button>
+
+        <!-- Capa invisible para cerrar el menú al hacer clic afuera -->
+        <div *ngIf="menuAbierto" class="fixed inset-0 z-10" (click)="menuAbierto = false"></div>
+
+        <div *ngIf="menuAbierto" class="absolute top-full left-0 mt-1.5 w-full sm:w-64 bg-white border border-slate-200 rounded-xl shadow-lg p-1.5 z-20">
+          <button type="button" (click)="seleccionarMercado('Todas')"
+            class="w-full px-3 py-2.5 rounded-lg text-[13px] font-semibold text-slate-700 flex items-center gap-2.5 hover:bg-slate-50 transition cursor-pointer text-left">
+            <span class="material-symbols-outlined text-[18px] text-slate-400">inventory_2</span>
+            Todos los mercados
+          </button>
+          <button type="button" (click)="seleccionarMercado('Granos')"
+            class="w-full px-3 py-2.5 rounded-lg text-[13px] font-semibold text-slate-700 flex items-center gap-2.5 hover:bg-amber-50 transition cursor-pointer text-left">
+            <span class="material-symbols-outlined text-[18px] text-amber-600">restaurant</span>
+            Granos / No perecederos
+          </button>
+          <button type="button" (click)="seleccionarMercado('Perecederos')"
+            class="w-full px-3 py-2.5 rounded-lg text-[13px] font-semibold text-slate-700 flex items-center gap-2.5 hover:bg-blue-50 transition cursor-pointer text-left">
+            <span class="material-symbols-outlined text-[18px] text-blue-600">schedule</span>
+            Perecederos
+          </button>
+        </div>
+      </div>
+
+      <!-- Frecuencia: mercado mensual / quincenal -->
+      <div class="flex flex-col w-full sm:w-auto gap-1.5">
+        <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider pl-1">Frecuencia</label>
+        <select [(ngModel)]="frecuenciaSel" name="frecuenciaSel"
+          class="border border-slate-200 rounded-xl bg-white px-3 py-2.5 text-[13px] font-medium text-slate-600 outline-none w-full sm:w-48 shadow-2xs cursor-pointer appearance-none focus:border-[#F4B41F] focus:ring-1 focus:ring-[#F4B41F]/50 transition">
+          <option value="">Todas</option>
+          <option value="Mensual">Mercado mensual</option>
+          <option value="Quincenal">Mercado quincenal</option>
+        </select>
+      </div>
+
+      <!-- [Limpiar Filtros] -->
+      <button type="button" (click)="limpiarFiltros()"
+        class="px-4 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-700 text-[13px] font-bold flex items-center gap-2 hover:bg-slate-50 transition cursor-pointer w-full sm:w-auto justify-center whitespace-nowrap shrink-0">
+        <span class="material-symbols-outlined text-[18px]">filter_alt_off</span>
+        Limpiar Filtros
+      </button>
+
+    </div>
+
+    <!-- Tabla -->
+    <div class="overflow-x-auto rounded-xl border border-slate-100">
+      <table class="w-full text-left border-collapse text-[13px]">
+        <thead>
+          <tr class="bg-slate-50/80 text-slate-600 font-bold border-b border-slate-200">
+            <th class="py-3.5 px-4 font-bold">Fecha</th>
+            <th class="py-3.5 px-4 font-bold">Ingrediente</th>
+            <th class="py-3.5 px-4 font-bold text-center">Tipo de mercado</th>
+            <th class="py-3.5 px-4 font-bold text-center">Frecuencia</th>
+            <th class="py-3.5 px-4 font-bold text-center">Cantidad</th>
+            <th class="py-3.5 px-4 font-bold text-center">Unidad</th>
+            <th class="py-3.5 px-4 font-bold text-center">Vencimiento</th>
+            <th class="py-3.5 px-4 font-bold text-center">Estado</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100/80">
+
+          <tr *ngFor="let entrega of entregasFiltradas" class="hover:bg-slate-50/50 transition">
+            <td class="py-3.5 px-4 text-slate-800 font-bold">{{ entrega.fechaRecepcion | date:'dd/MM/yyyy' }}</td>
+            <td class="py-3.5 px-4 text-slate-700 font-semibold">{{ entrega.ingrediente }}</td>
+
+            <td class="py-3.5 px-4 text-center">
+              <span [ngClass]="entrega.tipoMercado === 'Granos' ? 'bg-amber-100/60 text-amber-800 border-amber-200' : 'bg-blue-50 text-blue-700 border-blue-200'"
+                    class="px-2.5 py-1 rounded-[8px] text-[11px] font-bold border inline-flex items-center justify-center gap-1 min-w-[80px]">
+                <span class="material-symbols-outlined text-[14px]">{{ entrega.tipoMercado === 'Granos' ? 'restaurant' : 'schedule' }}</span>
+                {{ entrega.tipoMercado }}
+              </span>
+            </td>
+
+            <td class="py-3.5 px-4 text-center text-slate-600 font-semibold">{{ entrega.frecuencia }}</td>
+            <td class="py-3.5 px-4 text-center text-slate-700 font-bold">{{ entrega.cantidad }}</td>
+            <td class="py-3.5 px-4 text-center text-slate-500 font-semibold">{{ entrega.unidad }}</td>
+            <td class="py-3.5 px-4 text-center text-slate-600 font-medium">{{ entrega.fechaVencimiento | date:'dd/MM/yyyy' }}</td>
+
+            <td class="py-3.5 px-4 text-center">
+              <span [ngClass]="entregasService.claseEstado(entregasService.obtenerEstado(entrega))"
+                    class="px-3 py-1 rounded-full text-[11px] font-bold border inline-block min-w-[70px]">
+                {{ entregasService.obtenerEstado(entrega) }}
+              </span>
+            </td>
+          </tr>
+
+          <!-- Estado vacío -->
+          <tr *ngIf="entregasFiltradas.length === 0">
+            <td colspan="8" class="py-14 px-4 text-center">
+              <div class="flex flex-col items-center justify-center gap-2">
+                <div class="w-12 h-12 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-400">
+                  <span class="material-symbols-outlined text-[24px]">inventory_2</span>
+                </div>
+                <p class="text-xs font-bold text-slate-800 m-0">
+                  {{ entregas.length === 0 ? 'Aún no hay entregas registradas' : 'No hay entregas con estos filtros' }}
+                </p>
+                <p *ngIf="entregas.length === 0" class="text-[11px] text-slate-500 font-medium m-0">
+                  Regístralas en "Consultar historial de entregas".
+                </p>
+              </div>
+            </td>
+          </tr>
+
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Contador -->
+    <div class="mt-4">
+      <span class="text-xs text-slate-500 font-medium">Mostrando {{ entregasFiltradas.length }} de {{ entregas.length }} registros</span>
+    </div>
+
+  </div>
+</div>

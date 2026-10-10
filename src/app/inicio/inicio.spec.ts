@@ -1,17 +1,32 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Inicio } from './inicio';
+import { provideRouter } from '@angular/router';
+import { InicioComponent } from './inicio';
+import { AuthService } from '../services/auth.service';
 
-describe('Inicio', () => {
-  let component: Inicio;
-  let fixture: ComponentFixture<Inicio>;
+describe('InicioComponent', () => {
+  let component: InicioComponent;
+  let fixture: ComponentFixture<InicioComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [Inicio]
-    })
-    .compileComponents();
+      imports: [InicioComponent],
+      providers: [
+        provideRouter([]),
+        {
+          provide: AuthService,
+          useValue: {
+            obtenerUsuario: () => ({
+              nombre: 'Ana',
+              apellido: 'Pérez',
+              correo: 'ana@example.com',
+              rol: 'Administrador',
+            }),
+          },
+        },
+      ],
+    }).compileComponents();
 
-    fixture = TestBed.createComponent(Inicio);
+    fixture = TestBed.createComponent(InicioComponent);
     component = fixture.componentInstance;
     await fixture.whenStable();
   });

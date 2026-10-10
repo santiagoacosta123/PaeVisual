@@ -10,7 +10,7 @@ import { SweetAlertService } from '../sweet-alert.service';
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './usuarios.html',
-  styleUrls: ['./usuarios.css']
+  styleUrls: ['./usuarios.css', '../banco-datos/banco-datos.css']
 })
 export class UsuariosComponent implements OnInit {
 
