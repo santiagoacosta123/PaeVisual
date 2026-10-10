@@ -33,6 +33,7 @@ export class LoginComponent implements OnInit {
   errorRecuperacion: string = '';
   mensajeRecuperacion: string = '';
   enlaceRecuperacionDesarrollo: string = '';
+  codigoRecuperacionDesarrollo: string = '';
 
   ngOnInit(): void {
     this.loginForm = this.fb.group({
@@ -96,6 +97,7 @@ export class LoginComponent implements OnInit {
     this.errorRecuperacion = '';
     this.mensajeRecuperacion = '';
     this.enlaceRecuperacionDesarrollo = '';
+    this.codigoRecuperacionDesarrollo = '';
   }
 
   cerrarModalRecuperar(): void {
@@ -103,6 +105,13 @@ export class LoginComponent implements OnInit {
     this.errorRecuperacion = '';
     this.mensajeRecuperacion = '';
     this.enlaceRecuperacionDesarrollo = '';
+    this.codigoRecuperacionDesarrollo = '';
+  }
+
+  continuarRecuperacion(): void {
+    this.router.navigate(['/recuperar-password'], {
+      queryParams: { correo: this.correoRecuperacion.trim() },
+    });
   }
 
   enviarCorreoRecuperacion(): void {
@@ -120,10 +129,13 @@ export class LoginComponent implements OnInit {
       next: (response) => {
         this.enviandoRecuperacion = false;
         this.enlaceRecuperacionDesarrollo = response.debug_link || '';
-        this.mensajeRecuperacion = this.enlaceRecuperacionDesarrollo
+        this.codigoRecuperacionDesarrollo = response.debug_code || '';
+        this.mensajeRecuperacion = this.codigoRecuperacionDesarrollo
+          ? 'Modo local: usa este código para cambiar tu contraseña.'
+          : this.enlaceRecuperacionDesarrollo
           ? 'Modo local: abre este enlace para crear la nueva contraseña.'
           : response.mensaje
-            || 'Si el correo está registrado, recibirás instrucciones para restablecer la contraseña.';
+            || 'Si el correo está registrado, recibirás un código para restablecer la contraseña.';
         this.cdr.detectChanges();
       },
       error: (err) => {

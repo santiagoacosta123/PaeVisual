@@ -17,6 +17,9 @@ export class RecuperarPasswordComponent implements OnInit {
   private readonly cdr = inject(ChangeDetectorRef);
 
   token: string | null = null;
+  correo = '';
+  codigo = '';
+  modoCodigo = false;
   nuevaPassword = '';
   confirmarPassword = '';
   verificandoToken = true;
@@ -27,13 +30,25 @@ export class RecuperarPasswordComponent implements OnInit {
 
   ngOnInit(): void {
     this.token = this.route.snapshot.queryParamMap.get('token');
-    if (!this.token) {
-      this.verificandoToken = false;
-      this.errorMensaje = 'El enlace de recuperación no contiene un token. Solicita uno nuevo.';
+    if (this.token) {
+      this.validarToken(this.token);
       return;
     }
 
-    this.authService.validarTokenRecuperacion(this.token).subscribe({
+    this.correo = this.route.snapshot.queryParamMap.get('correo')?.trim() ?? '';
+    if (this.correo) {
+      this.modoCodigo = true;
+      this.verificandoToken = false;
+      this.tokenValido = true;
+      return;
+    }
+
+    this.verificandoToken = false;
+    this.errorMensaje = 'El enlace no contiene un token ni un correo para verificar el código. Solicita una recuperación nueva.';
+  }
+
+  private validarToken(token: string): void {
+    this.authService.validarTokenRecuperacion(token).subscribe({
       next: (response) => {
         this.verificandoToken = false;
         this.tokenValido = response.valido;
@@ -55,13 +70,16 @@ export class RecuperarPasswordComponent implements OnInit {
   restablecerContrasena(): void {
     this.errorMensaje = '';
 
-    if (!this.token || !this.tokenValido) {
-      this.errorMensaje = 'El enlace de recuperación no es válido. Solicita uno nuevo.';
+    if (!this.tokenValido || (!this.token && (!this.correo || !/^\d{6}$/.test(this.codigo)))) {
+      this.errorMensaje = this.modoCodigo
+        ? 'Ingresa el código de seis dígitos enviado a tu correo.'
+        : 'El enlace de recuperación no es válido. Solicita uno nuevo.';
       return;
     }
 
-    if (this.nuevaPassword.length < 6) {
-      this.errorMensaje = 'La contraseña debe tener al menos 6 caracteres.';
+    const longitudMinima = this.modoCodigo ? 8 : 6;
+    if (this.nuevaPassword.length < longitudMinima) {
+      this.errorMensaje = `La contraseña debe tener al menos ${longitudMinima} caracteres.`;
       return;
     }
 
@@ -71,23 +89,34 @@ export class RecuperarPasswordComponent implements OnInit {
     }
 
     this.procesando = true;
-    this.authService.confirmarRecuperacionContrasena({
-      token: this.token,
-      nueva_password: this.nuevaPassword,
-      confirmar_password: this.confirmarPassword,
-    }).subscribe({
+    const solicitud = this.token
+      ? this.authService.confirmarRecuperacionContrasena({
+          token: this.token,
+          nueva_password: this.nuevaPassword,
+          confirmar_password: this.confirmarPassword,
+        })
+      : this.authService.confirmarRecuperacionCodigo({
+          correo: this.correo,
+          codigo: this.codigo,
+          nueva_password: this.nuevaPassword,
+          confirmar_password: this.confirmarPassword,
+        });
+
+    solicitud.subscribe({
       next: () => {
         this.procesando = false;
         this.completado = true;
+        this.codigo = '';
         this.nuevaPassword = '';
         this.confirmarPassword = '';
         this.cdr.detectChanges();
       },
       error: (err) => {
         this.procesando = false;
-        this.errorMensaje = err.error?.error
-          || err.error?.detail
-          || 'No fue posible cambiar la contraseña. Solicita un nuevo enlace e inténtalo otra vez.';
+        const error = err.error?.error || err.error?.detail;
+        this.errorMensaje = Array.isArray(error)
+          ? error.join(' ')
+          : error || 'No fue posible cambiar la contraseña. Verifica el código e inténtalo otra vez.';
         this.cdr.detectChanges();
       },
     });

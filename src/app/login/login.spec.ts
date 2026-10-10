@@ -108,9 +108,7 @@ describe('LoginComponent', () => {
 
   it('requests a password recovery email for a valid address', () => {
     authServiceMock.recuperarContrasena.mockReturnValue(of({
-      status: 'success',
-      mensaje: 'Si el correo está registrado, recibirás instrucciones.',
-      debug_link: 'http://localhost:4200/recuperar-password?token=token-de-prueba',
+      mensaje: 'Si el correo está registrado, recibirás un código de verificación.',
     }));
     component.abrirModalRecuperar();
     component.correoRecuperacion = '  ana@example.com  ';
@@ -120,11 +118,35 @@ describe('LoginComponent', () => {
     expect(authServiceMock.recuperarContrasena).toHaveBeenCalledWith({
       correo: 'ana@example.com',
     });
-    expect(component.mensajeRecuperacion).toContain('Modo local');
-    expect(component.enlaceRecuperacionDesarrollo).toBe(
-      'http://localhost:4200/recuperar-password?token=token-de-prueba'
-    );
+    expect(component.mensajeRecuperacion).toContain('código');
+    expect(component.enlaceRecuperacionDesarrollo).toBe('');
     expect(component.enviandoRecuperacion).toBe(false);
+  });
+
+  it('continues to the code verification form with the requested email', () => {
+    const router = TestBed.inject(Router);
+    const navigate = vi.spyOn(router, 'navigate');
+    component.correoRecuperacion = 'ana@example.com';
+
+    component.continuarRecuperacion();
+
+    expect(navigate).toHaveBeenCalledWith(['/recuperar-password'], {
+      queryParams: { correo: 'ana@example.com' },
+    });
+  });
+
+  it('shows the local verification code when the backend uses the console mailer', () => {
+    authServiceMock.recuperarContrasena.mockReturnValue(of({
+      mensaje: 'Si el correo está registrado, recibirás un código de verificación.',
+      debug_code: '123456',
+    }));
+    component.abrirModalRecuperar();
+    component.correoRecuperacion = 'ana@example.com';
+
+    component.enviarCorreoRecuperacion();
+
+    expect(component.codigoRecuperacionDesarrollo).toBe('123456');
+    expect(component.mensajeRecuperacion).toContain('Modo local');
   });
 
   it('rejects an invalid recovery email without calling the API', () => {

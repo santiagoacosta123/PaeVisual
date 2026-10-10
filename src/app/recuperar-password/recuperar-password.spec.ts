@@ -10,6 +10,7 @@ describe('RecuperarPasswordComponent', () => {
   const authServiceMock = {
     validarTokenRecuperacion: vi.fn(),
     confirmarRecuperacionContrasena: vi.fn(),
+    confirmarRecuperacionCodigo: vi.fn(),
   };
   const routeMock = {
     snapshot: {
@@ -56,6 +57,29 @@ describe('RecuperarPasswordComponent', () => {
 
     expect(authServiceMock.confirmarRecuperacionContrasena).toHaveBeenCalledWith({
       token: 'token-de-prueba',
+      nueva_password: 'nueva-clave-segura',
+      confirmar_password: 'nueva-clave-segura',
+    });
+    expect(component.completado).toBe(true);
+  });
+
+  it('submits the recovery code with the matching passwords', () => {
+    authServiceMock.confirmarRecuperacionCodigo.mockReturnValue(of({
+      mensaje: 'Contraseña restablecida.',
+    }));
+    component.token = null;
+    component.correo = 'ana@example.com';
+    component.codigo = '123456';
+    component.modoCodigo = true;
+    component.tokenValido = true;
+    component.nuevaPassword = 'nueva-clave-segura';
+    component.confirmarPassword = 'nueva-clave-segura';
+
+    component.restablecerContrasena();
+
+    expect(authServiceMock.confirmarRecuperacionCodigo).toHaveBeenCalledWith({
+      correo: 'ana@example.com',
+      codigo: '123456',
       nueva_password: 'nueva-clave-segura',
       confirmar_password: 'nueva-clave-segura',
     });

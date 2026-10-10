@@ -20,9 +20,11 @@ export interface AuthenticatedUser {
 }
 
 export interface PasswordResetResponse {
-  status: string;
-  mensaje: string;
+  status?: string;
+  mensaje?: string;
+  error?: string;
   debug_link?: string;
+  debug_code?: string;
 }
 
 export interface PasswordResetTokenResponse {
@@ -79,6 +81,18 @@ export class AuthService {
 
   recuperarContrasena(data: { correo: string }): Observable<PasswordResetResponse> {
     return this.http.post<PasswordResetResponse>(`${this.apiBaseUrl}/auth/recuperar-password/`, data);
+  }
+
+  confirmarRecuperacionCodigo(data: {
+    correo: string;
+    codigo: string;
+    nueva_password: string;
+    confirmar_password: string;
+  }): Observable<PasswordResetResponse> {
+    return this.http.post<PasswordResetResponse>(
+      `${this.apiBaseUrl}/auth/confirmar-recuperacion-password/`,
+      data
+    );
   }
 
   validarTokenRecuperacion(token: string): Observable<PasswordResetTokenResponse> {
