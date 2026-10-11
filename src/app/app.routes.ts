@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 
-import { LoginComponent } from './login/login'; // <--- Corregido aquí
+import { LoginComponent } from './login/login';
 import { RecuperarPasswordComponent } from './recuperar-password/recuperar-password';
 import { LayoutComponent } from './layout/layout';
 import { InicioComponent } from './inicio/inicio';
@@ -8,16 +8,18 @@ import { UsuariosComponent } from './usuarios/usuarios';
 import { ContratosComponent } from './contratos/contratos';
 import { CrearUsuarioComponent } from './crear-usuario/crear-usuario';
 import { Rol } from './rol/rol';
-import { Productos } from './productos/productos';
+import { Ingredientes } from './ingredientes/ingredientes';
 import { NuevoProducto } from './nuevo-producto/nuevo-producto';
 import { ReporteInventario } from './reporte-inventario/reporte-inventario';
 import { UnidadesMedidaComponent } from './unidades-medida/unidades-medida';
 import { MenusComponent } from './menus/menus';
+import { EntradasInventario } from './entradas-inventario/entradas-inventario';
 import { ContratoDetalleComponent } from './contrato-detalle/contrato-detalle';
 import { NotificacionesComponent } from './notificaciones/notificaciones.component';
 import { DashboardSupervisor } from './dashboard-supervisor/dashboard-supervisor';
 import { authGuard } from './services/auth.guard';
 import { roleGuard } from './services/role.guard';
+import { BancoDatosComponent } from './banco-datos/banco-datos';
 
 // Importaciones corregidas sin la extensión .component
 import { RegistrarEntregaAlimentosComponent } from './registrar-entrega-alimentos/registrar-entrega-alimentos';
@@ -148,8 +150,8 @@ export const routes: Routes = [
       },
 
       {
-        path: 'productos',
-        component: Productos,
+        path: 'ingredientes',
+        component: Ingredientes,
         canActivate: [roleGuard],
         data: { roles: ['administrador', 'admin'] }
       },
@@ -185,6 +187,18 @@ export const routes: Routes = [
       {
         path: 'notificaciones',
         component: NotificacionesComponent
+      },
+      {
+        path: 'banco-datos',
+        component: BancoDatosComponent,
+        canActivate: [roleGuard],
+        data: { roles: ['administrador', 'admin'] }
+      },
+      {
+        path: 'entradas-inventario',
+        component: EntradasInventario,
+        canActivate: [roleGuard],
+        data: { roles: ['administrador', 'admin'] }
       }
     ]
   },

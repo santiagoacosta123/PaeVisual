@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { SiraeService } from '../services/contratos_pae.service';
+import { ContratoDetalleComponent } from '../contrato-detalle/contrato-detalle';
 
 @Component({
   selector: 'app-gestion-contratos',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, ContratoDetalleComponent],
   templateUrl: './contratos.html',
   styleUrls: ['./contratos.css']
 })
@@ -28,7 +29,7 @@ export class ContratosComponent implements OnInit {
     this.siraeService.getContratos().subscribe({
       next: (data: any) => {
         // Soporta array directo o respuesta paginada con .results
-        const lista = Array.isArray(data) ? data : (data.results || []);
+        const lista = Array.isArray(data) ? data : (data.results || data.data || []);
 
         this.contratos = lista.map((c: any) => ({
           id: c.id_contrato || c.id,
@@ -52,7 +53,7 @@ export class ContratosComponent implements OnInit {
   cargarDatosMaestros() {
     this.siraeService.getJornadas().subscribe({
       next: (datos: any) => {
-        const res = Array.isArray(datos) ? datos : (datos.results || []);
+        const res = Array.isArray(datos) ? datos : (datos.results || datos.data || []);
         this.jornadas = res.map((j: any) => ({
           id: j.id_jornada || j.id,
           nombre: j.nombre_jornada || j.nombre,
@@ -68,7 +69,7 @@ export class ContratosComponent implements OnInit {
 
     this.siraeService.getSeccionesMenu().subscribe({
       next: (datos: any) => {
-        const res = Array.isArray(datos) ? datos : (datos.results || []);
+        const res = Array.isArray(datos) ? datos : (datos.results || datos.data || []);
         this.secciones = res.map((s: any) => ({
           id: s.id_seccion || s.id,
           nombre: s.nombre_seccion || s.nombre,
@@ -99,6 +100,9 @@ export class ContratosComponent implements OnInit {
 
   modalTurnoAbierto = false;
   modoEdicionTurno = false;
+
+  modalGrandeAbierto = false;
+  contratoIdSeleccionado: string | null = null;
 
   contratoActual: any = {
     id: null,
@@ -175,6 +179,19 @@ export class ContratosComponent implements OnInit {
   }
 
   // CONTRATOS
+
+  abrirModalGrandeContrato(id: string | number) {
+    this.contratoIdSeleccionado = String(id);
+    this.modalGrandeAbierto = true;
+    this.cdr.detectChanges();
+  }
+
+  cerrarModalGrandeContrato() {
+    this.modalGrandeAbierto = false;
+    this.contratoIdSeleccionado = null;
+    this.cargarContratos();
+    this.cdr.detectChanges();
+  }
 
   configurarContrato(contratoId: number) {
     this.router.navigate(['/contratos', contratoId, 'detalle']);

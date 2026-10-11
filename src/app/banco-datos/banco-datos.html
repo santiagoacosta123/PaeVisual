@@ -1,0 +1,147 @@
+<div class="banco-datos-page">
+
+  <!-- ===================== CABECERA PRINCIPAL ===================== -->
+  <header class="bd-header">
+    <div class="bd-header-info">
+      <h1 class="bd-title">Banco de Datos</h1>
+      <p class="bd-subtitle">Administración central de parámetros y tablas maestras del sistema</p>
+    </div>
+
+    <!-- Botón Añadir (Amarillo, lado derecho) -->
+    <button type="button" class="bd-new-button" (click)="abrirModal()">
+      <span class="material-symbols-outlined" aria-hidden="true">add</span>
+      <span>Añadir {{ tab.singular }}</span>
+    </button>
+  </header>
+
+
+  <!-- ===================== TABS (Desplazables horizontalmente sin iconos) ===================== -->
+  <nav class="bd-tabs" aria-label="Tablas del banco de datos">
+    <button *ngFor="let t of tabs" type="button" class="bd-tab" [class.active]="tabActual === t.id"
+      [attr.aria-current]="tabActual === t.id ? 'page' : null" (click)="cambiarTab(t.id)">
+      <span>{{ t.nombre }}</span>
+    </button>
+  </nav>
+
+
+  <!-- ===================== CONTENIDO / TABLA ===================== -->
+  <section class="bd-section">
+    
+    <!-- Encabezado de la Sección (Sin ícono gigante) -->
+    <div class="bd-section-header">
+      <div>
+        <h2>{{ tab.nombre }}</h2>
+        <p>Consulta y administra los registros de esta sección. {{ datos.length > 0 ? (datos.length + ' registro' + (datos.length !== 1 ? 's' : '')) : '' }}</p>
+      </div>
+    </div>
+
+    <!-- Cargando -->
+    <div *ngIf="cargando" class="bd-loading" aria-busy="true">
+      <div class="bd-skeleton-row" *ngFor="let i of [1,2,3,4,5]">
+        <div class="bd-skeleton skeleton-lg"></div>
+        <div class="bd-skeleton skeleton-xl"></div>
+        <div class="bd-skeleton skeleton-sm"></div>
+      </div>
+    </div>
+
+    <!-- Error de Carga -->
+    <div *ngIf="!cargando && errorCarga" class="bd-empty">
+      <span class="material-symbols-outlined" aria-hidden="true">cloud_off</span>
+      <h3>No pudimos cargar {{ tab.nombre }}</h3>
+      <p>{{ errorCarga }}</p>
+      <button type="button" class="bd-empty-button" (click)="cargarDatos()">Reintentar</button>
+    </div>
+
+    <!-- Vacío -->
+    <div *ngIf="!cargando && !errorCarga && datos.length === 0" class="bd-empty">
+      <span class="material-symbols-outlined" aria-hidden="true">inbox</span>
+      <h3>Aún no hay registros en {{ tab.nombre }}</h3>
+      <p>Crea el primero para empezar a usarlo en el resto del sistema.</p>
+      <button type="button" class="bd-empty-button" (click)="abrirModal()">Añadir {{ tab.singular }}</button>
+    </div>
+
+    <!-- Tabla -->
+    <div class="bd-table-container" *ngIf="!cargando && !errorCarga && datos.length > 0">
+      <div class="bd-table-scroll">
+        <table class="bd-table">
+          <thead>
+            <tr>
+              <th *ngFor="let campo of tab.campos" scope="col">{{ campo.label }}</th>
+              <th scope="col" class="bd-actions-header">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of datos; trackBy: trackPorId">
+              <td *ngFor="let campo of tab.campos">
+                <span class="bd-cell-value">{{ valorCelda(item, campo) }}</span>
+              </td>
+              <td class="bd-actions">
+                <button type="button" class="bd-action edit" title="Editar registro" (click)="abrirModal(item)">
+                  <span class="material-symbols-outlined" aria-hidden="true">edit</span>
+                </button>
+                <button type="button" class="bd-action delete" title="Eliminar registro" (click)="eliminar(item)">
+                  <span class="material-symbols-outlined" aria-hidden="true">delete</span>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== MODAL ===================== -->
+  <div class="bd-modal-overlay" *ngIf="mostrarModal" (click)="cerrarModal()">
+    <form
+      #formulario="ngForm"
+      class="bd-modal"
+      role="dialog"
+      aria-modal="true"
+      (click)="$event.stopPropagation()"
+      (ngSubmit)="guardar()"
+    >
+      <div class="bd-modal-header">
+        <div>
+          <span class="bd-modal-eyebrow">{{ tab.nombre | uppercase }}</span>
+          <h2>{{ modoEdicion ? 'Editar ' : 'Nuevo ' }}{{ tab.singular }}</h2>
+        </div>
+        <button type="button" class="bd-modal-close" (click)="cerrarModal()">
+          <span class="material-symbols-outlined" aria-hidden="true">close</span>
+        </button>
+      </div>
+
+      <div class="bd-modal-body">
+        <p class="bd-modal-description">Completa los campos a continuación para guardar el registro.</p>
+        
+        <div class="bd-form-grid">
+          <div class="bd-form-group" *ngFor="let campo of tab.campos" [style.grid-column]="campo.type === 'textarea' ? '1 / -1' : 'auto'">
+            <label [for]="'campo-' + campo.name">
+              {{ campo.label }} <span *ngIf="campo.required" style="color: #ef4444">*</span>
+            </label>
+
+            <!-- Lista desplegable -->
+            <ng-container *ngIf="campo.type === 'select'">
+              <select class="bd-input" [id]="'campo-' + campo.name" [name]="campo.name" [(ngModel)]="itemForm[campo.name]">
+                <option [ngValue]="null">Seleccionar…</option>
+                <option *ngFor="let o of opcionesDe(campo)" [ngValue]="o.id">{{ o.label }}</option>
+              </select>
+            </ng-container>
+
+            <!-- Texto largo -->
+            <textarea *ngIf="campo.type === 'textarea'" class="bd-input" rows="3" [id]="'campo-' + campo.name" [name]="campo.name" [(ngModel)]="itemForm[campo.name]" [placeholder]="campo.placeholder || ''"></textarea>
+
+            <!-- Texto, número u hora -->
+            <input *ngIf="campo.type === 'text' || campo.type === 'number' || campo.type === 'time'" class="bd-input" [type]="campo.type" [attr.min]="campo.type === 'number' ? 0 : null" [attr.step]="campo.type === 'number' ? 'any' : null" [id]="'campo-' + campo.name" [name]="campo.name" [(ngModel)]="itemForm[campo.name]" [placeholder]="campo.placeholder || ''" autocomplete="off" />
+          </div>
+        </div>
+      </div>
+
+      <div class="bd-modal-footer">
+        <button type="button" class="bd-cancel" (click)="cerrarModal()">Cancelar</button>
+        <button type="submit" class="bd-save" [disabled]="guardando">
+          {{ guardando ? 'Guardando…' : (modoEdicion ? 'Guardar cambios' : 'Crear registro') }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

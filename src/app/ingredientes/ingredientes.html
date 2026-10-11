@@ -1,0 +1,154 @@
+<div style="display:flex; flex-direction:column; gap:18px; position:relative; font-family: system-ui, -apple-system, sans-serif;">
+      
+  <!-- ===================== CABECERA PRINCIPAL ===================== -->
+  <header style="width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 20px 24px; background: linear-gradient(135deg, #fffcf0 0%, #ffffff 100%); border: 1px solid #f2ead0; border-radius: 12px; box-shadow: 0 4px 15px rgba(250, 201, 75, 0.05);">
+    <div>
+      <h1 style="margin: 0; color: #1a1a1a; font-size: 22px; font-weight: 700; letter-spacing: -0.5px;">Inventario Actual</h1>
+      <p style="margin: 4px 0 0; color: #64748b; font-size: 13px;">Insumos, marcas y stock disponible.</p>
+    </div>
+
+    <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+      <!-- Buscador -->
+      <div style="display:flex; align-items:center; gap:8px; background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; padding:8px 12px; min-width:240px; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <input type="text" [(ngModel)]="filtroBusqueda" placeholder="Buscar..." style="border:none; background:transparent; outline:none; font-size:13px; width:100%; color:#0f172a;">
+      </div>
+      
+      <!-- Entrada -->
+      <button type="button" (click)="abrirModalMovimiento('ENTRADA')" style="height: 38px; padding: 0 16px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: none; border-radius: 8px; background: #dcfce7; color: #166534; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: all 0.2s ease;">
+        <span class="material-symbols-outlined" style="font-size: 16px;">add</span>
+        <span>Entrada</span>
+      </button>
+
+      <!-- Salida -->
+      <button type="button" (click)="abrirModalMovimiento('SALIDA')" style="height: 38px; padding: 0 16px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: none; border-radius: 8px; background: #fee2e2; color: #991b1b; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: all 0.2s ease;">
+        <span class="material-symbols-outlined" style="font-size: 16px;">remove</span>
+        <span>Salida</span>
+      </button>
+
+      <!-- Nuevo Insumo -->
+      <button type="button" (click)="abrirFormulario()" style="height: 38px; padding: 0 20px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: none; border-radius: 8px; background: #fac94b; color: #1a1a1a; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; box-shadow: 0 2px 6px rgba(250, 201, 75, 0.3); transition: all 0.2s ease;">
+        <span class="material-symbols-outlined" style="font-size: 18px;">add</span>
+        <span>Nuevo Insumo</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ===================== CONTENIDO / TABLA ===================== -->
+  <section style="width: 100%; margin: 0; background: #ffffff; border-radius: 12px; padding: 24px; border: 1px solid #f1f5f9; box-shadow: 0 2px 10px rgba(0,0,0,0.02);">
+
+    <div style="overflow-x:auto;">
+          <table style="width:100%; border-collapse:collapse; text-align:left; font-size:13px; min-width:650px;">
+            <thead>
+              <tr style="border-bottom:2px solid #f1f5f9; color:#64748b;">
+                <th style="padding:12px 16px; font-weight:600;">Ingrediente</th>
+                <th style="padding:12px 16px; font-weight:600;">Categoría</th>
+                <th style="padding:12px 16px; font-weight:600;">Marca</th>
+                <th style="padding:12px 16px; font-weight:600;">Cant. Actual</th>
+                <th style="padding:12px 16px; font-weight:600;">Unidad</th>
+                <th style="padding:12px 16px; font-weight:600; text-align:right;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of inventarioFiltrado" style="border-bottom:1px solid #f1f5f9; transition:background 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                <td style="padding:12px 16px; color:#0f172a; font-weight:600;">{{ item.nombre_ingrediente }}</td>
+                <td style="padding:12px 16px; color:#475569;">{{ item.nombre_categoria }}</td>
+                <td style="padding:12px 16px; color:#475569;">{{ item.marca_ingrediente || 'N/A' }}</td>
+                <td style="padding:12px 16px;">
+                  <span [style.color]="item.cantidad_actual <= item.stock_minimo ? '#dc2626' : '#059669'" [style.background]="item.cantidad_actual <= item.stock_minimo ? '#fee2e2' : '#d1fae5'" style="font-weight:700; padding:4px 8px; border-radius:6px;">{{ item.cantidad_actual }}</span>
+                </td>
+                <td style="padding:12px 16px; color:#475569;">{{ item.nombre_unidad }}</td>
+                <td style="padding:12px 16px; text-align:right;">
+                  <button type="button" (click)="abrirFormulario(item)" style="background:transparent; border:none; cursor:pointer; padding:4px; color:#3b82f6;" title="Editar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
+                  <button type="button" (click)="eliminarItem(inventario, item)" style="background:transparent; border:none; cursor:pointer; padding:4px; color:#ef4444; margin-left:8px;" title="Eliminar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2 2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+                </td>
+              </tr>
+              <tr *ngIf="inventarioFiltrado.length === 0">
+                <td colspan="6" style="padding:24px; text-align:center; color:#64748b;">No hay registros disponibles.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+  </section>
+
+  <!-- MODAL PRINCIPAL (NUEVO/EDITAR Y MOVIMIENTOS) ESTILO BANCO DATOS -->
+  <div class="bd-modal-overlay" *ngIf="mostrarFormulario" (click)="cerrarFormulario()">
+    <form class="bd-modal" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+      
+      <div class="bd-modal-header">
+        <div>
+          <span class="bd-modal-eyebrow">{{ modalTipo === 'ENTRADA' ? 'INGRESO' : (modalTipo === 'SALIDA' ? 'DESCUENTO' : 'INVENTARIO') }}</span>
+          <h2>{{ modalTipo === 'ENTRADA' ? 'Registrar Entrada' : (modalTipo === 'SALIDA' ? 'Registrar Salida' : (modoEdicion ? 'Editar Registro' : 'Nuevo Insumo')) }}</h2>
+        </div>
+        <button type="button" class="bd-modal-close" (click)="cerrarFormulario()">
+          <span class="material-symbols-outlined" aria-hidden="true">close</span>
+        </button>
+      </div>
+
+      <div class="bd-modal-body">
+        <p class="bd-modal-description" *ngIf="modalTipo === 'INSUMO'">Completa los datos del insumo en el inventario.</p>
+        <p class="bd-modal-description" *ngIf="modalTipo !== 'INSUMO'">Completa los datos del movimiento de stock.</p>
+        
+        <div class="bd-form-grid">
+          <!-- Formulario Insumo -->
+          <ng-container *ngIf="modalTipo === 'INSUMO'">
+            <div class="bd-form-group" style="grid-column: 1 / -1">
+              <label>Ingrediente / Insumo <span style="color: #ef4444">*</span></label>
+              <select class="bd-input" [(ngModel)]="itemForm.id_ingrediente" name="id_ingrediente">
+                <option value="">Seleccione...</option>
+                <option *ngFor="let i of ingredientesDisponibles" [value]="i.id_ingrediente">{{i.nombre_ingrediente}}</option>
+              </select>
+            </div>
+
+            <div class="bd-form-group">
+              <label>Cantidad Actual</label>
+              <input class="bd-input" type="number" [(ngModel)]="itemForm.cantidad_actual" name="cantidad_actual">
+            </div>
+
+            <div class="bd-form-group">
+              <label>Unidad</label>
+              <select class="bd-input" [(ngModel)]="itemForm.id_unidad_medida" name="id_unidad_medida">
+                <option value="">Seleccione...</option>
+                <option *ngFor="let u of unidadesMedida" [value]="u.id_unidad_medida">{{ u.nombre || u.nombre_unidad }}</option>
+              </select>
+            </div>
+
+            <div class="bd-form-group">
+              <label>Stock Mínimo</label>
+              <input class="bd-input" type="number" [(ngModel)]="itemForm.stock_minimo" name="stock_minimo">
+            </div>
+          </ng-container>
+
+          <!-- Formulario Movimiento -->
+          <ng-container *ngIf="modalTipo === 'ENTRADA' || modalTipo === 'SALIDA'">
+            <div class="bd-form-group" style="grid-column: 1 / -1">
+              <label>Ingrediente <span style="color: #ef4444">*</span></label>
+              <select class="bd-input" [(ngModel)]="movimientoForm.id_ingrediente" name="mov_ingrediente">
+                <option value="">Seleccione...</option>
+                <option *ngFor="let i of ingredientesDisponibles" [value]="i.id_ingrediente">{{i.nombre_ingrediente}}</option>
+              </select>
+            </div>
+
+            <div class="bd-form-group" style="grid-column: 1 / -1">
+              <label>Cantidad a {{ modalTipo === 'ENTRADA' ? 'ingresar' : 'retirar' }} <span style="color: #ef4444">*</span></label>
+              <input class="bd-input" type="number" min="0.01" step="any" [(ngModel)]="movimientoForm.cantidad" name="mov_cantidad" required>
+            </div>
+
+            <div class="bd-form-group" style="grid-column: 1 / -1">
+              <label>Observaciones</label>
+              <textarea class="bd-input" rows="2" [(ngModel)]="movimientoForm.observaciones" name="mov_observaciones" placeholder="Motivo, lote, etc."></textarea>
+            </div>
+          </ng-container>
+        </div>
+      </div>
+
+      <div class="bd-modal-footer">
+        <button type="button" class="bd-cancel" (click)="cerrarFormulario()">Cancelar</button>
+        <button type="button" class="bd-save" (click)="guardarInventario()" [style.background]="modalTipo === 'ENTRADA' ? '#f6c400' : (modalTipo === 'SALIDA' ? '#fca5a5' : '')" [style.color]="modalTipo === 'ENTRADA' ? '#202020' : (modalTipo === 'SALIDA' ? '#7f1d1d' : '')">
+          {{ modalTipo === 'ENTRADA' || modalTipo === 'SALIDA' ? 'Confirmar' : (modoEdicion ? 'Actualizar' : 'Guardar') }}
+        </button>
+      </div>
+    </form>
+  </div>
+
+</div>
