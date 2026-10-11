@@ -1,6 +1,14 @@
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
+import {
+  RouterOutlet,
+  RouterLink,
+  RouterLinkActive,
+  Router,
+  NavigationEnd
+} from '@angular/router';
+import { filter } from 'rxjs/operators';
 import { FormsModule } from '@angular/forms';
 import { NotificacionService } from '../notificaciones/notificacion.service';
 import { Notificacion } from '../notificaciones/notificacion.model';
@@ -9,34 +17,43 @@ import { AuthService } from '../services/auth.service';
 @Component({
   selector: 'app-layout',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, FormsModule],
+  imports: [
+    CommonModule,
+    RouterOutlet,
+    RouterLink,
+    RouterLinkActive,
+    FormsModule
+  ],
   templateUrl: './layout.html',
   styleUrls: ['./layout.css']
 })
 export class LayoutComponent implements OnInit {
-  // Control de Roles para el Menú Lateral
+
+  // Control de Roles
   rolUsuario: string = '';
   esSupervisor: boolean = false;
+  esJefa: boolean = false;
   esAdministrador: boolean = false;
   esGestor: boolean = false;
 
-  // Estado y métodos del perfil de usuario desplegable
-  mostrarPerfil: boolean = false;
-  vistaActual: string = 'perfil';
+  // Estado del perfil
+  mostrarPerfil = false;
+  vistaActual = 'perfil';
 
-  // Estado del panel de notificaciones
-  mostrarNotificaciones: boolean = false;
+  // Estado de las notificaciones
+  mostrarNotificaciones = false;
   listaNotificaciones: Notificacion[] = [];
-  notificacionesNoLeidas: number = 0;
+  notificacionesNoLeidas = 0;
 
   // Datos del perfil y formularios (declarados una sola vez)
   perfil = {
     nombre: '',
     correo: '',
-    rol: '',
+    rol: ''
   };
 
   editForm = { ...this.perfil };
+
   passwordForm = { actual: '', nueva: '', confirmar: '' };
   passwordProcesando = false;
   passwordError = '';
@@ -50,56 +67,104 @@ export class LayoutComponent implements OnInit {
 
   ngOnInit(): void {
     const usuario = this.authService.obtenerUsuario();
+
     if (usuario) {
       this.perfil = {
-        nombre: `${usuario.nombre || ''} ${usuario.apellido || ''}`.trim() || usuario.correo,
+        nombre: `${usuario.nombre ?? ''} ${usuario.apellido ?? ''}`.trim()
+          || usuario.correo,
         correo: usuario.correo,
-        rol: usuario.rol || 'Sin rol asignado',
+        rol: this.authService.esSupervisor(usuario.rol)
+          ? 'Supervisor (Coordinador PAE)'
+          : this.authService.esJefa(usuario.rol)
+            ? 'Jefa de manipuladoras'
+            : usuario.rol || 'Sin rol asignado'
       };
+
       this.editForm = { ...this.perfil };
 
       // Normalizar y evaluar el rol del usuario autenticado
-      this.rolUsuario = String(usuario.rol || '').toLowerCase().trim();
-      
-      this.esSupervisor = this.rolUsuario.includes('supervisor');
-      this.esAdministrador = this.rolUsuario.includes('admin') || this.rolUsuario.includes('administrador');
+      this.rolUsuario = this.authService.normalizarRol(usuario.rol);
+
+      this.esSupervisor = this.authService.esSupervisor(usuario.rol);
+      this.esJefa = this.authService.esJefa(usuario.rol);
+      this.esAdministrador = this.rolUsuario === 'admin' || this.rolUsuario === 'administrador';
       this.esGestor = this.rolUsuario.includes('gestor');
     }
 
     this.cargarNotificacionesHeader();
   }
 
+  actualizarTitulo(url: string): void {
+    const routeTitles: { [key: string]: string } = {
+      '/inicio': 'Inicio',
+      '/dashboard-supervisor': 'Panel del Supervisor',
+      '/asistencia-diaria': 'Asistencia diaria',
+      '/contratos': 'Gestión de Contratos',
+      '/usuarios': 'Gestión de Usuarios',
+      '/rol': 'Gestión de Roles',
+      '/ingredientes': 'Gestión de Inventario',
+      '/entradas-inventario': 'Entradas de inventario',
+      '/saldos-almacen': 'Saldos de almacén',
+      '/entradas-ajustes-inventario': 'Ajustes de inventario',
+      '/registrar-entrega-alimentos': 'Registrar entrega de alimentos',
+      '/historial-entregas': 'Historial de entregas',
+      '/entregas-tipo-mercado': 'Entregas por tipo de mercado',
+      '/banco-datos': 'Banco de Datos',
+      '/crear-usuario': 'Crear Usuario',
+      '/nuevo-producto': 'Nuevo Producto',
+      '/reporte-inventario': 'Reporte Inventario',
+      '/unidades-medida': 'Unidades de Medida',
+      '/menus': 'Menús',
+      '/reportes-consumo': 'Reporte de consumos / salidas',
+      '/notificaciones': 'Notificaciones'
+    };
+
+    const rutaEncontrada = Object.keys(routeTitles).find(
+      ruta => url.includes(ruta)
+    );
+
+    this.pageTitle = rutaEncontrada
+      ? routeTitles[rutaEncontrada]
+      : 'SIRAE';
+  }
+
   cargarNotificacionesHeader(): void {
     this.notificacionService.obtenerNotificaciones().subscribe({
       next: (data: Notificacion[]) => {
         this.listaNotificaciones = data;
-        this.notificacionesNoLeidas = data.filter((n: Notificacion) => !n.leida).length;
+        this.notificacionesNoLeidas =
+          data.filter((n: Notificacion) => !n.leida).length;
       },
-      error: (err: any) => console.error('Error al cargar notificaciones en layout', err)
+      error: (err: any) =>
+        console.error(
+          'Error al cargar notificaciones en layout',
+          err
+        )
     });
   }
 
   toggleNotificaciones(): void {
     this.mostrarNotificaciones = !this.mostrarNotificaciones;
+
     if (this.mostrarNotificaciones) {
-      this.mostrarPerfil = false; 
+      this.mostrarPerfil = false;
       this.cargarNotificacionesHeader();
     }
   }
 
   togglePerfil(): void {
     this.mostrarPerfil = !this.mostrarPerfil;
+
     if (this.mostrarPerfil) {
-      this.mostrarNotificaciones = false; 
+      this.mostrarNotificaciones = false;
     }
   }
 
   marcarTodasComoLeidasDesdePanel(): void {
     this.notificacionService.marcarTodasComoLeidas().subscribe({
-      next: () => {
-        this.cargarNotificacionesHeader();
-      },
-      error: (err: any) => console.error('Error al marcar todas como leídas', err)
+      next: () => this.cargarNotificacionesHeader(),
+      error: (err: any) =>
+        console.error('Error al marcar todas como leídas', err)
     });
   }
 
@@ -110,6 +175,7 @@ export class LayoutComponent implements OnInit {
 
   irA(vista: string): void {
     this.vistaActual = vista;
+
     if (vista === 'editar') {
       this.editForm = { ...this.perfil };
     }
@@ -140,19 +206,19 @@ export class LayoutComponent implements OnInit {
       nueva_password: this.passwordForm.nueva,
       confirmar_password: this.passwordForm.confirmar,
     }).subscribe({
-      next: (response) => {
+      next: (response: any) => {
         this.passwordProcesando = false;
         this.passwordMensaje = response.mensaje || 'Contraseña actualizada correctamente.';
         this.passwordForm = { actual: '', nueva: '', confirmar: '' };
         this.cdr.detectChanges();
       },
-      error: (err) => {
+      error: (err: any) => {
         this.passwordProcesando = false;
         this.passwordError = err.error?.error
           || err.error?.detail
           || 'No fue posible actualizar la contraseña. Inténtalo nuevamente.';
         this.cdr.detectChanges();
-      },
+      }
     });
   }
 

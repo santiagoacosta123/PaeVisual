@@ -70,7 +70,7 @@
           <textarea [(ngModel)]="notificacionForm.mensaje" placeholder="Escribe el contenido detallado..." rows="3" style="padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; outline: none; resize: none;"></textarea>
         </div>
 
-        <div style="display: flex; align-items: center; gap: 8px;">
+        <div *ngIf="modoEdicion" style="display: flex; align-items: center; gap: 8px;">
           <input type="checkbox" [(ngModel)]="notificacionForm.leida" id="leidaCheck" style="width: 16px; height: 16px;" />
           <label for="leidaCheck" style="font-size: 13px; color: #333; cursor: pointer;">Marcar como leída</label>
         </div>

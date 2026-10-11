@@ -10,7 +10,13 @@ describe('LoginComponent', () => {
   const authServiceMock = {
     login: vi.fn(),
     rolPermitido: vi.fn((rol: string | null | undefined) =>
-      rol?.toLowerCase() === 'administrador' || rol?.toLowerCase() === 'supervisor'
+      ['administrador', 'supervisor', 'coordinador', 'coordinador pae', 'jefa de manipuladoras', 'jefamanipuladoras'].includes(rol?.toLowerCase() ?? '')
+    ),
+    esSupervisor: vi.fn((rol: string | null | undefined) =>
+      ['supervisor', 'coordinador', 'coordinador pae'].includes(rol?.toLowerCase() ?? '')
+    ),
+    esJefa: vi.fn((rol: string | null | undefined) =>
+      ['jefa de manipuladoras', 'jefa manipuladoras', 'jefamanipuladoras'].includes(rol?.toLowerCase() ?? '')
     ),
     limpiarSesion: vi.fn(),
     recuperarContrasena: vi.fn(),
@@ -44,7 +50,7 @@ describe('LoginComponent', () => {
     expect(fixture.nativeElement.textContent).not.toMatch(/Google|continúa con/i);
   });
 
-  it('stores the authenticated profile and opens the application', () => {
+  it('stores the authenticated profile and opens the supervisor dashboard', () => {
     const response = {
       access: 'access-token',
       refresh: 'refresh-token',
@@ -73,7 +79,55 @@ describe('LoginComponent', () => {
     });
     expect(authServiceMock.rolPermitido).toHaveBeenCalledWith('Supervisor');
     expect(authServiceMock.guardarSesion).toHaveBeenCalledWith(response);
-    expect(navigate).toHaveBeenCalledWith(['/inicio']);
+    expect(navigate).toHaveBeenCalledWith(['/dashboard-supervisor']);
+  });
+
+  it('routes the document Coordinator role into the Supervisor dashboard', () => {
+    const response = {
+      access: 'access-token',
+      refresh: 'refresh-token',
+      usuario: {
+        id_usuario: 14,
+        nombre: 'Luis',
+        apellido: 'Pérez',
+        correo: 'coordinador@example.com',
+        numero_documento: '24680',
+        rol: 'Coordinador PAE',
+      },
+    };
+    authServiceMock.login.mockReturnValue(of(response));
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate');
+    component.loginForm.setValue({ correo: response.usuario.correo, clave: 'password-seguro' });
+
+    component.onSubmit();
+
+    expect(authServiceMock.rolPermitido).toHaveBeenCalledWith('Coordinador PAE');
+    expect(authServiceMock.esSupervisor).toHaveBeenCalledWith('Coordinador PAE');
+    expect(navigate).toHaveBeenCalledWith(['/dashboard-supervisor']);
+  });
+
+  it('routes the Jefa role into daily attendance', () => {
+    const response = {
+      access: 'access-token',
+      refresh: 'refresh-token',
+      usuario: {
+        id_usuario: 15,
+        nombre: 'Carmen',
+        apellido: 'Gómez',
+        correo: 'jefa@example.com',
+        numero_documento: '13579',
+        rol: 'Jefa de manipuladoras',
+      },
+    };
+    authServiceMock.login.mockReturnValue(of(response));
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate');
+    component.loginForm.setValue({ correo: response.usuario.correo, clave: 'password-seguro' });
+
+    component.onSubmit();
+
+    expect(authServiceMock.rolPermitido).toHaveBeenCalledWith('Jefa de manipuladoras');
+    expect(authServiceMock.esJefa).toHaveBeenCalledWith('Jefa de manipuladoras');
+    expect(navigate).toHaveBeenCalledWith(['/asistencia-diaria']);
   });
 
   it('rejects users whose role does not have access to this web application', () => {

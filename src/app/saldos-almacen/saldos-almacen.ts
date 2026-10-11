@@ -1,62 +1,143 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule, NgIf, NgFor } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { forkJoin } from 'rxjs';
+import { SweetAlertService } from '../sweet-alert.service';
+import {
+  InventarioOperativoService,
+  IngredienteInventario,
+  SaldoInventario,
+  UnidadInventario,
+} from '../services/inventario-operativo.service';
 
-interface SaldoAlmacen {
-  id: number;
-  producto: string;
+interface SaldoPresentacion extends SaldoInventario {
+  ingrediente: string;
   categoria: string;
-  stockActual: number;
   unidad: string;
   nivelStock: 'Adecuado' | 'Bajo' | 'Crítico';
-  ultimoMovimiento: string;
 }
 
 @Component({
   selector: 'app-saldos-almacen',
   standalone: true,
-  imports: [CommonModule, NgIf, NgFor, FormsModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './saldos-almacen.html',
-  styleUrls: ['./saldos-almacen.css']
+  styleUrls: ['./saldos-almacen.css'],
 })
 export class SaldosAlmacenComponent implements OnInit {
-  saldos: SaldoAlmacen[] = [
-    { id: 1, producto: 'Arroz Blanco Extra', categoria: 'Granos', stockActual: 320, unidad: 'Kg', nivelStock: 'Adecuado', ultimoMovimiento: '2026-10-05 Entrada' },
-    { id: 2, producto: 'Aceite Vegetal', categoria: 'Abarrotes', stockActual: 15, unidad: 'Litros', nivelStock: 'Crítico', ultimoMovimiento: '2026-10-08 Salida' },
-    { id: 3, producto: 'Leche Entera', categoria: 'Lácteos/Perecederos', stockActual: 45, unidad: 'Litros', nivelStock: 'Bajo', ultimoMovimiento: '2026-10-07 Entrada' },
-    { id: 4, producto: 'Lenteja', categoria: 'Granos', stockActual: 180, unidad: 'Kg', nivelStock: 'Adecuado', ultimoMovimiento: '2026-09-28 Entrada' }
-  ];
+  saldos: SaldoPresentacion[] = [];
+  filtroTexto = '';
+  filtroCategoria = 'todas';
+  soloAlertasStock = false;
+  cargando = true;
+  errorMensaje = '';
 
-  saldosFiltrados: SaldoAlmacen[] = [];
-  filtroCategoria: string = 'todas';
-  soloAlertasStock: boolean = false;
-
-  mostrarModalMovimientos: boolean = false;
-  productoMovimiento: SaldoAlmacen | null = null;
+  constructor(
+    private inventarioService: InventarioOperativoService,
+    private alertas: SweetAlertService,
+  ) {}
 
   ngOnInit(): void {
-    this.aplicarFiltros();
+    this.cargarSaldos();
   }
 
-  aplicarFiltros(): void {
-    this.saldosFiltrados = this.saldos.filter(item => {
-      const cumpleCat = this.filtroCategoria === 'todas' || item.categoria.toLowerCase().includes(this.filtroCategoria.toLowerCase());
-      const cumpleAlerta = !this.soloAlertasStock || item.nivelStock === 'Bajo' || item.nivelStock === 'Crítico';
-      return cumpleCat && cumpleAlerta;
+  cargarSaldos(): void {
+    this.cargando = true;
+    this.errorMensaje = '';
+    forkJoin({
+      saldos: this.inventarioService.cargarSaldos(),
+      ingredientes: this.inventarioService.cargarIngredientes(),
+      unidades: this.inventarioService.cargarUnidades(),
+    }).subscribe({
+      next: ({ saldos, ingredientes, unidades }) => {
+        this.saldos = saldos.map(saldo => this.presentarSaldo(saldo, ingredientes, unidades));
+        this.cargando = false;
+        if (this.saldos.length === 0) {
+          void this.alertas.info('Inventario vacío', 'Todavía no hay saldos de inventario registrados.');
+        }
+      },
+      error: (error) => {
+        console.error('Error al consultar saldos de inventario:', error);
+        this.cargando = false;
+        this.errorMensaje = error.status === 401
+          ? 'La sesión expiró. Inicia sesión nuevamente para consultar el inventario.'
+          : error.status === 403
+            ? 'Tu usuario no tiene permiso para consultar el inventario.'
+            : 'No se pudieron cargar los saldos. Verifica la conexión e intenta nuevamente.';
+        void this.alertas.error('No se pudo cargar el inventario', this.errorMensaje);
+      },
     });
   }
 
-  toggleAlertasStock(): void {
+  get categorias(): string[] {
+    return [...new Set(this.saldos.map(saldo => saldo.categoria))].sort();
+  }
+
+  get saldosFiltrados(): SaldoPresentacion[] {
+    const texto = this.filtroTexto.trim().toLocaleLowerCase();
+    return this.saldos.filter(saldo => {
+      const coincideCategoria = this.filtroCategoria === 'todas'
+        || saldo.categoria === this.filtroCategoria;
+      const coincideAlerta = !this.soloAlertasStock || saldo.nivelStock !== 'Adecuado';
+      const coincideTexto = !texto
+        || `${saldo.ingrediente} ${saldo.categoria} ${saldo.unidad}`.toLocaleLowerCase().includes(texto);
+      return coincideCategoria && coincideAlerta && coincideTexto;
+    });
+  }
+
+  get productosEnAlerta(): number {
+    return this.saldos.filter(saldo => saldo.nivelStock !== 'Adecuado').length;
+  }
+
+  cambiarFiltroAlerta(): void {
     this.soloAlertasStock = !this.soloAlertasStock;
-    this.aplicarFiltros();
   }
 
-  verMovimientosProducto(prod: SaldoAlmacen): void {
-    this.productoMovimiento = prod;
-    this.mostrarModalMovimientos = true;
+  descargarCsv(): void {
+    if (!this.saldosFiltrados.length) {
+      void this.alertas.warning('No hay datos para exportar', 'Ajusta los filtros o revisa el inventario.');
+      return;
+    }
+
+    const filas = [
+      ['Ingrediente', 'Categoría', 'Saldo actual', 'Unidad', 'Stock mínimo', 'Estado'],
+      ...this.saldosFiltrados.map(saldo => [
+        saldo.ingrediente,
+        saldo.categoria,
+        String(saldo.cantidad),
+        saldo.unidad,
+        String(saldo.stockMinimo),
+        saldo.nivelStock,
+      ]),
+    ];
+    const contenido = filas.map(fila => fila.map(celda => `"${celda.replace(/"/g, '""')}"`).join(',')).join('\r\n');
+    const url = URL.createObjectURL(new Blob(['\uFEFF', contenido], { type: 'text/csv;charset=utf-8' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'saldos-inventario.csv';
+    link.click();
+    URL.revokeObjectURL(url);
+    void this.alertas.success('Reporte exportado', 'Se descargó el archivo CSV de saldos.');
   }
 
-  exportarInventario(formato: string): void {
-    alert(`Exportando reporte consolidado de almacén en formato ${formato}...`);
+  private presentarSaldo(
+    saldo: SaldoInventario,
+    ingredientes: IngredienteInventario[],
+    unidades: UnidadInventario[],
+  ): SaldoPresentacion {
+    const ingrediente = ingredientes.find(item => item.id === saldo.ingredienteId);
+    const unidad = unidades.find(item => item.id === saldo.unidadId);
+    const nivelStock = saldo.cantidad <= 0
+      ? 'Crítico'
+      : saldo.cantidad <= saldo.stockMinimo
+        ? 'Bajo'
+        : 'Adecuado';
+    return {
+      ...saldo,
+      ingrediente: ingrediente?.nombre || `Ingrediente ${saldo.ingredienteId}`,
+      categoria: ingrediente?.categoriaId == null ? 'Sin categoría' : `Categoría ${ingrediente.categoriaId}`,
+      unidad: unidad ? `${unidad.nombre} (${unidad.abreviatura})` : `Unidad ${saldo.unidadId}`,
+      nivelStock,
+    };
   }
 }

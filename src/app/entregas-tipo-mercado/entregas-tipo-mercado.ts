@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { EntregasService } from '../services/entregas.service';
+import { SweetAlertService } from '../sweet-alert.service';
 
 type Mercado = 'Todas' | 'Granos' | 'Perecederos';
 
@@ -17,12 +18,23 @@ export class EntregasTipoMercadoComponent implements OnInit {
   frecuenciaSel: string = '';      // '' = todas | 'Mensual' | 'Quincenal'
   menuAbierto: boolean = false;
 
-  constructor(public entregasService: EntregasService) {}
+  constructor(
+    public entregasService: EntregasService,
+    private alertas: SweetAlertService,
+  ) {}
 
   // Al abrir la pantalla se cargan las entregas registradas desde el backend
   ngOnInit(): void {
     this.entregasService.cargar().subscribe({
-      error: (err) => console.error('Error al consultar entregas:', err)
+      error: (err) => {
+        console.error('Error al consultar entregas:', err);
+        void this.alertas.error(
+          'No se pudieron cargar las entregas',
+          err.status === 401
+            ? 'La sesión expiró. Inicia sesión nuevamente.'
+            : 'Verifica tu conexión e intenta de nuevo.',
+        );
+      }
     });
   }
 

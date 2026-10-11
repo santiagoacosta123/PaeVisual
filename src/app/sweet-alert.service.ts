@@ -5,18 +5,19 @@ import Swal from 'sweetalert2';
 export class SweetAlertService {
   success(title: string, text?: string) {
     return Swal.fire({
-      icon: 'success',
       title,
       text,
       confirmButtonColor: '#FAB41F',
       background: '#fff',
-      color: '#1f2937'
+      color: '#1f2937',
+      customClass: {
+        confirmButton: 'bd-sweet-confirm'
+      }
     });
   }
 
   error(title: string, text?: string) {
     return Swal.fire({
-      icon: 'error',
       title,
       text,
       confirmButtonColor: '#ef4444',
@@ -27,7 +28,6 @@ export class SweetAlertService {
 
   info(title: string, text?: string) {
     return Swal.fire({
-      icon: 'info',
       title,
       text,
       confirmButtonColor: '#FAB41F',
@@ -38,7 +38,6 @@ export class SweetAlertService {
 
   warning(title: string, text?: string) {
     return Swal.fire({
-      icon: 'warning',
       title,
       text,
       confirmButtonColor: '#F59E0B',
@@ -51,12 +50,14 @@ export class SweetAlertService {
     return Swal.fire({
       title,
       text,
-      icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#FAB41F',
-      cancelButtonColor: '#d1d5db',
+      cancelButtonColor: '#334155',
       confirmButtonText,
-      cancelButtonText: 'Cancelar'
+      cancelButtonText: 'Cancelar',
+      background: '#fff',
+      color: '#1f2937',
+      reverseButtons: true
     });
   }
 }

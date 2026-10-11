@@ -1,7 +1,9 @@
 import { Component } from '@angular/core';
+import { RouterLink } from '@angular/router';
 
 @Component({
-  imports: [],
+  standalone: true,
+  imports: [RouterLink],
   selector: 'app-dashboard-supervisor',
   styleUrl: './dashboard-supervisor.css',
   templateUrl: './dashboard-supervisor.html',

@@ -2,16 +2,42 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
+import { environment } from '../../environments/environment';
+import { AuthService } from './auth.service';
 
 export interface Entrega {
   id?: number;
+  idIngrediente?: number;
+  idTipoMercado?: number;
   ingrediente: string;
-  tipoMercado: string;      // siempre 'Granos' o 'Perecederos'
+  tipoMercado: string;
   frecuencia: string;
   cantidad: number | null;
   unidad: string;
-  fechaRecepcion: string;   // YYYY-MM-DD
-  fechaVencimiento: string; // YYYY-MM-DD
+  fechaRecepcion: string;
+  fechaVencimiento: string;
+  observaciones?: string;
+}
+
+export interface IngredienteOpcion {
+  id: number;
+  nombre: string;
+}
+
+export interface TipoMercadoOpcion {
+  id: number;
+  nombre: string;
+}
+
+export interface EntregaPayload {
+  id_ingrediente: number;
+  id_tipo_mercado: number;
+  fecha_entrega: string;
+  fecha_vencimiento: string;
+  cantidad: number;
+  observaciones: string;
+  frecuencia: string;
+  unidad: string;
 }
 
 /**
@@ -22,60 +48,95 @@ export interface Entrega {
 @Injectable({ providedIn: 'root' })
 export class EntregasService {
 
-  readonly apiUrl = 'https://backend-sirae-pyim.onrender.com/api/entregas/';
-
-  // Lista compartida (viene del backend, sin datos de ejemplo)
+  public readonly apiUrl = `${environment.apiUrl}/entregas/`;
+  private readonly ingredientesUrl = `${environment.apiUrl}/ingredientes/`;
+  private readonly tiposMercadoUrl = `${environment.apiUrl}/tipos-mercado/`;
   entregas: Entrega[] = [];
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private authService: AuthService
+  ) {}
 
   // ---------- Cabeceras con token ----------
   getHeaders(): { headers: HttpHeaders } {
-    const rawToken = localStorage.getItem('token') ||
-                     localStorage.getItem('access') ||
-                     localStorage.getItem('access_token') ||
-                     localStorage.getItem('auth_token') ||
-                     localStorage.getItem('user_token') || '';
-
-    const cleanToken = rawToken.replace(/^(Bearer|Token)\s+/i, '').trim();
-
     let headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    const token = this.authService.obtenerToken()?.replace(/^(Bearer|Token)\s+/i, '').trim();
 
-    if (cleanToken) {
-      const prefix = rawToken.startsWith('Bearer ') ? 'Bearer' : 'Token';
-      headers = headers.set('Authorization', `${prefix} ${cleanToken}`);
+    if (token) {
+      headers = headers.set('Authorization', `Bearer ${token}`);
     }
     return { headers };
+  }
+
+  cargarIngredientes(): Observable<IngredienteOpcion[]> {
+    return this.http.get<any>(this.ingredientesUrl, this.getHeaders()).pipe(
+      map(data => this.listaDe(data).map(item => ({
+        id: Number(item.id_ingrediente),
+        nombre: String(item.nombre_ingrediente ?? ''),
+      })))
+    );
+  }
+
+  cargarTiposMercado(): Observable<TipoMercadoOpcion[]> {
+    return this.http.get<any>(this.tiposMercadoUrl, this.getHeaders()).pipe(
+      map(data => this.listaDe(data).map(item => ({
+        id: Number(item.id_tipo_mercado),
+        nombre: String(item.nombre_tipo ?? ''),
+      })))
+    );
   }
 
   // ---------- Cargar desde el backend ----------
   cargar(): Observable<Entrega[]> {
     return this.http.get<any>(this.apiUrl, this.getHeaders()).pipe(
-      map(data => {
-        const lista: any[] = Array.isArray(data) ? data : (data?.results ?? []);
-        return lista.map(item => this.normalizar(item));
-      }),
+      map(data => this.listaDe(data).map(item => this.normalizar(item))),
       tap(lista => (this.entregas = lista))
     );
   }
 
+  registrar(payload: EntregaPayload): Observable<unknown> {
+    return this.http.post(this.apiUrl, payload, this.getHeaders());
+  }
+
+  actualizar(id: number, payload: EntregaPayload): Observable<unknown> {
+    return this.http.put(`${this.apiUrl}${id}/`, payload, this.getHeaders());
+  }
+
+  eliminar(id: number): Observable<unknown> {
+    return this.http.delete(`${this.apiUrl}${id}/`, this.getHeaders());
+  }
+
+  private listaDe(data: any): any[] {
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data?.results)) return data.results;
+    throw new Error('El backend devolvió una respuesta de lista no válida.');
+  }
+
   private normalizar(item: any): Entrega {
     return {
-      id: item.id,
-      ingrediente: item.ingrediente || item.ingrediente_nombre || '',
-      tipoMercado: this.normalizarMercado(item.tipoMercado || item.tipo_mercado),
-      frecuencia: item.frecuencia || 'Mensual',
-      cantidad: item.cantidad ? Number(item.cantidad) : 0,
-      unidad: this.normalizarUnidad(item.unidad) || 'Kg',
-      fechaRecepcion: this.soloFecha(item.fechaRecepcion || item.fecha_recepcion),
-      fechaVencimiento: this.soloFecha(item.fechaVencimiento || item.fecha_vencimiento)
+      id: Number(item.id_entrega ?? item.id),
+      idIngrediente: Number(item.id_ingrediente ?? item.idIngrediente),
+      idTipoMercado: Number(item.id_tipo_mercado ?? item.idTipoMercado),
+      ingrediente: String(item.ingrediente_nombre ?? item.ingrediente ?? ''),
+      tipoMercado: this.normalizarMercado(
+        item.tipo_mercado_nombre ?? item.tipoMercado ?? item.tipo_mercado
+      ),
+      frecuencia: String(item.frecuencia ?? ''),
+      cantidad: item.cantidad == null ? null : Number(item.cantidad),
+      unidad: this.normalizarUnidad(item.unidad),
+      fechaRecepcion: this.soloFecha(item.fecha_entrega ?? item.fechaRecepcion ?? item.fecha_recepcion),
+      fechaVencimiento: this.soloFecha(item.fecha_vencimiento ?? item.fechaVencimiento),
+      observaciones: String(item.observaciones ?? ''),
     };
   }
 
   // "Granos / No perecederos", "granos", etc. -> 'Granos'   |   "Perecederos" -> 'Perecederos'
   normalizarMercado(valor: any): string {
     const v = String(valor ?? '').toLowerCase().trim();
-    return v.startsWith('perecedero') ? 'Perecederos' : 'Granos';
+    if (v.startsWith('perecedero')) return 'Perecederos';
+    if (v.startsWith('grano') || v.startsWith('no perecedero')) return 'Granos';
+    return String(valor ?? '');
   }
 
   normalizarUnidad(valor: any): string {

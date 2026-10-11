@@ -1,0 +1,78 @@
+<section class="mx-auto flex w-full max-w-6xl flex-col gap-6">
+  <header class="rounded-3xl border border-amber-200 bg-white p-6 shadow-sm sm:p-8">
+    <span class="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold uppercase tracking-wide text-amber-800">
+      <span class="material-symbols-outlined text-base">fact_check</span>
+      Gestión diaria PAE
+    </span>
+    <h1 class="mb-2 mt-4 text-2xl font-black text-slate-900 sm:text-3xl">Asistencia por grado</h1>
+    <p class="m-0 text-sm leading-6 text-slate-600">Registra la cantidad de estudiantes presentes por grado y fecha.</p>
+  </header>
+
+  <form (ngSubmit)="guardar()" class="grid grid-cols-1 gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:grid-cols-4">
+    <label class="flex flex-col gap-1 text-sm font-semibold text-slate-700">
+      Grado
+      <select name="id_grado" [(ngModel)]="formulario.id_grado" required class="rounded-xl border border-slate-300 px-3 py-2.5">
+        <option value="" disabled>Selecciona grado</option>
+        <option *ngFor="let grado of grados" [value]="grado.id_grado">{{ grado.nombre_grado }}</option>
+      </select>
+    </label>
+    <label class="flex flex-col gap-1 text-sm font-semibold text-slate-700">
+      Fecha
+      <input name="fecha" type="date" [(ngModel)]="formulario.fecha" required class="rounded-xl border border-slate-300 px-3 py-2.5">
+    </label>
+    <label class="flex flex-col gap-1 text-sm font-semibold text-slate-700">
+      Estudiantes presentes
+      <input name="ninos_presentes" type="number" min="0" step="1" [(ngModel)]="formulario.ninos_presentes" required class="rounded-xl border border-slate-300 px-3 py-2.5">
+    </label>
+    <div class="flex items-end gap-2">
+      <button type="submit" [disabled]="guardando || cargando || grados.length === 0" class="rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-bold text-amber-950 hover:bg-amber-500 disabled:opacity-50">
+        {{ guardando ? 'Guardando...' : editandoId === null ? 'Registrar asistencia' : 'Guardar cambios' }}
+      </button>
+      <button *ngIf="editandoId !== null" type="button" (click)="cancelarEdicion()" class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700">
+        Cancelar
+      </button>
+    </div>
+    <p *ngIf="!cargando && grados.length === 0" class="m-0 text-sm text-amber-800 md:col-span-4">
+      No hay grados configurados; solicita al Administrador completar el catálogo.
+    </p>
+  </form>
+
+  <div *ngIf="errorMensaje" role="alert" class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+    {{ errorMensaje }}
+  </div>
+
+  <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div class="border-b border-slate-100 px-5 py-4">
+      <h2 class="m-0 text-base font-extrabold text-slate-900">Registros recientes</h2>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-sm">
+        <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+          <tr>
+            <th class="px-5 py-3">Fecha</th>
+            <th class="px-5 py-3">Grado</th>
+            <th class="px-5 py-3">Presentes</th>
+            <th class="px-5 py-3 text-right">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let asistencia of asistencias" class="border-t border-slate-100">
+            <td class="px-5 py-3">{{ asistencia.fecha }}</td>
+            <td class="px-5 py-3 font-semibold">{{ nombreGrado(asistencia.id_grado) }}</td>
+            <td class="px-5 py-3">{{ asistencia.ninos_presentes }}</td>
+            <td class="px-5 py-3 text-right">
+              <button type="button" (click)="editar(asistencia)" class="mr-2 font-semibold text-blue-700">Editar</button>
+              <button type="button" (click)="eliminar(asistencia)" class="font-semibold text-red-700">Eliminar</button>
+            </td>
+          </tr>
+          <tr *ngIf="cargando">
+            <td colspan="4" class="px-5 py-8 text-center text-slate-500">Cargando asistencia...</td>
+          </tr>
+          <tr *ngIf="!cargando && asistencias.length === 0">
+            <td colspan="4" class="px-5 py-8 text-center text-slate-500">No hay asistencias registradas.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</section>

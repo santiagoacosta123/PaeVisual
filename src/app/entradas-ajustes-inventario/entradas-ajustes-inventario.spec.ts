@@ -1,16 +1,16 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { EntradasAjustesInventario } from './entradas-ajustes-inventario';
+import { EntradasAjustesInventarioComponent } from './entradas-ajustes-inventario';
 
-describe('EntradasAjustesInventario', () => {
-  let component: EntradasAjustesInventario;
-  let fixture: ComponentFixture<EntradasAjustesInventario>;
+describe('EntradasAjustesInventarioComponent', () => {
+  let component: EntradasAjustesInventarioComponent;
+  let fixture: ComponentFixture<EntradasAjustesInventarioComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [EntradasAjustesInventario],
+      imports: [EntradasAjustesInventarioComponent],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(EntradasAjustesInventario);
+    fixture = TestBed.createComponent(EntradasAjustesInventarioComponent);
     component = fixture.componentInstance;
     await fixture.whenStable();
   });
