@@ -29,6 +29,7 @@ export class LayoutComponent implements OnInit {
   listaNotificaciones: Notificacion[] = [];
   notificacionesNoLeidas: number = 0;
 
+  // Datos del perfil y formularios (declarados una sola vez)
   perfil = {
     nombre: '',
     correo: '',
@@ -37,15 +38,14 @@ export class LayoutComponent implements OnInit {
 
   editForm = { ...this.perfil };
   passwordForm = { actual: '', nueva: '', confirmar: '' };
+  passwordProcesando = false;
+  passwordError = '';
+  passwordMensaje = '';
 
   constructor(
     private notificacionService: NotificacionService,
-<<<<<<< Updated upstream
     private authService: AuthService,
     private cdr: ChangeDetectorRef,
-=======
-    private authService: AuthService
->>>>>>> Stashed changes
   ) {}
 
   ngOnInit(): void {
@@ -103,21 +103,6 @@ export class LayoutComponent implements OnInit {
     });
   }
 
-<<<<<<< Updated upstream
-  perfil = {
-    nombre: '',
-    correo: '',
-    rol: '',
-  };
-
-  editForm = { ...this.perfil };
-  passwordForm = { actual: '', nueva: '', confirmar: '' };
-  passwordProcesando = false;
-  passwordError = '';
-  passwordMensaje = '';
-
-=======
->>>>>>> Stashed changes
   cerrarPanel(): void {
     this.mostrarPerfil = false;
     this.mostrarNotificaciones = false;
