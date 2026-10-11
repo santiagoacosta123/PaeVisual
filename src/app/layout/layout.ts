@@ -45,10 +45,7 @@ export class LayoutComponent implements OnInit {
   listaNotificaciones: Notificacion[] = [];
   notificacionesNoLeidas = 0;
 
-  // Título de la página
-  pageTitle = 'Inicio';
-
-  // Estructuras de datos limpias y sin duplicados
+  // Datos del perfil y formularios (declarados una sola vez)
   perfil = {
     nombre: '',
     correo: '',
@@ -65,19 +62,8 @@ export class LayoutComponent implements OnInit {
   constructor(
     private notificacionService: NotificacionService,
     private authService: AuthService,
-    private router: Router,
-    private cdr: ChangeDetectorRef
-  ) {
-    this.router.events
-      .pipe(
-        filter(event => event instanceof NavigationEnd)
-      )
-      .subscribe(event => {
-        if (event instanceof NavigationEnd) {
-          this.actualizarTitulo(event.urlAfterRedirects);
-        }
-      });
-  }
+    private cdr: ChangeDetectorRef,
+  ) {}
 
   ngOnInit(): void {
     const usuario = this.authService.obtenerUsuario();
