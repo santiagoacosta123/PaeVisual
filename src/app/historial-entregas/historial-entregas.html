@@ -9,12 +9,20 @@
         </h1>
         <p class="mb-0 mt-1 text-xs font-medium text-slate-600">Consulta, busca y administra las entregas del inventario.</p>
       </div>
-      <button type="button" (click)="toggleCrud()"
-        class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-[13px] font-black text-slate-900 shadow-md transition hover:brightness-95"
-        style="background-color: #F4B41F;">
-        <span class="material-symbols-outlined text-[18px]">{{ crudAbierto ? 'expand_less' : 'database' }}</span>
-        {{ crudAbierto ? 'Ocultar gestión' : 'Gestionar entregas (CRUD)' }}
-      </button>
+      <div class="flex flex-wrap items-center gap-2">
+        <!-- SP-249: Botón para exportar a Excel -->
+        <button type="button" (click)="exportarExcel()"
+          class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-[13px] font-black text-white shadow-md transition hover:bg-emerald-700">
+          <span class="material-symbols-outlined text-[18px]">download</span>
+          Exportar Excel
+        </button>
+        <button type="button" (click)="toggleCrud()"
+          class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-[13px] font-black text-slate-900 shadow-md transition hover:brightness-95"
+          style="background-color: #F4B41F;">
+          <span class="material-symbols-outlined text-[18px]">{{ crudAbierto ? 'expand_less' : 'database' }}</span>
+          {{ crudAbierto ? 'Ocultar gestión' : 'Gestionar entregas (CRUD)' }}
+        </button>
+      </div>
     </header>
 
     <div class="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">

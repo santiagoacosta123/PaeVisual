@@ -1,4 +1,3 @@
-
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
@@ -29,12 +28,18 @@ import { AuthService } from '../services/auth.service';
 })
 export class LayoutComponent implements OnInit {
 
+  // Declaración de pageTitle para evitar errores de compilación
+  pageTitle: string = '';
+
   // Control de Roles
   rolUsuario: string = '';
   esSupervisor: boolean = false;
   esJefa: boolean = false;
   esAdministrador: boolean = false;
   esGestor: boolean = false;
+
+  // Control del menú desplegable de entregas e inventario
+  menuEntregaAbierto: boolean = true;
 
   // Estado del perfil
   mostrarPerfil = false;
@@ -63,7 +68,15 @@ export class LayoutComponent implements OnInit {
     private notificacionService: NotificacionService,
     private authService: AuthService,
     private cdr: ChangeDetectorRef,
-  ) {}
+    private router: Router
+  ) {
+    // Escuchar los cambios de ruta para actualizar el título automáticamente
+    this.router.events.pipe(
+      filter((event): event is NavigationEnd => event instanceof NavigationEnd)
+    ).subscribe((event: NavigationEnd) => {
+      this.actualizarTitulo(event.urlAfterRedirects);
+    });
+  }
 
   ngOnInit(): void {
     const usuario = this.authService.obtenerUsuario();
@@ -92,6 +105,7 @@ export class LayoutComponent implements OnInit {
     }
 
     this.cargarNotificacionesHeader();
+    this.actualizarTitulo(this.router.url);
   }
 
   actualizarTitulo(url: string): void {

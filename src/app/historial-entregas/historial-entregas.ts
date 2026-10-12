@@ -66,6 +66,25 @@ export class HistorialEntregas implements OnInit {
     });
   }
 
+  // SP-249: Exportar historial de entregas a Excel
+  exportarExcel(): void {
+    this.entregasService.exportarExcel().subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Historial_Entregas_${new Date().toISOString().slice(0, 10)}.xlsx`;
+        link.click();
+        window.URL.revokeObjectURL(url);
+        void this.alertas.success('Exportación exitosa', 'El archivo Excel se descargó correctamente.');
+      },
+      error: (error) => {
+        console.error('Error al exportar Excel:', error);
+        void this.alertas.error('No se pudo exportar', 'Ocurrió un error al generar el archivo Excel.');
+      }
+    });
+  }
+
   toggleCrud(): void {
     this.crudAbierto = !this.crudAbierto;
     if (this.crudAbierto && !this.catalogosCargados && !this.cargandoCatalogos) {
