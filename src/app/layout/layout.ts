@@ -28,8 +28,8 @@ import { AuthService } from '../services/auth.service';
 })
 export class LayoutComponent implements OnInit {
 
-  // Declaración de pageTitle para evitar errores de compilación
-  pageTitle: string = '';
+  // Declaración de pageTitle
+  pageTitle: string = 'Panel de Control';
 
   // Control de Roles
   rolUsuario: string = '';
@@ -37,9 +37,6 @@ export class LayoutComponent implements OnInit {
   esJefa: boolean = false;
   esAdministrador: boolean = false;
   esGestor: boolean = false;
-
-  // Control del menú desplegable de entregas e inventario
-  menuEntregaAbierto: boolean = true;
 
   // Estado del perfil
   mostrarPerfil = false;
@@ -50,7 +47,7 @@ export class LayoutComponent implements OnInit {
   listaNotificaciones: Notificacion[] = [];
   notificacionesNoLeidas = 0;
 
-  // Datos del perfil y formularios (declarados una sola vez)
+  // Datos del perfil y formularios
   perfil = {
     nombre: '',
     correo: '',
@@ -83,8 +80,7 @@ export class LayoutComponent implements OnInit {
 
     if (usuario) {
       this.perfil = {
-        nombre: `${usuario.nombre ?? ''} ${usuario.apellido ?? ''}`.trim()
-          || usuario.correo,
+        nombre: `${usuario.nombre ?? ''} ${usuario.apellido ?? ''}`.trim() || usuario.correo,
         correo: usuario.correo,
         rol: this.authService.esSupervisor(usuario.rol)
           ? 'Supervisor (Coordinador PAE)'
@@ -146,14 +142,9 @@ export class LayoutComponent implements OnInit {
     this.notificacionService.obtenerNotificaciones().subscribe({
       next: (data: Notificacion[]) => {
         this.listaNotificaciones = data;
-        this.notificacionesNoLeidas =
-          data.filter((n: Notificacion) => !n.leida).length;
+        this.notificacionesNoLeidas = data.filter((n: Notificacion) => !n.leida).length;
       },
-      error: (err: any) =>
-        console.error(
-          'Error al cargar notificaciones en layout',
-          err
-        )
+      error: (err: any) => console.error('Error al cargar notificaciones en layout', err)
     });
   }
 
@@ -177,8 +168,7 @@ export class LayoutComponent implements OnInit {
   marcarTodasComoLeidasDesdePanel(): void {
     this.notificacionService.marcarTodasComoLeidas().subscribe({
       next: () => this.cargarNotificacionesHeader(),
-      error: (err: any) =>
-        console.error('Error al marcar todas como leídas', err)
+      error: (err: any) => console.error('Error al marcar todas como leídas', err)
     });
   }
 
@@ -189,6 +179,8 @@ export class LayoutComponent implements OnInit {
 
   irA(vista: string): void {
     this.vistaActual = vista;
+    this.passwordError = '';
+    this.passwordMensaje = '';
 
     if (vista === 'editar') {
       this.editForm = { ...this.perfil };
@@ -225,6 +217,7 @@ export class LayoutComponent implements OnInit {
         this.passwordMensaje = response.mensaje || 'Contraseña actualizada correctamente.';
         this.passwordForm = { actual: '', nueva: '', confirmar: '' };
         this.cdr.detectChanges();
+        setTimeout(() => this.vistaActual = 'perfil', 1200);
       },
       error: (err: any) => {
         this.passwordProcesando = false;

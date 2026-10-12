@@ -25,12 +25,20 @@
       MENU SIRAE
     </p>
 
-    <!-- Navegación Lateral Línea Directa -->
+    <!-- Navegación Lateral -->
     <nav class="flex flex-col gap-1 flex-1" style="overflow-y:auto;">
 
-      <a *ngIf="esSupervisor" routerLink="dashboard-supervisor" routerLinkActive="active-link"
+      <!-- INICIO (Para todos excepto Supervisor) -->
+      <a *ngIf="!esSupervisor" routerLink="inicio" routerLinkActive="active-link"
          style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500;">
         <span class="material-symbols-outlined nav-icon" style="font-size:20px;">home</span>
+        Inicio
+      </a>
+
+      <!-- MÓDULOS DE SUPERVISOR -->
+      <a *ngIf="esSupervisor" routerLink="dashboard-supervisor" routerLinkActive="active-link"
+         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500;">
+        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">space_dashboard</span>
         Inicio Supervisor
       </a>
 
@@ -46,24 +54,26 @@
         Filtro entregas mercado
       </a>
 
-      <a *ngIf="esSupervisor || esAdministrador" routerLink="registrar-entrega-alimentos" routerLinkActive="active-link"
+      <a *ngIf="esSupervisor" routerLink="registrar-entrega-alimentos" routerLinkActive="active-link"
          style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500;">
         <span class="material-symbols-outlined nav-icon" style="font-size:20px;">local_shipping</span>
         Registrar entrega de alimentos
       </a>
 
+      <!-- MÓDULOS DE JEFA DE COCINA / MANIPULADORA -->
       <a *ngIf="esJefa" routerLink="asistencia-diaria" routerLinkActive="active-link"
          style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500;">
         <span class="material-symbols-outlined nav-icon" style="font-size:20px;">fact_check</span>
         Registrar asistencia diaria
       </a>
 
-      <a *ngIf="esJefa || esAdministrador" routerLink="menus" routerLinkActive="active-link"
+      <a *ngIf="esJefa" routerLink="menus" routerLinkActive="active-link"
          style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500;">
         <span class="material-symbols-outlined nav-icon" style="font-size:20px;">restaurant_menu</span>
-        {{ esJefa ? 'Seleccionar menús' : 'Gestión de menús y platos' }}
+        Seleccionar menús
       </a>
 
+      <!-- MÓDULOS DE ADMINISTRADOR -->
       <a *ngIf="esAdministrador" routerLink="contratos" routerLinkActive="active-link"
          style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500;">
         <span class="material-symbols-outlined nav-icon" style="font-size:20px;">description</span>
@@ -76,22 +86,10 @@
         Usuarios
       </a>
 
-      <a *ngIf="esAdministrador" routerLink="rol" routerLinkActive="active-link"
-         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500;">
-        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">shield</span>
-        Roles
-      </a>
-
       <a *ngIf="esAdministrador" routerLink="ingredientes" routerLinkActive="active-link"
          style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500;">
         <span class="material-symbols-outlined nav-icon" style="font-size:20px;">package</span>
         Inventario
-      </a>
-
-      <a *ngIf="esAdministrador" routerLink="nuevo-producto" routerLinkActive="active-link"
-         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500;">
-        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">add_box</span>
-        Nuevo producto
       </a>
 
       <a *ngIf="esAdministrador" routerLink="unidades-medida" routerLinkActive="active-link"
