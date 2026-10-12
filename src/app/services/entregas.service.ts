@@ -107,6 +107,25 @@ export class EntregasService {
     return this.http.delete(`${this.apiUrl}${id}/`, this.getHeaders());
   }
 
+  // ---------- Métodos agregados para completar Historias de Usuario Jira ----------
+  
+  // SP-246: Obtener detalle individual de una entrega
+  getEntregaPorId(id: number): Observable<Entrega> {
+    return this.http.get<any>(`${this.apiUrl}${id}/`, this.getHeaders()).pipe(
+      map(item => this.normalizar(item))
+    );
+  }
+
+  // SP-249: Exportar el historial de entregas a Excel
+  exportarExcel(): Observable<Blob> {
+    const headersConfig = this.getHeaders();
+    return this.http.get(`${this.apiUrl}exportar-excel/`, {
+      headers: headersConfig.headers,
+      responseType: 'blob'
+    });
+  }
+  // ------------------------------------------------------------------------------
+
   private listaDe(data: any): any[] {
     if (Array.isArray(data)) return data;
     if (Array.isArray(data?.results)) return data.results;

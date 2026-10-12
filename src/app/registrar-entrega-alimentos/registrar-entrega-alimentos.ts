@@ -1,7 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { SweetAlertService } from '../sweet-alert.service';
 import {
@@ -10,14 +9,26 @@ import {
   TipoMercadoOpcion,
 } from '../services/entregas.service';
 
+// Importación de los componentes activos para las pestañas
+import { SaldosAlmacenComponent } from '../saldos-almacen/saldos-almacen';
+import { EntradasAjustesInventarioComponent } from '../entradas-ajustes-inventario/entradas-ajustes-inventario';
+
 @Component({
   selector: 'app-registrar-entrega-alimentos',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [
+    CommonModule,
+    FormsModule,
+    SaldosAlmacenComponent,
+    EntradasAjustesInventarioComponent,
+  ],
   templateUrl: './registrar-entrega-alimentos.html',
   styleUrls: ['./registrar-entrega-alimentos.css'],
 })
 export class RegistrarEntregaAlimentosComponent implements OnInit {
+  // Control de la pestaña activa en la parte superior
+  pestanaActiva: 'formulario' | 'saldos' | 'ajustes' | 'reporte-salidas' = 'formulario';
+
   ingredientes: IngredienteOpcion[] = [];
   tiposMercado: TipoMercadoOpcion[] = [];
   cargandoCatalogos = true;

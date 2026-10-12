@@ -78,6 +78,25 @@ export class EntradasAjustesInventarioComponent implements OnInit {
     });
   }
 
+  // SP-258: Exportar Entradas a Excel
+  exportarExcelEntradas(): void {
+    this.inventarioService.exportarEntradasExcel().subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Entradas_Inventario_${new Date().toISOString().slice(0, 10)}.xlsx`;
+        link.click();
+        window.URL.revokeObjectURL(url);
+        void this.alertas.success('Exportación exitosa', 'El reporte de entradas se descargó correctamente.');
+      },
+      error: (error) => {
+        console.error('Error al exportar entradas a Excel:', error);
+        void this.alertas.error('No se pudo exportar', 'Ocurrió un error al generar el archivo Excel de entradas.');
+      }
+    });
+  }
+
   get ingredientesConSaldo(): IngredienteInventario[] {
     const ids = new Set(this.saldos.map(saldo => saldo.ingredienteId));
     return this.ingredientes.filter(ingrediente => ids.has(ingrediente.id));

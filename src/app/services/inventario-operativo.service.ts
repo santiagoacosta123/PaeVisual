@@ -141,6 +141,20 @@ export class InventarioOperativoService {
     return this.http.post(`${this.baseUrl}/entradas-inventario/`, payload);
   }
 
+  // ---------- Métodos agregados para soporte de Excel (SP-249 y SP-258) ----------
+  
+  exportarInventarioExcel(): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}/inventario/exportar-excel/`, {
+      responseType: 'blob'
+    });
+  }
+
+  exportarEntradasExcel(): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}/entradas-inventario/exportar-excel/`, {
+      responseType: 'blob'
+    });
+  }
+
   private listaDe(data: unknown): ApiRecord[] {
     if (Array.isArray(data)) return data as ApiRecord[];
     if (data && typeof data === 'object' && Array.isArray((data as { results?: unknown }).results)) {
