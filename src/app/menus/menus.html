@@ -288,9 +288,13 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label class="block font-semibold text-slate-700 mb-1.5">Jornada *</label>
-            <select [(ngModel)]="menuForm.id_jornada" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500 cursor-pointer">
-              <option *ngFor="let jor of jornadas" [value]="jor.id_jornada">{{ jor.nombre_jornada }}</option>
-            </select>
+            <app-custom-select
+              [options]="jornadas"
+              valueField="id_jornada"
+              labelField="nombre_jornada"
+              placeholder="Seleccionar jornada..."
+              [(ngModel)]="menuForm.id_jornada"
+            ></app-custom-select>
           </div>
           <div>
             <label class="block font-semibold text-slate-700 mb-1.5">Fecha *</label>
@@ -305,9 +309,13 @@
           </div>
           <div>
             <label class="block font-semibold text-slate-700 mb-1.5">Contrato PAE *</label>
-            <select [(ngModel)]="menuForm.id_contrato" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500 cursor-pointer">
-              <option *ngFor="let con of contratos" [value]="con.id_contrato">{{ con.numero_cor }} - {{ con.institucion }}</option>
-            </select>
+            <app-custom-select
+              [options]="contratosOpciones"
+              valueField="id_contrato"
+              labelField="label"
+              placeholder="Seleccionar contrato..."
+              [(ngModel)]="menuForm.id_contrato"
+            ></app-custom-select>
           </div>
         </div>
 
@@ -321,10 +329,13 @@
       <div *ngIf="pestanaActiva === 'platos'" class="flex flex-col gap-3.5 text-xs">
         <div>
           <label class="block font-semibold text-slate-700 mb-1.5">Sección de Menú *</label>
-          <select [(ngModel)]="platoForm.id_seccion" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500 cursor-pointer">
-            <option value="" disabled selected>Seleccione una sección...</option>
-            <option *ngFor="let sec of seccionesMenu" [value]="sec.id_seccion">{{ sec.nombre_seccion }}</option>
-          </select>
+          <app-custom-select
+            [options]="seccionesMenu"
+            valueField="id_seccion"
+            labelField="nombre_seccion"
+            placeholder="Seleccione una sección..."
+            [(ngModel)]="platoForm.id_seccion"
+          ></app-custom-select>
         </div>
 
         <div>
@@ -343,24 +354,36 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label class="block font-semibold text-slate-700 mb-1.5">Menú *</label>
-            <select [(ngModel)]="preparacionForm.id_menu" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500 cursor-pointer">
-              <option *ngFor="let m of menus" [value]="m.id_menu">Menú #{{ m.id_menu }} ({{ m.fecha }})</option>
-            </select>
+            <app-custom-select
+              [options]="menusOpciones"
+              valueField="id_menu"
+              labelField="label"
+              placeholder="Seleccionar menú..."
+              [(ngModel)]="preparacionForm.id_menu"
+            ></app-custom-select>
           </div>
           <div>
             <label class="block font-semibold text-slate-700 mb-1.5">Plato *</label>
-            <select [(ngModel)]="preparacionForm.id_plato" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500 cursor-pointer">
-              <option *ngFor="let p of platos" [value]="p.id_plato">{{ p.nombre_plato }}</option>
-            </select>
+            <app-custom-select
+              [options]="platos"
+              valueField="id_plato"
+              labelField="nombre_plato"
+              placeholder="Seleccionar plato..."
+              [(ngModel)]="preparacionForm.id_plato"
+            ></app-custom-select>
           </div>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label class="block font-semibold text-slate-700 mb-1.5">Manipuladora *</label>
-            <select [(ngModel)]="preparacionForm.id_usuario_manipuladora" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500 cursor-pointer">
-              <option *ngFor="let u of usuariosManipuladoras" [value]="u.id_usuario_manipuladora">{{ u.nombre }}</option>
-            </select>
+            <app-custom-select
+              [options]="usuariosManipuladoras"
+              valueField="id_usuario_manipuladora"
+              labelField="nombre"
+              placeholder="Seleccionar manipuladora..."
+              [(ngModel)]="preparacionForm.id_usuario_manipuladora"
+            ></app-custom-select>
           </div>
           <div>
             <label class="block font-semibold text-slate-700 mb-1.5">Fecha y Hora Programada *</label>
@@ -405,12 +428,14 @@
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
           <div>
             <label class="block font-semibold text-slate-500 text-[10px] mb-1">Menú *</label>
-            <select [(ngModel)]="detalleForm.id_menu" class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none">
-              <option value="">Selecciona</option>
-              <option *ngFor="let menu of menus" [value]="menu.id_menu">
-                {{ menu.fecha }} - {{ menu.nombre_jornada }} - {{ menu.institucion }}
-              </option>
-            </select>
+            <app-custom-select
+              [options]="detalleMenusOpciones"
+              valueField="id_menu"
+              labelField="label"
+              placeholder="Selecciona menú..."
+              size="sm"
+              [(ngModel)]="detalleForm.id_menu"
+            ></app-custom-select>
           </div>
           <div>
             <label class="block font-semibold text-slate-500 text-[10px] mb-1">Porción/Niño</label>

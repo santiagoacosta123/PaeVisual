@@ -79,9 +79,9 @@
   border: none;
   border-radius: 8px;
   background: #fac94b;
-  color: #1a1a1a;
+  color: #000000;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
   box-shadow: 0 2px 6px rgba(250, 201, 75, 0.3);
@@ -96,6 +96,7 @@
 
 .bd-new-button .material-symbols-outlined {
   font-size: 18px;
+  color: #000000;
 }
 
 
@@ -162,8 +163,8 @@
 
 .bd-tab.active {
   background: #fac94b;
-  color: #1a1a1a;
-  font-weight: 600;
+  color: #000000;
+  font-weight: 700;
 }
 
 
@@ -657,8 +658,8 @@
 
 .bd-modal-body {
   padding: 25px;
-
   overflow-y: auto;
+  min-height: 260px;
 }
 
 .bd-modal-description {
@@ -771,11 +772,11 @@
   border-radius: 8px;
 
   background: #f6c400;
-  color: #202020;
+  color: #000000;
 
   font-family: inherit;
   font-size: 13px;
-  font-weight: 650;
+  font-weight: 700;
 
   cursor: pointer;
 }
@@ -786,6 +787,7 @@
 
 .bd-save .material-symbols-outlined {
   font-size: 18px;
+  color: #000000;
 }
 
 

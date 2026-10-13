@@ -9,11 +9,12 @@ import { MenusService } from '../services/menus.service';
 import { SiraeService } from '../services/contratos_pae.service';
 import { AuthService } from '../services/auth.service';
 import { SweetAlertService } from '../sweet-alert.service';
+import { CustomSelectComponent } from '../shared/custom-select/custom-select';
 
 @Component({
   selector: 'app-menus',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, CustomSelectComponent],
   templateUrl: './menus.html',
   styleUrls: ['./menus.css']
 })
@@ -49,6 +50,27 @@ export class MenusComponent implements OnInit {
   esJefa = false;
   esAdministrador = false;
   cargandoMenus = false;
+
+  get contratosOpciones(): any[] {
+    return (this.contratos || []).map((c: any) => ({
+      id_contrato: c.id_contrato,
+      label: `${c.numero_cor || ''} - ${c.institucion || ''}`
+    }));
+  }
+
+  get menusOpciones(): any[] {
+    return (this.menus || []).map((m: any) => ({
+      id_menu: m.id_menu,
+      label: `Menú #${m.id_menu} (${m.fecha || ''})`
+    }));
+  }
+
+  get detalleMenusOpciones(): any[] {
+    return (this.menus || []).map((m: any) => ({
+      id_menu: m.id_menu,
+      label: `${m.fecha || ''} - ${m.nombre_jornada || ''} - ${m.institucion || ''}`
+    }));
+  }
 
   // ---------- Modales y Formularios ----------
   mostrarFormulario: boolean = false;

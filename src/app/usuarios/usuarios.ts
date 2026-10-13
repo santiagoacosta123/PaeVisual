@@ -4,11 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { UsuarioService } from '../services/usuario.service';
 import { RolService } from '../services/rol.service';
 import { SweetAlertService } from '../sweet-alert.service';
+import { CustomSelectComponent } from '../shared/custom-select/custom-select';
 
 @Component({
   selector: 'app-usuarios',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, CustomSelectComponent],
   templateUrl: './usuarios.html',
   styleUrls: ['./usuarios.css', '../banco-datos/banco-datos.css']
 })
@@ -16,6 +17,19 @@ export class UsuariosComponent implements OnInit {
 
   usuarios: any[] = [];
   roles: any[] = []; // Se llena dinámicamente desde la BD
+
+  readonly tiposDocumento = [
+    { value: 'CC', label: 'Cédula de Ciudadanía' },
+    { value: 'CE', label: 'Cédula de Extranjería' },
+    { value: 'TI', label: 'Tarjeta de Identidad' }
+  ];
+
+  get opcionesFiltroRol(): any[] {
+    return [
+      { id_rol: '', nombre_rol: 'Todos los Roles' },
+      ...(this.roles || [])
+    ];
+  }
 
   modoEdicion: boolean = false;
   usuarioSeleccionadoId?: number;
@@ -203,6 +217,35 @@ export class UsuariosComponent implements OnInit {
 
   editarUsuario(usuario: any): void {
     this.abrirFormulario(usuario);
+  }
+
+  toggleEstadoUsuario(usuario: any): void {
+    const id = usuario.id_usuario || usuario.id || usuario.pk || usuario.user_id;
+    if (!id) {
+      this.sweetAlert.error('Error', 'Este usuario no tiene un ID válido.');
+      return;
+    }
+
+    const nuevoEstado = !usuario.is_active;
+    const datosEnviar = {
+      is_active: nuevoEstado
+    };
+
+    this.usuarioService.actualizarUsuario(id, datosEnviar).subscribe({
+      next: () => {
+        usuario.is_active = nuevoEstado;
+        this.sweetAlert.success(
+          nuevoEstado ? 'Usuario activado' : 'Usuario inactivado',
+          `El usuario ahora está ${nuevoEstado ? 'Activo' : 'Inactivo'}.`
+        );
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        const mensajeError = this.formatearMensajeError(err);
+        this.sweetAlert.error('Error al cambiar estado', mensajeError);
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   eliminarUsuario(usuario: any): void {

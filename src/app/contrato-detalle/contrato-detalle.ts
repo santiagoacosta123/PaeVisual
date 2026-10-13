@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SiraeService } from '../services/contratos_pae.service';
+import { CustomSelectComponent } from '../shared/custom-select/custom-select';
 
 @Component({
   selector: 'app-contrato-detalle',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, CustomSelectComponent],
   templateUrl: './contrato-detalle.html',
   styleUrls: ['./contrato-detalle.css']
 })
@@ -22,6 +23,34 @@ export class ContratoDetalleComponent implements OnInit {
   contratosSeccionMenu: any[] = [];
   contrato: any = { codigo: '', institucion: '', zona: 'Norte', fecha_inicio: '', fecha_fin: '', estado: 'Activo' };
   jornadaSeleccionada: any = null;
+
+  readonly zonasDisponibles: string[] = [
+    'Norte',
+    'Sur',
+    'Este',
+    'Oeste',
+    'Centro',
+    'Oriente',
+    'Occidente',
+    'Nororiente',
+    'Noroccidente',
+    'Suroriente',
+    'Suroccidente',
+    'Urbana',
+    'Rural'
+  ];
+
+  get opcionesZona(): string[] {
+    const actual = this.contrato?.zona;
+    if (actual && !this.zonasDisponibles.includes(actual)) {
+      return [actual, ...this.zonasDisponibles];
+    }
+    return this.zonasDisponibles;
+  }
+
+  instituciones: any[] = [];
+  sedes: any[] = [];
+  sedesInstitucion: any[] = [];
 
   get jornadasHabilitadas() {
     return this.jornadas.filter(j => j.habilitada);
@@ -54,6 +83,87 @@ export class ContratoDetalleComponent implements OnInit {
     return this.seccionesMenu.filter(s => {
       const sJornadaId = (typeof s.id_jornada === 'object' && s.id_jornada !== null) ? (s.id_jornada.id_jornada || s.id_jornada.id) : (s.id_jornada || s.jornada);
       return sJornadaId !== idJornadaFiltro;
+    });
+  }
+
+  get institucionSeleccionadaInfo(): any {
+    if (!this.contrato?.institucion) return null;
+    return this.instituciones.find(i =>
+      i.nombre_institucion?.toLowerCase() === this.contrato.institucion?.toLowerCase()
+    );
+  }
+
+  mostrarSedesDetalle = false;
+  modalSeleccionarInstitucionAbierto = false;
+  busquedaInstitucion = '';
+  institucionTemporalSeleccionada: any = null;
+
+  toggleMostrarSedes(): void {
+    this.mostrarSedesDetalle = !this.mostrarSedesDetalle;
+    this.cdr.detectChanges();
+  }
+
+  abrirModalSeleccionarInstitucion(): void {
+    this.busquedaInstitucion = '';
+    this.institucionTemporalSeleccionada = this.instituciones.find(i =>
+      i.nombre_institucion?.toLowerCase() === this.contrato.institucion?.toLowerCase()
+    ) || null;
+    this.modalSeleccionarInstitucionAbierto = true;
+    this.cdr.detectChanges();
+  }
+
+  cerrarModalSeleccionarInstitucion(): void {
+    this.modalSeleccionarInstitucionAbierto = false;
+    this.cdr.detectChanges();
+  }
+
+  marcarInstitucion(inst: any): void {
+    this.institucionTemporalSeleccionada = inst;
+    this.cdr.detectChanges();
+  }
+
+  seleccionarInstitucionDesdeModal(inst: any): void {
+    this.institucionTemporalSeleccionada = inst;
+    this.contrato.institucion = inst.nombre_institucion;
+    this.onInstitucionChange();
+    this.cerrarModalSeleccionarInstitucion();
+  }
+
+  confirmarSeleccionInstitucion(): void {
+    if (this.institucionTemporalSeleccionada) {
+      this.contrato.institucion = this.institucionTemporalSeleccionada.nombre_institucion;
+      this.onInstitucionChange();
+    }
+    this.cerrarModalSeleccionarInstitucion();
+  }
+
+  deseleccionarInstitucion(event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    this.contrato.institucion = '';
+    this.institucionTemporalSeleccionada = null;
+    this.onInstitucionChange();
+    this.cdr.detectChanges();
+  }
+
+  get institucionesFiltradasModal(): any[] {
+    const q = this.busquedaInstitucion.trim().toLowerCase();
+    if (!q) return this.instituciones;
+    return this.instituciones.filter(i =>
+      (i.nombre_institucion && i.nombre_institucion.toLowerCase().includes(q)) ||
+      (i.nit && i.nit.toLowerCase().includes(q)) ||
+      (i.representante_legal && i.representante_legal.toLowerCase().includes(q))
+    );
+  }
+
+  obtenerSedesDeInst(inst: any): any[] {
+    const instId = inst?.id_institucion || inst?.id;
+    return this.sedes.filter(s => {
+      const sInstId = typeof s.id_institucion === 'object' && s.id_institucion !== null
+        ? (s.id_institucion.id_institucion ?? s.id_institucion.id)
+        : s.id_institucion;
+      return Number(sInstId) === Number(instId);
     });
   }
 
@@ -104,6 +214,61 @@ export class ContratoDetalleComponent implements OnInit {
         this.cdr.detectChanges();
       }
     });
+
+    // 3. Cargar Instituciones reales
+    this.siraeService.getInstituciones().subscribe({
+      next: (datos: any) => {
+        const res = Array.isArray(datos) ? datos : (datos.results || datos.data || []);
+        this.instituciones = res;
+        this.actualizarSedesDeInstitucion();
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error cargando instituciones en detalle:', err);
+        this.cdr.detectChanges();
+      }
+    });
+
+    // 4. Cargar Sedes reales
+    this.siraeService.getSedes().subscribe({
+      next: (datos: any) => {
+        const res = Array.isArray(datos) ? datos : (datos.results || datos.data || []);
+        this.sedes = res;
+        this.actualizarSedesDeInstitucion();
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error cargando sedes en detalle:', err);
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  actualizarSedesDeInstitucion() {
+    if (!this.contrato?.institucion) {
+      this.sedesInstitucion = [];
+      return;
+    }
+    const inst = this.instituciones.find(i =>
+      i.nombre_institucion?.toLowerCase() === this.contrato.institucion?.toLowerCase() ||
+      String(i.id_institucion) === String(this.contrato.institucion)
+    );
+    if (inst) {
+      const instId = inst.id_institucion || inst.id;
+      this.sedesInstitucion = this.sedes.filter(s => {
+        const sInstId = typeof s.id_institucion === 'object' && s.id_institucion !== null
+          ? (s.id_institucion.id_institucion ?? s.id_institucion.id)
+          : s.id_institucion;
+        return Number(sInstId) === Number(instId);
+      });
+    } else {
+      this.sedesInstitucion = [];
+    }
+    this.cdr.detectChanges();
+  }
+
+  onInstitucionChange() {
+    this.actualizarSedesDeInstitucion();
   }
 
   cargarDetalleContrato() {
@@ -126,6 +291,7 @@ export class ContratoDetalleComponent implements OnInit {
             fecha_fin: contratoEncontrado.fecha_fin || contratoEncontrado.fin,
             condiciones: contratoEncontrado.condiciones || contratoEncontrado.descripcion || ''
           };
+          this.actualizarSedesDeInstitucion();
         } else {
           // Fallback por si acaso entra directo por URL y el backend requiere detalle por ID específico
           this.contrato = { codigo: `COR-${this.contratoId}`, estado: 'Activo' };
@@ -274,7 +440,7 @@ export class ContratoDetalleComponent implements OnInit {
 
   guardarTodo() {
     if (!this.contrato.institucion) {
-      alert('Por favor, ingresa el nombre del contrato/institución.');
+      alert('Por favor, selecciona o ingresa la institución educativa.');
       return;
     }
 
@@ -287,12 +453,15 @@ export class ContratoDetalleComponent implements OnInit {
       estado: this.contrato.estado || 'Activo'
     };
 
-    if (this.contratoId === 'nuevo') {
+    const esNuevo = !this.contratoId || this.contratoId === 'nuevo' || this.contratoId === '0';
+
+    if (esNuevo) {
       this.siraeService.crearContrato(payload).subscribe({
         next: (res: any) => {
           const newId = res.id_contrato || res.id || res.pk;
 
           if (this.contratosSeccionMenu.length === 0) {
+            this.cerrar.emit();
             this.router.navigate(['/contratos']);
             return;
           }
@@ -313,6 +482,7 @@ export class ContratoDetalleComponent implements OnInit {
           });
 
           Promise.all(promesas).then(() => {
+            this.cerrar.emit();
             this.router.navigate(['/contratos']);
           });
         },
@@ -324,6 +494,7 @@ export class ContratoDetalleComponent implements OnInit {
     } else {
       this.siraeService.actualizarContrato(Number(this.contratoId), payload).subscribe({
         next: () => {
+          this.cerrar.emit();
           this.router.navigate(['/contratos']);
         },
         error: (err) => {

@@ -1,207 +1,187 @@
-<div class="flex h-screen w-screen items-center justify-center font-sans relative overflow-hidden" style="background-color: #fdfaf2;">
-
-  <!-- Fondo Premium: Patrón sutil y degradados dinámicos -->
-  <div class="absolute inset-0 z-0">
-    <div class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-amber-200/40 rounded-full blur-[120px]"></div>
-    <div class="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-[#fac94b]/20 rounded-full blur-[150px]"></div>
-    <!-- Opcional: ruido o textura sutil -->
-    <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.03]"></div>
-  </div>
+<div class="min-h-screen w-screen flex items-center justify-center font-sans relative overflow-x-hidden p-4 sm:p-6 lg:p-10"
+     style="background-image: url('/fondo-login.jpeg'); background-size: cover; background-position: center; background-repeat: no-repeat; background-color: #f7f5ed;">
 
   <style>
     input:-webkit-autofill,
     input:-webkit-autofill:hover,
     input:-webkit-autofill:focus,
     input:-webkit-autofill:active {
-      -webkit-box-shadow: 0 0 0 30px #ffffff inset !important;
+      -webkit-box-shadow: 0 0 0 30px #fafafa inset !important;
     }
   </style>
 
-  <div class="w-full max-w-6xl mx-auto px-6 md:px-12 flex flex-col md:flex-row items-center justify-between relative z-10 gap-12 md:gap-8">
 
-    <!-- Lado izquierdo: Logo y Branding -->
-    <div class="w-full md:w-1/2 flex flex-col items-center md:items-start text-center md:text-left drop-shadow-sm md:pl-8">
+
+  <div class="w-full max-w-5xl mx-auto flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-14 xl:gap-16 relative z-10 px-4 sm:px-6">
+
+    <!-- LADO IZQUIERDO: Branding y Logo Proporcionado -->
+    <div class="w-full lg:w-1/2 flex flex-col items-center text-center justify-center py-2 lg:py-4">
       
-      <img src="/sirae-logo.png" alt="Logo SIRAE" class="w-full max-w-[240px] md:max-w-[280px] h-auto mb-6 transition-transform hover:scale-105 duration-500" />
+      <!-- Logo SIRAE a escala armónica y proporcionada -->
+      <img src="/sirae-logo.png" alt="Logo SIRAE"
+           class="w-36 sm:w-40 md:w-44 lg:w-48 h-auto object-contain mb-2.5 transition-transform hover:scale-105 duration-300 drop-shadow-sm" />
 
-      <h2 style="font-family: 'Playfair Display', serif;" class="text-[20px] sm:text-[24px] md:text-[26px] lg:text-[30px] text-[#1f2937] font-extrabold mb-5 tracking-tight leading-tight whitespace-nowrap">
+      <!-- Título Principal a escala equilibrada -->
+      <h1 class="text-2xl sm:text-[28px] md:text-[32px] font-normal text-[#1f3d2b] tracking-normal leading-snug max-w-md"
+          style="font-family: 'Pacifico', 'Courgette', cursive;">
         Programa de Alimentación Escolar
-      </h2>
+      </h1>
 
-      <div class="flex items-center justify-center md:justify-start gap-4">
-        <div class="w-12 h-[2px] bg-[#fac94b] rounded-full"></div>
-        <p style="font-family: 'Playfair Display', serif;" class="text-[#fac94b] text-[18px] md:text-[20px] font-medium tracking-wide italic">
-          Alimentando cada día
-        </p>
-        <div class="w-12 h-[2px] bg-[#fac94b] rounded-full"></div>
-      </div>
+      <!-- Subtítulo refinado y compacto -->
+      <p class="text-xs sm:text-[13px] text-slate-500 font-normal max-w-xs mt-1.5 leading-relaxed"
+         style="font-family: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;">
+        Nutrición, bienestar y futuro para nuestra comunidad educativa.
+      </p>
+
     </div>
 
-    <!-- Lado derecho: Tarjeta de Login (Efecto Glass/Premium) -->
-    <div class="w-full md:w-1/2 flex justify-center md:justify-end">
+    <!-- LADO DERECHO: Tarjeta de Login Estilizada -->
+    <div class="w-full lg:w-1/2 flex justify-center items-center">
       
-      <div class="w-full max-w-[440px] bg-white/90 backdrop-blur-xl rounded-[2.5rem] shadow-[0_20px_60px_rgba(250,201,75,0.12)] p-10 md:p-12 border border-white relative overflow-hidden">
-        
-        <!-- Reflejo superior sutil -->
-        <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#fac94b] to-transparent opacity-50"></div>
+      <div class="w-full max-w-[390px] sm:max-w-[410px] bg-white/95 backdrop-blur-md rounded-[26px] shadow-[0_20px_50px_rgba(0,0,0,0.06)] p-7 sm:p-9 border border-white relative transition-all">
 
-        <!-- Encabezado -->
-        <div class="mb-10 text-center relative z-10">
-          <h1 style="font-family: 'Playfair Display', serif;" class="text-4xl md:text-5xl font-bold text-[#1a1a1a] mb-3 tracking-tight italic">
-            ¡Bienvenido!
-          </h1>
-          <p class="text-[14.5px] text-slate-500 font-medium">
-            Ingresa tus credenciales para continuar.
+        <!-- Encabezado de la Tarjeta con la tipografía del logo -->
+        <div class="text-center mb-6">
+          <h2 class="text-2xl sm:text-[30px] font-normal text-[#1f3d2b] tracking-normal"
+              style="font-family: 'Pacifico', 'Courgette', cursive;">
+            Bienvenidos
+          </h2>
+          <p class="text-xs text-slate-500 mt-1 font-medium">
+            Inicia sesión para acceder a tu cuenta
           </p>
         </div>
 
         <!-- Formulario -->
-        <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="space-y-5 w-full relative z-10">
+        <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="space-y-4 w-full">
 
-          <!-- Correo electrónico -->
-          <div class="relative group">
-            <div class="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[#fac94b] transition-colors z-10">
-              <span class="material-symbols-outlined text-[22px]">mail</span>
+          <!-- Campo Correo -->
+          <div>
+            <label for="correo" class="block text-xs font-semibold text-slate-700 mb-1.5">
+              Correo electrónico
+            </label>
+            <div class="relative group">
+              <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#faa911] text-[19px] transition-colors pointer-events-none">
+                mail
+              </span>
+              <input id="correo" type="email" formControlName="correo" placeholder="ejemplo@correo.com" autocomplete="email"
+                     class="w-full pl-10 pr-4 py-3 bg-[#fafafa] border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:bg-white focus:border-[#faa911] focus:ring-2 focus:ring-[#faa911]/20 outline-none transition" />
             </div>
-
-            <input id="correo" type="email" formControlName="correo" placeholder="Correo electrónico" autocomplete="email"
-              class="w-full pl-14 pr-5 py-4 text-[15px] bg-[#f8fafc] border border-slate-100 rounded-2xl outline-none text-[#1a1a1a] focus:bg-white focus:border-[#fac94b] focus:ring-4 focus:ring-[#fac94b]/15 transition-all placeholder-slate-400 font-medium shadow-inner" />
+            <span class="text-[11px] text-red-500 font-medium block mt-1 pl-1"
+                  *ngIf="correo?.invalid && (correo?.dirty || correo?.touched)">
+              Ingresa un correo válido
+            </span>
           </div>
 
-          <span class="text-[11.5px] text-red-500 font-medium block pl-2 -mt-3"
-            *ngIf="correo?.invalid && (correo?.dirty || correo?.touched)">
-            Ingresa un correo válido
-          </span>
-
-          <!-- Contraseña -->
-          <div class="relative group">
-            <div class="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[#fac94b] transition-colors z-10">
-              <span class="material-symbols-outlined text-[22px]">lock</span>
+          <!-- Campo Contraseña -->
+          <div>
+            <label for="clave" class="block text-xs font-semibold text-slate-700 mb-1.5">
+              Contraseña
+            </label>
+            <div class="relative group">
+              <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#faa911] text-[19px] transition-colors pointer-events-none">
+                lock
+              </span>
+              <input id="clave" [type]="mostrarClave ? 'text' : 'password'" formControlName="clave" placeholder="Ingresa tu contraseña" autocomplete="current-password"
+                     class="w-full pl-10 pr-10 py-3 bg-[#fafafa] border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:bg-white focus:border-[#faa911] focus:ring-2 focus:ring-[#faa911]/20 outline-none transition" />
+              <button type="button" (click)="alternarClave()"
+                      class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none cursor-pointer p-1"
+                      aria-label="Mostrar u ocultar contraseña">
+                <span class="material-symbols-outlined text-[19px]">{{ mostrarClave ? 'visibility_off' : 'visibility' }}</span>
+              </button>
             </div>
-
-            <input id="clave" [type]="mostrarClave ? 'text' : 'password'" formControlName="clave" placeholder="Contraseña"
-              autocomplete="current-password"
-              class="w-full pl-14 pr-12 py-4 text-[15px] bg-[#f8fafc] border border-slate-100 rounded-2xl outline-none text-[#1a1a1a] focus:bg-white focus:border-[#fac94b] focus:ring-4 focus:ring-[#fac94b]/15 transition-all placeholder-slate-400 font-medium shadow-inner" />
-
-            <!-- Mostrar u ocultar contraseña -->
-            <button type="button"
-              class="absolute inset-y-0 right-0 pr-5 flex items-center text-slate-400 hover:text-[#fac94b] focus:outline-none z-10 cursor-pointer transition-colors"
-              (click)="alternarClave()" aria-label="Mostrar u ocultar contraseña">
-              <span class="material-symbols-outlined text-[20px]">{{ mostrarClave ? 'visibility_off' : 'visibility' }}</span>
-            </button>
+            <span class="text-[11px] text-red-500 font-medium block mt-1 pl-1"
+                  *ngIf="clave?.invalid && (clave?.dirty || clave?.touched)">
+              Mínimo 6 caracteres
+            </span>
           </div>
 
-          <span class="text-[11.5px] text-red-500 font-medium block pl-2 -mt-3" *ngIf="clave?.invalid && (clave?.dirty || clave?.touched)">
-            Mínimo 6 caracteres
-          </span>
-
-          <!-- Recuperar contraseña -->
-          <div class="flex justify-end pb-2">
+          <!-- Link Olvidaste contraseña -->
+          <div class="flex justify-end pt-0.5">
             <button type="button" (click)="abrirModalRecuperar()"
-              class="text-[13px] text-slate-500 font-medium hover:text-[#b18a00] transition-colors focus:outline-none cursor-pointer">
+                    class="text-[11.5px] font-semibold text-[#1e392a] hover:text-[#faa911] transition-colors cursor-pointer">
               ¿Olvidaste tu contraseña?
             </button>
           </div>
 
           <!-- Mensaje de error -->
-          <div class="bg-red-50 text-red-700 px-4 py-3 rounded-2xl text-[13px] mb-4 border border-red-100 text-center font-medium shadow-sm"
-            *ngIf="errorMensaje">
+          <div *ngIf="errorMensaje" class="bg-red-50 border border-red-200 text-red-700 px-3.5 py-2.5 rounded-xl text-xs text-center font-medium">
             {{ errorMensaje }}
           </div>
 
-          <!-- Botón de inicio de sesión -->
-          <button type="submit"
-            class="w-full py-4 bg-gradient-to-r from-[#fac94b] to-[#f4b316] hover:from-[#f5b927] hover:to-[#e5a00d] text-[#1a1a1a] font-bold text-[15.5px] rounded-2xl shadow-[0_8px_20px_rgba(250,201,75,0.35)] hover:shadow-[0_10px_25px_rgba(250,201,75,0.45)] hover:-translate-y-[2px] transition-all duration-300 cursor-pointer disabled:opacity-50 flex items-center justify-center mt-6"
-            [disabled]="cargando">
-
-            <span *ngIf="!cargando" class="tracking-wide">
-              Iniciar Sesión
-            </span>
-            <span *ngIf="cargando" class="tracking-wide">
-              Verificando...
-            </span>
+          <!-- Botón Iniciar Sesión con el amarillo dorado exacto del texto Sirae (#faa911) -->
+          <button type="submit" [disabled]="cargando"
+                  class="w-full py-3.5 px-6 rounded-xl font-bold text-sm text-black bg-[#faa911] hover:bg-[#e89906] shadow-[0_4px_14px_rgba(250,169,17,0.35)] hover:shadow-[0_6px_20px_rgba(250,169,17,0.45)] transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 mt-2" style="color: #000000 !important;">
+            <span style="color: #000000 !important; font-weight: 700;">{{ cargando ? 'Iniciando sesión...' : 'Iniciar sesión' }}</span>
+            <span *ngIf="!cargando" class="material-symbols-outlined text-base" style="color: #000000 !important;">arrow_forward</span>
           </button>
 
         </form>
 
-        <!-- Mensaje de seguridad -->
-        <div class="mt-8 text-center text-[12px] text-slate-400 font-medium flex items-center justify-center gap-1.5">
-          <span class="material-symbols-outlined text-[16px]">verified_user</span>
-          Acceso seguro y encriptado
-        </div>
-
       </div>
     </div>
+
   </div>
+
 </div>
 
 <!-- Modal para recuperar contraseña -->
 <div *ngIf="mostrarModalRecuperar" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-  <div class="w-full max-w-[520px] rounded-[26px] bg-white p-8 shadow-[0_18px_45px_rgba(17,24,39,0.12)] relative animate-fade-in">
+  <div class="w-full max-w-[500px] rounded-[24px] bg-white p-7 shadow-[0_18px_45px_rgba(17,24,39,0.12)] relative animate-fade-in">
     
-    <h3 class="mb-3 text-[2.2rem] font-bold leading-tight text-[#3a3d42]">Recuperar Contraseña</h3>
-    <p class="mb-6 text-[0.96rem] leading-relaxed text-[#5a616b]">
+    <h3 class="mb-2 text-2xl font-bold leading-tight text-slate-800"
+        style="font-family: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;">
+      Recuperar Contraseña
+    </h3>
+    <p class="mb-5 text-xs sm:text-sm text-slate-500">
       Ingresa tu correo institucional y te enviaremos un código para restablecer tu acceso.
     </p>
 
-    <div class="mb-3 flex flex-col">
-      <label for="correoRecuperar" class="mb-2 text-[0.98rem] font-medium text-[#2f3135]">Correo electrónico</label>
+    <div class="mb-4 flex flex-col">
+      <label for="correoRecuperar" class="mb-1.5 text-xs font-semibold text-slate-700">Correo electrónico</label>
       <input 
         id="correoRecuperar" 
         type="email" 
         [(ngModel)]="correoRecuperacion"
         name="correoRecuperacion"
         placeholder="admin@sirae.com"
-        class="w-full rounded-[10px] border border-[#d7dbe1] bg-[#f8f9fa] px-3.5 py-3.5 text-[0.95rem] text-[#1f2937] outline-none transition-all placeholder:text-[#6b7280] focus:border-[#f1bf49] focus:bg-white focus:ring-4 focus:ring-[#f1bf49]/10"
+        class="w-full rounded-xl border border-slate-200 bg-[#fafafa] px-4 py-3 text-sm text-slate-800 outline-none transition-all placeholder:text-slate-400 focus:border-[#fac94b] focus:bg-white focus:ring-2 focus:ring-[#fac94b]/20"
       />
     </div>
 
-    <p *ngIf="errorRecuperacion" class="mb-5 text-[0.95rem] font-medium text-[#dc4f4f]" role="alert">
+    <p *ngIf="errorRecuperacion" class="mb-4 text-xs font-medium text-red-600" role="alert">
       {{ errorRecuperacion }}
     </p>
-    <p *ngIf="mensajeRecuperacion" class="mb-5 text-[0.95rem] text-green-700" role="status">
+    <p *ngIf="mensajeRecuperacion" class="mb-4 text-xs font-medium text-emerald-700" role="status">
       {{ mensajeRecuperacion }}
     </p>
-    <p
-      *ngIf="codigoRecuperacionDesarrollo"
-      class="mb-5 rounded-lg bg-amber-50 px-4 py-3 text-center text-lg font-bold tracking-[0.3em] text-slate-800"
-      data-testid="codigo-recuperacion-desarrollo"
-    >
+    <p *ngIf="codigoRecuperacionDesarrollo"
+       class="mb-4 rounded-xl bg-amber-50 border border-amber-200 px-4 py-2.5 text-center text-lg font-bold tracking-[0.25em] text-amber-900"
+       data-testid="codigo-recuperacion-desarrollo">
       {{ codigoRecuperacionDesarrollo }}
     </p>
-    <a
-      *ngIf="enlaceRecuperacionDesarrollo"
-      [href]="enlaceRecuperacionDesarrollo"
-      class="mb-5 block break-all text-sm font-semibold text-amber-700 underline"
-      data-testid="enlace-recuperacion-desarrollo"
-    >
+    <a *ngIf="enlaceRecuperacionDesarrollo"
+       [href]="enlaceRecuperacionDesarrollo"
+       class="mb-4 block break-all text-xs font-semibold text-amber-700 underline text-center"
+       data-testid="enlace-recuperacion-desarrollo">
       Abrir enlace de recuperación
     </a>
 
-    <div class="mt-4 flex justify-end gap-3">
-      <button 
-        type="button" 
-        (click)="cerrarModalRecuperar()" 
-        class="min-w-[122px] rounded-[12px] bg-[#e7eaee] px-5 py-3 text-[1.05rem] font-medium text-[#2b2f36] transition-colors hover:bg-[#dfe5ea]"
-      >
+    <div class="mt-5 flex justify-end gap-2.5">
+      <button type="button" (click)="cerrarModalRecuperar()"
+              class="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 cursor-pointer">
         Cancelar
       </button>
-      <button
-        *ngIf="mensajeRecuperacion && !enlaceRecuperacionDesarrollo"
-        type="button"
-        (click)="continuarRecuperacion()"
-        class="rounded-[12px] bg-[#e7eaee] px-5 py-3 text-[1.05rem] font-semibold text-[#2b2f36] transition-colors hover:bg-[#dfe5ea]"
-      >
+      <button *ngIf="mensajeRecuperacion && !enlaceRecuperacionDesarrollo"
+              type="button" (click)="continuarRecuperacion()"
+              class="rounded-xl bg-slate-100 px-4 py-2.5 text-xs font-semibold text-slate-800 transition hover:bg-slate-200 cursor-pointer">
         Ingresar código
       </button>
-      <button 
-        type="button" 
-        (click)="enviarCorreoRecuperacion()" 
-        class="min-w-[150px] rounded-[12px] bg-[#f3c451] px-5 py-3 text-[1.05rem] font-bold text-[#1f2937] transition-colors hover:bg-[#eab734] disabled:opacity-50"
-        [disabled]="enviandoRecuperacion || !!mensajeRecuperacion"
-      >
-        <span *ngIf="!enviandoRecuperacion">Enviar código</span>
-        <span *ngIf="enviandoRecuperacion">Enviando...</span>
+      <button type="button" (click)="enviarCorreoRecuperacion()"
+              class="rounded-xl bg-[#fac94b] hover:bg-[#f5b82e] px-5 py-2.5 text-xs font-bold text-black transition cursor-pointer disabled:opacity-50"
+              style="color: #000000 !important;"
+              [disabled]="enviandoRecuperacion || !!mensajeRecuperacion">
+        <span *ngIf="!enviandoRecuperacion" style="color: #000000 !important; font-weight: 700;">Enviar código</span>
+        <span *ngIf="enviandoRecuperacion" style="color: #000000 !important;">Enviando...</span>
       </button>
     </div>
 

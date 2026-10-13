@@ -87,12 +87,16 @@
         <!-- Ingrediente -->
         <div class="bd-form-group">
           <label class="bd-label">Ingrediente <span style="color:red">*</span></label>
-          <select name="ingrediente" class="bd-input" [(ngModel)]="formEntrada.id_ingrediente" required>
-            <option [ngValue]="null" disabled>Seleccione un ingrediente...</option>
-            <option *ngFor="let ing of ingredientes" [ngValue]="ing.id_ingrediente || ing.id">
-              {{ ing.nombre_ingrediente || ing.nombre }}
-            </option>
-          </select>
+          <app-custom-select
+            [options]="ingredientes"
+            valueField="id_ingrediente"
+            labelField="nombre_ingrediente"
+            placeholder="Seleccione un ingrediente..."
+            name="ingrediente"
+            [required]="true"
+            [searchable]="true"
+            [(ngModel)]="formEntrada.id_ingrediente"
+          ></app-custom-select>
         </div>
 
         <div style="display: flex; gap: 16px;">
@@ -105,12 +109,15 @@
           <!-- Unidad de Medida -->
           <div class="bd-form-group" style="flex: 1;">
             <label class="bd-label">Unidad <span style="color:red">*</span></label>
-            <select name="unidad" class="bd-input" [(ngModel)]="formEntrada.id_unidad_medida" required>
-              <option [ngValue]="null" disabled>Seleccione...</option>
-              <option *ngFor="let uni of unidades" [ngValue]="uni.id_unidad_medida || uni.id">
-                {{ uni.nombre_unidad || uni.nombre }} ({{ uni.abreviatura }})
-              </option>
-            </select>
+            <app-custom-select
+              [options]="unidadesOpciones"
+              valueField="id_unidad_medida"
+              labelField="label"
+              placeholder="Seleccione..."
+              name="unidad"
+              [required]="true"
+              [(ngModel)]="formEntrada.id_unidad_medida"
+            ></app-custom-select>
           </div>
         </div>
 

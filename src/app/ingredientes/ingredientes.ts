@@ -5,10 +5,11 @@ import { SweetAlertService } from '../sweet-alert.service';
 import { ProductoService } from '../services/producto.service';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
+import { CustomSelectComponent } from '../shared/custom-select/custom-select';
 
 @Component({
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, CustomSelectComponent],
   selector: 'app-ingredientes',
   styleUrls: ['./ingredientes.css', '../banco-datos/banco-datos.css'],
   templateUrl: './ingredientes.html',
@@ -33,6 +34,13 @@ export class Ingredientes implements OnInit {
 
   // Unidades de medida
   unidadesMedida: any[] = [];
+
+  get unidadesMedidaOpciones(): any[] {
+    return (this.unidadesMedida || []).map((u: any) => ({
+      id_unidad_medida: u.id_unidad_medida,
+      label: (u.nombre || u.nombre_unidad || '') + (u.abreviatura ? ` (${u.abreviatura})` : '')
+    }));
+  }
 
   // Ingredientes disponibles
   ingredientesDisponibles: any[] = [];

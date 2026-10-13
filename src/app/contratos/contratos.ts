@@ -4,11 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { SiraeService } from '../services/contratos_pae.service';
 import { ContratoDetalleComponent } from '../contrato-detalle/contrato-detalle';
+import { CustomSelectComponent } from '../shared/custom-select/custom-select';
 
 @Component({
   selector: 'app-gestion-contratos',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, ContratoDetalleComponent],
+  imports: [CommonModule, FormsModule, RouterModule, ContratoDetalleComponent, CustomSelectComponent],
   templateUrl: './contratos.html',
   styleUrls: ['./contratos.css']
 })
@@ -23,6 +24,27 @@ export class ContratosComponent implements OnInit {
   ngOnInit() {
     this.cargarContratos();
     this.cargarDatosMaestros();
+    this.cargarInstitucionesYSedes();
+  }
+
+  cargarInstitucionesYSedes() {
+    this.siraeService.getInstituciones().subscribe({
+      next: (datos: any) => {
+        const res = Array.isArray(datos) ? datos : (datos.results || datos.data || []);
+        this.instituciones = res;
+        this.cdr.detectChanges();
+      },
+      error: (err) => console.error('Error al cargar instituciones en contratos:', err)
+    });
+
+    this.siraeService.getSedes().subscribe({
+      next: (datos: any) => {
+        const res = Array.isArray(datos) ? datos : (datos.results || datos.data || []);
+        this.sedes = res;
+        this.cdr.detectChanges();
+      },
+      error: (err) => console.error('Error al cargar sedes en contratos:', err)
+    });
   }
 
   cargarContratos() {
@@ -114,6 +136,30 @@ export class ContratosComponent implements OnInit {
     zona: ''
   };
 
+  readonly zonasDisponibles: string[] = [
+    'Norte',
+    'Sur',
+    'Este',
+    'Oeste',
+    'Centro',
+    'Oriente',
+    'Occidente',
+    'Nororiente',
+    'Noroccidente',
+    'Suroriente',
+    'Suroccidente',
+    'Urbana',
+    'Rural'
+  ];
+
+  get opcionesZona(): string[] {
+    const actual = this.contratoActual?.zona;
+    if (actual && !this.zonasDisponibles.includes(actual)) {
+      return [actual, ...this.zonasDisponibles];
+    }
+    return this.zonasDisponibles;
+  }
+
   jornadaActual: any = {
     id: null,
     nombre: '',
@@ -138,6 +184,122 @@ export class ContratosComponent implements OnInit {
   jornadas: any[] = [];
   secciones: any[] = [];
   turnos: any[] = [];
+  instituciones: any[] = [];
+  sedes: any[] = [];
+  sedesDeInstitucionSeleccionada: any[] = [];
+
+  onInstitucionContratoChange() {
+    if (!this.contratoActual.institucion) {
+      this.sedesDeInstitucionSeleccionada = [];
+      return;
+    }
+    const inst = this.instituciones.find(i =>
+      i.nombre_institucion === this.contratoActual.institucion ||
+      String(i.id_institucion) === String(this.contratoActual.institucion)
+    );
+    if (inst) {
+      this.contratoActual.institucion = inst.nombre_institucion;
+      const instId = inst.id_institucion || inst.id;
+      this.sedesDeInstitucionSeleccionada = this.sedes.filter(s => {
+        const sInstId = typeof s.id_institucion === 'object' && s.id_institucion !== null
+          ? (s.id_institucion.id_institucion ?? s.id_institucion.id)
+          : s.id_institucion;
+        return Number(sInstId) === Number(instId);
+      });
+    } else {
+      this.sedesDeInstitucionSeleccionada = [];
+    }
+    this.cdr.detectChanges();
+  }
+
+  modalSeleccionarInstitucionAbierto = false;
+  busquedaInstitucionModal = '';
+  mostrarSedesEnModalContrato = false;
+  institucionTemporalSeleccionada: any = null;
+
+  abrirModalSeleccionarInstitucion() {
+    this.busquedaInstitucionModal = '';
+    this.institucionTemporalSeleccionada = this.instituciones.find(i =>
+      i.nombre_institucion?.toLowerCase() === this.contratoActual.institucion?.toLowerCase()
+    ) || null;
+    this.modalSeleccionarInstitucionAbierto = true;
+    this.cdr.detectChanges();
+  }
+
+  cerrarModalSeleccionarInstitucion() {
+    this.modalSeleccionarInstitucionAbierto = false;
+    this.cdr.detectChanges();
+  }
+
+  marcarInstitucion(inst: any) {
+    this.institucionTemporalSeleccionada = inst;
+    this.cdr.detectChanges();
+  }
+
+  seleccionarInstitucionDesdeModal(inst: any) {
+    this.institucionTemporalSeleccionada = inst;
+    this.contratoActual.institucion = inst.nombre_institucion;
+    this.onInstitucionContratoChange();
+    this.cerrarModalSeleccionarInstitucion();
+  }
+
+  confirmarSeleccionInstitucion() {
+    if (this.institucionTemporalSeleccionada) {
+      this.contratoActual.institucion = this.institucionTemporalSeleccionada.nombre_institucion;
+      this.onInstitucionContratoChange();
+    }
+    this.cerrarModalSeleccionarInstitucion();
+  }
+
+  deseleccionarInstitucion(event?: Event) {
+    if (event) {
+      event.stopPropagation();
+    }
+    this.contratoActual.institucion = '';
+    this.institucionTemporalSeleccionada = null;
+    this.onInstitucionContratoChange();
+    this.cdr.detectChanges();
+  }
+
+  get institucionesFiltradasModal(): any[] {
+    const q = this.busquedaInstitucionModal.trim().toLowerCase();
+    if (!q) return this.instituciones;
+    return this.instituciones.filter(i =>
+      (i.nombre_institucion && i.nombre_institucion.toLowerCase().includes(q)) ||
+      (i.nit && i.nit.toLowerCase().includes(q)) ||
+      (i.representante_legal && i.representante_legal.toLowerCase().includes(q))
+    );
+  }
+
+  obtenerSedesDeInst(inst: any): any[] {
+    const instId = inst?.id_institucion || inst?.id;
+    return this.sedes.filter(s => {
+      const sInstId = typeof s.id_institucion === 'object' && s.id_institucion !== null
+        ? (s.id_institucion.id_institucion ?? s.id_institucion.id)
+        : s.id_institucion;
+      return Number(sInstId) === Number(instId);
+    });
+  }
+
+  toggleMostrarSedesModal() {
+    this.mostrarSedesEnModalContrato = !this.mostrarSedesEnModalContrato;
+    this.cdr.detectChanges();
+  }
+
+  obtenerSedesDeInstitucion(nombreInstitucion: string): any[] {
+    if (!nombreInstitucion) return [];
+    const inst = this.instituciones.find(i =>
+      i.nombre_institucion?.toLowerCase() === nombreInstitucion.toLowerCase()
+    );
+    if (!inst) return [];
+    const instId = inst.id_institucion || inst.id;
+    return this.sedes.filter(s => {
+      const sInstId = typeof s.id_institucion === 'object' && s.id_institucion !== null
+        ? (s.id_institucion.id_institucion ?? s.id_institucion.id)
+        : s.id_institucion;
+      return Number(sInstId) === Number(instId);
+    });
+  }
 
   get contratosFiltrados() {
     const filtro = this.filtroBusquedaContratos.toLowerCase();
@@ -214,6 +376,7 @@ export class ContratosComponent implements OnInit {
         expandido: false
       };
     }
+    this.onInstitucionContratoChange();
     this.modalContratoAbierto = true;
     this.cdr.detectChanges();
   }
@@ -255,6 +418,29 @@ export class ContratosComponent implements OnInit {
         error: (err) => console.error('Error al crear contrato', err)
       });
     }
+  }
+
+  toggleEstadoContrato(c: any) {
+    const nuevoEstado = c.estado === 'Activo' ? 'Inactivo' : 'Activo';
+    const payload = {
+      numero_cor: c.codigo,
+      institucion: c.institucion,
+      zona: c.zona,
+      fecha_inicio: c.fechaInicio,
+      fecha_fin: c.fechaFin,
+      estado: nuevoEstado
+    };
+
+    this.siraeService.actualizarContrato(c.id, payload).subscribe({
+      next: () => {
+        c.estado = nuevoEstado;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error al cambiar estado del contrato', err);
+        alert('No se pudo actualizar el estado del contrato.');
+      }
+    });
   }
 
   eliminarContrato(id: number) {

@@ -108,16 +108,26 @@
 
           <div class="bd-form-group">
             <label>Categoría</label>
-            <select class="bd-input" [(ngModel)]="formIngrediente.id_categoria" name="id_categoria">
-              <option *ngFor="let cat of categorias" [value]="cat.id_categoria_inventario">{{ cat.nombre_categoria }}</option>
-            </select>
+            <app-custom-select
+              [options]="categorias"
+              valueField="id_categoria_inventario"
+              labelField="nombre_categoria"
+              placeholder="Seleccione categoría..."
+              name="id_categoria"
+              [(ngModel)]="formIngrediente.id_categoria"
+            ></app-custom-select>
           </div>
 
           <div class="bd-form-group">
             <label>Unidad de Medida</label>
-            <select class="bd-input" [(ngModel)]="formIngrediente.id_unidad_medida" name="id_unidad_medida">
-              <option *ngFor="let und of unidadesMedida" [value]="und.id_unidad_medida">{{ und.nombre_unidad }}</option>
-            </select>
+            <app-custom-select
+              [options]="unidadesMedida"
+              valueField="id_unidad_medida"
+              labelField="nombre_unidad"
+              placeholder="Seleccione unidad..."
+              name="id_unidad_medida"
+              [(ngModel)]="formIngrediente.id_unidad_medida"
+            ></app-custom-select>
           </div>
 
           <div class="bd-form-group">
