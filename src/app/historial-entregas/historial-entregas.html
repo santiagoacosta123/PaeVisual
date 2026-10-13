@@ -19,8 +19,8 @@
         <button type="button" (click)="toggleCrud()"
           class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-[13px] font-black text-slate-900 shadow-md transition hover:brightness-95"
           style="background-color: #F4B41F;">
-          <span class="material-symbols-outlined text-[18px]">{{ crudAbierto ? 'expand_less' : 'database' }}</span>
-          {{ crudAbierto ? 'Ocultar gestión' : 'Gestionar entregas (CRUD)' }}
+          <span class="material-symbols-outlined text-[18px]">{{ crudAbierto ? 'expand_less' : 'add' }}</span>
+          {{ crudAbierto ? 'Ocultar gestión' : 'Nueva Entrega' }}
         </button>
       </div>
     </header>
@@ -62,13 +62,6 @@
         [style.background-color]="filtroMercado === 'Todas' ? '#F4B41F' : null">
         <span class="material-symbols-outlined text-[18px]">inventory_2</span>
         Todas
-      </button>
-      <button type="button" (click)="filtroMercado = 'Granos'"
-        class="flex cursor-pointer items-center gap-2 rounded-xl border px-4 py-2.5 text-[13px] font-bold transition"
-        [ngClass]="filtroMercado === 'Granos' ? 'border-transparent text-slate-900 shadow-md' : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'"
-        [style.background-color]="filtroMercado === 'Granos' ? '#F4B41F' : null">
-        <span class="material-symbols-outlined text-[18px]">restaurant</span>
-        Granos / No perecederos
       </button>
       <button type="button" (click)="filtroMercado = 'Perecederos'"
         class="flex cursor-pointer items-center gap-2 rounded-xl border px-4 py-2.5 text-[13px] font-bold transition"
