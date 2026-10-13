@@ -27,9 +27,9 @@
       </button>
 
       <!-- Nuevo Insumo -->
-      <button type="button" (click)="abrirFormulario()" style="height: 38px; padding: 0 20px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: none; border-radius: 8px; background: #fac94b; color: #1a1a1a; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; box-shadow: 0 2px 6px rgba(250, 201, 75, 0.3); transition: all 0.2s ease;">
-        <span class="material-symbols-outlined" style="font-size: 18px;">add</span>
-        <span>Nuevo Insumo</span>
+      <button type="button" (click)="abrirFormulario()" style="height: 38px; padding: 0 20px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: none; border-radius: 8px; background: #fac94b; color: #000000; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; box-shadow: 0 2px 6px rgba(250, 201, 75, 0.3); transition: all 0.2s ease;">
+        <span class="material-symbols-outlined" style="font-size: 18px; color: #000000;">add</span>
+        <span style="color: #000000; font-weight: 700;">Nuevo Insumo</span>
       </button>
     </div>
   </header>
@@ -94,10 +94,15 @@
           <ng-container *ngIf="modalTipo === 'INSUMO'">
             <div class="bd-form-group" style="grid-column: 1 / -1">
               <label>Ingrediente / Insumo <span style="color: #ef4444">*</span></label>
-              <select class="bd-input" [(ngModel)]="itemForm.id_ingrediente" name="id_ingrediente">
-                <option value="">Seleccione...</option>
-                <option *ngFor="let i of ingredientesDisponibles" [value]="i.id_ingrediente">{{i.nombre_ingrediente}}</option>
-              </select>
+              <app-custom-select
+                [options]="ingredientesDisponibles"
+                valueField="id_ingrediente"
+                labelField="nombre_ingrediente"
+                placeholder="Seleccione ingrediente..."
+                name="id_ingrediente"
+                [required]="true"
+                [(ngModel)]="itemForm.id_ingrediente"
+              ></app-custom-select>
             </div>
 
             <div class="bd-form-group">
@@ -107,10 +112,14 @@
 
             <div class="bd-form-group">
               <label>Unidad</label>
-              <select class="bd-input" [(ngModel)]="itemForm.id_unidad_medida" name="id_unidad_medida">
-                <option value="">Seleccione...</option>
-                <option *ngFor="let u of unidadesMedida" [value]="u.id_unidad_medida">{{ u.nombre || u.nombre_unidad }}</option>
-              </select>
+              <app-custom-select
+                [options]="unidadesMedidaOpciones"
+                valueField="id_unidad_medida"
+                labelField="label"
+                placeholder="Seleccione unidad..."
+                name="id_unidad_medida"
+                [(ngModel)]="itemForm.id_unidad_medida"
+              ></app-custom-select>
             </div>
 
             <div class="bd-form-group">
@@ -123,10 +132,15 @@
           <ng-container *ngIf="modalTipo === 'ENTRADA' || modalTipo === 'SALIDA'">
             <div class="bd-form-group" style="grid-column: 1 / -1">
               <label>Ingrediente <span style="color: #ef4444">*</span></label>
-              <select class="bd-input" [(ngModel)]="movimientoForm.id_ingrediente" name="mov_ingrediente">
-                <option value="">Seleccione...</option>
-                <option *ngFor="let i of ingredientesDisponibles" [value]="i.id_ingrediente">{{i.nombre_ingrediente}}</option>
-              </select>
+              <app-custom-select
+                [options]="ingredientesDisponibles"
+                valueField="id_ingrediente"
+                labelField="nombre_ingrediente"
+                placeholder="Seleccione ingrediente..."
+                name="mov_ingrediente"
+                [required]="true"
+                [(ngModel)]="movimientoForm.id_ingrediente"
+              ></app-custom-select>
             </div>
 
             <div class="bd-form-group" style="grid-column: 1 / -1">

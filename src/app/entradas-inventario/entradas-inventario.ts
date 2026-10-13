@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ProductoService } from '../services/producto.service';
 import { SweetAlertService } from '../sweet-alert.service';
+import { CustomSelectComponent } from '../shared/custom-select/custom-select';
 
 @Component({
   selector: 'app-entradas-inventario',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, CustomSelectComponent],
   templateUrl: './entradas-inventario.html',
   styleUrls: ['./entradas-inventario.css', '../banco-datos/banco-datos.css']
 })
@@ -16,6 +17,13 @@ export class EntradasInventario implements OnInit {
   entradas: any[] = [];
   ingredientes: any[] = [];
   unidades: any[] = [];
+
+  get unidadesOpciones(): any[] {
+    return (this.unidades || []).map((uni: any) => ({
+      id_unidad_medida: uni.id_unidad_medida || uni.id,
+      label: `${uni.nombre_unidad || uni.nombre || ''} (${uni.abreviatura || ''})`
+    }));
+  }
 
   mostrarModal = false;
   guardando = false;

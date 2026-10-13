@@ -19,8 +19,8 @@ export class UsuarioService {
     return this.http.post<UsuarioModel>(this.apiUrl, usuario);
   }
 
-  actualizarUsuario(id: number, usuario: UsuarioModel): Observable<UsuarioModel> {
-    return this.http.put<UsuarioModel>(`${this.apiUrl}${id}/`, usuario);
+  actualizarUsuario(id: number, usuario: Partial<UsuarioModel> | UsuarioModel | any): Observable<UsuarioModel> {
+    return this.http.patch<UsuarioModel>(`${this.apiUrl}${id}/`, usuario);
   }
 
   eliminarUsuario(id: number): Observable<void> {

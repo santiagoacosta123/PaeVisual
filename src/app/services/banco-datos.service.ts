@@ -47,8 +47,22 @@ export class BancoDatosService {
       'turnos': 'turnos/',
       'gramajes': 'gramage/',
       'ingredientes': 'ingredientes/',
-      'recetas': 'recetas/'
+      'recetas': 'recetas/',
+      'instituciones': 'instituciones/',
+      'sedes': 'sedes/',
+      'sede_jornadas': 'sede-jornadas/'
     };
     return endpoints[tabla] || '';
+  }
+
+  obtenerInstituciones(): Observable<any> {
+    return this.http.get(`${this.apiUrl}/instituciones/`);
+  }
+
+  obtenerSedes(idInstitucion?: number): Observable<any> {
+    const url = idInstitucion
+      ? `${this.apiUrl}/sedes/?id_institucion=${idInstitucion}`
+      : `${this.apiUrl}/sedes/`;
+    return this.http.get(url);
   }
 }

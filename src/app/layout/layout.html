@@ -4,20 +4,8 @@
   <aside style="width:280px; background:#fff; border-right:1px solid #e0e0e0; display:flex; flex-direction:column; padding:24px 20px; box-sizing:border-box; flex-shrink:0;">
 
     <!-- Logo / Marca SIRAE -->
-    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; margin-bottom:32px; padding: 10px 0; text-align: center;">
-      <img src="sirae-logo.png" alt="Logo SIRAE" style="height:70px; max-width:100%; object-fit:contain; margin-bottom: 8px;" />
-      
-      <h2 style="font-family: 'Playfair Display', serif; font-size: 15px; font-weight: 600; color: #334155; margin: 0 0 6px 0; line-height: 1.2; letter-spacing: 0.2px;">
-        Programa de Alimentación Escolar
-      </h2>
-      
-      <div style="display:flex; align-items:center; justify-content:center; gap: 8px;">
-        <div style="width: 16px; height: 1px; background-color: #fac94b;"></div>
-        <p style="font-family: 'Playfair Display', serif; font-size: 13px; font-weight: 500; color: #fac94b; font-style: italic; margin: 0; letter-spacing: 0.5px;">
-          Alimentando cada día
-        </p>
-        <div style="width: 16px; height: 1px; background-color: #fac94b;"></div>
-      </div>
+    <div style="display:flex; align-items:center; justify-content:center; margin-bottom:28px; padding: 10px 0; text-align: center;">
+      <img src="sirae-logo.png" alt="Logo SIRAE" style="height:110px; max-width:200px; width:auto; object-fit:contain; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.04));" />
     </div>
 
     <!-- Título de sección -->
@@ -90,12 +78,6 @@
          style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500;">
         <span class="material-symbols-outlined nav-icon" style="font-size:20px;">package</span>
         Inventario
-      </a>
-
-      <a *ngIf="esAdministrador" routerLink="unidades-medida" routerLinkActive="active-link"
-         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500;">
-        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">straighten</span>
-        Unidades de medida
       </a>
 
       <a *ngIf="esAdministrador" routerLink="banco-datos" routerLinkActive="active-link"
@@ -210,7 +192,7 @@
                   <input [(ngModel)]="editForm.correo" type="email" style="width:100%; border:1px solid #cbd5e1; border-radius:8px; padding:6px 10px; box-sizing:border-box;" />
                 </div>
                 <div style="display:flex; gap:8px; margin-top:8px;">
-                  <button type="button" (click)="guardarPerfil()" style="flex:1; background:#fac94b; border:none; padding:8px; border-radius:8px; font-weight:700; cursor:pointer;">Guardar</button>
+                  <button type="button" (click)="guardarPerfil()" style="flex:1; background:#fac94b; color:#000000; border:none; padding:8px; border-radius:8px; font-weight:700; cursor:pointer;">Guardar</button>
                   <button type="button" (click)="irA('perfil')" style="flex:1; background:#f1f5f9; border:1px solid #cbd5e1; padding:8px; border-radius:8px; font-weight:600; cursor:pointer;">Cancelar</button>
                 </div>
               </div>
@@ -228,7 +210,7 @@
                 <p *ngIf="passwordMensaje" style="color:#16a34a; margin:4px 0 0 0; font-size:11px;">{{ passwordMensaje }}</p>
 
                 <div style="display:flex; gap:8px; margin-top:8px;">
-                  <button type="button" (click)="guardarPassword()" [disabled]="passwordProcesando" style="flex:1; background:#fac94b; border:none; padding:8px; border-radius:8px; font-weight:700; cursor:pointer;">
+                  <button type="button" (click)="guardarPassword()" [disabled]="passwordProcesando" style="flex:1; background:#fac94b; color:#000000; border:none; padding:8px; border-radius:8px; font-weight:700; cursor:pointer;">
                     {{ passwordProcesando ? 'Guardando...' : 'Cambiar' }}
                   </button>
                   <button type="button" (click)="irA('perfil')" style="flex:1; background:#f1f5f9; border:1px solid #cbd5e1; padding:8px; border-radius:8px; font-weight:600; cursor:pointer;">Cancelar</button>

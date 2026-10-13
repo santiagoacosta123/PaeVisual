@@ -12,6 +12,7 @@ import { Subscription } from 'rxjs';
 
 import { BancoDatosService } from '../services/banco-datos.service';
 import { SweetAlertService } from '../sweet-alert.service';
+import { CustomSelectComponent } from '../shared/custom-select/custom-select';
 
 
 // ============================================================
@@ -21,7 +22,7 @@ import { SweetAlertService } from '../sweet-alert.service';
 type TipoCampo = 'text' | 'textarea' | 'number' | 'time' | 'select';
 
 /** Tablas que alimentan listas desplegables de otras tablas. */
-type FuenteRelacion = 'jornadas' | 'unidades_medida' | 'ingredientes' | 'categorias_inventario' | 'grados';
+type FuenteRelacion = 'jornadas' | 'unidades_medida' | 'ingredientes' | 'categorias_inventario' | 'grados' | 'instituciones';
 
 interface CampoConfig {
   name: string;
@@ -31,6 +32,8 @@ interface CampoConfig {
   placeholder?: string;
   /** Solo para type = 'select': de qué tabla salen las opciones. */
   source?: FuenteRelacion;
+  options?: OpcionRelacion[];
+  defaultValue?: any;
 }
 
 interface TabConfig {
@@ -59,6 +62,10 @@ const FUENTES: Record<
   FuenteRelacion,
   { id: string; etiqueta: (r: any) => string }
 > = {
+  instituciones: {
+    id: 'id_institucion',
+    etiqueta: r => r.nombre_institucion ?? r.nombre ?? ''
+  },
   jornadas: {
     id: 'id_jornada',
     etiqueta: r => r.nombre_jornada ?? r.nombre ?? ''
@@ -88,7 +95,7 @@ const FUENTES: Record<
 @Component({
   selector: 'app-banco-datos',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, CustomSelectComponent],
   templateUrl: './banco-datos.html',
   styleUrls: ['./banco-datos.css']
 })
@@ -102,6 +109,56 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
   // ============================================================
 
   readonly tabs: TabConfig[] = [
+    {
+      id: 'instituciones',
+      nombre: 'Instituciones',
+      singular: 'institución',
+      icon: 'apartment',
+      idField: 'id_institucion',
+      campos: [
+        { name: 'nombre_institucion', label: 'Nombre Institución', type: 'text', required: true, placeholder: 'Ej: I.E. San Agustín' },
+        { name: 'nit', label: 'NIT / Código', type: 'text', required: true, placeholder: 'Ej: 900.123.456-7' },
+        { name: 'representante_legal', label: 'Representante Legal', type: 'text', placeholder: 'Ej: Carlos Gómez' },
+        { name: 'telefono', label: 'Teléfono', type: 'text', placeholder: 'Ej: 300 123 4567' },
+        { name: 'correo_contacto', label: 'Correo de contacto', type: 'text', placeholder: 'Ej: rectoria@iesanagustin.edu.co' },
+        {
+          name: 'estado',
+          label: 'Estado',
+          type: 'select',
+          required: true,
+          defaultValue: 'ACTIVO',
+          options: [
+            { id: 'ACTIVO', label: 'Activo' },
+            { id: 'INACTIVO', label: 'Inactivo' }
+          ]
+        }
+      ]
+    },
+    {
+      id: 'sedes',
+      nombre: 'Sedes',
+      singular: 'sede',
+      icon: 'domain',
+      idField: 'id_sede',
+      campos: [
+        { name: 'nombre_sede', label: 'Nombre de la Sede', type: 'text', required: true, placeholder: 'Ej: Sede Principal' },
+        { name: 'id_institucion', label: 'Institución Educativa', type: 'select', required: true, source: 'instituciones' },
+        { name: 'codigo_dane', label: 'Código DANE', type: 'text', placeholder: 'Ej: 105001000123' },
+        { name: 'direccion', label: 'Dirección', type: 'text', placeholder: 'Ej: Carrera 45 # 12-34' },
+        { name: 'telefono', label: 'Teléfono', type: 'text', placeholder: 'Ej: 604 123 4567' },
+        {
+          name: 'estado',
+          label: 'Estado',
+          type: 'select',
+          required: true,
+          defaultValue: 'ACTIVO',
+          options: [
+            { id: 'ACTIVO', label: 'Activo' },
+            { id: 'INACTIVO', label: 'Inactivo' }
+          ]
+        }
+      ]
+    },
     {
       id: 'unidades_medida',
       nombre: 'Unidades de Medida',
@@ -156,7 +213,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
     },
     {
       id: 'categorias_inventario',
-      nombre: 'Categorías Inv.',
+      nombre: 'Categorías',
       singular: 'categoría',
       icon: 'category',
       idField: 'id_categoria_inventario',
@@ -222,14 +279,116 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
   // ESTADO
   // ============================================================
 
-  tabActual: string = 'unidades_medida';
+  tabActual: string = 'instituciones';
 
   datos: any[] = [];
   cargando = false;
   /** Mensaje cuando la carga FALLA (distinto de "no hay registros"). */
   errorCarga: string | null = null;
 
+  /** Filtro opcional por institución cuando se visualiza la pestaña de sedes */
+  filtroInstitucionSede: any = 'TODAS';
+
+  modalSeleccionarInstitucionAbierto = false;
+  busquedaInstitucionModal = '';
+  institucionTemporalId: any = 'TODAS';
+  institucionesCompletas: any[] = [];
+
+  extraerIdInstitucion(item: any): any {
+    if (item === null || item === undefined || item === 'TODAS') return 'TODAS';
+    if (typeof item === 'object') {
+      return item.id_institucion ?? item.id;
+    }
+    return item;
+  }
+
+  get nombreInstitucionSedeSeleccionada(): string {
+    if (this.filtroInstitucionSede === 'TODAS' || !this.filtroInstitucionSede) {
+      return `Todas las instituciones (${this.datos?.length || 0} sedes)`;
+    }
+    const instCompleta = this.institucionesCompletas.find(i => {
+      const id = i.id_institucion ?? i.id;
+      return String(id) === String(this.filtroInstitucionSede);
+    });
+    if (instCompleta) {
+      return instCompleta.nombre_institucion || instCompleta.nombre || instCompleta.label;
+    }
+    const instOpcion = this.opciones['instituciones']?.find(i => String(i.id) === String(this.filtroInstitucionSede));
+    return instOpcion ? instOpcion.label : 'Institución seleccionada';
+  }
+
+  abrirModalInstitucionSede(): void {
+    this.busquedaInstitucionModal = '';
+    this.institucionTemporalId = this.filtroInstitucionSede;
+    this.modalSeleccionarInstitucionAbierto = true;
+  }
+
+  cerrarModalInstitucionSede(): void {
+    this.modalSeleccionarInstitucionAbierto = false;
+  }
+
+  marcarInstitucionSede(item: any): void {
+    this.institucionTemporalId = this.extraerIdInstitucion(item);
+  }
+
+  seleccionarInstitucionSede(item: any): void {
+    this.filtroInstitucionSede = this.extraerIdInstitucion(item);
+    this.modalSeleccionarInstitucionAbierto = false;
+  }
+
+  confirmarSeleccionInstitucionSede(): void {
+    this.filtroInstitucionSede = this.institucionTemporalId;
+    this.modalSeleccionarInstitucionAbierto = false;
+  }
+
+  limpiarFiltroInstitucionSede(event?: Event): void {
+    if (event) event.stopPropagation();
+    this.filtroInstitucionSede = 'TODAS';
+  }
+
+  esInstitucionMarcada(item: any): boolean {
+    const id = this.extraerIdInstitucion(item);
+    return String(this.institucionTemporalId) === String(id) ||
+           String(this.filtroInstitucionSede) === String(id);
+  }
+
+  get institucionesFiltradasModal(): any[] {
+    const q = this.busquedaInstitucionModal.trim().toLowerCase();
+    const insts = this.institucionesCompletas.length > 0
+      ? this.institucionesCompletas
+      : (this.opciones['instituciones'] || []);
+
+    if (!q) return insts;
+    return insts.filter((i: any) => {
+      const nombre = (i.nombre_institucion || i.nombre || i.label || '').toLowerCase();
+      const nit = (i.nit || '').toLowerCase();
+      return nombre.includes(q) || nit.includes(q);
+    });
+  }
+
+  obtenerSedesDeInstEnBanco(inst: any): number {
+    const instId = inst?.id_institucion || inst?.id;
+    if (!this.datos || this.tabActual !== 'sedes') return 0;
+    return this.datos.filter(s => {
+      const sId = typeof s.id_institucion === 'object' && s.id_institucion !== null
+        ? (s.id_institucion.id_institucion ?? s.id_institucion.id)
+        : s.id_institucion;
+      return String(sId) === String(instId);
+    }).length;
+  }
+
+  get opcionesFiltroInstitucion(): OpcionRelacion[] {
+    const list: OpcionRelacion[] = [
+      { id: 'TODAS', label: `Todas las instituciones (${this.datos?.length || 0})` }
+    ];
+    if (this.opciones['instituciones']) {
+      list.push(...this.opciones['instituciones']);
+    }
+    return list;
+  }
+
   opciones: Record<string, OpcionRelacion[]> = {
+    instituciones: [],
     jornadas: [],
     unidades_medida: [],
     ingredientes: [],
@@ -259,6 +418,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.cargarDatos();
+    this.cargarFuente('instituciones');
     this.cargarFuente('jornadas');
     this.cargarFuente('unidades_medida');
     this.cargarFuente('ingredientes');
@@ -286,11 +446,29 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
     return this.tabs.find(t => t.id === this.tabActual) ?? this.tabs[0];
   }
 
+  get datosFiltrados(): any[] {
+    if (this.tabActual === 'sedes' && this.filtroInstitucionSede && this.filtroInstitucionSede !== 'TODAS') {
+      return this.datos.filter(item => {
+        const instId = typeof item.id_institucion === 'object' && item.id_institucion !== null
+          ? (item.id_institucion.id_institucion ?? item.id_institucion.id)
+          : item.id_institucion;
+        return String(instId) === String(this.filtroInstitucionSede);
+      });
+    }
+    return this.datos;
+  }
+
   cambiarTab(tabId: string): void {
     if (this.tabActual === tabId) {
       return;
     }
     this.tabActual = tabId;
+    this.cargarDatos();
+  }
+
+  navegarASedesDeInstitucion(idInstitucion: number): void {
+    this.filtroInstitucionSede = idInstitucion;
+    this.tabActual = 'sedes';
     this.cargarDatos();
   }
 
@@ -313,6 +491,9 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (res: any) => {
           this.datos = this.normalizarRespuesta(res);
+          if (this.tabActual === 'instituciones') {
+            this.institucionesCompletas = this.datos;
+          }
           this.cargando = false;
           this.cdr.detectChanges();
         },
@@ -334,7 +515,11 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
 
     this.bancoDatosService.obtenerDatos(fuente).subscribe({
       next: (res: any) => {
-        this.opciones[fuente] = this.normalizarRespuesta(res).map(r => ({
+        const items = this.normalizarRespuesta(res);
+        if (fuente === 'instituciones') {
+          this.institucionesCompletas = items;
+        }
+        this.opciones[fuente] = items.map(r => ({
           id: r[cfg.id] ?? r.id,
           label: cfg.etiqueta(r)
         }));
@@ -348,7 +533,14 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
 
   /** Si cambió una tabla que alimenta selects, refresca sus opciones. */
   private refrescarFuenteSiAplica(): void {
-    if (this.tabActual === 'jornadas' || this.tabActual === 'unidades_medida' || this.tabActual === 'ingredientes' || this.tabActual === 'categorias_inventario') {
+    if (
+      this.tabActual === 'instituciones' ||
+      this.tabActual === 'jornadas' ||
+      this.tabActual === 'unidades_medida' ||
+      this.tabActual === 'ingredientes' ||
+      this.tabActual === 'categorias_inventario' ||
+      this.tabActual === 'grados'
+    ) {
       this.cargarFuente(this.tabActual as FuenteRelacion);
     }
   }
@@ -370,17 +562,31 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
   }
 
   opcionesDe(campo: CampoConfig): OpcionRelacion[] {
+    if (campo.options && campo.options.length > 0) {
+      return campo.options;
+    }
     return campo.source ? this.opciones[campo.source] : [];
   }
 
   valorCelda(item: any, campo: CampoConfig): string {
     const valor = item?.[campo.name];
 
-    if (campo.type === 'select' && campo.source) {
-      const opcion = this.opciones[campo.source].find(
-        o => String(o.id) === String(valor)
-      );
-      return opcion?.label || '—';
+    if (campo.type === 'select') {
+      if (campo.options && campo.options.length > 0) {
+        const opcion = campo.options.find(o => String(o.id) === String(valor));
+        return opcion?.label || (valor ? String(valor) : '—');
+      }
+
+      if (campo.source) {
+        const opcion = this.opciones[campo.source]?.find(
+          o => String(o.id) === String(valor)
+        );
+        // Fallback para sedes: si Django serializó institucion_nombre directamente
+        if (!opcion && campo.name === 'id_institucion' && item?.institucion_nombre) {
+          return item.institucion_nombre;
+        }
+        return opcion?.label || (valor ? String(valor) : '—');
+      }
     }
 
     if (valor === undefined || valor === null || valor === '') {
@@ -414,6 +620,21 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       if (campo.type === 'time' && valor) {
         valor = String(valor).slice(0, 5);
       }
+
+      // Si el backend envió un objeto ForeignKey:
+      if (typeof valor === 'object' && valor !== null) {
+        valor = valor[campo.name] ?? valor.id ?? valor;
+      }
+
+      if (!item && campo.defaultValue !== undefined) {
+        valor = campo.defaultValue;
+      }
+
+      // Si estamos en sedes y hay un filtro de institución activo, preseleccionar esa institución
+      if (!item && campo.name === 'id_institucion' && this.filtroInstitucionSede && this.filtroInstitucionSede !== 'TODAS') {
+        valor = Number(this.filtroInstitucionSede);
+      }
+
       form[campo.name] = valor ?? (campo.type === 'select' ? null : '');
     }
 
@@ -470,9 +691,16 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       const valor = this.itemForm[campo.name];
 
       if (campo.type === 'number') {
-        cuerpo[campo.name] = Number(valor);
+        cuerpo[campo.name] = (valor === '' || valor === null) ? null : Number(valor);
       } else if (campo.type === 'select') {
-        cuerpo[campo.name] = valor === null || valor === '' ? null : valor;
+        if (valor === null || valor === '') {
+          cuerpo[campo.name] = null;
+        } else if (campo.source) {
+          const num = Number(valor);
+          cuerpo[campo.name] = isNaN(num) ? valor : num;
+        } else {
+          cuerpo[campo.name] = valor;
+        }
       } else {
         cuerpo[campo.name] = String(valor ?? '').trim();
       }

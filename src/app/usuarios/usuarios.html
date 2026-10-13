@@ -19,15 +19,21 @@
       </div>
 
       <!-- Filtro Rol -->
-      <select [(ngModel)]="filtroRol" class="bg-white border border-slate-200 rounded-lg px-3 py-2 text-[13px] text-slate-700 outline-none cursor-pointer shadow-sm">
-        <option value="">Todos los Roles</option>
-        <option *ngFor="let rol of roles" [value]="rol.id_rol">{{ rol.nombre_rol }}</option>
-      </select>
+      <div class="w-48 sm:w-56">
+        <app-custom-select
+          [options]="opcionesFiltroRol"
+          valueField="id_rol"
+          labelField="nombre_rol"
+          placeholder="Todos los Roles"
+          size="sm"
+          [(ngModel)]="filtroRol"
+        ></app-custom-select>
+      </div>
 
       <!-- Botón Nuevo Usuario -->
-      <button type="button" (click)="abrirFormulario()" class="h-[38px] px-5 inline-flex items-center justify-center gap-2 border-none rounded-lg bg-[#fac94b] text-[#1a1a1a] text-[13px] font-semibold cursor-pointer whitespace-nowrap shadow-[0_2px_6px_rgba(250,201,75,0.3)] transition-all hover:bg-[#f5b927] hover:-translate-y-[1px]">
-        <span class="material-symbols-outlined text-[18px]">add</span>
-        <span>Añadir usuario</span>
+      <button type="button" (click)="abrirFormulario()" class="h-[38px] px-5 inline-flex items-center justify-center gap-2 border-none rounded-lg bg-[#fac94b] text-black text-[13px] font-bold cursor-pointer whitespace-nowrap shadow-[0_2px_6px_rgba(250,201,75,0.3)] transition-all hover:bg-[#f5b927] hover:-translate-y-[1px]" style="color: #000000 !important;">
+        <span class="material-symbols-outlined text-[18px]" style="color: #000000 !important;">add</span>
+        <span style="color: #000000 !important;">Añadir usuario</span>
       </button>
     </div>
   </header>
@@ -92,14 +98,6 @@
                   <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                     <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                  </svg>
-                </button>
-                <button type="button" (click)="eliminarUsuario(u)" class="w-8 h-8 rounded-lg bg-slate-50 hover:bg-rose-50 border border-slate-300 text-slate-600 hover:text-rose-600 inline-flex items-center justify-center transition cursor-pointer" title="Eliminar">
-                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="3 6 5 6 21 6"></polyline>
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                    <line x1="10" y1="11" x2="10" y2="17"></line>
-                    <line x1="14" y1="11" x2="14" y2="17"></line>
                   </svg>
                 </button>
               </div>
@@ -168,12 +166,14 @@
 
           <div class="bd-form-group">
             <label>Tipo de Documento</label>
-            <select class="bd-input" [(ngModel)]="usuarioForm.tipo_documento" name="tipo_documento">
-              <option value="" disabled>Seleccione...</option>
-              <option value="CC">Cédula de Ciudadanía</option>
-              <option value="CE">Cédula de Extranjería</option>
-              <option value="TI">Tarjeta de Identidad</option>
-            </select>
+            <app-custom-select
+              [options]="tiposDocumento"
+              valueField="value"
+              labelField="label"
+              placeholder="Seleccione..."
+              name="tipo_documento"
+              [(ngModel)]="usuarioForm.tipo_documento"
+            ></app-custom-select>
           </div>
           <div class="bd-form-group">
             <label>Número de Documento <span style="color: #ef4444">*</span></label>
@@ -182,10 +182,15 @@
 
           <div class="bd-form-group" style="grid-column: 1 / -1">
             <label>Rol del Sistema <span style="color: #ef4444">*</span></label>
-            <select class="bd-input" [(ngModel)]="usuarioForm.rol" name="rol" required>
-              <option value="" disabled>Selecciona un rol...</option>
-              <option *ngFor="let rol of roles" [ngValue]="rol.id_rol">{{ rol.nombre_rol }}</option>
-            </select>
+            <app-custom-select
+              [options]="roles"
+              valueField="id_rol"
+              labelField="nombre_rol"
+              placeholder="Selecciona un rol..."
+              name="rol"
+              [required]="true"
+              [(ngModel)]="usuarioForm.rol"
+            ></app-custom-select>
           </div>
 
           <div class="bd-form-group" style="grid-column: 1 / -1; flex-direction: row; align-items: center; gap: 8px; margin-top: 5px;">

@@ -97,4 +97,43 @@ export class SiraeService {
   eliminarContratoSeccionMenu(id: number): Observable<any> {
     return this.http.delete<any>(`${this.contratosSeccionMenuUrl}${id}/`);
   }
+
+  // INSTITUCIONES
+  private institucionesUrl = `${environment.apiUrl}/instituciones/`;
+
+  getInstituciones(): Observable<any[]> {
+    return this.http.get<any[]>(this.institucionesUrl);
+  }
+
+  crearInstitucion(institucion: any): Observable<any> {
+    return this.http.post<any>(this.institucionesUrl, institucion);
+  }
+
+  actualizarInstitucion(id: number, institucion: any): Observable<any> {
+    return this.http.put<any>(`${this.institucionesUrl}${id}/`, institucion);
+  }
+
+  eliminarInstitucion(id: number): Observable<any> {
+    return this.http.delete<any>(`${this.institucionesUrl}${id}/`);
+  }
+
+  // SEDES
+  private sedesUrl = `${environment.apiUrl}/sedes/`;
+
+  getSedes(idInstitucion?: number): Observable<any[]> {
+    const url = idInstitucion ? `${this.sedesUrl}?id_institucion=${idInstitucion}` : this.sedesUrl;
+    return this.http.get<any[]>(url);
+  }
+
+  crearSede(sede: any): Observable<any> {
+    return this.http.post<any>(this.sedesUrl, sede);
+  }
+
+  actualizarSede(id: number, sede: any): Observable<any> {
+    return this.http.put<any>(`${this.sedesUrl}${id}/`, sede);
+  }
+
+  eliminarSede(id: number): Observable<any> {
+    return this.http.delete<any>(`${this.sedesUrl}${id}/`);
+  }
 }
