@@ -63,13 +63,6 @@
         </select>
       </div>
 
-      <!-- [Limpiar Filtros] -->
-      <button type="button" (click)="limpiarFiltros()"
-        class="px-4 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-700 text-[13px] font-bold flex items-center gap-2 hover:bg-slate-50 transition cursor-pointer w-full sm:w-auto justify-center whitespace-nowrap shrink-0">
-        <span class="material-symbols-outlined text-[18px]">filter_alt_off</span>
-        Limpiar Filtros
-      </button>
-
     </div>
 
     <!-- Tabla -->
@@ -101,9 +94,9 @@
               </span>
             </td>
 
-            <td class="py-3.5 px-4 text-center text-slate-600 font-semibold">{{ entrega.frecuencia }}</td>
+            <td class="py-3.5 px-4 text-center text-slate-600 font-semibold">{{ entrega.frecuencia || '-' }}</td>
             <td class="py-3.5 px-4 text-center text-slate-700 font-bold">{{ entrega.cantidad }}</td>
-            <td class="py-3.5 px-4 text-center text-slate-500 font-semibold">{{ entrega.unidad }}</td>
+            <td class="py-3.5 px-4 text-center text-slate-500 font-semibold">{{ entrega.unidad || '-' }}</td>
             <td class="py-3.5 px-4 text-center text-slate-600 font-medium">{{ entrega.fechaVencimiento | date:'dd/MM/yyyy' }}</td>
 
             <td class="py-3.5 px-4 text-center">

@@ -1,188 +1,339 @@
 <div class="flex w-full flex-col gap-6" style="font-family: 'Roboto', sans-serif;">
-  
-  <!-- BARRA DE PESTAÑAS SUPERIOR (SIN REPORTE DE INVENTARIO) -->
-  <div class="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-3">
-    <button type="button" (click)="pestanaActiva = 'formulario'"
-      [class]="pestanaActiva === 'formulario' ? 'bg-[#F4B41F] text-slate-900 font-bold shadow-sm' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'"
-      class="inline-flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2.5 text-xs transition">
-      <span class="material-symbols-outlined text-[18px]">add_shopping_cart</span>
-      Registrar Entrega
-    </button>
 
-    <button type="button" (click)="pestanaActiva = 'saldos'"
-      [class]="pestanaActiva === 'saldos' ? 'bg-[#F4B41F] text-slate-900 font-bold shadow-sm' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'"
-      class="inline-flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2.5 text-xs transition">
-      <span class="material-symbols-outlined text-[18px]">inventory_2</span>
-      Saldos de Almacén
-    </button>
+  <!-- ====================================================== -->
+  <!-- 1. HISTORIAL DE ENTREGAS (tabla grande) + BOTÓN NUEVA  -->
+  <!-- ====================================================== -->
+  <section class="w-full">
 
-    <button type="button" (click)="pestanaActiva = 'ajustes'"
-      [class]="pestanaActiva === 'ajustes' ? 'bg-[#F4B41F] text-slate-900 font-bold shadow-sm' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'"
-      class="inline-flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2.5 text-xs transition">
-      <span class="material-symbols-outlined text-[18px]">edit_note</span>
-      Ajustes de Inventario
-    </button>
+    <div class="bg-white border border-slate-200/80 rounded-[24px] p-5 sm:p-7 shadow-sm">
 
-    <button type="button" (click)="pestanaActiva = 'reporte-salidas'"
-      [class]="pestanaActiva === 'reporte-salidas' ? 'bg-[#F4B41F] text-slate-900 font-bold shadow-sm' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'"
-      class="inline-flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2.5 text-xs transition">
-      <span class="material-symbols-outlined text-[18px]">summarize</span>
-      Consumos / Salidas
-    </button>
-  </div>
-
-  <!-- CONTENIDO QUE CAMBIA SEGÚN LA PESTAÑA SELECCIONADA -->
-
-  <!-- 1. FORMULARIO DE REGISTRO -->
-  <section *ngIf="pestanaActiva === 'formulario'" class="mx-auto w-full max-w-3xl rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-    <header class="mb-5 flex items-center gap-3 border-b border-slate-100 pb-4">
-      <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-900 shadow-sm"
-        style="background-color: #F4B41F;">
-        <span class="material-symbols-outlined text-[20px]">add_shopping_cart</span>
+      <!-- Encabezado -->
+      <div class="rounded-[16px] px-5 py-4 mb-6 flex items-center justify-between border" style="background-color: rgba(244, 180, 31, 0.1); border-color: rgba(244, 180, 31, 0.3);">
+        <h2 class="text-slate-900 font-bold text-lg m-0 tracking-tight flex items-center gap-2.5">
+          <span class="material-symbols-outlined text-[22px]" style="color: #F4B41F;">history</span>
+          Historial de Entregas Registradas
+        </h2>
       </div>
-      <div>
-        <h1 class="m-0 text-lg font-black leading-tight text-slate-900">Registrar Entrega de Alimentos</h1>
-        <p class="m-0 mt-1 text-xs font-medium text-slate-500">Completa los datos para ingresar los insumos al inventario.</p>
-      </div>
-    </header>
 
-    <div *ngIf="errorMensaje" role="alert"
-      class="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
-      {{ errorMensaje }}
-    </div>
-    <p *ngIf="cargandoCatalogos" class="mb-5 text-sm text-slate-500" role="status">
-      Cargando ingredientes y tipos de mercado...
-    </p>
-    <button *ngIf="errorMensaje && !cargandoCatalogos" type="button" (click)="cargarCatalogos()"
-      class="mb-5 inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-[13px] font-bold text-slate-700 transition hover:bg-slate-50">
-      <span class="material-symbols-outlined text-[18px]">refresh</span>
-      Volver a cargar catálogos
-    </button>
-
-    <form (ngSubmit)="guardarEntrega()" class="flex flex-col gap-5">
-      <div class="grid grid-cols-1 gap-x-5 gap-y-5 sm:grid-cols-2">
-        <div class="flex flex-col sm:col-span-2">
-          <label for="ingrediente" class="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-700">
-            Ingrediente / Alimento *
-          </label>
-          <div class="relative">
-            <span class="material-symbols-outlined pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[18px] text-slate-400">kitchen</span>
-            <select id="ingrediente" [(ngModel)]="entregaForm.idIngrediente" name="ingrediente" required
-              [disabled]="cargandoCatalogos || ingredientes.length === 0"
-              class="w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-8 text-sm font-medium text-slate-800 outline-none transition focus:border-[#F4B41F] focus:bg-white focus:ring-2 focus:ring-[#F4B41F]/30 disabled:opacity-60">
-              <option [ngValue]="null" disabled>Seleccione...</option>
-              <option *ngFor="let ingrediente of ingredientes" [ngValue]="ingrediente.id">{{ ingrediente.nombre }}</option>
-            </select>
-            <span class="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[18px] text-slate-400">expand_more</span>
-          </div>
+      <!-- Barra de alerta: productos vencidos o por vencer -->
+      <div *ngIf="alertasVencimiento.length > 0"
+           class="mb-6 rounded-xl border border-orange-200 bg-orange-50 px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3">
+        <div class="flex items-center gap-2 text-orange-800 font-bold text-[13px] shrink-0">
+          <span class="material-symbols-outlined text-[20px]">warning</span>
+          {{ alertasVencimiento.length }} producto(s) por vencer
         </div>
-
-        <div class="flex flex-col">
-          <label for="tipoMercado" class="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-700">Tipo de Mercado *</label>
-          <div class="relative">
-            <span class="material-symbols-outlined pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[18px] text-slate-400">category</span>
-            <select id="tipoMercado" [(ngModel)]="entregaForm.idTipoMercado" name="tipoMercado" required
-              [disabled]="cargandoCatalogos || tiposMercado.length === 0"
-              class="w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-8 text-sm font-medium text-slate-800 outline-none transition focus:border-[#F4B41F] focus:bg-white focus:ring-2 focus:ring-[#F4B41F]/30 disabled:opacity-60">
-              <option [ngValue]="null" disabled>Seleccione...</option>
-              <option *ngFor="let tipo of tiposMercado" [ngValue]="tipo.id">{{ tipo.nombre }}</option>
-            </select>
-            <span class="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[18px] text-slate-400">expand_more</span>
-          </div>
-          <p *ngIf="!cargandoCatalogos && tiposMercado.length === 0" class="mb-0 mt-1 text-xs font-medium text-red-600">
-            No hay tipos de mercado disponibles. Recarga el catálogo después de que el administrador lo configure.
-          </p>
-        </div>
-
-        <div class="flex flex-col">
-          <label for="frecuencia" class="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-700">Frecuencia *</label>
-          <div class="relative">
-            <span class="material-symbols-outlined pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[18px] text-slate-400">event_repeat</span>
-            <select id="frecuencia" [(ngModel)]="entregaForm.frecuencia" name="frecuencia" required
-              class="w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-8 text-sm font-medium text-slate-800 outline-none transition focus:border-[#F4B41F] focus:bg-white focus:ring-2 focus:ring-[#F4B41F]/30">
-              <option value="" disabled>Seleccione...</option>
-              <option value="Semanal">Semanal</option>
-              <option value="Quincenal">Quincenal</option>
-              <option value="Mensual">Mensual</option>
-            </select>
-            <span class="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[18px] text-slate-400">expand_more</span>
-          </div>
-        </div>
-
-        <div class="flex flex-col">
-          <label for="cantidad" class="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-700">Cantidad Recibida *</label>
-          <div class="relative">
-            <span class="material-symbols-outlined pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[18px] text-slate-400">tag</span>
-            <input id="cantidad" [(ngModel)]="entregaForm.cantidad" name="cantidad" type="number" min="0.01" step="0.01" placeholder="0.00" required
-              class="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm font-medium text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#F4B41F] focus:bg-white focus:ring-2 focus:ring-[#F4B41F]/30" />
-          </div>
-        </div>
-
-        <div class="flex flex-col">
-          <label for="unidad" class="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-700">Unidad de Medida *</label>
-          <div class="relative">
-            <span class="material-symbols-outlined pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[18px] text-slate-400">scale</span>
-            <select id="unidad" [(ngModel)]="entregaForm.unidad" name="unidad" required
-              class="w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-8 text-sm font-medium text-slate-800 outline-none transition focus:border-[#F4B41F] focus:bg-white focus:ring-2 focus:ring-[#F4B41F]/30">
-              <option value="" disabled>Seleccione...</option>
-              <option value="Kg">Kilogramos (Kg)</option>
-              <option value="Litros">Litros (L)</option>
-              <option value="Unidades">Unidades (Ud)</option>
-            </select>
-            <span class="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[18px] text-slate-400">expand_more</span>
-          </div>
-        </div>
-
-        <div class="flex flex-col">
-          <label for="fechaRecepcion" class="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-700">Fecha de Recepción *</label>
-          <div class="relative">
-            <span class="material-symbols-outlined pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[18px] text-slate-400">event_available</span>
-            <input id="fechaRecepcion" [(ngModel)]="entregaForm.fechaRecepcion" name="fechaRecepcion" type="date" required
-              class="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm font-medium text-slate-900 outline-none transition focus:border-[#F4B41F] focus:bg-white focus:ring-2 focus:ring-[#F4B41F]/30" />
-          </div>
-        </div>
-
-        <div class="flex flex-col">
-          <label for="fechaVencimiento" class="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-700">Fecha de Vencimiento *</label>
-          <div class="relative">
-            <span class="material-symbols-outlined pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[18px] text-slate-400">event_busy</span>
-            <input id="fechaVencimiento" [(ngModel)]="entregaForm.fechaVencimiento" name="fechaVencimiento" type="date" required
-              class="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm font-medium text-slate-900 outline-none transition focus:border-[#F4B41F] focus:bg-white focus:ring-2 focus:ring-[#F4B41F]/30" />
-          </div>
-        </div>
-
-        <div class="flex flex-col sm:col-span-2">
-          <label for="observaciones" class="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-700">Observaciones</label>
-          <textarea id="observaciones" [(ngModel)]="entregaForm.observaciones" name="observaciones" rows="3"
-            class="w-full resize-y rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-medium text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#F4B41F] focus:bg-white focus:ring-2 focus:ring-[#F4B41F]/30"></textarea>
+        <div class="flex flex-wrap gap-2">
+          <span *ngFor="let a of alertasVencimiento"
+                class="px-3 py-1 rounded-full text-[11px] font-bold border bg-white whitespace-nowrap"
+                [class]="a.dias < 0 ? 'border-red-200 text-red-700' : 'border-orange-200 text-orange-700'">
+            {{ a.ingrediente }} · {{ textoDias(a.dias) }}
+          </span>
         </div>
       </div>
 
-      <div class="mt-1 flex items-center justify-end gap-3 border-t border-slate-100 pt-5">
-        <button type="submit" [disabled]="guardando || cargandoCatalogos || !ingredientes.length || !tiposMercado.length"
-          class="inline-flex cursor-pointer items-center gap-2 rounded-xl px-5 py-2.5 text-[13px] font-black text-slate-900 shadow-sm transition hover:brightness-95 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
-          style="background-color: #F4B41F;">
-          <span class="material-symbols-outlined text-[18px]">{{ guardando ? 'hourglass_top' : 'save' }}</span>
-          {{ guardando ? 'Guardando...' : 'Guardar Entrega' }}
+      <!-- Filtros y botones -->
+      <div class="flex flex-col lg:flex-row items-end justify-between gap-3 mb-6">
+
+        <div class="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-end gap-4 w-full lg:w-auto">
+
+          <!-- Rango de fechas -->
+          <div class="flex flex-col w-full sm:w-auto gap-1.5">
+            <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider pl-1">Rango de fechas</label>
+            <div class="relative flex items-center border border-slate-200 rounded-xl bg-white px-3 py-2.5 w-full sm:w-auto shadow-2xs gap-1">
+              <span class="material-symbols-outlined text-slate-400 text-[18px] mr-2">calendar_today</span>
+              <input type="date" [(ngModel)]="fechaDesde" name="fechaDesde" class="w-[135px] text-[13px] text-slate-600 font-medium outline-none bg-transparent cursor-pointer" />
+              <span class="text-slate-400 text-xs font-bold mx-2">-</span>
+              <input type="date" [(ngModel)]="fechaHasta" name="fechaHasta" class="w-[135px] text-[13px] text-slate-600 font-medium outline-none bg-transparent cursor-pointer" />
+            </div>
+          </div>
+
+          <!-- Ingrediente + búsqueda -->
+          <div class="flex flex-col w-full sm:w-auto gap-1.5">
+            <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider pl-1">Ingrediente</label>
+            <div class="flex items-center gap-2 w-full">
+              <select [(ngModel)]="ingredienteFiltro" name="ingredienteFiltro"
+                class="border border-slate-200 rounded-xl bg-white px-3 py-2.5 text-[13px] font-medium text-slate-600 outline-none w-full sm:w-60 shadow-2xs cursor-pointer appearance-none truncate focus:border-[#F4B41F] focus:ring-1 focus:ring-[#F4B41F]/50 transition">
+                <option value="Todos">Todos</option>
+                <option *ngFor="let ing of ingredientesHistorial" [value]="ing">{{ ing }}</option>
+              </select>
+
+              <div class="relative flex-1 sm:w-72">
+                <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">search</span>
+                <input type="text" [(ngModel)]="textoFiltro" name="textoFiltro" (keyup.enter)="aplicarBusqueda()" placeholder="Buscar..."
+                  class="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 bg-white text-[13px] font-medium text-slate-800 outline-none focus:border-[#F4B41F] focus:ring-1 focus:ring-[#F4B41F] transition shadow-2xs placeholder-slate-400" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Botones -->
+        <div class="flex items-center gap-2 w-full lg:w-auto mt-3 lg:mt-0 shrink-0">
+          <button type="button" (click)="aplicarBusqueda()"
+            class="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-[13px] font-bold flex items-center gap-2 hover:bg-slate-800 transition cursor-pointer w-full sm:w-auto justify-center shadow-md whitespace-nowrap shrink-0">
+            <span class="material-symbols-outlined text-[18px]">search</span>
+            Buscar
+          </button>
+          <button type="button" (click)="abrirModalEntrega()"
+            class="px-5 py-2.5 rounded-xl text-slate-900 text-[13px] font-bold flex items-center gap-2 transition cursor-pointer w-full sm:w-auto justify-center shadow-md hover:brightness-95 active:scale-95 whitespace-nowrap shrink-0"
+            style="background-color: #F4B41F;">
+            <span class="material-symbols-outlined text-[18px]">add</span>
+            Nueva Entrega
+          </button>
+        </div>
+      </div>
+
+      <!-- Tabla -->
+      <div class="overflow-x-auto rounded-xl border border-slate-100">
+        <table class="w-full text-left border-collapse text-[13px]">
+          <thead>
+            <tr class="bg-slate-50/80 text-slate-600 font-bold border-b border-slate-200">
+              <th class="py-3.5 px-4 font-bold">Fecha</th>
+              <th class="py-3.5 px-4 font-bold">Ingrediente</th>
+              <th class="py-3.5 px-4 font-bold text-center">Tipo de mercado</th>
+              <th class="py-3.5 px-4 font-bold text-center">Cantidad</th>
+              <th class="py-3.5 px-4 font-bold text-center">Unidad</th>
+              <th class="py-3.5 px-4 font-bold text-center">Vencimiento</th>
+              <th class="py-3.5 px-4 font-bold text-center">Estado</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100/80">
+
+            <tr *ngFor="let entrega of historialPaginado" class="hover:bg-slate-50/50 transition">
+              <td class="py-3.5 px-4 text-slate-800 font-bold">{{ entrega.fechaRecepcion }}</td>
+              <td class="py-3.5 px-4 text-slate-700 font-semibold">{{ entrega.ingrediente }}</td>
+
+              <td class="py-3.5 px-4 text-center">
+                <span class="px-2.5 py-1 rounded-[8px] text-[11px] font-bold border inline-block min-w-[80px]"
+                      [class]="entrega.categoria === 'Granos' ? 'bg-amber-100/60 text-amber-800 border-amber-200' : 'bg-blue-50 text-blue-700 border-blue-200'">
+                  {{ entrega.tipoMercado }}
+                </span>
+              </td>
+
+              <td class="py-3.5 px-4 text-center text-slate-700 font-bold">{{ entrega.cantidad }}</td>
+              <td class="py-3.5 px-4 text-center text-slate-500 font-semibold">{{ entrega.unidad }}</td>
+              <td class="py-3.5 px-4 text-center text-slate-600 font-medium">{{ entrega.fechaVencimiento }}</td>
+
+              <td class="py-3.5 px-4 text-center">
+                <span class="px-3 py-1 rounded-full text-[11px] font-bold border inline-block min-w-[70px]"
+                      [class]="claseEstado(estadoDe(entrega))">
+                  {{ estadoDe(entrega) }}
+                </span>
+              </td>
+            </tr>
+
+            <tr *ngIf="cargandoHistorial">
+              <td colspan="7" class="py-14 px-4 text-center text-xs font-bold text-slate-500">Cargando entregas...</td>
+            </tr>
+
+            <tr *ngIf="!cargandoHistorial && errorHistorial">
+              <td colspan="7" class="py-14 px-4 text-center">
+                <div class="flex flex-col items-center justify-center gap-3">
+                  <p class="text-xs font-bold text-red-700 m-0">No se pudo cargar el historial de entregas.</p>
+                  <button type="button" (click)="cargarHistorial()"
+                    class="px-4 py-2 rounded-xl bg-white border border-slate-300 text-slate-700 text-[12px] font-bold hover:bg-slate-50 transition cursor-pointer">
+                    Reintentar
+                  </button>
+                </div>
+              </td>
+            </tr>
+
+            <tr *ngIf="!cargandoHistorial && !errorHistorial && historialFiltrado.length === 0">
+              <td colspan="7" class="py-14 px-4 text-center">
+                <div class="flex flex-col items-center justify-center gap-2">
+                  <div class="w-12 h-12 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-400">
+                    <span class="material-symbols-outlined text-[24px]">inventory_2</span>
+                  </div>
+                  <p class="text-xs font-bold text-slate-800 m-0">
+                    {{ historial.length === 0 ? 'Aún no hay entregas registradas' : 'No se encontraron entregas' }}
+                  </p>
+                </div>
+              </td>
+            </tr>
+
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pie: contador, paginación y exportar -->
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mt-5">
+        <span class="text-xs text-slate-500 font-medium">
+          Mostrando {{ desdeRegistro }} - {{ hastaRegistro }} de {{ historialFiltrado.length }} registros
+        </span>
+
+        <div class="flex items-center gap-1.5">
+          <button type="button" (click)="irAPagina(paginaActual - 1)" [disabled]="paginaActual === 1"
+            class="w-7 h-7 rounded-lg border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">
+            <span class="material-symbols-outlined text-[16px]">chevron_left</span>
+          </button>
+
+          <button type="button" *ngFor="let p of paginas" (click)="irAPagina(p)"
+            class="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold transition cursor-pointer"
+            [class]="p === paginaActual ? 'text-slate-900 shadow-sm' : 'border border-slate-200 text-slate-500 hover:bg-slate-50'"
+            [style.background-color]="p === paginaActual ? '#F4B41F' : null">
+            {{ p }}
+          </button>
+
+          <button type="button" (click)="irAPagina(paginaActual + 1)" [disabled]="paginaActual === totalPaginas"
+            class="w-7 h-7 rounded-lg border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">
+            <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+          </button>
+        </div>
+
+        <button type="button" (click)="exportarExcelHistorial()"
+          class="px-4 py-2 rounded-xl bg-emerald-600 text-white text-[12px] font-bold flex items-center gap-1.5 shadow-sm hover:bg-emerald-700 transition cursor-pointer">
+          <span class="material-symbols-outlined text-[16px]">table_view</span>
+          Exportar Excel
         </button>
       </div>
-    </form>
-  </section>
+    </div>
 
-  <!-- 2. SALDOS DE ALMACÉN -->
-  <section *ngIf="pestanaActiva === 'saldos'" class="w-full">
-    <app-saldos-almacen></app-saldos-almacen>
-  </section>
+    <!-- MODAL: REGISTRAR ENTREGA -->
+    <div *ngIf="mostrarModalEntrega" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
+      <div class="relative max-h-[95vh] w-full max-w-2xl overflow-y-auto rounded-[24px] border border-slate-200 bg-white p-6 shadow-2xl sm:p-8">
 
-  <!-- 3. AJUSTES DE INVENTARIO -->
-  <section *ngIf="pestanaActiva === 'ajustes'" class="w-full">
-    <app-entradas-ajustes-inventario></app-entradas-ajustes-inventario>
-  </section>
+        <header class="mb-5 flex items-center justify-between border-b border-slate-100 pb-4">
+          <div class="flex items-center gap-3">
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-900 shadow-sm" style="background-color: #F4B41F;">
+              <span class="material-symbols-outlined text-[20px]">add_shopping_cart</span>
+            </div>
+            <div>
+              <h3 class="m-0 text-lg font-black leading-tight text-slate-900">Registrar Entrega de Alimentos</h3>
+              <p class="m-0 mt-1 text-xs font-medium text-slate-500">Completa los datos para ingresar los insumos al inventario.</p>
+            </div>
+          </div>
+          <button type="button" (click)="cerrarModalEntrega()" title="Cerrar"
+            class="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100">
+            <span class="material-symbols-outlined text-[20px]">close</span>
+          </button>
+        </header>
 
-  <!-- 4. CONSUMOS / SALIDAS -->
-  <section *ngIf="pestanaActiva === 'reporte-salidas'" class="mx-auto w-full max-w-3xl rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-    <h2 class="text-base font-bold text-slate-800 mb-2">Reporte de Consumos y Salidas</h2>
-    <p class="text-xs text-slate-500">Módulo de consumos e inventario de salidas integrado correctamente.</p>
+        <div *ngIf="errorMensaje" role="alert"
+          class="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+          {{ errorMensaje }}
+        </div>
+        <p *ngIf="cargandoCatalogos" class="mb-5 text-sm text-slate-500" role="status">
+          Cargando ingredientes y tipos de mercado...
+        </p>
+        <button *ngIf="errorMensaje && !cargandoCatalogos" type="button" (click)="cargarCatalogos()"
+          class="mb-5 inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-[13px] font-bold text-slate-700 transition hover:bg-slate-50">
+          <span class="material-symbols-outlined text-[18px]">refresh</span>
+          Volver a cargar catálogos
+        </button>
+
+        <form (ngSubmit)="guardarEntrega()" class="flex flex-col gap-5">
+          <div class="grid grid-cols-1 gap-x-5 gap-y-5 sm:grid-cols-2">
+
+            <div class="flex flex-col sm:col-span-2">
+              <label for="ingrediente" class="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-700">Ingrediente / Alimento *</label>
+              <div class="relative">
+                <span class="material-symbols-outlined pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[18px] text-slate-400">kitchen</span>
+                <select id="ingrediente" [(ngModel)]="entregaForm.idIngrediente" name="ingrediente" required
+                  [disabled]="cargandoCatalogos || ingredientes.length === 0"
+                  class="w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-8 text-sm font-medium text-slate-800 outline-none transition focus:border-[#F4B41F] focus:bg-white focus:ring-2 focus:ring-[#F4B41F]/30 disabled:opacity-60">
+                  <option [ngValue]="null" disabled>Seleccione...</option>
+                  <option *ngFor="let ingrediente of ingredientes" [ngValue]="ingrediente.id">{{ ingrediente.nombre }}</option>
+                </select>
+                <span class="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[18px] text-slate-400">expand_more</span>
+              </div>
+            </div>
+
+            <div class="flex flex-col">
+              <label for="tipoMercado" class="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-700">Tipo de Mercado *</label>
+              <div class="relative">
+                <span class="material-symbols-outlined pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[18px] text-slate-400">category</span>
+                <select id="tipoMercado" [(ngModel)]="entregaForm.idTipoMercado" name="tipoMercado" required
+                  [disabled]="cargandoCatalogos || tiposMercado.length === 0"
+                  class="w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-8 text-sm font-medium text-slate-800 outline-none transition focus:border-[#F4B41F] focus:bg-white focus:ring-2 focus:ring-[#F4B41F]/30 disabled:opacity-60">
+                  <option [ngValue]="null" disabled>Seleccione...</option>
+                  <option *ngFor="let tipo of tiposMercado" [ngValue]="tipo.id">{{ tipo.nombre }}</option>
+                </select>
+                <span class="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[18px] text-slate-400">expand_more</span>
+              </div>
+              <p *ngIf="!cargandoCatalogos && tiposMercado.length === 0" class="mb-0 mt-1 text-xs font-medium text-red-600">
+                No hay tipos de mercado disponibles. Recarga el catálogo después de que el administrador lo configure.
+              </p>
+            </div>
+
+            <div class="flex flex-col">
+              <label for="frecuencia" class="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-700">Frecuencia *</label>
+              <div class="relative">
+                <span class="material-symbols-outlined pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[18px] text-slate-400">event_repeat</span>
+                <select id="frecuencia" [(ngModel)]="entregaForm.frecuencia" name="frecuencia" required
+                  class="w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-8 text-sm font-medium text-slate-800 outline-none transition focus:border-[#F4B41F] focus:bg-white focus:ring-2 focus:ring-[#F4B41F]/30">
+                  <option value="" disabled>Seleccione...</option>
+                  <option value="Semanal">Semanal</option>
+                  <option value="Quincenal">Quincenal</option>
+                  <option value="Mensual">Mensual</option>
+                </select>
+                <span class="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[18px] text-slate-400">expand_more</span>
+              </div>
+            </div>
+
+            <div class="flex flex-col">
+              <label for="cantidad" class="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-700">Cantidad Recibida *</label>
+              <div class="relative">
+                <span class="material-symbols-outlined pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[18px] text-slate-400">tag</span>
+                <input id="cantidad" [(ngModel)]="entregaForm.cantidad" name="cantidad" type="number" min="0.01" step="0.01" placeholder="0.00" required
+                  class="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm font-medium text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#F4B41F] focus:bg-white focus:ring-2 focus:ring-[#F4B41F]/30" />
+              </div>
+            </div>
+
+            <div class="flex flex-col">
+              <label for="unidad" class="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-700">Unidad de Medida *</label>
+              <div class="relative">
+                <span class="material-symbols-outlined pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[18px] text-slate-400">scale</span>
+                <select id="unidad" [(ngModel)]="entregaForm.unidad" name="unidad" required
+                  class="w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-8 text-sm font-medium text-slate-800 outline-none transition focus:border-[#F4B41F] focus:bg-white focus:ring-2 focus:ring-[#F4B41F]/30">
+                  <option value="" disabled>Seleccione...</option>
+                  <option value="Kg">Kilogramos (Kg)</option>
+                  <option value="Litros">Litros (L)</option>
+                  <option value="Unidades">Unidades (Ud)</option>
+                </select>
+                <span class="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[18px] text-slate-400">expand_more</span>
+              </div>
+            </div>
+
+            <div class="flex flex-col">
+              <label for="fechaRecepcion" class="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-700">Fecha de Recepción *</label>
+              <div class="relative">
+                <span class="material-symbols-outlined pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[18px] text-slate-400">event_available</span>
+                <input id="fechaRecepcion" [(ngModel)]="entregaForm.fechaRecepcion" name="fechaRecepcion" type="date" required
+                  class="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm font-medium text-slate-900 outline-none transition focus:border-[#F4B41F] focus:bg-white focus:ring-2 focus:ring-[#F4B41F]/30" />
+              </div>
+            </div>
+
+            <div class="flex flex-col">
+              <label for="fechaVencimiento" class="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-700">Fecha de Vencimiento *</label>
+              <div class="relative">
+                <span class="material-symbols-outlined pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[18px] text-slate-400">event_busy</span>
+                <input id="fechaVencimiento" [(ngModel)]="entregaForm.fechaVencimiento" name="fechaVencimiento" type="date" required
+                  class="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm font-medium text-slate-900 outline-none transition focus:border-[#F4B41F] focus:bg-white focus:ring-2 focus:ring-[#F4B41F]/30" />
+              </div>
+            </div>
+
+            <div class="flex flex-col sm:col-span-2">
+              <label for="observaciones" class="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-700">Observaciones</label>
+              <textarea id="observaciones" [(ngModel)]="entregaForm.observaciones" name="observaciones" rows="3"
+                class="w-full resize-y rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-medium text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#F4B41F] focus:bg-white focus:ring-2 focus:ring-[#F4B41F]/30"></textarea>
+            </div>
+          </div>
+
+          <div class="mt-1 flex items-center justify-end gap-3 border-t border-slate-100 pt-5">
+            <button type="button" (click)="cerrarModalEntrega()"
+              class="cursor-pointer rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-[13px] font-bold text-slate-700 transition hover:bg-slate-50">
+              Cancelar
+            </button>
+            <button type="submit" [disabled]="guardando || cargandoCatalogos || !ingredientes.length || !tiposMercado.length"
+              class="inline-flex cursor-pointer items-center gap-2 rounded-xl px-5 py-2.5 text-[13px] font-black text-slate-900 shadow-sm transition hover:brightness-95 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+              style="background-color: #F4B41F;">
+              <span class="material-symbols-outlined text-[18px]">{{ guardando ? 'hourglass_top' : 'save' }}</span>
+              {{ guardando ? 'Guardando...' : 'Guardar Entrega' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
   </section>
 
 </div>
