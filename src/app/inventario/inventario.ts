@@ -221,11 +221,10 @@ export class InventarioComponent implements OnInit {
         });
       }
     } else {
-      // Simulación rápida de un ingrediente nuevo para que se refleje visualmente
       const nuevoItem: Ingrediente = {
         ...this.formIngrediente,
         id_inventario: Math.floor(Math.random() * 10000) + 1000,
-        id_ingrediente: Math.floor(Math.random() * 10000) + 1000
+        id_ingrediente: this.formIngrediente.id_ingrediente || Math.floor(Math.random() * 10000) + 1000
       };
       
       const cat = this.categorias.find(c => c.id_categoria_inventario === Number(this.formIngrediente.id_categoria));
@@ -235,7 +234,18 @@ export class InventarioComponent implements OnInit {
       if (und) nuevoItem.unidad_nombre = `${und.nombre_unidad} (${und.abreviatura})`;
 
       this.listaInventario.unshift(nuevoItem);
-      console.log('Nuevo item:', nuevoItem);
+
+      const payloadInventario = {
+        id_ingrediente: nuevoItem.id_ingrediente,
+        cantidad_actual: (this.formIngrediente.stock_actual || 0).toString(),
+        stock_minimo: (this.formIngrediente.stock_minimo || 0).toString(),
+        id_unidad_medida: this.formIngrediente.id_unidad_medida
+      };
+
+      this.productoService.crearProducto(payloadInventario).subscribe({
+        next: () => this.cargarInventario(),
+        error: (err) => console.error('Error al crear producto en backend:', err)
+      });
     }
 
     this.mostrarModal = false;

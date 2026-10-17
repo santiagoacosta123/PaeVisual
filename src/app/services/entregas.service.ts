@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import { map, tap } from 'rxjs/operators';
+import { Observable, forkJoin, of } from 'rxjs';
+import { map, tap, catchError } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { AuthService } from './auth.service';
 
@@ -38,6 +38,7 @@ export interface EntregaPayload {
   observaciones: string;
   frecuencia: string;
   unidad: string;
+  id_usuario_supervisor?: number;
 }
 
 /**
@@ -72,8 +73,8 @@ export class EntregasService {
   cargarIngredientes(): Observable<IngredienteOpcion[]> {
     return this.http.get<any>(this.ingredientesUrl, this.getHeaders()).pipe(
       map(data => this.listaDe(data).map(item => ({
-        id: Number(item.id_ingrediente),
-        nombre: String(item.nombre_ingrediente ?? ''),
+        id: Number(item.id_ingrediente ?? item.id),
+        nombre: String(item.nombre_ingrediente ?? item.nombre ?? ''),
       })))
     );
   }
@@ -81,16 +82,24 @@ export class EntregasService {
   cargarTiposMercado(): Observable<TipoMercadoOpcion[]> {
     return this.http.get<any>(this.tiposMercadoUrl, this.getHeaders()).pipe(
       map(data => this.listaDe(data).map(item => ({
-        id: Number(item.id_tipo_mercado),
-        nombre: String(item.nombre_tipo ?? ''),
+        id: Number(item.id_tipo_mercado ?? item.id),
+        nombre: String(item.nombre_tipo ?? item.nombre ?? ''),
       })))
     );
   }
 
   // ---------- Cargar desde el backend ----------
   cargar(): Observable<Entrega[]> {
-    return this.http.get<any>(this.apiUrl, this.getHeaders()).pipe(
-      map(data => this.listaDe(data).map(item => this.normalizar(item))),
+    return forkJoin({
+      entregasData: this.http.get<any>(this.apiUrl, this.getHeaders()),
+      ingredientes: this.cargarIngredientes().pipe(catchError(() => of([]))),
+      tipos: this.cargarTiposMercado().pipe(catchError(() => of([])))
+    }).pipe(
+      map(({ entregasData, ingredientes, tipos }) => {
+        const mapaIng = new Map<number, string>(ingredientes.map(i => [i.id, i.nombre]));
+        const mapaTipos = new Map<number, string>(tipos.map(t => [t.id, t.nombre]));
+        return this.listaDe(entregasData).map(item => this.normalizar(item, mapaIng, mapaTipos));
+      }),
       tap(lista => (this.entregas = lista))
     );
   }
@@ -132,21 +141,47 @@ export class EntregasService {
     throw new Error('El backend devolvió una respuesta de lista no válida.');
   }
 
-  private normalizar(item: any): Entrega {
+  private normalizar(item: any, mapaIng?: Map<number, string>, mapaTipos?: Map<number, string>): Entrega {
+    const idIng = Number(item.id_ingrediente ?? item.idIngrediente);
+    const idTipo = Number(item.id_tipo_mercado ?? item.idTipoMercado);
+    const obs = String(item.observaciones ?? '');
+
+    let ingNombre = String(item.ingrediente_nombre ?? item.ingrediente ?? '');
+    if (!ingNombre && idIng && mapaIng?.has(idIng)) {
+      ingNombre = mapaIng.get(idIng)!;
+    }
+
+    let tipoMercadoNombre = String(item.tipo_mercado_nombre ?? item.tipoMercado ?? item.tipo_mercado ?? '');
+    if (!tipoMercadoNombre && idTipo && mapaTipos?.has(idTipo)) {
+      tipoMercadoNombre = mapaTipos.get(idTipo)!;
+    }
+
+    let frec = String(item.frecuencia ?? '');
+    if (!frec) {
+      const matchFrec = obs.match(/Frecuencia:\s*([^|]+)/i);
+      if (matchFrec) frec = matchFrec[1].trim();
+    }
+
+    let uni = item.unidad;
+    if (!uni) {
+      const matchUni = obs.match(/Unidad:\s*([^|]+)/i);
+      if (matchUni) uni = matchUni[1].trim();
+    }
+
     return {
       id: Number(item.id_entrega ?? item.id),
-      idIngrediente: Number(item.id_ingrediente ?? item.idIngrediente),
-      idTipoMercado: Number(item.id_tipo_mercado ?? item.idTipoMercado),
-      ingrediente: String(item.ingrediente_nombre ?? item.ingrediente ?? ''),
+      idIngrediente: idIng,
+      idTipoMercado: idTipo,
+      ingrediente: ingNombre,
       tipoMercado: this.normalizarMercado(
-        item.tipo_mercado_nombre ?? item.tipoMercado ?? item.tipo_mercado
+        tipoMercadoNombre || (idTipo === 1 ? 'Perecederos' : 'Granos')
       ),
-      frecuencia: String(item.frecuencia ?? ''),
+      frecuencia: frec,
       cantidad: item.cantidad == null ? null : Number(item.cantidad),
-      unidad: this.normalizarUnidad(item.unidad),
+      unidad: this.normalizarUnidad(uni),
       fechaRecepcion: this.soloFecha(item.fecha_entrega ?? item.fechaRecepcion ?? item.fecha_recepcion),
       fechaVencimiento: this.soloFecha(item.fecha_vencimiento ?? item.fechaVencimiento),
-      observaciones: String(item.observaciones ?? ''),
+      observaciones: obs,
     };
   }
 
