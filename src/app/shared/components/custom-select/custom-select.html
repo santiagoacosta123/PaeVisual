@@ -1,0 +1,85 @@
+<div class="cs-wrapper" [class.cs-is-open]="isOpen" [style.min-width]="minWidth" [style.max-width]="maxWidth" [style.width]="width">
+  <!-- Trigger Button -->
+  <button
+    type="button"
+    class="cs-trigger"
+    [class.cs-sm]="size === 'sm'"
+    [class.cs-md]="size === 'md'"
+    [class.cs-open]="isOpen"
+    [class.cs-disabled]="disabled"
+    [disabled]="disabled"
+    (click)="toggleDropdown($event)"
+    [attr.aria-expanded]="isOpen"
+    [attr.aria-label]="placeholder"
+  >
+    <span class="cs-label" [class.cs-placeholder]="!hasSelection">
+      {{ currentDisplayLabel }}
+    </span>
+
+    <div class="cs-actions">
+      <!-- Clear button if allowed -->
+      <span
+        *ngIf="allowClear && hasSelection && !disabled"
+        class="material-symbols-outlined cs-clear-btn"
+        (click)="clearSelection($event)"
+        title="Limpiar"
+      >
+        close
+      </span>
+
+      <!-- Chevron arrow -->
+      <span class="material-symbols-outlined cs-chevron" [class.cs-chevron-rotated]="isOpen">
+        expand_more
+      </span>
+    </div>
+  </button>
+
+  <!-- Dropdown Popup -->
+  <div
+    *ngIf="isOpen"
+    class="cs-dropdown"
+    [class.cs-upwards]="openUpwards"
+    (click)="$event.stopPropagation()"
+  >
+    <!-- Search Bar -->
+    <div *ngIf="isSearchable" class="cs-search-container">
+      <span class="material-symbols-outlined cs-search-icon">search</span>
+      <input
+        #searchInput
+        type="text"
+        [(ngModel)]="searchQuery"
+        placeholder="Buscar..."
+        class="cs-search-input"
+        autocomplete="off"
+      />
+      <span
+        *ngIf="searchQuery"
+        class="material-symbols-outlined cs-search-clear"
+        (click)="searchQuery = ''"
+      >
+        close
+      </span>
+    </div>
+
+    <!-- Options List -->
+    <ul class="cs-list" role="listbox">
+      <li
+        *ngFor="let opt of filteredOptions"
+        class="cs-item"
+        [class.cs-selected]="isSelected(opt)"
+        (click)="selectOption(opt, $event)"
+        role="option"
+        [attr.aria-selected]="isSelected(opt)"
+      >
+        <span class="cs-item-text">{{ getOptionLabel(opt) }}</span>
+        <span *ngIf="isSelected(opt)" class="material-symbols-outlined cs-check-icon">
+          check
+        </span>
+      </li>
+
+      <li *ngIf="filteredOptions.length === 0" class="cs-empty">
+        No se encontraron opciones
+      </li>
+    </ul>
+  </div>
+</div>

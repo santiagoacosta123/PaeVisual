@@ -1,0 +1,29 @@
+import { Injectable, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { UsuarioModel } from '@shared/models/usuario.model';
+import { environment } from '@env/environment';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class UsuarioService {
+  private apiUrl = `${environment.apiUrl}/usuarios/`;
+  private http = inject(HttpClient);
+
+  getUsuarios(): Observable<UsuarioModel[]> {
+    return this.http.get<UsuarioModel[]>(this.apiUrl);
+  }
+
+  crearUsuario(usuario: UsuarioModel): Observable<UsuarioModel> {
+    return this.http.post<UsuarioModel>(this.apiUrl, usuario);
+  }
+
+  actualizarUsuario(id: number, usuario: Partial<UsuarioModel> | UsuarioModel | any): Observable<UsuarioModel> {
+    return this.http.patch<UsuarioModel>(`${this.apiUrl}${id}/`, usuario);
+  }
+
+  eliminarUsuario(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}${id}/`);
+  }
+}

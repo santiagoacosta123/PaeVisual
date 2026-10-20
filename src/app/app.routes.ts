@@ -17,8 +17,7 @@ import { EntradasInventario } from './entradas-inventario/entradas-inventario';
 import { ContratoDetalleComponent } from './contrato-detalle/contrato-detalle';
 import { NotificacionesComponent } from './notificaciones/notificaciones.component';
 import { DashboardSupervisor } from './dashboard-supervisor/dashboard-supervisor';
-import { authGuard } from './services/auth.guard';
-import { roleGuard } from './services/role.guard';
+import { authGuard, roleGuard } from '@core/auth';
 import { BancoDatosComponent } from './banco-datos/banco-datos';
 
 // Importaciones corregidas sin la extensión .component
