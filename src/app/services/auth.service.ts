@@ -17,6 +17,10 @@ export interface AuthenticatedUser {
   correo: string;
   numero_documento: string;
   rol: string | null;
+  institucion?: string;
+  id_institucion?: number;
+  is_superuser?: boolean;
+  debe_cambiar_password?: boolean;
 }
 
 export interface PasswordResetResponse {
@@ -69,10 +73,18 @@ export class AuthService {
     });
   }
 
+  esSuperAdministrador(rol: string | null | undefined): boolean {
+    const rolNormalizado = this.normalizarRol(rol);
+    return rolNormalizado === 'superadministrador'
+      || rolNormalizado === 'super administrador'
+      || rolNormalizado === 'super admin';
+  }
+
   rolPermitido(rol: string | null | undefined): boolean {
     const rolNormalizado = this.normalizarRol(rol);
 
-    return rolNormalizado === 'administrador'
+    return this.esSuperAdministrador(rol)
+      || rolNormalizado === 'administrador'
       || rolNormalizado === 'admin'
       || this.esSupervisor(rol)
       || this.esJefa(rol);

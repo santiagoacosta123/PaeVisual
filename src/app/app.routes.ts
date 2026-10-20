@@ -118,70 +118,70 @@ export const routes: Routes = [
         path: 'usuarios',
         component: UsuariosComponent,
         canActivate: [roleGuard],
-        data: { roles: ['administrador', 'admin'] }
+        data: { roles: ['superadministrador', 'super administrador', 'super admin', 'administrador', 'admin'] }
       },
 
       {
         path: 'contratos',
         component: ContratosComponent,
         canActivate: [roleGuard],
-        data: { roles: ['administrador', 'admin'] }
+        data: { roles: ['superadministrador', 'super administrador', 'super admin'] }
       },
 
       {
         path: 'contratos/:id/detalle',
         component: ContratoDetalleComponent,
         canActivate: [roleGuard],
-        data: { roles: ['administrador', 'admin'] }
+        data: { roles: ['superadministrador', 'super administrador', 'super admin'] }
       },
 
       {
         path: 'crear-usuario',
         component: CrearUsuarioComponent,
         canActivate: [roleGuard],
-        data: { roles: ['administrador', 'admin'] }
+        data: { roles: ['superadministrador', 'super administrador', 'super admin', 'administrador', 'admin'] }
       },
 
       {
         path: 'rol',
         component: Rol,
         canActivate: [roleGuard],
-        data: { roles: ['administrador', 'admin'] }
+        data: { roles: ['superadministrador', 'super administrador', 'super admin', 'administrador', 'admin'] }
       },
 
       {
         path: 'ingredientes',
         component: Ingredientes,
         canActivate: [roleGuard],
-        data: { roles: ['administrador', 'admin'] }
+        data: { roles: ['superadministrador', 'super administrador', 'super admin', 'administrador', 'admin'] }
       },
 
       {
         path: 'nuevo-producto',
         component: NuevoProducto,
         canActivate: [roleGuard],
-        data: { roles: ['administrador', 'admin'] }
+        data: { roles: ['superadministrador', 'super administrador', 'super admin', 'administrador', 'admin'] }
       },
 
       {
         path: 'reporte-inventario',
         component: ReporteInventario,
         canActivate: [roleGuard],
-        data: { roles: ['supervisor', 'coordinador', 'coordinador pae', 'administrador', 'admin'] }
+        data: { roles: ['superadministrador', 'super administrador', 'super admin', 'supervisor', 'coordinador', 'coordinador pae', 'administrador', 'admin'] }
       },
 
       {
         path: 'unidades-medida',
         component: UnidadesMedidaComponent,
         canActivate: [roleGuard],
-        data: { roles: ['administrador', 'admin'] }
+        data: { roles: ['superadministrador', 'super administrador', 'super admin', 'administrador', 'admin'] }
       },
 
       {
         path: 'menus',
         component: MenusComponent,
         canActivate: [roleGuard],
-        data: { roles: ['jefa de manipuladoras', 'jefa manipuladoras', 'jefamanipuladoras', 'administrador', 'admin'] }
+        data: { roles: ['superadministrador', 'super administrador', 'super admin', 'jefa de manipuladoras', 'jefa manipuladoras', 'jefamanipuladoras', 'administrador', 'admin'] }
       },
 
       {
@@ -192,13 +192,13 @@ export const routes: Routes = [
         path: 'banco-datos',
         component: BancoDatosComponent,
         canActivate: [roleGuard],
-        data: { roles: ['administrador', 'admin'] }
+        data: { roles: ['superadministrador', 'super administrador', 'super admin'] }
       },
       {
         path: 'entradas-inventario',
         component: EntradasInventario,
         canActivate: [roleGuard],
-        data: { roles: ['administrador', 'admin'] }
+        data: { roles: ['superadministrador', 'super administrador', 'super admin', 'administrador', 'admin'] }
       }
     ]
   },

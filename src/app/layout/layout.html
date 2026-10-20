@@ -61,13 +61,38 @@
         Seleccionar menús
       </a>
 
-      <!-- MÓDULOS DE ADMINISTRADOR -->
-      <a *ngIf="esAdministrador" routerLink="contratos" routerLinkActive="active-link"
+      <!-- MÓDULOS DE SUPER ADMINISTRADOR -->
+      <a *ngIf="esSuperAdministrador" routerLink="contratos" routerLinkActive="active-link"
          style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500;">
         <span class="material-symbols-outlined nav-icon" style="font-size:20px;">description</span>
         Contratos
       </a>
 
+      <a *ngIf="esSuperAdministrador" routerLink="banco-datos" routerLinkActive="active-link"
+         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500;">
+        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">database</span>
+        Banco de Datos
+      </a>
+
+      <a *ngIf="esSuperAdministrador" routerLink="usuarios" routerLinkActive="active-link"
+         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500;">
+        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">people</span>
+        Usuarios
+      </a>
+
+      <a *ngIf="esSuperAdministrador" routerLink="ingredientes" routerLinkActive="active-link"
+         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500;">
+        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">package</span>
+        Inventario / Catálogo
+      </a>
+
+      <a *ngIf="esSuperAdministrador" routerLink="menus" routerLinkActive="active-link"
+         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500;">
+        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">restaurant_menu</span>
+        Auditoría Menús
+      </a>
+
+      <!-- MÓDULOS DE ADMINISTRADOR -->
       <a *ngIf="esAdministrador" routerLink="usuarios" routerLinkActive="active-link"
          style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500;">
         <span class="material-symbols-outlined nav-icon" style="font-size:20px;">people</span>
@@ -77,13 +102,13 @@
       <a *ngIf="esAdministrador" routerLink="ingredientes" routerLinkActive="active-link"
          style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500;">
         <span class="material-symbols-outlined nav-icon" style="font-size:20px;">package</span>
-        Inventario
+        Inventario Institución
       </a>
 
-      <a *ngIf="esAdministrador" routerLink="banco-datos" routerLinkActive="active-link"
+      <a *ngIf="esAdministrador" routerLink="menus" routerLinkActive="active-link"
          style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500;">
-        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">database</span>
-        Banco de Datos
+        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">restaurant_menu</span>
+        Menús
       </a>
 
     </nav>
@@ -104,10 +129,17 @@
     <!-- Barra superior Header -->
     <div style="background:#fff; border:1px solid #f1f5f9; border-radius:16px; padding:16px 32px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 2px 10px rgba(0,0,0,0.02); flex-shrink:0;">
       <div style="display:flex; align-items:center; gap:16px;">
-        <h1 style="font-size:22px; font-weight:700; color:#1a1a1a; margin:0; position:relative;">
-          {{ pageTitle }}
-          <div style="width: 32px; height: 4px; background: #fac94b; border-radius: 2px; margin-top: 4px;"></div>
-        </h1>
+        <div>
+          <h1 style="font-size:22px; font-weight:700; color:#1a1a1a; margin:0; position:relative;">
+            {{ pageTitle }}
+            <div style="width: 32px; height: 4px; background: #fac94b; border-radius: 2px; margin-top: 4px;"></div>
+          </h1>
+          <!-- Institución asignada al Administrador -->
+          <div *ngIf="esAdministrador && institucionUsuario" style="margin-top: 6px; display:inline-flex; align-items:center; gap:6px; background:#f8fafc; padding:4px 10px; border-radius:8px; font-size:12px; color:#334155; font-weight:600; border:1px solid #e2e8f0;">
+            <span class="material-symbols-outlined" style="font-size:16px; color:#d97706;">apartment</span>
+            <span>Institución: {{ institucionUsuario }}</span>
+          </div>
+        </div>
       </div>
 
       <div style="display:flex; align-items:center; gap:16px; position:relative;">

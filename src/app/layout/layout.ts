@@ -33,10 +33,12 @@ export class LayoutComponent implements OnInit {
 
   // Control de Roles
   rolUsuario: string = '';
+  esSuperAdministrador: boolean = false;
   esSupervisor: boolean = false;
   esJefa: boolean = false;
   esAdministrador: boolean = false;
   esGestor: boolean = false;
+  institucionUsuario: string = '';
 
   // Estado del perfil
   mostrarPerfil = false;
@@ -79,25 +81,39 @@ export class LayoutComponent implements OnInit {
     const usuario = this.authService.obtenerUsuario();
 
     if (usuario) {
+      // Normalizar y evaluar el rol del usuario autenticado
+      this.rolUsuario = this.authService.normalizarRol(usuario.rol);
+      this.esSuperAdministrador = this.authService.esSuperAdministrador(usuario.rol);
+      this.esSupervisor = this.authService.esSupervisor(usuario.rol);
+      this.esJefa = this.authService.esJefa(usuario.rol);
+      this.esAdministrador = (this.rolUsuario === 'admin' || this.rolUsuario === 'administrador') && !this.esSuperAdministrador;
+      this.esGestor = this.rolUsuario.includes('gestor');
+
+      const rolNombre = this.esSuperAdministrador
+        ? 'Super Administrador'
+        : this.esSupervisor
+          ? 'Supervisor (Coordinador PAE)'
+          : this.esJefa
+            ? 'Jefa de manipuladoras'
+            : usuario.rol || 'Sin rol asignado';
+
       this.perfil = {
         nombre: `${usuario.nombre ?? ''} ${usuario.apellido ?? ''}`.trim() || usuario.correo,
         correo: usuario.correo,
-        rol: this.authService.esSupervisor(usuario.rol)
-          ? 'Supervisor (Coordinador PAE)'
-          : this.authService.esJefa(usuario.rol)
-            ? 'Jefa de manipuladoras'
-            : usuario.rol || 'Sin rol asignado'
+        rol: rolNombre
       };
 
       this.editForm = { ...this.perfil };
 
-      // Normalizar y evaluar el rol del usuario autenticado
-      this.rolUsuario = this.authService.normalizarRol(usuario.rol);
+      // Asignación de institución para el administrador
+      this.institucionUsuario = usuario.institucion || (this.esAdministrador ? 'Institución Educativa Asignada' : '');
 
-      this.esSupervisor = this.authService.esSupervisor(usuario.rol);
-      this.esJefa = this.authService.esJefa(usuario.rol);
-      this.esAdministrador = this.rolUsuario === 'admin' || this.rolUsuario === 'administrador';
-      this.esGestor = this.rolUsuario.includes('gestor');
+      // Primer ingreso con contraseña provisional
+      if (usuario.debe_cambiar_password) {
+        this.mostrarPerfil = true;
+        this.vistaActual = 'password';
+        this.passwordMensaje = 'Por seguridad, debes actualizar tu contraseña provisional en este primer inicio de sesión.';
+      }
     }
 
     this.cargarNotificacionesHeader();

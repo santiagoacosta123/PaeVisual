@@ -12,12 +12,15 @@ import { AuthService } from '../services/auth.service';
 })
 export class InicioComponent {
   private authService = inject(AuthService);
+  usuario = this.authService.obtenerUsuario();
   nombreUsuario = this.obtenerNombreUsuario();
-  rolUsuario = this.authService.obtenerUsuario()?.rol || 'Sin rol asignado';
+  rolUsuario = this.usuario?.rol || 'Sin rol asignado';
+  esSuperAdministrador = this.authService.esSuperAdministrador(this.usuario?.rol);
+  esAdministrador = (this.authService.normalizarRol(this.usuario?.rol) === 'administrador' || this.authService.normalizarRol(this.usuario?.rol) === 'admin') && !this.esSuperAdministrador;
   fechaActual = new Intl.DateTimeFormat('es-CO', { dateStyle: 'full' }).format(new Date());
 
   private obtenerNombreUsuario(): string {
-    const usuario = this.authService.obtenerUsuario();
+    const usuario = this.usuario;
     return usuario ? `${usuario.nombre} ${usuario.apellido}`.trim() || usuario.correo : '';
   }
 }

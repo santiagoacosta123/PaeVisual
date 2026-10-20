@@ -7,9 +7,11 @@ export const roleGuard: CanActivateFn = (route) => {
   const router = inject(Router);
   const usuario = authService.obtenerUsuario();
   const rol = authService.normalizarRol(usuario?.rol);
-  const rolesPermitidos = route.data['roles'] as string[] | undefined;
+  const rolesPermitidos = (route.data?.['roles'] as string[] | undefined) || [];
 
-  if (rolesPermitidos?.includes(rol)) {
+  const rolesNormalizados = rolesPermitidos.map(r => authService.normalizarRol(r));
+
+  if (rolesNormalizados.includes(rol)) {
     return true;
   }
 
