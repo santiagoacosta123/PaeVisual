@@ -1,619 +1,205 @@
-<div class="flex w-full flex-col gap-6" style="font-family: 'Roboto', sans-serif;">
+<style>
+    .sirae-root { font-family: 'Roboto', sans-serif; background-color: #FBF9F5; color: #0F172A; min-height: 100vh; }
+    .fx-wrap { position: relative; }
+    .fx-panel { position: relative; background: #fff; border-radius: 28px; border: 1px solid #F1F5F9; box-shadow: 0 10px 30px -18px rgba(15, 23, 42, .18); }
+    
+    /* Menú y Categorías superiores */
+    .menu-scroll { display: flex; gap: 12px; overflow-x: auto; padding: 6px 4px 14px; scroll-snap-type: x proximity; }
+    .menu-scroll::-webkit-scrollbar { height: 6px; }
+    .menu-scroll::-webkit-scrollbar-thumb { background: #FFD9A8; border-radius: 9999px; }
+    .menu-chip { flex: 0 0 auto; width: 105px; scroll-snap-align: start; }
+    .cat-count { background: linear-gradient(135deg, #FFA928, #FF8A00); color: #fff; }
+    
+    /* Tarjetas de producto compactas (estilo horizontal sin espacios vacíos) */
+    .prod-card { position: relative; background: #fff; border-radius: 16px; padding: 10px 12px; display: flex; align-items: center; gap: 12px; text-align: left; box-shadow: 0 4px 12px -8px rgba(15, 23, 42, .12); border: 1px solid #F8FAFC; transition: transform .2s ease, box-shadow .2s ease; }
+    .prod-card:hover { transform: translateY(-2px); box-shadow: 0 10px 20px -8px rgba(255, 138, 0, .25); }
+    .prod-img { width: 44px; height: 44px; border-radius: 9999px; display: flex; align-items: center; justify-content: center; font-size: 22px; line-height: 1; overflow: hidden; border: 2px solid #fff; background: radial-gradient(circle at 30% 25%, #fff, #FFEFD6 72%); box-shadow: 0 4px 10px -4px rgba(255, 138, 0, .35); flex-shrink: 0; }
+    .prod-img.warn { background: radial-gradient(circle at 30% 25%, #fff, #FDE9B8 72%); }
+    .prod-badge { position: absolute; top: 6px; right: 6px; width: 20px; height: 20px; border-radius: 9999px; display: flex; align-items: center; justify-content: center; }
 
-  <section class="w-full">
+    /* Flechas de categorías */
+    .arrow-btn { flex: 0 0 auto; width: 32px; height: 32px; border-radius: 9999px; border: 1px solid #FFD9A8; background: #fff; color: #FF8A00; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 10px -6px rgba(255, 138, 0, .5); transition: background .2s ease, transform .15s ease; }
+    .arrow-btn:hover { background: #FFF1DB; }
 
-    <div class="bg-white border border-slate-200/80 rounded-[24px] p-5 sm:p-7 shadow-sm">
+    @keyframes fxUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+    .fx-up { animation: fxUp .3s ease both; }
+    .fx-lift { transition: transform .25s ease, box-shadow .25s ease; }
+    .fx-lift:hover { transform: translateY(-3px); }
+    .ico-naranja { background: linear-gradient(135deg, #FFA928 0%, #FF8A00 100%); color: #fff; }
+    .cat-card { position: relative; background: #fff; border: 1px solid #F1F5F9; box-shadow: 0 6px 18px -10px rgba(15, 23, 42, .18); transition: all .25s ease; }
+    .pill-on { background: linear-gradient(135deg, #FFA928, #FF8A00); color: #fff; box-shadow: 0 6px 14px -6px rgba(255, 138, 0, .7); }
+    .fx-input:focus { border-color: #FF9500; box-shadow: 0 0 0 3px rgba(255, 149, 0, .18); }
+</style>
 
-      <!-- ================= ENCABEZADO ================= -->
-      <div class="rounded-[16px] px-5 py-4 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border"
-           style="background-color: rgba(244, 180, 31, 0.1); border-color: rgba(244, 180, 31, 0.3);">
-        <div class="flex items-center gap-3">
-          <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-900 shadow-sm" style="background-color: #F4B41F;">
-            <span class="material-symbols-outlined text-[22px]">history</span>
-          </div>
-          <div>
-            <h2 class="text-slate-900 font-bold text-lg m-0 tracking-tight">Historial de Entregas Registradas</h2>
-            <p class="m-0 mt-0.5 text-xs font-medium text-slate-500">Busca, filtra y registra las entregas de alimentos en un solo lugar.</p>
-          </div>
-        </div>
-
-        <div class="flex items-center gap-2">
-          <button type="button" (click)="cargarHistorial()" title="Actualizar lista"
-            class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-slate-300 bg-white text-slate-600 shadow-sm transition hover:bg-slate-50">
-            <span class="material-symbols-outlined text-[20px]" [class.animate-spin]="cargandoHistorial">refresh</span>
-          </button>
-          <button type="button" (click)="abrirModalEntrega()"
-            class="px-5 py-2.5 rounded-xl text-slate-900 text-[13px] font-bold flex items-center gap-2 transition cursor-pointer shadow-md hover:brightness-95 active:scale-95 whitespace-nowrap"
-            style="background-color: #F4B41F;">
-            <span class="material-symbols-outlined text-[18px]">add</span>
-            Nueva entrega
-          </button>
-        </div>
-      </div>
-
-      <!-- ================= RESUMEN (clic para filtrar) ================= -->
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-        <button type="button" (click)="setEstado('Todos')"
-          class="cursor-pointer rounded-2xl border p-4 text-left transition"
-          [class]="filtroEstado === 'Todos' ? 'border-[#F4B41F] bg-amber-50/60 ring-1 ring-[#F4B41F]/40' : 'border-slate-200 bg-white hover:bg-slate-50'">
-          <div class="flex items-center justify-between">
-            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Total entregas</span>
-            <span class="material-symbols-outlined text-[20px] text-slate-400">inventory_2</span>
-          </div>
-          <p class="m-0 mt-2 text-2xl font-black text-slate-900">{{ resumen.total }}</p>
-        </button>
-
-        <button type="button" (click)="setEstado('Vigente')"
-          class="cursor-pointer rounded-2xl border p-4 text-left transition"
-          [class]="filtroEstado === 'Vigente' ? 'border-emerald-400 bg-emerald-50 ring-1 ring-emerald-300' : 'border-slate-200 bg-white hover:bg-slate-50'">
-          <div class="flex items-center justify-between">
-            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Vigentes</span>
-            <span class="material-symbols-outlined text-[20px] text-emerald-500">check_circle</span>
-          </div>
-          <p class="m-0 mt-2 text-2xl font-black text-emerald-700">{{ resumen.vigentes }}</p>
-        </button>
-
-        <button type="button" (click)="setEstado('Próximo a vencer')"
-          class="cursor-pointer rounded-2xl border p-4 text-left transition"
-          [class]="filtroEstado === 'Próximo a vencer' ? 'border-orange-400 bg-orange-50 ring-1 ring-orange-300' : 'border-slate-200 bg-white hover:bg-slate-50'">
-          <div class="flex items-center justify-between">
-            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Por vencer</span>
-            <span class="material-symbols-outlined text-[20px] text-orange-500">schedule</span>
-          </div>
-          <p class="m-0 mt-2 text-2xl font-black text-orange-700">{{ resumen.porVencer }}</p>
-        </button>
-
-        <button type="button" (click)="setEstado('Vencido')"
-          class="cursor-pointer rounded-2xl border p-4 text-left transition"
-          [class]="filtroEstado === 'Vencido' ? 'border-red-400 bg-red-50 ring-1 ring-red-300' : 'border-slate-200 bg-white hover:bg-slate-50'">
-          <div class="flex items-center justify-between">
-            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Vencidos</span>
-            <span class="material-symbols-outlined text-[20px] text-red-500">error</span>
-          </div>
-          <p class="m-0 mt-2 text-2xl font-black text-red-700">{{ resumen.vencidos }}</p>
-        </button>
-      </div>
-
-      <!-- ================= BÚSQUEDA Y FILTROS (al instante) ================= -->
-      <div class="mb-4 flex flex-col gap-3">
-
-        <div class="flex flex-col lg:flex-row gap-3">
-          <!-- Buscador -->
-          <div class="relative flex-1">
-            <span class="material-symbols-outlined pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-[20px]">search</span>
-            <input type="text" [ngModel]="textoFiltro" (ngModelChange)="textoFiltro = $event; paginaActual = 1"
-              name="textoFiltro" placeholder="Escribe para buscar: frijol, arroz, pollo, vencido..." autocomplete="off"
-              class="w-full rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-10 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-400 shadow-2xs focus:border-[#F4B41F] focus:ring-2 focus:ring-[#F4B41F]/30" />
-            <button *ngIf="textoFiltro" type="button" (click)="textoFiltro = ''; paginaActual = 1" title="Borrar búsqueda"
-              class="absolute right-2.5 top-1/2 flex h-7 w-7 -translate-y-1/2 cursor-pointer items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-600">
-              <span class="material-symbols-outlined text-[18px]">close</span>
-            </button>
-          </div>
-
-          <!-- Mercado: botones rápidos -->
-          <div class="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1 self-start lg:self-auto">
-            <button type="button" (click)="setMercado('Todos')"
-              class="cursor-pointer rounded-lg px-3.5 py-2 text-[12px] font-bold transition whitespace-nowrap"
-              [class]="filtroMercado === 'Todos' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'">
-              Todos
-            </button>
-            <button type="button" (click)="setMercado('Granos')"
-              class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-3.5 py-2 text-[12px] font-bold transition whitespace-nowrap"
-              [class]="filtroMercado === 'Granos' ? 'bg-amber-100 text-amber-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'">
-              <span class="material-symbols-outlined text-[16px]">restaurant</span>
-              No perecederos
-            </button>
-            <button type="button" (click)="setMercado('Perecederos')"
-              class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-3.5 py-2 text-[12px] font-bold transition whitespace-nowrap"
-              [class]="filtroMercado === 'Perecederos' ? 'bg-blue-100 text-blue-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'">
-              <span class="material-symbols-outlined text-[16px]">schedule</span>
-              Perecederos
-            </button>
-          </div>
-        </div>
-
-        <div class="flex flex-wrap items-end gap-3">
-          <!-- Rango de fechas -->
-          <div class="flex flex-col gap-1.5">
-            <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider pl-1">Fecha de recepción</label>
-            <div class="flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-2.5 shadow-2xs">
-              <span class="material-symbols-outlined text-slate-400 text-[18px] mr-1">calendar_today</span>
-              <input type="date" [ngModel]="fechaDesde" (ngModelChange)="fechaDesde = $event; paginaActual = 1" name="fechaDesde"
-                class="w-[135px] cursor-pointer bg-transparent text-[13px] font-medium text-slate-600 outline-none" />
-              <span class="mx-1 text-xs font-bold text-slate-400">-</span>
-              <input type="date" [ngModel]="fechaHasta" (ngModelChange)="fechaHasta = $event; paginaActual = 1" name="fechaHasta"
-                class="w-[135px] cursor-pointer bg-transparent text-[13px] font-medium text-slate-600 outline-none" />
-            </div>
-          </div>
-
-          <!-- Ingrediente -->
-          <div class="flex flex-col gap-1.5">
-            <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider pl-1">Ingrediente</label>
-            <select [ngModel]="ingredienteFiltro" (ngModelChange)="ingredienteFiltro = $event; paginaActual = 1" name="ingredienteFiltro"
-              class="w-full sm:w-56 cursor-pointer appearance-none truncate rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-[13px] font-medium text-slate-600 outline-none shadow-2xs transition focus:border-[#F4B41F] focus:ring-1 focus:ring-[#F4B41F]/50">
-              <option value="Todos">Todos los ingredientes</option>
-              <option *ngFor="let ing of ingredientesHistorial" [value]="ing">{{ ing }}</option>
-            </select>
-          </div>
-
-          <!-- Limpiar (solo aparece si hay filtros) -->
-          <button *ngIf="hayFiltros" type="button" (click)="limpiarFiltros()"
-            class="inline-flex cursor-pointer items-center gap-2 whitespace-nowrap rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-[13px] font-bold text-slate-700 transition hover:bg-slate-50">
-            <span class="material-symbols-outlined text-[18px]">filter_alt_off</span>
-            Limpiar filtros
-          </button>
-
-          <!-- Exportar -->
-          <button type="button" (click)="exportarExcelHistorial()"
-            class="ml-auto inline-flex cursor-pointer items-center gap-2 whitespace-nowrap rounded-xl bg-emerald-600 px-4 py-2.5 text-[13px] font-bold text-white shadow-sm transition hover:bg-emerald-700">
-            <span class="material-symbols-outlined text-[18px]">table_view</span>
-            Exportar Excel
-          </button>
-        </div>
-      </div>
-
-      <!-- Resultado de la búsqueda -->
-      <p *ngIf="hayFiltros && !cargandoHistorial" class="m-0 mb-3 text-xs font-medium text-slate-500">
-        {{ historialFiltrado.length }} resultado(s) de {{ historial.length }} entregas
-      </p>
-
-      <!-- ================= VISTA: INVENTARIO / DETALLE ================= -->
-      <div class="mb-4 inline-flex gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1">
-        <button type="button" (click)="vista = 'facturas'"
-          class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-4 py-2 text-[12px] font-bold transition"
-          [class]="vista === 'facturas' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'">
-          <span class="material-symbols-outlined text-[16px]">receipt_long</span>
-          Inventario
-        </button>
-        <button type="button" (click)="vista = 'detalle'"
-          class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-4 py-2 text-[12px] font-bold transition"
-          [class]="vista === 'detalle' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'">
-          <span class="material-symbols-outlined text-[16px]">table_rows</span>
-          Detalle por producto
-        </button>
-      </div>
-
-      <!-- ================= INVENTARIOS ================= -->
-      <div *ngIf="vista === 'facturas'" class="flex flex-col gap-3">
-
-        <p *ngIf="cargandoHistorial && historial.length === 0" class="m-0 py-10 text-center text-xs font-bold text-slate-500">Cargando inventarios...</p>
-
-        <div *ngIf="!cargandoHistorial && errorHistorial" class="flex flex-col items-center gap-3 py-12 text-center">
-          <p class="m-0 text-xs font-bold text-red-700">No se pudo cargar el historial de entregas.</p>
-          <button type="button" (click)="cargarHistorial()"
-            class="cursor-pointer rounded-xl border border-slate-300 bg-white px-4 py-2 text-[12px] font-bold text-slate-700 transition hover:bg-slate-50">Reintentar</button>
-        </div>
-
-        <div *ngIf="!cargandoHistorial && !errorHistorial && facturas.length === 0" class="flex flex-col items-center gap-3 py-12 text-center">
-          <span class="material-symbols-outlined text-[32px] text-slate-300">receipt_long</span>
-          <p class="m-0 text-xs font-bold text-slate-800">
-            {{ historial.length === 0 ? 'Aún no hay inventarios registrados' : 'No hay inventarios que coincidan con tu búsqueda' }}
-          </p>
-          <button *ngIf="historial.length > 0" type="button" (click)="limpiarFiltros()"
-            class="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-[12px] font-bold text-slate-700 transition hover:bg-slate-50">
-            <span class="material-symbols-outlined text-[16px]">filter_alt_off</span>
-            Limpiar filtros
-          </button>
-        </div>
-
-        <div *ngFor="let fa of facturas; trackBy: trackFactura" class="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-          <button type="button" (click)="toggleFactura(fa.fecha)"
-            class="flex w-full cursor-pointer items-center justify-between gap-3 px-4 py-3.5 text-left transition hover:bg-amber-50/40">
+<div class="sirae-root p-4 md:p-8">
+    <div class="max-w-[1520px] mx-auto fx-wrap">
+        <!-- BARRA SUPERIOR / HEADER -->
+        <header class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-5 bg-white p-5 rounded-3xl border border-slate-100 shadow-sm">
             <div class="flex items-center gap-3">
-              <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-900" style="background-color: #F4B41F;">
-                <span class="material-symbols-outlined text-[20px]">receipt_long</span>
-              </div>
-              <div>
-                <p class="m-0 text-[13px] font-black text-slate-900">Inventario {{ fa.folio }}</p>
-                <p class="m-0 mt-0.5 text-[11px] font-medium text-slate-500">
-                  Recibido el {{ fechaCorta(fa.fecha) }} · {{ fa.items.length }} producto(s)
-                </p>
-              </div>
-            </div>
-            <div class="flex items-center gap-3">
-              <span *ngIf="fa.alertas > 0"
-                class="whitespace-nowrap rounded-full border border-orange-200 bg-orange-50 px-2.5 py-1 text-[11px] font-bold text-orange-700">
-                {{ fa.alertas }} por vencer o vencidos
-              </span>
-              <span class="material-symbols-outlined text-[22px] text-slate-400 transition" [class.rotate-180]="estaAbierta(fa.fecha)">expand_more</span>
-            </div>
-          </button>
-
-          <div *ngIf="estaAbierta(fa.fecha)" class="overflow-x-auto border-t border-slate-100">
-            <table class="w-full border-collapse text-left text-[13px]">
-              <thead class="bg-slate-50 text-slate-600">
-                <tr class="border-b border-slate-200">
-                  <th class="px-4 py-2.5 font-bold">Producto</th>
-                  <th class="px-4 py-2.5 text-center font-bold">Mercado</th>
-                  <th class="px-4 py-2.5 text-center font-bold">Cantidad</th>
-                  <th class="px-4 py-2.5 text-center font-bold">Vencimiento</th>
-                  <th class="px-4 py-2.5 text-center font-bold">Estado</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-100">
-                <tr *ngFor="let e of fa.items; trackBy: trackFila">
-                  <td class="px-4 py-2.5">
-                    <div class="font-semibold text-slate-800" [innerHTML]="resaltarHtml(e.ingrediente)"></div>
-                    <div class="text-[11px] font-medium text-slate-500">{{ e.frecuencia }}</div>
-                  </td>
-                  <td class="px-4 py-2.5 text-center text-[12px] font-medium text-slate-600">{{ e.tipoMercado }}</td>
-                  <td class="whitespace-nowrap px-4 py-2.5 text-center">
-                    <span class="font-bold text-slate-800">{{ e.cantidad }}</span>
-                    <span class="ml-1 font-semibold text-slate-500">{{ e.unidad }}</span>
-                  </td>
-                  <td class="whitespace-nowrap px-4 py-2.5 text-center">
-                    <div class="font-medium text-slate-700">{{ fechaCorta(e.fechaVencimiento) }}</div>
-                    <div class="text-[11px] font-semibold"
-                         [class]="diasDe(e) < 0 ? 'text-red-600' : (estadoDe(e) === 'Próximo a vencer' ? 'text-orange-600' : 'text-slate-400')">
-                      {{ textoDias(diasDe(e)) }}
+                <div class="ico-naranja flex h-12 w-12 items-center justify-center rounded-2xl shadow-md">
+                    <span class="material-symbols-outlined text-[26px]">local_mall</span>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-xl font-black text-slate-900 tracking-tight m-0">Menú Institucional</h1>
+                        <span class="text-[11px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-200 px-2 py-0.5 rounded-full">En línea</span>
                     </div>
-                  </td>
-                  <td class="px-4 py-2.5 text-center">
-                    <span class="inline-block min-w-[70px] rounded-full border px-3 py-1 text-[11px] font-bold" [class]="claseEstado(estadoDe(e))">
-                      {{ estadoDe(e) }}
-                    </span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <ng-container *ngIf="vista === 'detalle'">
-      <!-- ================= TABLA ================= -->
-      <div class="max-h-[560px] overflow-auto rounded-xl border border-slate-100">
-        <table class="w-full text-left border-collapse text-[13px]">
-          <thead class="sticky top-0 z-10">
-            <tr class="bg-slate-50 text-slate-600 border-b border-slate-200">
-              <th class="py-3 px-4 font-bold">
-                <button type="button" (click)="ordenar('fechaRecepcion')" class="inline-flex cursor-pointer items-center gap-1 font-bold hover:text-slate-900">
-                  Fecha <span class="material-symbols-outlined text-[16px]" [style.color]="ordenColumna === 'fechaRecepcion' ? '#F4B41F' : null">{{ iconoOrden('fechaRecepcion') }}</span>
-                </button>
-              </th>
-              <th class="py-3 px-4 font-bold">
-                <button type="button" (click)="ordenar('ingrediente')" class="inline-flex cursor-pointer items-center gap-1 font-bold hover:text-slate-900">
-                  Ingrediente <span class="material-symbols-outlined text-[16px]" [style.color]="ordenColumna === 'ingrediente' ? '#F4B41F' : null">{{ iconoOrden('ingrediente') }}</span>
-                </button>
-              </th>
-              <th class="py-3 px-4 font-bold text-center">
-                <button type="button" (click)="ordenar('tipoMercado')" class="inline-flex cursor-pointer items-center gap-1 font-bold hover:text-slate-900">
-                  Tipo de mercado <span class="material-symbols-outlined text-[16px]" [style.color]="ordenColumna === 'tipoMercado' ? '#F4B41F' : null">{{ iconoOrden('tipoMercado') }}</span>
-                </button>
-              </th>
-              <th class="py-3 px-4 font-bold text-center">
-                <button type="button" (click)="ordenar('cantidad')" class="inline-flex cursor-pointer items-center gap-1 font-bold hover:text-slate-900">
-                  Cantidad <span class="material-symbols-outlined text-[16px]" [style.color]="ordenColumna === 'cantidad' ? '#F4B41F' : null">{{ iconoOrden('cantidad') }}</span>
-                </button>
-              </th>
-              <th class="py-3 px-4 font-bold text-center">
-                <button type="button" (click)="ordenar('fechaVencimiento')" class="inline-flex cursor-pointer items-center gap-1 font-bold hover:text-slate-900">
-                  Vencimiento <span class="material-symbols-outlined text-[16px]" [style.color]="ordenColumna === 'fechaVencimiento' ? '#F4B41F' : null">{{ iconoOrden('fechaVencimiento') }}</span>
-                </button>
-              </th>
-              <th class="py-3 px-4 font-bold text-center">
-                <button type="button" (click)="ordenar('estado')" class="inline-flex cursor-pointer items-center gap-1 font-bold hover:text-slate-900">
-                  Estado <span class="material-symbols-outlined text-[16px]" [style.color]="ordenColumna === 'estado' ? '#F4B41F' : null">{{ iconoOrden('estado') }}</span>
-                </button>
-              </th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-100/80">
-
-            <!-- Filas -->
-            <tr *ngFor="let entrega of historialPaginado; trackBy: trackFila" class="transition hover:bg-amber-50/40">
-              <td class="border-l-4 py-3.5 px-4 font-bold text-slate-800 whitespace-nowrap"
-                  [class]="estadoDe(entrega) === 'Vencido' ? 'border-l-red-500' : (estadoDe(entrega) === 'Vigente' ? 'border-l-emerald-400' : 'border-l-orange-400')">
-                {{ fechaCorta(entrega.fechaRecepcion) }}
-              </td>
-
-              <td class="py-3.5 px-4">
-                <div class="font-semibold text-slate-800" [innerHTML]="resaltarHtml(entrega.ingrediente)"></div>
-                <div class="text-[11px] font-medium text-slate-500">{{ entrega.frecuencia }}</div>
-              </td>
-
-              <td class="py-3.5 px-4 text-center">
-                <span class="inline-flex min-w-[90px] items-center justify-center gap-1 rounded-[8px] border px-2.5 py-1 text-[11px] font-bold"
-                      [class]="entrega.categoria === 'Granos' ? 'bg-amber-100/60 text-amber-800 border-amber-200' : 'bg-blue-50 text-blue-700 border-blue-200'">
-                  <span class="material-symbols-outlined text-[14px]">{{ entrega.categoria === 'Granos' ? 'restaurant' : 'schedule' }}</span>
-                  <span [innerHTML]="resaltarHtml(entrega.tipoMercado)"></span>
-                </span>
-              </td>
-
-              <td class="py-3.5 px-4 text-center whitespace-nowrap">
-                <span class="font-bold text-slate-800">{{ entrega.cantidad }}</span>
-                <span class="ml-1 font-semibold text-slate-500">{{ entrega.unidad }}</span>
-              </td>
-
-              <td class="py-3.5 px-4 text-center whitespace-nowrap">
-                <div class="font-medium text-slate-700">{{ fechaCorta(entrega.fechaVencimiento) }}</div>
-                <div class="text-[11px] font-semibold"
-                     [class]="diasDe(entrega) < 0 ? 'text-red-600' : (estadoDe(entrega) === 'Próximo a vencer' ? 'text-orange-600' : 'text-slate-400')">
-                  {{ textoDias(diasDe(entrega)) }}
+                    <p class="text-xs text-slate-500 font-medium m-0">SIRAE · Sistema de Control y Abastecimiento de Alimentos</p>
                 </div>
-              </td>
-
-              <td class="py-3.5 px-4 text-center">
-                <span class="inline-block min-w-[70px] rounded-full border px-3 py-1 text-[11px] font-bold"
-                      [class]="claseEstado(estadoDe(entrega))">
-                  {{ estadoDe(entrega) }}
-                </span>
-              </td>
-
-            </tr>
-
-            <!-- Cargando (esqueleto) -->
-            <ng-container *ngIf="cargandoHistorial && historial.length === 0">
-              <tr *ngFor="let f of filasEsqueleto">
-                <td *ngFor="let c of columnasEsqueleto" class="py-4 px-4">
-                  <div class="h-4 w-full animate-pulse rounded bg-slate-100"></div>
-                </td>
-              </tr>
-            </ng-container>
-
-            <!-- Error al cargar -->
-            <tr *ngIf="!cargandoHistorial && errorHistorial">
-              <td colspan="6" class="py-14 px-4 text-center">
-                <div class="flex flex-col items-center justify-center gap-3">
-                  <div class="flex h-12 w-12 items-center justify-center rounded-2xl border border-red-200 bg-red-50 text-red-500">
-                    <span class="material-symbols-outlined text-[24px]">cloud_off</span>
-                  </div>
-                  <p class="m-0 text-xs font-bold text-red-700">No se pudo cargar el historial de entregas.</p>
-                  <button type="button" (click)="cargarHistorial()"
-                    class="cursor-pointer rounded-xl border border-slate-300 bg-white px-4 py-2 text-[12px] font-bold text-slate-700 transition hover:bg-slate-50">
-                    Reintentar
-                  </button>
-                </div>
-              </td>
-            </tr>
-
-            <!-- Vacío -->
-            <tr *ngIf="!cargandoHistorial && !errorHistorial && historialFiltrado.length === 0">
-              <td colspan="6" class="py-14 px-4 text-center">
-                <div class="flex flex-col items-center justify-center gap-3">
-                  <div class="flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-400">
-                    <span class="material-symbols-outlined text-[24px]">{{ historial.length === 0 ? 'inventory_2' : 'search_off' }}</span>
-                  </div>
-                  <p class="m-0 text-xs font-bold text-slate-800">
-                    {{ historial.length === 0 ? 'Aún no hay entregas registradas' : 'No hay entregas que coincidan con tu búsqueda' }}
-                  </p>
-                  <button *ngIf="historial.length === 0" type="button" (click)="abrirModalEntrega()"
-                    class="inline-flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2 text-[12px] font-bold text-slate-900 shadow-sm transition hover:brightness-95"
-                    style="background-color: #F4B41F;">
-                    <span class="material-symbols-outlined text-[16px]">add</span>
-                    Registrar la primera entrega
-                  </button>
-                  <button *ngIf="historial.length > 0" type="button" (click)="limpiarFiltros()"
-                    class="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-[12px] font-bold text-slate-700 transition hover:bg-slate-50">
-                    <span class="material-symbols-outlined text-[16px]">filter_alt_off</span>
-                    Limpiar filtros
-                  </button>
-                </div>
-              </td>
-            </tr>
-
-          </tbody>
-        </table>
-      </div>
-
-      <!-- ================= PIE: contador y paginación ================= -->
-      <div class="mt-5 flex flex-col items-center justify-between gap-4 sm:flex-row">
-        <div class="flex items-center gap-3">
-          <span class="text-xs font-medium text-slate-500">
-            Mostrando {{ desdeRegistro }} - {{ hastaRegistro }} de {{ historialFiltrado.length }} registros
-          </span>
-          <select [ngModel]="porPagina" (ngModelChange)="cambiarPorPagina($event)" name="porPagina" title="Filas por página"
-            class="cursor-pointer rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs font-semibold text-slate-600 outline-none">
-            <option *ngFor="let n of opcionesPorPagina" [ngValue]="n">{{ n }} por página</option>
-          </select>
-        </div>
-
-        <div class="flex items-center gap-1.5">
-          <button type="button" (click)="irAPagina(1)" [disabled]="paginaActual === 1" title="Primera página"
-            class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40">
-            <span class="material-symbols-outlined text-[18px]">first_page</span>
-          </button>
-          <button type="button" (click)="irAPagina(paginaActual - 1)" [disabled]="paginaActual === 1" title="Anterior"
-            class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40">
-            <span class="material-symbols-outlined text-[18px]">chevron_left</span>
-          </button>
-
-          <button type="button" *ngFor="let p of paginasVisibles" (click)="irAPagina(p)"
-            class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-xs font-bold transition"
-            [class]="p === paginaActual ? 'text-slate-900 shadow-sm' : 'border border-slate-200 text-slate-500 hover:bg-slate-50'"
-            [style.background-color]="p === paginaActual ? '#F4B41F' : null">
-            {{ p }}
-          </button>
-
-          <button type="button" (click)="irAPagina(paginaActual + 1)" [disabled]="paginaActual === totalPaginas" title="Siguiente"
-            class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40">
-            <span class="material-symbols-outlined text-[18px]">chevron_right</span>
-          </button>
-          <button type="button" (click)="irAPagina(totalPaginas)" [disabled]="paginaActual === totalPaginas" title="Última página"
-            class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40">
-            <span class="material-symbols-outlined text-[18px]">last_page</span>
-          </button>
-        </div>
-      </div>
-      </ng-container>
-    </div>
-
-    <!-- ================= MODAL: INVENTARIO ================= -->
-    <div *ngIf="mostrarModalEntrega" (click)="cerrarModalEntrega()" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
-      <div (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Inventario" class="relative max-h-[95vh] w-full max-w-5xl overflow-y-auto rounded-[24px] border border-slate-200 bg-white p-6 shadow-2xl sm:p-8">
-
-        <header class="mb-5 flex items-center justify-between border-b border-slate-100 pb-4">
-          <div class="flex items-center gap-3">
-            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-900 shadow-sm" style="background-color: #F4B41F;">
-              <span class="material-symbols-outlined text-[20px]">add_shopping_cart</span>
             </div>
-            <div>
-              <h3 class="m-0 text-lg font-black leading-tight text-slate-900">Inventario</h3>
-              <p class="m-0 mt-1 text-xs font-medium text-slate-500">Escribe la cantidad de cada producto que llegó. Todo se guarda en un solo inventario.</p>
+
+            <div class="flex items-center gap-3 self-end md:self-auto">
+                <div class="text-right hidden xl:block text-xs font-medium text-slate-500">
+                    <div class="flex items-center gap-1 font-bold text-slate-700">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span> 19/10/2026 - 02:59 p.m.
+                    </div>
+                    <span>Sede Principal SIRAE</span>
+                </div>
             </div>
-          </div>
-          <button type="button" (click)="cerrarModalEntrega()" title="Cerrar"
-            class="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100">
-            <span class="material-symbols-outlined text-[20px]">close</span>
-          </button>
         </header>
 
-        <div *ngIf="errorMensaje" role="alert"
-          class="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
-          {{ errorMensaje }}
+        <div *ngIf="errorHistorial" class="mb-4 rounded-2xl border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-700" role="alert">
+            No se pudo cargar el historial de entregas.
+            <button type="button" (click)="cargarHistorial()" class="ml-2 underline">Reintentar</button>
         </div>
-        <p *ngIf="cargandoCatalogos" class="mb-5 text-sm text-slate-500" role="status">
-          Cargando ingredientes y tipos de mercado...
-        </p>
-        <button *ngIf="errorMensaje && !cargandoCatalogos" type="button" (click)="cargarCatalogos()"
-          class="mb-5 inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-[13px] font-bold text-slate-700 transition hover:bg-slate-50">
-          <span class="material-symbols-outlined text-[18px]">refresh</span>
-          Volver a cargar catálogos
-        </button>
+        <p *ngIf="cargandoHistorial" class="mb-4 text-center text-xs font-semibold text-slate-500" role="status">Cargando entregas...</p>
 
-        <!-- ============ CARGA POR LOTE ============ -->
-        <div class="flex flex-col gap-4">
-
-          <!-- Institución + fecha + buscador -->
-          <div class="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-
-            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <!-- Institución -->
-              <div class="flex flex-col">
-                <label for="institucionLote" class="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-700">Institución</label>
-                <div class="relative">
-                  <span class="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-slate-400">school</span>
-                  <select id="institucionLote" [(ngModel)]="institucionLote" name="institucionLote"
-                    class="w-full cursor-pointer appearance-none rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-sm font-semibold text-slate-900 outline-none transition focus:border-[#F4B41F] focus:ring-2 focus:ring-[#F4B41F]/30">
-                    <option *ngFor="let i of instituciones" [value]="i">{{ i }}</option>
-                  </select>
-                </div>
-              </div>
-
-              <!-- Fecha -->
-              <div class="flex flex-col">
-                <label for="fechaLote" class="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-700">Fecha de recepción</label>
-                <div class="flex items-center gap-2">
-                  <input id="fechaLote" type="date" [ngModel]="fechaRecepcionLote" (ngModelChange)="alCambiarFechaLote($event)" name="fechaLote"
-                    class="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-900 outline-none transition focus:border-[#F4B41F] focus:ring-2 focus:ring-[#F4B41F]/30" />
-                  <button type="button" (click)="alCambiarFechaLote(fechaHoy())"
-                    class="cursor-pointer whitespace-nowrap rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-[12px] font-bold text-slate-700 transition hover:bg-slate-50">
-                    Hoy
-                  </button>
-                </div>
-                <span class="mt-1 pl-1 text-[11px] font-medium capitalize text-slate-500">{{ fechaLarga(fechaRecepcionLote) }}</span>
-              </div>
-            </div>
-
-            <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <div class="relative flex-1">
-                <span class="material-symbols-outlined pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[18px] text-slate-400">search</span>
-                <input type="text" [(ngModel)]="busquedaLote" name="busquedaLote" placeholder="Buscar producto en la lista..." autocomplete="off"
-                  class="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-[#F4B41F] focus:ring-2 focus:ring-[#F4B41F]/30" />
-              </div>
-              <span class="whitespace-nowrap text-xs font-bold text-slate-600">
-                {{ filasConCantidad.length }} con cantidad
-              </span>
-            </div>
-          </div>
-
-          <!-- Lista de productos -->
-          <div class="max-h-[420px] overflow-auto rounded-xl border border-slate-200">
-            <table class="w-full border-collapse text-left text-[13px]">
-              <thead class="sticky top-0 z-10 bg-slate-50 text-slate-600">
-                <tr class="border-b border-slate-200">
-                  <th class="px-3 py-3 font-bold">Producto</th>
-                  <th class="px-3 py-3 font-bold">Cantidad</th>
-                  <th class="px-3 py-3 font-bold">Unidad</th>
-                  <th class="px-3 py-3 font-bold">Vence</th>
-                  <th class="px-3 py-3 font-bold">Tipo</th>
-                  <th class="px-3 py-3 font-bold">Frecuencia de entrega</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-100">
-                <tr *ngFor="let f of filasLoteVisibles; trackBy: trackLote"
-                    [class.bg-amber-50]="f.cantidad && f.cantidad > 0">
-
-                  <td class="px-3 py-2 font-semibold text-slate-800">
-                    {{ f.nombre }}
-                    <span *ngIf="!f.tieneHistorial"
-                          class="ml-1 rounded-full border border-orange-200 bg-orange-50 px-1.5 py-0.5 text-[10px] font-bold text-orange-600">NUEVO</span>
-                  </td>
-
-                  <td class="px-3 py-2">
-                    <input type="number" min="0" step="0.01" placeholder="0"
-                      [(ngModel)]="f.cantidad" [name]="'cant' + f.idIngrediente"
-                      class="w-24 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm font-bold text-slate-900 outline-none focus:border-[#F4B41F] focus:ring-2 focus:ring-[#F4B41F]/30" />
-                  </td>
-
-                  <td class="px-3 py-2">
-                    <select [(ngModel)]="f.unidad" [name]="'uni' + f.idIngrediente"
-                      class="rounded-lg border bg-white px-2 py-1.5 text-xs font-medium text-slate-800 outline-none"
-                      [class]="(f.cantidad && !f.unidad) ? 'border-red-400' : 'border-slate-200'">
-                      <option value="">--</option>
-                      <option value="Kg">Kg</option>
-                      <option value="Litros">L</option>
-                      <option value="Unidades">Ud</option>
-                    </select>
-                  </td>
-
-                  <td class="px-3 py-2">
-                    <input type="date" [(ngModel)]="f.fechaVencimiento" [name]="'ven' + f.idIngrediente" [min]="fechaRecepcionLote"
-                      class="rounded-lg border bg-white px-2 py-1.5 text-xs font-medium text-slate-800 outline-none"
-                      [class]="(f.cantidad && !f.fechaVencimiento) ? 'border-red-400' : 'border-slate-200'" />
-                  </td>
-
-                  <!-- Tipo: todos los productos son Perecedero o No perecedero -->
-                  <td class="px-3 py-2">
-                    <select [(ngModel)]="f.idTipoMercado" [name]="'mer' + f.idIngrediente"
-                      class="rounded-lg border bg-white px-2 py-1.5 text-xs font-medium text-slate-800 outline-none focus:border-[#F4B41F]"
-                      [class]="(f.cantidad && !f.idTipoMercado) ? 'border-red-400' : 'border-slate-200'">
-                      <option [ngValue]="null">Seleccione...</option>
-                      <option *ngFor="let t of tiposMercado" [ngValue]="t.id">{{ t.nombre }}</option>
-                    </select>
-                  </td>
-
-                  <!-- Frecuencia: cada cuántos días llega -->
-                  <td class="px-3 py-2">
-                    <div class="flex items-center gap-1.5 whitespace-nowrap">
-                      <span class="text-[11px] font-semibold text-slate-500">Cada</span>
-                      <input type="number" min="1" step="1" placeholder="8"
-                        [(ngModel)]="f.frecuenciaDias" [name]="'fre' + f.idIngrediente"
-                        class="w-16 rounded-lg border bg-white px-2 py-1.5 text-sm font-bold text-slate-900 outline-none focus:border-[#F4B41F]"
-                        [class]="(f.cantidad && !(f.frecuenciaDias && f.frecuenciaDias > 0)) ? 'border-red-400' : 'border-slate-200'" />
-                      <span class="text-[11px] font-semibold text-slate-500">días</span>
+        <!-- CUERPO PRINCIPAL -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <!-- COLUMNA IZQUIERDA: CATÁLOGO Y VISTAS -->
+            <section class="lg:col-span-8 fx-panel p-4 sm:p-6">
+                <!-- Búsqueda y Filtros Rápidos -->
+                <div class="mb-4 flex flex-col sm:flex-row gap-3 items-center justify-between">
+                    <div class="relative w-full sm:w-80">
+                        <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[19px] text-slate-400">search</span>
+                        <input type="text" id="busquedaInput" [(ngModel)]="textoFiltro" (ngModelChange)="paginaActual = 1" placeholder="Buscar: arroz, frijol, pollo, leche..." class="fx-input w-full rounded-full border border-slate-200 bg-slate-50/70 py-2 pl-11 pr-4 text-xs font-medium text-slate-800 outline-none">
                     </div>
-                  </td>
-                </tr>
+                    <div class="inline-flex items-center gap-1 self-start sm:self-auto rounded-full border border-slate-200 bg-slate-50 p-1">
+                        <button type="button" (click)="setMercado('Todos')" [class.pill-on]="filtroMercado === 'Todos'" [class.text-slate-500]="filtroMercado !== 'Todos'" class="rounded-full px-3 py-1 text-xs font-bold transition cursor-pointer">Todos</button>
+                        <button type="button" (click)="setMercado('Perecederos')" [class.pill-on]="filtroMercado === 'Perecederos'" [class.text-slate-500]="filtroMercado !== 'Perecederos'" class="rounded-full px-3 py-1 text-xs font-bold transition cursor-pointer">Perecederos</button>
+                        <button type="button" (click)="setMercado('Granos')" [class.pill-on]="filtroMercado === 'Granos'" [class.text-slate-500]="filtroMercado !== 'Granos'" class="rounded-full px-3 py-1 text-xs font-bold transition cursor-pointer">No perecederos</button>
+                        <button type="button" (click)="exportarExcelHistorial()" class="bg-emerald-600 hover:bg-emerald-700 text-white rounded-full px-3 py-1 text-xs font-bold transition inline-flex items-center gap-1 cursor-pointer">
+                            <span class="material-symbols-outlined text-[14px]">table_view</span> Excel
+                        </button>
+                    </div>
+                </div>
 
-                <tr *ngIf="filasLoteVisibles.length === 0">
-                  <td colspan="6" class="px-4 py-10 text-center text-xs font-bold text-slate-500">
-                    {{ filasLote.length === 0 ? 'No hay ingredientes en el inventario.' : 'Ningún producto coincide con la búsqueda.' }}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+                <!-- VISTA: MENÚ -->
+                <div id="view-menu">
+                    <!-- Categorías Deslizables -->
+                    <div class="mb-2 flex items-center justify-between">
+                        <h3 class="text-sm font-black text-slate-900 m-0">Categorías de Abastecimiento SIRAE</h3>
+                        <button type="button" (click)="categoriaMenu = 'Todos'" class="text-xs font-bold text-orange-500 hover:text-orange-600 cursor-pointer">Ver todo &gt;</button>
+                    </div>
+                    <div class="mb-4 flex items-center gap-2">
+                        <button type="button" class="arrow-btn" aria-label="Categorías anteriores" (click)="menuChips.scrollBy({ left: -260, behavior: 'smooth' })">
+                            <span class="material-symbols-outlined text-[18px]">chevron_left</span>
+                        </button>
+                        <div #menuChips class="menu-scroll min-w-0 flex-1">
+                            <button type="button" *ngFor="let categoria of categoriasMenu"
+                                (click)="categoriaMenu = categoria.nombre"
+                                [class.active]="categoriaMenu === categoria.nombre"
+                                class="cat-card fx-lift menu-chip rounded-2xl p-2.5 text-center cursor-pointer">
+                                <div class="cat-dot mx-auto mb-1 flex h-9 w-9 items-center justify-center rounded-full text-xl">{{ categoria.emoji }}</div>
+                                <p class="cat-label text-[11px] font-bold text-slate-700 m-0 truncate">{{ categoria.nombre }}</p>
+                                <span class="cat-count mx-auto mt-1 flex h-4 min-w-[18px] items-center justify-center rounded-full px-1 text-[9px] font-black">{{ categoria.total }}</span>
+                            </button>
+                        </div>
+                        <button type="button" class="arrow-btn" aria-label="Más categorías" (click)="menuChips.scrollBy({ left: 260, behavior: 'smooth' })">
+                            <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+                        </button>
+                    </div>
 
-          <!-- Botones -->
-          <div class="flex items-center justify-end gap-3 border-t border-slate-100 pt-4">
-            <button type="button" (click)="cerrarModalEntrega()"
-              class="cursor-pointer rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-[13px] font-bold text-slate-700 transition hover:bg-slate-50">
-              Cancelar
-            </button>
-            <button type="button" (click)="guardarLote()"
-              [disabled]="guardandoLote || cargandoCatalogos || filasConCantidad.length === 0"
-              class="inline-flex cursor-pointer items-center gap-2 rounded-xl px-5 py-2.5 text-[13px] font-black text-slate-900 shadow-sm transition hover:brightness-95 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
-              style="background-color: #F4B41F;">
-              <span class="material-symbols-outlined text-[18px]">{{ guardandoLote ? 'hourglass_top' : 'save' }}</span>
-              {{ guardandoLote ? 'Guardando inventario...' : 'Guardar inventario (' + filasConCantidad.length + ' producto(s))' }}
-            </button>
-          </div>
+                    <!-- Catálogo organizado por grupos (sin desplazamiento vertical excesivo) -->
+                    <div class="mb-2 flex items-center justify-between">
+                        <h3 class="text-sm font-black text-slate-900 m-0">Productos de Abastecimiento</h3>
+                        <span class="text-xs font-semibold text-slate-400">{{ productosMenu.length }} productos</span>
+                    </div>
+                    <p *ngIf="cargandoCatalogos" class="mb-3 text-center text-xs font-semibold text-slate-500" role="status">Cargando productos...</p>
+
+                    <div *ngFor="let grupo of gruposMenu; trackBy: trackGrupo" class="mb-4">
+                        <div class="mt-4 flex items-center gap-2 border-b border-orange-100 pb-1.5">
+                            <span class="text-lg">{{ grupo.emoji }}</span>
+                            <h4 class="m-0 text-xs font-black text-slate-900">{{ grupo.nombre }}</h4>
+                            <span class="cat-count flex h-4 min-w-[18px] items-center justify-center rounded-full px-1 text-[9px] font-black">{{ grupo.productos.length }}</span>
+                        </div>
+
+                        <!-- Grid de productos compactos -->
+                        <div class="grid grid-cols-1 gap-2.5 pt-3 sm:grid-cols-2 xl:grid-cols-3">
+                            <article *ngFor="let producto of grupo.productos; trackBy: trackProducto" class="prod-card fx-up">
+                                <span class="prod-badge" [title]="nombreTipo(producto)"
+                                    [ngClass]="esPerecedero(producto) ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600'">
+                                    <span class="material-symbols-outlined text-[14px]">{{ esPerecedero(producto) ? 'schedule' : 'check_circle' }}</span>
+                                </span>
+                                
+                                <div class="prod-img" [class.warn]="esPerecedero(producto)">
+                                    <span>{{ emojiDe(producto.nombre) }}</span>
+                                </div>
+
+                                <div class="min-w-0 flex-1">
+                                    <h4 class="m-0 text-xs font-black text-slate-900 truncate">{{ producto.nombre }}</h4>
+                                    <div class="mt-0.5 flex items-center gap-2">
+                                        <span class="text-[10px] font-black" [ngClass]="esPerecedero(producto) ? 'text-amber-600' : 'text-emerald-600'">{{ nombreTipo(producto) }}</span>
+                                        <span class="text-[10px] font-semibold text-slate-400">· Unidad: {{ producto.unidad }}</span>
+                                    </div>
+                                </div>
+                            </article>
+                        </div>
+                    </div>
+
+                    <p *ngIf="!cargandoCatalogos && productosMenu.length === 0" class="rounded-2xl border border-slate-100 bg-white p-4 text-center text-xs text-slate-500">
+                        No hay productos para los filtros seleccionados.
+                    </p>
+                </div>
+            </section>
+
+            <!-- COLUMNA DERECHA: ÚLTIMO REGISTRO SIRAE -->
+            <aside class="lg:col-span-4 flex flex-col gap-4">
+                <div class="fx-panel p-4 sm:p-5 rounded-3xl">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-2.5 mb-3">
+                        <div>
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Última entrega</span>
+                            <h3 class="text-sm font-black text-slate-900 m-0">Lotes de Entrega SIRAE</h3>
+                        </div>
+                        <span class="bg-orange-100 text-orange-600 text-[11px] font-black px-2.5 py-0.5 rounded-full">{{ ultimoRegistro ? ultimoRegistro.items.length : 0 }} productos</span>
+                    </div>
+
+                    <ng-container *ngIf="ultimoRegistro as reg; else sinUltimo">
+                        <div class="mb-3 rounded-xl bg-orange-50/60 p-2.5 text-xs">
+                            <div class="flex justify-between">
+                                <span class="text-slate-500">Fecha de entrega</span>
+                                <span class="font-black text-slate-800">{{ fechaCorta(reg.fecha) }}</span>
+                            </div>
+                            <div class="mt-1 flex justify-between">
+                                <span class="text-slate-500">Cantidad total</span>
+                                <span class="font-black text-orange-600">{{ reg.totales }}</span>
+                            </div>
+                        </div>
+
+                        <div class="space-y-2 max-h-[360px] overflow-y-auto pr-1">
+                            <div *ngFor="let item of reg.items; trackBy: trackFila" class="p-2.5 rounded-xl border border-slate-100 bg-white shadow-2xs">
+                                <div class="flex items-center justify-between gap-2">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center text-base shrink-0">{{ emojiDe(item.ingrediente) }}</div>
+                                        <div class="min-w-0">
+                                            <h5 class="text-xs font-bold text-slate-800 m-0 truncate">{{ item.ingrediente }}</h5>
+                                            <p class="text-[10px] text-slate-400 m-0 truncate">{{ categoriaDe(item.ingrediente) }} · {{ item.tipoMercado }}</p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right shrink-0">
+                                        <span class="text-xs font-black text-orange-600">{{ item.cantidad }} {{ item.unidad }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </ng-container>
+                    <ng-template #sinUltimo>
+                        <p class="rounded-xl border border-dashed border-slate-200 p-4 text-center text-xs text-slate-500">
+                            Aún no hay entregas.
+                        </p>
+                    </ng-template>
+                </div>
+            </aside>
         </div>
-
-      </div>
     </div>
-
-  </section>
-
 </div>

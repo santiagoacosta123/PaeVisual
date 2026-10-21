@@ -38,11 +38,11 @@ export class MenusService {
   }
 
   crear(payload: MenuPayload): Observable<MenuRegistro> {
-    return this.http.post<MenuRegistro>(this.url, payload);
+    return this.http.post<MenuPayload>(this.url, payload) as Observable<MenuRegistro>;
   }
 
   actualizar(id: number, payload: MenuPayload): Observable<MenuRegistro> {
-    return this.http.put<MenuRegistro>(`${this.url}${id}/`, payload);
+    return this.http.put<MenuPayload>(`${this.url}${id}/`, payload) as Observable<MenuRegistro>;
   }
 
   eliminar(id: number): Observable<void> {

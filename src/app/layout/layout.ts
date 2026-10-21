@@ -28,26 +28,21 @@ import { AuthService } from '../services/auth.service';
 })
 export class LayoutComponent implements OnInit {
 
-  // Declaración de pageTitle
   pageTitle: string = 'Panel de Control';
 
-  // Control de Roles
   rolUsuario: string = '';
   esSupervisor: boolean = false;
   esJefa: boolean = false;
   esAdministrador: boolean = false;
   esGestor: boolean = false;
 
-  // Estado del perfil
   mostrarPerfil = false;
   vistaActual = 'perfil';
 
-  // Estado de las notificaciones
   mostrarNotificaciones = false;
   listaNotificaciones: Notificacion[] = [];
   notificacionesNoLeidas = 0;
 
-  // Datos del perfil y formularios
   perfil = {
     nombre: '',
     correo: '',
@@ -67,7 +62,6 @@ export class LayoutComponent implements OnInit {
     private cdr: ChangeDetectorRef,
     private router: Router
   ) {
-    // Escuchar los cambios de ruta para actualizar el título automáticamente
     this.router.events.pipe(
       filter((event): event is NavigationEnd => event instanceof NavigationEnd)
     ).subscribe((event: NavigationEnd) => {
@@ -91,9 +85,7 @@ export class LayoutComponent implements OnInit {
 
       this.editForm = { ...this.perfil };
 
-      // Normalizar y evaluar el rol del usuario autenticado
       this.rolUsuario = this.authService.normalizarRol(usuario.rol);
-
       this.esSupervisor = this.authService.esSupervisor(usuario.rol);
       this.esJefa = this.authService.esJefa(usuario.rol);
       this.esAdministrador = this.rolUsuario === 'admin' || this.rolUsuario === 'administrador';
@@ -119,6 +111,7 @@ export class LayoutComponent implements OnInit {
       '/registrar-entrega-alimentos': 'Registrar entrega de alimentos',
       '/historial-entregas': 'Historial de entregas',
       '/entregas-tipo-mercado': 'Entregas por tipo de mercado',
+      '/instituciones': 'Instituciones',
       '/banco-datos': 'Banco de Datos',
       '/crear-usuario': 'Crear Usuario',
       '/nuevo-producto': 'Nuevo Producto',
