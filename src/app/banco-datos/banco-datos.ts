@@ -255,6 +255,17 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
         { name: 'id_categoria_inventario', label: 'Categoría', type: 'select', required: true, source: 'categorias_inventario' },
         { name: 'id_unidad_medida', label: 'Unidad de medida', type: 'select', required: true, source: 'unidades_medida' },
         { name: 'marca_ingrediente', label: 'Marca', type: 'text', required: false },
+        {
+          name: 'tipo_conservacion',
+          label: 'Tipo de conservación',
+          type: 'select',
+          required: true,
+          defaultValue: 'perecedero',
+          options: [
+            { id: 'perecedero', label: 'Perecedero' },
+            { id: 'no_perecedero', label: 'No perecedero' }
+          ]
+        },
         { name: 'descripcion', label: 'Descripción', type: 'textarea', required: false }
       ]
     },

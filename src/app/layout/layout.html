@@ -48,6 +48,12 @@
         Registrar entrega de alimentos
       </a>
 
+      <a *ngIf="esSupervisor" routerLink="instituciones" routerLinkActive="active-link"
+         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500;">
+        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">apartment</span>
+        Instituciones
+      </a>
+
       <!-- MÓDULOS DE JEFA DE COCINA / MANIPULADORA -->
       <a *ngIf="esJefa" routerLink="asistencia-diaria" routerLinkActive="active-link"
          style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500;">

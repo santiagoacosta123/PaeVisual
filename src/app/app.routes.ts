@@ -28,6 +28,7 @@ import { SaldosAlmacenComponent } from './saldos-almacen/saldos-almacen';
 import { EntradasAjustesInventarioComponent } from './entradas-ajustes-inventario/entradas-ajustes-inventario';
 import { AsistenciaDiariaComponent } from './asistencia-diaria/asistencia-diaria';
 import { Reportes } from './reportes/reportes';
+import { InstitucionesComponent } from './instituciones/instituciones';
 
 export const routes: Routes = [
   {
@@ -77,6 +78,12 @@ export const routes: Routes = [
       },
 
       /* RUTAS MÓDULOS DE SUPERVISIÓN */
+      {
+        path: 'instituciones',
+        component: InstitucionesComponent,
+        canActivate: [roleGuard],
+        data: { roles: ['supervisor', 'coordinador', 'coordinador pae', 'superadministrador', 'super administrador', 'administrador', 'admin'] }
+      },
       {
         path: 'registrar-entrega-alimentos',
         component: RegistrarEntregaAlimentosComponent,
