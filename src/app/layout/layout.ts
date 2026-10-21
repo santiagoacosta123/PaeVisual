@@ -142,6 +142,7 @@ export class LayoutComponent implements OnInit {
       '/reporte-inventario': 'Reporte Inventario',
       '/unidades-medida': 'Unidades de Medida',
       '/menus': 'Menús',
+      '/facturas-compra': 'Facturas de Compra y Bodega Central',
       '/reportes-consumo': 'Reporte de consumos / salidas',
       '/notificaciones': 'Notificaciones'
     };

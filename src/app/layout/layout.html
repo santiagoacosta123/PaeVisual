@@ -86,6 +86,12 @@
         Usuarios
       </a>
 
+      <a *ngIf="esSuperAdministrador" routerLink="facturas-compra" routerLinkActive="active-link"
+         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500;">
+        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">receipt_long</span>
+        Facturas de Compra / Bodega
+      </a>
+
       <a *ngIf="esSuperAdministrador" routerLink="ingredientes" routerLinkActive="active-link"
          style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500;">
         <span class="material-symbols-outlined nav-icon" style="font-size:20px;">package</span>
@@ -103,6 +109,12 @@
          style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500;">
         <span class="material-symbols-outlined nav-icon" style="font-size:20px;">people</span>
         Usuarios
+      </a>
+
+      <a *ngIf="esAdministrador" routerLink="historial-entregas" routerLinkActive="active-link"
+         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500;">
+        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">local_shipping</span>
+        Recepción de Entregas
       </a>
 
       <a *ngIf="esAdministrador" routerLink="ingredientes" routerLinkActive="active-link"

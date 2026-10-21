@@ -1,57 +1,167 @@
-<div class="max-w-2xl font-sans">
-  <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs flex flex-col gap-5">
-    
+<div class="max-w-3xl font-sans" style="margin: 0 auto;">
+  <div class="bg-white border border-slate-200 rounded-2xl p-7 shadow-xs flex flex-col gap-6">
+
     <!-- Encabezado -->
-    <div class="border-b border-slate-100 pb-3.5">
-      <h3 class="text-base font-bold text-slate-900 m-0">Crear Nuevo Usuario</h3>
-      <p class="text-xs text-slate-500 m-0">Complete el formulario para dar de alta una nueva cuenta en el sistema.</p>
+    <div class="border-b border-slate-100 pb-4 flex items-center justify-between">
+      <div>
+        <h3 class="text-lg font-bold text-slate-900 m-0">Registrar Nuevo Usuario</h3>
+        <p class="text-xs text-slate-500 m-0 mt-1">
+          <span *ngIf="esSuperAdmin">Crea cuentas de <strong>Administradores</strong> o <strong>Supervisores</strong> del programa.</span>
+          <span *ngIf="esAdmin">Crea el equipo de cocina (<strong>Manipuladora Jefe</strong> o <strong>Manipuladoras</strong>) para tu institución.</span>
+        </p>
+      </div>
+      <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+        <span class="material-symbols-outlined text-sm">shield_person</span>
+        {{ esSuperAdmin ? 'Super Administrador' : (esAdmin ? 'Administrador Institucional' : 'Gestor') }}
+      </span>
     </div>
 
-    <!-- Campos -->
+    <!-- Banner si es Administrador institucional -->
+    <div *ngIf="esAdmin" class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex items-center gap-3">
+      <span class="material-symbols-outlined text-amber-600 text-xl">apartment</span>
+      <div class="text-xs text-slate-700">
+        <span class="font-semibold text-slate-900">Institución Asignada:</span>
+        {{ currentUser?.institucion || currentUser?.institucion_nombre || 'Tu Institución Educativa' }}
+        <p class="m-0 text-slate-500 text-[11px]">Todo usuario creado pertenecerá automáticamente a esta institución.</p>
+      </div>
+    </div>
+
+    <!-- Formulario -->
     <div class="flex flex-col gap-4 text-xs">
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+
+      <!-- Fila 1: Nombre y Apellido -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label class="block font-semibold text-slate-700 mb-1.5">Nombre Completo *</label>
-          <input type="text" placeholder="Ingresa tu nombre completo" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500">
+          <label class="block font-semibold text-slate-700 mb-1.5">Nombre *</label>
+          <input [(ngModel)]="form.nombre" type="text" placeholder="Ej: Carlos"
+            class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition">
         </div>
         <div>
-          <label class="block font-semibold text-slate-700 mb-1.5">Correo Electrónico *</label>
-          <input type="email" placeholder="Ingresa tu correo institucional" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500">
+          <label class="block font-semibold text-slate-700 mb-1.5">Apellido *</label>
+          <input [(ngModel)]="form.apellido" type="text" placeholder="Ej: Gómez"
+            class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition">
         </div>
       </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+      <!-- Fila 2: Documento y Correo -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1.5">Tipo Documento *</label>
+          <select [(ngModel)]="form.tipo_documento"
+            class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition cursor-pointer">
+            <option value="CC">Cédula de Ciudadanía (CC)</option>
+            <option value="CE">Cédula de Extranjería (CE)</option>
+            <option value="TI">Tarjeta de Identidad (TI)</option>
+            <option value="PAS">Pasaporte</option>
+          </select>
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1.5">Número de Documento *</label>
+          <input [(ngModel)]="form.numero_documento" type="text" placeholder="Ej: 1088123456"
+            class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition">
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1.5">Correo Electrónico *</label>
+          <input [(ngModel)]="form.correo" type="email" placeholder="correo@institucion.edu.co"
+            class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition">
+        </div>
+      </div>
+
+      <!-- Fila 3: Rol y Estado -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label class="block font-semibold text-slate-700 mb-1.5">Rol en el Sistema *</label>
-          <select class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500">
-            <option value="" disabled selected>Selecciona un rol...</option>
-            <option>Administrador</option>
-            <option value="supervisor">Supervisor (Coordinador PAE)</option>
-            <option value="JefaManipuladoras">Jefa de manipuladoras</option>
+          <select [(ngModel)]="form.rol" (change)="onRolChange()"
+            class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition cursor-pointer">
+            <option [ngValue]="null" disabled selected>Selecciona el rol a asignar...</option>
+            <option *ngFor="let rol of rolesDisponibles" [value]="rol.id_rol">
+              {{ rol.nombre }}
+            </option>
           </select>
         </div>
         <div>
           <label class="block font-semibold text-slate-700 mb-1.5">Estado Inicial</label>
-          <select class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500">
-            <option value="Activo" selected>Activo</option>
-            <option value="Inactivo">Inactivo</option>
+          <select [(ngModel)]="form.is_active"
+            class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition cursor-pointer">
+            <option [ngValue]="true">Activo (Habilitado para ingresar)</option>
+            <option [ngValue]="false">Inactivo (Acceso suspendido)</option>
           </select>
         </div>
       </div>
 
-      <div>
-        <label class="block font-semibold text-slate-700 mb-1.5">Contraseña *</label>
-        <input type="password" placeholder="Ingresa tu contraseña" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500">
+      <!-- CONDICIONAL 1: Super Admin asigna Institución al Administrador -->
+      <div *ngIf="esSuperAdmin && esRolAdmin()" class="bg-amber-50/50 border border-amber-200 rounded-xl p-4">
+        <label class="block font-semibold text-slate-800 mb-1.5">
+          <span class="material-symbols-outlined text-sm align-middle text-amber-600">apartment</span>
+          Institución Educativa que Administrará *
+        </label>
+        <select [(ngModel)]="form.id_institucion"
+          class="w-full px-3.5 py-2.5 bg-white border border-amber-300 rounded-xl text-xs text-slate-900 outline-none focus:border-amber-600 focus:ring-1 focus:ring-amber-600 transition cursor-pointer">
+          <option [ngValue]="null" disabled selected>Selecciona la institución correspondiente...</option>
+          <option *ngFor="let inst of institucionesDisponibles" [value]="inst.id_institucion || inst.id">
+            {{ inst.nombre_institucion || inst.nombre }} (NIT: {{ inst.nit || 'S/N' }})
+          </option>
+        </select>
+        <p class="text-[11px] text-slate-500 m-0 mt-1.5">Este usuario será la máxima autoridad para esta institución y sus sedes.</p>
       </div>
+
+      <!-- CONDICIONAL 2: Super Admin asigna Múltiples Instituciones al Supervisor -->
+      <div *ngIf="esSuperAdmin && esRolSupervisor()" class="bg-blue-50/40 border border-blue-200 rounded-xl p-4">
+        <label class="block font-semibold text-slate-800 mb-1.5">
+          <span class="material-symbols-outlined text-sm align-middle text-blue-600">domain_add</span>
+          Instituciones Asignadas a este Supervisor (Selección Múltiple)
+        </label>
+        <p class="text-[11px] text-slate-500 m-0 mb-3">Marca los colegios que supervisará este coordinador en su circuito:</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
+          <div *ngFor="let inst of institucionesDisponibles"
+            (click)="toggleInstitucionSupervisor(inst.id_institucion || inst.id)"
+            class="flex items-center gap-2.5 p-2.5 rounded-lg border cursor-pointer transition select-none"
+            [ngClass]="institucionSeleccionada(inst.id_institucion || inst.id) ? 'bg-blue-100 border-blue-400 font-semibold text-blue-900' : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700'">
+            <span class="material-symbols-outlined text-base"
+              [ngClass]="institucionSeleccionada(inst.id_institucion || inst.id) ? 'text-blue-600' : 'text-slate-400'">
+              {{ institucionSeleccionada(inst.id_institucion || inst.id) ? 'check_box' : 'check_box_outline_blank' }}
+            </span>
+            <span class="truncate text-xs">{{ inst.nombre_institucion || inst.nombre }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- CONDICIONAL 3: Administrador asigna Sede a la Manipuladora -->
+      <div *ngIf="esAdmin" class="bg-emerald-50/50 border border-emerald-200 rounded-xl p-4">
+        <label class="block font-semibold text-slate-800 mb-1.5">
+          <span class="material-symbols-outlined text-sm align-middle text-emerald-600">kitchen</span>
+          Sede Escolar donde Cocinará *
+        </label>
+        <select [(ngModel)]="form.id_sede"
+          class="w-full px-3.5 py-2.5 bg-white border border-emerald-300 rounded-xl text-xs text-slate-900 outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 transition cursor-pointer">
+          <option [ngValue]="null" disabled selected>Selecciona la sede escolar...</option>
+          <option *ngFor="let sede of sedesDisponibles" [value]="sede.id_sede || sede.id">
+            {{ sede.nombre_sede || sede.nombre }} - {{ sede.direccion || 'Sede institucional' }}
+          </option>
+        </select>
+        <p class="text-[11px] text-slate-500 m-0 mt-1.5">Esta manipuladora registrará asistencia y menús de esta sede específica.</p>
+      </div>
+
+      <!-- Fila 4: Contraseña Temporal -->
+      <div>
+        <label class="block font-semibold text-slate-700 mb-1.5">Contraseña Inicial *</label>
+        <input [(ngModel)]="form.password" type="password" placeholder="Asigna una contraseña provisional"
+          class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition">
+        <p class="text-[11px] text-slate-400 m-0 mt-1">El usuario deberá actualizarla en su primer inicio de sesión.</p>
+      </div>
+
     </div>
 
     <!-- Pie / Botones -->
-    <div class="flex justify-end gap-2.5 border-t border-slate-100 pt-4">
-      <a routerLink="/usuarios" (click)="cancelar()" class="bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-semibold px-4 py-2 rounded-xl text-xs transition cursor-pointer">
+    <div class="flex justify-end gap-3 border-t border-slate-100 pt-4">
+      <button type="button" (click)="cancelar()"
+        class="bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-semibold px-5 py-2.5 rounded-xl text-xs transition cursor-pointer">
         Cancelar
-      </a>
-      <button type="button" (click)="guardarUsuario()" class="bg-slate-900 hover:bg-slate-800 text-white font-semibold px-5 py-2 rounded-xl text-xs transition cursor-pointer shadow-2xs">
-        Guardar Usuario
+      </button>
+      <button type="button" (click)="guardarUsuario()" [disabled]="guardando"
+        class="bg-[#fac94b] hover:bg-[#f5b927] text-black font-bold px-6 py-2.5 rounded-xl text-xs transition cursor-pointer shadow-xs inline-flex items-center gap-2 border-none">
+        <span *ngIf="guardando" class="material-symbols-outlined text-sm animate-spin">progress_activity</span>
+        <span>{{ guardando ? 'Guardando...' : 'Crear Usuario' }}</span>
       </button>
     </div>
 
