@@ -29,6 +29,7 @@ import { EntradasAjustesInventarioComponent } from './entradas-ajustes-inventari
 import { AsistenciaDiariaComponent } from './asistencia-diaria/asistencia-diaria';
 import { Reportes } from './reportes/reportes';
 import { InstitucionesComponent } from './instituciones/instituciones';
+import { FacturasCompraComponent } from './facturas-compra/facturas-compra';
 
 export const routes: Routes = [
   {
@@ -95,7 +96,7 @@ export const routes: Routes = [
         path: 'historial-entregas',
         component: HistorialEntregas,
         canActivate: [roleGuard],
-        data: { roles: ['supervisor', 'coordinador', 'coordinador pae'] }
+        data: { roles: ['supervisor', 'coordinador', 'coordinador pae', 'administrador', 'admin', 'superadministrador', 'super administrador', 'super admin'] }
       },
 
       {
@@ -205,6 +206,12 @@ export const routes: Routes = [
         component: EntradasInventario,
         canActivate: [roleGuard],
         data: { roles: ['superadministrador', 'super administrador', 'super admin', 'administrador', 'admin'] }
+      },
+      {
+        path: 'facturas-compra',
+        component: FacturasCompraComponent,
+        canActivate: [roleGuard],
+        data: { roles: ['superadministrador', 'super administrador', 'super admin'] }
       }
     ]
   },

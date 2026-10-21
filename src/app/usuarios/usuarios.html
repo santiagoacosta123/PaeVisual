@@ -49,6 +49,7 @@
             <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase">DOCUMENTO</th>
             <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase">CORREO ELECTRÓNICO</th>
             <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase">ROL</th>
+            <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase">INSTITUCIÓN / SEDE</th>
             <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase">ESTADO</th>
             <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase text-right">ACCIONES</th>
           </tr>
@@ -81,6 +82,18 @@
               <span class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200 inline-block">
                 {{ obtenerNombreRol(u.rol) }}
               </span>
+            </td>
+
+            <!-- Institución / Sede -->
+            <td class="py-3 px-3">
+              <div *ngIf="u.institucion_nombre" class="inline-flex items-center gap-1.5 text-[11px] text-slate-800 font-semibold bg-slate-100 px-2.5 py-1 rounded-lg">
+                <span class="material-symbols-outlined text-[14px] text-amber-600">apartment</span>
+                {{ u.institucion_nombre }}
+              </div>
+              <div *ngIf="u.sede_nombre" class="text-[11px] text-slate-500 font-normal mt-0.5">
+                Sede: {{ u.sede_nombre }}
+              </div>
+              <span *ngIf="!u.institucion_nombre && !u.sede_nombre" class="text-slate-400 text-xs italic">—</span>
             </td>
 
             <!-- Estado -->

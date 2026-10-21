@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { SweetAlertService } from '../sweet-alert.service';
+import { AuthService } from '../services/auth.service';
 import {
   Entrega,
   EntregaPayload,
@@ -34,14 +35,40 @@ export class HistorialEntregas implements OnInit {
   editandoId: number | null = null;
   private catalogosCargados = false;
 
+  // Roles de usuario
+  esAdministrador = false;
+  esSupervisor = false;
+  esSuperAdmin = false;
+
+  // Modal de Recepción y Control de Calidad (Administrador)
+  modalRecepcionAbierto = false;
+  entregaSeleccionada: Entrega | null = null;
+  formRecepcion = {
+    cantidadRecibida: 0,
+    cantidadRechazada: 0,
+    motivoRechazo: '',
+  };
+  procesandoRecepcion = false;
+
+  // Modal de Detalle de Novedad / Auditoría
+  modalDetalleAbierto = false;
+  entregaDetalle: Entrega | null = null;
+
   crudForm = this.formularioVacio();
 
   constructor(
     public entregasService: EntregasService,
     private alertas: SweetAlertService,
+    private authService: AuthService,
   ) {}
 
   ngOnInit(): void {
+    const user = this.authService.obtenerUsuario();
+    const rol = user?.rol;
+    this.esSuperAdmin = this.authService.esSuperAdministrador(rol);
+    this.esSupervisor = this.authService.esSupervisor(rol);
+    this.esAdministrador = (this.authService.esAdministrador(rol) || rol === 'admin' || rol === 'administrador') && !this.esSuperAdmin;
+
     this.cargarHistorial();
   }
 
@@ -266,6 +293,131 @@ export class HistorialEntregas implements OnInit {
 
   claseEstado(entrega: Entrega): string {
     return this.entregasService.claseEstado(this.estado(entrega));
+  }
+
+  // =========================================================================
+  // CONTROL DE CALIDAD Y RECEPCIÓN TÉCNICA (ADMINISTRADOR)
+  // =========================================================================
+
+  abrirModalRecepcion(entrega: Entrega): void {
+    this.entregaSeleccionada = entrega;
+    const totalCant = entrega.cantidad || 0;
+    this.formRecepcion = {
+      cantidadRecibida: totalCant,
+      cantidadRechazada: 0,
+      motivoRechazo: '',
+    };
+    this.modalRecepcionAbierto = true;
+  }
+
+  cerrarModalRecepcion(): void {
+    this.modalRecepcionAbierto = false;
+    this.entregaSeleccionada = null;
+  }
+
+  onCambioCantidades(campo: 'recibida' | 'rechazada'): void {
+    if (!this.entregaSeleccionada) return;
+    const total = this.entregaSeleccionada.cantidad || 0;
+    if (campo === 'rechazada') {
+      const rech = Math.max(0, Number(this.formRecepcion.cantidadRechazada) || 0);
+      this.formRecepcion.cantidadRecibida = Math.max(0, +(total - rech).toFixed(3));
+    } else {
+      const rec = Math.max(0, Number(this.formRecepcion.cantidadRecibida) || 0);
+      this.formRecepcion.cantidadRechazada = Math.max(0, +(total - rec).toFixed(3));
+    }
+  }
+
+  confirmarRecepcion(): void {
+    if (!this.entregaSeleccionada || !this.entregaSeleccionada.id) return;
+    const rec = Number(this.formRecepcion.cantidadRecibida);
+    const rech = Number(this.formRecepcion.cantidadRechazada);
+
+    if (isNaN(rec) || rec < 0 || isNaN(rech) || rech < 0) {
+      void this.alertas.warning('Cantidades inválidas', 'Las cantidades deben ser números positivos.');
+      return;
+    }
+
+    if (rech > 0 && !this.formRecepcion.motivoRechazo.trim()) {
+      void this.alertas.warning(
+        'Motivo requerido',
+        'Has reportado productos dañados o rechazados. Por favor especifica el motivo (ej: tomates magullados o empaque averiado).'
+      );
+      return;
+    }
+
+    this.procesandoRecepcion = true;
+    this.entregasService.confirmarRecepcion(this.entregaSeleccionada.id, {
+      cantidad_recibida: rec,
+      cantidad_rechazada: rech,
+      motivo_rechazo: this.formRecepcion.motivoRechazo.trim(),
+    }).subscribe({
+      next: (res) => {
+        this.procesandoRecepcion = false;
+        this.cerrarModalRecepcion();
+        const unidad = this.entregaSeleccionada?.unidad || 'unidades';
+        const msj = rech > 0
+          ? `Se recibieron ${rec} ${unidad} en buen estado y se reportaron ${rech} ${unidad} con novedad/avería. El inventario ha sido acreditado.`
+          : `Se recibieron exitosamente los ${rec} ${unidad}. El inventario ha sido acreditado.`;
+        void this.alertas.success('Recepción confirmada', msj);
+        this.cargarHistorial();
+      },
+      error: (err) => {
+        this.procesandoRecepcion = false;
+        console.error('Error al confirmar recepción:', err);
+        const errMsj = err?.error?.error || 'No se pudo confirmar la recepción. Intenta nuevamente.';
+        void this.alertas.error('Error al confirmar recepción', errMsj);
+      },
+    });
+  }
+
+  verDetalleNovedad(entrega: Entrega): void {
+    this.entregaDetalle = entrega;
+    this.modalDetalleAbierto = true;
+  }
+
+  cerrarModalDetalle(): void {
+    this.modalDetalleAbierto = false;
+    this.entregaDetalle = null;
+  }
+
+  // Helpers de estado del ciclo de vida de la entrega
+  estadoEntrega(entrega: Entrega): string {
+    const e = (entrega.estado || 'EN_TRANSITO').toUpperCase();
+    switch (e) {
+      case 'RECIBIDA': return 'Recibida OK';
+      case 'CON_NOVEDAD': return 'Con Novedad';
+      case 'RECHAZADA': return 'Rechazada';
+      case 'EN_TRANSITO':
+      default:
+        return 'En tránsito';
+    }
+  }
+
+  claseEstadoEntrega(entrega: Entrega): string {
+    const e = (entrega.estado || 'EN_TRANSITO').toUpperCase();
+    switch (e) {
+      case 'RECIBIDA':
+        return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+      case 'CON_NOVEDAD':
+        return 'border-orange-300 bg-orange-50 text-orange-800';
+      case 'RECHAZADA':
+        return 'border-red-200 bg-red-50 text-red-700';
+      case 'EN_TRANSITO':
+      default:
+        return 'border-amber-200 bg-amber-50 text-amber-800';
+    }
+  }
+
+  iconoEstadoEntrega(entrega: Entrega): string {
+    const e = (entrega.estado || 'EN_TRANSITO').toUpperCase();
+    switch (e) {
+      case 'RECIBIDA': return 'check_circle';
+      case 'CON_NOVEDAD': return 'warning';
+      case 'RECHAZADA': return 'cancel';
+      case 'EN_TRANSITO':
+      default:
+        return 'local_shipping';
+    }
   }
 
   private formularioVacio() {

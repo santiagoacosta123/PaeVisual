@@ -1,0 +1,643 @@
+<div class="flex w-full flex-col gap-6" style="font-family: 'Roboto', sans-serif;">
+  
+  <!-- Sección Principal -->
+  <section class="rounded-[24px] border border-slate-200/80 bg-white p-5 shadow-sm sm:p-7">
+    
+    <!-- Header del Módulo -->
+    <header class="mb-6 flex flex-col justify-between gap-4 rounded-[16px] border px-5 py-4 sm:flex-row sm:items-center"
+      style="background-color: rgba(244, 180, 31, 0.1); border-color: rgba(244, 180, 31, 0.3);">
+      <div>
+        <h1 class="m-0 flex items-center gap-2.5 text-lg font-bold tracking-tight text-slate-900">
+          <span class="material-symbols-outlined text-[22px]" style="color: #d97706;">receipt_long</span>
+          Facturas de Compra & Bodega Central
+        </h1>
+        <p class="mb-0 mt-1 text-xs font-medium text-slate-600">
+          Registro de compras a proveedores mayoristas y control del stock central del operador PAE.
+        </p>
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        <button *ngIf="tabActiva === 'facturas'" type="button" (click)="abrirModalRegistro()"
+          class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-[13px] font-black text-slate-900 shadow-md transition hover:brightness-95"
+          style="background-color: #fac94b;">
+          <span class="material-symbols-outlined text-[18px]">add</span>
+          Registrar Factura
+        </button>
+      </div>
+    </header>
+
+    <!-- Pestañas de Navegación -->
+    <div class="mb-6 flex items-center gap-2 border-b border-slate-200 pb-3">
+      <button type="button" (click)="tabActiva = 'facturas'"
+        class="inline-flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-black transition"
+        [ngClass]="tabActiva === 'facturas' ? 'bg-amber-400 text-slate-900 shadow-sm' : 'text-slate-600 hover:bg-slate-100'">
+        <span class="material-symbols-outlined text-[18px]">receipt_long</span>
+        Facturas de Compra
+        <span class="rounded-full bg-slate-900/10 px-2 py-0.5 text-[10px] font-black">{{ facturas.length }}</span>
+      </button>
+
+      <button type="button" (click)="tabActiva = 'bodega'"
+        class="inline-flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-black transition"
+        [ngClass]="tabActiva === 'bodega' ? 'bg-amber-400 text-slate-900 shadow-sm' : 'text-slate-600 hover:bg-slate-100'">
+        <span class="material-symbols-outlined text-[18px]">warehouse</span>
+        Bodega Central (Stock Global)
+        <span class="rounded-full bg-slate-900/10 px-2 py-0.5 text-[10px] font-black">{{ inventarioCentral.length }}</span>
+      </button>
+    </div>
+
+    <!-- =========================================================================
+         PESTAÑA 1: FACTURAS DE COMPRA
+         ========================================================================= -->
+    <div *ngIf="tabActiva === 'facturas'">
+      
+      <!-- Tarjetas de Métricas -->
+      <div class="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-4">
+        <article class="flex items-center gap-3.5 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+          <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+            <span class="material-symbols-outlined">receipt</span>
+          </span>
+          <div>
+            <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-slate-500">Total Facturas</p>
+            <p class="mb-0 mt-0.5 text-2xl font-black text-slate-900">{{ facturas.length }}</p>
+          </div>
+        </article>
+
+        <article class="flex items-center gap-3.5 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4">
+          <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
+            <span class="material-symbols-outlined">check_circle</span>
+          </span>
+          <div>
+            <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-emerald-700">Facturas Activas</p>
+            <p class="mb-0 mt-0.5 text-2xl font-black text-slate-900">{{ totalRegistradas }}</p>
+          </div>
+        </article>
+
+        <article class="flex items-center gap-3.5 rounded-2xl border border-red-200 bg-red-50/60 p-4">
+          <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-red-100 text-red-700">
+            <span class="material-symbols-outlined">cancel</span>
+          </span>
+          <div>
+            <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-red-700">Facturas Anuladas</p>
+            <p class="mb-0 mt-0.5 text-2xl font-black text-slate-900">{{ totalAnuladas }}</p>
+          </div>
+        </article>
+
+        <article class="flex items-center gap-3.5 rounded-2xl border border-blue-200 bg-blue-50/60 p-4">
+          <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
+            <span class="material-symbols-outlined">payments</span>
+          </span>
+          <div>
+            <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-blue-700">Inversión Activa</p>
+            <p class="mb-0 mt-0.5 text-xl font-black text-slate-900">${{ totalInversion | number:'1.2-2' }}</p>
+          </div>
+        </article>
+      </div>
+
+      <!-- Filtros y Búsqueda -->
+      <div class="mb-5 flex flex-wrap items-center gap-3">
+        <button type="button" (click)="filtroEstado = 'TODAS'"
+          class="flex cursor-pointer items-center gap-1.5 rounded-xl border px-3.5 py-2 text-xs font-bold transition"
+          [ngClass]="filtroEstado === 'TODAS' ? 'border-amber-400 bg-amber-400 text-slate-900 shadow-sm' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'">
+          Todas
+        </button>
+        <button type="button" (click)="filtroEstado = 'REGISTRADA'"
+          class="flex cursor-pointer items-center gap-1.5 rounded-xl border px-3.5 py-2 text-xs font-bold transition"
+          [ngClass]="filtroEstado === 'REGISTRADA' ? 'border-emerald-500 bg-emerald-600 text-white shadow-sm' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'">
+          Registradas
+        </button>
+        <button type="button" (click)="filtroEstado = 'ANULADA'"
+          class="flex cursor-pointer items-center gap-1.5 rounded-xl border px-3.5 py-2 text-xs font-bold transition"
+          [ngClass]="filtroEstado === 'ANULADA' ? 'border-red-500 bg-red-600 text-white shadow-sm' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'">
+          Anuladas
+        </button>
+
+        <div class="flex min-w-[240px] flex-1 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 shadow-xs focus-within:border-amber-400">
+          <span class="material-symbols-outlined text-[18px] text-slate-400">search</span>
+          <input [(ngModel)]="filtroBusqueda" name="buscarFactura" type="search"
+            placeholder="Buscar por número de factura o proveedor..."
+            class="w-full border-0 bg-transparent py-2 text-xs font-medium text-slate-800 outline-none placeholder:text-slate-400" />
+        </div>
+
+        <button type="button" (click)="cargarDatos()" [disabled]="cargando"
+          class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-50">
+          <span class="material-symbols-outlined text-[17px]">refresh</span>
+          Actualizar
+        </button>
+      </div>
+
+      <!-- Tabla de Facturas -->
+      <div *ngIf="!cargando" class="overflow-x-auto rounded-2xl border border-slate-200/80">
+        <table class="w-full min-w-[950px] border-collapse text-left text-[13px]">
+          <thead>
+            <tr class="border-b border-slate-200 bg-slate-50/80 font-bold text-slate-600">
+              <th class="px-4 py-3.5">N° Factura</th>
+              <th class="px-4 py-3.5">Proveedor</th>
+              <th class="px-4 py-3.5">Fecha Compra</th>
+              <th class="px-4 py-3.5 text-center">Ítems</th>
+              <th class="px-4 py-3.5 text-right">Valor Total</th>
+              <th class="px-4 py-3.5 text-center">Estado</th>
+              <th class="px-4 py-3.5">Registrado Por</th>
+              <th class="px-4 py-3.5 text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr *ngFor="let f of facturasFiltradas" class="transition hover:bg-slate-50/60">
+              <td class="px-4 py-3.5 font-black text-slate-900">
+                <div class="flex items-center gap-2">
+                  <span class="material-symbols-outlined text-[17px] text-amber-600">description</span>
+                  <span>{{ f.numero_factura }}</span>
+                </div>
+              </td>
+              <td class="px-4 py-3.5 font-semibold text-slate-700">{{ f.proveedor }}</td>
+              <td class="px-4 py-3.5 font-medium text-slate-600">{{ f.fecha_compra | date:'dd/MM/yyyy' }}</td>
+              <td class="px-4 py-3.5 text-center font-bold text-slate-700">
+                <span class="rounded-lg bg-slate-100 px-2 py-0.5 text-xs">{{ f.detalles?.length || 0 }} productos</span>
+              </td>
+              <td class="px-4 py-3.5 text-right font-black text-slate-900">
+                ${{ f.valor_total | number:'1.2-2' }}
+              </td>
+              <td class="px-4 py-3.5 text-center">
+                <span *ngIf="f.estado === 'REGISTRADA'"
+                  class="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-black text-emerald-700">
+                  <span class="material-symbols-outlined text-[13px]">check_circle</span>
+                  Registrada
+                </span>
+                <span *ngIf="f.estado === 'ANULADA'"
+                  class="inline-flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-2.5 py-0.5 text-[11px] font-black text-red-700">
+                  <span class="material-symbols-outlined text-[13px]">cancel</span>
+                  Anulada
+                </span>
+              </td>
+              <td class="px-4 py-3.5 text-xs text-slate-500">
+                {{ f.usuario_registro_nombre || 'Sistema' }}
+              </td>
+              <td class="px-4 py-3.5 text-center">
+                <div class="flex items-center justify-center gap-1.5">
+                  <button type="button" (click)="abrirModalDetalle(f)" title="Ver detalle de factura"
+                    class="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-slate-700 hover:bg-slate-50">
+                    <span class="material-symbols-outlined text-[15px]">visibility</span>
+                    Ver
+                  </button>
+                  <button *ngIf="f.estado === 'REGISTRADA'" type="button" (click)="abrirModalAnular(f)" title="Anular factura"
+                    class="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-bold text-red-700 hover:bg-red-100">
+                    <span class="material-symbols-outlined text-[15px]">cancel</span>
+                    Anular
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="facturasFiltradas.length === 0">
+              <td colspan="8" class="px-4 py-12 text-center">
+                <div class="flex flex-col items-center justify-center gap-2">
+                  <span class="material-symbols-outlined text-4xl text-slate-300">receipt_long</span>
+                  <p class="m-0 text-xs font-bold text-slate-600">No se encontraron facturas con los filtros aplicados.</p>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p *ngIf="!cargando" class="mb-0 mt-3 text-xs font-medium text-slate-500">
+        Mostrando {{ facturasFiltradas.length }} de {{ facturas.length }} facturas.
+      </p>
+    </div>
+
+    <!-- =========================================================================
+         PESTAÑA 2: BODEGA CENTRAL (STOCK GLOBAL OPERADOR)
+         ========================================================================= -->
+    <div *ngIf="tabActiva === 'bodega'">
+      
+      <!-- Métricas Bodega -->
+      <div class="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <article class="flex items-center gap-3.5 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+          <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+            <span class="material-symbols-outlined">inventory_2</span>
+          </span>
+          <div>
+            <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-slate-500">Total Insumos en Bodega</p>
+            <p class="mb-0 mt-0.5 text-2xl font-black text-slate-900">{{ inventarioCentral.length }}</p>
+          </div>
+        </article>
+
+        <article class="flex items-center gap-3.5 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4">
+          <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
+            <span class="material-symbols-outlined">task_alt</span>
+          </span>
+          <div>
+            <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-emerald-700">Stock Óptimo</p>
+            <p class="mb-0 mt-0.5 text-2xl font-black text-slate-900">{{ inventarioCentral.length - stockBajoCount }}</p>
+          </div>
+        </article>
+
+        <article class="flex items-center gap-3.5 rounded-2xl border border-orange-200 bg-orange-50/60 p-4">
+          <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-orange-100 text-orange-700">
+            <span class="material-symbols-outlined">warning</span>
+          </span>
+          <div>
+            <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-orange-700">Stock Bajo o Crítico</p>
+            <p class="mb-0 mt-0.5 text-2xl font-black text-slate-900">{{ stockBajoCount }}</p>
+          </div>
+        </article>
+      </div>
+
+      <!-- Buscador Bodega -->
+      <div class="mb-5 flex items-center gap-3">
+        <div class="flex min-w-[260px] flex-1 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 shadow-xs focus-within:border-amber-400">
+          <span class="material-symbols-outlined text-[18px] text-slate-400">search</span>
+          <input [(ngModel)]="filtroBusquedaBodega" name="buscarBodega" type="search"
+            placeholder="Buscar por ingrediente o categoría..."
+            class="w-full border-0 bg-transparent py-2 text-xs font-medium text-slate-800 outline-none placeholder:text-slate-400" />
+        </div>
+        <button type="button" (click)="cargarBodega()"
+          class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-50">
+          <span class="material-symbols-outlined text-[17px]">refresh</span>
+          Actualizar Stock
+        </button>
+      </div>
+
+      <!-- Tabla Bodega Central -->
+      <div class="overflow-x-auto rounded-2xl border border-slate-200/80">
+        <table class="w-full min-w-[850px] border-collapse text-left text-[13px]">
+          <thead>
+            <tr class="border-b border-slate-200 bg-slate-50/80 font-bold text-slate-600">
+              <th class="px-4 py-3.5">Insumo / Ingrediente</th>
+              <th class="px-4 py-3.5">Categoría</th>
+              <th class="px-4 py-3.5 text-center">Tipo Conservación</th>
+              <th class="px-4 py-3.5 text-center">Stock Disponible</th>
+              <th class="px-4 py-3.5 text-center">Stock Mínimo</th>
+              <th class="px-4 py-3.5 text-center">Estado Bodega</th>
+              <th class="px-4 py-3.5">Última Actualización</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr *ngFor="let item of inventarioCentralFiltrado" class="transition hover:bg-slate-50/60">
+              <td class="px-4 py-3.5 font-bold text-slate-900">
+                <div class="flex items-center gap-2">
+                  <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-50 text-amber-700">
+                    <span class="material-symbols-outlined text-[16px]">egg_alt</span>
+                  </span>
+                  <span>{{ item.ingrediente_nombre }}</span>
+                </div>
+              </td>
+              <td class="px-4 py-3.5 font-semibold text-slate-600">{{ item.categoria_nombre || 'General' }}</td>
+              <td class="px-4 py-3.5 text-center">
+                <span class="rounded-lg border px-2 py-0.5 text-[11px] font-bold"
+                  [ngClass]="item.tipo_conservacion === 'Perecedero' ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-amber-200 bg-amber-50 text-amber-800'">
+                  {{ item.tipo_conservacion || 'No perecedero' }}
+                </span>
+              </td>
+              <td class="px-4 py-3.5 text-center font-black text-slate-900 text-sm">
+                {{ item.cantidad_disponible | number:'1.2-3' }}
+                <span class="text-xs font-semibold text-slate-500">{{ item.unidad_medida_abreviatura || item.unidad_medida_nombre || 'Kg' }}</span>
+              </td>
+              <td class="px-4 py-3.5 text-center font-bold text-slate-500">
+                {{ item.stock_minimo | number:'1.2-3' }}
+              </td>
+              <td class="px-4 py-3.5 text-center">
+                <span *ngIf="+item.cantidad_disponible > +item.stock_minimo"
+                  class="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-black text-emerald-700">
+                  <span class="material-symbols-outlined text-[13px]">check_circle</span>
+                  Óptimo
+                </span>
+                <span *ngIf="+item.cantidad_disponible <= +item.stock_minimo && +item.cantidad_disponible > 0"
+                  class="inline-flex items-center gap-1 rounded-full border border-orange-300 bg-orange-50 px-2.5 py-0.5 text-[11px] font-black text-orange-800">
+                  <span class="material-symbols-outlined text-[13px]">warning</span>
+                  Bajo Stock
+                </span>
+                <span *ngIf="+item.cantidad_disponible <= 0"
+                  class="inline-flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-2.5 py-0.5 text-[11px] font-black text-red-700">
+                  <span class="material-symbols-outlined text-[13px]">error</span>
+                  Agotado
+                </span>
+              </td>
+              <td class="px-4 py-3.5 text-xs text-slate-500">
+                {{ item.fecha_ultima_actualizacion ? (item.fecha_ultima_actualizacion | date:'dd/MM/yyyy HH:mm') : '—' }}
+              </td>
+            </tr>
+            <tr *ngIf="inventarioCentralFiltrado.length === 0">
+              <td colspan="7" class="px-4 py-12 text-center text-xs font-bold text-slate-500">
+                No hay insumos registrados en bodega central con ese criterio.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="mb-0 mt-3 text-xs font-medium text-slate-500">
+        Mostrando {{ inventarioCentralFiltrado.length }} de {{ inventarioCentral.length }} insumos en bodega.
+      </p>
+    </div>
+
+  </section>
+
+  <!-- =========================================================================
+       MODAL DE REGISTRO DE FACTURA DE COMPRA
+       ========================================================================= -->
+  <div *ngIf="modalRegistroAbierto"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs overflow-y-auto">
+    <div class="w-full max-w-3xl rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl transition-all sm:p-7 max-h-[90vh] flex flex-col">
+      
+      <!-- Header Modal -->
+      <div class="flex items-start justify-between border-b border-slate-100 pb-4 flex-shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
+            <span class="material-symbols-outlined text-[24px]">post_add</span>
+          </div>
+          <div>
+            <h3 class="m-0 text-base font-black text-slate-900">Registrar Factura de Compra</h3>
+            <p class="m-0 text-xs font-medium text-slate-500">Los insumos ingresados sumarán automáticamente a la Bodega Central</p>
+          </div>
+        </div>
+        <button type="button" (click)="cerrarModalRegistro()"
+          class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-slate-400 hover:bg-slate-100">
+          <span class="material-symbols-outlined text-[20px]">close</span>
+        </button>
+      </div>
+
+      <!-- Formulario Scrollable -->
+      <form (ngSubmit)="guardarFactura()" class="flex-1 overflow-y-auto py-4 space-y-5">
+        
+        <!-- Cabecera de la factura -->
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 bg-slate-50/70 p-4 rounded-2xl border border-slate-100">
+          <label class="flex flex-col gap-1 text-[11px] font-black uppercase tracking-wider text-slate-600">
+            N° Factura *
+            <input type="text" [(ngModel)]="formFactura.numero_factura" name="numFac" required
+              placeholder="Ej: FAC-2026-001"
+              class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-800 outline-none focus:border-amber-400" />
+          </label>
+
+          <label class="flex flex-col gap-1 text-[11px] font-black uppercase tracking-wider text-slate-600">
+            Proveedor Mayorista *
+            <input type="text" [(ngModel)]="formFactura.proveedor" name="provFac" required
+              placeholder="Ej: Distribuidora Central"
+              class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-800 outline-none focus:border-amber-400" />
+          </label>
+
+          <label class="flex flex-col gap-1 text-[11px] font-black uppercase tracking-wider text-slate-600">
+            Fecha de Compra *
+            <input type="date" [(ngModel)]="formFactura.fecha_compra" name="fechaFac" required
+              class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-800 outline-none focus:border-amber-400" />
+          </label>
+
+          <label class="flex flex-col gap-1 text-[11px] font-black uppercase tracking-wider text-slate-600">
+            Soporte Digital / Ref.
+            <input type="text" [(ngModel)]="formFactura.soporte_digital" name="soporteFac"
+              placeholder="PDF, enlace o ref."
+              class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-800 outline-none focus:border-amber-400" />
+          </label>
+        </div>
+
+        <!-- Tabla dinámica de Ítems / Insumos -->
+        <div>
+          <div class="flex items-center justify-between mb-3">
+            <h4 class="m-0 text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-[17px] text-amber-600">inventory</span>
+              Detalle de Productos Comprados
+            </h4>
+            <button type="button" (click)="agregarFilaDetalle()"
+              class="inline-flex cursor-pointer items-center gap-1 rounded-xl border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-900 hover:bg-amber-100">
+              <span class="material-symbols-outlined text-[16px]">add</span>
+              Agregar producto
+            </button>
+          </div>
+
+          <div class="space-y-3">
+            <div *ngFor="let item of formFactura.detalles; let i = index"
+              class="flex flex-col sm:flex-row items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-xs">
+              
+              <span class="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-[11px] font-black text-slate-500">
+                {{ i + 1 }}
+              </span>
+
+              <!-- Selector de Producto -->
+              <div class="flex-1 min-w-[200px]">
+                <label class="block text-[10px] font-bold uppercase text-slate-400 mb-0.5">Producto *</label>
+                <select [(ngModel)]="item.id_ingrediente" [name]="'prod_' + i" required
+                  class="w-full rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-800 outline-none focus:border-amber-400">
+                  <option [ngValue]="null" disabled>Selecciona producto</option>
+                  <option *ngFor="let ing of catalogoIngredientes" [ngValue]="ing.id_ingrediente">
+                    {{ ing.nombre_ingrediente }} ({{ ing.unidad_abreviatura || ing.unidad_nombre || 'Kg' }})
+                  </option>
+                </select>
+              </div>
+
+              <!-- Cantidad -->
+              <div class="w-28">
+                <label class="block text-[10px] font-bold uppercase text-slate-400 mb-0.5">Cantidad *</label>
+                <input type="number" [(ngModel)]="item.cantidad" [name]="'cant_' + i" min="0.001" step="0.001" required
+                  placeholder="0.00"
+                  class="w-full rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-black text-slate-800 outline-none focus:border-amber-400" />
+              </div>
+
+              <!-- Precio Unitario -->
+              <div class="w-32">
+                <label class="block text-[10px] font-bold uppercase text-slate-400 mb-0.5">Precio Unit. ($)</label>
+                <input type="number" [(ngModel)]="item.precio_unitario" [name]="'precio_' + i" min="0" step="0.01"
+                  placeholder="0.00"
+                  class="w-full rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-800 outline-none focus:border-amber-400" />
+              </div>
+
+              <!-- Subtotal -->
+              <div class="w-28 text-right">
+                <label class="block text-[10px] font-bold uppercase text-slate-400 mb-0.5">Subtotal</label>
+                <p class="m-0 text-xs font-black text-slate-900 py-1.5">
+                  ${{ calcularSubtotal(item) | number:'1.2-2' }}
+                </p>
+              </div>
+
+              <!-- Lote y Vencimiento opcionales -->
+              <div class="w-28">
+                <label class="block text-[10px] font-bold uppercase text-slate-400 mb-0.5">N° Lote</label>
+                <input type="text" [(ngModel)]="item.numero_lote" [name]="'lote_' + i" placeholder="Opcional"
+                  class="w-full rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-[11px] font-medium text-slate-700 outline-none focus:border-amber-400" />
+              </div>
+
+              <div class="w-32">
+                <label class="block text-[10px] font-bold uppercase text-slate-400 mb-0.5">Vencimiento</label>
+                <input type="date" [(ngModel)]="item.fecha_vencimiento" [name]="'venc_' + i"
+                  class="w-full rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-[11px] font-medium text-slate-700 outline-none focus:border-amber-400" />
+              </div>
+
+              <!-- Botón Eliminar Fila -->
+              <button type="button" (click)="eliminarFilaDetalle(i)" title="Eliminar fila"
+                class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl text-slate-400 transition hover:bg-red-50 hover:text-red-600 mt-3 sm:mt-0">
+                <span class="material-symbols-outlined text-[18px]">delete</span>
+              </button>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- Total de la Factura -->
+        <div class="flex items-center justify-between rounded-2xl border border-amber-200 bg-amber-50/70 p-4">
+          <div>
+            <p class="m-0 text-xs font-bold text-amber-900">Total General de la Compra</p>
+            <p class="m-0 text-[11px] text-amber-700">Calculado automáticamente a partir de los subtotales de cada insumo.</p>
+          </div>
+          <div class="text-right">
+            <span class="text-2xl font-black text-slate-900">
+              ${{ totalFacturaCalculado | number:'1.2-2' }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Botones Modal -->
+        <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 flex-shrink-0">
+          <button type="button" (click)="cerrarModalRegistro()" [disabled]="guardando"
+            class="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-50">
+            Cancelar
+          </button>
+          <button type="submit" [disabled]="guardando"
+            class="inline-flex cursor-pointer items-center gap-2 rounded-xl px-5 py-2.5 text-xs font-black text-slate-900 shadow-md transition hover:brightness-95 disabled:opacity-50"
+            style="background-color: #fac94b;">
+            <span class="material-symbols-outlined text-[17px]">{{ guardando ? 'hourglass_top' : 'save' }}</span>
+            {{ guardando ? 'Guardando...' : 'Guardar Factura e Ingresar a Bodega' }}
+          </button>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       MODAL DE DETALLE DE FACTURA
+       ========================================================================= -->
+  <div *ngIf="modalDetalleAbierto && facturaSeleccionada"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs">
+    <div class="w-full max-w-2xl rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl">
+      <div class="flex items-start justify-between border-b border-slate-100 pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
+            <span class="material-symbols-outlined text-[22px]">receipt</span>
+          </div>
+          <div>
+            <h3 class="m-0 text-base font-black text-slate-900">Factura {{ facturaSeleccionada.numero_factura }}</h3>
+            <p class="m-0 text-xs font-medium text-slate-500">Proveedor: {{ facturaSeleccionada.proveedor }}</p>
+          </div>
+        </div>
+        <button type="button" (click)="cerrarModalDetalle()"
+          class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-slate-400 hover:bg-slate-100">
+          <span class="material-symbols-outlined text-[20px]">close</span>
+        </button>
+      </div>
+
+      <div class="my-4 space-y-4 text-xs">
+        <!-- Info general -->
+        <div class="grid grid-cols-3 gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-100">
+          <div>
+            <span class="text-[10px] font-bold uppercase text-slate-400">Fecha de Compra</span>
+            <p class="m-0 font-bold text-slate-800">{{ facturaSeleccionada.fecha_compra | date:'dd/MM/yyyy' }}</p>
+          </div>
+          <div>
+            <span class="text-[10px] font-bold uppercase text-slate-400">Estado</span>
+            <p class="m-0 font-black" [ngClass]="facturaSeleccionada.estado === 'REGISTRADA' ? 'text-emerald-700' : 'text-red-700'">
+              {{ facturaSeleccionada.estado }}
+            </p>
+          </div>
+          <div>
+            <span class="text-[10px] font-bold uppercase text-slate-400">Total Facturado</span>
+            <p class="m-0 font-black text-slate-900 text-sm">${{ facturaSeleccionada.valor_total | number:'1.2-2' }}</p>
+          </div>
+        </div>
+
+        <!-- Alerta si fue anulada -->
+        <div *ngIf="facturaSeleccionada.estado === 'ANULADA'"
+          class="rounded-2xl border border-red-200 bg-red-50 p-3.5 space-y-1 text-red-800">
+          <div class="flex items-center gap-1.5 font-black">
+            <span class="material-symbols-outlined text-[17px]">cancel</span>
+            <span>Factura Anulada el {{ facturaSeleccionada.fecha_anulacion | date:'dd/MM/yyyy HH:mm' }}</span>
+          </div>
+          <p class="m-0 text-xs"><strong>Motivo:</strong> {{ facturaSeleccionada.motivo_anulacion }}</p>
+          <p class="m-0 text-[11px] text-red-600">Anulada por: {{ facturaSeleccionada.usuario_anulacion_nombre || 'Administrador' }}</p>
+        </div>
+
+        <!-- Lista de Productos Comprados -->
+        <div>
+          <h5 class="m-0 mb-2 font-black text-slate-700 uppercase tracking-wider text-[11px]">Productos de la Factura</h5>
+          <div class="overflow-x-auto rounded-xl border border-slate-200">
+            <table class="w-full border-collapse text-left text-xs">
+              <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold">
+                <tr>
+                  <th class="px-3 py-2">Producto</th>
+                  <th class="px-3 py-2 text-center">Cantidad</th>
+                  <th class="px-3 py-2 text-right">Precio Unit.</th>
+                  <th class="px-3 py-2 text-right">Subtotal</th>
+                  <th class="px-3 py-2 text-center">Lote / Vence</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                <tr *ngFor="let det of facturaSeleccionada.detalles">
+                  <td class="px-3 py-2 font-bold text-slate-800">{{ det.ingrediente_nombre }}</td>
+                  <td class="px-3 py-2 text-center font-bold">{{ det.cantidad }} {{ det.unidad_medida_nombre }}</td>
+                  <td class="px-3 py-2 text-right font-medium text-slate-600">${{ det.precio_unitario | number:'1.2-2' }}</td>
+                  <td class="px-3 py-2 text-right font-black text-slate-900">${{ det.subtotal | number:'1.2-2' }}</td>
+                  <td class="px-3 py-2 text-center text-[11px] text-slate-500">
+                    {{ det.numero_lote || '—' }} <span *ngIf="det.fecha_vencimiento">({{ det.fecha_vencimiento | date:'dd/MM/yy' }})</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="flex justify-end pt-3 border-t border-slate-100">
+        <button type="button" (click)="cerrarModalDetalle()"
+          class="rounded-xl px-4 py-2 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200">
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       MODAL DE ANULACIÓN DE FACTURA
+       ========================================================================= -->
+  <div *ngIf="modalAnularAbierto && facturaAAnular"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs">
+    <div class="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl">
+      <div class="flex items-start justify-between border-b border-slate-100 pb-3">
+        <div class="flex items-center gap-2 text-red-700">
+          <span class="material-symbols-outlined text-[24px]">warning</span>
+          <h3 class="m-0 text-base font-black text-slate-900">Anular Factura de Compra</h3>
+        </div>
+        <button type="button" (click)="cerrarModalAnular()"
+          class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-slate-400 hover:bg-slate-100">
+          <span class="material-symbols-outlined text-[20px]">close</span>
+        </button>
+      </div>
+
+      <div class="my-4 space-y-3 text-xs">
+        <p class="m-0 text-slate-600 leading-relaxed">
+          ¿Estás seguro de anular la factura <strong>{{ facturaAAnular.numero_factura }}</strong> de <strong>{{ facturaAAnular.proveedor }}</strong>?
+        </p>
+        <div class="rounded-xl bg-red-50 p-3 border border-red-200 text-red-800">
+          <p class="m-0 font-bold">¡Atención!</p>
+          <p class="m-0 text-[11px] mt-0.5">
+            Al anular esta factura, todos los productos ingresados en ella serán descontados automáticamente de la <strong>Bodega Central</strong>.
+          </p>
+        </div>
+
+        <label class="flex flex-col gap-1 text-[11px] font-bold text-slate-700">
+          Motivo o justificación de anulación *
+          <textarea [(ngModel)]="motivoAnulacion" name="motivoAnul" rows="3" required
+            placeholder="Especifica la razón legal o administrativa de la anulación..."
+            class="w-full rounded-xl border border-red-300 bg-white p-2.5 text-xs text-slate-800 outline-none focus:border-red-500"></textarea>
+        </label>
+      </div>
+
+      <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+        <button type="button" (click)="cerrarModalAnular()" [disabled]="procesandoAnulacion"
+          class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50">
+          Cancelar
+        </button>
+        <button type="button" (click)="confirmarAnulacion()" [disabled]="procesandoAnulacion"
+          class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-red-600 px-4 py-2 text-xs font-black text-white shadow-md hover:bg-red-700 disabled:opacity-50">
+          <span class="material-symbols-outlined text-[16px]">{{ procesandoAnulacion ? 'hourglass_top' : 'delete_forever' }}</span>
+          {{ procesandoAnulacion ? 'Anulando...' : 'Sí, Anular Factura' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>

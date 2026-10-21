@@ -19,6 +19,9 @@ export interface AuthenticatedUser {
   rol: string | null;
   institucion?: string;
   id_institucion?: number;
+  institucion_nombre?: string;
+  id_sede?: number;
+  sede_nombre?: string;
   is_superuser?: boolean;
   debe_cambiar_password?: boolean;
 }
@@ -78,6 +81,11 @@ export class AuthService {
     return rolNormalizado === 'superadministrador'
       || rolNormalizado === 'super administrador'
       || rolNormalizado === 'super admin';
+  }
+
+  esAdministrador(rol: string | null | undefined): boolean {
+    const rolNormalizado = this.normalizarRol(rol);
+    return rolNormalizado === 'administrador' || rolNormalizado === 'admin';
   }
 
   rolPermitido(rol: string | null | undefined): boolean {

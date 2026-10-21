@@ -9,6 +9,10 @@ export interface Entrega {
   id?: number;
   idIngrediente?: number;
   idTipoMercado?: number;
+  idInstitucion?: number;
+  institucionNombre?: string;
+  idSede?: number;
+  sedeNombre?: string;
   ingrediente: string;
   tipoMercado: string;
   frecuencia: string;
@@ -16,6 +20,11 @@ export interface Entrega {
   unidad: string;
   fechaRecepcion: string;
   fechaVencimiento: string;
+  estado?: 'EN_TRANSITO' | 'RECIBIDA' | 'CON_NOVEDAD' | 'RECHAZADA' | string;
+  cantidadRecibida?: number | null;
+  cantidadRechazada?: number | null;
+  motivoRechazo?: string;
+  usuarioReceptorNombre?: string;
   observaciones?: string;
 }
 
@@ -133,6 +142,15 @@ export class EntregasService {
       responseType: 'blob'
     });
   }
+
+  // Confirmar recepción técnica y control de calidad (Administrador)
+  confirmarRecepcion(id: number, payload: {
+    cantidad_recibida: number;
+    cantidad_rechazada?: number;
+    motivo_rechazo?: string;
+  }): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}${id}/confirmar-recepcion/`, payload, this.getHeaders());
+  }
   // ------------------------------------------------------------------------------
 
   private listaDe(data: any): any[] {
@@ -172,6 +190,10 @@ export class EntregasService {
       id: Number(item.id_entrega ?? item.id),
       idIngrediente: idIng,
       idTipoMercado: idTipo,
+      idInstitucion: item.id_institucion ? Number(item.id_institucion) : undefined,
+      institucionNombre: String(item.institucion_nombre ?? item.institucion?.nombre_institucion ?? ''),
+      idSede: item.id_sede ? Number(item.id_sede) : undefined,
+      sedeNombre: String(item.sede_nombre ?? item.sede?.nombre_sede ?? ''),
       ingrediente: ingNombre,
       tipoMercado: this.normalizarMercado(
         tipoMercadoNombre || (idTipo === 1 ? 'Perecederos' : 'Granos')
@@ -181,6 +203,11 @@ export class EntregasService {
       unidad: this.normalizarUnidad(uni),
       fechaRecepcion: this.soloFecha(item.fecha_entrega ?? item.fechaRecepcion ?? item.fecha_recepcion),
       fechaVencimiento: this.soloFecha(item.fecha_vencimiento ?? item.fechaVencimiento),
+      estado: (item.estado || 'EN_TRANSITO').toUpperCase(),
+      cantidadRecibida: item.cantidad_recibida != null ? Number(item.cantidad_recibida) : null,
+      cantidadRechazada: item.cantidad_rechazada != null ? Number(item.cantidad_rechazada) : null,
+      motivoRechazo: item.motivo_rechazo || '',
+      usuarioReceptorNombre: item.usuario_receptor_nombre || '',
       observaciones: obs,
     };
   }
