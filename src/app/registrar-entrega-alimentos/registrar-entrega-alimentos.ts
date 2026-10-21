@@ -4,14 +4,15 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
+import { environment } from '@env/environment';
 
 /* ============================================================
    AJUSTA ESTAS RUTAS A TU BACKEND
    ============================================================ */
-export const API = '/api';
-export const URL_INGREDIENTES = `${API}/ingredientes`;     // GET  -> catálogo completo de productos
-export const URL_TIPOS_MERCADO = `${API}/tipos-mercado`;   // GET  -> perecedero / no perecedero
-export const URL_ENTREGAS = `${API}/entregas`;             // GET historial · POST guardar entrega
+export const API = environment.apiUrl;
+export const URL_INGREDIENTES = `${API}/ingredientes/`;     // GET  -> catálogo completo de productos
+export const URL_TIPOS_MERCADO = `${API}/tipos-mercado/`;   // GET  -> perecedero / no perecedero
+export const URL_ENTREGAS = `${API}/entregas/`;             // GET historial · POST guardar entrega
 
 /* ============================================================
    MODELOS

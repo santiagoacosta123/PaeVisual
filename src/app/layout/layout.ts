@@ -28,21 +28,28 @@ import { AuthService } from '../services/auth.service';
 })
 export class LayoutComponent implements OnInit {
 
+  // Declaración de pageTitle
   pageTitle: string = 'Panel de Control';
 
+  // Control de Roles
   rolUsuario: string = '';
+  esSuperAdministrador: boolean = false;
   esSupervisor: boolean = false;
   esJefa: boolean = false;
   esAdministrador: boolean = false;
   esGestor: boolean = false;
+  institucionUsuario: string = '';
 
+  // Estado del perfil
   mostrarPerfil = false;
   vistaActual = 'perfil';
 
+  // Estado de las notificaciones
   mostrarNotificaciones = false;
   listaNotificaciones: Notificacion[] = [];
   notificacionesNoLeidas = 0;
 
+  // Datos del perfil y formularios
   perfil = {
     nombre: '',
     correo: '',
@@ -62,6 +69,7 @@ export class LayoutComponent implements OnInit {
     private cdr: ChangeDetectorRef,
     private router: Router
   ) {
+    // Escuchar los cambios de ruta para actualizar el título automáticamente
     this.router.events.pipe(
       filter((event): event is NavigationEnd => event instanceof NavigationEnd)
     ).subscribe((event: NavigationEnd) => {
@@ -73,23 +81,39 @@ export class LayoutComponent implements OnInit {
     const usuario = this.authService.obtenerUsuario();
 
     if (usuario) {
+      // Normalizar y evaluar el rol del usuario autenticado
+      this.rolUsuario = this.authService.normalizarRol(usuario.rol);
+      this.esSuperAdministrador = this.authService.esSuperAdministrador(usuario.rol);
+      this.esSupervisor = this.authService.esSupervisor(usuario.rol);
+      this.esJefa = this.authService.esJefa(usuario.rol);
+      this.esAdministrador = (this.rolUsuario === 'admin' || this.rolUsuario === 'administrador') && !this.esSuperAdministrador;
+      this.esGestor = this.rolUsuario.includes('gestor');
+
+      const rolNombre = this.esSuperAdministrador
+        ? 'Super Administrador'
+        : this.esSupervisor
+          ? 'Supervisor (Coordinador PAE)'
+          : this.esJefa
+            ? 'Jefa de manipuladoras'
+            : usuario.rol || 'Sin rol asignado';
+
       this.perfil = {
         nombre: `${usuario.nombre ?? ''} ${usuario.apellido ?? ''}`.trim() || usuario.correo,
         correo: usuario.correo,
-        rol: this.authService.esSupervisor(usuario.rol)
-          ? 'Supervisor (Coordinador PAE)'
-          : this.authService.esJefa(usuario.rol)
-            ? 'Jefa de manipuladoras'
-            : usuario.rol || 'Sin rol asignado'
+        rol: rolNombre
       };
 
       this.editForm = { ...this.perfil };
 
-      this.rolUsuario = this.authService.normalizarRol(usuario.rol);
-      this.esSupervisor = this.authService.esSupervisor(usuario.rol);
-      this.esJefa = this.authService.esJefa(usuario.rol);
-      this.esAdministrador = this.rolUsuario === 'admin' || this.rolUsuario === 'administrador';
-      this.esGestor = this.rolUsuario.includes('gestor');
+      // Asignación de institución para el administrador
+      this.institucionUsuario = usuario.institucion || (this.esAdministrador ? 'Institución Educativa Asignada' : '');
+
+      // Primer ingreso con contraseña provisional
+      if (usuario.debe_cambiar_password) {
+        this.mostrarPerfil = true;
+        this.vistaActual = 'password';
+        this.passwordMensaje = 'Por seguridad, debes actualizar tu contraseña provisional en este primer inicio de sesión.';
+      }
     }
 
     this.cargarNotificacionesHeader();

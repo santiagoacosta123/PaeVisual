@@ -1,0 +1,369 @@
+<style>
+/* Estilos de Instituciones: misma línea visual (naranja SIRAE) del resto de pantallas */
+.fx-panel { position: relative; background: #fff; border-radius: 28px; border: 1px solid #F1F5F9; box-shadow: 0 10px 30px -18px rgba(15, 23, 42, .18); }
+.ico-naranja { background: linear-gradient(135deg, #FFA928 0%, #FF8A00 100%); color: #fff; }
+.ico-suave { background: #FFF1DB; color: #FF8A00; }
+.pill-on { background: linear-gradient(135deg, #FFA928, #FF8A00); color: #fff; box-shadow: 0 6px 14px -6px rgba(255, 138, 0, .7); }
+.fx-input:focus { border-color: #FF9500; box-shadow: 0 0 0 3px rgba(255, 149, 0, .18); }
+
+/* Tarjeta de institución */
+.inst-card { background: #fff; border-radius: 28px; border: 1px solid #F1F5F9; padding: 22px; box-shadow: 0 10px 26px -16px rgba(15, 23, 42, .18); transition: transform .3s ease, box-shadow .3s ease; }
+.inst-card:hover { transform: translateY(-4px); box-shadow: 0 20px 36px -16px rgba(255, 138, 0, .35); }
+
+/* Tarjeta de ingrediente */
+.prod-card { position: relative; background: #fff; border-radius: 28px; padding: 64px 16px 16px; text-align: center; box-shadow: 0 10px 26px -14px rgba(15, 23, 42, .15); border: 1px solid #F8FAFC; transition: transform .3s ease, box-shadow .3s ease; }
+.prod-card:hover { transform: translateY(-6px); box-shadow: 0 20px 36px -14px rgba(255, 138, 0, .35); }
+.prod-img { position: absolute; top: -44px; left: 50%; transform: translateX(-50%); width: 100px; height: 100px; border-radius: 9999px; display: flex; align-items: center; justify-content: center; font-size: 50px; line-height: 1; overflow: hidden; border: 6px solid #fff; background: radial-gradient(circle at 30% 25%, #fff, #FFEFD6 72%); box-shadow: 0 12px 24px -10px rgba(255, 138, 0, .45); transition: transform .45s cubic-bezier(.2, .9, .3, 1.2); }
+.prod-card:hover .prod-img { transform: translateX(-50%) rotate(-10deg) scale(1.08); }
+.prod-emoji { display: inline-block; animation: fxFloat 4s ease-in-out infinite; }
+
+/* Barra de consumo */
+.barra-consumo { background: linear-gradient(90deg, #FFC15A, #FF8A00); }
+
+/* Animaciones */
+@keyframes fxUp { from { opacity: 0; transform: translateY(16px) scale(.98); } to { opacity: 1; transform: none; } }
+@keyframes fxFloat { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-5px) rotate(4deg); } }
+.fx-up { animation: fxUp .5s cubic-bezier(.2, .8, .2, 1) both; }
+</style>
+
+<div class="flex w-full flex-col gap-6" style="font-family: 'Roboto', sans-serif;">
+
+  <!-- ===================================================== -->
+  <!--  LISTA: INSTITUCIONES ASIGNADAS                         -->
+  <!-- ===================================================== -->
+  <section *ngIf="!seleccionada" class="w-full">
+
+    <!-- Encabezado -->
+    <header class="mb-6 flex flex-col justify-between gap-4 rounded-3xl border border-slate-100 bg-white p-5 shadow-sm sm:flex-row sm:items-center">
+      <div class="flex items-center gap-3">
+        <div class="ico-naranja flex h-12 w-12 items-center justify-center rounded-2xl shadow-md">
+          <span class="material-symbols-outlined text-[26px]">school</span>
+        </div>
+        <div>
+          <h1 class="m-0 text-xl font-black tracking-tight text-slate-900">Mis instituciones</h1>
+          <p class="m-0 text-xs font-medium text-slate-500">Estas son las instituciones que tienes asignadas.</p>
+        </div>
+      </div>
+      <button type="button" (click)="cargar()" title="Actualizar lista" aria-label="Actualizar lista"
+        class="flex h-10 w-10 cursor-pointer items-center justify-center self-end rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:bg-orange-50 sm:self-auto">
+        <span class="material-symbols-outlined text-[20px]" [class.animate-spin]="cargando">refresh</span>
+      </button>
+    </header>
+
+    <!-- Aviso cuando se usan datos de ejemplo -->
+    <div *ngIf="avisoRespaldo" role="alert"
+      class="mb-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs font-semibold text-amber-800">
+      {{ avisoRespaldo }}
+      <button type="button" (click)="cargar()" class="ml-2 cursor-pointer underline">Reintentar</button>
+    </div>
+
+    <!-- Buscador y filtro -->
+    <div class="mb-5 flex flex-col gap-3 sm:flex-row">
+      <div class="relative w-full sm:w-96">
+        <span class="material-symbols-outlined pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[19px] text-slate-400">search</span>
+        <input type="text" [(ngModel)]="textoBusqueda" placeholder="Buscar institución o administrador..." autocomplete="off"
+          aria-label="Buscar institución o administrador"
+          class="fx-input w-full rounded-full border border-slate-200 bg-white py-2.5 pl-11 pr-4 text-xs font-medium text-slate-800 outline-none" />
+      </div>
+      <select [(ngModel)]="filtroEstado" aria-label="Filtrar por estado"
+        class="fx-input cursor-pointer rounded-full border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-700 outline-none">
+        <option *ngFor="let e of opcionesEstado" [ngValue]="e">{{ e === 'Todos' ? 'Todos los estados' : e }}</option>
+      </select>
+    </div>
+
+    <p *ngIf="cargando && instituciones.length === 0" class="py-10 text-center text-xs font-semibold text-slate-500" role="status">
+      Cargando tus instituciones...
+    </p>
+
+    <!-- Tarjetas -->
+    <div class="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+      <article *ngFor="let inst of filtradas; trackBy: trackInstitucion" class="inst-card fx-up">
+        <div class="flex items-start justify-between">
+          <div class="ico-suave flex h-12 w-12 items-center justify-center rounded-2xl">
+            <span class="material-symbols-outlined text-[24px]">school</span>
+          </div>
+          <span [ngClass]="claseEstado(inst.estado)" class="rounded-full border px-2.5 py-0.5 text-[11px] font-bold">{{ inst.estado }}</span>
+        </div>
+
+        <h3 class="m-0 mt-4 text-lg font-black leading-tight text-slate-900">{{ inst.nombre }}</h3>
+        <p class="m-0 mt-1 text-xs font-medium text-slate-500">Administrador: {{ inst.administrador || '—' }}</p>
+
+        <div class="mt-4 grid grid-cols-3 divide-x divide-slate-100 border-y border-slate-100 py-3 text-left">
+          <div class="pr-2">
+            <span class="block text-[10px] font-bold uppercase tracking-wide text-slate-400">Matriculados</span>
+            <span class="text-base font-black text-slate-900">{{ inst.matriculados }}</span>
+          </div>
+          <div class="px-3">
+            <span class="block text-[10px] font-bold uppercase tracking-wide text-slate-400">Asistencia prom.</span>
+            <span class="text-base font-black text-slate-900">{{ inst.asistenciaPromedio }}%</span>
+          </div>
+          <div class="pl-3">
+            <span class="block text-[10px] font-bold uppercase tracking-wide text-slate-400">Inventario</span>
+            <span class="text-base font-black text-slate-900">{{ inst.diasInventario }} días</span>
+          </div>
+        </div>
+
+        <button type="button" (click)="abrir(inst)"
+          class="mt-4 flex w-full cursor-pointer items-center justify-center gap-2 rounded-full border border-orange-300 bg-white px-4 py-2.5 text-xs font-bold text-orange-600 transition hover:bg-orange-50">
+          <span class="material-symbols-outlined text-[18px]">visibility</span>
+          Ver detalle
+        </button>
+      </article>
+    </div>
+
+    <!-- Sin resultados -->
+    <div *ngIf="!cargando && filtradas.length === 0" class="flex flex-col items-center gap-3 rounded-3xl border border-slate-100 bg-white py-14 text-center">
+      <span class="material-symbols-outlined text-[34px] text-slate-300">search_off</span>
+      <p class="m-0 text-xs font-bold text-slate-700">
+        {{ instituciones.length === 0 ? 'Aún no tienes instituciones asignadas.' : 'Ninguna institución coincide con tu búsqueda.' }}
+      </p>
+      <button *ngIf="hayFiltros" type="button" (click)="limpiarFiltros()"
+        class="cursor-pointer rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50">
+        Limpiar filtros
+      </button>
+    </div>
+  </section>
+
+  <!-- ===================================================== -->
+  <!--  DETALLE DE UNA INSTITUCIÓN (SOLO LECTURA)              -->
+  <!-- ===================================================== -->
+  <section *ngIf="seleccionada as inst" class="w-full">
+
+    <!-- Entregas registradas: cada producto una sola vez, con su cantidad total y la fecha de registro.
+         Recibe la lista a mostrar (todas en la pestaña Entregas, solo las últimas en el Resumen). -->
+    <ng-template #listaEntregas let-lista>
+      <p *ngIf="cargandoEntregas" class="m-0 py-6 text-center text-xs font-semibold text-slate-500" role="status">Cargando entregas...</p>
+
+      <div *ngIf="errorEntregas" class="rounded-2xl border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-700" role="alert">
+        {{ errorEntregas }}
+        <button *ngIf="seleccionada" type="button" (click)="cargarEntregas(seleccionada)" class="ml-2 cursor-pointer underline">Reintentar</button>
+      </div>
+
+      <div *ngIf="!cargandoEntregas && !errorEntregas && entregasUnidas.length === 0"
+        class="rounded-2xl border border-dashed border-slate-200 p-5 text-center text-xs text-slate-500">
+        Aún no hay entregas registradas para esta institución.
+      </div>
+
+      <div *ngIf="lista.length > 0" class="max-h-[420px] space-y-3 overflow-y-auto pr-1">
+        <div *ngFor="let e of lista; trackBy: trackEntrega" class="rounded-2xl border border-slate-100 bg-white p-3">
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2.5">
+              <div class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-orange-50 text-xl">
+                <img *ngIf="mostrarImagen(e.ingrediente)" [src]="urlImagen(e.ingrediente)" [alt]="e.ingrediente" loading="lazy"
+                  (error)="marcarFallo(e.ingrediente)" class="h-full w-full object-contain p-1" />
+                <span *ngIf="!mostrarImagen(e.ingrediente)">{{ e.emoji }}</span>
+              </div>
+              <div>
+                <h5 class="m-0 text-xs font-bold text-slate-800">{{ e.ingrediente }}</h5>
+                <p class="m-0 text-[10px] text-slate-400">Registrado: {{ fechaHora(e.fechaRegistro) }}</p>
+              </div>
+            </div>
+            <div class="text-right">
+              <span class="block text-[9px] font-bold uppercase text-slate-400">Cantidad</span>
+              <span class="text-sm font-black text-orange-600">{{ e.cantidad }} {{ e.unidad }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </ng-template>
+
+    <button type="button" (click)="volver()"
+      class="mb-3 inline-flex cursor-pointer items-center gap-1 text-xs font-bold text-orange-600 hover:text-orange-700">
+      <span class="material-symbols-outlined text-[18px]">chevron_left</span>
+      Volver a mis instituciones
+    </button>
+
+    <!-- Encabezado del detalle -->
+    <header class="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
+      <div>
+        <h1 class="m-0 text-2xl font-black tracking-tight text-slate-900">{{ inst.nombre }}</h1>
+        <p class="m-0 mt-1 text-xs font-medium text-slate-500">Administrador: {{ inst.administrador || '—' }}</p>
+      </div>
+      <span class="inline-flex items-center gap-1.5 self-start rounded-full border border-purple-200 bg-purple-50 px-3 py-1 text-[11px] font-bold text-purple-700">
+        <span class="material-symbols-outlined text-[15px]">lock</span>
+        Solo lectura
+      </span>
+    </header>
+
+    <!-- Pestañas -->
+    <nav class="mb-6 flex gap-1 overflow-x-auto rounded-full border border-slate-200 bg-white p-1 shadow-sm" aria-label="Secciones de la institución">
+      <button type="button" *ngFor="let p of pestanas" (click)="cambiarPestana(p.id)"
+        [class.pill-on]="pestana === p.id" [class.text-slate-500]="pestana !== p.id"
+        [attr.aria-current]="pestana === p.id ? 'page' : null"
+        class="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold transition">
+        <span class="material-symbols-outlined text-[16px]">{{ p.icono }}</span>
+        {{ p.nombre }}
+      </button>
+    </nav>
+
+    <!-- ============ RESUMEN ============ -->
+    <div *ngIf="pestana === 'resumen'" class="flex flex-col gap-5">
+      <div class="grid grid-cols-1 gap-5 lg:grid-cols-3">
+
+        <!-- Datos generales -->
+        <div class="fx-panel p-6 lg:col-span-2">
+          <h2 class="m-0 mb-5 text-lg font-black text-slate-900">Datos generales</h2>
+          <div class="grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-3">
+            <div>
+              <span class="block text-[11px] font-medium text-slate-400">Sede principal</span>
+              <span class="text-sm font-black text-slate-800">{{ inst.sedePrincipal || '—' }}</span>
+            </div>
+            <div>
+              <span class="block text-[11px] font-medium text-slate-400">Municipio</span>
+              <span class="text-sm font-black text-slate-800">{{ inst.municipio || '—' }}</span>
+            </div>
+            <div>
+              <span class="block text-[11px] font-medium text-slate-400">Estudiantes matriculados</span>
+              <span class="text-sm font-black text-slate-800">{{ inst.matriculados }} estudiantes</span>
+            </div>
+            <div>
+              <span class="block text-[11px] font-medium text-slate-400">Asistencia promedio</span>
+              <span class="text-sm font-black text-slate-800">{{ inst.asistenciaPromedio }}%</span>
+            </div>
+            <div>
+              <span class="block text-[11px] font-medium text-slate-400">Modalidad PAE</span>
+              <span class="text-sm font-black text-slate-800">{{ inst.modalidad || '—' }}</span>
+            </div>
+            <div>
+              <span class="block text-[11px] font-medium text-slate-400">Última actualización</span>
+              <span class="text-sm font-black text-slate-800">{{ textoActualizacion(inst) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cobertura de inventario -->
+        <div class="fx-panel p-6">
+          <div class="flex items-start justify-between gap-2">
+            <h2 class="m-0 text-lg font-black leading-tight text-slate-900">Cobertura de inventario</h2>
+            <span [ngClass]="claseEstado(inst.estado)" class="rounded-full border px-2.5 py-0.5 text-[11px] font-bold">{{ inst.estado }}</span>
+          </div>
+          <p class="m-0 mt-4">
+            <span class="text-5xl font-black text-orange-500">{{ inst.diasInventario }}</span>
+            <span class="ml-1 text-base font-bold text-orange-500">días</span>
+          </p>
+          <p class="m-0 mt-1 text-xs font-medium text-slate-500">de alimentación con el saldo actual</p>
+          <div class="mt-4 h-2.5 w-full overflow-hidden rounded-full bg-slate-100">
+            <div class="h-full rounded-full transition-all" [ngClass]="claseBarra(inst.estado)" [style.width.%]="porcentajeCobertura(inst)"></div>
+          </div>
+          <p class="m-0 mt-2 text-[11px] font-medium text-slate-400">Mínimo recomendado: 10 días</p>
+        </div>
+      </div>
+
+      <!-- Últimas entregas -->
+      <div class="fx-panel p-6">
+        <div class="mb-4 flex items-center justify-between">
+          <h2 class="m-0 text-lg font-black text-slate-900">Últimas entregas</h2>
+          <button type="button" (click)="cambiarPestana('entregas')" class="cursor-pointer text-xs font-bold text-orange-500 hover:text-orange-600">Ver todas &gt;</button>
+        </div>
+        <ng-container *ngTemplateOutlet="listaEntregas; context: { $implicit: ultimasEntregas }"></ng-container>
+      </div>
+    </div>
+
+    <!-- ============ INVENTARIO (TARJETAS) ============ -->
+    <div *ngIf="pestana === 'inventario'">
+      <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <h2 class="m-0 text-lg font-black text-slate-900">Inventario de la institución</h2>
+        <span class="text-[11px] font-semibold text-slate-400">Ingredientes del banco de datos SIRAE · saldos de ejemplo</span>
+      </div>
+      <div class="grid grid-cols-1 gap-x-5 gap-y-14 pt-10 sm:grid-cols-2 xl:grid-cols-3">
+        <article *ngFor="let p of inventario; trackBy: trackProducto" class="prod-card fx-up">
+          <span [ngClass]="claseEstado(p.estado)" class="absolute right-4 top-4 rounded-full border px-2 py-0.5 text-[10px] font-bold">{{ p.estado }}</span>
+          <div class="prod-img">
+            <img *ngIf="mostrarImagen(p.nombre)" [src]="urlImagen(p.nombre)" [alt]="p.nombre" loading="lazy"
+              (error)="marcarFallo(p.nombre)" class="h-full w-full object-contain p-2" />
+            <span *ngIf="!mostrarImagen(p.nombre)" class="prod-emoji">{{ p.emoji }}</span>
+          </div>
+          <h4 class="m-0 text-sm font-black text-slate-900">{{ p.nombre }}</h4>
+          <p class="m-0 mt-0.5 text-[11px] font-medium text-slate-500">{{ p.categoria }}</p>
+          <div class="mt-3 h-2 w-full overflow-hidden rounded-full bg-slate-100">
+            <div class="h-full rounded-full" [ngClass]="barraProducto(p)" [style.width.%]="p.nivel"></div>
+          </div>
+          <div class="mt-3 flex items-end justify-between border-t border-slate-100 pt-3 text-left">
+            <div>
+              <span class="block text-[10px] font-bold uppercase text-slate-400">Saldo</span>
+              <span class="text-xl font-black text-orange-500">{{ p.saldo }}</span>
+              <span class="ml-0.5 text-xs font-bold text-slate-500">{{ p.unidad }}</span>
+            </div>
+            <div class="text-right">
+              <span class="block text-[10px] font-bold uppercase text-slate-400">Vence</span>
+              <span class="text-xs font-bold text-slate-700">{{ fechaCorta(p.vence) }}</span>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+
+    <!-- ============ CONSUMO DIARIO ============ -->
+    <div *ngIf="pestana === 'consumo'" class="fx-panel p-6">
+      <h2 class="m-0 text-lg font-black text-slate-900">Consumo diario</h2>
+      <p class="m-0 mb-5 text-xs font-medium text-slate-500">Raciones servidas y kilos de alimento utilizados en los últimos 5 días hábiles.</p>
+      <div class="flex flex-col gap-4">
+        <div *ngFor="let c of consumo" class="grid grid-cols-[110px_1fr] items-center gap-3 text-xs sm:grid-cols-[130px_1fr_170px]">
+          <div>
+            <p class="m-0 font-black text-slate-800">{{ c.dia }}</p>
+            <p class="m-0 text-[11px] text-slate-400">{{ fechaCorta(c.fecha) }}</p>
+          </div>
+          <div class="h-3 overflow-hidden rounded-full bg-orange-50">
+            <div class="barra-consumo h-full rounded-full" [style.width.%]="c.porcentaje"></div>
+          </div>
+          <p class="col-span-2 m-0 text-slate-600 sm:col-span-1 sm:text-right">
+            <b class="text-slate-900">{{ c.raciones }}</b> raciones · {{ c.kg }} kg
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ MENÚS ============ -->
+    <div *ngIf="pestana === 'menus'">
+      <h2 class="m-0 mb-1 text-lg font-black text-slate-900">Menús publicados</h2>
+      <p class="m-0 mb-4 text-xs font-medium text-slate-500">Menú de los próximos días hábiles para esta institución.</p>
+      <div class="grid grid-cols-1 gap-5 md:grid-cols-3">
+        <div *ngFor="let m of menus" class="fx-panel fx-up p-5">
+          <div class="mb-4 flex items-start justify-between gap-2">
+            <div>
+              <p class="m-0 text-base font-black text-slate-900">{{ m.dia }}</p>
+              <p class="m-0 text-[11px] text-slate-400">{{ fechaCorta(m.fecha) }} · {{ m.jornada }}</p>
+            </div>
+            <span class="rounded-full bg-orange-50 px-2.5 py-1 text-[11px] font-bold text-orange-600">{{ m.ninos }} niños</span>
+          </div>
+          <ul class="m-0 flex list-none flex-col gap-2 p-0">
+            <li *ngFor="let plato of m.platos" class="flex items-center gap-2 rounded-2xl bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700">
+              <span class="material-symbols-outlined text-[16px] text-orange-500">restaurant</span>{{ plato }}
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ ENTREGAS ============ -->
+    <div *ngIf="pestana === 'entregas'" class="fx-panel p-6">
+      <h2 class="m-0 mb-1 text-lg font-black text-slate-900">Historial de entregas</h2>
+      <p class="m-0 mb-4 text-xs font-medium text-slate-500">Productos entregados a esta institución, con su cantidad total.</p>
+      <ng-container *ngTemplateOutlet="listaEntregas; context: { $implicit: entregasUnidas }"></ng-container>
+    </div>
+
+    <!-- ============ REPORTES ============ -->
+    <div *ngIf="pestana === 'reportes'">
+      <h2 class="m-0 mb-1 text-lg font-black text-slate-900">Reportes</h2>
+      <p class="m-0 mb-4 text-xs font-medium text-slate-500">Reportes de {{ inst.nombre }} disponibles para consulta.</p>
+      <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
+        <div *ngFor="let r of reportes" class="fx-panel fx-up flex items-center justify-between gap-3 p-5">
+          <div class="flex items-center gap-3">
+            <div class="ico-suave flex h-12 w-12 flex-none items-center justify-center rounded-2xl">
+              <span class="material-symbols-outlined text-[24px]">{{ r.icono }}</span>
+            </div>
+            <div>
+              <p class="m-0 text-sm font-black text-slate-900">{{ r.nombre }}</p>
+              <p class="m-0 text-[11px] text-slate-500">{{ r.detalle }}</p>
+              <p class="m-0 text-[10px] text-slate-400">Generado el {{ fechaCorta(r.fecha) }}</p>
+            </div>
+          </div>
+          <button type="button" (click)="descargar(r)"
+            class="inline-flex flex-none cursor-pointer items-center gap-1 rounded-full border border-orange-300 bg-white px-3 py-1.5 text-[11px] font-bold text-orange-600 transition hover:bg-orange-50">
+            <span class="material-symbols-outlined text-[16px]">visibility</span> Ver
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>

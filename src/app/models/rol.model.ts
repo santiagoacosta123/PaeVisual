@@ -1,5 +1,1 @@
-export interface RolModel {
-  id_rol?: number;
-  nombre: string;
-  descripcion: string;
-}
+export * from '../shared/models/rol.model';
