@@ -1,99 +1,53 @@
 <div class="flex min-h-screen" style="background:#f8fafc; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; overflow:hidden; height:100vh;">
 
-  <!-- Sidebar -->
-  <aside style="width:280px; background:#fff; border-right:1px solid #e0e0e0; display:flex; flex-direction:column; padding:24px 20px; box-sizing:border-box; flex-shrink:0;">
+  <!-- Sidebar Minimalista de Iconos PAE -->
+  <aside style="width:72px; min-width:72px; background:#fff; border-right:1px solid #e5e7eb; display:flex; flex-direction:column; align-items:center; padding:16px 0; box-sizing:border-box; flex-shrink:0; height:100vh;">
 
-    <!-- Logo / Marca SIRAE -->
-    <div style="display:flex; align-items:center; justify-content:center; margin-bottom:28px; padding: 10px 0; text-align: center;">
-      <img src="sirae-logo.png" alt="Logo SIRAE" style="height:110px; max-width:200px; width:auto; object-fit:contain; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.04));" />
+    <!-- Logo SIRAE Superior -->
+    <div style="display:flex; align-items:center; justify-content:center; margin-bottom:20px; width:100%; padding:0 8px;">
+      <img src="sirae-logo.png" alt="Logo SIRAE" title="SIRAE" style="width:44px; height:44px; object-fit:contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.06));" />
     </div>
 
-    <!-- Título de sección -->
-    <p style="font-size:13px; font-weight:bold; color:#888888; text-transform:uppercase; letter-spacing:0.8px; margin:0 0 16px 12px;">
-      MENU SIRAE
-    </p>
+    <!-- Navegación Lateral sin Menús -->
+    <nav class="flex flex-col gap-2 flex-1 items-center w-full px-2" style="overflow-y:auto; overflow-x:hidden;">
 
-    <!-- Navegación Lateral -->
-    <nav class="flex flex-col gap-1 flex-1" style="overflow-y:auto;">
-
-      <!-- INICIO (Para todos excepto Supervisor) -->
-      <a *ngIf="!esSupervisor" routerLink="inicio" routerLinkActive="active-link"
-         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500;">
-        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">home</span>
-        Inicio
-      </a>
-
-      <!-- MÓDULOS DE SUPERVISOR -->
+      <!-- Inicio Supervisor -->
       <a *ngIf="esSupervisor" routerLink="dashboard-supervisor" routerLinkActive="active-link"
-         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500;">
-        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">space_dashboard</span>
-        Inicio Supervisor
+         style="display:flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:14px; text-decoration:none; color:#555555; transition:all 0.2s;" title="Inicio Supervisor">
+        <span class="material-symbols-outlined nav-icon" style="font-size:24px;">space_dashboard</span>
       </a>
 
+      <!-- Historial de entregas -->
       <a *ngIf="esSupervisor" routerLink="historial-entregas" routerLinkActive="active-link"
-         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500;">
-        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">history</span>
-        Historial de entregas
+         style="display:flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:14px; text-decoration:none; color:#555555; transition:all 0.2s;" title="Historial de entregas">
+        <span class="material-symbols-outlined nav-icon" style="font-size:24px;">history</span>
       </a>
 
+      <!-- Filtro entregas mercado -->
       <a *ngIf="esSupervisor" routerLink="entregas-tipo-mercado" routerLinkActive="active-link"
-         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500;">
-        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">filter_alt</span>
-        Filtro entregas mercado
+         style="display:flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:14px; text-decoration:none; color:#555555; transition:all 0.2s;" title="Filtro entregas mercado">
+        <span class="material-symbols-outlined nav-icon" style="font-size:24px;">filter_alt</span>
       </a>
 
+      <!-- Registrar entrega de alimentos -->
       <a *ngIf="esSupervisor" routerLink="registrar-entrega-alimentos" routerLinkActive="active-link"
-         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500;">
-        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">local_shipping</span>
-        Registrar entrega de alimentos
+         style="display:flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:14px; text-decoration:none; color:#555555; transition:all 0.2s;" title="Registrar entrega de alimentos">
+        <span class="material-symbols-outlined nav-icon" style="font-size:24px;">local_shipping</span>
       </a>
 
-      <!-- MÓDULOS DE JEFA DE COCINA / MANIPULADORA -->
-      <a *ngIf="esJefa" routerLink="asistencia-diaria" routerLinkActive="active-link"
-         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500;">
-        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">fact_check</span>
-        Registrar asistencia diaria
-      </a>
-
-      <a *ngIf="esJefa" routerLink="menus" routerLinkActive="active-link"
-         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500;">
-        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">restaurant_menu</span>
-        Seleccionar menús
-      </a>
-
-      <!-- MÓDULOS DE ADMINISTRADOR -->
-      <a *ngIf="esAdministrador" routerLink="contratos" routerLinkActive="active-link"
-         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500;">
-        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">description</span>
-        Contratos
-      </a>
-
-      <a *ngIf="esAdministrador" routerLink="usuarios" routerLinkActive="active-link"
-         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500;">
-        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">people</span>
-        Usuarios
-      </a>
-
-      <a *ngIf="esAdministrador" routerLink="ingredientes" routerLinkActive="active-link"
-         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500;">
-        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">package</span>
-        Inventario
-      </a>
-
-      <a *ngIf="esAdministrador" routerLink="banco-datos" routerLinkActive="active-link"
-         style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px; text-decoration:none; color:#555555; font-size:14px; font-weight:500;">
-        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">database</span>
-        Banco de Datos
+      <!-- Instituciones -->
+      <a *ngIf="esSupervisor || esAdministrador" routerLink="instituciones" routerLinkActive="active-link"
+         style="display:flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:14px; text-decoration:none; color:#555555; transition:all 0.2s;" title="Instituciones">
+        <span class="material-symbols-outlined nav-icon" style="font-size:24px;">apartment</span>
       </a>
 
     </nav>
 
-    <!-- Cerrar sesión -->
-    <div style="border-top:1px solid #eeeeee; padding-top:16px; margin-top:16px;">
+    <!-- Botón Inferior: Cerrar Sesión -->
+    <div style="border-top:1px solid #f1f5f9; padding-top:12px; margin-top:8px; width:100%; display:flex; justify-content:center;">
       <button type="button" (click)="cerrarSesion()"
-        style="display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px; background:none; border:none; cursor:pointer; color:#e53935; font-size:14px; font-weight:500; width:100%; text-align:left;">
-        <span class="material-symbols-outlined" style="font-size:20px; color:#e53935;">logout</span>
-        Cerrar sesión
+        style="display:flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:14px; background:none; border:none; cursor:pointer; color:#e53935; transition:all 0.2s;" title="Cerrar sesión">
+        <span class="material-symbols-outlined" style="font-size:24px;">logout</span>
       </button>
     </div>
   </aside>
@@ -111,11 +65,11 @@
       </div>
 
       <div style="display:flex; align-items:center; gap:16px; position:relative;">
-        
+
         <!-- BOTÓN NOTIFICACIONES -->
         <div style="position:relative;">
           <button type="button" (click)="toggleNotificaciones()"
-            style="background:#f8f9fc; border:1px solid #eee; border-radius:12px; width:42px; height:42px; display:flex; align-items:center; justify-content:center; cursor:pointer;">
+            style="background:#f8f9fc; border:1px solid #eee; border-radius:12px; width:42px; height:42px; display:flex; align-items:center; justify-content:center; cursor:pointer;" title="Notificaciones">
             <span class="material-symbols-outlined" style="font-size:20px; color:#555;">notifications</span>
             <span *ngIf="notificacionesNoLeidas > 0" style="position:absolute; top:9px; right:9px; width:8px; height:8px; background:#e0a316; border-radius:50%; border:2px solid #fff;"></span>
           </button>
@@ -154,7 +108,7 @@
 
           <!-- DESPLEGABLE PERFIL -->
           <div *ngIf="mostrarPerfil" style="position:absolute; right:0; top:50px; z-index:100; width:300px; background:#fff; border:1px solid #e2e8f0; border-radius:16px; padding:20px; box-shadow:0 10px 25px -5px rgba(0,0,0,0.1);">
-            
+
             <!-- Vista General -->
             <div *ngIf="vistaActual === 'perfil'">
               <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px; border-bottom:1px solid #f1f5f9; padding-bottom:12px;">
@@ -205,7 +159,7 @@
                 <input [(ngModel)]="passwordForm.actual" type="password" placeholder="Contraseña actual" style="width:100%; border:1px solid #cbd5e1; border-radius:8px; padding:6px 10px; box-sizing:border-box;" />
                 <input [(ngModel)]="passwordForm.nueva" type="password" placeholder="Nueva contraseña" style="width:100%; border:1px solid #cbd5e1; border-radius:8px; padding:6px 10px; box-sizing:border-box;" />
                 <input [(ngModel)]="passwordForm.confirmar" type="password" placeholder="Confirmar nueva contraseña" style="width:100%; border:1px solid #cbd5e1; border-radius:8px; padding:6px 10px; box-sizing:border-box;" />
-                
+
                 <p *ngIf="passwordError" style="color:#dc2626; margin:4px 0 0 0; font-size:11px;">{{ passwordError }}</p>
                 <p *ngIf="passwordMensaje" style="color:#16a34a; margin:4px 0 0 0; font-size:11px;">{{ passwordMensaje }}</p>
 
@@ -224,7 +178,7 @@
       </div>
     </div>
 
-    <!-- Vistas Hijas Dinámicas -->
+    <!-- Contenido dinámico de las rutas hijas -->
     <router-outlet></router-outlet>
 
   </main>
@@ -234,14 +188,10 @@
 <style>
   .active-link {
     background: #fdf5e6 !important;
-    color: #1a1a1a !important;
-    font-weight: 600 !important;
+    color: #d97706 !important;
   }
   .active-link .nav-icon {
     color: #d97706 !important;
-  }
-  .nav-icon {
-    color: #64748b;
   }
   aside a:hover:not(.active-link) {
     background: #f8fafc;
