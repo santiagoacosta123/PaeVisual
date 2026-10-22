@@ -1,9 +1,9 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, forkJoin, of } from 'rxjs';
 import { map, tap, catchError } from 'rxjs/operators';
 import { environment } from '@env/environment';
-import { AuthService } from '@core/auth/auth.service';
+import { AuthService } from '@core/auth';
 
 export interface Entrega {
   id?: number;
@@ -58,15 +58,15 @@ export interface EntregaPayload {
 @Injectable({ providedIn: 'root' })
 export class EntregasService {
 
+  private http = inject(HttpClient);
+  private authService = inject(AuthService);
+
   public readonly apiUrl = `${environment.apiUrl}/entregas/`;
   private readonly ingredientesUrl = `${environment.apiUrl}/ingredientes/`;
   private readonly tiposMercadoUrl = `${environment.apiUrl}/tipos-mercado/`;
   entregas: Entrega[] = [];
 
-  constructor(
-    private http: HttpClient,
-    private authService: AuthService
-  ) {}
+  constructor() {}
 
   // ---------- Cabeceras con token ----------
   getHeaders(): { headers: HttpHeaders } {
