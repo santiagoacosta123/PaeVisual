@@ -105,8 +105,12 @@ export class EntregasService {
       tipos: this.cargarTiposMercado().pipe(catchError(() => of([])))
     }).pipe(
       map(({ entregasData, ingredientes, tipos }) => {
-        const mapaIng = new Map<number, string>(ingredientes.map(i => [i.id, i.nombre]));
-        const mapaTipos = new Map<number, string>(tipos.map(t => [t.id, t.nombre]));
+        const mapaIng = new Map<number, string>();
+        (ingredientes || []).forEach(i => mapaIng.set(i.id, i.nombre));
+
+        const mapaTipos = new Map<number, string>();
+        (tipos || []).forEach(t => mapaTipos.set(t.id, t.nombre));
+
         return this.listaDe(entregasData).map(item => this.normalizar(item, mapaIng, mapaTipos));
       }),
       tap(lista => (this.entregas = lista))
