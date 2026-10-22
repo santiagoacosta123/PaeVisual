@@ -1,10 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { environment } from '@env/environment';
+import { AuthService } from '../services/auth.service';
 
 /* ============================================================
    AJUSTA ESTAS RUTAS A TU BACKEND
@@ -125,7 +126,17 @@ export class RegistrarEntregaAlimentosComponent implements OnInit {
   ultimoRegistro: { fecha: string; totales: number; items: Entrega[] } | null = null;
   resumen = { total: 0, vigentes: 0, porVencer: 0, vencidos: 0 };
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private authService: AuthService
+  ) {}
+
+  private getHeaders(): { headers: HttpHeaders } {
+    let headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    const token = this.authService.obtenerToken()?.replace(/^(Bearer|Token)\s+/i, '').trim();
+    if (token) headers = headers.set('Authorization', `Bearer ${token}`);
+    return { headers };
+  }
 
   ngOnInit(): void {
     this.cargarCatalogos();
@@ -140,8 +151,8 @@ export class RegistrarEntregaAlimentosComponent implements OnInit {
     this.errorCatalogos = '';
 
     forkJoin({
-      productos: this.http.get<any>(URL_INGREDIENTES).pipe(catchError(() => of(null))),
-      tipos: this.http.get<any>(URL_TIPOS_MERCADO).pipe(catchError(() => of(null)))
+      productos: this.http.get<any>(URL_INGREDIENTES, this.getHeaders()).pipe(catchError(() => of(null))),
+      tipos: this.http.get<any>(URL_TIPOS_MERCADO, this.getHeaders()).pipe(catchError(() => of(null)))
     }).subscribe(({ productos, tipos }) => {
       this.cargandoCatalogos = false;
 
@@ -175,7 +186,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit {
     this.cargandoHistorial = true;
     this.errorHistorial = false;
 
-    this.http.get<any>(URL_ENTREGAS).subscribe({
+    this.http.get<any>(URL_ENTREGAS, this.getHeaders()).subscribe({
       next: r => {
         this.historial = this.comoLista(r).map((x: any): Entrega => ({
           ingrediente: String(x.ingrediente ?? x.nombre ?? ''),
