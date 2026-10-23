@@ -170,7 +170,7 @@ export const routes: Routes = [
         path: 'ingredientes',
         component: Ingredientes,
         canActivate: [roleGuard],
-        data: { roles: ['superadministrador', 'super administrador', 'super admin', 'administrador', 'admin'] }
+        data: { roles: ['administrador', 'admin'] }
       },
 
       {

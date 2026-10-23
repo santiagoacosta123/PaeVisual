@@ -160,6 +160,31 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       ]
     },
     {
+      id: 'ingredientes',
+      nombre: 'Ingredientes',
+      singular: 'ingrediente',
+      icon: 'kitchen',
+      idField: 'id_ingrediente',
+      campos: [
+        { name: 'nombre_ingrediente', label: 'Nombre del ingrediente', type: 'text', required: true, placeholder: 'Ej: Tomate Chonto' },
+        { name: 'id_categoria_inventario', label: 'Categoría', type: 'select', required: true, source: 'categorias_inventario' },
+        { name: 'id_unidad_medida', label: 'Unidad de medida', type: 'select', required: true, source: 'unidades_medida' },
+        { name: 'marca_ingrediente', label: 'Marca', type: 'text', required: false, placeholder: 'Ej: San Jorge' },
+        {
+          name: 'tipo_conservacion',
+          label: 'Tipo de conservación',
+          type: 'select',
+          required: true,
+          defaultValue: 'perecedero',
+          options: [
+            { id: 'perecedero', label: 'Perecedero' },
+            { id: 'no_perecedero', label: 'No perecedero' }
+          ]
+        },
+        { name: 'descripcion', label: 'Descripción', type: 'textarea', required: false, placeholder: 'Notas o especificaciones de calidad' }
+      ]
+    },
+    {
       id: 'unidades_medida',
       nombre: 'Unidades de Medida',
       singular: 'unidad de medida',
@@ -168,6 +193,26 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       campos: [
         { name: 'nombre', label: 'Nombre', type: 'text', required: true, placeholder: 'Ej: Kilogramo' },
         { name: 'abreviatura', label: 'Abreviatura', type: 'text', required: true, placeholder: 'Ej: kg' }
+      ]
+    },
+    {
+      id: 'categorias_inventario',
+      nombre: 'Categorías',
+      singular: 'categoría',
+      icon: 'category',
+      idField: 'id_categoria_inventario',
+      campos: [
+        { name: 'nombre_categoria', label: 'Nombre categoría', type: 'text', required: true, placeholder: 'Ej: Lácteos' }
+      ]
+    },
+    {
+      id: 'tipos_mercado',
+      nombre: 'Tipos Mercado',
+      singular: 'tipo de mercado',
+      icon: 'storefront',
+      idField: 'id_tipo_mercado',
+      campos: [
+        { name: 'nombre_tipo', label: 'Tipo de mercado', type: 'text', required: true, placeholder: 'Ej: Perecederos' }
       ]
     },
     {
@@ -202,26 +247,6 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       ]
     },
     {
-      id: 'tipos_mercado',
-      nombre: 'Tipos Mercado',
-      singular: 'tipo de mercado',
-      icon: 'storefront',
-      idField: 'id_tipo_mercado',
-      campos: [
-        { name: 'nombre_tipo', label: 'Tipo de mercado', type: 'text', required: true, placeholder: 'Ej: Perecederos' }
-      ]
-    },
-    {
-      id: 'categorias_inventario',
-      nombre: 'Categorías',
-      singular: 'categoría',
-      icon: 'category',
-      idField: 'id_categoria_inventario',
-      campos: [
-        { name: 'nombre_categoria', label: 'Nombre categoría', type: 'text', required: true, placeholder: 'Ej: Lácteos' }
-      ]
-    },
-    {
       id: 'turnos',
       nombre: 'Turnos',
       singular: 'turno',
@@ -242,31 +267,6 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       campos: [
         { name: 'nombre', label: 'Nombre', type: 'text', required: true },
         { name: 'descripcion', label: 'Descripción', type: 'textarea' }
-      ]
-    },
-    {
-      id: 'ingredientes',
-      nombre: 'Ingredientes',
-      singular: 'ingrediente',
-      icon: 'kitchen',
-      idField: 'id_ingrediente',
-      campos: [
-        { name: 'nombre_ingrediente', label: 'Nombre del ingrediente', type: 'text', required: true },
-        { name: 'id_categoria_inventario', label: 'Categoría', type: 'select', required: true, source: 'categorias_inventario' },
-        { name: 'id_unidad_medida', label: 'Unidad de medida', type: 'select', required: true, source: 'unidades_medida' },
-        { name: 'marca_ingrediente', label: 'Marca', type: 'text', required: false },
-        {
-          name: 'tipo_conservacion',
-          label: 'Tipo de conservación',
-          type: 'select',
-          required: true,
-          defaultValue: 'perecedero',
-          options: [
-            { id: 'perecedero', label: 'Perecedero' },
-            { id: 'no_perecedero', label: 'No perecedero' }
-          ]
-        },
-        { name: 'descripcion', label: 'Descripción', type: 'textarea', required: false }
       ]
     },
     {

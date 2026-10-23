@@ -72,7 +72,9 @@ export class CrearUsuarioComponent implements OnInit {
           // Super Admin solo crea Administradores y Supervisores
           this.rolesDisponibles = todos.filter((r: any) => {
             const nom = (r.nombre || '').toLowerCase();
-            return nom.includes('admin') || nom.includes('supervisor') || nom.includes('coordinador');
+            const esAdminRol = (nom === 'administrador' || nom === 'admin' || (nom.includes('admin') && !nom.includes('super')));
+            const esSupervRol = nom.includes('supervisor') || nom.includes('coordinador');
+            return esAdminRol || esSupervRol;
           });
         } else if (this.esAdmin) {
           // Administrador solo crea personal de cocina

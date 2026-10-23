@@ -6,6 +6,8 @@ import { RolService } from '../services/rol.service';
 import { SweetAlertService } from '../sweet-alert.service';
 import { CustomSelectComponent } from '../shared/custom-select/custom-select';
 
+import { AuthService } from '@core/auth';
+
 @Component({
   selector: 'app-usuarios',
   standalone: true,
@@ -53,7 +55,8 @@ export class UsuariosComponent implements OnInit {
     private usuarioService: UsuarioService,
     private rolService: RolService,
     private sweetAlert: SweetAlertService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private authService: AuthService
   ) {}
 
   ngOnInit(): void {
@@ -79,10 +82,33 @@ export class UsuariosComponent implements OnInit {
       next: (datos: any) => {
         const rolesApi = Array.isArray(datos) ? datos : (datos.results || datos.data || []);
         // Normalizamos las propiedades para soportar id_rol / id y nombre_rol / nombre
-        this.roles = rolesApi.map((r: any) => ({
+        const normalizados = rolesApi.map((r: any) => ({
           id_rol: r.id_rol || r.id || r.pk,
           nombre_rol: r.nombre_rol || r.nombre || r.name
         }));
+
+        const usuarioActual = this.authService.obtenerUsuario();
+        const esSuper = this.authService.esSuperAdministrador(usuarioActual?.rol);
+        const esAdmin = this.authService.esAdministrador(usuarioActual?.rol);
+
+        if (esSuper) {
+          // El Super Administrador SOLO crea y asigna Administradores y Supervisores
+          this.roles = normalizados.filter((r: any) => {
+            const nom = (r.nombre_rol || '').toLowerCase();
+            const esAdminRol = (nom === 'administrador' || nom === 'admin' || (nom.includes('admin') && !nom.includes('super')));
+            const esSupervRol = nom.includes('supervisor') || nom.includes('coordinador');
+            return esAdminRol || esSupervRol;
+          });
+        } else if (esAdmin) {
+          // El Administrador de colegio solo crea personal de cocina
+          this.roles = normalizados.filter((r: any) => {
+            const nom = (r.nombre_rol || '').toLowerCase();
+            return nom.includes('manipuladora') || nom.includes('jefa') || nom.includes('cocina');
+          });
+        } else {
+          this.roles = normalizados;
+        }
+
         this.cdr.detectChanges();
       },
       error: (error) => {
