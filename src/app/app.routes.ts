@@ -31,7 +31,7 @@ import { InstitucionesComponent } from './instituciones/instituciones';
 import { FacturasCompraComponent } from './facturas-compra/facturas-compra';
 
 // NUEVO: página de Instituciones
-import { InstitucionesComponent } from './instituciones/instituciones';
+
 
 export const routes: Routes = [
   {
