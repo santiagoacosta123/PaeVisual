@@ -143,7 +143,7 @@ export class LayoutComponent implements OnInit {
       '/unidades-medida': 'Unidades de Medida',
       '/menus': 'Menús',
       '/facturas-compra': 'Facturas de Compra y Bodega Central',
-      '/reportes-consumo': 'Reporte de consumos / salidas',
+      '/reportes-consumo': 'Informes Oficiales PAE & Auditoría Alcaldía',
       '/notificaciones': 'Notificaciones'
     };
 

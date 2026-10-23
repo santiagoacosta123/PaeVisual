@@ -75,6 +75,11 @@
         <span class="material-symbols-outlined nav-icon" style="font-size:24px;">restaurant_menu</span>
       </a>
 
+      <a *ngIf="esSuperAdministrador" routerLink="reportes-consumo" routerLinkActive="active-icon-link" title="Informes & Auditoría Alcaldía"
+         style="display:flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:14px; text-decoration:none; color:#64748b; transition:all 0.2s;">
+        <span class="material-symbols-outlined nav-icon" style="font-size:24px;">analytics</span>
+      </a>
+
       <!-- MÓDULOS DE ADMINISTRADOR -->
       <a *ngIf="esAdministrador" routerLink="usuarios" routerLinkActive="active-icon-link" title="Usuarios"
          style="display:flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:14px; text-decoration:none; color:#64748b; transition:all 0.2s;">

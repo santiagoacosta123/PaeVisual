@@ -50,7 +50,8 @@ export class BancoDatosService {
       'recetas': 'recetas/',
       'instituciones': 'instituciones/',
       'sedes': 'sedes/',
-      'sede_jornadas': 'sede-jornadas/'
+      'sede_jornadas': 'sede-jornadas/',
+      'proveedores': 'proveedores/'
     };
     return endpoints[tabla] || '';
   }

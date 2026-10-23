@@ -365,10 +365,19 @@
           </label>
 
           <label class="flex flex-col gap-1 text-[11px] font-black uppercase tracking-wider text-slate-600">
-            Proveedor Mayorista *
-            <input type="text" [(ngModel)]="formFactura.proveedor" name="provFac" required
-              placeholder="Ej: Distribuidora Central"
-              class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-800 outline-none focus:border-amber-400" />
+            <span class="flex items-center justify-between">
+              <span>Proveedor Mayorista *</span>
+              <span class="text-[10px] text-amber-700 font-medium normal-case flex items-center gap-0.5">
+                <span class="material-symbols-outlined text-[13px]">storefront</span> Catálogo
+              </span>
+            </span>
+            <select [(ngModel)]="formFactura.proveedor" name="provFac" required
+              class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-800 outline-none focus:border-amber-400">
+              <option value="" disabled>-- Selecciona un proveedor registrado --</option>
+              <option *ngFor="let p of catalogoProveedores" [value]="p.nombre">
+                {{ p.nombre }} {{ p.nit ? '(NIT: ' + p.nit + ')' : '' }}
+              </option>
+            </select>
           </label>
 
           <label class="flex flex-col gap-1 text-[11px] font-black uppercase tracking-wider text-slate-600">

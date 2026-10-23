@@ -173,7 +173,12 @@
                 placeholder="Seleccionar…"
                 [(ngModel)]="itemForm[campo.name]"
                 [required]="campo.required || false"
+                [disabled]="campoBloqueado(campo)"
               ></app-custom-select>
+              <div *ngIf="campoBloqueado(campo)" style="display:flex; align-items:center; gap:4px; margin-top:5px; color:#d97706; font-size:11.5px; font-weight:600;">
+                <span class="material-symbols-outlined" style="font-size:15px;">lock</span>
+                <span>Unidad inmutable: Este ingrediente ya registra compras, entregas o existencias en inventario.</span>
+              </div>
             </ng-container>
 
             <!-- Texto largo -->

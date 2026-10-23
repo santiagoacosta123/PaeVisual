@@ -33,6 +33,7 @@ export class FacturasCompraComponent implements OnInit {
   facturas: FacturaCompra[] = [];
   inventarioCentral: InventarioCentralItem[] = [];
   catalogoIngredientes: any[] = [];
+  catalogoProveedores: any[] = [];
 
   cargando = true;
   guardando = false;
@@ -70,6 +71,7 @@ export class FacturasCompraComponent implements OnInit {
   cargarDatos(): void {
     this.cargando = true;
     this.cargarCatalogoIngredientes();
+    this.cargarCatalogoProveedores();
     this.cargarFacturas();
     this.cargarBodega();
   }
@@ -110,6 +112,23 @@ export class FacturasCompraComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error al cargar catálogo de ingredientes:', err);
+      },
+    });
+  }
+
+  cargarCatalogoProveedores(): void {
+    const token = this.authService.obtenerToken()?.replace(/^(Bearer|Token)\s+/i, '').trim();
+    let headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    if (token) headers = headers.set('Authorization', `Bearer ${token}`);
+
+    this.http.get<any>(`${environment.apiUrl}/proveedores/`, { headers }).subscribe({
+      next: (res) => {
+        const lista = Array.isArray(res) ? res : (res?.results || []);
+        // Solo proveedores activos
+        this.catalogoProveedores = lista.filter((p: any) => p.estado !== false);
+      },
+      error: (err) => {
+        console.error('Error al cargar catálogo de proveedores:', err);
       },
     });
   }

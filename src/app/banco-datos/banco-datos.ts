@@ -185,6 +185,32 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       ]
     },
     {
+      id: 'proveedores',
+      nombre: 'Proveedores',
+      singular: 'proveedor',
+      icon: 'local_shipping',
+      idField: 'id_proveedor',
+      campos: [
+        { name: 'nombre', label: 'Razón Social / Proveedor', type: 'text', required: true, placeholder: 'Ej: Distribuidora Mayorista S.A.S' },
+        { name: 'nit', label: 'NIT / Cédula', type: 'text', placeholder: 'Ej: 900.123.456-7' },
+        { name: 'telefono', label: 'Teléfono', type: 'text', placeholder: 'Ej: 310 123 4567' },
+        { name: 'correo', label: 'Correo Electrónico', type: 'text', placeholder: 'ventas@proveedor.com' },
+        { name: 'direccion', label: 'Dirección', type: 'text', placeholder: 'Ej: Calle 15 # 45-20' },
+        { name: 'contacto', label: 'Persona de Contacto', type: 'text', placeholder: 'Ej: Andrés Gómez' },
+        {
+          name: 'estado',
+          label: 'Estado',
+          type: 'select',
+          required: true,
+          defaultValue: 'ACTIVO',
+          options: [
+            { id: 'ACTIVO', label: 'Activo' },
+            { id: 'INACTIVO', label: 'Inactivo' }
+          ]
+        }
+      ]
+    },
+    {
       id: 'unidades_medida',
       nombre: 'Unidades de Medida',
       singular: 'unidad de medida',
@@ -412,6 +438,14 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
   guardando = false;
   itemForm: any = {};
   itemSeleccionadoId: number | null = null;
+  itemOriginal: any = null;
+
+  campoBloqueado(campo: CampoConfig): boolean {
+    if (this.tabActual === 'ingredientes' && this.modoEdicion && campo.name === 'id_unidad_medida') {
+      return !!this.itemOriginal?.tiene_movimientos;
+    }
+    return false;
+  }
 
   private cargaSub?: Subscription;
 
@@ -623,6 +657,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
   abrirModal(item?: any): void {
     this.modoEdicion = !!item;
     this.itemSeleccionadoId = item ? this.obtenerIdItem(item) : null;
+    this.itemOriginal = item ? { ...item } : null;
 
     const form: any = {};
     for (const campo of this.tab.campos) {
@@ -660,6 +695,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
     this.guardando = false;
     this.itemForm = {};
     this.itemSeleccionadoId = null;
+    this.itemOriginal = null;
   }
 
 

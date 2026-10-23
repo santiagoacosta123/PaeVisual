@@ -1,153 +1,516 @@
-<style>
-/* Misma línea visual (naranja SIRAE) del resto de pantallas */
-.fx-panel { position: relative; background: #fff; border-radius: 28px; border: 1px solid #F1F5F9; box-shadow: 0 10px 30px -18px rgba(15, 23, 42, .18); }
-.ico-naranja { background: linear-gradient(135deg, #FFA928 0%, #FF8A00 100%); color: #fff; }
-.ico-suave { background: #FFF1DB; color: #FF8A00; }
-.btn-naranja { background: linear-gradient(135deg, #FFA928 0%, #FF8A00 100%); color: #fff; box-shadow: 0 10px 20px -8px rgba(255, 138, 0, .7); transition: transform .2s ease, filter .2s ease; }
-.btn-naranja:hover:not(:disabled) { filter: brightness(1.06); transform: translateY(-2px); }
-.btn-naranja:active:not(:disabled) { transform: scale(.97); }
-.fx-input:focus { border-color: #FF9500; box-shadow: 0 0 0 3px rgba(255, 149, 0, .18); outline: none; }
-.fx-lift { transition: transform .25s ease, box-shadow .25s ease; }
-.fx-lift:hover { transform: translateY(-3px); box-shadow: 0 16px 30px -18px rgba(255, 138, 0, .4); }
-.tabla-scroll { max-height: 520px; overflow: auto; }
-.tabla-scroll thead th { position: sticky; top: 0; z-index: 1; }
-@keyframes fxUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
-.fx-up { animation: fxUp .45s cubic-bezier(.2, .8, .2, 1) both; }
-</style>
+<section class="mx-auto flex w-full max-w-7xl flex-col gap-6" style="font-family: 'Roboto', sans-serif;">
 
-<section class="mx-auto flex w-full max-w-6xl flex-col gap-6" style="font-family: 'Roboto', sans-serif;">
+  <!-- ========================================================================= -->
+  <!-- ENCABEZADO OFICIAL SOLO VISIBLE EN IMPRESIÓN / PDF                        -->
+  <!-- ========================================================================= -->
+  <div class="seccion-impresion-oficial">
+    <div style="border-bottom: 2px solid #e2e8f0; padding-bottom: 12px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <h2 style="font-size: 16px; font-weight: 900; margin: 0; text-transform: uppercase;">República de Colombia — Programa de Alimentación Escolar (PAE)</h2>
+        <h3 style="font-size: 13px; font-weight: 700; color: #475569; margin: 2px 0 0 0;">Informe Oficial de Auditoría, Ejecución y Suministro de Insumos</h3>
+      </div>
+      <div style="text-align: right; font-size: 11px; color: #64748b;">
+        <div><b>Fecha Emisión:</b> {{ filtroFechaHasta || 'Hoy' }}</div>
+        <div><b>Entidad de Control:</b> Alcaldía Municipal / Interventoría</div>
+      </div>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; font-size: 11px; background: #f8fafc; padding: 10px; border-radius: 8px; margin-bottom: 16px;">
+      <div><b>Contrato:</b> {{ filtroContrato !== 'TODOS' ? filtroContrato : 'CONSOLIDADO GENERAL' }}</div>
+      <div><b>Institución:</b> {{ filtroInstitucion !== 'TODAS' ? filtroInstitucion : 'TODAS LAS INSTITUCIONES' }}</div>
+      <div><b>Período:</b> {{ filtroFechaDesde || 'Inicio' }} a {{ filtroFechaHasta || 'Fin' }}</div>
+    </div>
+  </div>
 
-  <!-- ============ ENCABEZADO ============ -->
-  <header class="flex flex-col gap-4 rounded-3xl border border-slate-100 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-6">
+  <!-- ========================================================================= -->
+  <!-- ENCABEZADO PANTALLA & SELECTOR DE PESTAÑAS (NO-PRINT)                     -->
+  <!-- ========================================================================= -->
+  <header class="no-print flex flex-col gap-4 rounded-3xl border border-slate-100 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-6">
     <div class="flex items-center gap-4">
       <div class="ico-naranja flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl shadow-md">
-        <span class="material-symbols-outlined text-[30px]">summarize</span>
+        <span class="material-symbols-outlined text-[30px]">analytics</span>
       </div>
       <div>
-        <span class="text-[11px] font-bold uppercase tracking-wider text-orange-500">Reportes PAE</span>
-        <h1 class="m-0 text-2xl font-black tracking-tight text-slate-900">Salidas registradas de inventario</h1>
+        <span class="text-[11px] font-bold uppercase tracking-wider text-orange-500">Módulo de Informes & Auditoría PAE</span>
+        <h1 class="m-0 text-2xl font-black tracking-tight text-slate-900">Reportes de Auditoría & Suministro</h1>
+        <p class="m-0 text-xs font-medium text-slate-500">Informes consolidados para Alcaldía, Interventoría y supervisión territorial</p>
       </div>
+    </div>
+
+    <!-- Selector de pestañas -->
+    <div class="tab-buttons inline-flex rounded-2xl border border-slate-200 bg-slate-50 p-1.5">
+      <button type="button" (click)="tabActiva = 'alcaldia'"
+        [class]="tabActiva === 'alcaldia' ? 'cursor-pointer rounded-xl bg-white px-4 py-2 text-xs font-black text-orange-600 shadow-sm' : 'cursor-pointer rounded-xl px-4 py-2 text-xs font-bold text-slate-600 hover:text-slate-900'">
+        <span class="inline-flex items-center gap-1.5">
+          <span class="material-symbols-outlined text-[16px]">account_balance</span>
+          Informe Oficial Alcaldía
+          <span class="rounded-full bg-orange-100 px-1.5 py-0.2 text-[10px] font-bold text-orange-700">
+            {{ entregasFiltradas.length }}
+          </span>
+        </span>
+      </button>
+
+      <button type="button" (click)="tabActiva = 'cocina'"
+        [class]="tabActiva === 'cocina' ? 'cursor-pointer rounded-xl bg-white px-4 py-2 text-xs font-black text-orange-600 shadow-sm' : 'cursor-pointer rounded-xl px-4 py-2 text-xs font-bold text-slate-600 hover:text-slate-900'">
+        <span class="inline-flex items-center gap-1.5">
+          <span class="material-symbols-outlined text-[16px]">soup_kitchen</span>
+          Salidas de Cocina
+          <span class="rounded-full bg-slate-200 px-1.5 py-0.2 text-[10px] font-bold text-slate-700">
+            {{ salidasFiltradas.length }}
+          </span>
+        </span>
+      </button>
     </div>
   </header>
 
-  <!-- Aclaración -->
-  <div class="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50/70 p-4 text-xs font-medium leading-5 text-amber-900">
-    <span class="material-symbols-outlined mt-0.5 text-[20px] text-amber-600">info</span>
-    <p class="m-0">
-      Este reporte consulta las <b>salidas de inventario guardadas por el sistema</b>.
-      No calcula consumo teórico de recetas.
-    </p>
-  </div>
+  <!-- ========================================================================= -->
+  <!-- TAB 1: INFORME OFICIAL ALCALDÍA / AUDITORÍA                               -->
+  <!-- ========================================================================= -->
+  <ng-container *ngIf="tabActiva === 'alcaldia'">
 
-  <!-- ============ FILTROS ============ -->
-  <section class="fx-panel p-5 sm:p-6" aria-label="Filtros del reporte">
-    <div class="grid grid-cols-1 items-end gap-4 sm:grid-cols-2 lg:grid-cols-4">
-
-      <label class="flex flex-col gap-1.5 text-xs font-bold text-slate-600">
-        Desde
-        <span class="relative">
-          <span class="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-slate-400">calendar_today</span>
-          <input type="date" [(ngModel)]="fechaDesde"
-            class="fx-input w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-sm font-semibold text-slate-800">
-        </span>
-      </label>
-
-      <label class="flex flex-col gap-1.5 text-xs font-bold text-slate-600">
-        Hasta
-        <span class="relative">
-          <span class="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-slate-400">event</span>
-          <input type="date" [(ngModel)]="fechaHasta"
-            class="fx-input w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-sm font-semibold text-slate-800">
-        </span>
-      </label>
-
-      <button type="button" (click)="cargar()" [disabled]="cargando || (!!fechaDesde && !!fechaHasta && fechaDesde > fechaHasta)"
-        class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-orange-50 disabled:cursor-not-allowed disabled:opacity-50">
-        <span class="material-symbols-outlined text-[20px]" [class.animate-spin]="cargando">refresh</span>
-        {{ cargando ? 'Actualizando...' : 'Actualizar datos' }}
-      </button>
-
-      <button type="button" (click)="exportarCsv()" [disabled]="cargando || salidasFiltradas.length === 0"
-        class="btn-naranja inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-black disabled:cursor-not-allowed disabled:opacity-50">
-        <span class="material-symbols-outlined text-[20px]">download</span>
-        Exportar CSV
-      </button>
-    </div>
-
-    <!-- Aviso si las fechas están al revés -->
-    <p *ngIf="fechaDesde && fechaHasta && fechaDesde > fechaHasta" role="alert"
-      class="m-0 mt-4 flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800">
-      <span class="material-symbols-outlined text-[18px]">warning</span>
-      La fecha "Desde" no puede ser posterior a "Hasta".
-    </p>
-  </section>
-
-  <!-- ============ ERROR ============ -->
-  <div *ngIf="errorMensaje" role="alert"
-    class="flex items-center justify-between gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-800">
-    <span class="flex items-center gap-2">
-      <span class="material-symbols-outlined text-[20px]">error</span>
-      {{ errorMensaje }}
-    </span>
-    <button type="button" (click)="cargar()" class="cursor-pointer rounded-full border border-red-300 bg-white px-3 py-1 text-xs font-bold text-red-700 hover:bg-red-100">
-      Reintentar
-    </button>
-  </div>
-
-  <!-- ============ TABLA ============ -->
-  <section class="fx-panel overflow-hidden">
-    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
-      <h2 class="m-0 text-base font-black text-slate-900">Detalle de movimientos</h2>
-      <span class="rounded-full bg-orange-100 px-3 py-1 text-xs font-black text-orange-600">
-        {{ salidasFiltradas.length }} {{ salidasFiltradas.length === 1 ? 'registro' : 'registros' }}
-      </span>
-    </div>
-
-    <div class="tabla-scroll">
-      <table class="w-full min-w-[680px] border-collapse text-left text-sm">
-        <thead class="bg-orange-50/70 text-[11px] uppercase tracking-wider text-slate-500">
-          <tr>
-            <th scope="col" class="px-5 py-3 font-bold">Fecha</th>
-            <th scope="col" class="px-5 py-3 font-bold">Ingrediente</th>
-            <th scope="col" class="px-5 py-3 text-right font-bold">Cantidad</th>
-            <th scope="col" class="px-5 py-3 font-bold">Unidad</th>
-            <th scope="col" class="px-5 py-3 font-bold">Observaciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let salida of salidasFiltradas" class="border-t border-slate-100 transition hover:bg-orange-50/40">
-            <td class="whitespace-nowrap px-5 py-3 font-medium text-slate-600">{{ salida.fecha || 'Sin fecha' }}</td>
-            <td class="px-5 py-3 font-bold text-slate-900">{{ salida.ingrediente }}</td>
-            <td class="px-5 py-3 text-right text-base font-black text-orange-600">{{ salida.cantidad }}</td>
-            <td class="px-5 py-3">
-              <span class="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-xs font-bold text-slate-600">{{ salida.unidad || '—' }}</span>
-            </td>
-            <td class="max-w-[260px] truncate px-5 py-3 text-slate-500" [title]="salida.observaciones || ''">{{ salida.observaciones || '—' }}</td>
-          </tr>
-
-          <!-- Cargando -->
-          <ng-container *ngIf="cargando">
-            <tr *ngFor="let fila of [1, 2, 3, 4]" class="border-t border-slate-100" aria-hidden="true">
-              <td class="px-5 py-4"><div class="h-3 w-20 animate-pulse rounded-full bg-slate-100"></div></td>
-              <td class="px-5 py-4"><div class="h-3 w-32 animate-pulse rounded-full bg-slate-100"></div></td>
-              <td class="px-5 py-4"><div class="ml-auto h-3 w-12 animate-pulse rounded-full bg-slate-100"></div></td>
-              <td class="px-5 py-4"><div class="h-3 w-10 animate-pulse rounded-full bg-slate-100"></div></td>
-              <td class="px-5 py-4"><div class="h-3 w-40 animate-pulse rounded-full bg-slate-100"></div></td>
-            </tr>
-          </ng-container>
-        </tbody>
-      </table>
-    </div>
-
-    <p *ngIf="cargando" class="sr-only" role="status">Cargando movimientos registrados...</p>
-
-    <!-- Sin resultados -->
-    <div *ngIf="!cargando && salidasFiltradas.length === 0" class="flex flex-col items-center gap-3 px-6 py-14 text-center">
-      <div class="ico-suave flex h-14 w-14 items-center justify-center rounded-2xl">
-        <span class="material-symbols-outlined text-[28px]">search_off</span>
+    <!-- BANNER METRICAS / KPIS EJECUTIVOS (NO-PRINT) -->
+    <section class="no-print grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <!-- KPI 1 -->
+      <div class="fx-panel p-4 flex flex-col justify-between">
+        <div class="flex items-center justify-between text-slate-500 mb-1">
+          <span class="text-[11px] font-bold uppercase tracking-wider">Despachos</span>
+          <span class="material-symbols-outlined text-orange-500 text-[18px]">local_shipping</span>
+        </div>
+        <div class="text-2xl font-black text-slate-900">{{ totalDespachos }}</div>
+        <span class="text-[11px] text-slate-400 mt-1">Registros en período</span>
       </div>
-      <p class="m-0 text-sm font-black text-slate-800">No hay salidas en el periodo seleccionado</p>
-      <p class="m-0 max-w-sm text-xs font-medium text-slate-500">Cambia las fechas o presiona "Actualizar datos" para volver a consultar.</p>
+
+      <!-- KPI 2 -->
+      <div class="fx-panel p-4 flex flex-col justify-between">
+        <div class="flex items-center justify-between text-slate-500 mb-1">
+          <span class="text-[11px] font-bold uppercase tracking-wider">Cant. Recibida</span>
+          <span class="material-symbols-outlined text-emerald-600 text-[18px]">inventory_2</span>
+        </div>
+        <div class="text-2xl font-black text-emerald-700">{{ totalKilosUnidadesRecibidas | number:'1.0-2' }}</div>
+        <span class="text-[11px] text-emerald-600 mt-1">Kg / Lts / Unidades</span>
+      </div>
+
+      <!-- KPI 3 -->
+      <div class="fx-panel p-4 flex flex-col justify-between">
+        <div class="flex items-center justify-between text-slate-500 mb-1">
+          <span class="text-[11px] font-bold uppercase tracking-wider">Conformidad</span>
+          <span class="material-symbols-outlined text-blue-600 text-[18px]">verified</span>
+        </div>
+        <div class="text-2xl font-black text-blue-700">{{ porcentajeConformidad }}%</div>
+        <div class="w-full bg-slate-100 rounded-full h-1.5 mt-2 overflow-hidden">
+          <div class="bg-blue-600 h-1.5 rounded-full" [style.width.%]="porcentajeConformidad"></div>
+        </div>
+      </div>
+
+      <!-- KPI 4 -->
+      <div class="fx-panel p-4 flex flex-col justify-between">
+        <div class="flex items-center justify-between text-slate-500 mb-1">
+          <span class="text-[11px] font-bold uppercase tracking-wider">Novedades</span>
+          <span class="material-symbols-outlined text-amber-500 text-[18px]">warning</span>
+        </div>
+        <div class="text-2xl font-black text-amber-600">{{ totalNovedades }}</div>
+        <span class="text-[11px] text-amber-600 mt-1">Con novedad o rechazo</span>
+      </div>
+
+      <!-- KPI 5 -->
+      <div class="fx-panel p-4 flex flex-col justify-between col-span-2 sm:col-span-1">
+        <div class="flex items-center justify-between text-slate-500 mb-1">
+          <span class="text-[11px] font-bold uppercase tracking-wider">Sedes</span>
+          <span class="material-symbols-outlined text-purple-600 text-[18px]">apartment</span>
+        </div>
+        <div class="text-2xl font-black text-purple-700">{{ totalSedesAtendidas }}</div>
+        <span class="text-[11px] text-slate-400 mt-1">Sedes beneficiadas</span>
+      </div>
+    </section>
+
+    <!-- FILTROS OFICIALES (NO-PRINT) -->
+    <section class="no-print fx-panel p-5 sm:p-6 filtros-container space-y-4">
+      <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+        <h3 class="m-0 text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+          <span class="material-symbols-outlined text-[17px] text-orange-500">filter_alt</span>
+          Filtros de Auditoría Institucional
+        </h3>
+
+        <!-- Píldoras de períodos predefinidos -->
+        <div class="flex flex-wrap gap-1.5 text-xs font-medium">
+          <span class="text-slate-400 self-center text-[11px] mr-1">Rango rápido:</span>
+          <button type="button" (click)="setPeriodo('este_mes')"
+            class="cursor-pointer rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-bold text-slate-600 hover:border-orange-300 hover:bg-orange-50">
+            Este mes
+          </button>
+          <button type="button" (click)="setPeriodo('mes_anterior')"
+            class="cursor-pointer rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-bold text-slate-600 hover:border-orange-300 hover:bg-orange-50">
+            Mes anterior
+          </button>
+          <button type="button" (click)="setPeriodo('ultimos_30')"
+            class="cursor-pointer rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-bold text-slate-600 hover:border-orange-300 hover:bg-orange-50">
+            Últimos 30 días
+          </button>
+          <button type="button" (click)="setPeriodo('anio_actual')"
+            class="cursor-pointer rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-bold text-slate-600 hover:border-orange-300 hover:bg-orange-50">
+            Año vigente
+          </button>
+          <button type="button" (click)="setPeriodo('todo')"
+            class="cursor-pointer rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-bold text-slate-400 hover:text-slate-700">
+            Limpiar fechas
+          </button>
+        </div>
+      </div>
+
+      <!-- Selectores en Grid -->
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        
+        <!-- Filtro 1: Contrato PAE -->
+        <label class="flex flex-col gap-1 text-[11px] font-black uppercase tracking-wider text-slate-600">
+          Contrato PAE
+          <select [(ngModel)]="filtroContrato" (change)="onCambioContrato()"
+            class="fx-input rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-800">
+            <option value="TODOS">-- Todos los Contratos --</option>
+            <option *ngFor="let c of contratos" [value]="c.id_contrato">
+              {{ c.numero_cor }} — {{ c.institucion || c.institucion_nombre || 'Contrato' }}
+            </option>
+          </select>
+        </label>
+
+        <!-- Filtro 2: Institución Educativa -->
+        <label class="flex flex-col gap-1 text-[11px] font-black uppercase tracking-wider text-slate-600">
+          Institución Educativa
+          <select [(ngModel)]="filtroInstitucion" (change)="onCambioInstitucion()"
+            class="fx-input rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-800">
+            <option value="TODAS">-- Todas las Instituciones --</option>
+            <option *ngFor="let inst of instituciones" [value]="inst.id_institucion">
+              {{ inst.nombre_institucion }}
+            </option>
+          </select>
+        </label>
+
+        <!-- Filtro 3: Sede Educativa -->
+        <label class="flex flex-col gap-1 text-[11px] font-black uppercase tracking-wider text-slate-600">
+          Sede Educativa
+          <select [(ngModel)]="filtroSede"
+            class="fx-input rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-800">
+            <option value="TODAS">-- Todas las Sedes --</option>
+            <option *ngFor="let s of sedesDisponibles" [value]="s.id_sede">
+              {{ s.nombre_sede }}
+            </option>
+          </select>
+        </label>
+
+        <!-- Filtro 4: Estado de la entrega -->
+        <label class="flex flex-col gap-1 text-[11px] font-black uppercase tracking-wider text-slate-600">
+          Estado de Recepción
+          <select [(ngModel)]="filtroEstadoEntrega"
+            class="fx-input rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-800">
+            <option value="TODOS">-- Todos los estados --</option>
+            <option value="RECIBIDA">Recibida Conforme</option>
+            <option value="CON_NOVEDAD">Recibida con Novedad</option>
+            <option value="RECHAZADA">Rechazada</option>
+            <option value="EN_TRANSITO">En Tránsito</option>
+          </select>
+        </label>
+
+        <!-- Filtro 5: Fecha Desde -->
+        <label class="flex flex-col gap-1 text-[11px] font-black uppercase tracking-wider text-slate-600">
+          Fecha Desde
+          <input type="date" [(ngModel)]="filtroFechaDesde"
+            class="fx-input rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-800" />
+        </label>
+
+        <!-- Filtro 6: Fecha Hasta -->
+        <label class="flex flex-col gap-1 text-[11px] font-black uppercase tracking-wider text-slate-600">
+          Fecha Hasta
+          <input type="date" [(ngModel)]="filtroFechaHasta"
+            class="fx-input rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-800" />
+        </label>
+
+        <!-- Filtro 7: Búsqueda rápida por texto -->
+        <label class="flex flex-col gap-1 text-[11px] font-black uppercase tracking-wider text-slate-600">
+          Búsqueda rápida
+          <input type="text" [(ngModel)]="filtroBusquedaRapida" placeholder="Insumo, responsable, etc."
+            class="fx-input rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-800" />
+        </label>
+
+        <!-- Botones de Acción Oficial -->
+        <div class="flex items-end gap-2">
+          <!-- Botón Exportar CSV / Excel -->
+          <button type="button" (click)="exportarExcelAlcaldia()" [disabled]="cargandoAlcaldia || entregasFiltradas.length === 0"
+            class="btn-naranja flex-1 inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-black disabled:cursor-not-allowed disabled:opacity-50"
+            title="Exportar archivo compatible con Microsoft Excel con firmas y membrete oficial">
+            <span class="material-symbols-outlined text-[17px]">table_view</span>
+            Exportar Excel
+          </button>
+
+          <!-- Botón Imprimir PDF -->
+          <button type="button" (click)="imprimirInforme()" [disabled]="cargandoAlcaldia || entregasFiltradas.length === 0"
+            class="inline-flex cursor-pointer items-center justify-center gap-1 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+            title="Imprimir o guardar como PDF formal">
+            <span class="material-symbols-outlined text-[17px]">print</span>
+            PDF
+          </button>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- MENSAJE DE ERROR -->
+    <div *ngIf="errorAlcaldia" role="alert"
+      class="flex items-center justify-between gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-xs font-bold text-red-800">
+      <span class="flex items-center gap-2">
+        <span class="material-symbols-outlined text-[18px]">error</span>
+        {{ errorAlcaldia }}
+      </span>
+      <button type="button" (click)="cargarDatosAlcaldia()" class="cursor-pointer rounded-full border border-red-300 bg-white px-3 py-1 text-xs font-bold text-red-700 hover:bg-red-100">
+        Reintentar
+      </button>
     </div>
-  </section>
+
+    <!-- TABLA DE AUDITORÍA OFICIAL -->
+    <section class="fx-panel overflow-hidden">
+      <div class="no-print flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
+        <div>
+          <h2 class="m-0 text-sm font-black uppercase tracking-wider text-slate-900">
+            Cuadro de Suministros y Entregas Físicas a Sedes
+          </h2>
+          <p class="m-0 text-xs text-slate-500 font-medium">Consolidado individual por fecha, institución, insumo y acta de recibo</p>
+        </div>
+        <span class="rounded-full bg-orange-100 px-3 py-1 text-xs font-black text-orange-700">
+          {{ entregasFiltradas.length }} registros auditados
+        </span>
+      </div>
+
+      <div class="tabla-scroll">
+        <table class="w-full min-w-[900px] border-collapse text-left text-xs">
+          <thead class="bg-orange-50/70 text-[11px] uppercase tracking-wider text-slate-600 border-b border-orange-100">
+            <tr>
+              <th scope="col" class="px-4 py-3 font-bold">Fecha</th>
+              <th scope="col" class="px-4 py-3 font-bold">Contrato</th>
+              <th scope="col" class="px-4 py-3 font-bold">Institución / Sede</th>
+              <th scope="col" class="px-4 py-3 font-bold">Insumo Alimento</th>
+              <th scope="col" class="px-4 py-3 text-right font-bold">Despacho</th>
+              <th scope="col" class="px-4 py-3 text-right font-bold">Recibido</th>
+              <th scope="col" class="px-4 py-3 font-bold">Estado</th>
+              <th scope="col" class="px-4 py-3 font-bold">Receptor / Acta</th>
+              <th scope="col" class="px-4 py-3 font-bold">Novedad / Obs.</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let e of entregasFiltradas" class="border-t border-slate-100 transition hover:bg-orange-50/30">
+              <td class="whitespace-nowrap px-4 py-3 font-semibold text-slate-600">
+                {{ e.fecha_entrega || '—' }}
+              </td>
+              <td class="whitespace-nowrap px-4 py-3 font-bold text-slate-800">
+                <span class="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-mono text-slate-700 border border-slate-200">
+                  {{ e.numero_contrato || 'CTR-PAE' }}
+                </span>
+              </td>
+              <td class="px-4 py-3">
+                <div class="font-bold text-slate-900">{{ e.institucion_nombre || 'Institución no asignada' }}</div>
+                <div class="text-[11px] text-slate-500 flex items-center gap-1">
+                  <span class="material-symbols-outlined text-[13px] text-slate-400">home_work</span>
+                  {{ e.sede_nombre || 'Sede principal' }}
+                </div>
+              </td>
+              <td class="px-4 py-3 font-bold text-slate-900">
+                {{ e.ingrediente_nombre || ('Insumo #' + e.id_ingrediente) }}
+              </td>
+              <td class="whitespace-nowrap px-4 py-3 text-right font-semibold text-slate-700">
+                {{ e.cantidad }} <span class="text-[10px] text-slate-400 font-normal">{{ e.unidad || 'Unid' }}</span>
+              </td>
+              <td class="whitespace-nowrap px-4 py-3 text-right font-black text-emerald-700">
+                {{ e.cantidad_recibida ?? e.cantidad }} <span class="text-[10px] text-emerald-600 font-normal">{{ e.unidad || 'Unid' }}</span>
+              </td>
+              <td class="whitespace-nowrap px-4 py-3">
+                <span *ngIf="e.estado === 'RECIBIDA'"
+                  class="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700">
+                  <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span> Conforme
+                </span>
+                <span *ngIf="e.estado === 'CON_NOVEDAD'"
+                  class="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-2.5 py-0.5 text-[11px] font-bold text-amber-700">
+                  <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span> Con Novedad
+                </span>
+                <span *ngIf="e.estado === 'RECHAZADA'"
+                  class="inline-flex items-center gap-1 rounded-full bg-red-50 border border-red-200 px-2.5 py-0.5 text-[11px] font-bold text-red-700">
+                  <span class="h-1.5 w-1.5 rounded-full bg-red-500"></span> Rechazada
+                </span>
+                <span *ngIf="e.estado === 'EN_TRANSITO'"
+                  class="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-200 px-2.5 py-0.5 text-[11px] font-bold text-blue-700">
+                  <span class="h-1.5 w-1.5 rounded-full bg-blue-500"></span> En Tránsito
+                </span>
+              </td>
+              <td class="px-4 py-3 text-slate-700">
+                <div class="font-medium truncate max-w-[150px]">{{ e.usuario_receptor_nombre || 'Pendiente' }}</div>
+                <div class="text-[10px] text-slate-400">{{ e.fecha_recepcion ? (e.fecha_recepcion | slice:0:10) : '' }}</div>
+              </td>
+              <td class="max-w-[200px] truncate px-4 py-3 text-slate-500" [title]="e.motivo_rechazo || e.observaciones || ''">
+                <span *ngIf="e.motivo_rechazo" class="text-amber-700 font-semibold">⚠️ {{ e.motivo_rechazo }}</span>
+                <span *ngIf="!e.motivo_rechazo">{{ e.observaciones || '—' }}</span>
+              </td>
+            </tr>
+
+            <!-- Estado de Carga -->
+            <ng-container *ngIf="cargandoAlcaldia">
+              <tr *ngFor="let _ of [1, 2, 3, 4]" class="border-t border-slate-100 animate-pulse">
+                <td class="px-4 py-3"><div class="h-3 w-16 bg-slate-200 rounded"></div></td>
+                <td class="px-4 py-3"><div class="h-3 w-24 bg-slate-200 rounded"></div></td>
+                <td class="px-4 py-3"><div class="h-3 w-32 bg-slate-200 rounded"></div></td>
+                <td class="px-4 py-3"><div class="h-3 w-28 bg-slate-200 rounded"></div></td>
+                <td class="px-4 py-3"><div class="h-3 w-12 bg-slate-200 rounded ml-auto"></div></td>
+                <td class="px-4 py-3"><div class="h-3 w-12 bg-slate-200 rounded ml-auto"></div></td>
+                <td class="px-4 py-3"><div class="h-3 w-20 bg-slate-200 rounded"></div></td>
+                <td class="px-4 py-3"><div class="h-3 w-20 bg-slate-200 rounded"></div></td>
+                <td class="px-4 py-3"><div class="h-3 w-20 bg-slate-200 rounded"></div></td>
+              </tr>
+            </ng-container>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Sin resultados -->
+      <div *ngIf="!cargandoAlcaldia && entregasFiltradas.length === 0" class="flex flex-col items-center gap-3 px-6 py-14 text-center">
+        <div class="ico-suave flex h-14 w-14 items-center justify-center rounded-2xl">
+          <span class="material-symbols-outlined text-[28px]">search_off</span>
+        </div>
+        <p class="m-0 text-sm font-black text-slate-800">No se encontraron suministros con los filtros aplicados</p>
+        <p class="m-0 max-w-sm text-xs font-medium text-slate-500">Prueba cambiando el contrato, la institución o ampliando el rango de fechas.</p>
+      </div>
+    </section>
+
+    <!-- SECCIÓN DE FIRMAS PARA IMPRESIÓN Y AUDITORÍA OFICIAL -->
+    <div class="firmas-impresion">
+      <div style="width: 45%; text-align: center;">
+        <div style="border-top: 1px solid #000; margin-bottom: 6px; padding-top: 6px; font-weight: bold;">
+          SUPERVISOR DE CAMPO / OPERADOR PAE
+        </div>
+        <div style="font-size: 10px; color: #555;">C.C. &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Cargo: Supervisor Territorial</div>
+      </div>
+      <div style="width: 45%; text-align: center;">
+        <div style="border-top: 1px solid #000; margin-bottom: 6px; padding-top: 6px; font-weight: bold;">
+          INTERVENTORÍA / DELEGADO ALCALDÍA MUNICIPAL
+        </div>
+        <div style="font-size: 10px; color: #555;">C.C. &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Cargo: Interventor Técnico PAE</div>
+      </div>
+    </div>
+
+  </ng-container>
+
+  <!-- ========================================================================= -->
+  <!-- TAB 2: SALIDAS OPERATIVAS DE COCINA (EXISTENTE)                           -->
+  <!-- ========================================================================= -->
+  <ng-container *ngIf="tabActiva === 'cocina'">
+    <!-- Aclaración -->
+    <div class="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50/70 p-4 text-xs font-medium leading-5 text-amber-900">
+      <span class="material-symbols-outlined mt-0.5 text-[20px] text-amber-600">info</span>
+      <p class="m-0">
+        Este reporte consulta las <b>salidas de inventario registradas en cocina por las manipuladoras</b>.
+        No calcula consumo teórico de recetas.
+      </p>
+    </div>
+
+    <!-- Filtros de Salidas -->
+    <section class="fx-panel p-5 sm:p-6" aria-label="Filtros del reporte de cocina">
+      <div class="grid grid-cols-1 items-end gap-4 sm:grid-cols-2 lg:grid-cols-4">
+
+        <label class="flex flex-col gap-1.5 text-xs font-bold text-slate-600">
+          Desde
+          <span class="relative">
+            <span class="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-slate-400">calendar_today</span>
+            <input type="date" [(ngModel)]="fechaDesdeCocina"
+              class="fx-input w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-sm font-semibold text-slate-800">
+          </span>
+        </label>
+
+        <label class="flex flex-col gap-1.5 text-xs font-bold text-slate-600">
+          Hasta
+          <span class="relative">
+            <span class="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-slate-400">event</span>
+            <input type="date" [(ngModel)]="fechaHastaCocina"
+              class="fx-input w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-sm font-semibold text-slate-800">
+          </span>
+        </label>
+
+        <button type="button" (click)="cargarCocina()" [disabled]="cargandoCocina || (!!fechaDesdeCocina && !!fechaHastaCocina && fechaDesdeCocina > fechaHastaCocina)"
+          class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-orange-50 disabled:cursor-not-allowed disabled:opacity-50">
+          <span class="material-symbols-outlined text-[20px]" [class.animate-spin]="cargandoCocina">refresh</span>
+          {{ cargandoCocina ? 'Actualizando...' : 'Actualizar datos' }}
+        </button>
+
+        <button type="button" (click)="exportarCsvCocina()" [disabled]="cargandoCocina || salidasFiltradas.length === 0"
+          class="btn-naranja inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-black disabled:cursor-not-allowed disabled:opacity-50">
+          <span class="material-symbols-outlined text-[20px]">download</span>
+          Exportar CSV
+        </button>
+      </div>
+
+      <p *ngIf="fechaDesdeCocina && fechaHastaCocina && fechaDesdeCocina > fechaHastaCocina" role="alert"
+        class="m-0 mt-4 flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800">
+        <span class="material-symbols-outlined text-[18px]">warning</span>
+        La fecha "Desde" no puede ser posterior a "Hasta".
+      </p>
+    </section>
+
+    <!-- Error Cocina -->
+    <div *ngIf="errorCocina" role="alert"
+      class="flex items-center justify-between gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-800">
+      <span class="flex items-center gap-2">
+        <span class="material-symbols-outlined text-[20px]">error</span>
+        {{ errorCocina }}
+      </span>
+      <button type="button" (click)="cargarCocina()" class="cursor-pointer rounded-full border border-red-300 bg-white px-3 py-1 text-xs font-bold text-red-700 hover:bg-red-100">
+        Reintentar
+      </button>
+    </div>
+
+    <!-- Tabla Salidas de Cocina -->
+    <section class="fx-panel overflow-hidden">
+      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
+        <h2 class="m-0 text-base font-black text-slate-900">Salidas Operativas de Cocina</h2>
+        <span class="rounded-full bg-orange-100 px-3 py-1 text-xs font-black text-orange-600">
+          {{ salidasFiltradas.length }} {{ salidasFiltradas.length === 1 ? 'registro' : 'registros' }}
+        </span>
+      </div>
+
+      <div class="tabla-scroll">
+        <table class="w-full min-w-[680px] border-collapse text-left text-sm">
+          <thead class="bg-orange-50/70 text-[11px] uppercase tracking-wider text-slate-500">
+            <tr>
+              <th scope="col" class="px-5 py-3 font-bold">Fecha</th>
+              <th scope="col" class="px-5 py-3 font-bold">Ingrediente</th>
+              <th scope="col" class="px-5 py-3 text-right font-bold">Cantidad</th>
+              <th scope="col" class="px-5 py-3 font-bold">Unidad</th>
+              <th scope="col" class="px-5 py-3 font-bold">Observaciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let salida of salidasFiltradas" class="border-t border-slate-100 transition hover:bg-orange-50/40">
+              <td class="whitespace-nowrap px-5 py-3 font-medium text-slate-600">{{ salida.fecha || 'Sin fecha' }}</td>
+              <td class="px-5 py-3 font-bold text-slate-900">{{ salida.ingrediente }}</td>
+              <td class="px-5 py-3 text-right text-base font-black text-orange-600">{{ salida.cantidad }}</td>
+              <td class="px-5 py-3">
+                <span class="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-xs font-bold text-slate-600">{{ salida.unidad || '—' }}</span>
+              </td>
+              <td class="max-w-[260px] truncate px-5 py-3 text-slate-500" [title]="salida.observaciones || ''">{{ salida.observaciones || '—' }}</td>
+            </tr>
+
+            <ng-container *ngIf="cargandoCocina">
+              <tr *ngFor="let _ of [1, 2, 3, 4]" class="border-t border-slate-100">
+                <td class="px-5 py-4"><div class="h-3 w-20 animate-pulse rounded-full bg-slate-100"></div></td>
+                <td class="px-5 py-4"><div class="h-3 w-32 animate-pulse rounded-full bg-slate-100"></div></td>
+                <td class="px-5 py-4"><div class="ml-auto h-3 w-12 animate-pulse rounded-full bg-slate-100"></div></td>
+                <td class="px-5 py-4"><div class="h-3 w-10 animate-pulse rounded-full bg-slate-100"></div></td>
+                <td class="px-5 py-4"><div class="h-3 w-40 animate-pulse rounded-full bg-slate-100"></div></td>
+              </tr>
+            </ng-container>
+          </tbody>
+        </table>
+      </div>
+
+      <div *ngIf="!cargandoCocina && salidasFiltradas.length === 0" class="flex flex-col items-center gap-3 px-6 py-14 text-center">
+        <div class="ico-suave flex h-14 w-14 items-center justify-center rounded-2xl">
+          <span class="material-symbols-outlined text-[28px]">search_off</span>
+        </div>
+        <p class="m-0 text-sm font-black text-slate-800">No hay salidas en el periodo seleccionado</p>
+        <p class="m-0 max-w-sm text-xs font-medium text-slate-500">Cambia las fechas o presiona "Actualizar datos" para volver a consultar.</p>
+      </div>
+    </section>
+  </ng-container>
+
 </section>
