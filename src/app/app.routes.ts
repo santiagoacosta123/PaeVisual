@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 
-import { LoginComponent } from './login/login'; // <--- Corregido aquí
+import { LoginComponent } from './login/login';
 import { RecuperarPasswordComponent } from './recuperar-password/recuperar-password';
 import { LayoutComponent } from './layout/layout';
 import { InicioComponent } from './inicio/inicio';
@@ -20,7 +20,6 @@ import { DashboardSupervisor } from './dashboard-supervisor/dashboard-supervisor
 import { authGuard, roleGuard } from '@core/auth';
 import { BancoDatosComponent } from './banco-datos/banco-datos';
 
-// Importaciones corregidas sin la extensión .component
 import { RegistrarEntregaAlimentosComponent } from './registrar-entrega-alimentos/registrar-entrega-alimentos';
 import { HistorialEntregas } from './historial-entregas/historial-entregas';
 import { EntregasTipoMercadoComponent } from './entregas-tipo-mercado/entregas-tipo-mercado';
@@ -30,6 +29,9 @@ import { AsistenciaDiariaComponent } from './asistencia-diaria/asistencia-diaria
 import { Reportes } from './reportes/reportes';
 import { InstitucionesComponent } from './instituciones/instituciones';
 import { FacturasCompraComponent } from './facturas-compra/facturas-compra';
+
+// NUEVO: página de Instituciones
+
 
 export const routes: Routes = [
   {
@@ -104,6 +106,14 @@ export const routes: Routes = [
         component: EntregasTipoMercadoComponent,
         canActivate: [roleGuard],
         data: { roles: ['supervisor', 'coordinador', 'coordinador pae'] }
+      },
+
+      // NUEVO: Instituciones
+      {
+        path: 'instituciones',
+        component: InstitucionesComponent,
+        canActivate: [roleGuard],
+        data: { roles: ['supervisor', 'coordinador', 'coordinador pae', 'administrador', 'admin'] }
       },
 
       {

@@ -1,360 +1,1360 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, HostListener, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { forkJoin, of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
-import { environment } from '@env/environment';
-import { AuthService } from '../services/auth.service';
+import { HttpClient } from '@angular/common/http';
+import { Observable, forkJoin, of } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
+import { environment } from '../../environments/environment';
+import { SweetAlertService } from '../sweet-alert.service';
+import { EntregasService } from '../services/entregas.service';
 
-/* ============================================================
-   AJUSTA ESTAS RUTAS A TU BACKEND
-   ============================================================ */
-export const API = environment.apiUrl;
-export const URL_INGREDIENTES = `${API}/ingredientes/`;     // GET  -> catálogo completo de productos
-export const URL_TIPOS_MERCADO = `${API}/tipos-mercado/`;   // GET  -> perecedero / no perecedero
-export const URL_ENTREGAS = `${API}/entregas/`;             // GET historial · POST guardar entrega
+// Opciones de los catálogos (se definen aquí para no depender de la forma exacta de los tipos del servicio)
+interface IngredienteOpcion { id: number; nombre: string; }
+interface TipoMercadoOpcion { id: number; nombre: string; }
 
-/* ============================================================
-   MODELOS
-   ============================================================ */
-export interface TipoMercado { id: number; nombre: string; }
+// Fila que se muestra en la tabla del historial
+interface FilaEntrega {
+  id?: number;
+  idIngrediente: number | null;
+  idTipoMercado: number | null;
+  ingrediente: string;
+  tipoMercado: string;                   // nombre del catálogo
+  categoria: 'Granos' | 'Perecederos';   // para colores y alertas
+  frecuencia: string;
+  cantidad: number;
+  unidad: string;
+  fechaRecepcion: string;                // YYYY-MM-DD
+  fechaVencimiento: string;              // YYYY-MM-DD
 
-export interface Producto {
+  // Opcionales: alimentan el modal "Registro del día" (si el backend no los envía, se muestra "—")
+  codigo?: string;
+  lote?: string;
+  destino?: string;
+  hora?: string;
+  responsable?: string;
+  estadoEntrega?: string;
+}
+
+// Fila de la carga por lote (una por ingrediente del inventario)
+interface FilaLote {
+  idIngrediente: number;
+  nombre: string;
+  cantidad: number | null;
+  unidad: string;
+  idTipoMercado: number | null;  // Perecedero / No perecedero (catálogo de tipos de mercado)
+  frecuenciaDias: number | null; // cada cuántos días llega (8, 20, ...)
+  diasVigencia: number | null;   // duración que tuvo la última entrega (recepción -> vencimiento)
+  fechaVencimiento: string;
+  tieneHistorial: boolean;
+}
+
+// Inventario: todas las entregas recibidas en una misma fecha
+interface Factura {
+  fecha: string;                 // YYYY-MM-DD
+  folio: string;                 // CI-AAAAMMDD
+  items: FilaEntrega[];
+  alertas: number;               // productos vencidos o por vencer
+}
+
+// Producto del catálogo que se ve como tarjeta en la vista Menú
+interface ProductoCatalogo {
+  id: number;
   nombre: string;
   categoria: string;
   unidad: string;
   idTipoMercado: number | null;
-  frecuenciaDias: number | null;
 }
 
-export interface Entrega {
-  ingrediente: string;
-  cantidad: number;
-  unidad: string;
-  tipoMercado: string;
-  fechaRecepcion: string;
-  fechaVencimiento: string;
-  frecuencia: string;
+// Grupo de productos de una misma categoría
+interface GrupoMenu {
+  nombre: string;
+  emoji: string;
+  productos: ProductoCatalogo[];
 }
 
-export interface CategoriaMenu { nombre: string; emoji: string; total: number; }
-export interface GrupoProductos { nombre: string; emoji: string; productos: Producto[]; }
+// Un día del calendario mensual
+interface DiaCalendario {
+  iso: string;            // YYYY-MM-DD
+  numero: number;         // número del día
+  enMes: boolean;         // false = día del mes anterior o siguiente
+  esHoy: boolean;
+  seleccionado: boolean;
+  entregas: number;       // productos recibidos ese día
+  estado: 'Vigente' | 'Próximo a vencer' | 'Vencido' | null;   // el peor estado entre los productos del día
+  vencen: number;         // productos que vencen ese día
+}
 
-/* ============================================================
-   EMOJIS
-   ============================================================ */
-const EMOJI_CATEGORIA: Record<string, string> = {
-  'Granos y cereales': '🌾',
-  'Despensa': '🫙',
-  'Carnes y huevos': '🥩',
-  'Lácteos': '🥛',
-  'Verduras': '🥕',
-  'Frutas': '🍎',
-  'Panadería': '🍞',
-  'Otros': '🍽️'
-};
+// Un registro (entrega) dentro del modal "Registro del día"
+interface RegistroDia {
+  codigo: string;
+  descripcion: string;
+  estado: string;
+  destino: string;
+  hora: string;
+  responsable: string;
+  items: FilaEntrega[];
+}
 
-const EMOJI_PRODUCTO: Record<string, string> = {
-  'arroz': '🌾', 'frijol': '🫘', 'lentejas': '🫘', 'pasta': '🍝', 'harina de maíz': '🌽',
-  'azúcar': '🍬', 'sal': '🧂', 'aceite': '🫒', 'panela': '🍯',
-  'carne de res': '🥩', 'carne molida': '🥩', 'pollo': '🍗', 'huevos': '🥚', 'pescado': '🐟',
-  'leche': '🥛', 'queso': '🧀', 'yogur': '🥣', 'mantequilla': '🧈',
-  'zanahoria': '🥕', 'tomate': '🍅', 'cebolla': '🧅', 'papa': '🥔',
-  'plátano': '🍌', 'naranja': '🍊', 'manzana': '🍎'
-};
+interface CategoriaOpcion {
+  nombre: string;
+  emoji: string;
+  total: number;
+}
 
-/* ============================================================
-   CATÁLOGO DE RESPALDO (si el servidor falla con 500)
-   ============================================================ */
-const TIPOS_RESPALDO: TipoMercado[] = [
-  { id: 1, nombre: 'Perecedero' },
-  { id: 2, nombre: 'No perecedero' }
-];
-
-const p = (nombre: string, categoria: string, unidad: string, idTipoMercado: number): Producto =>
-  ({ nombre, categoria, unidad, idTipoMercado, frecuenciaDias: idTipoMercado === 1 ? 7 : 15 });
-
-const CATALOGO_RESPALDO: Producto[] = [
-  p('Arroz', 'Granos y cereales', 'Kg', 2),
-  p('Frijol', 'Granos y cereales', 'Kg', 2),
-  p('Lentejas', 'Granos y cereales', 'Kg', 2),
-  p('Pasta', 'Granos y cereales', 'Kg', 2),
-  p('Harina de maíz', 'Granos y cereales', 'Kg', 2),
-  p('Azúcar', 'Despensa', 'Kg', 2),
-  p('Sal', 'Despensa', 'Kg', 2),
-  p('Aceite', 'Despensa', 'L', 2),
-  p('Panela', 'Despensa', 'Kg', 2),
-  p('Carne de res', 'Carnes y huevos', 'Kg', 1),
-  p('Carne molida', 'Carnes y huevos', 'Kg', 1),
-  p('Pollo', 'Carnes y huevos', 'Kg', 1),
-  p('Pescado', 'Carnes y huevos', 'Kg', 1),
-  p('Huevos', 'Carnes y huevos', 'Und', 1),
-  p('Leche', 'Lácteos', 'L', 1),
-  p('Queso', 'Lácteos', 'Kg', 1),
-  p('Zanahoria', 'Verduras', 'Kg', 1),
-  p('Tomate', 'Verduras', 'Kg', 1),
-  p('Cebolla', 'Verduras', 'Kg', 1),
-  p('Papa', 'Verduras', 'Kg', 1)
-];
+type Columna = 'fechaRecepcion' | 'ingrediente' | 'tipoMercado' | 'cantidad' | 'fechaVencimiento' | 'estado';
+type FiltroMercado = 'Todos' | 'Granos' | 'Perecederos';
+type FiltroEstado = 'Todos' | 'Vigente' | 'Próximo a vencer' | 'Vencido';
 
 @Component({
   selector: 'app-registrar-entrega-alimentos',
   standalone: true,
   imports: [CommonModule, FormsModule],
-  templateUrl: './registrar-entrega-alimentos.html'
+  templateUrl: './registrar-entrega-alimentos.html',
+  styleUrls: ['./registrar-entrega-alimentos.css'],
 })
 export class RegistrarEntregaAlimentosComponent implements OnInit {
 
-  /* ---------- Vista y filtros ---------- */
-  vista: 'menu' = 'menu';
-  textoFiltro = '';
-  paginaActual = 1;
-  filtroMercado: 'Todos' | 'Perecederos' | 'Granos' = 'Todos';
-  categoriaMenu = 'Todos';
+  ingredientes: IngredienteOpcion[] = [];
+  tiposMercado: TipoMercadoOpcion[] = [];
+  cargandoCatalogos = true;
+  errorMensaje = '';
+  errorCatalogos = '';   // aviso fijo en el modal cuando los catálogos no llegaron del servidor
 
-  /* ---------- Catálogo ---------- */
-  catalogo: Producto[] = [];
-  tiposMercado: TipoMercado[] = [];
-  cargandoCatalogos = false;
-  errorCatalogos = '';
+  // ===================== PRODUCTOS BASE =====================
+  // Se usan cuando el servidor no devuelve ingredientes, para que el inventario nunca salga vacío.
+  // IMPORTANTE: para poder GUARDAR, estos ids (1, 2, 3...) deben existir en la tabla de ingredientes del backend.
+  private readonly productosBase: IngredienteOpcion[] = [
+    { id: 1,  nombre: 'Arroz' },
+    { id: 2,  nombre: 'Frijol' },
+    { id: 3,  nombre: 'Lentejas' },
+    { id: 4,  nombre: 'Pasta' },
+    { id: 5,  nombre: 'Harina de maíz' },
+    { id: 6,  nombre: 'Azúcar' },
+    { id: 7,  nombre: 'Sal' },
+    { id: 8,  nombre: 'Aceite' },
+    { id: 9,  nombre: 'Panela' },
+    { id: 10, nombre: 'Avena' },
+    { id: 11, nombre: 'Leche' },
+    { id: 12, nombre: 'Huevos' },
+    { id: 13, nombre: 'Pollo' },
+    { id: 14, nombre: 'Carne de res' },
+    { id: 15, nombre: 'Papa' },
+    { id: 16, nombre: 'Yuca' },
+    { id: 17, nombre: 'Plátano' },
+    { id: 18, nombre: 'Zanahoria' },
+    { id: 19, nombre: 'Tomate' },
+    { id: 20, nombre: 'Cebolla' },
+  ];
 
-  /* ---------- Historial de entregas ---------- */
-  historial: Entrega[] = [];
+  // Tipos de mercado de respaldo (solo si el servidor no los entrega)
+  private readonly tiposBase: TipoMercadoOpcion[] = [
+    { id: 1, nombre: 'Perecedero' },
+    { id: 2, nombre: 'No perecedero' },
+  ];
+
+  // Unidad sugerida para los productos que aún no tienen historial
+  private readonly unidadPorDefecto: Record<string, string> = {
+    'Aceite': 'Litros', 'Leche': 'Litros', 'Huevos': 'Unidades',
+  };
+
+  // ===================== INSTITUCIÓN =====================
+  instituciones: string[] = ['Liceo de Occidente'];
+  institucionLote = 'Liceo de Occidente';
+
+  // ===================== MENÚ / CATEGORÍAS =====================
+  categoriaMenu = 'Todos';   // categoría elegida en la vista Menú
+  categoriaLote = 'Todos';   // categoría elegida en el modal
+
+  // ===================== CARGA POR LOTE =====================
+  fechaRecepcionLote = this.fechaHoy();
+  filasLote: FilaLote[] = [];
+  guardandoLote = false;
+  busquedaLote = '';
+
+  // ===================== HISTORIAL DE ENTREGAS =====================
+  // Si te da error 404 al cargar la tabla, pon aquí la misma ruta que usa registrar() en entregas.service.ts
+  private readonly urlEntregas = `${environment.apiUrl}/entregas/`;
+
+  mostrarModalEntrega = false;
   cargandoHistorial = false;
   errorHistorial = false;
-  ultimoRegistro: { fecha: string; totales: number; items: Entrega[] } | null = null;
-  resumen = { total: 0, vigentes: 0, porVencer: 0, vencidos: 0 };
+
+  private entregasRaw: any[] = [];
+  historial: FilaEntrega[] = [];
+
+  // Filtros: se aplican al instante, sin botón
+  textoFiltro = '';
+  fechaDesde = '';
+  fechaHasta = '';
+  ingredienteFiltro = 'Todos';
+  filtroMercado: FiltroMercado = 'Todos';
+  filtroEstado: FiltroEstado = 'Todos';
+
+  // Orden de la tabla (clic en el título de cada columna)
+  ordenColumna: Columna = 'fechaRecepcion';
+  ordenDireccion: 'asc' | 'desc' = 'desc';
+
+  // Paginación
+  paginaActual = 1;
+  porPagina = 10;
+  opcionesPorPagina = [10, 25, 50];
+  filasEsqueleto = [1, 2, 3, 4, 5];
+  columnasEsqueleto = [1, 2, 3, 4, 5, 6];
 
   constructor(
+    private entregasService: EntregasService,
+    private alertas: SweetAlertService,
     private http: HttpClient,
-    private authService: AuthService
   ) {}
-
-  private getHeaders(): { headers: HttpHeaders } {
-    let headers = new HttpHeaders({ 'Content-Type': 'application/json' });
-    const token = this.authService.obtenerToken()?.replace(/^(Bearer|Token)\s+/i, '').trim();
-    if (token) headers = headers.set('Authorization', `Bearer ${token}`);
-    return { headers };
-  }
 
   ngOnInit(): void {
     this.cargarCatalogos();
     this.cargarHistorial();
   }
 
-  /* ============================================================
-     CARGA DE DATOS
-     ============================================================ */
+  // Esc cierra la ventana abierta (primero el modal del día, luego el formulario)
+  @HostListener('document:keydown.escape')
+  alPresionarEsc(): void {
+    if (this.productoDetalle) { this.cerrarDetalleProducto(); return; }
+    if (this.modalDiaAbierto) { this.cerrarModalDia(); return; }
+    if (this.mostrarModalEntrega) this.cerrarModalEntrega();
+  }
+
   cargarCatalogos(): void {
     this.cargandoCatalogos = true;
+    this.errorMensaje = '';
     this.errorCatalogos = '';
-
     forkJoin({
-      productos: this.http.get<any>(URL_INGREDIENTES, this.getHeaders()).pipe(catchError(() => of(null))),
-      tipos: this.http.get<any>(URL_TIPOS_MERCADO, this.getHeaders()).pipe(catchError(() => of(null)))
-    }).subscribe(({ productos, tipos }) => {
-      this.cargandoCatalogos = false;
-
-      const listaTipos = this.comoLista(tipos)
-        .map((t: any): TipoMercado => ({ id: Number(t.id), nombre: String(t.nombre ?? t.name ?? '') }))
-        .filter(t => t.nombre);
-
-      const listaProductos = this.comoLista(productos)
-        .map((x: any): Producto => ({
-          nombre: String(x.nombre ?? x.name ?? '').trim(),
-          categoria: String(x.categoria?.nombre ?? x.categoria ?? 'Otros'),
-          unidad: String(x.unidad ?? 'Kg'),
-          idTipoMercado: x.idTipoMercado ?? x.tipoMercado?.id ?? null,
-          frecuenciaDias: x.frecuenciaDias ?? x.frecuencia ?? null
-        }))
-        .filter(x => x.nombre);
-
-      if (listaTipos.length === 0 || listaProductos.length === 0) {
-        this.errorCatalogos =
-          'No se pudieron cargar los catálogos del servidor. Se muestran productos de ejemplo; para guardar debe funcionar la conexión.';
-        this.tiposMercado = TIPOS_RESPALDO;
-        this.catalogo = CATALOGO_RESPALDO;
-      } else {
-        this.tiposMercado = listaTipos;
-        this.catalogo = listaProductos;
-      }
+      ingredientes: this.entregasService.cargarIngredientes() as unknown as Observable<IngredienteOpcion[]>,
+      tiposMercado: this.entregasService.cargarTiposMercado() as unknown as Observable<TipoMercadoOpcion[]>,
+    }).subscribe({
+      next: ({ ingredientes, tiposMercado }) => {
+        this.ingredientes = ingredientes.length > 0 ? ingredientes : this.productosBase;
+        this.tiposMercado = tiposMercado.length > 0 ? tiposMercado : this.tiposBase;
+        this.cargandoCatalogos = false;
+        if (tiposMercado.length === 0) {
+          this.errorCatalogos = 'El servidor no devolvió tipos de mercado; se usan Perecedero y No perecedero locales. Para guardar deben existir en el backend.';
+        }
+        this.reconstruirHistorial(); // ya hay nombres de catálogo para la tabla (y arma la lista del lote)
+      },
+      error: (error) => {
+        console.error('Error al cargar catálogos de entregas:', error);
+        const motivo = this.describirError(error);
+        this.errorCatalogos = `No se pudieron cargar los catálogos del servidor: ${motivo}. Se muestran productos de ejemplo; para guardar debe funcionar la conexión.`;
+        void this.alertas.error('No se pudo cargar el formulario', this.errorCatalogos);
+        // El formulario sigue usable con los productos y tipos de respaldo
+        if (this.ingredientes.length === 0) this.ingredientes = this.productosBase;
+        if (this.tiposMercado.length === 0) this.tiposMercado = this.tiposBase;
+        this.cargandoCatalogos = false;
+        this.reconstruirHistorial();
+      },
     });
   }
 
+  // Traduce el error HTTP a un motivo que se entienda
+  private describirError(error: any): string {
+    const estado = error?.status;
+    if (estado === 0) return 'no hay conexión con el servidor (¿está encendido el backend?)';
+    if (estado === 401) return 'la sesión expiró; inicia sesión de nuevo';
+    if (estado === 403) return 'no tienes permiso para esta acción (403)';
+    if (estado === 404) return 'la ruta no existe en el servidor (404); revisa la URL de la API';
+    if (estado === 400) {
+      const detalle = typeof error.error === 'string' ? error.error : JSON.stringify(error.error ?? '');
+      return `el servidor rechazó los datos (400): ${detalle.slice(0, 160)}`;
+    }
+    return estado ? `error ${estado} del servidor` : 'error desconocido';
+  }
+
+  // Fecha de hoy en hora local (YYYY-MM-DD). Pública: la usa el botón "Hoy" del formulario
+  fechaHoy(): string {
+    const hoy = new Date();
+    const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+    const dia = String(hoy.getDate()).padStart(2, '0');
+    return `${hoy.getFullYear()}-${mes}-${dia}`;
+  }
+
+  // "viernes, 16 de octubre de 2026"
+  fechaLarga(iso: string): string {
+    if (!iso) return '';
+    const [y, m, d] = iso.split('-').map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString('es-CO', {
+      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+    });
+  }
+
+  // =====================================================
+  //  CARGA POR LOTE: escribir solo la cantidad de cada producto
+  // =====================================================
+  // Arma una fila por ingrediente, autocompletada con su última entrega.
+  // conservar = true mantiene las cantidades ya escritas (por si el historial termina de cargar con el modal abierto)
+  private prepararLote(conservar = true): void {
+    const previas = new Map<number, number | null>();
+    if (conservar) this.filasLote.forEach(f => previas.set(f.idIngrediente, f.cantidad));
+
+    this.filasLote = this.ingredientes.map(ing => {
+      const ultima = this.historial
+        .filter(e => e.idIngrediente === ing.id)
+        .sort((a, b) => b.fechaRecepcion.localeCompare(a.fechaRecepcion))[0];
+
+      const dias = ultima && ultima.fechaRecepcion && ultima.fechaVencimiento
+        ? this.diasEntre(ultima.fechaRecepcion, ultima.fechaVencimiento)
+        : 0;
+
+      const fila: FilaLote = {
+        idIngrediente: ing.id,
+        nombre: ing.nombre,
+        cantidad: previas.get(ing.id) ?? null,
+        unidad: ultima ? this.normalizarUnidad(ultima.unidad) : (this.unidadPorDefecto[ing.nombre] ?? 'Kg'),
+        idTipoMercado: ultima?.idTipoMercado ?? null,
+        frecuenciaDias: ultima ? this.diasDeFrecuencia(ultima.frecuencia) : null,
+        diasVigencia: dias > 0 ? dias : null,
+        fechaVencimiento: '',
+        tieneHistorial: !!ultima,
+      };
+      this.recalcularVencimiento(fila);
+      return fila;
+    });
+  }
+
+  // "Cada 8 días" -> 8 | "Semanal" -> 7 | "Quincenal" -> 15 | "Mensual" -> 30
+  private diasDeFrecuencia(texto: string): number | null {
+    const t = (texto || '').toLowerCase();
+    const num = t.match(/\d+/);
+    if (num) return Number(num[0]);
+    if (t.includes('seman')) return 7;
+    if (t.includes('quinc')) return 15;
+    if (t.includes('mens')) return 30;
+    if (t.includes('dia')) return 1;
+    return null;
+  }
+
+  private textoFrecuencia(dias: number): string {
+    return dias === 1 ? 'Cada día' : `Cada ${dias} días`;
+  }
+
+  private recalcularVencimiento(f: FilaLote): void {
+    if (f.diasVigencia == null || !this.fechaRecepcionLote) return;
+    f.fechaVencimiento = this.sumarDiasISO(this.fechaRecepcionLote, f.diasVigencia);
+  }
+
+  alCambiarFechaLote(fecha: string): void {
+    this.fechaRecepcionLote = fecha;
+    this.filasLote.forEach(f => this.recalcularVencimiento(f));
+  }
+
+  get filasLoteVisibles(): FilaLote[] {
+    const q = this.busquedaLote.trim().toLowerCase();
+    return this.filasLote.filter(f =>
+      (this.categoriaLote === 'Todos' || this.categoriaDe(f.nombre) === this.categoriaLote) &&
+      (!q || f.nombre.toLowerCase().includes(q))
+    );
+  }
+
+  get filasConCantidad(): FilaLote[] {
+    return this.filasLote.filter(f => f.cantidad != null && f.cantidad > 0);
+  }
+
+  filaIncompleta(f: FilaLote): boolean {
+    return !f.unidad || !f.idTipoMercado || !f.frecuenciaDias || f.frecuenciaDias < 1 || !f.fechaVencimiento;
+  }
+
+  trackLote = (_: number, f: FilaLote) => f.idIngrediente;
+
+  guardarLote(): void {
+    const filas = this.filasConCantidad;
+
+    if (this.tiposMercado.length === 0 || this.ingredientes.length === 0) {
+      return this.mostrarError('No hay catálogos cargados. Actualiza el catálogo e intenta de nuevo.');
+    }
+    if (filas.length === 0) {
+      return this.mostrarError('Escribe la cantidad de al menos un producto.');
+    }
+    if (!this.fechaRecepcionLote) {
+      return this.mostrarError('Selecciona la fecha de recepción.');
+    }
+    const incompletas = filas.filter(f => this.filaIncompleta(f));
+    if (incompletas.length > 0) {
+      return this.mostrarError(`Completa los datos marcados en rojo: ${incompletas.map(f => f.nombre).join(', ')}.`);
+    }
+    const fechasMalas = filas.filter(f => f.fechaVencimiento < this.fechaRecepcionLote);
+    if (fechasMalas.length > 0) {
+      return this.mostrarError(`El vencimiento es anterior a la recepción en: ${fechasMalas.map(f => f.nombre).join(', ')}.`);
+    }
+
+    this.errorMensaje = '';
+    this.guardandoLote = true;
+
+    // Una petición por producto; si una falla, las demás se siguen guardando
+    let motivoFallo = '';
+    const peticiones = filas.map(f =>
+      this.entregasService.registrar({
+        id_ingrediente: f.idIngrediente,
+        id_tipo_mercado: f.idTipoMercado!,
+        frecuencia: this.textoFrecuencia(f.frecuenciaDias!),
+        cantidad: f.cantidad!,
+        unidad: f.unidad,
+        fecha_entrega: this.fechaRecepcionLote,
+        fecha_vencimiento: f.fechaVencimiento,
+        observaciones: '',
+      } as any).pipe(
+        map(() => ({ ok: true, fila: f })),
+        catchError(error => {
+          console.error('Error al registrar', f.nombre, error);
+          motivoFallo = this.describirError(error);
+          return of({ ok: false, fila: f });
+        }),
+      )
+    );
+
+    forkJoin(peticiones).subscribe(resultados => {
+      this.guardandoLote = false;
+      const fallidas = resultados.filter(r => !r.ok).map(r => r.fila);
+      const guardadas = resultados.length - fallidas.length;
+
+      // Quita la cantidad de las que sí se guardaron; las fallidas se quedan para reintentar
+      resultados.filter(r => r.ok).forEach(r => (r.fila.cantidad = null));
+
+      if (guardadas > 0) {
+        // El inventario recién guardado queda visible: sin filtros, ordenado por fecha (el más reciente primero) y abierto
+        this.limpiarFiltros();
+        this.ordenColumna = 'fechaRecepcion';
+        this.ordenDireccion = 'desc';
+        this.facturasAbiertas.add(this.fechaRecepcionLote);
+      }
+
+      if (fallidas.length === 0) {
+        void this.alertas.success('Inventario guardado', `Se registraron ${guardadas} producto(s) con fecha ${this.fechaCorta(this.fechaRecepcionLote)}.`);
+        this.vista = 'facturas';
+        this.mostrarModalEntrega = false;
+      } else {
+        this.errorMensaje =
+          `Se guardaron ${guardadas} y fallaron ${fallidas.length}: ${fallidas.map(f => f.nombre).join(', ')}. ` +
+          (motivoFallo ? `Motivo: ${motivoFallo}. ` : '') +
+          'Sus cantidades siguen en la lista para que intentes de nuevo.';
+        void this.alertas.error('El inventario quedó incompleto', this.errorMensaje);
+      }
+      this.cargarHistorial();
+    });
+  }
+
+  // =====================================================
+  //  HISTORIAL: carga de la tabla
+  // =====================================================
   cargarHistorial(): void {
     this.cargandoHistorial = true;
     this.errorHistorial = false;
 
-    this.http.get<any>(URL_ENTREGAS, this.getHeaders()).subscribe({
-      next: r => {
-        this.historial = this.comoLista(r).map((x: any): Entrega => ({
-          ingrediente: String(x.ingrediente ?? x.nombre ?? ''),
-          cantidad: Number(x.cantidad ?? 0),
-          unidad: String(x.unidad ?? ''),
-          tipoMercado: String(x.tipoMercado?.nombre ?? x.tipoMercado ?? ''),
-          fechaRecepcion: String(x.fechaRecepcion ?? x.fecha ?? ''),
-          fechaVencimiento: String(x.fechaVencimiento ?? ''),
-          frecuencia: String(x.frecuencia ?? '')
-        }));
+    this.http.get<any>(this.urlEntregas).pipe(
+      map(d => (Array.isArray(d) ? d : (d?.results ?? [])) as any[])
+    ).subscribe({
+      next: (lista) => {
+        this.entregasRaw = lista;
+        this.reconstruirHistorial();
         this.cargandoHistorial = false;
-        this.actualizarDerivados();
       },
-      error: () => {
+      error: (error) => {
+        console.error('Error al consultar entregas:', error);
         this.cargandoHistorial = false;
         this.errorHistorial = true;
-      }
+      },
     });
   }
 
-  private comoLista(r: any): any[] {
-    if (Array.isArray(r)) return r;
-    if (r && Array.isArray(r.data)) return r.data;
-    return [];
+  // Convierte lo que devuelve el backend en filas con nombres (usa los catálogos por id)
+  private reconstruirHistorial(): void {
+    this.historial = this.entregasRaw.map(item => this.aFila(item));
+    this.prepararLote(true); // la lista del lote usa el historial para autocompletar
   }
 
-  /* ============================================================
-     CATÁLOGO ORGANIZADO POR CATEGORÍAS DE ABASTECIMIENTO
-     ============================================================ */
-  get categoriasMenu(): CategoriaMenu[] {
-    const conteo = new Map<string, number>();
-    this.catalogo.forEach(x => conteo.set(x.categoria, (conteo.get(x.categoria) ?? 0) + 1));
+  private aFila(item: any): FilaEntrega {
+    const idIngrediente = item.id_ingrediente ??
+      (typeof item.ingrediente === 'number' ? item.ingrediente : item.ingrediente?.id);
+    const idTipo = item.id_tipo_mercado ??
+      (typeof item.tipo_mercado === 'number' ? item.tipo_mercado : item.tipo_mercado?.id);
 
-    const categorias = [...conteo.entries()]
-      .sort((a, b) => a[0].localeCompare(b[0], 'es'))
-      .map(([nombre, total]) => ({ nombre, emoji: this.emojiCategoria(nombre), total }));
+    const ingrediente =
+      this.texto(item.ingrediente_nombre) ||
+      this.texto(item.nombre_ingrediente) ||
+      this.texto(item.ingrediente) ||
+      this.ingredientes.find(i => i.id === idIngrediente)?.nombre || '';
 
-    return [{ nombre: 'Todos', emoji: '🍽️', total: this.catalogo.length }, ...categorias];
+    const tipoMercado =
+      this.texto(item.tipo_mercado_nombre) ||
+      this.texto(item.nombre_tipo_mercado) ||
+      this.texto(item.tipo_mercado) ||
+      this.tiposMercado.find(t => t.id === idTipo)?.nombre || '';
+
+    const nombreMercado = tipoMercado.toLowerCase();
+    const esPerecedero = nombreMercado.includes('perecedero') && !nombreMercado.includes('no perecedero');
+
+    const idIng = idIngrediente != null ? Number(idIngrediente) : (this.ingredientes.find(i => i.nombre === ingrediente)?.id ?? null);
+    const idTip = idTipo != null ? Number(idTipo) : (this.tiposMercado.find(t => t.nombre === tipoMercado)?.id ?? null);
+
+    return {
+      id: item.id,
+      idIngrediente: idIng,
+      idTipoMercado: idTip,
+      ingrediente,
+      tipoMercado,
+      categoria: esPerecedero ? 'Perecederos' : 'Granos',
+      frecuencia: item.frecuencia || '',
+      cantidad: Number(item.cantidad) || 0,
+      unidad: item.unidad || '',
+      fechaRecepcion: this.soloFecha(item.fecha_entrega ?? item.fecha_recepcion ?? item.fechaRecepcion),
+      fechaVencimiento: this.soloFecha(item.fecha_vencimiento ?? item.fechaVencimiento),
+
+      // Opcionales para el modal "Registro del día": si el backend no los envía quedan vacíos y se muestra "—"
+      codigo: item.codigo ?? item.codigo_entrega ?? '',
+      lote: item.lote ?? item.numero_lote ?? '',
+      destino: item.destino ?? this.texto(item.institucion),
+      hora: this.horaDe(item.hora ?? item.hora_registro ?? item.created_at ?? item.fecha_creacion),
+      responsable: this.texto(item.responsable) || this.texto(item.usuario),
+      estadoEntrega: item.estado ?? '',
+    };
   }
 
-  /** Lista plana de productos con los filtros de la pantalla principal */
-  get productosMenu(): Producto[] {
-    const texto = this.normalizar(this.textoFiltro);
-    return this.catalogo.filter(prod => {
-      const okCategoria = this.categoriaMenu === 'Todos' || prod.categoria === this.categoriaMenu;
-      const okTexto = !texto || this.normalizar(prod.nombre).includes(texto);
-      const okMercado =
-        this.filtroMercado === 'Todos' ||
-        (this.filtroMercado === 'Perecederos' ? this.esPerecedero(prod) : !this.esPerecedero(prod));
-      return okCategoria && okTexto && okMercado;
-    });
+  // Acepta texto o un objeto { nombre }. Un número (id) no es un nombre.
+  private texto(valor: any): string {
+    if (valor == null) return '';
+    if (typeof valor === 'object') return String(valor.nombre ?? valor.name ?? '');
+    if (typeof valor === 'number') return '';
+    return String(valor);
   }
 
-  /** Productos agrupados por categoría, para pintar un bloque por categoría */
-  get gruposMenu(): GrupoProductos[] {
-    const mapa = new Map<string, Producto[]>();
-    this.productosMenu.forEach(prod => {
-      if (!mapa.has(prod.categoria)) mapa.set(prod.categoria, []);
-      mapa.get(prod.categoria)!.push(prod);
-    });
-    return [...mapa.entries()]
-      .sort((a, b) => a[0].localeCompare(b[0], 'es'))
-      .map(([nombre, productos]) => ({ nombre, emoji: this.emojiCategoria(nombre), productos }));
+  private soloFecha(valor: any): string {
+    return String(valor ?? '').substring(0, 10);
   }
 
-  /* ============================================================
-     ACCIONES
-     ============================================================ */
-  setMercado(valor: 'Todos' | 'Perecederos' | 'Granos'): void {
-    this.filtroMercado = valor;
-    this.paginaActual = 1;
+  // "7:50 a. m." a partir de "07:50:00" o de una fecha ISO con hora
+  private horaDe(valor: any): string {
+    const s = String(valor ?? '');
+    if (!s) return '';
+    const d = s.includes('T') ? new Date(s) : new Date(`1970-01-01T${s}`);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleTimeString('es-CO', { hour: 'numeric', minute: '2-digit', hour12: true });
   }
 
-  exportarExcelHistorial(): void {
-    const encabezado = ['Producto', 'Categoría', 'Tipo de mercado', 'Cantidad', 'Unidad', 'Fecha de entrega', 'Vencimiento'];
-    const filas = this.historial.map(h => [
-      h.ingrediente, this.categoriaDe(h.ingrediente), h.tipoMercado,
-      h.cantidad, h.unidad, this.fechaCorta(h.fechaRecepcion), this.fechaCorta(h.fechaVencimiento)
-    ]);
-    const csv = [encabezado, ...filas]
-      .map(fila => fila.map(c => `"${String(c).replace(/"/g, '""')}"`).join(';'))
-      .join('\r\n');
-
-    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
-    const enlace = document.createElement('a');
-    enlace.href = URL.createObjectURL(blob);
-    enlace.download = `entregas-sirae-${this.hoyISO()}.csv`;
-    enlace.click();
-    URL.revokeObjectURL(enlace.href);
+  // Si viene el nombre de un producto (botón + de su tarjeta), el modal abre filtrado en ese producto.
+  // Las cantidades ya escritas se conservan (también alimentan el panel "Tu selección").
+  abrirModalEntrega(producto?: string): void {
+    this.institucionLote = this.institucionLote || this.instituciones[0];
+    this.fechaRecepcionLote = this.fechaHoy();       // siempre abre con la fecha de hoy
+    this.busquedaLote = producto ?? '';
+    this.categoriaLote = 'Todos';
+    this.errorMensaje = '';
+    this.prepararLote(true);
+    this.mostrarModalEntrega = true;
   }
 
-  /* ============================================================
-     AUXILIARES DE LA PLANTILLA
-     ============================================================ */
-  esPerecedero(prod: Producto): boolean {
-    const tipo = this.tiposMercado.find(t => t.id === prod.idTipoMercado);
-    return !!tipo && !tipo.nombre.toLowerCase().startsWith('no');
+  // Muestra un error de validación; abre el modal si se guardó desde el panel lateral
+  private mostrarError(mensaje: string): void {
+    this.errorMensaje = mensaje;
+    this.mostrarModalEntrega = true;
   }
 
-  nombreTipo(prod: Producto): string {
-    return this.tiposMercado.find(t => t.id === prod.idTipoMercado)?.nombre ?? 'Sin definir';
+  private normalizarUnidad(valor: string): string {
+    const u = (valor || '').toLowerCase();
+    if (u.includes('kg') || u.includes('kilo')) return 'Kg';
+    if (u.includes('lit') || u === 'l') return 'Litros';
+    if (u.includes('unid') || u === 'ud') return 'Unidades';
+    return valor || '';
+  }
+
+  private aISO(d: Date): string {
+    const mes = String(d.getMonth() + 1).padStart(2, '0');
+    const dia = String(d.getDate()).padStart(2, '0');
+    return `${d.getFullYear()}-${mes}-${dia}`;
+  }
+
+  private sumarDiasISO(iso: string, dias: number): string {
+    const d = new Date(iso + 'T00:00:00');
+    d.setDate(d.getDate() + dias);
+    return this.aISO(d);
+  }
+
+  private diasEntre(desde: string, hasta: string): number {
+    const a = new Date(desde + 'T00:00:00').getTime();
+    const b = new Date(hasta + 'T00:00:00').getTime();
+    return Math.round((b - a) / 86400000);
+  }
+
+  cerrarModalEntrega(): void {
+    this.mostrarModalEntrega = false;
+  }
+
+  // =====================================================
+  //  MENÚ: tarjetas de producto, categorías y lo registrado
+  // =====================================================
+  emojiDe(nombre: string): string {
+    const n = (nombre || '').toLowerCase();
+    const mapa: [string[], string][] = [
+      [['arroz', 'avena'], '🌾'], [['frijol', 'lenteja', 'garbanzo', 'arveja'], '🫘'],
+      [['pasta', 'espagueti', 'fideo'], '🍝'], [['harina', 'maíz', 'maiz'], '🌽'],
+      [['azúcar', 'azucar'], '🍬'], [['sal'], '🧂'], [['aceite'], '🫒'], [['panela'], '🍯'],
+      [['leche'], '🥛'], [['queso'], '🧀'], [['huevo'], '🥚'], [['pollo', 'pechuga'], '🍗'],
+      [['carne', 'res', 'cerdo'], '🥩'], [['pescado', 'atún', 'atun'], '🐟'],
+      [['papa'], '🥔'], [['yuca'], '🥔'], [['plátano', 'platano', 'banano'], '🍌'],
+      [['zanahoria'], '🥕'], [['tomate'], '🍅'], [['cebolla'], '🧅'],
+      [['manzana'], '🍎'], [['naranja'], '🍊'], [['lechuga', 'verdura'], '🥬'],
+    ];
+    return mapa.find(([claves]) => claves.some(k => n.includes(k)))?.[1] ?? '🍽️';
+  }
+
+  // Imagen del producto desde la carpeta public/ (devuelve null si no hay foto: ahí se usa el emoji)
+  // El orden importa: lo más específico primero ("molida" antes que "carne", "deslactosad" antes que "leche").
+  private readonly imagenesProducto: { clave: string; archivo: string }[] = [
+    { clave: 'molida',      archivo: 'molida.png' },
+    { clave: 'carne',       archivo: 'carne.png' },
+    { clave: 'tocino',      archivo: 'tocino.png' },
+    { clave: 'huevo',       archivo: 'huevos.png' },
+    { clave: 'aceite',      archivo: 'aceite.png' },
+    { clave: 'platano',     archivo: 'platano.png' },
+    { clave: 'arroz',       archivo: 'arroz.png' },
+    { clave: 'frijol',      archivo: 'frijoles.png' },
+    { clave: 'harina',      archivo: 'harina.png' },
+    { clave: 'deslactosad', archivo: 'deslatosada.png' },   // el archivo se llama "deslatosada.png"
+    { clave: 'leche',       archivo: 'leche.png' },          // renombra "leche .png" -> "leche.png"
+    { clave: 'queso',       archivo: 'queso.png' },
+  ];
+
+  imagenDe(nombre: string): string | null {
+    const n = (nombre ?? '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')   // quita tildes: "Plátano" -> "platano"
+      .toLowerCase();
+    const hallada = this.imagenesProducto.find(i => n.includes(i.clave));
+    return hallada ? '/' + hallada.archivo : null;   // si usas src/assets: '/assets/' + hallada.archivo
+  }
+
+  // Imagen de cada categoría (chips deslizables y encabezados de grupo).
+  private readonly imagenesCategoria: Record<string, string> = {
+    'Todos':             'plato.png',
+    'Granos y cereales': 'granos.png',
+    'Despensa':          'sal.png',
+    'Lácteos':           'lacteos.png',
+    'Carnes y huevos':   'carne.png',
+    'Verduras':          'verduras.png',
+    'Frutas':            'frutas.png',
+    'Otros':             'otros.png',
+  };
+
+  imagenCategoria(nombre: string): string | null {
+    const archivo = this.imagenesCategoria[nombre];
+    return archivo ? '/' + archivo : null;
   }
 
   categoriaDe(nombre: string): string {
-    return this.catalogo.find(x => x.nombre === nombre)?.categoria ?? 'Otros';
+    const n = (nombre || '').toLowerCase();
+    const mapa: [string[], string][] = [
+      [['arroz', 'frijol', 'lenteja', 'garbanzo', 'arveja', 'pasta', 'harina', 'avena', 'maíz', 'maiz'], 'Granos y cereales'],
+      [['azúcar', 'azucar', 'sal', 'aceite', 'panela'], 'Despensa'],
+      [['leche', 'queso', 'yogur'], 'Lácteos'],
+      [['pollo', 'pechuga', 'carne', 'res', 'cerdo', 'pescado', 'atún', 'atun', 'huevo'], 'Carnes y huevos'],
+      [['papa', 'yuca', 'zanahoria', 'tomate', 'cebolla', 'lechuga', 'verdura'], 'Verduras'],
+      [['plátano', 'platano', 'banano', 'manzana', 'naranja', 'mango'], 'Frutas'],
+    ];
+    return mapa.find(([claves]) => claves.some(k => n.includes(k)))?.[1] ?? 'Otros';
   }
 
-  emojiCategoria(categoria: string): string {
-    return EMOJI_CATEGORIA[categoria] ?? '🍽️';
+  private emojiDeCategoria(categoria: string): string {
+    const e: Record<string, string> = {
+      'Todos': '🍽️', 'Granos y cereales': '🌾', 'Despensa': '🧂', 'Lácteos': '🥛',
+      'Carnes y huevos': '🥩', 'Verduras': '🥕', 'Frutas': '🍎',
+    };
+    return e[categoria] ?? '📦';
   }
 
-  emojiDe(nombre: string): string {
-    const clave = (nombre ?? '').toLowerCase().trim();
-    return EMOJI_PRODUCTO[clave] ?? this.emojiCategoria(this.categoriaDe(nombre));
+  private armarCategorias(nombres: string[]): CategoriaOpcion[] {
+    const conteo = new Map<string, number>();
+    nombres.forEach(n => {
+      const cat = this.categoriaDe(n);
+      conteo.set(cat, (conteo.get(cat) ?? 0) + 1);
+    });
+    const lista = Array.from(conteo.entries())
+      .sort((a, b) => a[0].localeCompare(b[0], 'es'))
+      .map(([nombre, total]) => ({ nombre, emoji: this.emojiDeCategoria(nombre), total }));
+    return [{ nombre: 'Todos', emoji: this.emojiDeCategoria('Todos'), total: nombres.length }, ...lista];
   }
 
-  fechaCorta(valor?: string | null): string {
-    if (!valor) return '—';
-    const [a, m, d] = valor.substring(0, 10).split('-');
-    return a && m && d ? `${d}/${m}/${a}` : '—';
+  // Categorías de la vista Menú (según el catálogo de productos)
+  get categoriasMenu(): CategoriaOpcion[] {
+    return this.armarCategorias(this.ingredientes.map(i => i.nombre));
   }
 
-  trackProducto = (_: number, prod: Producto) => prod.nombre;
-  trackFila = (_: number, item: Entrega) => item.ingrediente + item.fechaRecepcion;
-  trackGrupo = (_: number, g: { nombre: string }) => g.nombre;
+  // Categorías del modal (según los ingredientes disponibles para registrar)
+  get categoriasLote(): CategoriaOpcion[] {
+    return this.armarCategorias(this.filasLote.map(f => f.nombre));
+  }
 
-  /* ============================================================
-     CÁLCULOS INTERNOS
-     ============================================================ */
-  private actualizarDerivados(): void {
-    // Última entrega: todos los ítems de la fecha de recepción más reciente
-    const fechas = this.historial.map(h => h.fechaRecepcion.substring(0, 10)).filter(Boolean).sort();
-    const ultima = fechas[fechas.length - 1];
-    if (ultima) {
-      const items = this.historial.filter(h => h.fechaRecepcion.substring(0, 10) === ultima);
-      this.ultimoRegistro = { fecha: ultima, totales: items.reduce((s, i) => s + i.cantidad, 0), items };
+  // Todos los productos del catálogo, con su unidad y tipo (se toman de su última entrega si existe)
+  private get catalogoMenu(): ProductoCatalogo[] {
+    return this.ingredientes.map(ing => {
+      const ultima = this.historial
+        .filter(e => e.idIngrediente === ing.id)
+        .sort((a, b) => b.fechaRecepcion.localeCompare(a.fechaRecepcion))[0];
+      return {
+        id: ing.id,
+        nombre: ing.nombre,
+        categoria: this.categoriaDe(ing.nombre),
+        unidad: ultima ? this.normalizarUnidad(ultima.unidad) : (this.unidadPorDefecto[ing.nombre] ?? 'Kg'),
+        idTipoMercado: ultima?.idTipoMercado ?? null,
+      };
+    }).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+  }
+
+  // Productos que se ven en las tarjetas (aplica buscador, mercado y categoría)
+  get productosMenu(): ProductoCatalogo[] {
+    const q = this.textoFiltro.trim().toLowerCase();
+    return this.catalogoMenu.filter(p =>
+      (this.filtroMercado === 'Todos' || (this.filtroMercado === 'Perecederos') === this.esPerecedero(p)) &&
+      (this.categoriaMenu === 'Todos' || p.categoria === this.categoriaMenu) &&
+      (!q || p.nombre.toLowerCase().includes(q) || p.categoria.toLowerCase().includes(q) || this.nombreTipo(p).toLowerCase().includes(q))
+    );
+  }
+
+  // Los mismos productos, organizados por categoría
+  get gruposMenu(): GrupoMenu[] {
+    const mapa = new Map<string, ProductoCatalogo[]>();
+    for (const p of this.productosMenu) {
+      const lista = mapa.get(p.categoria) ?? [];
+      lista.push(p);
+      mapa.set(p.categoria, lista);
+    }
+    return Array.from(mapa.entries())
+      .sort(([a], [b]) => a.localeCompare(b, 'es'))
+      .map(([nombre, productos]) => ({ nombre, emoji: this.emojiDeCategoria(nombre), productos }));
+  }
+
+  // Si el producto ya tuvo entregas se usa su tipo de mercado; si no, se deduce por el nombre
+  private readonly perecederosPorNombre = [
+    'pollo', 'carne', 'res', 'cerdo', 'pescado', 'huevo', 'leche', 'queso', 'yogur', 'papa', 'yuca',
+    'plátano', 'platano', 'zanahoria', 'tomate', 'cebolla', 'lechuga', 'banano', 'manzana', 'naranja',
+  ];
+
+  esPerecedero(p: ProductoCatalogo): boolean {
+    const tipo = this.tiposMercado.find(t => t.id === p.idTipoMercado)?.nombre.toLowerCase();
+    if (tipo) return tipo.includes('perecedero') && !tipo.includes('no perecedero');
+    return p.nombre.toLowerCase().split(/\s+/).some(palabra =>
+      this.perecederosPorNombre.some(k => palabra === k || (k.length >= 4 && palabra.startsWith(k))));
+  }
+
+  nombreTipo(p: ProductoCatalogo): string {
+    const tipo = this.tiposMercado.find(t => t.id === p.idTipoMercado)?.nombre;
+    return tipo || (this.esPerecedero(p) ? 'Perecedero' : 'No perecedero');
+  }
+
+  trackGrupo(_: number, g: GrupoMenu): string {
+    return g.nombre;
+  }
+
+  trackProducto(_: number, p: ProductoCatalogo): number {
+    return p.id;
+  }
+
+  // Lo que se registró de un producto: última entrada y total recibido
+  registroDe(nombre: string): {
+    fechaIngreso: string; cantidadIngresada: number; unidad: string; totalRecibido: number; entradas: number;
+  } | null {
+    const entradas = this.historial
+      .filter(e => e.ingrediente === nombre)
+      .sort((a, b) => b.fechaRecepcion.localeCompare(a.fechaRecepcion) || ((b.id ?? 0) - (a.id ?? 0)));
+    if (entradas.length === 0) return null;
+
+    const ultima = entradas[0];
+    const total = entradas
+      .filter(e => e.unidad === ultima.unidad)   // solo suma entradas con la misma unidad
+      .reduce((suma, e) => suma + e.cantidad, 0);
+
+    return {
+      fechaIngreso: ultima.fechaRecepcion,
+      cantidadIngresada: ultima.cantidad,
+      unidad: ultima.unidad,
+      totalRecibido: Math.round(total * 100) / 100,
+      entradas: entradas.length,
+    };
+  }
+
+  // Último registro: todo lo que entró en la fecha de recepción más reciente (alimenta "Lotes de Entrega SIRAE")
+  get ultimoRegistro(): { fecha: string; items: FilaEntrega[]; totales: string } | null {
+    const fechas = this.historial.map(e => e.fechaRecepcion).filter(f => !!f);
+    if (fechas.length === 0) return null;
+
+    const fecha = fechas.reduce((a, b) => (a > b ? a : b));
+    const items = this.historial
+      .filter(e => e.fechaRecepcion === fecha)
+      .sort((a, b) => (b.id ?? 0) - (a.id ?? 0) || a.ingrediente.localeCompare(b.ingrediente, 'es'));
+
+    const porUnidad = new Map<string, number>();
+    for (const e of items) porUnidad.set(e.unidad, (porUnidad.get(e.unidad) ?? 0) + e.cantidad);
+    const totales = Array.from(porUnidad.entries())
+      .map(([unidad, total]) => `${Math.round(total * 100) / 100} ${unidad}`)
+      .join(' · ');
+
+    return { fecha, items, totales };
+  }
+
+  // ===================== CALENDARIO DE ENTREGAS =====================
+  mostrarCalendario = false;
+  mesCalendario = this.primerDiaDelMes(new Date());
+  diaSeleccionado = this.isoDeFecha(new Date());
+  readonly nombresDias = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+  private readonly nombresMeses = [
+    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+  ];
+
+  irACalendario(): void {
+    this.mostrarCalendario = true;
+  }
+
+  get tituloMes(): string {
+    return `${this.nombresMeses[this.mesCalendario.getMonth()]} ${this.mesCalendario.getFullYear()}`;
+  }
+
+  mesAnterior(): void {
+    this.mesCalendario = new Date(this.mesCalendario.getFullYear(), this.mesCalendario.getMonth() - 1, 1);
+  }
+
+  mesSiguiente(): void {
+    this.mesCalendario = new Date(this.mesCalendario.getFullYear(), this.mesCalendario.getMonth() + 1, 1);
+  }
+
+  irAHoy(): void {
+    const hoy = new Date();
+    this.mesCalendario = this.primerDiaDelMes(hoy);
+    this.diaSeleccionado = this.isoDeFecha(hoy);
+  }
+
+  // Si se toca un día gris (de otro mes), el calendario cambia a ese mes. Además abre el modal "Registro del día"
+  seleccionarDia(iso: string): void {
+    this.diaSeleccionado = iso;
+    const [anio, mes] = iso.split('-').map(Number);
+    if (anio !== this.mesCalendario.getFullYear() || mes - 1 !== this.mesCalendario.getMonth()) {
+      this.mesCalendario = new Date(anio, mes - 1, 1);
+    }
+    this.modalDiaAbierto = true;
+  }
+
+  // El buscador de arriba también filtra el calendario por producto
+  private get historialCalendario(): FilaEntrega[] {
+    const q = this.textoFiltro.trim().toLowerCase();
+    return q ? this.historial.filter(e => e.ingrediente.toLowerCase().includes(q)) : this.historial;
+  }
+
+  // Semanas completas (de lunes a domingo) del mes que se está viendo
+  get diasCalendario(): DiaCalendario[] {
+    const lista = this.historialCalendario;
+    const hoy = this.isoDeFecha(new Date());
+    const primero = this.mesCalendario;
+    const desplazamiento = (primero.getDay() + 6) % 7;   // la semana empieza en lunes
+
+    const dias: DiaCalendario[] = [];
+    for (let i = 0; i < 42; i++) {
+      const fecha = new Date(primero.getFullYear(), primero.getMonth(), 1 - desplazamiento + i);
+      const iso = this.isoDeFecha(fecha);
+      const recibidos = lista.filter(e => e.fechaRecepcion === iso);
+      dias.push({
+        iso,
+        numero: fecha.getDate(),
+        enMes: fecha.getMonth() === primero.getMonth(),
+        esHoy: iso === hoy,
+        seleccionado: iso === this.diaSeleccionado,
+        entregas: recibidos.length,
+        estado: this.peorEstado(recibidos),
+        vencen: lista.filter(e => e.fechaVencimiento === iso).length,
+      });
+    }
+    return dias[35].enMes ? dias : dias.slice(0, 35);   // si la sexta semana está vacía, no se muestra
+  }
+
+  private peorEstado(items: FilaEntrega[]): DiaCalendario['estado'] {
+    if (items.length === 0) return null;
+    const estados = items.map(e => this.estadoDe(e));
+    if (estados.includes('Vencido')) return 'Vencido';
+    if (estados.includes('Próximo a vencer')) return 'Próximo a vencer';
+    return 'Vigente';
+  }
+
+  // Detalle del día elegido
+  get entregasDelDia(): FilaEntrega[] {
+    return this.historialCalendario
+      .filter(e => e.fechaRecepcion === this.diaSeleccionado)
+      .sort((a, b) => a.ingrediente.localeCompare(b.ingrediente, 'es'));
+  }
+
+  get vencenDelDia(): FilaEntrega[] {
+    return this.historialCalendario
+      .filter(e => e.fechaVencimiento === this.diaSeleccionado)
+      .sort((a, b) => a.ingrediente.localeCompare(b.ingrediente, 'es'));
+  }
+
+  claseChipEstado(estado: string | null): string {
+    if (estado === 'Vencido') return 'est-bad';
+    if (estado === 'Próximo a vencer') return 'est-warn';
+    return 'est-ok';
+  }
+
+  trackDia(_: number, d: DiaCalendario): string {
+    return d.iso;
+  }
+
+  // ===================== MODAL "REGISTRO DEL DÍA" =====================
+  modalDiaAbierto = false;
+
+  cerrarModalDia(): void {
+    this.modalDiaAbierto = false;
+  }
+
+  // ===================== MODAL "DETALLE DEL PRODUCTO" (clic en un producto de Última entrega) =====================
+  productoDetalle: FilaEntrega | null = null;
+
+  abrirDetalleProducto(item: FilaEntrega): void {
+    this.productoDetalle = item;
+  }
+
+  cerrarDetalleProducto(): void {
+    this.productoDetalle = null;
+  }
+
+  // "18 de septiembre de 2025" (fechaLarga ya existe y lleva el día de la semana)
+  fechaDiaModal(iso: string): string {
+    if (!iso) return '';
+    const [y, m, d] = iso.split('-').map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString('es-CO', {
+      day: 'numeric', month: 'long', year: 'numeric',
+    });
+  }
+
+  // Entregas del día elegido agrupadas por código (si no hay código, usa el folio CI-AAAAMMDD)
+  get registrosDelDia(): RegistroDia[] {
+    const mapa = new Map<string, RegistroDia>();
+    for (const e of this.entregasDelDia) {
+      const codigo = e.codigo || 'CI-' + e.fechaRecepcion.replace(/-/g, '');
+      let reg = mapa.get(codigo);
+      if (!reg) {
+        reg = {
+          codigo,
+          descripcion: 'Lote de entrega SIRAE',
+          estado: e.estadoEntrega || 'Recibida',
+          destino: e.destino || this.institucionLote || '—',
+          hora: e.hora || '—',
+          responsable: e.responsable || '—',
+          items: [],
+        };
+        mapa.set(codigo, reg);
+      }
+      reg.items.push(e);
+    }
+    return Array.from(mapa.values());
+  }
+
+  trackRegistro(_: number, r: RegistroDia): string {
+    return r.codigo;
+  }
+
+  private primerDiaDelMes(d: Date): Date {
+    return new Date(d.getFullYear(), d.getMonth(), 1);
+  }
+
+  private isoDeFecha(d: Date): string {
+    const mes = String(d.getMonth() + 1).padStart(2, '0');
+    const dia = String(d.getDate()).padStart(2, '0');
+    return `${d.getFullYear()}-${mes}-${dia}`;
+  }
+
+  // Botones - y + de la tarjeta del modal
+  ajustarCantidad(fila: FilaLote, paso: number): void {
+    const nueva = Math.max(0, Math.round(((fila.cantidad ?? 0) + paso) * 100) / 100);
+    fila.cantidad = nueva > 0 ? nueva : null;
+  }
+
+  // Quita un producto del panel "Tu selección"
+  quitarDeLote(fila: FilaLote): void {
+    fila.cantidad = null;
+  }
+
+  get totalCantidadLote(): number {
+    const total = this.filasConCantidad.reduce((suma, f) => suma + (f.cantidad ?? 0), 0);
+    return Math.round(total * 100) / 100;
+  }
+
+  // =====================================================
+  //  INVENTARIOS (entregas agrupadas por fecha de recepción)
+  // =====================================================
+  vista: 'menu' | 'facturas' | 'detalle' = 'menu';
+  private facturasAbiertas = new Set<string>();
+
+  get facturas(): Factura[] {
+    const mapa = new Map<string, FilaEntrega[]>();
+    for (const e of this.historialFiltrado) {
+      const lista = mapa.get(e.fechaRecepcion) ?? [];
+      lista.push(e);
+      mapa.set(e.fechaRecepcion, lista);
+    }
+    return Array.from(mapa.entries())
+      .map(([fecha, items]) => ({
+        fecha,
+        folio: 'CI-' + fecha.replace(/-/g, ''),
+        items: [...items].sort((a, b) => a.ingrediente.localeCompare(b.ingrediente, 'es')),
+        alertas: items.filter(e => this.estadoDe(e) !== 'Vigente').length,
+      }))
+      .sort((a, b) => b.fecha.localeCompare(a.fecha));
+  }
+
+  trackFactura(_: number, f: Factura): string {
+    return f.fecha;
+  }
+
+  toggleFactura(fecha: string): void {
+    if (this.facturasAbiertas.has(fecha)) this.facturasAbiertas.delete(fecha);
+    else this.facturasAbiertas.add(fecha);
+  }
+
+  estaAbierta(fecha: string): boolean {
+    return this.facturasAbiertas.has(fecha);
+  }
+
+  // =====================================================
+  //  FILTROS (al instante)
+  // =====================================================
+  get ingredientesHistorial(): string[] {
+    return Array.from(new Set(this.historial.map(e => e.ingrediente))).filter(n => !!n).sort((a, b) => a.localeCompare(b, 'es'));
+  }
+
+  get hayFiltros(): boolean {
+    return !!this.textoFiltro.trim() || !!this.fechaDesde || !!this.fechaHasta
+      || this.ingredienteFiltro !== 'Todos' || this.filtroMercado !== 'Todos' || this.filtroEstado !== 'Todos';
+  }
+
+  setMercado(m: FiltroMercado): void {
+    this.filtroMercado = m;
+    this.paginaActual = 1;
+  }
+
+  // Clic en una tarjeta: filtra por ese estado; otro clic lo quita
+  setEstado(est: FiltroEstado): void {
+    this.filtroEstado = (est !== 'Todos' && this.filtroEstado === est) ? 'Todos' : est;
+    this.paginaActual = 1;
+  }
+
+  limpiarFiltros(): void {
+    this.textoFiltro = '';
+    this.fechaDesde = '';
+    this.fechaHasta = '';
+    this.ingredienteFiltro = 'Todos';
+    this.filtroMercado = 'Todos';
+    this.filtroEstado = 'Todos';
+    this.paginaActual = 1;
+  }
+
+  get historialFiltrado(): FilaEntrega[] {
+    const texto = this.textoFiltro.trim().toLowerCase();
+
+    const lista = this.historial.filter(e => {
+      if (this.ingredienteFiltro !== 'Todos' && e.ingrediente !== this.ingredienteFiltro) return false;
+      if (this.filtroMercado !== 'Todos' && e.categoria !== this.filtroMercado) return false;
+      if (this.filtroEstado !== 'Todos' && this.estadoDe(e) !== this.filtroEstado) return false;
+      if (this.fechaDesde && e.fechaRecepcion < this.fechaDesde) return false;
+      if (this.fechaHasta && e.fechaRecepcion > this.fechaHasta) return false;
+      if (texto) {
+        const coincide =
+          e.ingrediente.toLowerCase().includes(texto) ||
+          e.tipoMercado.toLowerCase().includes(texto) ||
+          e.frecuencia.toLowerCase().includes(texto) ||
+          this.estadoDe(e).toLowerCase().includes(texto);
+        if (!coincide) return false;
+      }
+      return true;
+    });
+
+    const dir = this.ordenDireccion === 'asc' ? 1 : -1;
+    return lista.sort((a, b) => {
+      let r = 0;
+      switch (this.ordenColumna) {
+        case 'ingrediente':       r = a.ingrediente.localeCompare(b.ingrediente, 'es'); break;
+        case 'tipoMercado':       r = a.tipoMercado.localeCompare(b.tipoMercado, 'es'); break;
+        case 'cantidad':          r = a.cantidad - b.cantidad; break;
+        case 'fechaVencimiento':  r = a.fechaVencimiento.localeCompare(b.fechaVencimiento); break;
+        case 'estado':            r = this.diasDe(a) - this.diasDe(b); break;
+        default:                  r = a.fechaRecepcion.localeCompare(b.fechaRecepcion) || ((a.id ?? 0) - (b.id ?? 0));
+      }
+      return r * dir;
+    });
+  }
+
+  // Resalta lo que escribes en el buscador (ej. "frijol") dentro de la tabla
+  resaltarHtml(valor: any): string {
+    const s = String(valor ?? '');
+    const q = this.textoFiltro.trim();
+    const esc = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    if (!q) return esc(s);
+
+    const lower = s.toLowerCase();
+    const ql = q.toLowerCase();
+    let salida = '';
+    let i = 0;
+    while (i < s.length) {
+      const k = lower.indexOf(ql, i);
+      if (k === -1) { salida += esc(s.slice(i)); break; }
+      salida += esc(s.slice(i, k)) + '<mark>' + esc(s.slice(k, k + q.length)) + '</mark>';
+      i = k + q.length;
+    }
+    return salida;
+  }
+
+  // =====================================================
+  //  ORDEN
+  // =====================================================
+  ordenar(col: Columna): void {
+    if (this.ordenColumna === col) {
+      this.ordenDireccion = this.ordenDireccion === 'asc' ? 'desc' : 'asc';
     } else {
-      this.ultimoRegistro = null;
+      this.ordenColumna = col;
+      this.ordenDireccion = col === 'fechaRecepcion' ? 'desc' : 'asc';
+    }
+    this.paginaActual = 1;
+  }
+
+  iconoOrden(col: Columna): string {
+    if (this.ordenColumna !== col) return 'unfold_more';
+    return this.ordenDireccion === 'asc' ? 'arrow_upward' : 'arrow_downward';
+  }
+
+  trackFila(_: number, e: FilaEntrega): any {
+    return e.id ?? `${e.ingrediente}-${e.fechaRecepcion}-${e.cantidad}`;
+  }
+
+  // =====================================================
+  //  ESTADO, DÍAS Y ALERTAS
+  // =====================================================
+  // Perecederos avisan con 7 días; granos / no perecederos con 30 días
+  private umbralAlerta(e: FilaEntrega): number {
+    return e.categoria === 'Perecederos' ? 7 : 30;
+  }
+
+  diasDe(e: FilaEntrega): number {
+    if (!e.fechaVencimiento) return 99999;
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const vence = new Date(e.fechaVencimiento + 'T00:00:00');
+    return Math.round((vence.getTime() - hoy.getTime()) / 86400000);
+  }
+
+  estadoDe(e: FilaEntrega): string {
+    const dias = this.diasDe(e);
+    if (dias < 0) return 'Vencido';
+    if (dias <= this.umbralAlerta(e)) return 'Próximo a vencer';
+    return 'Vigente';
+  }
+
+  claseEstado(estado: string): string {
+    switch (estado) {
+      case 'Vigente':
+        return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      case 'Vencido':
+        return 'bg-red-50 text-red-700 border-red-200';
+      default:
+        return 'bg-orange-50 text-orange-700 border-orange-200';
+    }
+  }
+
+  textoDias(d: number): string {
+    if (d >= 99999) return '';
+    if (d < -1) return `Vencido hace ${Math.abs(d)} días`;
+    if (d === -1) return 'Venció ayer';
+    if (d === 0) return 'Vence hoy';
+    if (d === 1) return 'Vence mañana';
+    return `Vence en ${d} días`;
+  }
+
+  // dd/mm/aaaa
+  fechaCorta(iso: string): string {
+    if (!iso) return '';
+    const [y, m, d] = iso.split('-');
+    return `${d}/${m}/${y}`;
+  }
+
+  get resumen(): { total: number; vigentes: number; porVencer: number; vencidos: number } {
+    let vigentes = 0, porVencer = 0, vencidos = 0;
+    for (const e of this.historial) {
+      const estado = this.estadoDe(e);
+      if (estado === 'Vigente') vigentes++;
+      else if (estado === 'Vencido') vencidos++;
+      else porVencer++;
+    }
+    return { total: this.historial.length, vigentes, porVencer, vencidos };
+  }
+
+  // Productos vencidos o por vencer (alimenta la barra de alerta)
+  get alertasVencimiento(): any[] {
+    return this.historial
+      .filter(e => e.fechaVencimiento)
+      .map(e => ({ ...e, dias: this.diasDe(e) }))
+      .filter(e => e.dias <= this.umbralAlerta(e))
+      .sort((x, y) => x.dias - y.dias);
+  }
+
+  // =====================================================
+  //  PAGINACIÓN
+  // =====================================================
+  get totalPaginas(): number {
+    return Math.max(1, Math.ceil(this.historialFiltrado.length / this.porPagina));
+  }
+
+  // Muestra máximo 5 números de página alrededor de la actual
+  get paginasVisibles(): number[] {
+    const total = this.totalPaginas;
+    let fin = Math.min(total, Math.max(1, this.paginaActual - 2) + 4);
+    const ini = Math.max(1, fin - 4);
+    fin = Math.min(total, ini + 4);
+    return Array.from({ length: fin - ini + 1 }, (_, i) => ini + i);
+  }
+
+  get historialPaginado(): FilaEntrega[] {
+    if (this.paginaActual > this.totalPaginas) this.paginaActual = this.totalPaginas;
+    const inicio = (this.paginaActual - 1) * this.porPagina;
+    return this.historialFiltrado.slice(inicio, inicio + this.porPagina);
+  }
+
+  get desdeRegistro(): number {
+    return this.historialFiltrado.length === 0 ? 0 : (this.paginaActual - 1) * this.porPagina + 1;
+  }
+
+  get hastaRegistro(): number {
+    return Math.min(this.paginaActual * this.porPagina, this.historialFiltrado.length);
+  }
+
+  irAPagina(p: number): void {
+    if (p >= 1 && p <= this.totalPaginas) this.paginaActual = p;
+  }
+
+  cambiarPorPagina(n: number): void {
+    this.porPagina = Number(n) || 10;
+    this.paginaActual = 1;
+  }
+
+  // =====================================================
+  //  EXPORTAR A EXCEL (respeta los filtros y el orden)
+  // =====================================================
+  // Resumen: un renglón por producto y unidad con el total recibido (así el producto no se repite).
+  // No mezcla unidades distintas: "Leche en Litros" y "Leche en Kg" salen en renglones separados.
+  private resumenPorProducto(lista: FilaEntrega[]) {
+    interface Resumen {
+      ingrediente: string;
+      unidad: string;
+      tipoMercado: string;
+      total: number;
+      entregas: number;
+      ultimaFecha: string;    // fecha de la entrega más reciente
+      estadoUltima: string;   // estado de esa entrega más reciente
+      proxVence: string;      // vencimiento más cercano que todavía no ha pasado
     }
 
-    // Resumen de tarjetas superiores
-    let vigentes = 0, porVencer = 0, vencidos = 0;
-    this.historial.forEach(h => {
-      const dias = this.diasHastaVencer(h.fechaVencimiento);
-      if (dias === null) vigentes++;
-      else if (dias < 0) vencidos++;
-      else if (dias <= 7) porVencer++;
-      else vigentes++;
-    });
-    this.resumen = { total: this.historial.length, vigentes, porVencer, vencidos };
+    const mapa = new Map<string, Resumen>();
+    for (const e of lista) {
+      const unidad = this.normalizarUnidad(e.unidad) || 'Sin unidad';
+      const clave = `${e.ingrediente.toLowerCase()}|${unidad}`;
+      let r = mapa.get(clave);
+      if (!r) {
+        r = { ingrediente: e.ingrediente, unidad, tipoMercado: e.tipoMercado, total: 0, entregas: 0, ultimaFecha: '', estadoUltima: '', proxVence: '' };
+        mapa.set(clave, r);
+      }
+      r.total += e.cantidad;
+      r.entregas++;
+      if (e.fechaRecepcion >= r.ultimaFecha) {
+        r.ultimaFecha = e.fechaRecepcion;
+        r.tipoMercado = e.tipoMercado;
+        r.estadoUltima = this.estadoDe(e);
+      }
+      if (e.fechaVencimiento && this.diasDe(e) >= 0 && (!r.proxVence || e.fechaVencimiento < r.proxVence)) {
+        r.proxVence = e.fechaVencimiento;
+      }
+    }
+
+    return Array.from(mapa.values())
+      .map(r => ({ ...r, total: Math.round(r.total * 100) / 100 }))
+      .sort((a, b) => a.ingrediente.localeCompare(b.ingrediente, 'es') || a.unidad.localeCompare(b.unidad, 'es'));
   }
 
-  private diasHastaVencer(fecha: string): number | null {
-    if (!fecha) return null;
-    const [a, m, d] = fecha.substring(0, 10).split('-').map(Number);
-    if (!a || !m || !d) return null;
-    const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
-    return Math.round((new Date(a, m - 1, d).getTime() - hoy.getTime()) / 86400000);
-  }
+  exportarExcelHistorial(): void {
+    const lista = this.historialFiltrado;
+    if (lista.length === 0) {
+      void this.alertas.warning('Sin registros', 'No hay registros para exportar.');
+      return;
+    }
 
-  private hoyISO(): string {
-    const f = new Date();
-    const mm = String(f.getMonth() + 1).padStart(2, '0');
-    const dd = String(f.getDate()).padStart(2, '0');
-    return `${f.getFullYear()}-${mm}-${dd}`;
-  }
+    const esc = (v: any) => String(v ?? '')
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-  private normalizar(texto: string): string {
-    return (texto ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+    const th = 'style="background:#FF8A00;color:#FFFFFF;font-weight:bold;text-align:center"';
+    const titulo = 'style="font-size:14pt;font-weight:bold;border:none"';
+
+    // ---------- Tabla 1: resumen por producto ----------
+    const filasResumen = this.resumenPorProducto(lista).map(r => `
+      <tr>
+        <td><b>${esc(r.ingrediente)}</b></td>
+        <td>${esc(r.tipoMercado)}</td>
+        <td>${esc(r.unidad)}</td>
+        <td style="text-align:right"><b>${r.total}</b></td>
+        <td style="text-align:center">${r.entregas}</td>
+        <td>${this.fechaCorta(r.ultimaFecha)}</td>
+        <td>${r.proxVence ? this.fechaCorta(r.proxVence) : '—'}</td>
+        <td>${esc(r.estadoUltima)}</td>
+      </tr>`).join('');
+
+    // ---------- Tabla 2: detalle de cada entrega ----------
+    const filasDetalle = lista.map(e => `
+      <tr>
+        <td>${this.fechaCorta(e.fechaRecepcion)}</td>
+        <td>${esc(e.ingrediente)}</td>
+        <td>${esc(e.tipoMercado)}</td>
+        <td>${esc(e.frecuencia)}</td>
+        <td style="text-align:right">${esc(e.cantidad)}</td>
+        <td>${esc(e.unidad)}</td>
+        <td>${this.fechaCorta(e.fechaVencimiento)}</td>
+        <td>${esc(this.estadoDe(e))}</td>
+      </tr>`).join('');
+
+    const html = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office"
+            xmlns:x="urn:schemas-microsoft-com:office:excel"
+            xmlns="http://www.w3.org/TR/REC-html40">
+      <head><meta charset="UTF-8"></head>
+      <body>
+        <table>
+          <tr><td colspan="8" ${titulo}>Resumen por producto (total recibido)</td></tr>
+        </table>
+        <table border="1">
+          <thead><tr>
+            <th ${th}>Producto</th><th ${th}>Tipo de mercado</th><th ${th}>Unidad</th>
+            <th ${th}>Total recibido</th><th ${th}>N.º de entregas</th><th ${th}>Última entrega</th>
+            <th ${th}>Próximo vencimiento</th><th ${th}>Estado última entrega</th>
+          </tr></thead>
+          <tbody>${filasResumen}</tbody>
+        </table>
+
+        <br><br>
+
+        <table>
+          <tr><td colspan="8" ${titulo}>Detalle de entregas</td></tr>
+        </table>
+        <table border="1">
+          <thead><tr>
+            <th ${th}>Fecha</th><th ${th}>Ingrediente</th><th ${th}>Tipo de mercado</th><th ${th}>Frecuencia</th>
+            <th ${th}>Cantidad</th><th ${th}>Unidad</th><th ${th}>Vencimiento</th><th ${th}>Estado</th>
+          </tr></thead>
+          <tbody>${filasDetalle}</tbody>
+        </table>
+      </body></html>`;
+
+    const blob = new Blob(['\ufeff' + html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `historial_entregas_${new Date().toISOString().split('T')[0]}.xls`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 }

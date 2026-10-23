@@ -135,7 +135,7 @@ export class LayoutComponent implements OnInit {
       '/registrar-entrega-alimentos': 'Registrar entrega de alimentos',
       '/historial-entregas': 'Historial de entregas',
       '/entregas-tipo-mercado': 'Entregas por tipo de mercado',
-      '/instituciones': 'Instituciones',
+      '/instituciones': 'Sedes',
       '/banco-datos': 'Banco de Datos',
       '/crear-usuario': 'Crear Usuario',
       '/nuevo-producto': 'Nuevo Producto',

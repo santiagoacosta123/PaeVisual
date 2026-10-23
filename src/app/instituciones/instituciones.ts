@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { Subscription } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { environment } from '../../environments/environment';
+import { environment } from '@env/environment';
 
 type EstadoInventario = 'Ok' | 'Bajo' | 'Crítico';
 type FiltroEstado = 'Todos' | EstadoInventario;
@@ -92,18 +92,62 @@ const EMOJI_PRODUCTO: Record<string, string> = {
 };
 
 /* ============================================================
-   IMÁGENES DE INGREDIENTES  (AJUSTA ESTO)
-   Carpeta donde están los archivos. Dos opciones:
-   - Servidor Django:  'http://127.0.0.1:8000/media/ingredientes/'
-   - Copiadas dentro de Angular (carpeta public/ingredientes):  '/ingredientes/'
+   IMÁGENES DE INGREDIENTES
+   Los archivos están en la carpeta public/ de Angular, que se
+   sirve desde la raíz del sitio ("/arroz.png", "/aceite.png"...).
    ============================================================ */
-const RUTA_IMAGENES = 'http://127.0.0.1:8000/media/ingredientes/';
+const RUTA_IMAGENES = '/';
 const EXTENSION_IMAGEN = 'png';
 
-// Solo para los productos cuyo archivo NO se llama igual que el producto
-// (clave: nombre sin tildes y en minúscula; valor: nombre real del archivo)
+// clave: nombre del producto sin tildes y en minúscula  ->  archivo real en public/
 const ARCHIVOS_IMAGEN: Record<string, string> = {
-  // 'carne de res': 'carne_res.png',
+  // Granos y cereales
+  'arroz': 'arroz.png',
+  'frijol': 'frijoles.png',
+  'frijoles': 'frijoles.png',
+  'lenteja': 'lentejas.png',
+  'lentejas': 'lentejas.png',
+  'granos': 'granos.png',
+  'harina': 'harina.png',
+  'harina de maiz': 'harina.png',
+  'pasta': 'harina.png',
+
+  // Despensa
+  'aceite': 'aceite.png',
+  'sal': 'sal.png',
+
+  // Carnes y huevos
+  'pollo': 'pollo.png',
+  'carne': 'carne.png',
+  'carne de res': 'carne.png',
+  'carne molida': 'molida.png',
+  'molida': 'molida.png',
+  'tocino': 'tocino.png',
+  'huevo': 'huevos.png',
+  'huevos': 'huevos.png',
+
+  // Lácteos
+  'leche': 'leche.png',
+  'leche deslactosada': 'deslatosada.png',
+  'deslactosada': 'deslatosada.png',
+  'queso': 'queso.png',
+  'lacteos': 'lacteos.png',
+  'yogur': 'lacteos.png',
+
+  // Verduras y frutas
+  'papa': 'papa.png',
+  'zanahoria': 'verduras.png',
+  'tomate': 'verduras.png',
+  'cebolla': 'verduras.png',
+  'verduras': 'verduras.png',
+  'platano': 'platano.png',
+  'naranja': 'frutas.png',
+  'manzana': 'frutas.png',
+  'frutas': 'frutas.png',
+
+  // Otros
+  'otros': 'otros.png',
+  'plato': 'plato.png',
 };
 
 // Lee el primer campo con texto entre los nombres que pueda traer el backend
@@ -149,10 +193,9 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
   // Ruta de las instituciones asignadas al supervisor que inició sesión (el backend filtra por el usuario)
   private readonly urlInstituciones = `${environment.apiUrl}/instituciones/`;
 
-  // Catálogo de ingredientes: de aquí salen las imágenes (la misma fuente de la pantalla de ingredientes)
+  // Catálogo de ingredientes del servidor: solo se usa como respaldo para productos que no estén en ARCHIVOS_IMAGEN
   private readonly urlIngredientes = `${environment.apiUrl}/ingredientes`;
   // Raíz del servidor (apiUrl sin el "/api" final), p. ej. http://127.0.0.1:8000
-  // Si apiUrl es relativa (p. ej. '/api'), las imágenes se piden al servidor de Django: ajusta este valor
   private readonly origenServidor = /^https?:/i.test(environment.apiUrl)
     ? environment.apiUrl.replace(/\/api\/?$/, '')
     : 'http://127.0.0.1:8000';
@@ -577,7 +620,11 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
     alert(`Ejemplo: aquí se abriría el reporte "${r.nombre}".`);
   }
 
-  // Carga el catálogo de ingredientes y guarda la imagen de cada uno
+  // =====================================================
+  //  IMÁGENES
+  // =====================================================
+
+  // Carga el catálogo del servidor (solo respaldo para productos que no estén en ARCHIVOS_IMAGEN)
   private cargarImagenes(): void {
     this.http.get<any>(this.urlIngredientes).pipe(
       map(d => (Array.isArray(d) ? d : (d?.results ?? [])) as any[])
@@ -591,7 +638,7 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
         }
         this.imagenesIngredientes = mapa;
       },
-      // Sin catálogo no pasa nada grave: se muestran los emojis
+      // Sin catálogo no pasa nada grave: se usan las imágenes locales o los emojis
       error: (error) => console.error('Error al cargar imágenes de ingredientes:', error),
     });
   }
@@ -607,11 +654,18 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
       : `${this.origenServidor}/media/ingredientes/${v}`;
   }
 
-  // URL de la imagen: la del catálogo si la trae; si no, <RUTA_IMAGENES>/<nombre>.png
+  // Orden de búsqueda:
+  //   1) archivo local de public/ (mapa ARCHIVOS_IMAGEN)
+  //   2) imagen del catálogo del servidor
+  //   3) public/<nombre_del_producto>.png
   urlImagen(nombre: string): string {
     const n = normalizar(nombre);
-    const archivo = ARCHIVOS_IMAGEN[n] ?? `${n.replace(/\s+/g, '_')}.${EXTENSION_IMAGEN}`;
-    return this.imagenesIngredientes.get(n) ?? `${RUTA_IMAGENES}${archivo}`;
+
+    const local = ARCHIVOS_IMAGEN[n];
+    if (local) return `${RUTA_IMAGENES}${local}`;
+
+    return this.imagenesIngredientes.get(n)
+      ?? `${RUTA_IMAGENES}${n.replace(/\s+/g, '_')}.${EXTENSION_IMAGEN}`;
   }
 
   // Se muestra la imagen mientras no falle al cargar; si falla, queda el emoji
