@@ -2,24 +2,44 @@
     .sirae-root { font-family: 'Roboto', sans-serif; background-color: #FBF9F5; color: #0F172A; min-height: 100vh; }
     .fx-wrap { position: relative; }
     .fx-panel { position: relative; background: #fff; border-radius: 28px; border: 1px solid #F1F5F9; box-shadow: 0 10px 30px -18px rgba(15, 23, 42, .18); }
-    
+
     /* Menú y Categorías superiores */
     .menu-scroll { display: flex; gap: 12px; overflow-x: auto; padding: 6px 4px 14px; scroll-snap-type: x proximity; }
     .menu-scroll::-webkit-scrollbar { height: 6px; }
     .menu-scroll::-webkit-scrollbar-thumb { background: #FFD9A8; border-radius: 9999px; }
     .menu-chip { flex: 0 0 auto; width: 105px; scroll-snap-align: start; }
     .cat-count { background: linear-gradient(135deg, #FFA928, #FF8A00); color: #fff; }
-    
-    /* Tarjetas de producto compactas (estilo horizontal sin espacios vacíos) */
+
+    /* Tarjetas de producto compactas */
     .prod-card { position: relative; background: #fff; border-radius: 16px; padding: 10px 12px; display: flex; align-items: center; gap: 12px; text-align: left; box-shadow: 0 4px 12px -8px rgba(15, 23, 42, .12); border: 1px solid #F8FAFC; transition: transform .2s ease, box-shadow .2s ease; }
     .prod-card:hover { transform: translateY(-2px); box-shadow: 0 10px 20px -8px rgba(255, 138, 0, .25); }
     .prod-img { width: 44px; height: 44px; border-radius: 9999px; display: flex; align-items: center; justify-content: center; font-size: 22px; line-height: 1; overflow: hidden; border: 2px solid #fff; background: radial-gradient(circle at 30% 25%, #fff, #FFEFD6 72%); box-shadow: 0 4px 10px -4px rgba(255, 138, 0, .35); flex-shrink: 0; }
     .prod-img.warn { background: radial-gradient(circle at 30% 25%, #fff, #FDE9B8 72%); }
+    .prod-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
     .prod-badge { position: absolute; top: 6px; right: 6px; width: 20px; height: 20px; border-radius: 9999px; display: flex; align-items: center; justify-content: center; }
+
+    /* Miniatura redonda reutilizable (calendario, modal, última entrega) */
+    .mini-img { display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; border-radius: 9999px; font-size: 16px; line-height: 1; }
+    .mini-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
     /* Flechas de categorías */
     .arrow-btn { flex: 0 0 auto; width: 32px; height: 32px; border-radius: 9999px; border: 1px solid #FFD9A8; background: #fff; color: #FF8A00; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 10px -6px rgba(255, 138, 0, .5); transition: background .2s ease, transform .15s ease; }
     .arrow-btn:hover { background: #FFF1DB; }
+
+    /* Calendario de entregas */
+    .cal-cell { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-height: 92px; padding: 8px; border: 0; border-right: 1px solid #F1F5F9; border-bottom: 1px solid #F1F5F9; background: #fff; text-align: left; cursor: pointer; font-family: inherit; transition: background .15s ease; }
+    .cal-cell:hover { background: #FFFAF1; }
+    .cal-cell.fuera { background: #F8FAFC; }
+    .cal-cell.fuera .cal-num { color: #CBD5E1; }
+    .cal-cell.sel { background: #FFF7ED; outline: 2px solid #FDBA74; outline-offset: -2px; }
+    .cal-num { width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; border-radius: 9999px; font-size: 12px; font-weight: 700; color: #334155; }
+    .cal-num.hoy { background: linear-gradient(135deg, #FFA928, #FF8A00); color: #fff; box-shadow: 0 6px 12px -6px rgba(255, 138, 0, .8); }
+    .cal-chip { display: flex; align-items: center; gap: 4px; width: 100%; border-radius: 6px; padding: 2px 6px; font-size: 10px; font-weight: 600; line-height: 1.3; }
+    .cal-dot { width: 6px; height: 6px; border-radius: 9999px; background: currentColor; flex-shrink: 0; }
+    .est-ok { background: #ECFDF5; color: #047857; }
+    .est-warn { background: #FFFBEB; color: #B45309; }
+    .est-bad { background: #FEF2F2; color: #B91C1C; }
+    .cal-venc { background: #FFF1DB; color: #C2410C; }
 
     @keyframes fxUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
     .fx-up { animation: fxUp .3s ease both; }
@@ -66,7 +86,7 @@
 
         <!-- CUERPO PRINCIPAL -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <!-- COLUMNA IZQUIERDA: CATÁLOGO Y VISTAS -->
+            <!-- COLUMNA IZQUIERDA: CATÁLOGO Y CALENDARIO -->
             <section class="lg:col-span-8 fx-panel p-4 sm:p-6">
                 <!-- Búsqueda y Filtros Rápidos -->
                 <div class="mb-4 flex flex-col sm:flex-row gap-3 items-center justify-between">
@@ -75,17 +95,66 @@
                         <input type="text" id="busquedaInput" [(ngModel)]="textoFiltro" (ngModelChange)="paginaActual = 1" placeholder="Buscar: arroz, frijol, pollo, leche..." class="fx-input w-full rounded-full border border-slate-200 bg-slate-50/70 py-2 pl-11 pr-4 text-xs font-medium text-slate-800 outline-none">
                     </div>
                     <div class="inline-flex items-center gap-1 self-start sm:self-auto rounded-full border border-slate-200 bg-slate-50 p-1">
-                        <button type="button" (click)="setMercado('Todos')" [class.pill-on]="filtroMercado === 'Todos'" [class.text-slate-500]="filtroMercado !== 'Todos'" class="rounded-full px-3 py-1 text-xs font-bold transition cursor-pointer">Todos</button>
-                        <button type="button" (click)="setMercado('Perecederos')" [class.pill-on]="filtroMercado === 'Perecederos'" [class.text-slate-500]="filtroMercado !== 'Perecederos'" class="rounded-full px-3 py-1 text-xs font-bold transition cursor-pointer">Perecederos</button>
-                        <button type="button" (click)="setMercado('Granos')" [class.pill-on]="filtroMercado === 'Granos'" [class.text-slate-500]="filtroMercado !== 'Granos'" class="rounded-full px-3 py-1 text-xs font-bold transition cursor-pointer">No perecederos</button>
+                        <button type="button" (click)="mostrarCalendario = false; setMercado('Todos')" [class.pill-on]="!mostrarCalendario && filtroMercado === 'Todos'" [class.text-slate-500]="mostrarCalendario || filtroMercado !== 'Todos'" class="rounded-full px-3 py-1 text-xs font-bold transition cursor-pointer">Todos</button>
+                        <button type="button" (click)="mostrarCalendario = false; setMercado('Perecederos')" [class.pill-on]="!mostrarCalendario && filtroMercado === 'Perecederos'" [class.text-slate-500]="mostrarCalendario || filtroMercado !== 'Perecederos'" class="rounded-full px-3 py-1 text-xs font-bold transition cursor-pointer">Perecederos</button>
+                        <button type="button" (click)="mostrarCalendario = false; setMercado('Granos')" [class.pill-on]="!mostrarCalendario && filtroMercado === 'Granos'" [class.text-slate-500]="mostrarCalendario || filtroMercado !== 'Granos'" class="rounded-full px-3 py-1 text-xs font-bold transition cursor-pointer">No perecederos</button>
+                        <button type="button" (click)="irACalendario()" [class.pill-on]="mostrarCalendario" [class.text-slate-500]="!mostrarCalendario" class="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-bold transition cursor-pointer">
+                            <span class="material-symbols-outlined text-[14px]">calendar_month</span> Calendario
+                        </button>
                         <button type="button" (click)="exportarExcelHistorial()" class="bg-emerald-600 hover:bg-emerald-700 text-white rounded-full px-3 py-1 text-xs font-bold transition inline-flex items-center gap-1 cursor-pointer">
                             <span class="material-symbols-outlined text-[14px]">table_view</span> Excel
                         </button>
                     </div>
                 </div>
 
-                <!-- VISTA: MENÚ -->
-                <div id="view-menu">
+                <!-- ================= VISTA: CALENDARIO DE ENTREGAS ================= -->
+                <div id="view-calendario" *ngIf="mostrarCalendario">
+                    <!-- Encabezado del mes -->
+                    <div class="mb-3 flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2">
+                            <button type="button" class="arrow-btn" aria-label="Mes anterior" (click)="mesAnterior()">
+                                <span class="material-symbols-outlined text-[18px]">chevron_left</span>
+                            </button>
+                            <h3 class="m-0 min-w-[150px] text-center text-base font-black text-slate-900">{{ tituloMes }}</h3>
+                            <button type="button" class="arrow-btn" aria-label="Mes siguiente" (click)="mesSiguiente()">
+                                <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+                            </button>
+                        </div>
+                        <button type="button" (click)="irAHoy()" class="cursor-pointer rounded-full border border-orange-300 bg-white px-3.5 py-1.5 text-xs font-bold text-orange-600 hover:bg-orange-50">Hoy</button>
+                    </div>
+
+                    <!-- Leyenda de colores -->
+                    <div class="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] font-semibold text-slate-500">
+                        <span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-emerald-500"></span> Vigente</span>
+                        <span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-amber-500"></span> Próximo a vencer</span>
+                        <span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-red-500"></span> Vencido</span>
+                        <span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-orange-500"></span> Productos que vencen ese día</span>
+                    </div>
+
+                    <!-- Cuadrícula del mes -->
+                    <div class="overflow-hidden rounded-2xl border border-slate-100">
+                        <div class="grid grid-cols-7 bg-slate-50 text-center text-[10px] font-black uppercase tracking-wide text-slate-500">
+                            <div *ngFor="let nombre of nombresDias" class="py-2.5">{{ nombre }}</div>
+                        </div>
+                        <div class="grid grid-cols-7">
+                            <button type="button" *ngFor="let dia of diasCalendario; trackBy: trackDia"
+                                (click)="seleccionarDia(dia.iso)"
+                                [attr.aria-label]="fechaCorta(dia.iso)" [attr.aria-pressed]="dia.seleccionado"
+                                class="cal-cell" [class.fuera]="!dia.enMes" [class.sel]="dia.seleccionado">
+                                <span class="cal-num" [class.hoy]="dia.esHoy">{{ dia.numero }}</span>
+                                <span *ngIf="dia.entregas > 0" class="cal-chip" [ngClass]="claseChipEstado(dia.estado)">
+                                    <span class="cal-dot"></span>Entrega · {{ dia.entregas }} prod.
+                                </span>
+                                <span *ngIf="dia.vencen > 0" class="cal-chip cal-venc">
+                                    <span class="cal-dot"></span>Vencen · {{ dia.vencen }}
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= VISTA: MENÚ ================= -->
+                <div id="view-menu" *ngIf="!mostrarCalendario">
                     <!-- Categorías Deslizables -->
                     <div class="mb-2 flex items-center justify-between">
                         <h3 class="text-sm font-black text-slate-900 m-0">Categorías de Abastecimiento SIRAE</h3>
@@ -100,7 +169,11 @@
                                 (click)="categoriaMenu = categoria.nombre"
                                 [class.active]="categoriaMenu === categoria.nombre"
                                 class="cat-card fx-lift menu-chip rounded-2xl p-2.5 text-center cursor-pointer">
-                                <div class="cat-dot mx-auto mb-1 flex h-9 w-9 items-center justify-center rounded-full text-xl">{{ categoria.emoji }}</div>
+                                <div class="cat-dot mx-auto mb-1 flex h-9 w-9 items-center justify-center overflow-hidden rounded-full text-xl">
+                                    <img *ngIf="imagenCategoria(categoria.nombre) as src; else sinFotoCat"
+                                         [src]="src" [alt]="categoria.nombre" class="h-full w-full object-cover" loading="lazy">
+                                    <ng-template #sinFotoCat>{{ categoria.emoji }}</ng-template>
+                                </div>
                                 <p class="cat-label text-[11px] font-bold text-slate-700 m-0 truncate">{{ categoria.nombre }}</p>
                                 <span class="cat-count mx-auto mt-1 flex h-4 min-w-[18px] items-center justify-center rounded-full px-1 text-[9px] font-black">{{ categoria.total }}</span>
                             </button>
@@ -110,7 +183,7 @@
                         </button>
                     </div>
 
-                    <!-- Catálogo organizado por grupos (sin desplazamiento vertical excesivo) -->
+                    <!-- Catálogo organizado por grupos -->
                     <div class="mb-2 flex items-center justify-between">
                         <h3 class="text-sm font-black text-slate-900 m-0">Productos de Abastecimiento</h3>
                         <span class="text-xs font-semibold text-slate-400">{{ productosMenu.length }} productos</span>
@@ -119,7 +192,11 @@
 
                     <div *ngFor="let grupo of gruposMenu; trackBy: trackGrupo" class="mb-4">
                         <div class="mt-4 flex items-center gap-2 border-b border-orange-100 pb-1.5">
-                            <span class="text-lg">{{ grupo.emoji }}</span>
+                            <span class="flex h-7 w-7 items-center justify-center overflow-hidden rounded-full text-lg">
+                                <img *ngIf="imagenCategoria(grupo.nombre) as src; else sinFotoGrupo"
+                                     [src]="src" [alt]="grupo.nombre" class="h-full w-full object-cover" loading="lazy">
+                                <ng-template #sinFotoGrupo>{{ grupo.emoji }}</ng-template>
+                            </span>
                             <h4 class="m-0 text-xs font-black text-slate-900">{{ grupo.nombre }}</h4>
                             <span class="cat-count flex h-4 min-w-[18px] items-center justify-center rounded-full px-1 text-[9px] font-black">{{ grupo.productos.length }}</span>
                         </div>
@@ -131,9 +208,12 @@
                                     [ngClass]="esPerecedero(producto) ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600'">
                                     <span class="material-symbols-outlined text-[14px]">{{ esPerecedero(producto) ? 'schedule' : 'check_circle' }}</span>
                                 </span>
-                                
+
+                                <!-- Imagen del producto (si no existe, muestra el emoji) -->
                                 <div class="prod-img" [class.warn]="esPerecedero(producto)">
-                                    <span>{{ emojiDe(producto.nombre) }}</span>
+                                    <img *ngIf="imagenDe(producto.nombre) as src; else sinFotoProd"
+                                         [src]="src" [alt]="producto.nombre" loading="lazy">
+                                    <ng-template #sinFotoProd><span>{{ emojiDe(producto.nombre) }}</span></ng-template>
                                 </div>
 
                                 <div class="min-w-0 flex-1">
@@ -176,11 +256,22 @@
                             </div>
                         </div>
 
+                        <p class="m-0 mb-2 flex items-center gap-1 text-[11px] font-semibold text-slate-400">
+                            <span class="material-symbols-outlined text-[14px] text-orange-500">touch_app</span>
+                            Haz clic en un producto para ver su detalle
+                        </p>
+
                         <div class="space-y-2 max-h-[360px] overflow-y-auto pr-1">
-                            <div *ngFor="let item of reg.items; trackBy: trackFila" class="p-2.5 rounded-xl border border-slate-100 bg-white shadow-2xs">
+                            <div *ngFor="let item of reg.items; trackBy: trackFila"
+                                 (click)="abrirDetalleProducto(item)" (keydown.enter)="abrirDetalleProducto(item)"
+                                 role="button" tabindex="0" [attr.aria-label]="'Ver detalle de ' + item.ingrediente"
+                                 class="cursor-pointer p-2.5 rounded-xl border border-slate-100 bg-white shadow-2xs transition hover:border-orange-200 hover:bg-orange-50/40">
                                 <div class="flex items-center justify-between gap-2">
                                     <div class="flex items-center gap-2">
-                                        <div class="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center text-base shrink-0">{{ emojiDe(item.ingrediente) }}</div>
+                                        <div class="mini-img h-8 w-8 bg-orange-50">
+                                            <img *ngIf="imagenDe(item.ingrediente) as src; else sinFotoUlt" [src]="src" [alt]="item.ingrediente" loading="lazy">
+                                            <ng-template #sinFotoUlt>{{ emojiDe(item.ingrediente) }}</ng-template>
+                                        </div>
                                         <div class="min-w-0">
                                             <h5 class="text-xs font-bold text-slate-800 m-0 truncate">{{ item.ingrediente }}</h5>
                                             <p class="text-[10px] text-slate-400 m-0 truncate">{{ categoriaDe(item.ingrediente) }} · {{ item.tipoMercado }}</p>
@@ -200,6 +291,189 @@
                     </ng-template>
                 </div>
             </aside>
+        </div>
+    </div>
+</div>
+
+<!-- ================= MODAL: REGISTRO DEL DÍA ================= -->
+<div *ngIf="modalDiaAbierto" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4" (click)="cerrarModalDia()">
+    <div class="fx-up max-h-[90vh] w-full max-w-[640px] overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Registro del día">
+
+        <!-- Encabezado -->
+        <div class="flex items-start justify-between border-b border-slate-200 pb-4">
+            <div>
+                <p class="m-0 text-[10px] font-black uppercase tracking-wider text-orange-500">Registro del día</p>
+                <h3 class="m-0 mt-1 text-lg font-black text-slate-900">{{ fechaDiaModal(diaSeleccionado) }}</h3>
+            </div>
+            <button type="button" (click)="cerrarModalDia()" aria-label="Cerrar"
+                class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200">
+                <span class="material-symbols-outlined text-[20px]">close</span>
+            </button>
+        </div>
+
+        <p *ngIf="registrosDelDia.length === 0 && vencenDelDia.length === 0" class="m-0 py-6 text-center text-xs text-slate-500">
+            No hay entregas ni vencimientos este día.
+        </p>
+
+        <!-- Un bloque por entrega -->
+        <div *ngFor="let reg of registrosDelDia; trackBy: trackRegistro" class="mt-5">
+            <div class="flex items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
+                        <span class="material-symbols-outlined text-[24px]">local_shipping</span>
+                    </div>
+                    <div>
+                        <p class="m-0 text-sm font-black text-slate-900">{{ reg.codigo }}</p>
+                        <p class="m-0 text-[10px] text-slate-400">{{ reg.descripcion }}</p>
+                    </div>
+                </div>
+                <span class="rounded-full border border-amber-200 bg-amber-50 px-3 py-0.5 text-[10px] font-black text-amber-700">{{ reg.estado }}</span>
+            </div>
+
+            <!-- Datos generales -->
+            <div class="mt-4 rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                <div class="grid grid-cols-2 gap-4 border-b border-slate-200 pb-3">
+                    <div>
+                        <p class="m-0 text-[10px] text-slate-400">Destino</p>
+                        <p class="m-0 text-xs font-black text-slate-800">{{ reg.destino }}</p>
+                    </div>
+                    <div>
+                        <p class="m-0 text-[10px] text-slate-400">Hora registrada</p>
+                        <p class="m-0 text-xs font-black text-slate-800">{{ reg.hora }}</p>
+                    </div>
+                </div>
+                <div class="pt-3">
+                    <p class="m-0 text-[10px] text-slate-400">Responsable</p>
+                    <p class="m-0 text-xs font-black text-slate-800">{{ reg.responsable }}</p>
+                </div>
+            </div>
+
+            <!-- Productos registrados -->
+            <div class="mt-5 flex items-center justify-between">
+                <h4 class="m-0 text-sm font-black text-slate-900">Productos registrados</h4>
+                <span class="text-[10px] font-semibold text-sky-600">{{ reg.items.length }} productos</span>
+            </div>
+            <div class="mt-2 overflow-hidden rounded-2xl border border-slate-200">
+                <div *ngFor="let e of reg.items; let i = index; trackBy: trackFila"
+                    class="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3 last:border-b-0">
+                    <div class="flex min-w-0 items-center gap-3">
+                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-orange-100 text-[10px] font-black text-orange-600">{{ i + 1 }}</span>
+                        <div class="mini-img h-9 w-9 bg-orange-50">
+                            <img *ngIf="imagenDe(e.ingrediente) as src; else sinFotoReg" [src]="src" [alt]="e.ingrediente" loading="lazy">
+                            <ng-template #sinFotoReg>{{ emojiDe(e.ingrediente) }}</ng-template>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="m-0 truncate text-xs font-black text-slate-900">{{ e.ingrediente }}</p>
+                            <p class="m-0 truncate text-[10px] text-sky-600">Lote {{ e.lote || '—' }}</p>
+                        </div>
+                    </div>
+                    <span class="shrink-0 text-xs font-black text-slate-900">{{ e.cantidad }} {{ e.unidad }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vencimientos del día -->
+        <div *ngIf="vencenDelDia.length > 0" class="mt-6">
+            <div class="flex items-center justify-between">
+                <h4 class="m-0 text-sm font-black text-slate-900">Vencen este día</h4>
+                <span class="text-[10px] font-semibold text-orange-600">{{ vencenDelDia.length }} productos</span>
+            </div>
+            <div class="mt-2 overflow-hidden rounded-2xl border border-orange-100">
+                <div *ngFor="let e of vencenDelDia; let i = index; trackBy: trackFila"
+                    class="flex items-center justify-between gap-3 border-b border-orange-100 bg-orange-50/40 px-4 py-3 last:border-b-0">
+                    <div class="flex min-w-0 items-center gap-3">
+                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-orange-100 text-[10px] font-black text-orange-600">{{ i + 1 }}</span>
+                        <div class="mini-img h-9 w-9 bg-white">
+                            <img *ngIf="imagenDe(e.ingrediente) as src; else sinFotoVenc" [src]="src" [alt]="e.ingrediente" loading="lazy">
+                            <ng-template #sinFotoVenc>{{ emojiDe(e.ingrediente) }}</ng-template>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="m-0 truncate text-xs font-black text-slate-900">{{ e.ingrediente }}</p>
+                            <p class="m-0 truncate text-[10px] text-slate-400">Recibido el {{ fechaCorta(e.fechaRecepcion) }}</p>
+                        </div>
+                    </div>
+                    <span class="shrink-0 text-xs font-black text-slate-900">{{ e.cantidad }} {{ e.unidad }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ================= MODAL: DETALLE DEL PRODUCTO ================= -->
+<div *ngIf="productoDetalle as p" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4" (click)="cerrarDetalleProducto()">
+    <div class="fx-up max-h-[90vh] w-full max-w-[440px] overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Detalle del producto">
+
+        <!-- Encabezado -->
+        <div class="flex items-start justify-between border-b border-slate-200 pb-4">
+            <div>
+                <p class="m-0 text-[10px] font-black uppercase tracking-wider text-orange-500">Detalle del producto</p>
+                <h3 class="m-0 mt-1 text-lg font-black text-slate-900">{{ p.ingrediente }}</h3>
+            </div>
+            <button type="button" (click)="cerrarDetalleProducto()" aria-label="Cerrar"
+                class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200">
+                <span class="material-symbols-outlined text-[20px]">close</span>
+            </button>
+        </div>
+
+        <!-- Producto y cantidad -->
+        <div class="mt-5 flex items-center justify-between gap-3">
+            <div class="flex min-w-0 items-center gap-3">
+                <div class="mini-img h-14 w-14 bg-orange-50 text-3xl">
+                    <img *ngIf="imagenDe(p.ingrediente) as src; else sinFotoDet" [src]="src" [alt]="p.ingrediente">
+                    <ng-template #sinFotoDet>{{ emojiDe(p.ingrediente) }}</ng-template>
+                </div>
+                <div class="min-w-0">
+                    <p class="m-0 truncate text-sm font-black text-slate-900">{{ p.ingrediente }}</p>
+                    <p class="m-0 truncate text-[11px] text-slate-400">{{ categoriaDe(p.ingrediente) }} · {{ p.tipoMercado }}</p>
+                </div>
+            </div>
+            <span class="shrink-0 text-lg font-black text-orange-600">{{ p.cantidad }} {{ p.unidad }}</span>
+        </div>
+
+        <!-- Estado -->
+        <div class="mt-4 flex items-center justify-between gap-2 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3">
+            <span class="rounded-full border px-3 py-0.5 text-[11px] font-black" [ngClass]="claseEstado(estadoDe(p))">{{ estadoDe(p) }}</span>
+            <span class="text-[11px] font-semibold text-slate-500">{{ textoDias(diasDe(p)) }}</span>
+        </div>
+
+        <!-- Datos del registro -->
+        <div class="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 rounded-2xl border border-slate-100 bg-slate-50 p-4">
+            <div>
+                <p class="m-0 text-[10px] text-slate-400">Fecha de recepción</p>
+                <p class="m-0 text-xs font-black text-slate-800">{{ fechaCorta(p.fechaRecepcion) || '—' }}</p>
+            </div>
+            <div>
+                <p class="m-0 text-[10px] text-slate-400">Fecha de vencimiento</p>
+                <p class="m-0 text-xs font-black text-slate-800">{{ fechaCorta(p.fechaVencimiento) || '—' }}</p>
+            </div>
+            <div>
+                <p class="m-0 text-[10px] text-slate-400">Frecuencia</p>
+                <p class="m-0 text-xs font-black text-slate-800">{{ p.frecuencia || '—' }}</p>
+            </div>
+            <div>
+                <p class="m-0 text-[10px] text-slate-400">Tipo de mercado</p>
+                <p class="m-0 text-xs font-black text-slate-800">{{ p.tipoMercado || '—' }}</p>
+            </div>
+            <div *ngIf="p.lote">
+                <p class="m-0 text-[10px] text-slate-400">Lote</p>
+                <p class="m-0 text-xs font-black text-slate-800">{{ p.lote }}</p>
+            </div>
+            <div *ngIf="p.codigo">
+                <p class="m-0 text-[10px] text-slate-400">Código de entrega</p>
+                <p class="m-0 text-xs font-black text-slate-800">{{ p.codigo }}</p>
+            </div>
+            <div *ngIf="p.destino">
+                <p class="m-0 text-[10px] text-slate-400">Destino</p>
+                <p class="m-0 text-xs font-black text-slate-800">{{ p.destino }}</p>
+            </div>
+            <div *ngIf="p.hora">
+                <p class="m-0 text-[10px] text-slate-400">Hora registrada</p>
+                <p class="m-0 text-xs font-black text-slate-800">{{ p.hora }}</p>
+            </div>
+            <div *ngIf="p.responsable" class="col-span-2">
+                <p class="m-0 text-[10px] text-slate-400">Responsable</p>
+                <p class="m-0 text-xs font-black text-slate-800">{{ p.responsable }}</p>
+            </div>
         </div>
     </div>
 </div>

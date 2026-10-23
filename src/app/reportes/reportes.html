@@ -1,72 +1,153 @@
-<section class="mx-auto flex w-full max-w-6xl flex-col gap-6">
-  <header class="rounded-3xl border border-amber-200 bg-white p-6 shadow-sm sm:p-8">
-    <span class="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold uppercase tracking-wide text-amber-800">
-      <span class="material-symbols-outlined text-base">summarize</span>
-      Reportes PAE
-    </span>
-    <h1 class="mb-2 mt-4 text-2xl font-black text-slate-900 sm:text-3xl">Salidas registradas de inventario</h1>
-    <p class="m-0 max-w-3xl text-sm leading-6 text-slate-600">
-      Este reporte consulta las salidas de inventario guardadas por el sistema. No calcula consumo teórico de recetas.
-    </p>
+<style>
+/* Misma línea visual (naranja SIRAE) del resto de pantallas */
+.fx-panel { position: relative; background: #fff; border-radius: 28px; border: 1px solid #F1F5F9; box-shadow: 0 10px 30px -18px rgba(15, 23, 42, .18); }
+.ico-naranja { background: linear-gradient(135deg, #FFA928 0%, #FF8A00 100%); color: #fff; }
+.ico-suave { background: #FFF1DB; color: #FF8A00; }
+.btn-naranja { background: linear-gradient(135deg, #FFA928 0%, #FF8A00 100%); color: #fff; box-shadow: 0 10px 20px -8px rgba(255, 138, 0, .7); transition: transform .2s ease, filter .2s ease; }
+.btn-naranja:hover:not(:disabled) { filter: brightness(1.06); transform: translateY(-2px); }
+.btn-naranja:active:not(:disabled) { transform: scale(.97); }
+.fx-input:focus { border-color: #FF9500; box-shadow: 0 0 0 3px rgba(255, 149, 0, .18); outline: none; }
+.fx-lift { transition: transform .25s ease, box-shadow .25s ease; }
+.fx-lift:hover { transform: translateY(-3px); box-shadow: 0 16px 30px -18px rgba(255, 138, 0, .4); }
+.tabla-scroll { max-height: 520px; overflow: auto; }
+.tabla-scroll thead th { position: sticky; top: 0; z-index: 1; }
+@keyframes fxUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.fx-up { animation: fxUp .45s cubic-bezier(.2, .8, .2, 1) both; }
+</style>
+
+<section class="mx-auto flex w-full max-w-6xl flex-col gap-6" style="font-family: 'Roboto', sans-serif;">
+
+  <!-- ============ ENCABEZADO ============ -->
+  <header class="flex flex-col gap-4 rounded-3xl border border-slate-100 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-6">
+    <div class="flex items-center gap-4">
+      <div class="ico-naranja flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl shadow-md">
+        <span class="material-symbols-outlined text-[30px]">summarize</span>
+      </div>
+      <div>
+        <span class="text-[11px] font-bold uppercase tracking-wider text-orange-500">Reportes PAE</span>
+        <h1 class="m-0 text-2xl font-black tracking-tight text-slate-900">Salidas registradas de inventario</h1>
+      </div>
+    </div>
   </header>
 
-  <section class="grid grid-cols-1 gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:grid-cols-2 lg:grid-cols-4">
-    <label class="flex flex-col gap-1 text-sm font-semibold text-slate-700">
-      Desde
-      <input type="date" [(ngModel)]="fechaDesde" class="rounded-xl border border-slate-300 px-3 py-2.5">
-    </label>
-    <label class="flex flex-col gap-1 text-sm font-semibold text-slate-700">
-      Hasta
-      <input type="date" [(ngModel)]="fechaHasta" class="rounded-xl border border-slate-300 px-3 py-2.5">
-    </label>
-    <div class="flex items-end">
-      <button type="button" (click)="cargar()" [disabled]="cargando" class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 disabled:opacity-50">
+  <!-- Aclaración -->
+  <div class="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50/70 p-4 text-xs font-medium leading-5 text-amber-900">
+    <span class="material-symbols-outlined mt-0.5 text-[20px] text-amber-600">info</span>
+    <p class="m-0">
+      Este reporte consulta las <b>salidas de inventario guardadas por el sistema</b>.
+      No calcula consumo teórico de recetas.
+    </p>
+  </div>
+
+  <!-- ============ FILTROS ============ -->
+  <section class="fx-panel p-5 sm:p-6" aria-label="Filtros del reporte">
+    <div class="grid grid-cols-1 items-end gap-4 sm:grid-cols-2 lg:grid-cols-4">
+
+      <label class="flex flex-col gap-1.5 text-xs font-bold text-slate-600">
+        Desde
+        <span class="relative">
+          <span class="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-slate-400">calendar_today</span>
+          <input type="date" [(ngModel)]="fechaDesde"
+            class="fx-input w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-sm font-semibold text-slate-800">
+        </span>
+      </label>
+
+      <label class="flex flex-col gap-1.5 text-xs font-bold text-slate-600">
+        Hasta
+        <span class="relative">
+          <span class="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-slate-400">event</span>
+          <input type="date" [(ngModel)]="fechaHasta"
+            class="fx-input w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-sm font-semibold text-slate-800">
+        </span>
+      </label>
+
+      <button type="button" (click)="cargar()" [disabled]="cargando || (!!fechaDesde && !!fechaHasta && fechaDesde > fechaHasta)"
+        class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-orange-50 disabled:cursor-not-allowed disabled:opacity-50">
+        <span class="material-symbols-outlined text-[20px]" [class.animate-spin]="cargando">refresh</span>
         {{ cargando ? 'Actualizando...' : 'Actualizar datos' }}
       </button>
-    </div>
-    <div class="flex items-end">
-      <button type="button" (click)="exportarCsv()" [disabled]="cargando" class="rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-bold text-amber-950 hover:bg-amber-500 disabled:opacity-50">
+
+      <button type="button" (click)="exportarCsv()" [disabled]="cargando || salidasFiltradas.length === 0"
+        class="btn-naranja inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-black disabled:cursor-not-allowed disabled:opacity-50">
+        <span class="material-symbols-outlined text-[20px]">download</span>
         Exportar CSV
       </button>
     </div>
+
+    <!-- Aviso si las fechas están al revés -->
+    <p *ngIf="fechaDesde && fechaHasta && fechaDesde > fechaHasta" role="alert"
+      class="m-0 mt-4 flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800">
+      <span class="material-symbols-outlined text-[18px]">warning</span>
+      La fecha "Desde" no puede ser posterior a "Hasta".
+    </p>
   </section>
 
-  <div *ngIf="errorMensaje" role="alert" class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
-    {{ errorMensaje }}
+  <!-- ============ ERROR ============ -->
+  <div *ngIf="errorMensaje" role="alert"
+    class="flex items-center justify-between gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-800">
+    <span class="flex items-center gap-2">
+      <span class="material-symbols-outlined text-[20px]">error</span>
+      {{ errorMensaje }}
+    </span>
+    <button type="button" (click)="cargar()" class="cursor-pointer rounded-full border border-red-300 bg-white px-3 py-1 text-xs font-bold text-red-700 hover:bg-red-100">
+      Reintentar
+    </button>
   </div>
 
-  <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+  <!-- ============ TABLA ============ -->
+  <section class="fx-panel overflow-hidden">
     <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
-      <h2 class="m-0 text-base font-extrabold text-slate-900">Movimientos: {{ salidasFiltradas.length }}</h2>
-      <span class="rounded-full bg-amber-50 px-3 py-1 text-sm font-bold text-amber-800">Movimientos: {{ totalMovimientos }}</span>
+      <h2 class="m-0 text-base font-black text-slate-900">Detalle de movimientos</h2>
+      <span class="rounded-full bg-orange-100 px-3 py-1 text-xs font-black text-orange-600">
+        {{ salidasFiltradas.length }} {{ salidasFiltradas.length === 1 ? 'registro' : 'registros' }}
+      </span>
     </div>
-    <div class="overflow-x-auto">
-      <table class="w-full text-left text-sm">
-        <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+
+    <div class="tabla-scroll">
+      <table class="w-full min-w-[680px] border-collapse text-left text-sm">
+        <thead class="bg-orange-50/70 text-[11px] uppercase tracking-wider text-slate-500">
           <tr>
-            <th class="px-5 py-3">Fecha</th>
-            <th class="px-5 py-3">Ingrediente</th>
-            <th class="px-5 py-3">Cantidad</th>
-            <th class="px-5 py-3">Unidad</th>
-            <th class="px-5 py-3">Observaciones</th>
+            <th scope="col" class="px-5 py-3 font-bold">Fecha</th>
+            <th scope="col" class="px-5 py-3 font-bold">Ingrediente</th>
+            <th scope="col" class="px-5 py-3 text-right font-bold">Cantidad</th>
+            <th scope="col" class="px-5 py-3 font-bold">Unidad</th>
+            <th scope="col" class="px-5 py-3 font-bold">Observaciones</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let salida of salidasFiltradas" class="border-t border-slate-100">
-            <td class="whitespace-nowrap px-5 py-3">{{ salida.fecha || 'Sin fecha' }}</td>
-            <td class="px-5 py-3 font-semibold">{{ salida.ingrediente }}</td>
-            <td class="px-5 py-3">{{ salida.cantidad }}</td>
-            <td class="px-5 py-3">{{ salida.unidad }}</td>
-            <td class="px-5 py-3">{{ salida.observaciones || '—' }}</td>
+          <tr *ngFor="let salida of salidasFiltradas" class="border-t border-slate-100 transition hover:bg-orange-50/40">
+            <td class="whitespace-nowrap px-5 py-3 font-medium text-slate-600">{{ salida.fecha || 'Sin fecha' }}</td>
+            <td class="px-5 py-3 font-bold text-slate-900">{{ salida.ingrediente }}</td>
+            <td class="px-5 py-3 text-right text-base font-black text-orange-600">{{ salida.cantidad }}</td>
+            <td class="px-5 py-3">
+              <span class="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-xs font-bold text-slate-600">{{ salida.unidad || '—' }}</span>
+            </td>
+            <td class="max-w-[260px] truncate px-5 py-3 text-slate-500" [title]="salida.observaciones || ''">{{ salida.observaciones || '—' }}</td>
           </tr>
-          <tr *ngIf="cargando">
-            <td colspan="5" class="px-5 py-8 text-center text-slate-500">Cargando movimientos registrados...</td>
-          </tr>
-          <tr *ngIf="!cargando && salidasFiltradas.length === 0">
-            <td colspan="5" class="px-5 py-8 text-center text-slate-500">No hay salidas en el periodo seleccionado.</td>
-          </tr>
+
+          <!-- Cargando -->
+          <ng-container *ngIf="cargando">
+            <tr *ngFor="let fila of [1, 2, 3, 4]" class="border-t border-slate-100" aria-hidden="true">
+              <td class="px-5 py-4"><div class="h-3 w-20 animate-pulse rounded-full bg-slate-100"></div></td>
+              <td class="px-5 py-4"><div class="h-3 w-32 animate-pulse rounded-full bg-slate-100"></div></td>
+              <td class="px-5 py-4"><div class="ml-auto h-3 w-12 animate-pulse rounded-full bg-slate-100"></div></td>
+              <td class="px-5 py-4"><div class="h-3 w-10 animate-pulse rounded-full bg-slate-100"></div></td>
+              <td class="px-5 py-4"><div class="h-3 w-40 animate-pulse rounded-full bg-slate-100"></div></td>
+            </tr>
+          </ng-container>
         </tbody>
       </table>
+    </div>
+
+    <p *ngIf="cargando" class="sr-only" role="status">Cargando movimientos registrados...</p>
+
+    <!-- Sin resultados -->
+    <div *ngIf="!cargando && salidasFiltradas.length === 0" class="flex flex-col items-center gap-3 px-6 py-14 text-center">
+      <div class="ico-suave flex h-14 w-14 items-center justify-center rounded-2xl">
+        <span class="material-symbols-outlined text-[28px]">search_off</span>
+      </div>
+      <p class="m-0 text-sm font-black text-slate-800">No hay salidas en el periodo seleccionado</p>
+      <p class="m-0 max-w-sm text-xs font-medium text-slate-500">Cambia las fechas o presiona "Actualizar datos" para volver a consultar.</p>
     </div>
   </section>
 </section>
