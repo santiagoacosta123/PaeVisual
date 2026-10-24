@@ -26,7 +26,7 @@ interface FilaEntrega {
   fechaRecepcion: string;                // YYYY-MM-DD
   fechaVencimiento: string;              // YYYY-MM-DD
 
-  // Opcionales: alimentan el modal "Registro del día" (si el backend no los envía, se muestra "—")
+  // Opcionales: alimentan el modal "Registro del día" y el panel "Entradas" (si el backend no los envía, se muestra "—")
   codigo?: string;
   lote?: string;
   destino?: string;
@@ -84,7 +84,7 @@ interface DiaCalendario {
   vencen: number;         // productos que vencen ese día
 }
 
-// Un registro (entrega) dentro del modal "Registro del día"
+// Un registro (entrega) dentro del modal "Registro del día" y del panel "Entradas"
 interface RegistroDia {
   codigo: string;
   descripcion: string;
@@ -93,6 +93,14 @@ interface RegistroDia {
   hora: string;
   responsable: string;
   items: FilaEntrega[];
+}
+
+// Fila del formulario "Entradas" (un producto que entra)
+interface EntradaFila {
+  idIngrediente: number | null;
+  cantidad: number | null;
+  unidad: string;
+  perecedero: boolean;
 }
 
 interface CategoriaOpcion {
@@ -216,6 +224,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit {
   @HostListener('document:keydown.escape')
   alPresionarEsc(): void {
     if (this.productoDetalle) { this.cerrarDetalleProducto(); return; }
+    if (this.mostrarModalEntrada && !this.guardandoEntrada) { this.cerrarModalEntrada(); return; }
     if (this.modalDiaAbierto) { this.cerrarModalDia(); return; }
     if (this.mostrarModalEntrega) this.cerrarModalEntrega();
   }
@@ -490,6 +499,9 @@ export class RegistrarEntregaAlimentosComponent implements OnInit {
     const idIng = idIngrediente != null ? Number(idIngrediente) : (this.ingredientes.find(i => i.nombre === ingrediente)?.id ?? null);
     const idTip = idTipo != null ? Number(idTipo) : (this.tiposMercado.find(t => t.nombre === tipoMercado)?.id ?? null);
 
+    const fechaRecepcion = this.soloFecha(item.fecha_entrega ?? item.fecha_recepcion ?? item.fechaRecepcion);
+    const extra = this.extraDe(item.id, idIng, fechaRecepcion, Number(item.cantidad) || 0);
+
     return {
       id: item.id,
       idIngrediente: idIng,
@@ -503,12 +515,13 @@ export class RegistrarEntregaAlimentosComponent implements OnInit {
       fechaRecepcion: this.soloFecha(item.fecha_entrega ?? item.fecha_recepcion ?? item.fechaRecepcion),
       fechaVencimiento: this.soloFecha(item.fecha_vencimiento ?? item.fechaVencimiento),
 
-      // Opcionales para el modal "Registro del día": si el backend no los envía quedan vacíos y se muestra "—"
+      // Opcionales para el modal "Registro del día" y el panel "Entradas":
+      // se aceptan varios nombres de campo; si el backend no envía ninguno quedan vacíos y se muestra "—"
       codigo: item.codigo ?? item.codigo_entrega ?? '',
       lote: item.lote ?? item.numero_lote ?? '',
-      destino: item.destino ?? this.texto(item.institucion),
-      hora: this.horaDe(item.hora ?? item.hora_registro ?? item.created_at ?? item.fecha_creacion),
-      responsable: this.texto(item.responsable) || this.texto(item.usuario),
+      destino: this.texto(item.destino) || this.texto(item.destino_nombre) || this.texto(item.institucion) || extra?.destino || '',
+      hora: this.horaDe(item.hora_salida ?? item.hora ?? item.hora_registro ?? item.created_at ?? item.fecha_creacion) || extra?.hora || '',
+      responsable: this.texto(item.responsable) || this.texto(item.responsable_nombre) || this.texto(item.usuario) || extra?.responsable || '',
       estadoEntrega: item.estado ?? '',
     };
   }
@@ -807,6 +820,212 @@ export class RegistrarEntregaAlimentosComponent implements OnInit {
     this.mostrarCalendario = true;
   }
 
+  // ===================== REGISTRAR ENTRADA (botón "Entradas" del calendario) =====================
+  // El formulario pide solo: fecha, destino y los productos (con cantidad y si son perecederos o no).
+  // El vencimiento y la frecuencia se calculan solos con la última entrega de cada producto.
+  mostrarModalEntrada = false;
+  entradaFecha = this.fechaHoy();
+  entradaDestino = '';
+  entradaFilas: EntradaFila[] = [];
+  guardandoEntrada = false;
+  errorEntrada = '';
+  entradaResponsable = '';
+  busquedaEntrada = '';
+  readonly unidadesEntrada = ['Kg', 'Litros', 'Unidades'];
+
+  abrirModalEntrada(): void {
+    this.entradaFecha = this.fechaHoy();
+    this.entradaDestino = this.institucionLote || this.instituciones[0] || '';
+    this.entradaResponsable = '';
+    this.busquedaEntrada = '';
+    this.entradaFilas = [];
+    this.errorEntrada = '';
+    this.mostrarModalEntrada = true;
+  }
+
+  cerrarModalEntrada(): void {
+    this.mostrarModalEntrada = false;
+  }
+
+  private nuevaFilaEntrada(): EntradaFila {
+    return { idIngrediente: null, cantidad: null, unidad: 'Kg', perecedero: false };
+  }
+
+  // Productos que se ven como botones rápidos (el buscador los filtra)
+  get productosRapidos(): IngredienteOpcion[] {
+    const q = this.busquedaEntrada.trim().toLowerCase();
+    return this.ingredientes
+      .filter(i => !q || i.nombre.toLowerCase().includes(q))
+      .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+  }
+
+  estaEnEntrada(id: number): boolean {
+    return this.entradaFilas.some(f => f.idIngrediente === id);
+  }
+
+  nombreIngrediente(id: number | null): string {
+    return this.ingredientes.find(i => i.id === id)?.nombre ?? '';
+  }
+
+  // Un toque agrega el producto a la entrada; otro toque lo quita
+  alternarProductoEntrada(id: number): void {
+    const existente = this.entradaFilas.findIndex(f => f.idIngrediente === id);
+    if (existente >= 0) {
+      this.entradaFilas.splice(existente, 1);
+      return;
+    }
+    const fila = this.nuevaFilaEntrada();
+    fila.idIngrediente = id;
+    this.alElegirProductoEntrada(fila);
+    this.entradaFilas.push(fila);
+  }
+
+  quitarFilaEntrada(indice: number): void {
+    this.entradaFilas.splice(indice, 1);
+  }
+
+  // Botones - y + de la cantidad
+  ajustarCantidadEntrada(fila: EntradaFila, paso: number): void {
+    const nueva = Math.max(0, Math.round(((fila.cantidad ?? 0) + paso) * 100) / 100);
+    fila.cantidad = nueva > 0 ? nueva : null;
+  }
+
+  // Al elegir el producto se sugiere su unidad y si es perecedero (por su última entrega o por su nombre)
+  alElegirProductoEntrada(fila: EntradaFila): void {
+    const producto = this.catalogoMenu.find(p => p.id === fila.idIngrediente);
+    if (!producto) return;
+    fila.unidad = producto.unidad;
+    fila.perecedero = this.esPerecedero(producto);
+  }
+
+  // Id del tipo de mercado del catálogo que corresponde a Perecedero / No perecedero
+  private idTipoMercadoDe(perecedero: boolean): number | null {
+    const tipo = this.tiposMercado.find(t => {
+      const n = t.nombre.toLowerCase();
+      return (n.includes('perecedero') && !n.includes('no perecedero')) === perecedero;
+    });
+    return tipo?.id ?? null;
+  }
+
+  // Vencimiento y frecuencia: se repiten los de la última entrega del producto; si no hay, valores por defecto
+  private datosAutomaticos(fila: EntradaFila): { vencimiento: string; frecuencia: string } {
+    const ultima = this.historial
+      .filter(e => e.idIngrediente === fila.idIngrediente)
+      .sort((a, b) => b.fechaRecepcion.localeCompare(a.fechaRecepcion))[0];
+
+    const diasUltima = ultima && ultima.fechaRecepcion && ultima.fechaVencimiento
+      ? this.diasEntre(ultima.fechaRecepcion, ultima.fechaVencimiento)
+      : 0;
+    const vigencia = diasUltima > 0 ? diasUltima : (fila.perecedero ? 7 : 90);
+    const cada = (ultima ? this.diasDeFrecuencia(ultima.frecuencia) : null) ?? 8;
+
+    return {
+      vencimiento: this.sumarDiasISO(this.entradaFecha, vigencia),
+      frecuencia: this.textoFrecuencia(cada),
+    };
+  }
+
+  // ---- Respaldo en este navegador ----
+  // Si el backend no guarda destino / responsable / hora, se recuerdan aquí para lo registrado desde "Entradas"
+  private readonly claveExtras = 'sirae_entradas_extra';
+  private extras: Record<string, { destino: string; responsable: string; hora: string }> = this.leerExtras();
+
+  private leerExtras(): Record<string, { destino: string; responsable: string; hora: string }> {
+    try { return JSON.parse(localStorage.getItem(this.claveExtras) || '{}'); } catch { return {}; }
+  }
+
+  private claveCompuesta(idIngrediente: number | null, fecha: string, cantidad: number): string {
+    return `${idIngrediente}|${fecha}|${cantidad}`;
+  }
+
+  private guardarExtra(id: number | undefined, fila: EntradaFila,
+                       datos: { destino: string; responsable: string; hora: string }): void {
+    if (id != null) this.extras[`id:${id}`] = datos;
+    this.extras[this.claveCompuesta(fila.idIngrediente, this.entradaFecha, fila.cantidad ?? 0)] = datos;
+    try { localStorage.setItem(this.claveExtras, JSON.stringify(this.extras)); } catch { /* sin espacio o bloqueado */ }
+  }
+
+  private extraDe(id: number | undefined, idIngrediente: number | null, fecha: string, cantidad: number) {
+    return (id != null ? this.extras[`id:${id}`] : undefined)
+      ?? this.extras[this.claveCompuesta(idIngrediente, fecha, cantidad)];
+  }
+
+  guardarEntrada(): void {
+    const filas = this.entradaFilas;
+
+    if (!this.entradaFecha) { this.errorEntrada = 'Selecciona la fecha de entrega.'; return; }
+    if (!this.entradaDestino.trim()) { this.errorEntrada = 'Escribe el destino.'; return; }
+    if (!this.entradaResponsable.trim()) { this.errorEntrada = 'Escribe el nombre del responsable.'; return; }
+    if (filas.length === 0) { this.errorEntrada = 'Toca los productos que entran para agregarlos.'; return; }
+    const sinCantidad = filas.filter(f => !f.cantidad || f.cantidad <= 0);
+    if (sinCantidad.length > 0) {
+      this.errorEntrada = `Escribe la cantidad de: ${sinCantidad.map(f => this.nombreIngrediente(f.idIngrediente)).join(', ')}.`;
+      return;
+    }
+    if (filas.some(f => this.idTipoMercadoDe(f.perecedero) == null)) {
+      this.errorEntrada = 'No se encontró el tipo de mercado (Perecedero / No perecedero) en el catálogo del servidor.';
+      return;
+    }
+
+    this.errorEntrada = '';
+    this.guardandoEntrada = true;
+
+    let motivoFallo = '';
+    const peticiones = filas.map(f => {
+      const auto = this.datosAutomaticos(f);
+      return this.entregasService.registrar({
+        id_ingrediente: f.idIngrediente!,
+        id_tipo_mercado: this.idTipoMercadoDe(f.perecedero)!,
+        frecuencia: auto.frecuencia,
+        cantidad: f.cantidad!,
+        unidad: f.unidad,
+        fecha_entrega: this.entradaFecha,
+        fecha_vencimiento: auto.vencimiento,
+        destino: this.entradaDestino.trim(),
+        responsable: this.entradaResponsable.trim(),
+        observaciones: '',
+      } as any).pipe(
+        map((resp: any) => ({ ok: true, fila: f, id: resp?.id as number | undefined })),
+        catchError(error => {
+          console.error('Error al registrar entrada', error);
+          motivoFallo = this.describirError(error);
+          return of({ ok: false, fila: f, id: undefined as number | undefined });
+        }),
+      );
+    });
+
+    forkJoin(peticiones).subscribe(resultados => {
+      this.guardandoEntrada = false;
+      const fallidas = resultados.filter(r => !r.ok).map(r => r.fila);
+      const guardadas = resultados.length - fallidas.length;
+
+      // Se recuerdan destino, responsable y hora para mostrarlos en "Registro del día"
+      const hora = this.horaDe(new Date().toISOString());
+      resultados.filter(r => r.ok).forEach(r => this.guardarExtra(r.id, r.fila, {
+        destino: this.entradaDestino.trim(),
+        responsable: this.entradaResponsable.trim(),
+        hora,
+      }));
+
+      if (guardadas > 0) {
+        // El calendario salta al día registrado para que se vea la entrada
+        const [anio, mes] = this.entradaFecha.split('-').map(Number);
+        this.mesCalendario = new Date(anio, mes - 1, 1);
+        this.diaSeleccionado = this.entradaFecha;
+        this.cargarHistorial();
+      }
+
+      if (fallidas.length === 0) {
+        this.mostrarModalEntrada = false;
+        void this.alertas.success('Entrada registrada', `Se registraron ${guardadas} producto(s) con destino a ${this.entradaDestino.trim()}.`);
+      } else {
+        // Se quitan las que sí se guardaron; las fallidas quedan para reintentar
+        this.entradaFilas = fallidas;
+        this.errorEntrada = `Se guardaron ${guardadas} y fallaron ${fallidas.length}. ` + (motivoFallo ? `Motivo: ${motivoFallo}.` : '');
+      }
+    });
+  }
+
   get tituloMes(): string {
     return `${this.nombresMeses[this.mesCalendario.getMonth()]} ${this.mesCalendario.getFullYear()}`;
   }
@@ -944,6 +1163,12 @@ export class RegistrarEntregaAlimentosComponent implements OnInit {
         mapa.set(codigo, reg);
       }
       reg.items.push(e);
+    }
+    // Destino, hora y responsable: el primero que tenga algún producto del lote
+    for (const reg of mapa.values()) {
+      reg.destino = reg.items.find(i => i.destino)?.destino || this.institucionLote || '—';
+      reg.hora = reg.items.find(i => i.hora)?.hora || '—';
+      reg.responsable = reg.items.find(i => i.responsable)?.responsable || '—';
     }
     return Array.from(mapa.values());
   }
