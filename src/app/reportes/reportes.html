@@ -6,9 +6,11 @@
 .btn-naranja { background: linear-gradient(135deg, #FFA928 0%, #FF8A00 100%); color: #fff; box-shadow: 0 10px 20px -8px rgba(255, 138, 0, .7); transition: transform .2s ease, filter .2s ease; }
 .btn-naranja:hover:not(:disabled) { filter: brightness(1.06); transform: translateY(-2px); }
 .btn-naranja:active:not(:disabled) { transform: scale(.97); }
+.pill-on { background: linear-gradient(135deg, #FFA928, #FF8A00); color: #fff; box-shadow: 0 6px 14px -6px rgba(255, 138, 0, .7); }
 .fx-input:focus { border-color: #FF9500; box-shadow: 0 0 0 3px rgba(255, 149, 0, .18); outline: none; }
 .fx-lift { transition: transform .25s ease, box-shadow .25s ease; }
 .fx-lift:hover { transform: translateY(-3px); box-shadow: 0 16px 30px -18px rgba(255, 138, 0, .4); }
+.barra-naranja { background: linear-gradient(90deg, #FFC15A, #FF8A00); }
 .tabla-scroll { max-height: 520px; overflow: auto; }
 .tabla-scroll thead th { position: sticky; top: 0; z-index: 1; }
 @keyframes fxUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
@@ -25,18 +27,22 @@
       </div>
       <div>
         <span class="text-[11px] font-bold uppercase tracking-wider text-orange-500">Reportes PAE</span>
-        <h1 class="m-0 text-2xl font-black tracking-tight text-slate-900">Salidas registradas de inventario</h1>
+        <h1 class="m-0 text-2xl font-black tracking-tight text-slate-900">Reporte global de sedes</h1>
+        <p class="m-0 text-xs font-medium text-slate-500">Estudiantes atendidos, comidas servidas y salidas de inventario de tus sedes.</p>
       </div>
     </div>
+    <button type="button" (click)="exportarCsvSedes()" [disabled]="cargando || resumenSedes.length === 0"
+      class="btn-naranja inline-flex cursor-pointer items-center justify-center gap-2 self-start rounded-xl px-4 py-2.5 text-sm font-black disabled:cursor-not-allowed disabled:opacity-50 sm:self-auto">
+      <span class="material-symbols-outlined text-[20px]">download</span>
+      Exportar reporte (CSV)
+    </button>
   </header>
 
-  <!-- Aclaración -->
-  <div class="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50/70 p-4 text-xs font-medium leading-5 text-amber-900">
+  <!-- Aviso de datos de ejemplo -->
+  <div *ngIf="avisoEjemplo" role="status"
+    class="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50/70 p-4 text-xs font-medium leading-5 text-amber-900">
     <span class="material-symbols-outlined mt-0.5 text-[20px] text-amber-600">info</span>
-    <p class="m-0">
-      Este reporte consulta las <b>salidas de inventario guardadas por el sistema</b>.
-      No calcula consumo teórico de recetas.
-    </p>
+    <p class="m-0">{{ avisoEjemplo }}</p>
   </div>
 
   <!-- ============ FILTROS ============ -->
@@ -61,17 +67,31 @@
         </span>
       </label>
 
+      <label class="flex flex-col gap-1.5 text-xs font-bold text-slate-600">
+        Sede
+        <span class="relative">
+          <span class="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-slate-400">school</span>
+          <select [(ngModel)]="sedeFiltro"
+            class="fx-input w-full cursor-pointer rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-sm font-semibold text-slate-800">
+            <option value="Todas">Todas las sedes</option>
+            <option *ngFor="let nombre of sedesDisponibles" [value]="nombre">{{ nombre }}</option>
+          </select>
+        </span>
+      </label>
+
       <button type="button" (click)="cargar()" [disabled]="cargando || (!!fechaDesde && !!fechaHasta && fechaDesde > fechaHasta)"
         class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-orange-50 disabled:cursor-not-allowed disabled:opacity-50">
         <span class="material-symbols-outlined text-[20px]" [class.animate-spin]="cargando">refresh</span>
         {{ cargando ? 'Actualizando...' : 'Actualizar datos' }}
       </button>
+    </div>
 
-      <button type="button" (click)="exportarCsv()" [disabled]="cargando || salidasFiltradas.length === 0"
-        class="btn-naranja inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-black disabled:cursor-not-allowed disabled:opacity-50">
-        <span class="material-symbols-outlined text-[20px]">download</span>
-        Exportar CSV
-      </button>
+    <!-- Rangos rápidos -->
+    <div class="mt-4 flex flex-wrap items-center gap-2">
+      <span class="text-[11px] font-bold uppercase tracking-wide text-slate-400">Rango rápido</span>
+      <button type="button" (click)="rango(7)" class="cursor-pointer rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-600 transition hover:bg-orange-50">Últimos 7 días</button>
+      <button type="button" (click)="rango(30)" class="cursor-pointer rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-600 transition hover:bg-orange-50">Últimos 30 días</button>
+      <button type="button" (click)="rango(null)" class="cursor-pointer rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-600 transition hover:bg-orange-50">Ver todo</button>
     </div>
 
     <!-- Aviso si las fechas están al revés -->
@@ -94,13 +114,199 @@
     </button>
   </div>
 
-  <!-- ============ TABLA ============ -->
+  <!-- ============ INDICADORES ============ -->
+  <div class="grid grid-cols-2 gap-4 lg:grid-cols-5">
+    <div class="fx-panel fx-lift fx-up p-5">
+      <div class="ico-suave mb-3 flex h-10 w-10 items-center justify-center rounded-xl"><span class="material-symbols-outlined text-[22px]">school</span></div>
+      <p class="m-0 text-[11px] font-bold uppercase tracking-wide text-slate-400">Sedes</p>
+      <p class="m-0 text-2xl font-black text-slate-900">{{ totales.sedes }}</p>
+      <p class="m-0 text-[11px] text-slate-400">{{ totales.dias }} días con servicio</p>
+    </div>
+    <div class="fx-panel fx-lift fx-up p-5">
+      <div class="ico-suave mb-3 flex h-10 w-10 items-center justify-center rounded-xl"><span class="material-symbols-outlined text-[22px]">groups</span></div>
+      <p class="m-0 text-[11px] font-bold uppercase tracking-wide text-slate-400">Estudiantes matriculados</p>
+      <p class="m-0 text-2xl font-black text-slate-900">{{ totales.matriculados }}</p>
+    </div>
+    <div class="fx-panel fx-lift fx-up p-5">
+      <div class="ico-suave mb-3 flex h-10 w-10 items-center justify-center rounded-xl"><span class="material-symbols-outlined text-[22px]">fact_check</span></div>
+      <p class="m-0 text-[11px] font-bold uppercase tracking-wide text-slate-400">Asistencia promedio</p>
+      <p class="m-0 text-2xl font-black text-slate-900">{{ totales.asistencia }}%</p>
+    </div>
+    <div class="fx-panel fx-lift fx-up p-5">
+      <div class="ico-suave mb-3 flex h-10 w-10 items-center justify-center rounded-xl"><span class="material-symbols-outlined text-[22px]">restaurant</span></div>
+      <p class="m-0 text-[11px] font-bold uppercase tracking-wide text-slate-400">Raciones servidas</p>
+      <p class="m-0 text-2xl font-black text-orange-600">{{ totales.raciones }}</p>
+      <p class="m-0 text-[11px] text-slate-400">{{ totales.kilos }} kg utilizados</p>
+    </div>
+    <div class="fx-panel fx-lift fx-up col-span-2 p-5 lg:col-span-1">
+      <div class="ico-suave mb-3 flex h-10 w-10 items-center justify-center rounded-xl"><span class="material-symbols-outlined text-[22px]">inventory_2</span></div>
+      <p class="m-0 text-[11px] font-bold uppercase tracking-wide text-slate-400">Salidas de inventario</p>
+      <p class="m-0 text-2xl font-black text-orange-600">{{ totalMovimientos }}</p>
+      <p class="m-0 text-[11px] text-slate-400">movimientos registrados</p>
+    </div>
+  </div>
+
+  <!-- ============ RESUMEN POR SEDE ============ -->
   <section class="fx-panel overflow-hidden">
     <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
-      <h2 class="m-0 text-base font-black text-slate-900">Detalle de movimientos</h2>
+      <div>
+        <h2 class="m-0 text-base font-black text-slate-900">Resumen por sede</h2>
+        <p class="m-0 text-[11px] font-medium text-slate-500">Haz clic en el título de una columna para ordenar, o en una sede para ver su detalle día a día.</p>
+      </div>
       <span class="rounded-full bg-orange-100 px-3 py-1 text-xs font-black text-orange-600">
-        {{ salidasFiltradas.length }} {{ salidasFiltradas.length === 1 ? 'registro' : 'registros' }}
+        {{ resumenSedes.length }} {{ resumenSedes.length === 1 ? 'sede' : 'sedes' }}
       </span>
+    </div>
+
+    <div class="tabla-scroll">
+      <table class="w-full min-w-[860px] border-collapse text-left text-sm">
+        <thead class="bg-orange-50/70 text-[11px] uppercase tracking-wider text-slate-500">
+          <tr>
+            <th scope="col" class="px-5 py-3 font-bold">
+              <button type="button" (click)="ordenarPor('nombre')" class="inline-flex cursor-pointer items-center gap-1 font-bold uppercase tracking-wider hover:text-orange-600">
+                Sede <span class="material-symbols-outlined text-[14px]">{{ iconoOrden('nombre') }}</span>
+              </button>
+            </th>
+            <th scope="col" class="px-5 py-3 text-right font-bold">
+              <button type="button" (click)="ordenarPor('matriculados')" class="inline-flex cursor-pointer items-center gap-1 font-bold uppercase tracking-wider hover:text-orange-600">
+                Matriculados <span class="material-symbols-outlined text-[14px]">{{ iconoOrden('matriculados') }}</span>
+              </button>
+            </th>
+            <th scope="col" class="px-5 py-3 font-bold">
+              <button type="button" (click)="ordenarPor('asistenciaPromedio')" class="inline-flex cursor-pointer items-center gap-1 font-bold uppercase tracking-wider hover:text-orange-600">
+                Asistencia promedio <span class="material-symbols-outlined text-[14px]">{{ iconoOrden('asistenciaPromedio') }}</span>
+              </button>
+            </th>
+            <th scope="col" class="px-5 py-3 text-right font-bold">
+              <button type="button" (click)="ordenarPor('raciones')" class="inline-flex cursor-pointer items-center gap-1 font-bold uppercase tracking-wider hover:text-orange-600">
+                Raciones <span class="material-symbols-outlined text-[14px]">{{ iconoOrden('raciones') }}</span>
+              </button>
+            </th>
+            <th scope="col" class="px-5 py-3 text-right font-bold">
+              <button type="button" (click)="ordenarPor('kilos')" class="inline-flex cursor-pointer items-center gap-1 font-bold uppercase tracking-wider hover:text-orange-600">
+                Kg <span class="material-symbols-outlined text-[14px]">{{ iconoOrden('kilos') }}</span>
+              </button>
+            </th>
+            <th scope="col" class="px-5 py-3 text-right font-bold">
+              <button type="button" (click)="ordenarPor('dias')" class="inline-flex cursor-pointer items-center gap-1 font-bold uppercase tracking-wider hover:text-orange-600">
+                Días <span class="material-symbols-outlined text-[14px]">{{ iconoOrden('dias') }}</span>
+              </button>
+            </th>
+            <th scope="col" class="px-5 py-3 font-bold">Plato más servido</th>
+            <th scope="col" class="px-5 py-3 text-center font-bold">Detalle</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let s of resumenSedes; trackBy: trackSede" (click)="abrirSede(s)"
+            class="cursor-pointer border-t border-slate-100 transition hover:bg-orange-50/40">
+            <td class="px-5 py-3">
+              <div class="flex items-center gap-2">
+                <span class="ico-suave flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"><span class="material-symbols-outlined text-[18px]">school</span></span>
+                <span class="font-bold text-slate-900">{{ s.nombre }}</span>
+              </div>
+            </td>
+            <td class="px-5 py-3 text-right font-black text-slate-800">{{ s.matriculados }}</td>
+            <td class="px-5 py-3">
+              <div class="flex items-center gap-2">
+                <div class="h-2 w-24 overflow-hidden rounded-full bg-slate-100">
+                  <div class="h-full rounded-full" [ngClass]="claseAsistencia(s.asistenciaPromedio)" [style.width.%]="s.asistenciaPromedio"></div>
+                </div>
+                <span class="text-xs font-black text-slate-700">{{ s.asistenciaPromedio }}%</span>
+              </div>
+            </td>
+            <td class="px-5 py-3 text-right text-base font-black text-orange-600">{{ s.raciones }}</td>
+            <td class="px-5 py-3 text-right font-bold text-slate-700">{{ s.kilos }}</td>
+            <td class="px-5 py-3 text-right font-bold text-slate-700">{{ s.dias }}</td>
+            <td class="max-w-[200px] truncate px-5 py-3 text-slate-600" [title]="s.platoTop">{{ s.platoTop }}</td>
+            <td class="px-5 py-3 text-center">
+              <button type="button" (click)="abrirSede(s); $event.stopPropagation()" [attr.aria-label]="'Ver detalle de ' + s.nombre"
+                class="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-orange-300 bg-white text-orange-600 transition hover:bg-orange-50">
+                <span class="material-symbols-outlined text-[18px]">visibility</span>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+        <tfoot *ngIf="resumenSedes.length > 1" class="border-t-2 border-orange-200 bg-orange-50/50 text-sm">
+          <tr>
+            <td class="px-5 py-3 font-black text-slate-900">Total</td>
+            <td class="px-5 py-3 text-right font-black text-slate-900">{{ totales.matriculados }}</td>
+            <td class="px-5 py-3 text-xs font-black text-slate-700">{{ totales.asistencia }}%</td>
+            <td class="px-5 py-3 text-right font-black text-orange-600">{{ totales.raciones }}</td>
+            <td class="px-5 py-3 text-right font-black text-slate-900">{{ totales.kilos }}</td>
+            <td class="px-5 py-3 text-right font-black text-slate-900">{{ totales.dias }}</td>
+            <td class="px-5 py-3"></td>
+            <td class="px-5 py-3"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <div *ngIf="resumenSedes.length === 0" class="flex flex-col items-center gap-3 px-6 py-12 text-center">
+      <div class="ico-suave flex h-14 w-14 items-center justify-center rounded-2xl">
+        <span class="material-symbols-outlined text-[28px]">search_off</span>
+      </div>
+      <p class="m-0 text-sm font-black text-slate-800">No hay datos de sedes en este periodo</p>
+      <p class="m-0 max-w-sm text-xs font-medium text-slate-500">Cambia las fechas o la sede, o usa "Ver todo" en el rango rápido.</p>
+    </div>
+  </section>
+
+  <!-- ============ COMIDAS SERVIDAS ============ -->
+  <section class="fx-panel p-5 sm:p-6">
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+      <div>
+        <h2 class="m-0 text-base font-black text-slate-900">Comidas servidas</h2>
+        <p class="m-0 text-[11px] font-medium text-slate-500">Platos preparados en el periodo, cuántas veces se sirvieron y cuántas raciones.</p>
+      </div>
+      <span class="rounded-full bg-orange-100 px-3 py-1 text-xs font-black text-orange-600">
+        {{ comidasFiltradas.length }} {{ comidasFiltradas.length === 1 ? 'plato' : 'platos' }}
+      </span>
+    </div>
+
+    <p *ngIf="comidasFiltradas.length === 0" class="m-0 rounded-2xl border border-dashed border-slate-200 p-5 text-center text-xs text-slate-500">
+      Aún no hay comidas registradas para esta selección.
+    </p>
+
+    <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+      <div *ngFor="let c of comidasFiltradas; trackBy: trackComida" class="fx-up rounded-2xl border border-slate-100 bg-white p-4">
+        <div class="flex items-start justify-between gap-3">
+          <div class="flex min-w-0 items-center gap-2.5">
+            <span class="ico-suave flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"><span class="material-symbols-outlined text-[20px]">restaurant_menu</span></span>
+            <div class="min-w-0">
+              <p class="m-0 truncate text-sm font-black text-slate-900">{{ c.plato }}</p>
+              <p class="m-0 text-[11px] text-slate-400">En {{ c.sedes.length }} {{ c.sedes.length === 1 ? 'sede' : 'sedes' }}</p>
+            </div>
+          </div>
+          <div class="text-right">
+            <p class="m-0 text-lg font-black text-orange-600">{{ c.raciones }}</p>
+            <p class="m-0 text-[10px] font-bold uppercase text-slate-400">raciones</p>
+          </div>
+        </div>
+        <div class="mt-3 flex items-center gap-2">
+          <div class="h-2.5 flex-1 overflow-hidden rounded-full bg-orange-50">
+            <div class="barra-naranja h-full rounded-full" [style.width.%]="porcentajeVeces(c.veces)"></div>
+          </div>
+          <span class="text-[11px] font-bold text-slate-500">{{ c.veces }} {{ c.veces === 1 ? 'vez' : 'veces' }}</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SALIDAS DE INVENTARIO (DATOS REALES) ============ -->
+  <section class="fx-panel overflow-hidden">
+    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
+      <div>
+        <h2 class="m-0 text-base font-black text-slate-900">Salidas registradas de inventario</h2>
+        <p class="m-0 text-[11px] font-medium text-slate-500">Movimientos guardados por el sistema. No calcula consumo teórico de recetas.</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="rounded-full bg-orange-100 px-3 py-1 text-xs font-black text-orange-600">
+          {{ salidasFiltradas.length }} {{ salidasFiltradas.length === 1 ? 'registro' : 'registros' }}
+        </span>
+        <button type="button" (click)="exportarCsv()" [disabled]="cargando || salidasFiltradas.length === 0"
+          class="inline-flex cursor-pointer items-center gap-1 rounded-full border border-orange-300 bg-white px-3 py-1 text-xs font-bold text-orange-600 transition hover:bg-orange-50 disabled:cursor-not-allowed disabled:opacity-50">
+          <span class="material-symbols-outlined text-[16px]">download</span> CSV
+        </button>
+      </div>
     </div>
 
     <div class="tabla-scroll">
@@ -151,3 +357,91 @@
     </div>
   </section>
 </section>
+
+<!-- ================= VENTANA EMERGENTE: DETALLE DE UNA SEDE ================= -->
+<div *ngIf="sedeDetalle as sede" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4" (click)="cerrarSede()">
+  <div class="fx-up max-h-[90vh] w-full max-w-[760px] overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl"
+    (click)="$event.stopPropagation()" role="dialog" aria-modal="true" [attr.aria-label]="'Detalle de ' + sede.nombre"
+    style="font-family: 'Roboto', sans-serif;">
+
+    <!-- Encabezado -->
+    <div class="flex items-start justify-between gap-3 border-b border-slate-200 pb-4">
+      <div>
+        <p class="m-0 text-[10px] font-black uppercase tracking-wider text-orange-500">Detalle de la sede</p>
+        <h3 class="m-0 mt-1 text-lg font-black text-slate-900">{{ sede.nombre }}</h3>
+        <p class="m-0 mt-0.5 text-[11px] text-slate-400">
+          {{ fechaDesde || fechaHasta ? 'Del ' + (fechaCorta(fechaDesde) || 'inicio') + ' al ' + (fechaCorta(fechaHasta) || 'hoy') : 'Todo el periodo disponible' }}
+        </p>
+      </div>
+      <button type="button" (click)="cerrarSede()" aria-label="Cerrar"
+        class="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200">
+        <span class="material-symbols-outlined text-[20px]">close</span>
+      </button>
+    </div>
+
+    <!-- Indicadores de la sede -->
+    <div class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div class="rounded-2xl border border-slate-100 bg-slate-50 p-3">
+        <p class="m-0 text-[10px] font-bold uppercase text-slate-400">Matriculados</p>
+        <p class="m-0 text-lg font-black text-slate-900">{{ sede.matriculados }}</p>
+      </div>
+      <div class="rounded-2xl border border-slate-100 bg-slate-50 p-3">
+        <p class="m-0 text-[10px] font-bold uppercase text-slate-400">Asistencia</p>
+        <p class="m-0 text-lg font-black text-slate-900">{{ sede.asistenciaPromedio }}%</p>
+      </div>
+      <div class="rounded-2xl border border-slate-100 bg-slate-50 p-3">
+        <p class="m-0 text-[10px] font-bold uppercase text-slate-400">Raciones</p>
+        <p class="m-0 text-lg font-black text-orange-600">{{ sede.raciones }}</p>
+      </div>
+      <div class="rounded-2xl border border-slate-100 bg-slate-50 p-3">
+        <p class="m-0 text-[10px] font-bold uppercase text-slate-400">Kg utilizados</p>
+        <p class="m-0 text-lg font-black text-orange-600">{{ sede.kilos }}</p>
+      </div>
+    </div>
+
+    <!-- Comidas servidas en la sede -->
+    <div class="mt-5">
+      <h4 class="m-0 mb-2 text-sm font-black text-slate-900">Comidas servidas</h4>
+      <div class="flex flex-wrap gap-2">
+        <span *ngFor="let c of comidasSede" class="inline-flex items-center gap-1.5 rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-xs font-bold text-orange-700">
+          {{ c.plato }}
+          <span class="rounded-full bg-white px-1.5 text-[10px] font-black text-orange-600">{{ c.veces }}×</span>
+        </span>
+      </div>
+    </div>
+
+    <!-- Día a día -->
+    <div class="mt-5 flex items-center justify-between">
+      <h4 class="m-0 text-sm font-black text-slate-900">Día a día</h4>
+      <span class="text-[11px] font-semibold text-sky-600">{{ registrosSede.length }} días</span>
+    </div>
+    <div class="mt-2 max-h-[300px] overflow-y-auto rounded-2xl border border-slate-200">
+      <div *ngFor="let r of registrosSede; trackBy: trackRegistro"
+        class="flex flex-col gap-2 border-b border-slate-100 px-4 py-3 last:border-b-0 sm:flex-row sm:items-center sm:justify-between">
+        <div class="min-w-0">
+          <p class="m-0 text-xs font-black text-slate-900">{{ diaSemana(r.fecha) }} {{ fechaCorta(r.fecha) }}</p>
+          <p class="m-0 truncate text-[11px] text-slate-500">{{ r.plato }}</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="flex items-center gap-2">
+            <div class="h-2 w-24 overflow-hidden rounded-full bg-slate-100">
+              <div class="h-full rounded-full" [ngClass]="claseAsistencia(porcentajeAsistencia(r))" [style.width.%]="porcentajeAsistencia(r)"></div>
+            </div>
+            <span class="w-9 text-right text-[11px] font-black text-slate-700">{{ porcentajeAsistencia(r) }}%</span>
+          </div>
+          <span class="whitespace-nowrap text-[11px] text-slate-500"><b class="text-slate-900">{{ r.asistieron }}</b>/{{ r.matriculados }} est.</span>
+          <span class="whitespace-nowrap text-xs font-black text-orange-600">{{ r.raciones }} rac.</span>
+        </div>
+      </div>
+      <p *ngIf="registrosSede.length === 0" class="m-0 p-6 text-center text-xs text-slate-500">Esta sede no tiene días en el rango seleccionado.</p>
+    </div>
+
+    <div class="mt-5 flex justify-end">
+      <button type="button" (click)="exportarCsvSede()" [disabled]="registrosSede.length === 0"
+        class="btn-naranja inline-flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2 text-sm font-black disabled:cursor-not-allowed disabled:opacity-50">
+        <span class="material-symbols-outlined text-[20px]">download</span>
+        Exportar esta sede (CSV)
+      </button>
+    </div>
+  </div>
+</div>
