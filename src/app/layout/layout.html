@@ -222,10 +222,10 @@
         <span class="modern-nav-text">Facturas</span>
       </a>
 
-      <!-- ENTREGAS (Para ambos) -->
-      <a routerLink="historial-entregas" routerLinkActive="active" class="modern-nav-item" title="Entregas">
+      <!-- RECEPCIÓN DE ENTREGAS (Exclusivo para Administrador de Institución) -->
+      <a *ngIf="esAdministrador" routerLink="historial-entregas" routerLinkActive="active" class="modern-nav-item" title="Recepción de Entregas">
         <span class="material-symbols-outlined modern-nav-icon" aria-hidden="true">local_shipping</span>
-        <span class="modern-nav-text">Entregas</span>
+        <span class="modern-nav-text">Recepción Entregas</span>
       </a>
 
       <!-- MENÚS (Para ambos) -->
