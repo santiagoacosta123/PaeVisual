@@ -143,12 +143,18 @@ export class LayoutComponent implements OnInit {
       '/unidades-medida': 'Unidades de Medida',
       '/menus': 'Menús',
       '/facturas-compra': 'Facturas',
+      '/bodega-central': 'Bodega Central',
       '/reportes-consumo': 'Reportes',
       '/notificaciones': 'Notificaciones'
     };
 
+    if (url.includes('bodega-central') || (url.includes('facturas-compra') && url.includes('tab=bodega'))) {
+      this.pageTitle = 'Bodega Central';
+      return;
+    }
+
     if (url.includes('facturas-compra')) {
-      this.pageTitle = url.includes('tab=bodega') ? 'Bodega Central' : 'Facturas';
+      this.pageTitle = 'Facturas';
       return;
     }
 

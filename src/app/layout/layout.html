@@ -210,14 +210,14 @@
         <span class="modern-nav-text">Banco de Datos</span>
       </a>
 
-      <!-- BODEGA CENTRAL (Reemplaza a Inventario) -->
-      <a *ngIf="esSuperAdministrador" [routerLink]="['facturas-compra']" [queryParams]="{tab: 'bodega'}" routerLinkActive="active" class="modern-nav-item" title="Bodega Central">
+      <!-- BODEGA CENTRAL (Stock Global) -->
+      <a *ngIf="esSuperAdministrador" routerLink="bodega-central" routerLinkActive="active" class="modern-nav-item" title="Bodega Central">
         <span class="material-symbols-outlined modern-nav-icon" aria-hidden="true">warehouse</span>
         <span class="modern-nav-text">Bodega Central</span>
       </a>
 
       <!-- FACTURAS (Super Administrador) -->
-      <a *ngIf="esSuperAdministrador" [routerLink]="['facturas-compra']" [queryParams]="{tab: 'facturas'}" routerLinkActive="active" class="modern-nav-item" title="Facturas">
+      <a *ngIf="esSuperAdministrador" routerLink="facturas-compra" routerLinkActive="active" class="modern-nav-item" title="Facturas">
         <span class="material-symbols-outlined modern-nav-icon" aria-hidden="true">receipt_long</span>
         <span class="modern-nav-text">Facturas</span>
       </a>

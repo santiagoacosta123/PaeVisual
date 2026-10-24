@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { environment } from '@env/environment';
 import { AuthService } from '../services/auth.service';
 import { SweetAlertService } from '../sweet-alert.service';
@@ -30,6 +30,7 @@ interface FilaDetalleForm {
 })
 export class FacturasCompraComponent implements OnInit {
   tabActiva: 'facturas' | 'bodega' = 'facturas';
+  modoExclusivo: 'bodega' | 'facturas' | 'ambas' = 'ambas';
 
   facturas: FacturaCompra[] = [];
   inventarioCentral: InventarioCentralItem[] = [];
@@ -64,9 +65,20 @@ export class FacturasCompraComponent implements OnInit {
     private authService: AuthService,
     private alertas: SweetAlertService,
     private route: ActivatedRoute,
+    private router: Router,
   ) {}
 
   ngOnInit(): void {
+    const url = this.router.url;
+    const modoData = this.route.snapshot.data['modo'];
+    if (modoData === 'bodega' || url.includes('bodega-central') || this.route.snapshot.queryParams['tab'] === 'bodega') {
+      this.tabActiva = 'bodega';
+      this.modoExclusivo = 'bodega';
+    } else if (modoData === 'facturas' || url.includes('facturas-compra')) {
+      this.tabActiva = 'facturas';
+      this.modoExclusivo = 'facturas';
+    }
+
     this.route.queryParams.subscribe(params => {
       if (params['tab'] === 'bodega') {
         this.tabActiva = 'bodega';

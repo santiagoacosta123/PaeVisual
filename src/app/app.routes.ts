@@ -221,7 +221,13 @@ export const routes: Routes = [
         path: 'facturas-compra',
         component: FacturasCompraComponent,
         canActivate: [roleGuard],
-        data: { roles: ['superadministrador', 'super administrador', 'super admin'] }
+        data: { roles: ['superadministrador', 'super administrador', 'super admin'], modo: 'facturas' }
+      },
+      {
+        path: 'bodega-central',
+        component: FacturasCompraComponent,
+        canActivate: [roleGuard],
+        data: { roles: ['superadministrador', 'super administrador', 'super admin'], modo: 'bodega' }
       }
     ]
   },
