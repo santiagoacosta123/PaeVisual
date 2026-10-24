@@ -1,168 +1,395 @@
-<div class="banco-datos-page">
+<div class="banco-datos-layout">
 
-  <!-- ===================== CABECERA PRINCIPAL ===================== -->
-  <header class="bd-header">
-    <div class="bd-header-info">
-      <h1 class="bd-title">Banco de Datos</h1>
-      <p class="bd-subtitle">Administración central de parámetros y tablas maestras del sistema</p>
+  <!-- ===================== CABECERA DE LA PÁGINA ===================== -->
+  <header class="bd-page-header">
+    <div class="bd-page-header-left">
+      <!-- Ícono circular con cilindros / base de datos -->
+      <div class="bd-page-icon-badge" aria-hidden="true">
+        <svg class="bd-db-svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+          <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+          <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+          <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+        </svg>
+      </div>
+
+      <!-- Título y descripción -->
+      <div class="bd-page-title-box">
+        <h1 class="bd-page-title">Banco de Datos</h1>
+        <p class="bd-page-subtitle">Administra los parámetros y tablas maestras del sistema.</p>
+      </div>
     </div>
 
-    <!-- Botón Añadir (Amarillo, lado derecho) -->
-    <button type="button" class="bd-new-button" (click)="abrirModal()">
+    <!-- Botón Añadir (Pill amarillo con texto en negrita) -->
+    <button type="button" class="bd-btn-add" (click)="abrirModal()">
       <span class="material-symbols-outlined" aria-hidden="true">add</span>
       <span>Añadir {{ tab.singular }}</span>
     </button>
   </header>
 
 
-  <!-- ===================== TABS (Desplazables horizontalmente sin iconos) ===================== -->
-  <nav class="bd-tabs" aria-label="Tablas del banco de datos">
-    <button *ngFor="let t of tabs" type="button" class="bd-tab" [class.active]="tabActual === t.id"
-      [attr.aria-current]="tabActual === t.id ? 'page' : null" (click)="cambiarTab(t.id)">
-      <span>{{ t.nombre }}</span>
-    </button>
-  </nav>
+  <!-- ===================== CONTENEDOR DE DOS COLUMNAS ===================== -->
+  <div class="bd-main-grid">
+
+    <!-- ================= COLUMNA 1: TABLAS MAESTRAS ================= -->
+    <aside class="bd-sidebar-card" aria-label="Menú de tablas maestras">
+      <h2 class="bd-sidebar-title">Tablas maestras</h2>
+
+      <nav class="bd-master-nav">
+        <button
+          *ngFor="let t of tabs"
+          type="button"
+          class="bd-nav-item"
+          [class.active]="tabActual === t.id"
+          [attr.aria-current]="tabActual === t.id ? 'page' : null"
+          (click)="cambiarTab(t.id)"
+        >
+          <span class="material-symbols-outlined bd-nav-icon" aria-hidden="true">{{ t.icon }}</span>
+          <span class="bd-nav-text">{{ t.nombre }}</span>
+        </button>
+      </nav>
+    </aside>
 
 
-  <!-- ===================== CONTENIDO / TABLA ===================== -->
-  <section class="bd-section">
-    
-    <!-- Encabezado de la Sección (Sin ícono gigante) -->
-    <div class="bd-section-header">
-      <div>
-        <h2>{{ tab.nombre }}</h2>
-        <p>Consulta y administra los registros de esta sección. {{ datosFiltrados.length > 0 ? (datosFiltrados.length + ' registro' + (datosFiltrados.length !== 1 ? 's' : '')) : '' }}</p>
-      </div>
+    <!-- ================= COLUMNA 2: TABLA Y CONTROLES ================= -->
+    <main class="bd-table-card">
 
-      <!-- Filtro específico para Sedes por Institución (Estilo idéntico a Contrato Detalle) -->
-      <div *ngIf="tabActual === 'sedes'" style="display: flex; align-items: center; gap: 10px; margin-top: 8px; flex-wrap: wrap;">
-        <label style="font-size: 12px; font-weight: 600; color: #475569; display: flex; align-items: center; gap: 4px;">
-          <span class="material-symbols-outlined" style="font-size: 16px; color: #64748b;">filter_alt</span>
-          Filtrar por Institución:
-        </label>
+      <!-- Barra de Filtros Superiores -->
+      <div class="bd-filters-bar">
         
-        <div (click)="abrirModalInstitucionSede()"
-             style="min-width: 280px; max-width: 440px; min-height: 38px; padding: 7px 12px; border: 1px solid #cbd5e1; border-radius: 8px; background: #ffffff; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 8px; box-sizing: border-box; transition: border-color 0.15s ease;"
-             onmouseover="this.style.borderColor='#94a3b8'"
-             onmouseout="this.style.borderColor='#cbd5e1'"
-             title="Haz clic para seleccionar la institución">
-          
-          <div style="display: flex; align-items: center; gap: 8px; overflow: hidden; flex: 1;">
-            <span class="material-symbols-outlined" style="font-size: 18px; color: #64748b; flex-shrink: 0;">apartment</span>
-            <span style="font-size: 12.5px; font-weight: 600; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-              {{ nombreInstitucionSedeSeleccionada }}
-            </span>
-          </div>
+        <!-- Buscador -->
+        <div class="bd-search-box">
+          <span class="material-symbols-outlined bd-search-icon" aria-hidden="true">search</span>
+          <input
+            type="text"
+            [(ngModel)]="busquedaTexto"
+            (input)="onFiltroCambio()"
+            [placeholder]="placeholderBusqueda"
+            class="bd-search-input"
+          />
+          <button
+            *ngIf="busquedaTexto"
+            type="button"
+            class="bd-clear-btn"
+            (click)="busquedaTexto = ''; onFiltroCambio()"
+            title="Limpiar búsqueda"
+          >
+            ✕
+          </button>
+        </div>
 
-          <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
-            <button *ngIf="filtroInstitucionSede !== 'TODAS' && filtroInstitucionSede"
-                    type="button"
-                    (click)="limpiarFiltroInstitucionSede($event)"
-                    style="background: #f1f5f9; border: none; font-size: 12px; color: #64748b; cursor: pointer; padding: 2px 6px; border-radius: 4px; line-height: 1; display: flex; align-items: center;"
-                    title="Mostrar todas las instituciones">✕</button>
-            <span class="material-symbols-outlined" style="font-size: 20px; color: #64748b; line-height: 1;">expand_more</span>
+        <!-- Selector Estado -->
+        <div class="bd-filter-group">
+          <label class="bd-filter-label" for="select-estado">Estado</label>
+          <div class="bd-select-wrapper">
+            <select
+              id="select-estado"
+              [(ngModel)]="filtroEstado"
+              (change)="onFiltroCambio()"
+              class="bd-filter-select"
+            >
+              <option value="TODOS">Todos</option>
+              <option value="ACTIVO">Activo</option>
+              <option value="INACTIVO">Inactivo</option>
+            </select>
+            <span class="material-symbols-outlined bd-select-chevron" aria-hidden="true">expand_more</span>
           </div>
         </div>
 
-        <button *ngIf="filtroInstitucionSede !== 'TODAS' && filtroInstitucionSede"
-                type="button"
-                (click)="limpiarFiltroInstitucionSede($event)"
-                style="border: none; background: #f1f5f9; color: #475569; padding: 7px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; transition: background 0.15s; display: flex; align-items: center; gap: 4px;">
-          <span class="material-symbols-outlined" style="font-size: 15px;">close</span>
+        <!-- Selector Ordenar Por -->
+        <div class="bd-filter-group">
+          <label class="bd-filter-label" for="select-orden">Ordenar por</label>
+          <div class="bd-select-wrapper">
+            <select
+              id="select-orden"
+              [(ngModel)]="ordenPor"
+              (change)="onFiltroCambio()"
+              class="bd-filter-select"
+            >
+              <option value="recientes">Más recientes</option>
+              <option value="az">Nombre (A-Z)</option>
+              <option value="za">Nombre (Z-A)</option>
+            </select>
+            <span class="material-symbols-outlined bd-select-chevron" aria-hidden="true">expand_more</span>
+          </div>
+        </div>
+
+        <!-- Botón Filtros -->
+        <div class="bd-filter-action-group">
+          <button type="button" class="bd-btn-filter" (click)="toggleFiltrosAvanzados()">
+            <span class="material-symbols-outlined" aria-hidden="true">tune</span>
+            <span>Filtros</span>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Filtro específico para Sedes por Institución (Si aplica) -->
+      <div *ngIf="tabActual === 'sedes'" class="bd-sedes-filter-row">
+        <label class="bd-sedes-filter-label">
+          <span class="material-symbols-outlined" aria-hidden="true">apartment</span>
+          Institución educativa:
+        </label>
+        
+        <div
+          (click)="abrirModalInstitucionSede()"
+          class="bd-sedes-filter-trigger"
+          title="Haz clic para cambiar la institución asociada"
+        >
+          <span class="bd-sedes-filter-name">{{ nombreInstitucionSedeSeleccionada }}</span>
+          <div class="bd-sedes-trigger-actions">
+            <button
+              *ngIf="filtroInstitucionSede !== 'TODAS' && filtroInstitucionSede"
+              type="button"
+              class="bd-sedes-clear-pill"
+              (click)="limpiarFiltroInstitucionSede($event)"
+              title="Mostrar todas las sedes"
+            >
+              ✕
+            </button>
+            <span class="material-symbols-outlined" aria-hidden="true">expand_more</span>
+          </div>
+        </div>
+
+        <button
+          *ngIf="filtroInstitucionSede !== 'TODAS' && filtroInstitucionSede"
+          type="button"
+          class="bd-btn-all-sedes"
+          (click)="limpiarFiltroInstitucionSede($event)"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">close</span>
           Mostrar todas
         </button>
       </div>
-    </div>
 
-    <!-- Cargando -->
-    <div *ngIf="cargando" class="bd-loading" aria-busy="true">
-      <div class="bd-skeleton-row" *ngFor="let i of [1,2,3,4,5]">
-        <div class="bd-skeleton skeleton-lg"></div>
-        <div class="bd-skeleton skeleton-xl"></div>
-        <div class="bd-skeleton skeleton-sm"></div>
+      <!-- Estado: Cargando -->
+      <div *ngIf="cargando" class="bd-loading-box" aria-busy="true">
+        <div class="bd-skeleton-row" *ngFor="let i of [1,2,3,4,5,6]">
+          <div class="bd-skeleton sk-icon"></div>
+          <div class="bd-skeleton sk-name"></div>
+          <div class="bd-skeleton sk-mid"></div>
+          <div class="bd-skeleton sk-sm"></div>
+          <div class="bd-skeleton sk-badge"></div>
+        </div>
       </div>
-    </div>
 
-    <!-- Error de Carga -->
-    <div *ngIf="!cargando && errorCarga" class="bd-empty">
-      <span class="material-symbols-outlined" aria-hidden="true">cloud_off</span>
-      <h3>No pudimos cargar {{ tab.nombre }}</h3>
-      <p>{{ errorCarga }}</p>
-      <button type="button" class="bd-empty-button" (click)="cargarDatos()">Reintentar</button>
-    </div>
+      <!-- Estado: Error -->
+      <div *ngIf="!cargando && errorCarga" class="bd-state-card error">
+        <span class="material-symbols-outlined state-icon" aria-hidden="true">cloud_off</span>
+        <h3>No se pudo cargar {{ tab.nombre }}</h3>
+        <p>{{ errorCarga }}</p>
+        <button type="button" class="bd-state-btn" (click)="cargarDatos()">Reintentar</button>
+      </div>
 
-    <!-- Vacío -->
-    <div *ngIf="!cargando && !errorCarga && datosFiltrados.length === 0" class="bd-empty">
-      <span class="material-symbols-outlined" aria-hidden="true">inbox</span>
-      <h3>Aún no hay registros en {{ tab.nombre }}</h3>
-      <p *ngIf="tabActual === 'sedes' && filtroInstitucionSede !== 'TODAS'">No se encontraron sedes para la institución seleccionada.</p>
-      <p *ngIf="tabActual !== 'sedes' || filtroInstitucionSede === 'TODAS'">Crea el primero para empezar a usarlo en el resto del sistema.</p>
-      <button type="button" class="bd-empty-button" (click)="abrirModal()">Añadir {{ tab.singular }}</button>
-    </div>
+      <!-- Estado: Vacío -->
+      <div *ngIf="!cargando && !errorCarga && totalRegistros === 0" class="bd-state-card empty">
+        <span class="material-symbols-outlined state-icon" aria-hidden="true">inbox</span>
+        <h3>No hay registros disponibles en {{ tab.nombre }}</h3>
+        <p *ngIf="busquedaTexto || filtroEstado !== 'TODOS'">No se encontraron registros que coincidan con los filtros aplicados.</p>
+        <p *ngIf="!busquedaTexto && filtroEstado === 'TODOS' && tabActual === 'sedes' && filtroInstitucionSede !== 'TODAS'">No hay sedes registradas para la institución seleccionada.</p>
+        <p *ngIf="!busquedaTexto && filtroEstado === 'TODOS' && (tabActual !== 'sedes' || filtroInstitucionSede === 'TODAS')">Crea el primer registro para empezar a gestionarlo.</p>
+        <button type="button" class="bd-btn-add" (click)="abrirModal()">
+          <span class="material-symbols-outlined" aria-hidden="true">add</span>
+          <span>Añadir {{ tab.singular }}</span>
+        </button>
+      </div>
 
-    <!-- Tabla -->
-    <div class="bd-table-container" *ngIf="!cargando && !errorCarga && datosFiltrados.length > 0">
-      <div class="bd-table-scroll">
-        <table class="bd-table">
+      <!-- ================= TABLA DE DATOS ================= -->
+      <div class="bd-table-wrapper" *ngIf="!cargando && !errorCarga && totalRegistros > 0">
+        <table class="bd-data-table">
           <thead>
             <tr>
-              <th *ngFor="let campo of tab.campos" scope="col">{{ campo.label }}</th>
-              <th scope="col" class="bd-actions-header">Acciones</th>
+              <th *ngFor="let campo of tab.campos; let primer = first" scope="col" [class.col-primary]="primer">
+                {{ campo.label }}
+              </th>
+              <th scope="col" class="col-actions">Acciones</th>
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let item of datosFiltrados; trackBy: trackPorId">
-              <td *ngFor="let campo of tab.campos">
-                <span class="bd-cell-value">{{ valorCelda(item, campo) }}</span>
+            <tr *ngFor="let item of datosPaginados; trackBy: trackPorId">
+              
+              <!-- Celdas de Datos -->
+              <td *ngFor="let campo of tab.campos; let primer = first" [class.col-primary]="primer">
+                
+                <!-- Celda Primaria: Ícono temático + Nombre -->
+                <div *ngIf="primer" class="bd-primary-cell">
+                  <span class="material-symbols-outlined bd-cell-icon" aria-hidden="true">{{ tab.icon }}</span>
+                  <span class="bd-primary-name" [title]="valorCelda(item, campo)">{{ valorCelda(item, campo) }}</span>
+                </div>
+
+                <!-- Celda de Estado (Badge verde o rojo) -->
+                <ng-container *ngIf="!primer && esCampoEstado(campo)">
+                  <span *ngIf="isEstadoActivo(item, campo)" class="bd-badge bd-badge-active">
+                    <span class="bd-dot bd-dot-active" aria-hidden="true"></span>
+                    <span>Activo</span>
+                  </span>
+                  <span *ngIf="isEstadoInactivo(item, campo)" class="bd-badge bd-badge-inactive">
+                    <span class="bd-dot bd-dot-inactive" aria-hidden="true"></span>
+                    <span>Inactivo</span>
+                  </span>
+                  <span *ngIf="!isEstadoActivo(item, campo) && !isEstadoInactivo(item, campo)" class="bd-cell-text">
+                    {{ valorCelda(item, campo) }}
+                  </span>
+                </ng-container>
+
+                <!-- Resto de celdas estándar -->
+                <span *ngIf="!primer && !esCampoEstado(campo)" class="bd-cell-text" [title]="valorCelda(item, campo)">
+                  {{ valorCelda(item, campo) }}
+                </span>
               </td>
-              <td class="bd-actions">
-                <button *ngIf="tabActual === 'instituciones'" type="button" class="bd-action" title="Ver sedes de esta institución" (click)="navegarASedesDeInstitucion(obtenerIdItem(item))">
-                  <span class="material-symbols-outlined" aria-hidden="true" style="color: #d97706;">domain</span>
-                </button>
-                <button type="button" class="bd-action edit" title="Editar registro" (click)="abrirModal(item)">
-                  <span class="material-symbols-outlined" aria-hidden="true">edit</span>
-                </button>
-                <button type="button" class="bd-action delete" title="Eliminar registro" (click)="eliminar(item)">
-                  <span class="material-symbols-outlined" aria-hidden="true">delete</span>
-                </button>
+
+              <!-- Celda de Acciones (Menú de tres puntos verticales) -->
+              <td class="col-actions">
+                <div class="row-actions-container">
+                  <button
+                    type="button"
+                    class="bd-action-trigger"
+                    (click)="toggleMenuAccion(obtenerIdItem(item), $event)"
+                    title="Opciones"
+                    aria-label="Opciones del registro"
+                  >
+                    <span class="material-symbols-outlined" aria-hidden="true">more_vert</span>
+                  </button>
+
+                  <!-- Menú Desplegable Flotante -->
+                  <div *ngIf="menuAccionAbiertoId === obtenerIdItem(item)" class="bd-actions-menu" (click)="$event.stopPropagation()">
+                    <button
+                      *ngIf="tabActual === 'instituciones'"
+                      type="button"
+                      class="bd-menu-item"
+                      (click)="navegarASedesDeInstitucion(obtenerIdItem(item)); cerrarMenuAccion()"
+                    >
+                      <span class="material-symbols-outlined item-icon-sedes" aria-hidden="true">domain</span>
+                      <span>Ver sedes</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      class="bd-menu-item"
+                      (click)="abrirModal(item); cerrarMenuAccion()"
+                    >
+                      <span class="material-symbols-outlined item-icon-edit" aria-hidden="true">edit</span>
+                      <span>Editar</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      class="bd-menu-item item-delete"
+                      (click)="eliminar(item); cerrarMenuAccion()"
+                    >
+                      <span class="material-symbols-outlined item-icon-delete" aria-hidden="true">delete</span>
+                      <span>Eliminar</span>
+                    </button>
+                  </div>
+                </div>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
-    </div>
-  </section>
 
-  <!-- ===================== MODAL ===================== -->
+      <!-- ================= PIE DE PÁGINA / PAGINACIÓN ================= -->
+      <footer class="bd-pagination-footer" *ngIf="!cargando && !errorCarga && totalRegistros > 0">
+        
+        <!-- Contador de registros -->
+        <div class="bd-pagination-info">
+          Mostrando {{ registroInicio }} - {{ registroFin }} de {{ totalRegistros }} registros
+        </div>
+
+        <!-- Controles de navegación y cantidad por página -->
+        <div class="bd-pagination-controls">
+          
+          <!-- Botón Anterior -->
+          <button
+            type="button"
+            class="bd-page-arrow"
+            [disabled]="paginaActual === 1"
+            (click)="cambiarPagina(paginaActual - 1)"
+            title="Página anterior"
+          >
+            <span class="material-symbols-outlined" aria-hidden="true">chevron_left</span>
+          </button>
+
+          <!-- Números de página -->
+          <div class="bd-page-numbers">
+            <button
+              *ngFor="let p of listaPaginas"
+              type="button"
+              class="bd-page-num"
+              [class.active]="p === paginaActual"
+              (click)="cambiarPagina(p)"
+            >
+              {{ p }}
+            </button>
+          </div>
+
+          <!-- Botón Siguiente -->
+          <button
+            type="button"
+            class="bd-page-arrow"
+            [disabled]="paginaActual === totalPaginas"
+            (click)="cambiarPagina(paginaActual + 1)"
+            title="Página siguiente"
+          >
+            <span class="material-symbols-outlined" aria-hidden="true">chevron_right</span>
+          </button>
+
+          <!-- Selector de elementos por página -->
+          <div class="bd-per-page-wrapper">
+            <select
+              [ngModel]="elementosPorPagina"
+              (ngModelChange)="cambiarElementosPorPagina($event)"
+              class="bd-per-page-select"
+            >
+              <option *ngFor="let opt of opcionesElementosPorPagina" [value]="opt">
+                {{ opt }} por página
+              </option>
+            </select>
+            <span class="material-symbols-outlined bd-per-page-chevron" aria-hidden="true">expand_more</span>
+          </div>
+
+        </div>
+      </footer>
+
+    </main>
+  </div>
+
+
+  <!-- ===================== MODAL CREAR / EDITAR ===================== -->
   <div class="bd-modal-overlay" *ngIf="mostrarModal" (click)="cerrarModal()">
     <form
       #formulario="ngForm"
-      class="bd-modal"
+      class="bd-modal-window"
       role="dialog"
       aria-modal="true"
       (click)="$event.stopPropagation()"
       (ngSubmit)="guardar()"
     >
-      <div class="bd-modal-header">
+      <!-- Cabecera del Modal -->
+      <div class="bd-modal-head">
         <div>
           <span class="bd-modal-eyebrow">{{ tab.nombre | uppercase }}</span>
-          <h2>{{ modoEdicion ? 'Editar ' : 'Nuevo ' }}{{ tab.singular }}</h2>
+          <h2 class="bd-modal-heading">{{ modoEdicion ? 'Editar ' : 'Nuevo ' }}{{ tab.singular }}</h2>
         </div>
-        <button type="button" class="bd-modal-close" (click)="cerrarModal()">
+        <button type="button" class="bd-modal-close-btn" (click)="cerrarModal()" title="Cerrar">
           <span class="material-symbols-outlined" aria-hidden="true">close</span>
         </button>
       </div>
 
-      <div class="bd-modal-body">
-        <p class="bd-modal-description">Completa los campos a continuación para guardar el registro.</p>
+      <!-- Cuerpo del Modal -->
+      <div class="bd-modal-content">
+        <p class="bd-modal-desc">Ingresa los datos correspondientes para registrar o actualizar el elemento.</p>
         
-        <div class="bd-form-grid">
-          <div class="bd-form-group" *ngFor="let campo of tab.campos" [style.grid-column]="campo.type === 'textarea' ? '1 / -1' : 'auto'">
-            <label [for]="'campo-' + campo.name">
-              {{ campo.label }} <span *ngIf="campo.required" style="color: #ef4444">*</span>
+        <div class="bd-form-fields-grid">
+          <div
+            class="bd-field-box"
+            *ngFor="let campo of tab.campos"
+            [style.grid-column]="campo.type === 'textarea' ? '1 / -1' : 'auto'"
+          >
+            <label [for]="'campo-' + campo.name" class="bd-field-label">
+              {{ campo.label }} <span *ngIf="campo.required" class="bd-required-asterisk">*</span>
             </label>
 
-            <!-- Lista desplegable con diseño personalizado -->
+            <!-- Selector Personalizado -->
             <ng-container *ngIf="campo.type === 'select'">
               <app-custom-select
                 [id]="'campo-' + campo.name"
@@ -175,135 +402,155 @@
                 [required]="campo.required || false"
                 [disabled]="campoBloqueado(campo)"
               ></app-custom-select>
-              <div *ngIf="campoBloqueado(campo)" style="display:flex; align-items:center; gap:4px; margin-top:5px; color:#d97706; font-size:11.5px; font-weight:600;">
-                <span class="material-symbols-outlined" style="font-size:15px;">lock</span>
+
+              <div *ngIf="campoBloqueado(campo)" class="bd-field-warning">
+                <span class="material-symbols-outlined" aria-hidden="true">lock</span>
                 <span>Unidad inmutable: Este ingrediente ya registra compras, entregas o existencias en inventario.</span>
               </div>
             </ng-container>
 
-            <!-- Texto largo -->
-            <textarea *ngIf="campo.type === 'textarea'" class="bd-input" rows="3" [id]="'campo-' + campo.name" [name]="campo.name" [(ngModel)]="itemForm[campo.name]" [placeholder]="campo.placeholder || ''"></textarea>
+            <!-- Textarea -->
+            <textarea
+              *ngIf="campo.type === 'textarea'"
+              class="bd-field-input bd-field-textarea"
+              rows="3"
+              [id]="'campo-' + campo.name"
+              [name]="campo.name"
+              [(ngModel)]="itemForm[campo.name]"
+              [placeholder]="campo.placeholder || ''"
+            ></textarea>
 
-            <!-- Texto, número u hora -->
-            <input *ngIf="campo.type === 'text' || campo.type === 'number' || campo.type === 'time'" class="bd-input" [type]="campo.type" [attr.min]="campo.type === 'number' ? 0 : null" [attr.step]="campo.type === 'number' ? 'any' : null" [id]="'campo-' + campo.name" [name]="campo.name" [(ngModel)]="itemForm[campo.name]" [placeholder]="campo.placeholder || ''" autocomplete="off" />
+            <!-- Input Text / Number / Time -->
+            <input
+              *ngIf="campo.type === 'text' || campo.type === 'number' || campo.type === 'time'"
+              class="bd-field-input"
+              [type]="campo.type"
+              [attr.min]="campo.type === 'number' ? 0 : null"
+              [attr.step]="campo.type === 'number' ? 'any' : null"
+              [id]="'campo-' + campo.name"
+              [name]="campo.name"
+              [(ngModel)]="itemForm[campo.name]"
+              [placeholder]="campo.placeholder || ''"
+              autocomplete="off"
+            />
           </div>
         </div>
       </div>
 
-      <div class="bd-modal-footer">
-        <button type="button" class="bd-cancel" (click)="cerrarModal()">Cancelar</button>
-        <button type="submit" class="bd-save" [disabled]="guardando">
-          {{ guardando ? 'Guardando…' : (modoEdicion ? 'Guardar cambios' : 'Crear registro') }}
+      <!-- Pie del Modal -->
+      <div class="bd-modal-foot">
+        <button type="button" class="bd-modal-btn-cancel" (click)="cerrarModal()">Cancelar</button>
+        <button type="submit" class="bd-btn-add" [disabled]="guardando">
+          <span *ngIf="!guardando" class="material-symbols-outlined" aria-hidden="true">check</span>
+          <span>{{ guardando ? 'Guardando…' : (modoEdicion ? 'Guardar cambios' : 'Crear registro') }}</span>
         </button>
       </div>
     </form>
   </div>
-</div>
 
-<!-- ==================== MODAL EMERGENTE: SELECCIONAR INSTITUCIÓN PARA SEDES ==================== -->
-<div *ngIf="modalSeleccionarInstitucionAbierto" (click)="cerrarModalInstitucionSede()"
-     style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); display: flex; justify-content: center; align-items: center; z-index: 11000; padding: 20px; box-sizing: border-box; backdrop-filter: blur(2px);">
-  
-  <div (click)="$event.stopPropagation()"
-       style="background: #ffffff; width: 580px; max-width: 95%; max-height: 85vh; border-radius: 16px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); display: flex; flex-direction: column; overflow: hidden; font-family: inherit;">
-    
-    <!-- Cabecera del modal -->
-    <div style="padding: 16px 20px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
-      <div>
-        <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #0f172a;">Filtrar sedes por institución</h3>
-        <p style="margin: 3px 0 0; font-size: 12px; color: #64748b;">Selecciona una institución para visualizar únicamente sus sedes asociadas.</p>
-      </div>
-      <button type="button" (click)="cerrarModalInstitucionSede()" style="background: none; border: none; font-size: 18px; color: #64748b; cursor: pointer; padding: 4px; border-radius: 6px;">✕</button>
-    </div>
 
-    <!-- Buscador -->
-    <div style="padding: 12px 20px; border-bottom: 1px solid #f1f5f9; background: #f8fafc;">
-      <div style="display: flex; align-items: center; gap: 8px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px 12px;">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-        <input type="text" [(ngModel)]="busquedaInstitucionModal" placeholder="Buscar por nombre o NIT..."
-               style="border: none; background: transparent; outline: none; font-size: 13px; width: 100%; color: #0f172a; font-family: inherit;">
-        <span *ngIf="busquedaInstitucionModal" (click)="busquedaInstitucionModal = ''" style="cursor: pointer; color: #94a3b8; font-size: 14px;">✕</span>
-      </div>
-    </div>
-
-    <!-- Lista de instituciones -->
-    <div style="padding: 16px 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; flex: 1; max-height: 50vh;">
+  <!-- ===================== MODAL SELECCIONAR INSTITUCIÓN PARA SEDES ===================== -->
+  <div *ngIf="modalSeleccionarInstitucionAbierto" class="bd-modal-overlay" (click)="cerrarModalInstitucionSede()">
+    <div class="bd-institucion-modal" (click)="$event.stopPropagation()">
       
-      <!-- Opción rápida: Ver todas las instituciones -->
-      <div (click)="marcarInstitucionSede('TODAS')"
-           (dblclick)="seleccionarInstitucionSede('TODAS')"
-           style="padding: 12px 14px; border: 1px solid #e2e8f0; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: all 0.15s; background: #ffffff;"
-           [style.border-color]="institucionTemporalId === 'TODAS' ? '#cbd5e1' : '#e2e8f0'"
-           [style.background]="institucionTemporalId === 'TODAS' ? '#f8fafc' : '#ffffff'">
+      <!-- Cabecera -->
+      <div class="bd-inst-head">
         <div>
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span class="material-symbols-outlined" style="font-size: 18px; color: #64748b;">apps</span>
-            <span style="font-weight: 700; font-size: 13px; color: #0f172a;">Todas las instituciones</span>
+          <h3 class="bd-inst-title">Filtrar sedes por institución</h3>
+          <p class="bd-inst-desc">Selecciona una institución para visualizar únicamente sus sedes asociadas.</p>
+        </div>
+        <button type="button" class="bd-modal-close-btn" (click)="cerrarModalInstitucionSede()" title="Cerrar">✕</button>
+      </div>
+
+      <!-- Buscador -->
+      <div class="bd-inst-search-wrap">
+        <div class="bd-inst-search-box">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input
+            type="text"
+            [(ngModel)]="busquedaInstitucionModal"
+            placeholder="Buscar por nombre o NIT..."
+            class="bd-inst-input"
+          />
+          <span *ngIf="busquedaInstitucionModal" (click)="busquedaInstitucionModal = ''" class="bd-inst-clear">✕</span>
+        </div>
+      </div>
+
+      <!-- Lista de instituciones -->
+      <div class="bd-inst-list">
+        <!-- Opción Ver todas -->
+        <div
+          (click)="marcarInstitucionSede('TODAS')"
+          (dblclick)="seleccionarInstitucionSede('TODAS')"
+          class="bd-inst-card"
+          [class.selected]="institucionTemporalId === 'TODAS'"
+        >
+          <div>
+            <div class="bd-inst-card-title">
+              <span class="material-symbols-outlined" aria-hidden="true">apps</span>
+              <span>Todas las instituciones</span>
+            </div>
+            <div class="bd-inst-card-sub">Ver todas las sedes registradas sin ningún filtro</div>
           </div>
-          <div style="font-size: 11px; color: #64748b; margin-top: 3px;">
-            Ver todas las sedes registradas sin ningún filtro
-          </div>
+
+          <button
+            type="button"
+            (click)="seleccionarInstitucionSede('TODAS'); $event.stopPropagation()"
+            class="bd-inst-btn-select"
+            [class.active]="institucionTemporalId === 'TODAS'"
+          >
+            {{ institucionTemporalId === 'TODAS' ? 'Seleccionada ✓' : 'Seleccionar' }}
+          </button>
         </div>
 
-        <button type="button" (click)="seleccionarInstitucionSede('TODAS'); $event.stopPropagation()"
-                style="border-radius: 8px; font-size: 12px; font-weight: 600; padding: 7px 16px; cursor: pointer; transition: all 0.15s; white-space: nowrap;"
-                [style.background]="institucionTemporalId === 'TODAS' ? '#f1f5f9' : '#ffffff'"
-                [style.color]="'#334155'"
-                [style.border]="institucionTemporalId === 'TODAS' ? '1px solid #94a3b8' : '1px solid #cbd5e1'">
-          {{ institucionTemporalId === 'TODAS' ? 'Seleccionada ✓' : 'Seleccionar' }}
-        </button>
-      </div>
+        <!-- Tarjetas por institución -->
+        <div
+          *ngFor="let inst of institucionesFiltradasModal"
+          (click)="marcarInstitucionSede(inst)"
+          (dblclick)="seleccionarInstitucionSede(inst)"
+          class="bd-inst-card"
+          [class.selected]="esInstitucionMarcada(inst)"
+        >
+          <div>
+            <div class="bd-inst-card-title">
+              <span>{{ inst.nombre_institucion || inst.label || inst.nombre }}</span>
+              <span *ngIf="inst.nit" class="bd-inst-nit">NIT: {{ inst.nit }}</span>
+            </div>
+            <div class="bd-inst-card-meta">
+              <span *ngIf="inst.representante_legal">Rep: {{ inst.representante_legal }}</span>
+              <span *ngIf="inst.telefono">Tel: {{ inst.telefono }}</span>
+              <span class="bd-inst-count">{{ obtenerSedesDeInstEnBanco(inst) }} sedes</span>
+            </div>
+          </div>
 
-      <!-- Tarjetas de cada institución -->
-      <div *ngFor="let inst of institucionesFiltradasModal"
-           (click)="marcarInstitucionSede(inst)"
-           (dblclick)="seleccionarInstitucionSede(inst)"
-           style="padding: 12px 14px; border: 1px solid #e2e8f0; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: all 0.15s; background: #ffffff;"
-           [style.border-color]="esInstitucionMarcada(inst) ? '#fac94b' : '#e2e8f0'"
-           [style.background]="esInstitucionMarcada(inst) ? '#fffdf0' : '#ffffff'">
-        <div>
-          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-            <span style="font-weight: 700; font-size: 13px; color: #0f172a;">{{ inst.nombre_institucion || inst.label || inst.nombre }}</span>
-            <span *ngIf="inst.nit" style="font-size: 11px; font-weight: 600; color: #475569; background: #f1f5f9; padding: 2px 6px; border-radius: 4px;">NIT: {{ inst.nit }}</span>
-          </div>
-          <div style="font-size: 11px; color: #64748b; margin-top: 3px; display: flex; gap: 10px; flex-wrap: wrap;">
-            <span *ngIf="inst.representante_legal">Rep: {{ inst.representante_legal }}</span>
-            <span *ngIf="inst.telefono">Tel: {{ inst.telefono }}</span>
-            <span style="color: #ca8a04; font-weight: 600;">{{ obtenerSedesDeInstEnBanco(inst) }} sedes</span>
-          </div>
+          <button
+            type="button"
+            (click)="seleccionarInstitucionSede(inst); $event.stopPropagation()"
+            class="bd-inst-btn-select"
+            [class.active]="esInstitucionMarcada(inst)"
+          >
+            {{ esInstitucionMarcada(inst) ? 'Seleccionada ✓' : 'Seleccionar' }}
+          </button>
         </div>
 
-        <button type="button" (click)="seleccionarInstitucionSede(inst); $event.stopPropagation()"
-                style="border-radius: 8px; font-size: 12px; padding: 7px 16px; cursor: pointer; transition: all 0.15s; white-space: nowrap;"
-                [style.background]="esInstitucionMarcada(inst) ? '#fac94b' : '#ffffff'"
-                [style.color]="esInstitucionMarcada(inst) ? '#000000' : '#334155'"
-                [style.font-weight]="esInstitucionMarcada(inst) ? '700' : '600'"
-                [style.border]="esInstitucionMarcada(inst) ? '1px solid #eab308' : '1px solid #cbd5e1'">
-          {{ esInstitucionMarcada(inst) ? 'Seleccionada ✓' : 'Seleccionar' }}
-        </button>
+        <div *ngIf="institucionesFiltradasModal.length === 0" class="bd-inst-empty">
+          No se encontraron instituciones con ese criterio.
+        </div>
       </div>
 
-      <div *ngIf="institucionesFiltradasModal.length === 0" style="padding: 24px; text-align: center; color: #94a3b8; font-size: 12px;">
-        No se encontraron instituciones con ese criterio.
+      <!-- Pie del modal -->
+      <div class="bd-inst-foot">
+        <span class="bd-inst-total">{{ institucionesFiltradasModal.length }} instituciones disponibles</span>
+        <div class="bd-inst-actions">
+          <button type="button" class="bd-modal-btn-cancel" (click)="cerrarModalInstitucionSede()">Cancelar</button>
+          <button type="button" class="bd-btn-add" (click)="confirmarSeleccionInstitucionSede()">Aplicar filtro</button>
+        </div>
       </div>
-    </div>
 
-    <!-- Pie del modal -->
-    <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #f1f5f9; padding: 14px 20px; background: #ffffff;">
-      <span style="font-size: 12px; color: #64748b;">
-        {{ institucionesFiltradasModal.length }} instituciones disponibles
-      </span>
-      <div style="display: flex; gap: 8px;">
-        <button type="button" (click)="cerrarModalInstitucionSede()"
-                style="background: #ffffff; border: 1px solid #cbd5e1; color: #334155; padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer;">
-          Cancelar
-        </button>
-        <button type="button" (click)="confirmarSeleccionInstitucionSede()"
-                style="background: #fac94b; border: none; color: #000000; font-weight: 700; padding: 8px 18px; border-radius: 8px; font-size: 12px; cursor: pointer; box-shadow: 0 1px 3px rgba(250, 201, 75, 0.3);">
-          Aplicar filtro
-        </button>
-      </div>
     </div>
   </div>
-</div>
 
+</div>

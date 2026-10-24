@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { ActivatedRoute } from '@angular/router';
 import { environment } from '@env/environment';
 import { AuthService } from '../services/auth.service';
 import { SweetAlertService } from '../sweet-alert.service';
@@ -62,9 +63,17 @@ export class FacturasCompraComponent implements OnInit {
     private http: HttpClient,
     private authService: AuthService,
     private alertas: SweetAlertService,
+    private route: ActivatedRoute,
   ) {}
 
   ngOnInit(): void {
+    this.route.queryParams.subscribe(params => {
+      if (params['tab'] === 'bodega') {
+        this.tabActiva = 'bodega';
+      } else if (params['tab'] === 'facturas') {
+        this.tabActiva = 'facturas';
+      }
+    });
     this.cargarDatos();
   }
 

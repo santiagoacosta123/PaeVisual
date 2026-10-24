@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   RouterOutlet,
@@ -125,15 +125,15 @@ export class LayoutComponent implements OnInit {
       '/inicio': 'Inicio',
       '/dashboard-supervisor': 'Panel del Supervisor',
       '/asistencia-diaria': 'Asistencia diaria',
-      '/contratos': 'Gestión de Contratos',
-      '/usuarios': 'Gestión de Usuarios',
-      '/rol': 'Gestión de Roles',
-      '/ingredientes': 'Gestión de Inventario',
-      '/entradas-inventario': 'Entradas de inventario',
+      '/contratos': 'Contratos',
+      '/usuarios': 'Usuarios',
+      '/rol': 'Roles',
+      '/ingredientes': 'Inventario',
+      '/entradas-inventario': 'Inventario',
       '/saldos-almacen': 'Saldos de almacén',
       '/entradas-ajustes-inventario': 'Ajustes de inventario',
       '/registrar-entrega-alimentos': 'Registrar entrega de alimentos',
-      '/historial-entregas': 'Historial de entregas',
+      '/historial-entregas': 'Entregas',
       '/entregas-tipo-mercado': 'Entregas por tipo de mercado',
       '/instituciones': 'Sedes',
       '/banco-datos': 'Banco de Datos',
@@ -142,10 +142,15 @@ export class LayoutComponent implements OnInit {
       '/reporte-inventario': 'Reporte Inventario',
       '/unidades-medida': 'Unidades de Medida',
       '/menus': 'Menús',
-      '/facturas-compra': 'Facturas de Compra y Bodega Central',
-      '/reportes-consumo': 'Informes Oficiales PAE & Auditoría Alcaldía',
+      '/facturas-compra': 'Facturas',
+      '/reportes-consumo': 'Reportes',
       '/notificaciones': 'Notificaciones'
     };
+
+    if (url.includes('facturas-compra')) {
+      this.pageTitle = url.includes('tab=bodega') ? 'Bodega Central' : 'Facturas';
+      return;
+    }
 
     const rutaEncontrada = Object.keys(routeTitles).find(
       ruta => url.includes(ruta)
@@ -154,6 +159,15 @@ export class LayoutComponent implements OnInit {
     this.pageTitle = rutaEncontrada
       ? routeTitles[rutaEncontrada]
       : 'SIRAE';
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    const target = event.target as HTMLElement;
+    if (!target.closest('.dropdown-container') && !target.closest('.user-pill-btn') && !target.closest('.notif-btn') && !target.closest('.config-btn')) {
+      this.mostrarPerfil = false;
+      this.mostrarNotificaciones = false;
+    }
   }
 
   cargarNotificacionesHeader(): void {

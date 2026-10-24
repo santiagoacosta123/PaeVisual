@@ -1,6 +1,9 @@
-<div class="flex min-h-screen" style="background:#f8fafc; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; overflow:hidden; height:100vh;">
+<!-- ================================================================= -->
+<!-- CASO 1: SUPERVISOR (SE CONSERVA TAL CUAL SU DISEÑO ORIGINAL)     -->
+<!-- ================================================================= -->
+<div *ngIf="esSupervisor" class="flex min-h-screen" style="background:#f8fafc; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; overflow:hidden; height:100vh;">
 
-  <!-- Sidebar Compacto con la imagen de SIRAE -->
+  <!-- Sidebar Compacto para Supervisor -->
   <aside style="width:84px; background:#fff; border-right:1px solid #e0e0e0; display:flex; flex-direction:column; align-items:center; padding:16px 8px; box-sizing:border-box; flex-shrink:0;">
 
     <!-- Logo / Imagen SIRAE -->
@@ -10,97 +13,25 @@
 
     <!-- Navegación Lateral por Iconos -->
     <nav class="flex flex-col gap-2 flex-1 items-center" style="overflow-y:auto; width:100%;">
-
-      <!-- INICIO (Para todos excepto Supervisor) -->
-      <a *ngIf="!esSupervisor" routerLink="inicio" routerLinkActive="active-icon-link" title="Inicio"
-         style="display:flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:14px; text-decoration:none; color:#64748b; transition:all 0.2s;">
-        <span class="material-symbols-outlined nav-icon" style="font-size:24px;">home</span>
-      </a>
-
-      <!-- MÓDULOS DE SUPERVISOR (Registro, Sedes y Reportes) -->
-      <a *ngIf="esSupervisor" routerLink="dashboard-supervisor" routerLinkActive="active-icon-link" title="Inicio Supervisor"
+      <a routerLink="dashboard-supervisor" routerLinkActive="active-icon-link" title="Inicio Supervisor"
          style="display:flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:14px; text-decoration:none; color:#64748b; transition:all 0.2s;">
         <span class="material-symbols-outlined nav-icon" style="font-size:24px;">space_dashboard</span>
       </a>
 
-      <a *ngIf="esSupervisor" routerLink="registrar-entrega-alimentos" routerLinkActive="active-icon-link" title="Registrar entrega de alimentos"
+      <a routerLink="registrar-entrega-alimentos" routerLinkActive="active-icon-link" title="Registrar entrega de alimentos"
          style="display:flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:14px; text-decoration:none; color:#64748b; transition:all 0.2s;">
         <span class="material-symbols-outlined nav-icon" style="font-size:24px;">local_shipping</span>
       </a>
 
-      <a *ngIf="esSupervisor" routerLink="instituciones" routerLinkActive="active-icon-link" title="Sedes"
+      <a routerLink="instituciones" routerLinkActive="active-icon-link" title="Sedes"
          style="display:flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:14px; text-decoration:none; color:#64748b; transition:all 0.2s;">
         <span class="material-symbols-outlined nav-icon" style="font-size:24px;">apartment</span>
       </a>
 
-      <a *ngIf="esSupervisor" routerLink="reportes-consumo" routerLinkActive="active-icon-link" title="Reportes"
+      <a routerLink="reportes-consumo" routerLinkActive="active-icon-link" title="Reportes"
          style="display:flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:14px; text-decoration:none; color:#64748b; transition:all 0.2s;">
         <span class="material-symbols-outlined nav-icon" style="font-size:24px;">analytics</span>
       </a>
-
-      <!-- MÓDULOS DE JEFA DE COCINA / MANIPULADORA -->
-      <a *ngIf="esJefa" routerLink="asistencia-diaria" routerLinkActive="active-icon-link" title="Registrar asistencia diaria"
-         style="display:flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:14px; text-decoration:none; color:#64748b; transition:all 0.2s;">
-        <span class="material-symbols-outlined nav-icon" style="font-size:24px;">fact_check</span>
-      </a>
-
-      <a *ngIf="esJefa" routerLink="menus" routerLinkActive="active-icon-link" title="Seleccionar menús"
-         style="display:flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:14px; text-decoration:none; color:#64748b; transition:all 0.2s;">
-        <span class="material-symbols-outlined nav-icon" style="font-size:24px;">restaurant_menu</span>
-      </a>
-
-      <!-- MÓDULOS DE SUPER ADMINISTRADOR -->
-      <a *ngIf="esSuperAdministrador" routerLink="contratos" routerLinkActive="active-icon-link" title="Contratos"
-         style="display:flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:14px; text-decoration:none; color:#64748b; transition:all 0.2s;">
-        <span class="material-symbols-outlined nav-icon" style="font-size:24px;">description</span>
-      </a>
-
-      <a *ngIf="esSuperAdministrador" routerLink="banco-datos" routerLinkActive="active-icon-link" title="Banco de Datos"
-         style="display:flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:14px; text-decoration:none; color:#64748b; transition:all 0.2s;">
-        <span class="material-symbols-outlined nav-icon" style="font-size:24px;">database</span>
-      </a>
-
-      <a *ngIf="esSuperAdministrador" routerLink="usuarios" routerLinkActive="active-icon-link" title="Usuarios"
-         style="display:flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:14px; text-decoration:none; color:#64748b; transition:all 0.2s;">
-        <span class="material-symbols-outlined nav-icon" style="font-size:24px;">people</span>
-      </a>
-
-      <a *ngIf="esSuperAdministrador" routerLink="facturas-compra" routerLinkActive="active-icon-link" title="Bodega Central & Facturas"
-         style="display:flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:14px; text-decoration:none; color:#64748b; transition:all 0.2s;">
-        <span class="material-symbols-outlined nav-icon" style="font-size:24px;">receipt_long</span>
-      </a>
-
-      <a *ngIf="esSuperAdministrador" routerLink="menus" routerLinkActive="active-icon-link" title="Auditoría Menús"
-         style="display:flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:14px; text-decoration:none; color:#64748b; transition:all 0.2s;">
-        <span class="material-symbols-outlined nav-icon" style="font-size:24px;">restaurant_menu</span>
-      </a>
-
-      <a *ngIf="esSuperAdministrador" routerLink="reportes-consumo" routerLinkActive="active-icon-link" title="Informes & Auditoría Alcaldía"
-         style="display:flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:14px; text-decoration:none; color:#64748b; transition:all 0.2s;">
-        <span class="material-symbols-outlined nav-icon" style="font-size:24px;">analytics</span>
-      </a>
-
-      <!-- MÓDULOS DE ADMINISTRADOR -->
-      <a *ngIf="esAdministrador" routerLink="usuarios" routerLinkActive="active-icon-link" title="Usuarios"
-         style="display:flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:14px; text-decoration:none; color:#64748b; transition:all 0.2s;">
-        <span class="material-symbols-outlined nav-icon" style="font-size:24px;">people</span>
-      </a>
-
-      <a *ngIf="esAdministrador" routerLink="historial-entregas" routerLinkActive="active-icon-link" title="Recepción de Entregas"
-         style="display:flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:14px; text-decoration:none; color:#64748b; transition:all 0.2s;">
-        <span class="material-symbols-outlined nav-icon" style="font-size:24px;">local_shipping</span>
-      </a>
-
-      <a *ngIf="esAdministrador" routerLink="ingredientes" routerLinkActive="active-icon-link" title="Inventario Institución"
-         style="display:flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:14px; text-decoration:none; color:#64748b; transition:all 0.2s;">
-        <span class="material-symbols-outlined nav-icon" style="font-size:24px;">package</span>
-      </a>
-
-      <a *ngIf="esAdministrador" routerLink="menus" routerLinkActive="active-icon-link" title="Menús"
-         style="display:flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:14px; text-decoration:none; color:#64748b; transition:all 0.2s;">
-        <span class="material-symbols-outlined nav-icon" style="font-size:24px;">restaurant_menu</span>
-      </a>
-
     </nav>
 
     <!-- Cerrar sesión inferior -->
@@ -112,10 +43,10 @@
     </div>
   </aside>
 
-  <!-- Área Principal -->
+  <!-- Área Principal Supervisor -->
   <main style="flex:1; min-width:0; max-width:100%; padding:24px 32px; position:relative; overflow-y:auto; overflow-x:hidden; display:flex; flex-direction:column; gap:20px; box-sizing:border-box;">
 
-    <!-- Barra superior Header -->
+    <!-- Barra superior Header Supervisor -->
     <div style="background:#fff; border:1px solid #f1f5f9; border-radius:16px; padding:16px 32px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 2px 10px rgba(0,0,0,0.02); flex-shrink:0;">
       <div style="display:flex; align-items:center; gap:16px;">
         <div>
@@ -123,25 +54,18 @@
             {{ pageTitle }}
             <div style="width: 32px; height: 4px; background: #fac94b; border-radius: 2px; margin-top: 4px;"></div>
           </h1>
-          <!-- Institución asignada al Administrador -->
-          <div *ngIf="esAdministrador && institucionUsuario" style="margin-top: 6px; display:inline-flex; align-items:center; gap:6px; background:#f8fafc; padding:4px 10px; border-radius:8px; font-size:12px; color:#334155; font-weight:600; border:1px solid #e2e8f0;">
-            <span class="material-symbols-outlined" style="font-size:16px; color:#d97706;">apartment</span>
-            <span>Institución: {{ institucionUsuario }}</span>
-          </div>
         </div>
       </div>
 
       <div style="display:flex; align-items:center; gap:16px; position:relative;">
-        
-        <!-- BOTÓN NOTIFICACIONES -->
-        <div style="position:relative;">
-          <button type="button" (click)="toggleNotificaciones()"
+        <!-- Notificaciones -->
+        <div style="position:relative;" class="dropdown-container">
+          <button type="button" (click)="toggleNotificaciones()" class="notif-btn"
             style="background:#f8f9fc; border:1px solid #eee; border-radius:12px; width:42px; height:42px; display:flex; align-items:center; justify-content:center; cursor:pointer;">
             <span class="material-symbols-outlined" style="font-size:20px; color:#555;">notifications</span>
             <span *ngIf="notificacionesNoLeidas > 0" style="position:absolute; top:9px; right:9px; width:8px; height:8px; background:#e0a316; border-radius:50%; border:2px solid #fff;"></span>
           </button>
 
-          <!-- DESPLEGABLE NOTIFICACIONES -->
           <div *ngIf="mostrarNotificaciones" style="position:absolute; right:0; top:50px; z-index:100; width:300px; background:#fff; border:1px solid #e2e8f0; border-radius:16px; padding:16px; box-shadow:0 10px 25px -5px rgba(0,0,0,0.1);">
             <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; border-bottom:1px solid #f1f5f9; padding-bottom:8px;">
               <span style="font-size:13px; font-weight:700; color:#1e293b;">Notificaciones</span>
@@ -161,9 +85,9 @@
 
         <div style="width:1px; height:28px; background:#eee;"></div>
 
-        <!-- BOTÓN PERFIL -->
-        <div style="position:relative;">
-          <button type="button" (click)="togglePerfil()"
+        <!-- Perfil -->
+        <div style="position:relative;" class="dropdown-container">
+          <button type="button" (click)="togglePerfil()" class="user-pill-btn"
             style="background:none; border:none; display:flex; align-items:center; gap:12px; cursor:pointer; padding:6px 10px; border-radius:12px;">
             <img src="administrador.png" alt="Avatar" style="width:40px; height:40px; border-radius:50%; object-fit:cover; border:1px solid #e0e0e0;" />
             <div style="text-align:left; display:flex; flex-direction:column;">
@@ -173,10 +97,7 @@
             <span class="material-symbols-outlined" style="font-size:18px; color:#888; margin-left:4px;">expand_more</span>
           </button>
 
-          <!-- DESPLEGABLE PERFIL -->
           <div *ngIf="mostrarPerfil" style="position:absolute; right:0; top:50px; z-index:100; width:300px; background:#fff; border:1px solid #e2e8f0; border-radius:16px; padding:20px; box-shadow:0 10px 25px -5px rgba(0,0,0,0.1);">
-            
-            <!-- Vista General -->
             <div *ngIf="vistaActual === 'perfil'">
               <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px; border-bottom:1px solid #f1f5f9; padding-bottom:12px;">
                 <img src="administrador.png" style="width:48px; height:48px; border-radius:50%; object-fit:cover;" alt="Foto" />
@@ -226,10 +147,8 @@
                 <input [(ngModel)]="passwordForm.actual" type="password" placeholder="Contraseña actual" style="width:100%; border:1px solid #cbd5e1; border-radius:8px; padding:6px 10px; box-sizing:border-box;" />
                 <input [(ngModel)]="passwordForm.nueva" type="password" placeholder="Nueva contraseña" style="width:100%; border:1px solid #cbd5e1; border-radius:8px; padding:6px 10px; box-sizing:border-box;" />
                 <input [(ngModel)]="passwordForm.confirmar" type="password" placeholder="Confirmar nueva contraseña" style="width:100%; border:1px solid #cbd5e1; border-radius:8px; padding:6px 10px; box-sizing:border-box;" />
-                
                 <p *ngIf="passwordError" style="color:#dc2626; margin:4px 0 0 0; font-size:11px;">{{ passwordError }}</p>
                 <p *ngIf="passwordMensaje" style="color:#16a34a; margin:4px 0 0 0; font-size:11px;">{{ passwordMensaje }}</p>
-
                 <div style="display:flex; gap:8px; margin-top:8px;">
                   <button type="button" (click)="guardarPassword()" [disabled]="passwordProcesando" style="flex:1; background:#fac94b; color:#000000; border:none; padding:8px; border-radius:8px; font-weight:700; cursor:pointer;">
                     {{ passwordProcesando ? 'Guardando...' : 'Cambiar' }}
@@ -238,7 +157,6 @@
                 </div>
               </div>
             </div>
-
           </div>
         </div>
 
@@ -247,27 +165,246 @@
 
     <!-- Vistas Hijas Dinámicas -->
     <router-outlet></router-outlet>
-
   </main>
 </div>
 
-<!-- Estilos CSS -->
-<style>
-  .active-icon-link {
-    background: #fdf5e6 !important;
-    color: #d97706 !important;
-  }
-  .active-icon-link .nav-icon {
-    color: #d97706 !important;
-  }
-  .nav-icon {
-    color: #64748b;
-  }
-  aside a:hover:not(.active-icon-link) {
-    background: #f8fafc;
-    color: #1a1a1a;
-  }
-  aside button:hover {
-    background: #fee2e2;
-  }
-</style>
+
+<!-- ================================================================= -->
+<!-- CASO 2: ADMINISTRADOR Y SUPER ADMINISTRADOR (NUEVO DISEÑO PREMIUM) -->
+<!-- ================================================================= -->
+<div *ngIf="!esSupervisor" class="modern-shell">
+
+  <!-- ================= SIDEBAR LATERAL ================= -->
+  <aside class="modern-sidebar">
+    
+    <!-- Logo SiRae -->
+    <div class="modern-sidebar-logo">
+      <div class="modern-brand">
+        <svg class="modern-brand-svg" width="34" height="34" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M18 4C18 4 14.5 9 14.5 14C14.5 16.5 16 18.5 18 19C20 18.5 21.5 16.5 21.5 14C21.5 9 18 4 18 4Z" fill="#F59E0B"/>
+          <path d="M11 11C11 11 8.5 15.5 10 19.5C10.8 21.5 12.8 22.8 15 22.5C14.5 20.5 14 18 14.8 15.5C15.2 14 16 12.5 16.5 11.5C14.5 11 12.5 10.8 11 11Z" fill="#FBBF24"/>
+          <path d="M25 11C25 11 27.5 15.5 26 19.5C25.2 21.5 23.2 22.8 21 22.5C21.5 20.5 22 18 21.2 15.5C20.8 14 20 12.5 19.5 11.5C21.5 11 23.5 10.8 25 11Z" fill="#FBBF24"/>
+        </svg>
+        <span class="modern-brand-name">SiRae</span>
+      </div>
+    </div>
+
+    <!-- Navegación con Íconos y Nombres -->
+    <nav class="modern-sidebar-nav" aria-label="Menú principal del sistema">
+
+      <!-- INICIO -->
+      <a routerLink="inicio" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="modern-nav-item" title="Inicio">
+        <span class="material-symbols-outlined modern-nav-icon" aria-hidden="true">home</span>
+        <span class="modern-nav-text">Inicio</span>
+      </a>
+
+      <!-- CONTRATOS (Super Administrador) -->
+      <a *ngIf="esSuperAdministrador" routerLink="contratos" routerLinkActive="active" class="modern-nav-item" title="Contratos">
+        <span class="material-symbols-outlined modern-nav-icon" aria-hidden="true">description</span>
+        <span class="modern-nav-text">Contratos</span>
+      </a>
+
+      <!-- BANCO DE DATOS (Super Administrador) -->
+      <a *ngIf="esSuperAdministrador" routerLink="banco-datos" routerLinkActive="active" class="modern-nav-item" title="Banco de Datos">
+        <span class="material-symbols-outlined modern-nav-icon" aria-hidden="true">database</span>
+        <span class="modern-nav-text">Banco de Datos</span>
+      </a>
+
+      <!-- BODEGA CENTRAL (Reemplaza a Inventario) -->
+      <a *ngIf="esSuperAdministrador" [routerLink]="['facturas-compra']" [queryParams]="{tab: 'bodega'}" routerLinkActive="active" class="modern-nav-item" title="Bodega Central">
+        <span class="material-symbols-outlined modern-nav-icon" aria-hidden="true">warehouse</span>
+        <span class="modern-nav-text">Bodega Central</span>
+      </a>
+
+      <!-- FACTURAS (Super Administrador) -->
+      <a *ngIf="esSuperAdministrador" [routerLink]="['facturas-compra']" [queryParams]="{tab: 'facturas'}" routerLinkActive="active" class="modern-nav-item" title="Facturas">
+        <span class="material-symbols-outlined modern-nav-icon" aria-hidden="true">receipt_long</span>
+        <span class="modern-nav-text">Facturas</span>
+      </a>
+
+      <!-- ENTREGAS (Para ambos) -->
+      <a routerLink="historial-entregas" routerLinkActive="active" class="modern-nav-item" title="Entregas">
+        <span class="material-symbols-outlined modern-nav-icon" aria-hidden="true">local_shipping</span>
+        <span class="modern-nav-text">Entregas</span>
+      </a>
+
+      <!-- MENÚS (Para ambos) -->
+      <a routerLink="menus" routerLinkActive="active" class="modern-nav-item" title="Menús">
+        <span class="material-symbols-outlined modern-nav-icon" aria-hidden="true">restaurant_menu</span>
+        <span class="modern-nav-text">Menús</span>
+      </a>
+
+      <!-- USUARIOS (Para ambos) -->
+      <a routerLink="usuarios" routerLinkActive="active" class="modern-nav-item" title="Usuarios">
+        <span class="material-symbols-outlined modern-nav-icon" aria-hidden="true">people</span>
+        <span class="modern-nav-text">Usuarios</span>
+      </a>
+
+      <!-- REPORTES (Para ambos) -->
+      <a routerLink="reportes-consumo" routerLinkActive="active" class="modern-nav-item" title="Reportes">
+        <span class="material-symbols-outlined modern-nav-icon" aria-hidden="true">bar_chart</span>
+        <span class="modern-nav-text">Reportes</span>
+      </a>
+
+    </nav>
+
+    <!-- Pie del Sidebar: Configuración -->
+    <div class="modern-sidebar-bottom">
+      <button type="button" class="modern-nav-item modern-config-btn" (click)="togglePerfil()" title="Configuración y perfil">
+        <span class="material-symbols-outlined modern-nav-icon" aria-hidden="true">settings</span>
+        <span class="modern-nav-text">Configuración</span>
+      </button>
+    </div>
+
+  </aside>
+
+
+  <!-- ================= CONTENEDOR PRINCIPAL ================= -->
+  <div class="modern-main-container">
+
+    <!-- Header Superior Limpio con Migas de Pan (Breadcrumbs) -->
+    <header class="modern-top-header">
+      
+      <!-- Migas de Pan -->
+      <nav class="modern-breadcrumb" aria-label="Ruta de navegación">
+        <span class="material-symbols-outlined breadcrumb-home" aria-hidden="true">home</span>
+        <a routerLink="inicio" class="breadcrumb-item">Inicio</a>
+        
+        <ng-container *ngIf="pageTitle && pageTitle !== 'Inicio'">
+          <span class="breadcrumb-sep" aria-hidden="true">></span>
+          <span class="breadcrumb-current">{{ pageTitle }}</span>
+        </ng-container>
+
+        <!-- Indicador para Administrador institucional -->
+        <span *ngIf="esAdministrador && institucionUsuario" class="modern-inst-badge">
+          {{ institucionUsuario }}
+        </span>
+      </nav>
+
+      <!-- Zona Derecha: Notificaciones y Perfil -->
+      <div class="modern-header-actions">
+
+        <!-- Botón Notificaciones -->
+        <div class="dropdown-container">
+          <button type="button" class="notif-btn" (click)="toggleNotificaciones()" title="Notificaciones" aria-label="Notificaciones del sistema">
+            <span class="material-symbols-outlined notif-icon" aria-hidden="true">notifications</span>
+            <span *ngIf="notificacionesNoLeidas > 0" class="notif-badge-dot"></span>
+          </button>
+
+          <!-- Dropdown Notificaciones -->
+          <div *ngIf="mostrarNotificaciones" class="modern-dropdown notif-popover">
+            <div class="notif-popover-head">
+              <span class="notif-popover-title">Notificaciones</span>
+              <button type="button" class="notif-mark-btn" (click)="marcarTodasComoLeidasDesdePanel()">
+                Marcar leídas
+              </button>
+            </div>
+            
+            <div *ngIf="listaNotificaciones.length === 0" class="notif-empty-state">
+              No tienes notificaciones pendientes
+            </div>
+
+            <div class="notif-items-list" *ngIf="listaNotificaciones.length > 0">
+              <div *ngFor="let noti of listaNotificaciones" class="notif-item">
+                <strong class="notif-item-title">{{ noti.titulo }}</strong>
+                <span class="notif-item-msg">{{ noti.mensaje }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Botón Perfil de Usuario con Avatar -->
+        <div class="dropdown-container">
+          <button type="button" class="user-pill-btn" (click)="togglePerfil()" title="Mi cuenta" aria-label="Menú de perfil">
+            <img src="administrador.png" alt="Avatar" class="user-avatar" />
+            <div class="user-info-text">
+              <span class="user-name">{{ perfil.nombre }}</span>
+              <span class="user-role">{{ perfil.rol }}</span>
+            </div>
+            <span class="material-symbols-outlined user-chevron" aria-hidden="true">expand_more</span>
+          </button>
+
+          <!-- Dropdown Perfil -->
+          <div *ngIf="mostrarPerfil" class="modern-dropdown profile-popover">
+            
+            <!-- Vista General -->
+            <div *ngIf="vistaActual === 'perfil'">
+              <div class="profile-popover-head">
+                <img src="administrador.png" class="profile-popover-avatar" alt="Foto de perfil" />
+                <div class="profile-meta-wrap">
+                  <strong class="profile-popover-name">{{ perfil.nombre }}</strong>
+                  <span class="profile-popover-email">{{ perfil.correo }}</span>
+                  <span class="profile-popover-badge">{{ perfil.rol }}</span>
+                </div>
+              </div>
+
+              <div class="profile-actions-list">
+                <button type="button" class="profile-action-btn" (click)="irA('editar')">
+                  <span class="material-symbols-outlined" aria-hidden="true">edit</span>
+                  <span>Editar Perfil</span>
+                </button>
+                <button type="button" class="profile-action-btn" (click)="irA('password')">
+                  <span class="material-symbols-outlined" aria-hidden="true">lock</span>
+                  <span>Cambiar Contraseña</span>
+                </button>
+                <button type="button" class="profile-action-btn profile-logout-btn" (click)="cerrarSesion()">
+                  <span class="material-symbols-outlined" aria-hidden="true">logout</span>
+                  <span>Cerrar Sesión</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Vista Editar Perfil -->
+            <div *ngIf="vistaActual === 'editar'" class="profile-edit-view">
+              <h4 class="popover-view-title">Editar Perfil</h4>
+              <div class="popover-form-group">
+                <label>Nombre</label>
+                <input [(ngModel)]="editForm.nombre" type="text" class="popover-input" />
+              </div>
+              <div class="popover-form-group">
+                <label>Correo</label>
+                <input [(ngModel)]="editForm.correo" type="email" class="popover-input" />
+              </div>
+              <div class="popover-btn-row">
+                <button type="button" class="btn-save-popover" (click)="guardarPerfil()">Guardar</button>
+                <button type="button" class="btn-cancel-popover" (click)="irA('perfil')">Cancelar</button>
+              </div>
+            </div>
+
+            <!-- Vista Cambiar Contraseña -->
+            <div *ngIf="vistaActual === 'password'" class="profile-edit-view">
+              <h4 class="popover-view-title">Cambiar Contraseña</h4>
+              <div class="popover-form-group">
+                <input [(ngModel)]="passwordForm.actual" type="password" placeholder="Contraseña actual" class="popover-input" />
+              </div>
+              <div class="popover-form-group">
+                <input [(ngModel)]="passwordForm.nueva" type="password" placeholder="Nueva contraseña" class="popover-input" />
+              </div>
+              <div class="popover-form-group">
+                <input [(ngModel)]="passwordForm.confirmar" type="password" placeholder="Confirmar contraseña" class="popover-input" />
+              </div>
+              <p *ngIf="passwordError" class="popover-error">{{ passwordError }}</p>
+              <p *ngIf="passwordMensaje" class="popover-success">{{ passwordMensaje }}</p>
+              <div class="popover-btn-row">
+                <button type="button" class="btn-save-popover" (click)="guardarPassword()" [disabled]="passwordProcesando">
+                  {{ passwordProcesando ? 'Guardando…' : 'Cambiar' }}
+                </button>
+                <button type="button" class="btn-cancel-popover" (click)="irA('perfil')">Cancelar</button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+    </header>
+
+    <!-- Contenedor con Scroll para el contenido -->
+    <main class="modern-content-viewport">
+      <router-outlet></router-outlet>
+    </main>
+
+  </div>
+
+</div>

@@ -113,12 +113,12 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       id: 'instituciones',
       nombre: 'Instituciones',
       singular: 'institución',
-      icon: 'apartment',
+      icon: 'account_balance',
       idField: 'id_institucion',
       campos: [
-        { name: 'nombre_institucion', label: 'Nombre Institución', type: 'text', required: true, placeholder: 'Ej: I.E. San Agustín' },
+        { name: 'nombre_institucion', label: 'Nombre de la institución', type: 'text', required: true, placeholder: 'Ej: I.E. San Agustín' },
         { name: 'nit', label: 'NIT / Código', type: 'text', required: true, placeholder: 'Ej: 900.123.456-7' },
-        { name: 'representante_legal', label: 'Representante Legal', type: 'text', placeholder: 'Ej: Carlos Gómez' },
+        { name: 'representante_legal', label: 'Representante legal', type: 'text', placeholder: 'Ej: Carlos Gómez' },
         { name: 'telefono', label: 'Teléfono', type: 'text', placeholder: 'Ej: 300 123 4567' },
         { name: 'correo_contacto', label: 'Correo de contacto', type: 'text', placeholder: 'Ej: rectoria@iesanagustin.edu.co' },
         {
@@ -138,11 +138,11 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       id: 'sedes',
       nombre: 'Sedes',
       singular: 'sede',
-      icon: 'domain',
+      icon: 'location_on',
       idField: 'id_sede',
       campos: [
-        { name: 'nombre_sede', label: 'Nombre de la Sede', type: 'text', required: true, placeholder: 'Ej: Sede Principal' },
-        { name: 'id_institucion', label: 'Institución Educativa', type: 'select', required: true, source: 'instituciones' },
+        { name: 'nombre_sede', label: 'Nombre de la sede', type: 'text', required: true, placeholder: 'Ej: Sede Principal' },
+        { name: 'id_institucion', label: 'Institución educativa', type: 'select', required: true, source: 'instituciones' },
         { name: 'codigo_dane', label: 'Código DANE', type: 'text', placeholder: 'Ej: 105001000123' },
         { name: 'direccion', label: 'Dirección', type: 'text', placeholder: 'Ej: Carrera 45 # 12-34' },
         { name: 'telefono', label: 'Teléfono', type: 'text', placeholder: 'Ej: 604 123 4567' },
@@ -163,7 +163,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       id: 'ingredientes',
       nombre: 'Ingredientes',
       singular: 'ingrediente',
-      icon: 'kitchen',
+      icon: 'eco',
       idField: 'id_ingrediente',
       campos: [
         { name: 'nombre_ingrediente', label: 'Nombre del ingrediente', type: 'text', required: true, placeholder: 'Ej: Tomate Chonto' },
@@ -191,12 +191,12 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       icon: 'local_shipping',
       idField: 'id_proveedor',
       campos: [
-        { name: 'nombre', label: 'Razón Social / Proveedor', type: 'text', required: true, placeholder: 'Ej: Distribuidora Mayorista S.A.S' },
+        { name: 'nombre', label: 'Razón social / Proveedor', type: 'text', required: true, placeholder: 'Ej: Distribuidora Mayorista S.A.S' },
         { name: 'nit', label: 'NIT / Cédula', type: 'text', placeholder: 'Ej: 900.123.456-7' },
         { name: 'telefono', label: 'Teléfono', type: 'text', placeholder: 'Ej: 310 123 4567' },
-        { name: 'correo', label: 'Correo Electrónico', type: 'text', placeholder: 'ventas@proveedor.com' },
+        { name: 'correo', label: 'Correo electrónico', type: 'text', placeholder: 'ventas@proveedor.com' },
         { name: 'direccion', label: 'Dirección', type: 'text', placeholder: 'Ej: Calle 15 # 45-20' },
-        { name: 'contacto', label: 'Persona de Contacto', type: 'text', placeholder: 'Ej: Andrés Gómez' },
+        { name: 'contacto', label: 'Persona de contacto', type: 'text', placeholder: 'Ej: Andrés Gómez' },
         {
           name: 'estado',
           label: 'Estado',
@@ -212,9 +212,9 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
     },
     {
       id: 'unidades_medida',
-      nombre: 'Unidades de Medida',
+      nombre: 'Unidades de medida',
       singular: 'unidad de medida',
-      icon: 'straighten',
+      icon: 'balance',
       idField: 'id_unidad_medida',
       campos: [
         { name: 'nombre', label: 'Nombre', type: 'text', required: true, placeholder: 'Ej: Kilogramo' },
@@ -225,7 +225,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       id: 'categorias_inventario',
       nombre: 'Categorías',
       singular: 'categoría',
-      icon: 'category',
+      icon: 'grid_view',
       idField: 'id_categoria_inventario',
       campos: [
         { name: 'nombre_categoria', label: 'Nombre categoría', type: 'text', required: true, placeholder: 'Ej: Lácteos' }
@@ -233,9 +233,9 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
     },
     {
       id: 'tipos_mercado',
-      nombre: 'Tipos Mercado',
+      nombre: 'Tipos de mercado',
       singular: 'tipo de mercado',
-      icon: 'storefront',
+      icon: 'shopping_basket',
       idField: 'id_tipo_mercado',
       campos: [
         { name: 'nombre_tipo', label: 'Tipo de mercado', type: 'text', required: true, placeholder: 'Ej: Perecederos' }
@@ -255,7 +255,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       id: 'jornadas',
       nombre: 'Jornadas',
       singular: 'jornada',
-      icon: 'schedule',
+      icon: 'calendar_month',
       idField: 'id_jornada',
       campos: [
         { name: 'nombre_jornada', label: 'Nombre de la jornada', type: 'text', required: true, placeholder: 'Ej: Mañana' }
@@ -265,7 +265,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       id: 'secciones_menu',
       nombre: 'Secciones',
       singular: 'sección',
-      icon: 'restaurant_menu',
+      icon: 'groups',
       idField: 'id_seccion',
       campos: [
         { name: 'nombre_seccion', label: 'Nombre de la sección', type: 'text', required: true, placeholder: 'Ej: Desayuno' },
@@ -276,7 +276,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       id: 'turnos',
       nombre: 'Turnos',
       singular: 'turno',
-      icon: 'access_time',
+      icon: 'schedule',
       idField: 'id_turno',
       campos: [
         { name: 'nombre_turno', label: 'Nombre del turno', type: 'text', required: true },
@@ -288,7 +288,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       id: 'roles',
       nombre: 'Roles',
       singular: 'rol',
-      icon: 'shield_person',
+      icon: 'shield',
       idField: 'id_rol',
       campos: [
         { name: 'nombre', label: 'Nombre', type: 'text', required: true },
@@ -300,7 +300,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       nombre: 'Gramajes',
       singular: 'gramaje',
       icon: 'scale',
-      idField: 'id_gramage',
+      idField: 'id_gramaje',
       campos: [
         { name: 'id_ingrediente', label: 'Ingrediente', type: 'select', required: true, source: 'ingredientes' },
         { name: 'id_grado', label: 'Grado', type: 'select', required: true, source: 'grados' },
@@ -475,16 +475,94 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
     this.cargaSub?.unsubscribe();
   }
 
+  // ============================================================
+  // BUSCADOR, FILTROS Y ORDENAMIENTO
+  // ============================================================
+  busquedaTexto: string = '';
+  filtroEstado: string = 'TODOS';
+  ordenPor: string = 'recientes';
+  mostrarFiltrosAvanzados: boolean = false;
+
+  // Paginación
+  elementosPorPagina: number = 8;
+  paginaActual: number = 1;
+  readonly opcionesElementosPorPagina: number[] = [8, 10, 20, 50];
+
+  // Menú flotante de acciones por fila
+  menuAccionAbiertoId: any = null;
+
   @HostListener('document:keydown.escape')
   onEscape(): void {
     if (this.mostrarModal) {
       this.cerrarModal();
     }
+    this.cerrarMenuAccion();
   }
 
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    const target = event.target as HTMLElement;
+    if (!target.closest('.row-actions-container')) {
+      this.cerrarMenuAccion();
+    }
+  }
+
+  get placeholderBusqueda(): string {
+    if (this.tabActual === 'instituciones') {
+      return 'Buscar por nombre, NIT o código...';
+    }
+    return `Buscar en ${this.tab.nombre.toLowerCase()}...`;
+  }
+
+  toggleMenuAccion(id: any, event: Event): void {
+    event.stopPropagation();
+    this.menuAccionAbiertoId = this.menuAccionAbiertoId === id ? null : id;
+  }
+
+  cerrarMenuAccion(): void {
+    this.menuAccionAbiertoId = null;
+  }
+
+  toggleFiltrosAvanzados(): void {
+    this.mostrarFiltrosAvanzados = !this.mostrarFiltrosAvanzados;
+  }
+
+  onFiltroCambio(): void {
+    this.paginaActual = 1;
+    this.menuAccionAbiertoId = null;
+  }
+
+  cambiarElementosPorPagina(nuevoLimite: any): void {
+    this.elementosPorPagina = Number(nuevoLimite) || 8;
+    this.paginaActual = 1;
+    this.menuAccionAbiertoId = null;
+  }
+
+  cambiarPagina(pagina: number): void {
+    if (pagina >= 1 && pagina <= this.totalPaginas) {
+      this.paginaActual = pagina;
+      this.menuAccionAbiertoId = null;
+    }
+  }
+
+  obtenerNombrePrincipal(item: any): string {
+    if (!item) return '';
+    return item.nombre_institucion ||
+           item.nombre_sede ||
+           item.nombre_ingrediente ||
+           item.nombre_categoria ||
+           item.nombre_tipo ||
+           item.nombre_grado ||
+           item.nombre_jornada ||
+           item.nombre_seccion ||
+           item.nombre_turno ||
+           item.nombre ||
+           item.descripcion ||
+           '';
+  }
 
   // ============================================================
-  // TAB ACTUAL
+  // TAB ACTUAL Y FILTROS
   // ============================================================
 
   get tab(): TabConfig {
@@ -492,15 +570,121 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
   }
 
   get datosFiltrados(): any[] {
+    let resultado = [...this.datos];
+
+    // Filtro de sedes por institución
     if (this.tabActual === 'sedes' && this.filtroInstitucionSede && this.filtroInstitucionSede !== 'TODAS') {
-      return this.datos.filter(item => {
+      resultado = resultado.filter(item => {
         const instId = typeof item.id_institucion === 'object' && item.id_institucion !== null
           ? (item.id_institucion.id_institucion ?? item.id_institucion.id)
           : item.id_institucion;
         return String(instId) === String(this.filtroInstitucionSede);
       });
     }
-    return this.datos;
+
+    // Filtro por texto de búsqueda
+    if (this.busquedaTexto && this.busquedaTexto.trim()) {
+      const q = this.busquedaTexto.trim().toLowerCase();
+      resultado = resultado.filter(item => {
+        return Object.values(item).some(val => {
+          if (val === null || val === undefined) return false;
+          if (typeof val === 'object') {
+            return Object.values(val).some(sub => sub && String(sub).toLowerCase().includes(q));
+          }
+          return String(val).toLowerCase().includes(q);
+        });
+      });
+    }
+
+    // Filtro por Estado
+    if (this.filtroEstado !== 'TODOS') {
+      resultado = resultado.filter(item => {
+        const est = String(item.estado || '').toUpperCase();
+        return est === this.filtroEstado;
+      });
+    }
+
+    // Ordenamiento
+    if (this.ordenPor === 'az') {
+      resultado.sort((a, b) => {
+        const valA = String(this.obtenerNombrePrincipal(a)).toLowerCase();
+        const valB = String(this.obtenerNombrePrincipal(b)).toLowerCase();
+        return valA.localeCompare(valB, 'es');
+      });
+    } else if (this.ordenPor === 'za') {
+      resultado.sort((a, b) => {
+        const valA = String(this.obtenerNombrePrincipal(a)).toLowerCase();
+        const valB = String(this.obtenerNombrePrincipal(b)).toLowerCase();
+        return valB.localeCompare(valA, 'es');
+      });
+    } else {
+      // Más recientes: ordenar por ID descendente si existe
+      resultado.sort((a, b) => {
+        const idA = this.obtenerIdItem(a) || 0;
+        const idB = this.obtenerIdItem(b) || 0;
+        return idB - idA;
+      });
+    }
+
+    return resultado;
+  }
+
+  get totalRegistros(): number {
+    return this.datosFiltrados.length;
+  }
+
+  get totalPaginas(): number {
+    return Math.ceil(this.totalRegistros / this.elementosPorPagina) || 1;
+  }
+
+  get datosPaginados(): any[] {
+    const inicio = (this.paginaActual - 1) * this.elementosPorPagina;
+    return this.datosFiltrados.slice(inicio, inicio + this.elementosPorPagina);
+  }
+
+  get registroInicio(): number {
+    if (this.totalRegistros === 0) return 0;
+    return (this.paginaActual - 1) * this.elementosPorPagina + 1;
+  }
+
+  get registroFin(): number {
+    return Math.min(this.paginaActual * this.elementosPorPagina, this.totalRegistros);
+  }
+
+  get listaPaginas(): number[] {
+    const total = this.totalPaginas;
+    const actual = this.paginaActual;
+    const paginas: number[] = [];
+
+    if (total <= 5) {
+      for (let i = 1; i <= total; i++) paginas.push(i);
+    } else {
+      let inicio = Math.max(1, actual - 2);
+      let fin = Math.min(total, inicio + 4);
+      if (fin - inicio < 4) {
+        inicio = Math.max(1, fin - 4);
+      }
+      for (let i = inicio; i <= fin; i++) paginas.push(i);
+    }
+    return paginas;
+  }
+
+  esCampoEstado(campo: CampoConfig): boolean {
+    return campo.name.toLowerCase().includes('estado');
+  }
+
+  isEstadoActivo(item: any, campo?: CampoConfig): boolean {
+    const val = campo ? item?.[campo.name] : (item?.estado ?? item?.activo);
+    if (val === true || val === 1) return true;
+    const str = String(val ?? '').trim().toUpperCase();
+    return str === 'ACTIVO' || str === 'TRUE' || str === '1' || str === 'SI';
+  }
+
+  isEstadoInactivo(item: any, campo?: CampoConfig): boolean {
+    const val = campo ? item?.[campo.name] : (item?.estado ?? item?.activo);
+    if (val === false || val === 0) return true;
+    const str = String(val ?? '').trim().toUpperCase();
+    return str === 'INACTIVO' || str === 'FALSE' || str === '0' || str === 'NO';
   }
 
   cambiarTab(tabId: string): void {
@@ -508,12 +692,20 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       return;
     }
     this.tabActual = tabId;
+    this.busquedaTexto = '';
+    this.filtroEstado = 'TODOS';
+    this.ordenPor = 'recientes';
+    this.paginaActual = 1;
+    this.menuAccionAbiertoId = null;
     this.cargarDatos();
   }
 
   navegarASedesDeInstitucion(idInstitucion: number): void {
     this.filtroInstitucionSede = idInstitucion;
     this.tabActual = 'sedes';
+    this.busquedaTexto = '';
+    this.filtroEstado = 'TODOS';
+    this.paginaActual = 1;
     this.cargarDatos();
   }
 
