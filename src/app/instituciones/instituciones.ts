@@ -8,7 +8,7 @@ import { environment } from '@env/environment';
 
 type EstadoInventario = 'Ok' | 'Bajo' | 'Crítico';
 type FiltroEstado = 'Todos' | EstadoInventario;
-type Pestana = 'resumen' | 'inventario' | 'consumo' | 'menus' | 'entregas' | 'reportes';
+type Pestana = 'inventario' | 'entregas';
 
 // Institución asignada al supervisor
 interface Institucion {
@@ -53,32 +53,6 @@ interface EntregaUnida {
   unidad: string;
   cantidad: number;
   fechaRegistro: string;        // la más reciente de ese producto
-}
-
-// Consumo de un día (datos de ejemplo)
-interface ConsumoDia {
-  fecha: string;                // YYYY-MM-DD
-  dia: string;
-  raciones: number;
-  kg: number;
-  porcentaje: number;           // 0 - 100, relativo al día de mayor consumo
-}
-
-// Menú publicado (datos de ejemplo)
-interface MenuDia {
-  fecha: string;
-  dia: string;
-  jornada: string;
-  ninos: number;
-  platos: string[];
-}
-
-// Reporte disponible (datos de ejemplo)
-interface ReporteItem {
-  nombre: string;
-  detalle: string;
-  fecha: string;
-  icono: string;
 }
 
 // Mismos emojis que usa la pantalla registrar-entrega-alimentos
@@ -212,27 +186,19 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
   filtroEstado: FiltroEstado = 'Todos';
   opcionesEstado: FiltroEstado[] = ['Todos', 'Ok', 'Bajo', 'Crítico'];
 
-  // Detalle (solo lectura)
+  // Detalle (solo lectura): solo Inventario y Entregas
   seleccionada: Institucion | null = null;
-  pestana: Pestana = 'resumen';
+  pestana: Pestana = 'inventario';
   pestanas: { id: Pestana; nombre: string; icono: string }[] = [
-    { id: 'resumen',    nombre: 'Resumen',        icono: 'dashboard' },
-    { id: 'inventario', nombre: 'Inventario',     icono: 'inventory_2' },
-    { id: 'consumo',    nombre: 'Consumo diario', icono: 'monitoring' },
-    { id: 'menus',      nombre: 'Menús',          icono: 'restaurant_menu' },
-    { id: 'entregas',   nombre: 'Entregas',       icono: 'local_shipping' },
-    { id: 'reportes',   nombre: 'Reportes',       icono: 'description' },
+    { id: 'inventario', nombre: 'Inventario', icono: 'inventory_2' },
+    { id: 'entregas',   nombre: 'Entregas',   icono: 'local_shipping' },
   ];
 
   // Datos del detalle: se calculan una sola vez al abrir una institución
   inventario: ProductoInventario[] = [];
-  consumo: ConsumoDia[] = [];
-  menus: MenuDia[] = [];
-  reportes: ReporteItem[] = [];
 
   // Entregas (vienen del servidor; cada producto aparece una sola vez)
   entregasUnidas: EntregaUnida[] = [];
-  ultimasEntregas: EntregaUnida[] = [];      // las 4 más recientes, para el resumen
   cargandoEntregas = false;
   errorEntregas = '';
   private subEntregas?: Subscription;
@@ -364,13 +330,10 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
   // =====================================================
   abrir(institucion: Institucion): void {
     this.seleccionada = institucion;
-    this.pestana = 'resumen';
+    this.pestana = 'inventario';
 
-    // Se calculan una sola vez para que la pantalla no se redibuje en cada cambio
+    // Se calcula una sola vez para que la pantalla no se redibuje en cada cambio
     this.inventario = this.inventarioDe(institucion);
-    this.consumo = this.consumoDe(institucion);
-    this.menus = this.menusDe(institucion);
-    this.reportes = this.reportesDe();
 
     this.cargarEntregas(institucion);
   }
@@ -383,11 +346,6 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
 
   cambiarPestana(p: Pestana): void {
     this.pestana = p;
-  }
-
-  // Porcentaje de la barra de cobertura (30 días = barra llena)
-  porcentajeCobertura(i: Institucion): number {
-    return Math.max(0, Math.min(100, Math.round((i.diasInventario / 30) * 100)));
   }
 
   claseEstado(estado: string): string {
@@ -426,7 +384,6 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
     this.subEntregas?.unsubscribe();
     this.errorEntregas = '';
     this.entregasUnidas = [];
-    this.ultimasEntregas = [];
 
     // Las instituciones de ejemplo no existen en el servidor: se usan entregas de ejemplo
     if (this.usandoRespaldo) {
@@ -456,7 +413,6 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
 
   private aplicarEntregas(crudas: EntregaCruda[]): void {
     this.entregasUnidas = this.unirEntregas(crudas);
-    this.ultimasEntregas = this.entregasUnidas.slice(0, 4);
   }
 
   private aEntregaCruda(item: any): EntregaCruda {
@@ -524,7 +480,7 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
   }
 
   // =====================================================
-  //  DATOS DE EJEMPLO DEL DETALLE
+  //  DATOS DE EJEMPLO DEL INVENTARIO
   //  Cuando existan los servicios por institución, se reemplazan aquí.
   // =====================================================
   private readonly catalogoMuestra = [
@@ -537,14 +493,6 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
     { nombre: 'Leche',    emoji: '🥛', categoria: 'Lácteos',           unidad: 'Litros',   porNino: 0.2,  perecedero: true },
     { nombre: 'Papa',     emoji: '🥔', categoria: 'Verduras',          unidad: 'Kg',       porNino: 0.1,  perecedero: true },
     { nombre: 'Plátano',  emoji: '🍌', categoria: 'Frutas',            unidad: 'Kg',       porNino: 0.08, perecedero: true },
-  ];
-
-  private readonly menusMuestra: string[][] = [
-    ['Arroz con pollo', 'Ensalada de zanahoria', 'Jugo de naranja'],
-    ['Fríjoles con arroz', 'Carne molida', 'Plátano maduro'],
-    ['Pasta con pollo', 'Ensalada fresca', 'Agua de panela'],
-    ['Lentejas con arroz', 'Huevo revuelto', 'Jugo de mora'],
-    ['Sancocho de papa', 'Arroz blanco', 'Fruta de temporada'],
   ];
 
   private inventarioDe(i: Institucion): ProductoInventario[] {
@@ -572,52 +520,6 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
         estado,
       };
     });
-  }
-
-  // Últimos 5 días hábiles: raciones según matriculados y asistencia
-  private consumoDe(i: Institucion): ConsumoDia[] {
-    const base = i.matriculados * (i.asistenciaPromedio / 100);
-    const variacion = [0.98, 1.02, 0.95, 1.04, 1.0];
-
-    const dias = this.diasHabiles(5, true).map((fecha, n) => {
-      const raciones = Math.round(base * variacion[n]);
-      return {
-        fecha,
-        dia: this.nombreDia(fecha),
-        raciones,
-        kg: Math.round(raciones * 0.29 * 10) / 10,
-        porcentaje: 0,
-      };
-    });
-
-    const maximo = Math.max(1, ...dias.map(d => d.raciones));
-    return dias.map(d => ({ ...d, porcentaje: Math.round((d.raciones / maximo) * 100) }));
-  }
-
-  // Menús de los próximos 3 días hábiles
-  private menusDe(i: Institucion): MenuDia[] {
-    const ninos = Math.round(i.matriculados * (i.asistenciaPromedio / 100));
-    return this.diasHabiles(3, false).map((fecha, n) => ({
-      fecha,
-      dia: this.nombreDia(fecha),
-      jornada: 'Almuerzo',
-      ninos,
-      platos: this.menusMuestra[n % this.menusMuestra.length],
-    }));
-  }
-
-  private reportesDe(): ReporteItem[] {
-    const hoy = this.hoy();
-    return [
-      { nombre: 'Inventario mensual', detalle: 'Existencias y vencimientos del mes',   fecha: hoy,                     icono: 'inventory_2' },
-      { nombre: 'Consumo semanal',    detalle: 'Raciones servidas y kilos consumidos', fecha: this.sumarDias(hoy, -4), icono: 'monitoring' },
-      { nombre: 'Entregas del mes',   detalle: 'Productos recibidos por proveedor',    fecha: this.sumarDias(hoy, -1), icono: 'local_shipping' },
-      { nombre: 'Asistencia diaria',  detalle: 'Niños atendidos por jornada',          fecha: hoy,                     icono: 'fact_check' },
-    ];
-  }
-
-  descargar(r: ReporteItem): void {
-    alert(`Ejemplo: aquí se abriría el reporte "${r.nombre}".`);
   }
 
   // =====================================================
@@ -704,25 +606,6 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
     return this.aISO(d);
   }
 
-  // n días hábiles (lunes a viernes): hacia atrás desde hoy, o hacia adelante desde mañana
-  private diasHabiles(n: number, haciaAtras: boolean): string[] {
-    const resultado: string[] = [];
-    const d = new Date(this.hoy() + 'T00:00:00');
-    if (!haciaAtras) d.setDate(d.getDate() + 1);
-
-    while (resultado.length < n) {
-      const dia = d.getDay();
-      if (dia !== 0 && dia !== 6) resultado.push(this.aISO(d));
-      d.setDate(d.getDate() + (haciaAtras ? -1 : 1));
-    }
-    return haciaAtras ? resultado.reverse() : resultado;
-  }
-
-  private nombreDia(iso: string): string {
-    const nombres = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-    return nombres[new Date(iso + 'T00:00:00').getDay()];
-  }
-
   // dd/mm/aaaa; si no hay fecha válida muestra "—"
   fechaCorta(valor: string | null | undefined): string {
     const iso = String(valor ?? '').substring(0, 10);
@@ -743,12 +626,5 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
       day: '2-digit', month: '2-digit', year: 'numeric',
       hour: '2-digit', minute: '2-digit',
     });
-  }
-
-  // La última actualización puede venir como fecha o como texto ("Hoy, 8:42 a. m.")
-  textoActualizacion(i: Institucion): string {
-    const v = i.ultimaActualizacion;
-    if (!v) return '—';
-    return /^\d{4}-\d{2}-\d{2}/.test(v) ? this.fechaCorta(v) : v;
   }
 }

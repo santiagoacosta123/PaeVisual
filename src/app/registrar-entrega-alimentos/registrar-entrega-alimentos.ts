@@ -26,7 +26,7 @@ interface FilaEntrega {
   fechaRecepcion: string;                // YYYY-MM-DD
   fechaVencimiento: string;              // YYYY-MM-DD
 
-  // Opcionales: alimentan el modal "Registro del día" y el panel "Entradas" (si el backend no los envía, se muestra "—")
+  // Opcionales: alimentan el modal "Registro del día" y el panel de detalle (si el backend no los envía, se muestra "—")
   codigo?: string;
   lote?: string;
   destino?: string;
@@ -84,7 +84,7 @@ interface DiaCalendario {
   vencen: number;         // productos que vencen ese día
 }
 
-// Un registro (entrega) dentro del modal "Registro del día" y del panel "Entradas"
+// Un registro (entrega) dentro del modal "Registro del día"
 interface RegistroDia {
   codigo: string;
   descripcion: string;
@@ -101,6 +101,24 @@ interface EntradaFila {
   cantidad: number | null;
   unidad: string;
   perecedero: boolean;
+}
+
+// Una institución a la que va el producto, con la cantidad que se le envía
+interface EnvioDestino {
+  institucion: string;
+  cantidad: number | null;
+}
+
+// Un envío ya hecho (se muestra en el historial)
+interface EnvioRegistro {
+  id: number;
+  ingrediente: string;
+  cantidad: number;
+  unidad: string;
+  destino: string;
+  fechaSalida: string;
+  fechaEntrega: string;
+  enviadoEl: string;       // fecha en que se registró el envío
 }
 
 interface CategoriaOpcion {
@@ -220,13 +238,14 @@ export class RegistrarEntregaAlimentosComponent implements OnInit {
     this.cargarHistorial();
   }
 
-  // Esc cierra la ventana abierta (primero el modal del día, luego el formulario)
+  // Esc cierra la ventana abierta (primero los modales, al final el detalle del panel)
   @HostListener('document:keydown.escape')
   alPresionarEsc(): void {
-    if (this.productoDetalle) { this.cerrarDetalleProducto(); return; }
+    if (this.envioProducto) { this.cerrarModalEnvio(); return; }
     if (this.mostrarModalEntrada && !this.guardandoEntrada) { this.cerrarModalEntrada(); return; }
     if (this.modalDiaAbierto) { this.cerrarModalDia(); return; }
-    if (this.mostrarModalEntrega) this.cerrarModalEntrega();
+    if (this.mostrarModalEntrega) { this.cerrarModalEntrega(); return; }
+    if (this.productoDetalle) this.cerrarDetalleProducto();
   }
 
   cargarCatalogos(): void {
@@ -473,6 +492,19 @@ export class RegistrarEntregaAlimentosComponent implements OnInit {
   private reconstruirHistorial(): void {
     this.historial = this.entregasRaw.map(item => this.aFila(item));
     this.prepararLote(true); // la lista del lote usa el historial para autocompletar
+
+    // Si hay un producto abierto en el panel de detalle, se actualiza con los datos nuevos
+    if (this.productoDetalle) {
+      const abierto = this.productoDetalle;
+      this.productoDetalle = this.historial.find(e => this.esMismoProducto(e, abierto)) ?? null;
+    }
+
+    // Lo mismo con los productos elegidos en el menú: se actualizan con su última entrada
+    this.seleccionados = this.seleccionados
+      .map(sel => this.historial
+        .filter(e => e.idIngrediente === sel.idIngrediente)
+        .sort((a, b) => b.fechaRecepcion.localeCompare(a.fechaRecepcion) || ((b.id ?? 0) - (a.id ?? 0)))[0])
+      .filter((e): e is FilaEntrega => !!e);
   }
 
   private aFila(item: any): FilaEntrega {
@@ -512,10 +544,10 @@ export class RegistrarEntregaAlimentosComponent implements OnInit {
       frecuencia: item.frecuencia || '',
       cantidad: Number(item.cantidad) || 0,
       unidad: item.unidad || '',
-      fechaRecepcion: this.soloFecha(item.fecha_entrega ?? item.fecha_recepcion ?? item.fechaRecepcion),
+      fechaRecepcion,
       fechaVencimiento: this.soloFecha(item.fecha_vencimiento ?? item.fechaVencimiento),
 
-      // Opcionales para el modal "Registro del día" y el panel "Entradas":
+      // Opcionales para el panel de detalle y el modal "Registro del día":
       // se aceptan varios nombres de campo; si el backend no envía ninguno quedan vacíos y se muestra "—"
       codigo: item.codigo ?? item.codigo_entrega ?? '',
       lote: item.lote ?? item.numero_lote ?? '',
@@ -775,7 +807,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit {
 
     const ultima = entradas[0];
     const total = entradas
-      .filter(e => e.unidad === ultima.unidad)   // solo suma entradas con la misma unidad
+      .filter(e => this.normalizarUnidad(e.unidad) === this.normalizarUnidad(ultima.unidad))   // solo suma entradas con la misma unidad
       .reduce((suma, e) => suma + e.cantidad, 0);
 
     return {
@@ -787,7 +819,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit {
     };
   }
 
-  // Último registro: todo lo que entró en la fecha de recepción más reciente (alimenta "Lotes de Entrega SIRAE")
+  // Último registro: todo lo que entró en la fecha de recepción más reciente
   get ultimoRegistro(): { fecha: string; items: FilaEntrega[]; totales: string } | null {
     const fechas = this.historial.map(e => e.fechaRecepcion).filter(f => !!f);
     if (fechas.length === 0) return null;
@@ -797,13 +829,218 @@ export class RegistrarEntregaAlimentosComponent implements OnInit {
       .filter(e => e.fechaRecepcion === fecha)
       .sort((a, b) => (b.id ?? 0) - (a.id ?? 0) || a.ingrediente.localeCompare(b.ingrediente, 'es'));
 
+    // Se normaliza la unidad para que "Kg" y "kg" se sumen juntas (72 Kg y no "6 Kg · 66 kg")
     const porUnidad = new Map<string, number>();
-    for (const e of items) porUnidad.set(e.unidad, (porUnidad.get(e.unidad) ?? 0) + e.cantidad);
+    for (const e of items) {
+      const u = this.normalizarUnidad(e.unidad) || 'Sin unidad';
+      porUnidad.set(u, (porUnidad.get(u) ?? 0) + e.cantidad);
+    }
     const totales = Array.from(porUnidad.entries())
       .map(([unidad, total]) => `${Math.round(total * 100) / 100} ${unidad}`)
       .join(' · ');
 
     return { fecha, items, totales };
+  }
+
+  // =====================================================
+  //  DETALLE DEL PRODUCTO
+  // =====================================================
+  productoDetalle: FilaEntrega | null = null;
+
+  // Clic en un producto registrado: muestra su detalle. Segundo clic sobre el mismo = lo cierra.
+  abrirDetalleProducto(item: FilaEntrega): void {
+    this.productoDetalle = this.esMismoProducto(this.productoDetalle, item) ? null : item;
+  }
+
+  cerrarDetalleProducto(): void {
+    this.productoDetalle = null;
+  }
+
+  // Productos elegidos en el menú: se muestran en el panel de Inventario con los datos de su entrada
+  seleccionados: FilaEntrega[] = [];
+
+  // Clic en una tarjeta del menú: la agrega al inventario (su última entrada). Otro clic la quita.
+  abrirDetalleDesdeCatalogo(producto: ProductoCatalogo): void {
+    const existente = this.seleccionados.findIndex(s => s.idIngrediente === producto.id);
+    if (existente >= 0) {
+      this.seleccionados.splice(existente, 1);
+      return;
+    }
+
+    const ultima = this.historial
+      .filter(e => e.idIngrediente === producto.id)
+      .sort((a, b) => b.fechaRecepcion.localeCompare(a.fechaRecepcion) || ((b.id ?? 0) - (a.id ?? 0)))[0];
+
+    if (!ultima) {
+      void this.alertas.warning('Sin inventario', `${producto.nombre} todavía no tiene entradas en el inventario.`);
+      return;
+    }
+    this.seleccionados.push(ultima);
+  }
+
+  quitarSeleccionado(item: FilaEntrega): void {
+    this.seleccionados = this.seleccionados.filter(s => s.idIngrediente !== item.idIngrediente);
+  }
+
+  // Para resaltar la fila elegida (usa el id si existe)
+  esMismoProducto(a: FilaEntrega | null, b: FilaEntrega | null): boolean {
+    if (!a || !b) return false;
+    return a.id != null && b.id != null
+      ? a.id === b.id
+      : a.ingrediente === b.ingrediente && a.fechaRecepcion === b.fechaRecepcion;
+  }
+
+  // ¿La tarjeta del menú está seleccionada?
+  tarjetaActiva(producto: ProductoCatalogo): boolean {
+    return this.seleccionados.some(s => s.idIngrediente === producto.id);
+  }
+
+  // ===================== ENVIAR A LAS INSTITUCIONES =====================
+  // Flujo: icono de la escuela en un producto seleccionado -> ventana emergente -> se ESCRIBE la institución
+  // (puede ser más de una), la cantidad de cada una, la fecha de salida y la de entrega -> Enviar ->
+  // queda en la pestaña Historial (un registro por institución).
+  envioProducto: FilaEntrega | null = null;   // producto de la ventana emergente (null = cerrada)
+  envioUnidad = 'Kg';
+  envioFechaSalida = '';
+  envioFechaEntrega = '';
+  envioDestinos: EnvioDestino[] = [];
+  envioInstitucionTexto = '';                 // institución que se está escribiendo
+  errorEnvio = '';
+  hoyEnvio = this.fechaHoy();
+  mostrarHistorialEnvios = false;
+
+  // Cuando tengas la ruta del backend para envíos, cambia el guardado en enviarAInstituciones() por una llamada http.post
+  private readonly claveEnvios = 'sirae_envios_institucion';
+  historialEnvios: EnvioRegistro[] = this.leerEnvios();
+
+  private leerEnvios(): EnvioRegistro[] {
+    try {
+      const datos = JSON.parse(localStorage.getItem(this.claveEnvios) || '[]');
+      return Array.isArray(datos) ? datos : [];
+    } catch { return []; }
+  }
+
+  trackEnvioHist = (_: number, r: EnvioRegistro) => r.id;
+
+  // ¿Este producto ya aparece en el historial de envíos? (marca "✓ Enviado" en la tarjeta)
+  fueEnviado(nombre: string): boolean {
+    return this.historialEnvios.some(e => e.ingrediente === nombre);
+  }
+
+  // Instituciones a las que ya se envió este producto ("Ola, Sanna"); '' si aún no se ha enviado
+  destinosEnviados(nombre: string): string {
+    const lista = this.historialEnvios
+      .filter(e => e.ingrediente === nombre)
+      .map(e => e.destino);
+    return Array.from(new Set(lista)).join(', ');
+  }
+
+  // Clic en el icono de la escuela de un producto
+  abrirModalEnvio(item: FilaEntrega): void {
+    this.hoyEnvio = this.fechaHoy();
+    this.envioProducto = item;
+    this.envioUnidad = this.normalizarUnidad(item.unidad) || 'Kg';
+    this.envioFechaSalida = this.hoyEnvio;
+    this.envioFechaEntrega = this.hoyEnvio;
+    this.envioDestinos = [];            // la institución se escribe, ya no viene pre-elegida
+    this.envioInstitucionTexto = '';
+    this.errorEnvio = '';
+  }
+
+  cerrarModalEnvio(): void {
+    this.envioProducto = null;
+    this.envioInstitucionTexto = '';
+  }
+
+  // Agrega a la lista la institución que se escribió
+  agregarDestinoEscrito(): void {
+    const nombre = this.envioInstitucionTexto.trim();
+    if (!nombre) return;
+    const existe = this.envioDestinos.some(d => d.institucion.toLowerCase() === nombre.toLowerCase());
+    if (existe) {
+      this.errorEnvio = 'Esa institución ya está en la lista.';
+    } else {
+      this.errorEnvio = '';
+      this.envioDestinos.push({ institucion: nombre, cantidad: null });
+    }
+    this.envioInstitucionTexto = '';
+  }
+
+  quitarDestinoEnvio(indice: number): void {
+    this.envioDestinos.splice(indice, 1);
+  }
+
+  // Botones - y + de la cantidad
+  ajustarCantidadDestino(destino: EnvioDestino, paso: number): void {
+    const nueva = Math.max(0, Math.round(((destino.cantidad ?? 0) + paso) * 100) / 100);
+    destino.cantidad = nueva > 0 ? nueva : null;
+  }
+
+  // Si cambia la salida y la entrega queda antes, la entrega se acomoda a la misma fecha
+  alCambiarSalidaEnvio(): void {
+    if (this.envioFechaEntrega && this.envioFechaSalida && this.envioFechaEntrega < this.envioFechaSalida) {
+      this.envioFechaEntrega = this.envioFechaSalida;
+    }
+  }
+
+  get totalEnvio(): number {
+    const total = this.envioDestinos.reduce((suma, d) => suma + (d.cantidad ?? 0), 0);
+    return Math.round(total * 100) / 100;
+  }
+
+  enviarAInstituciones(): void {
+    const prod = this.envioProducto;
+    if (!prod) return;
+
+    // Si dejó una institución escrita sin pulsar "Agregar", se agrega sola
+    if (this.envioInstitucionTexto.trim()) this.agregarDestinoEscrito();
+
+    const hoy = this.fechaHoy();
+    const destinos = this.envioDestinos;
+
+    if (destinos.length === 0) { this.errorEnvio = 'Escribe al menos una institución.'; return; }
+
+    const sinCantidad = destinos.filter(d => !d.cantidad || d.cantidad <= 0);
+    if (sinCantidad.length > 0) {
+      this.errorEnvio = `Escribe la cantidad de: ${sinCantidad.map(d => d.institucion).join(', ')}.`;
+      return;
+    }
+    if (this.totalEnvio > prod.cantidad) {
+      this.errorEnvio = `La suma (${this.totalEnvio} ${this.envioUnidad}) es mayor a la disponible (${prod.cantidad} ${this.envioUnidad}).`;
+      return;
+    }
+    if (!this.envioFechaSalida || !this.envioFechaEntrega) { this.errorEnvio = 'Selecciona la fecha de salida y la de entrega.'; return; }
+    if (this.envioFechaSalida < hoy) { this.errorEnvio = 'La fecha de salida no puede ser anterior a hoy.'; return; }
+    if (this.envioFechaEntrega < this.envioFechaSalida) { this.errorEnvio = 'La fecha de entrega no puede ser anterior a la de salida.'; return; }
+
+    const registros: EnvioRegistro[] = destinos.map((d, i) => ({
+      id: Date.now() + i,
+      ingrediente: prod.ingrediente,
+      cantidad: d.cantidad!,
+      unidad: this.envioUnidad,
+      destino: d.institucion,
+      fechaSalida: this.envioFechaSalida,
+      fechaEntrega: this.envioFechaEntrega,
+      enviadoEl: hoy,
+    }));
+
+    const actualizado = [...registros, ...this.historialEnvios];   // lo más reciente primero
+    try {
+      localStorage.setItem(this.claveEnvios, JSON.stringify(actualizado));
+    } catch {
+      this.errorEnvio = 'No se pudo guardar el envío en este navegador.';
+      return;
+    }
+
+    this.historialEnvios = actualizado;
+    this.envioProducto = null;
+    this.envioInstitucionTexto = '';
+    this.errorEnvio = '';
+    this.mostrarHistorialEnvios = true;   // se abre el Historial para ver que quedó registrado
+    void this.alertas.success(
+      'Envío registrado',
+      `${prod.ingrediente} se envió a ${registros.length} institución(es), con salida el ${this.fechaCorta(registros[0].fechaSalida)}.`
+    );
   }
 
   // ===================== CALENDARIO DE ENTREGAS =====================
@@ -1122,17 +1359,6 @@ export class RegistrarEntregaAlimentosComponent implements OnInit {
 
   cerrarModalDia(): void {
     this.modalDiaAbierto = false;
-  }
-
-  // ===================== MODAL "DETALLE DEL PRODUCTO" (clic en un producto de Última entrega) =====================
-  productoDetalle: FilaEntrega | null = null;
-
-  abrirDetalleProducto(item: FilaEntrega): void {
-    this.productoDetalle = item;
-  }
-
-  cerrarDetalleProducto(): void {
-    this.productoDetalle = null;
   }
 
   // "18 de septiembre de 2025" (fechaLarga ya existe y lleva el día de la semana)
