@@ -265,7 +265,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       id: 'secciones_menu',
       nombre: 'Secciones',
       singular: 'sección',
-      icon: 'groups',
+      icon: 'lunch_dining',
       idField: 'id_seccion',
       campos: [
         { name: 'nombre_seccion', label: 'Nombre de la sección', type: 'text', required: true, placeholder: 'Ej: Desayuno' },

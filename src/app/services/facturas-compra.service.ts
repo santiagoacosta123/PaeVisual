@@ -126,4 +126,13 @@ export class FacturasCompraService {
       map(res => Array.isArray(res) ? res : (res?.results || []))
     );
   }
+
+  actualizarStockMinimo(idInventarioCentral: number, stockMinimo: number): Observable<any> {
+    return this.http.patch<any>(
+      `${this.inventarioCentralUrl}${idInventarioCentral}/`,
+      { stock_minimo: stockMinimo },
+      this.getHeaders()
+    );
+  }
 }
+

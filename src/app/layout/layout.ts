@@ -108,9 +108,8 @@ export class LayoutComponent implements OnInit {
       // Asignación de institución para el administrador
       this.institucionUsuario = usuario.institucion || (this.esAdministrador ? 'Institución Educativa Asignada' : '');
 
-      // Primer ingreso con contraseña provisional
+      // Primer ingreso con contraseña provisional (preparar vista para cuando abra su perfil)
       if (usuario.debe_cambiar_password) {
-        this.mostrarPerfil = true;
         this.vistaActual = 'password';
         this.passwordMensaje = 'Por seguridad, debes actualizar tu contraseña provisional en este primer inicio de sesión.';
       }

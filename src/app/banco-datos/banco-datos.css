@@ -27,10 +27,10 @@
   width: 100%;
   box-sizing: border-box;
   position: sticky;
-  top: -24px;
-  z-index: 20;
+  top: 0;
+  z-index: 30;
   background: #f8fafc;
-  padding: 8px 0 16px 0;
+  padding: 14px 0 14px 0;
   border-bottom: 1px solid #e2e8f0;
 }
 
@@ -148,6 +148,10 @@
   padding: 18px 14px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
   box-sizing: border-box;
+  position: sticky;
+  top: 86px;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
 }
 
 .bd-sidebar-title {

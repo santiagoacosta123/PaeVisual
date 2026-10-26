@@ -59,6 +59,12 @@ export class FacturasCompraComponent implements OnInit {
   facturaAAnular: FacturaCompra | null = null;
   motivoAnulacion: string = '';
 
+  // Modal Ajustar Stock Mínimo
+  modalStockMinimoAbierto = false;
+  itemStockMinimoSeleccionado: InventarioCentralItem | null = null;
+  nuevoStockMinimo: number = 0;
+  guardandoStockMinimo = false;
+
   constructor(
     private facturasService: FacturasCompraService,
     private http: HttpClient,
@@ -399,6 +405,46 @@ export class FacturasCompraComponent implements OnInit {
           this.cdr.detectChanges();
         },
       });
+  }
+
+  abrirAjusteStockMinimo(item: InventarioCentralItem): void {
+    this.itemStockMinimoSeleccionado = item;
+    this.nuevoStockMinimo = Number(item.stock_minimo) || 0;
+    this.modalStockMinimoAbierto = true;
+    this.cdr.detectChanges();
+  }
+
+  cerrarAjusteStockMinimo(): void {
+    this.modalStockMinimoAbierto = false;
+    this.itemStockMinimoSeleccionado = null;
+    this.cdr.detectChanges();
+  }
+
+  guardarStockMinimo(): void {
+    if (!this.itemStockMinimoSeleccionado) return;
+    if (this.nuevoStockMinimo < 0) {
+      void this.alertas.error('Valor inválido', 'El stock mínimo no puede ser negativo.');
+      return;
+    }
+    this.guardandoStockMinimo = true;
+    const id = this.itemStockMinimoSeleccionado.id_inventario_central;
+    this.facturasService.actualizarStockMinimo(id, this.nuevoStockMinimo).subscribe({
+      next: () => {
+        this.guardandoStockMinimo = false;
+        if (this.itemStockMinimoSeleccionado) {
+          this.itemStockMinimoSeleccionado.stock_minimo = this.nuevoStockMinimo;
+        }
+        this.cerrarAjusteStockMinimo();
+        void this.alertas.success('Stock mínimo actualizado', 'El umbral de alerta ha sido guardado exitosamente.');
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.guardandoStockMinimo = false;
+        console.error('Error al actualizar stock mínimo:', err);
+        this.cdr.detectChanges();
+        void this.alertas.error('Error', 'No se pudo actualizar el stock mínimo en el servidor.');
+      }
+    });
   }
 
   private formularioVacio() {

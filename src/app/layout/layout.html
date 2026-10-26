@@ -177,10 +177,10 @@
   <!-- ================= SIDEBAR LATERAL ================= -->
   <aside class="modern-sidebar">
     
-    <!-- Logo SIRAE Oficial (desde public/) -->
+    <!-- Logo SIRAE Oficial (versión de alto contraste para fondo claro) -->
     <div class="modern-sidebar-logo">
       <a routerLink="inicio" class="modern-brand" title="SIRAE - Sistema de Información y Registro Alimentario Escolar">
-        <img src="sirae-logo.png" alt="Logo SIRAE" class="modern-brand-img" />
+        <img src="sirae-logo-dark.png" alt="Logo SIRAE" class="modern-brand-img" />
       </a>
     </div>
 
@@ -205,16 +205,16 @@
         <span class="modern-nav-text">Banco de Datos</span>
       </a>
 
-      <!-- BODEGA CENTRAL (Stock Global) -->
-      <a *ngIf="esSuperAdministrador" routerLink="bodega-central" routerLinkActive="active" class="modern-nav-item" title="Bodega Central">
-        <span class="material-symbols-outlined modern-nav-icon" aria-hidden="true">warehouse</span>
-        <span class="modern-nav-text">Bodega Central</span>
-      </a>
-
-      <!-- FACTURAS DE COMPRA (Super Administrador) -->
+      <!-- FACTURAS DE COMPRA (Super Administrador: primero las facturas para registrar insumos) -->
       <a *ngIf="esSuperAdministrador" routerLink="facturas-compra" routerLinkActive="active" class="modern-nav-item" title="Facturas de Compra">
         <span class="material-symbols-outlined modern-nav-icon" aria-hidden="true">receipt_long</span>
         <span class="modern-nav-text">Facturas</span>
+      </a>
+
+      <!-- BODEGA CENTRAL (Stock Global: refleja existencias ingresadas) -->
+      <a *ngIf="esSuperAdministrador" routerLink="bodega-central" routerLinkActive="active" class="modern-nav-item" title="Bodega Central">
+        <span class="material-symbols-outlined modern-nav-icon" aria-hidden="true">warehouse</span>
+        <span class="modern-nav-text">Bodega Central</span>
       </a>
 
       <!-- RECEPCIÓN DE ENTREGAS (Exclusivo para Administrador de Institución) -->
@@ -235,20 +235,16 @@
         <span class="modern-nav-text">Usuarios</span>
       </a>
 
-      <!-- REPORTES (Para ambos) -->
-      <a routerLink="reportes-consumo" routerLinkActive="active" class="modern-nav-item" title="Reportes">
+      <!-- REPORTES (Oculto para Super Administrador, solo para otros roles) -->
+      <a *ngIf="!esSuperAdministrador" routerLink="reportes-consumo" routerLinkActive="active" class="modern-nav-item" title="Reportes">
         <span class="material-symbols-outlined modern-nav-icon" aria-hidden="true">bar_chart</span>
         <span class="modern-nav-text">Reportes</span>
       </a>
 
     </nav>
 
-    <!-- Pie del Sidebar: Configuración y Cerrar Sesión -->
+    <!-- Pie del Sidebar: Solo Cerrar Sesión -->
     <div class="modern-sidebar-bottom">
-      <button type="button" class="modern-nav-item modern-config-btn" (click)="togglePerfil()" title="Configuración y perfil">
-        <span class="material-symbols-outlined modern-nav-icon" aria-hidden="true">settings</span>
-        <span class="modern-nav-text">Configuración</span>
-      </button>
       <button type="button" class="modern-nav-item modern-logout-btn" (click)="cerrarSesion()" title="Cerrar sesión">
         <span class="material-symbols-outlined modern-nav-icon" aria-hidden="true">logout</span>
         <span class="modern-nav-text">Cerrar Sesión</span>
@@ -282,6 +278,9 @@
 
       <!-- Zona Derecha: Notificaciones y Perfil -->
       <div class="modern-header-actions">
+
+        <!-- Telón de fondo para cerrar popovers al hacer click fuera -->
+        <div *ngIf="mostrarPerfil || mostrarNotificaciones" class="popover-backdrop" (click)="cerrarPanel()"></div>
 
         <!-- Botón Notificaciones -->
         <div class="dropdown-container">
@@ -328,13 +327,16 @@
             
             <!-- Vista General -->
             <div *ngIf="vistaActual === 'perfil'">
-              <div class="profile-popover-head">
+              <div class="profile-popover-head" style="position:relative;">
                 <img src="administrador.png" class="profile-popover-avatar" alt="Foto de perfil" />
                 <div class="profile-meta-wrap">
                   <strong class="profile-popover-name">{{ perfil.nombre }}</strong>
                   <span class="profile-popover-email">{{ perfil.correo }}</span>
                   <span class="profile-popover-badge">{{ perfil.rol }}</span>
                 </div>
+                <button type="button" (click)="cerrarPanel()" style="position:absolute; right:0; top:0; background:none; border:none; color:#94a3b8; cursor:pointer; padding:4px;" title="Cerrar">
+                  <span class="material-symbols-outlined" style="font-size:18px;">close</span>
+                </button>
               </div>
 
               <div class="profile-actions-list">
@@ -355,7 +357,12 @@
 
             <!-- Vista Editar Perfil -->
             <div *ngIf="vistaActual === 'editar'" class="profile-edit-view">
-              <h4 class="popover-view-title">Editar Perfil</h4>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <h4 class="popover-view-title" style="margin:0;">Editar Perfil</h4>
+                <button type="button" (click)="cerrarPanel()" style="background:none; border:none; color:#94a3b8; cursor:pointer; padding:2px;" title="Cerrar">
+                  <span class="material-symbols-outlined" style="font-size:18px;">close</span>
+                </button>
+              </div>
               <div class="popover-form-group">
                 <label>Nombre</label>
                 <input [(ngModel)]="editForm.nombre" type="text" class="popover-input" />
@@ -366,13 +373,18 @@
               </div>
               <div class="popover-btn-row">
                 <button type="button" class="btn-save-popover" (click)="guardarPerfil()">Guardar</button>
-                <button type="button" class="btn-cancel-popover" (click)="irA('perfil')">Cancelar</button>
+                <button type="button" class="btn-cancel-popover" (click)="irA('perfil')">Volver</button>
               </div>
             </div>
 
             <!-- Vista Cambiar Contraseña -->
             <div *ngIf="vistaActual === 'password'" class="profile-edit-view">
-              <h4 class="popover-view-title">Cambiar Contraseña</h4>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <h4 class="popover-view-title" style="margin:0;">Cambiar Contraseña</h4>
+                <button type="button" (click)="cerrarPanel()" style="background:none; border:none; color:#94a3b8; cursor:pointer; padding:2px;" title="Cerrar">
+                  <span class="material-symbols-outlined" style="font-size:18px;">close</span>
+                </button>
+              </div>
               <div class="popover-form-group">
                 <input [(ngModel)]="passwordForm.actual" type="password" placeholder="Contraseña actual" class="popover-input" />
               </div>
@@ -388,7 +400,7 @@
                 <button type="button" class="btn-save-popover" (click)="guardarPassword()" [disabled]="passwordProcesando">
                   {{ passwordProcesando ? 'Guardando…' : 'Cambiar' }}
                 </button>
-                <button type="button" class="btn-cancel-popover" (click)="irA('perfil')">Cancelar</button>
+                <button type="button" class="btn-cancel-popover" (click)="cerrarPanel()">Cancelar</button>
               </div>
             </div>
 

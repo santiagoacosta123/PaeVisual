@@ -348,6 +348,14 @@
   box-sizing: border-box;
 }
 
+.popover-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  background: transparent;
+  cursor: default;
+}
+
 /* Notificaciones Popover */
 .notif-popover {
   width: 320px;

@@ -48,6 +48,7 @@ export class MenusComponent implements OnInit {
   contratos: any[] = [];
   usuariosManipuladoras: any[] = [];
   esJefa = false;
+  esSuperAdministrador = false;
   esAdministrador = false;
   cargandoMenus = false;
 
@@ -110,7 +111,11 @@ export class MenusComponent implements OnInit {
     const rol = this.authService.obtenerUsuario()?.rol;
     this.esJefa = this.authService.esJefa(rol);
     const rolNorm = this.authService.normalizarRol(rol);
+    this.esSuperAdministrador = ['superadmin', 'super administrador', 'superadministrador'].includes(rolNorm);
     this.esAdministrador = ['admin', 'administrador', 'superadmin', 'super administrador', 'superadministrador'].includes(rolNorm);
+    if (this.esSuperAdministrador) {
+      this.pestanaActiva = 'menus';
+    }
     this.cargarDatos();
   }
 
@@ -169,6 +174,7 @@ export class MenusComponent implements OnInit {
   }
 
   cambiarPestana(pestana: string): void {
+    if (this.esSuperAdministrador && pestana === 'platos') return;
     if (this.esJefa && !['menus', 'platos'].includes(pestana)) return;
     if (pestana === 'preparaciones') return;
     this.pestanaActiva = pestana;

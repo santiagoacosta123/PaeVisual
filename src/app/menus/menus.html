@@ -20,8 +20,8 @@
 
     <!-- Pestañas y Botón Acción -->
     <div class="flex flex-wrap items-center gap-3">
-      <!-- Pestañas -->
-      <div class="inline-flex bg-slate-100 p-1 rounded-xl border border-slate-200 gap-1">
+      <!-- Pestañas (Solo visibles para administrador institucional y jefa; Super Admin gestiona Menús) -->
+      <div *ngIf="!esSuperAdministrador" class="inline-flex bg-slate-100 p-1 rounded-xl border border-slate-200 gap-1">
         <button type="button" (click)="cambiarPestana('menus')"
           [class]="pestanaActiva === 'menus' ? 'bg-[#fac94b] text-slate-900 font-bold shadow-xs' : 'bg-transparent text-slate-600 hover:text-slate-900 font-medium'"
           class="px-4 py-2 rounded-lg text-xs transition cursor-pointer">
@@ -39,7 +39,7 @@
       <button type="button" (click)="abrirFormulario()"
         class="h-[38px] px-5 inline-flex items-center justify-center gap-2 border-none rounded-full bg-[#fac94b] text-slate-900 text-[13px] font-bold cursor-pointer whitespace-nowrap shadow-[0_2px_8px_rgba(251,191,36,0.28)] transition-all hover:bg-[#f59e0b]">
         <span class="material-symbols-outlined text-[18px]">add</span>
-        <span>{{ pestanaActiva === 'menus' ? 'Nuevo menú' : 'Nuevo plato' }}</span>
+        <span>{{ (esSuperAdministrador || pestanaActiva === 'menus') ? 'Nuevo menú' : 'Nuevo plato' }}</span>
       </button>
     </div>
   </header>
