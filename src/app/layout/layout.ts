@@ -150,11 +150,13 @@ export class LayoutComponent implements OnInit {
 
     if (url.includes('bodega-central') || (url.includes('facturas-compra') && url.includes('tab=bodega'))) {
       this.pageTitle = 'Bodega Central';
+      this.cdr.detectChanges();
       return;
     }
 
     if (url.includes('facturas-compra')) {
-      this.pageTitle = 'Facturas';
+      this.pageTitle = 'Facturas de Compra';
+      this.cdr.detectChanges();
       return;
     }
 
@@ -165,6 +167,7 @@ export class LayoutComponent implements OnInit {
     this.pageTitle = rutaEncontrada
       ? routeTitles[rutaEncontrada]
       : 'SIRAE';
+    this.cdr.detectChanges();
   }
 
   @HostListener('document:click', ['$event'])

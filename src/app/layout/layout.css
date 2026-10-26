@@ -19,7 +19,7 @@
    ========================================================= */
 
 .modern-sidebar {
-  width: 240px;
+  width: 252px;
   background: #ffffff;
   border-right: 1px solid #e2e8f0;
   display: flex;
@@ -30,37 +30,40 @@
 }
 
 .modern-sidebar-logo {
-  padding: 24px 20px 20px 24px;
+  padding: 20px 18px 18px 18px;
   display: flex;
   align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid #f1f5f9;
 }
 
 .modern-brand {
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: center;
   text-decoration: none;
+  width: 100%;
 }
 
-.modern-brand-svg {
-  flex-shrink: 0;
+.modern-brand-img {
+  height: 48px;
+  max-width: 190px;
+  width: auto;
+  object-fit: contain;
+  transition: transform 0.2s ease;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.04));
 }
 
-.modern-brand-name {
-  font-family: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;
-  font-size: 26px;
-  font-weight: 800;
-  color: #1e3a5f;
-  letter-spacing: -0.5px;
-  line-height: 1;
+.modern-brand-img:hover {
+  transform: scale(1.02);
 }
 
 /* Lista de Navegación */
 .modern-sidebar-nav {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 0 12px;
+  gap: 5px;
+  padding: 16px 12px;
   flex: 1;
   overflow-y: auto;
 }
@@ -69,13 +72,13 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  height: 42px;
-  padding: 0 14px;
+  height: 44px;
+  padding: 0 16px;
   border-radius: 12px;
   text-decoration: none;
   color: #475569;
   font-size: 13.5px;
-  font-weight: 500;
+  font-weight: 600;
   transition: all 0.15s ease;
   border: none;
   background: transparent;
@@ -86,18 +89,19 @@
 }
 
 .modern-nav-item:hover:not(.active) {
-  background: #f8fafc;
-  color: #0f172a;
+  background: #fffbeb;
+  color: #92400e;
 }
 
 .modern-nav-item:hover:not(.active) .modern-nav-icon {
-  color: #0f172a;
+  color: #d97706;
 }
 
 .modern-nav-item.active {
   background: #fef3c7;
-  color: #0f172a;
-  font-weight: 600;
+  color: #92400e;
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(245, 158, 11, 0.12);
 }
 
 .modern-nav-icon {
@@ -119,13 +123,13 @@
   flex: 1;
 }
 
-/* Pie del Sidebar: Configuración */
+/* Pie del Sidebar: Configuración y Cerrar Sesión */
 .modern-sidebar-bottom {
   padding: 12px;
   border-top: 1px solid #f1f5f9;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
 }
 
 .modern-config-btn {
@@ -135,6 +139,23 @@
 .modern-config-btn:hover {
   background: #f8fafc;
   color: #0f172a;
+}
+
+.modern-logout-btn {
+  color: #dc2626;
+}
+
+.modern-logout-btn .modern-nav-icon {
+  color: #dc2626;
+}
+
+.modern-logout-btn:hover {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.modern-logout-btn:hover .modern-nav-icon {
+  color: #b91c1c;
 }
 
 /* =========================================================

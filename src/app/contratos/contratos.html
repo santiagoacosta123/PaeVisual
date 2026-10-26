@@ -1,6 +1,5 @@
-<div style="display:flex; flex-direction:column; gap:18px; position:relative; font-family: system-ui, -apple-system, sans-serif;">
+<div style="display:flex; flex-direction:column; gap:18px; position:relative; font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;">
       
-  <!-- Contenido Dinámico (Pestañas eliminadas por redundancia) -->
   <!-- Contenido Dinámico -->
   <div [ngSwitch]="pestanaActiva">
     
@@ -8,21 +7,26 @@
     <div *ngSwitchCase="'contratos'" style="display:flex; flex-direction:column; gap:20px;">
 
       <!-- ===================== CABECERA PRINCIPAL ===================== -->
-      <header style="width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 20px 24px; background: linear-gradient(135deg, #fffcf0 0%, #ffffff 100%); border: 1px solid #f2ead0; border-radius: 12px; box-shadow: 0 4px 15px rgba(250, 201, 75, 0.05);">
-        <div>
-          <h1 style="margin: 0; color: #1a1a1a; font-size: 22px; font-weight: 700; letter-spacing: -0.5px;">Contratos recientes</h1>
-          <p style="margin: 4px 0 0; color: #64748b; font-size: 13px;">Últimos contratos registrados en la plataforma.</p>
+      <header style="width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 24px; background: linear-gradient(135deg, #fffcf0 0%, #ffffff 100%); border: 1px solid #f2ead0; border-radius: 14px; box-shadow: 0 4px 15px rgba(250, 201, 75, 0.05); position: sticky; top: -24px; z-index: 20; box-sizing: border-box; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 14px;">
+          <div style="width: 48px; height: 48px; border-radius: 50%; background: #fef3c7; border: 1.5px solid #fde68a; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 2px 6px rgba(245, 158, 11, 0.08);">
+            <span class="material-symbols-outlined" style="font-size: 24px; color: #b45309;">description</span>
+          </div>
+          <div>
+            <h1 style="margin: 0; color: #0f172a; font-size: 20px; font-weight: 800; letter-spacing: -0.5px;">Contratos Recientes</h1>
+            <p style="margin: 3px 0 0; color: #64748b; font-size: 13px;">Gestión y asignación de cupos institucionales del programa PAE.</p>
+          </div>
         </div>
 
         <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-          <div style="display:flex; align-items:center; gap:8px; background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; padding:8px 12px; min-width:240px; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+          <div style="display:flex; align-items:center; gap:8px; background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:8px 14px; min-width:240px; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-            <input type="text" [(ngModel)]="filtroBusquedaContratos" placeholder="Buscar contrato..." style="border:none; background:transparent; outline:none; font-size:13px; width:100%; color:#0f172a;">
+            <input type="text" [(ngModel)]="filtroBusquedaContratos" placeholder="Buscar por contrato o colegio..." style="border:none; background:transparent; outline:none; font-size:13px; width:100%; color:#0f172a; font-family: inherit;">
           </div>
 
-          <button type="button" (click)="abrirModalGrandeContrato('nuevo')" style="height: 38px; padding: 0 20px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: none; border-radius: 8px; background: #fac94b; color: #000000; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; box-shadow: 0 2px 6px rgba(250, 201, 75, 0.3); transition: all 0.2s ease;">
-            <span class="material-symbols-outlined" style="font-size: 18px; color: #000000;">add</span>
-            <span style="color: #000000; font-weight: 700;">Nuevo contrato</span>
+          <button type="button" (click)="abrirModalGrandeContrato('nuevo')" style="height: 40px; padding: 0 22px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: none; border-radius: 9999px; background: #fac94b; color: #0f172a; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; box-shadow: 0 2px 8px rgba(251, 191, 36, 0.28); transition: all 0.2s ease;">
+            <span class="material-symbols-outlined" style="font-size: 18px; color: #0f172a;">add</span>
+            <span style="color: #0f172a; font-weight: 700;">Nuevo contrato</span>
           </button>
         </div>
       </header>

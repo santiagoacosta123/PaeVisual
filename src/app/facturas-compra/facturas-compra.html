@@ -1,23 +1,27 @@
-<div class="flex w-full flex-col gap-6" style="font-family: 'Roboto', sans-serif;">
+<div class="flex w-full flex-col gap-6" style="font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;">
   
   <!-- Sección Principal -->
-  <section class="rounded-[24px] border border-slate-200/80 bg-white p-5 shadow-sm sm:p-7">
+  <section class="rounded-[20px] border border-slate-200/80 bg-white p-5 shadow-sm sm:p-7">
     
     <!-- Header para Modo Bodega Central Exclusivo -->
-    <header *ngIf="modoExclusivo === 'bodega'" class="mb-6 flex flex-col justify-between gap-4 rounded-[16px] border px-5 py-4 sm:flex-row sm:items-center"
-      style="background-color: rgba(244, 180, 31, 0.1); border-color: rgba(244, 180, 31, 0.3);">
-      <div>
-        <h1 class="m-0 flex items-center gap-2.5 text-lg font-bold tracking-tight text-slate-900">
-          <span class="material-symbols-outlined text-[22px]" style="color: #d97706;">warehouse</span>
-          Bodega Central (Stock Global)
-        </h1>
-        <p class="mb-0 mt-1 text-xs font-medium text-slate-600">
-          Control de existencias globales, balance de ingredientes y semáforo de disponibilidad del operador PAE.
-        </p>
+    <header *ngIf="modoExclusivo === 'bodega'" class="mb-6 flex flex-col justify-between gap-4 rounded-xl border border-[#f2ead0] px-6 py-5 sm:flex-row sm:items-center sticky top-[-24px] z-20 shadow-xs"
+      style="background: linear-gradient(135deg, #fffcf0 0%, #ffffff 100%);">
+      <div class="flex items-center gap-4">
+        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-amber-200 bg-amber-50 text-amber-700 shadow-xs">
+          <span class="material-symbols-outlined text-[24px]">warehouse</span>
+        </div>
+        <div>
+          <h1 class="m-0 text-xl font-bold tracking-tight text-slate-900">
+            Bodega Central (Stock Global)
+          </h1>
+          <p class="mb-0 mt-1 text-xs font-medium text-slate-600">
+            Control de existencias globales, balance de ingredientes y semáforo de disponibilidad del operador PAE.
+          </p>
+        </div>
       </div>
       <div class="flex flex-wrap items-center gap-2">
         <button type="button" (click)="cargarBodega()"
-          class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-[13px] font-bold text-slate-700 shadow-xs transition hover:bg-slate-50">
+          class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-full border border-slate-300 bg-white px-5 py-2.5 text-[13px] font-bold text-slate-700 shadow-xs transition hover:bg-slate-50">
           <span class="material-symbols-outlined text-[18px]">refresh</span>
           Actualizar Stock
         </button>
@@ -25,20 +29,24 @@
     </header>
 
     <!-- Header para Modo Facturas de Compra Exclusivo -->
-    <header *ngIf="modoExclusivo === 'facturas'" class="mb-6 flex flex-col justify-between gap-4 rounded-[16px] border px-5 py-4 sm:flex-row sm:items-center"
-      style="background-color: rgba(244, 180, 31, 0.1); border-color: rgba(244, 180, 31, 0.3);">
-      <div>
-        <h1 class="m-0 flex items-center gap-2.5 text-lg font-bold tracking-tight text-slate-900">
-          <span class="material-symbols-outlined text-[22px]" style="color: #d97706;">receipt_long</span>
-          Facturas de Compra
-        </h1>
-        <p class="mb-0 mt-1 text-xs font-medium text-slate-600">
-          Registro de compras a proveedores mayoristas y recepción técnica de insumos.
-        </p>
+    <header *ngIf="modoExclusivo === 'facturas'" class="mb-6 flex flex-col justify-between gap-4 rounded-xl border border-[#f2ead0] px-6 py-5 sm:flex-row sm:items-center sticky top-[-24px] z-20 shadow-xs"
+      style="background: linear-gradient(135deg, #fffcf0 0%, #ffffff 100%);">
+      <div class="flex items-center gap-4">
+        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-amber-200 bg-amber-50 text-amber-700 shadow-xs">
+          <span class="material-symbols-outlined text-[24px]">receipt_long</span>
+        </div>
+        <div>
+          <h1 class="m-0 text-xl font-bold tracking-tight text-slate-900">
+            Facturas de Compra
+          </h1>
+          <p class="mb-0 mt-1 text-xs font-medium text-slate-600">
+            Registro de compras a proveedores mayoristas y recepción técnica de insumos.
+          </p>
+        </div>
       </div>
       <div class="flex flex-wrap items-center gap-2">
         <button type="button" (click)="abrirModalRegistro()"
-          class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-[13px] font-black text-slate-900 shadow-md transition hover:brightness-95"
+          class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-full px-5 py-2.5 text-[13px] font-bold text-slate-900 shadow-md transition hover:brightness-95"
           style="background-color: #fac94b;">
           <span class="material-symbols-outlined text-[18px]">add</span>
           Registrar Factura
@@ -47,20 +55,24 @@
     </header>
 
     <!-- Header combinado solo si modoExclusivo === 'ambas' -->
-    <header *ngIf="modoExclusivo === 'ambas'" class="mb-6 flex flex-col justify-between gap-4 rounded-[16px] border px-5 py-4 sm:flex-row sm:items-center"
-      style="background-color: rgba(244, 180, 31, 0.1); border-color: rgba(244, 180, 31, 0.3);">
-      <div>
-        <h1 class="m-0 flex items-center gap-2.5 text-lg font-bold tracking-tight text-slate-900">
-          <span class="material-symbols-outlined text-[22px]" style="color: #d97706;">receipt_long</span>
-          Facturas de Compra & Bodega Central
-        </h1>
-        <p class="mb-0 mt-1 text-xs font-medium text-slate-600">
-          Registro de compras a proveedores mayoristas y control del stock central del operador PAE.
-        </p>
+    <header *ngIf="modoExclusivo === 'ambas'" class="mb-6 flex flex-col justify-between gap-4 rounded-xl border border-[#f2ead0] px-6 py-5 sm:flex-row sm:items-center sticky top-[-24px] z-20 shadow-xs"
+      style="background: linear-gradient(135deg, #fffcf0 0%, #ffffff 100%);">
+      <div class="flex items-center gap-4">
+        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-amber-200 bg-amber-50 text-amber-700 shadow-xs">
+          <span class="material-symbols-outlined text-[24px]">receipt_long</span>
+        </div>
+        <div>
+          <h1 class="m-0 text-xl font-bold tracking-tight text-slate-900">
+            Facturas de Compra & Bodega Central
+          </h1>
+          <p class="mb-0 mt-1 text-xs font-medium text-slate-600">
+            Registro de compras a proveedores mayoristas y control del stock central del operador PAE.
+          </p>
+        </div>
       </div>
       <div class="flex flex-wrap items-center gap-2">
         <button *ngIf="tabActiva === 'facturas'" type="button" (click)="abrirModalRegistro()"
-          class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-[13px] font-black text-slate-900 shadow-md transition hover:brightness-95"
+          class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-full px-5 py-2.5 text-[13px] font-bold text-slate-900 shadow-md transition hover:brightness-95"
           style="background-color: #fac94b;">
           <span class="material-symbols-outlined text-[18px]">add</span>
           Registrar Factura

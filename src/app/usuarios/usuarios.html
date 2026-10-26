@@ -1,25 +1,32 @@
-<div class="flex flex-col gap-5 relative font-sans">
+<div class="flex flex-col gap-5 relative" style="font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;">
 
   <!-- ===================== CABECERA PRINCIPAL ===================== -->
-  <header class="w-full flex items-center justify-between gap-5 px-6 py-5 rounded-xl border border-[#f2ead0] shadow-[0_4px_15px_rgba(250,201,75,0.05)]" style="background: linear-gradient(135deg, #fffcf0 0%, #ffffff 100%);">
-    <div>
-      <h1 class="m-0 text-[#1a1a1a] text-[22px] font-bold tracking-[-0.5px]">Gestión de Usuarios</h1>
-      <p class="m-0 mt-1 text-slate-500 text-[13px]">Administración de perfiles, roles y accesos del sistema (SIRAE).</p>
+  <header class="w-full flex flex-col lg:flex-row lg:items-center justify-between gap-4 px-6 py-5 rounded-xl border border-[#f2ead0] sticky top-[-24px] z-20 shadow-xs"
+    style="background: linear-gradient(135deg, #fffcf0 0%, #ffffff 100%);">
+    
+    <div class="flex items-center gap-4">
+      <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-amber-200 bg-amber-50 text-amber-700 shadow-xs">
+        <span class="material-symbols-outlined text-[24px]">group</span>
+      </div>
+      <div>
+        <h1 class="m-0 text-xl font-bold tracking-tight text-slate-900">Gestión de Usuarios</h1>
+        <p class="m-0 mt-0.5 text-xs font-medium text-slate-600">Administración de perfiles, roles institucionales y accesos del sistema SIRAE.</p>
+      </div>
     </div>
 
     <!-- Filtros y Botón -->
-    <div class="flex flex-wrap items-center gap-3">
+    <div class="flex flex-wrap items-center gap-2.5">
       <!-- Buscador -->
-      <div class="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-2 min-w-[240px] shadow-sm">
+      <div class="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3.5 py-2 min-w-[220px] shadow-xs">
         <svg class="w-4 h-4 text-slate-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="11" cy="11" r="8"></circle>
           <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
         </svg>
-        <input type="text" [(ngModel)]="filtroTexto" placeholder="Buscar por nombre, doc o correo..." class="border-none bg-transparent outline-none text-[13px] text-slate-900 w-full placeholder-slate-400">
+        <input type="text" [(ngModel)]="filtroTexto" placeholder="Buscar por nombre, doc o correo..." class="border-none bg-transparent outline-none text-[13px] text-slate-900 w-full placeholder-slate-400 font-sans">
       </div>
 
       <!-- Filtro Rol -->
-      <div class="w-48 sm:w-56">
+      <div class="w-44 sm:w-52">
         <app-custom-select
           [options]="opcionesFiltroRol"
           valueField="id_rol"
@@ -31,12 +38,12 @@
       </div>
 
       <!-- Botones Nuevo Usuario -->
-      <a routerLink="/crear-usuario" class="h-[38px] px-4 inline-flex items-center justify-center gap-2 border-none rounded-lg bg-[#fac94b] text-black text-[13px] font-bold cursor-pointer whitespace-nowrap shadow-[0_2px_6px_rgba(250,201,75,0.3)] transition-all hover:bg-[#f5b927] hover:-translate-y-[1px] no-underline" style="color: #000000 !important;">
-        <span class="material-symbols-outlined text-[18px]" style="color: #000000 !important;">person_add</span>
-        <span style="color: #000000 !important;">Asistente de registro</span>
+      <a routerLink="/crear-usuario" class="h-[38px] px-4 inline-flex items-center justify-center gap-2 border-none rounded-full bg-[#fac94b] text-slate-900 text-[13px] font-bold cursor-pointer whitespace-nowrap shadow-[0_2px_8px_rgba(251,191,36,0.28)] transition-all hover:bg-[#f59e0b] no-underline">
+        <span class="material-symbols-outlined text-[18px]">person_add</span>
+        <span>Asistente</span>
       </a>
 
-      <button type="button" (click)="abrirFormulario()" class="h-[38px] px-3.5 inline-flex items-center justify-center gap-1.5 border border-slate-300 rounded-lg bg-white text-slate-700 text-[13px] font-semibold cursor-pointer whitespace-nowrap hover:bg-slate-50 transition-all shadow-xs">
+      <button type="button" (click)="abrirFormulario()" class="h-[38px] px-4 inline-flex items-center justify-center gap-1.5 border border-slate-300 rounded-full bg-white text-slate-700 text-[13px] font-bold cursor-pointer whitespace-nowrap hover:bg-slate-50 transition-all shadow-xs">
         <span class="material-symbols-outlined text-[18px]">add</span>
         <span>Añadir rápido</span>
       </button>

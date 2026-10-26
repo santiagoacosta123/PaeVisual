@@ -177,16 +177,11 @@
   <!-- ================= SIDEBAR LATERAL ================= -->
   <aside class="modern-sidebar">
     
-    <!-- Logo SiRae -->
+    <!-- Logo SIRAE Oficial (desde public/) -->
     <div class="modern-sidebar-logo">
-      <div class="modern-brand">
-        <svg class="modern-brand-svg" width="34" height="34" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M18 4C18 4 14.5 9 14.5 14C14.5 16.5 16 18.5 18 19C20 18.5 21.5 16.5 21.5 14C21.5 9 18 4 18 4Z" fill="#F59E0B"/>
-          <path d="M11 11C11 11 8.5 15.5 10 19.5C10.8 21.5 12.8 22.8 15 22.5C14.5 20.5 14 18 14.8 15.5C15.2 14 16 12.5 16.5 11.5C14.5 11 12.5 10.8 11 11Z" fill="#FBBF24"/>
-          <path d="M25 11C25 11 27.5 15.5 26 19.5C25.2 21.5 23.2 22.8 21 22.5C21.5 20.5 22 18 21.2 15.5C20.8 14 20 12.5 19.5 11.5C21.5 11 23.5 10.8 25 11Z" fill="#FBBF24"/>
-        </svg>
-        <span class="modern-brand-name">SiRae</span>
-      </div>
+      <a routerLink="inicio" class="modern-brand" title="SIRAE - Sistema de Información y Registro Alimentario Escolar">
+        <img src="sirae-logo.png" alt="Logo SIRAE" class="modern-brand-img" />
+      </a>
     </div>
 
     <!-- Navegación con Íconos y Nombres -->
@@ -194,7 +189,7 @@
 
       <!-- INICIO -->
       <a routerLink="inicio" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="modern-nav-item" title="Inicio">
-        <span class="material-symbols-outlined modern-nav-icon" aria-hidden="true">home</span>
+        <span class="material-symbols-outlined modern-nav-icon" aria-hidden="true">dashboard</span>
         <span class="modern-nav-text">Inicio</span>
       </a>
 
@@ -216,8 +211,8 @@
         <span class="modern-nav-text">Bodega Central</span>
       </a>
 
-      <!-- FACTURAS (Super Administrador) -->
-      <a *ngIf="esSuperAdministrador" routerLink="facturas-compra" routerLinkActive="active" class="modern-nav-item" title="Facturas">
+      <!-- FACTURAS DE COMPRA (Super Administrador) -->
+      <a *ngIf="esSuperAdministrador" routerLink="facturas-compra" routerLinkActive="active" class="modern-nav-item" title="Facturas de Compra">
         <span class="material-symbols-outlined modern-nav-icon" aria-hidden="true">receipt_long</span>
         <span class="modern-nav-text">Facturas</span>
       </a>
@@ -236,7 +231,7 @@
 
       <!-- USUARIOS (Para ambos) -->
       <a routerLink="usuarios" routerLinkActive="active" class="modern-nav-item" title="Usuarios">
-        <span class="material-symbols-outlined modern-nav-icon" aria-hidden="true">people</span>
+        <span class="material-symbols-outlined modern-nav-icon" aria-hidden="true">group</span>
         <span class="modern-nav-text">Usuarios</span>
       </a>
 
@@ -248,11 +243,15 @@
 
     </nav>
 
-    <!-- Pie del Sidebar: Configuración -->
+    <!-- Pie del Sidebar: Configuración y Cerrar Sesión -->
     <div class="modern-sidebar-bottom">
       <button type="button" class="modern-nav-item modern-config-btn" (click)="togglePerfil()" title="Configuración y perfil">
         <span class="material-symbols-outlined modern-nav-icon" aria-hidden="true">settings</span>
         <span class="modern-nav-text">Configuración</span>
+      </button>
+      <button type="button" class="modern-nav-item modern-logout-btn" (click)="cerrarSesion()" title="Cerrar sesión">
+        <span class="material-symbols-outlined modern-nav-icon" aria-hidden="true">logout</span>
+        <span class="modern-nav-text">Cerrar Sesión</span>
       </button>
     </div>
 

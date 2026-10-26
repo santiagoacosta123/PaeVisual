@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
@@ -95,22 +95,22 @@ export class MenusComponent implements OnInit {
     id_detalle_plato: null, id_menu: '', id_plato: '',
     porcion_por_nino: null, total_a_preparar: null,
     unidad_total: '', estado_preparacion: 'Pendiente'
-  };
-
-  constructor(
+  };  constructor(
     private platosService: PlatosService,
     private seccionesService: SeccionesMenuService,
     private detallesService: DetallePlatosService,
     private menusService: MenusService,
     private catalogosService: SiraeService,
     private authService: AuthService,
-    private sweetAlert: SweetAlertService
+    private sweetAlert: SweetAlertService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
     const rol = this.authService.obtenerUsuario()?.rol;
     this.esJefa = this.authService.esJefa(rol);
-    this.esAdministrador = ['admin', 'administrador'].includes(this.authService.normalizarRol(rol));
+    const rolNorm = this.authService.normalizarRol(rol);
+    this.esAdministrador = ['admin', 'administrador', 'superadmin', 'super administrador', 'superadministrador'].includes(rolNorm);
     this.cargarDatos();
   }
 
@@ -130,10 +130,12 @@ export class MenusComponent implements OnInit {
           institucion: contratos.find(c => Number(c.id_contrato) === menu.id_contrato)?.institucion || `Contrato ${menu.id_contrato}`,
         }));
         this.cargandoMenus = false;
+        this.cdr.detectChanges();
       },
       error: (error) => {
         console.error('Error al cargar menús y catálogos:', error);
         this.cargandoMenus = false;
+        this.cdr.detectChanges();
         void this.sweetAlert.error(
           'No se pudieron cargar los menús',
           error.status === 403
@@ -144,7 +146,10 @@ export class MenusComponent implements OnInit {
     });
 
     this.platosService.getPlatos().subscribe({
-      next: (data) => this.platos = data,
+      next: (data) => {
+        this.platos = data;
+        this.cdr.detectChanges();
+      },
       error: (err) => {
         console.error('Error al cargar platos:', err);
         void this.sweetAlert.error('No se pudo cargar el catálogo de platos', 'Verifica tu sesión y vuelve a intentarlo.');
@@ -152,7 +157,10 @@ export class MenusComponent implements OnInit {
     });
 
     this.seccionesService.getSecciones().subscribe({
-      next: (data) => this.seccionesMenu = data,
+      next: (data) => {
+        this.seccionesMenu = data;
+        this.cdr.detectChanges();
+      },
       error: (err) => {
         console.error('Error al cargar secciones de menú:', err);
         void this.sweetAlert.error('No se pudieron cargar las secciones', 'Verifica la conexión e intenta nuevamente.');
@@ -164,6 +172,8 @@ export class MenusComponent implements OnInit {
     if (this.esJefa && !['menus', 'platos'].includes(pestana)) return;
     if (pestana === 'preparaciones') return;
     this.pestanaActiva = pestana;
+    this.cdr.detectChanges();
+  } pestana;
     this.paginaActual = 1;
     this.limpiarFiltros();
     this.cerrarFormulario();
@@ -261,6 +271,7 @@ export class MenusComponent implements OnInit {
     this.esEdicion = false;
     this.resetFormularios();
     this.mostrarFormulario = true;
+    this.cdr.detectChanges();
   }
 
   abrirEdicion(item: any): void {
@@ -274,11 +285,13 @@ export class MenusComponent implements OnInit {
       this.preparacionForm = { ...item };
     }
     this.mostrarFormulario = true;
+    this.cdr.detectChanges();
   }
 
   cerrarFormulario(): void {
     this.mostrarFormulario = false;
     this.resetFormularios();
+    this.cdr.detectChanges();
   }
 
   resetFormularios(): void {

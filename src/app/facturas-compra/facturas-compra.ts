@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
@@ -66,6 +66,7 @@ export class FacturasCompraComponent implements OnInit {
     private alertas: SweetAlertService,
     private route: ActivatedRoute,
     private router: Router,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -85,6 +86,7 @@ export class FacturasCompraComponent implements OnInit {
       } else if (params['tab'] === 'facturas') {
         this.tabActiva = 'facturas';
       }
+      this.cdr.detectChanges();
     });
     this.cargarDatos();
   }
@@ -102,10 +104,12 @@ export class FacturasCompraComponent implements OnInit {
       next: (data) => {
         this.facturas = data;
         this.cargando = false;
+        this.cdr.detectChanges();
       },
       error: (err) => {
         console.error('Error al cargar facturas de compra:', err);
         this.cargando = false;
+        this.cdr.detectChanges();
         void this.alertas.error('Error', 'No se pudieron consultar las facturas de compra.');
       },
     });
@@ -115,9 +119,11 @@ export class FacturasCompraComponent implements OnInit {
     this.facturasService.getInventarioCentral().subscribe({
       next: (data) => {
         this.inventarioCentral = data;
+        this.cdr.detectChanges();
       },
       error: (err) => {
         console.error('Error al cargar inventario central:', err);
+        this.cdr.detectChanges();
       },
     });
   }
@@ -208,10 +214,12 @@ export class FacturasCompraComponent implements OnInit {
   abrirModalRegistro(): void {
     this.formFactura = this.formularioVacio();
     this.modalRegistroAbierto = true;
+    this.cdr.detectChanges();
   }
 
   cerrarModalRegistro(): void {
     this.modalRegistroAbierto = false;
+    this.cdr.detectChanges();
   }
 
   agregarFilaDetalle(): void {
@@ -222,6 +230,7 @@ export class FacturasCompraComponent implements OnInit {
       numero_lote: '',
       fecha_vencimiento: '',
     });
+    this.cdr.detectChanges();
   }
 
   eliminarFilaDetalle(index: number): void {
@@ -230,6 +239,7 @@ export class FacturasCompraComponent implements OnInit {
       return;
     }
     this.formFactura.detalles.splice(index, 1);
+    this.cdr.detectChanges();
   }
 
   calcularSubtotal(item: FilaDetalleForm): number {
@@ -308,6 +318,7 @@ export class FacturasCompraComponent implements OnInit {
         );
         this.cargarFacturas();
         this.cargarBodega();
+        this.cdr.detectChanges();
       },
       error: (err) => {
         this.guardando = false;
@@ -318,6 +329,7 @@ export class FacturasCompraComponent implements OnInit {
         else if (errObj?.numero_factura) mensaje = Array.isArray(errObj.numero_factura) ? errObj.numero_factura[0] : errObj.numero_factura;
         else if (errObj?.detalles) mensaje = Array.isArray(errObj.detalles) ? errObj.detalles[0] : errObj.detalles;
         void this.alertas.error('Error al registrar factura', mensaje);
+        this.cdr.detectChanges();
       },
     });
   }
@@ -329,11 +341,13 @@ export class FacturasCompraComponent implements OnInit {
   abrirModalDetalle(factura: FacturaCompra): void {
     this.facturaSeleccionada = factura;
     this.modalDetalleAbierto = true;
+    this.cdr.detectChanges();
   }
 
   cerrarModalDetalle(): void {
     this.modalDetalleAbierto = false;
     this.facturaSeleccionada = null;
+    this.cdr.detectChanges();
   }
 
   // =========================================================================
@@ -344,12 +358,14 @@ export class FacturasCompraComponent implements OnInit {
     this.facturaAAnular = factura;
     this.motivoAnulacion = '';
     this.modalAnularAbierto = true;
+    this.cdr.detectChanges();
   }
 
   cerrarModalAnular(): void {
     this.modalAnularAbierto = false;
     this.facturaAAnular = null;
     this.motivoAnulacion = '';
+    this.cdr.detectChanges();
   }
 
   confirmarAnulacion(): void {
@@ -373,12 +389,14 @@ export class FacturasCompraComponent implements OnInit {
           );
           this.cargarFacturas();
           this.cargarBodega();
+          this.cdr.detectChanges();
         },
         error: (err) => {
           this.procesandoAnulacion = false;
           console.error('Error al anular factura:', err);
           const msj = err?.error?.error || err?.error?.motivo_anulacion || 'No se pudo anular la factura.';
           void this.alertas.error('Error de anulación', msj);
+          this.cdr.detectChanges();
         },
       });
   }
