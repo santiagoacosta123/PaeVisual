@@ -219,16 +219,16 @@
               <span style="color: #ef4444" *ngIf="esRolRequiereInstitucion()">*</span>
             </label>
             <app-custom-select
-              [options]="instituciones"
+              [options]="institucionesOpcionesAdmin"
               valueField="id_institucion"
-              labelField="nombre_institucion"
+              labelField="nombre_display"
               placeholder="Selecciona la institución educativa..."
               name="id_institucion"
               [(ngModel)]="usuarioForm.id_institucion"
               (ngModelChange)="onInstitucionChange()"
             ></app-custom-select>
             <span *ngIf="esRolAdmin()" style="font-size: 11px; color: #64748b; margin-top: 3px; display: block;">
-              Este usuario será el Administrador oficial a cargo de esta institución educativa y sus sedes.
+              Este usuario será el Administrador oficial a cargo de esta institución educativa y sus sedes (Máximo 1 Administrador por colegio).
             </span>
           </div>
 
@@ -239,20 +239,30 @@
               Instituciones Asignadas a este Supervisor (Selección Múltiple)
             </label>
             <p style="margin: 0 0 10px 0; font-size: 11px; color: #64748b;">
-              Selecciona todos los colegios que estarán bajo la supervisión de este coordinador:
+              Selecciona los colegios que estarán bajo la supervisión de este coordinador (cada colegio solo puede tener 1 supervisor responsable):
             </p>
-            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px; max-height: 180px; overflow-y: auto; padding-right: 4px;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; max-height: 200px; overflow-y: auto; padding-right: 4px;">
               <div *ngFor="let inst of instituciones"
-                (click)="toggleInstitucionSupervisor(inst.id_institucion || inst.id)"
-                style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; border: 1px solid #cbd5e1; cursor: pointer; transition: all 0.15s; user-select: none; font-size: 12px;"
-                [style.background]="institucionSupervisorSeleccionada(inst.id_institucion || inst.id) ? '#fefce8' : '#ffffff'"
+                (click)="toggleInstitucionSupervisor(inst)"
+                style="display: flex; flex-direction: column; gap: 4px; padding: 8px 10px; border-radius: 8px; border: 1px solid #cbd5e1; transition: all 0.15s; user-select: none; font-size: 12px;"
+                [style.opacity]="institucionAsignadaAotroSupervisor(inst) ? '0.6' : '1'"
+                [style.cursor]="institucionAsignadaAotroSupervisor(inst) ? 'not-allowed' : 'pointer'"
+                [style.background]="institucionSupervisorSeleccionada(inst.id_institucion || inst.id) ? '#fefce8' : (institucionAsignadaAotroSupervisor(inst) ? '#f1f5f9' : '#ffffff')"
                 [style.border-color]="institucionSupervisorSeleccionada(inst.id_institucion || inst.id) ? '#f59e0b' : '#cbd5e1'">
-                <span class="material-symbols-outlined" style="font-size: 18px;"
-                  [style.color]="institucionSupervisorSeleccionada(inst.id_institucion || inst.id) ? '#d97706' : '#94a3b8'">
-                  {{ institucionSupervisorSeleccionada(inst.id_institucion || inst.id) ? 'check_box' : 'check_box_outline_blank' }}
-                </span>
-                <span style="font-weight: 600; color: #0f172a; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
-                  {{ inst.nombre_institucion || inst.nombre }}
+                
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span class="material-symbols-outlined" style="font-size: 18px;"
+                    [style.color]="institucionSupervisorSeleccionada(inst.id_institucion || inst.id) ? '#d97706' : '#94a3b8'">
+                    {{ institucionSupervisorSeleccionada(inst.id_institucion || inst.id) ? 'check_box' : 'check_box_outline_blank' }}
+                  </span>
+                  <span style="font-weight: 600; color: #0f172a; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+                    {{ inst.nombre_institucion || inst.nombre }}
+                  </span>
+                </div>
+                
+                <!-- Badge indicador si ya pertenece a otro supervisor -->
+                <span *ngIf="institucionAsignadaAotroSupervisor(inst)" style="font-size: 10px; color: #dc2626; font-weight: 700; padding-left: 26px;">
+                  ⛔ Supervisada por: {{ nombreSupervisorAsignado(inst) }}
                 </span>
               </div>
             </div>

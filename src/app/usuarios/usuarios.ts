@@ -120,7 +120,58 @@ export class UsuariosComponent implements OnInit {
     return nom.includes('admin') && !nom.includes('super');
   }
 
-  toggleInstitucionSupervisor(id: number): void {
+  // Helper: Saber si una institución ya tiene un Supervisor asignado diferente del que estamos editando
+  institucionAsignadaAotroSupervisor(inst: any): boolean {
+    if (!inst) return false;
+    const supAsignado = inst.supervisor_asignado;
+    if (!supAsignado) return false;
+    if (this.modoEdicion && this.usuarioSeleccionadoId && Number(supAsignado.id_usuario) === Number(this.usuarioSeleccionadoId)) {
+      return false;
+    }
+    return true;
+  }
+
+  nombreSupervisorAsignado(inst: any): string {
+    return inst?.supervisor_asignado?.nombre_completo || 'Otro supervisor';
+  }
+
+  // Helper: Saber si una institución ya tiene un Administrador asignado diferente del que estamos editando
+  institucionAsignadaAotroAdmin(inst: any): boolean {
+    if (!inst) return false;
+    const adminAsignado = inst.administrador_asignado;
+    if (!adminAsignado) return false;
+    if (this.modoEdicion && this.usuarioSeleccionadoId && Number(adminAsignado.id_usuario) === Number(this.usuarioSeleccionadoId)) {
+      return false;
+    }
+    return true;
+  }
+
+  nombreAdminAsignado(inst: any): string {
+    return inst?.administrador_asignado?.nombre_completo || 'Otro administrador';
+  }
+
+  get institucionesOpcionesAdmin(): any[] {
+    return this.instituciones.map(inst => {
+      const ocupado = this.institucionAsignadaAotroAdmin(inst);
+      const ocupadoPor = ocupado ? ` (⚠️ Ocupada por: ${this.nombreAdminAsignado(inst)})` : '';
+      return {
+        ...inst,
+        nombre_display: `${inst.nombre_institucion || inst.nombre}${ocupadoPor}`,
+        deshabilitado: ocupado
+      };
+    });
+  }
+
+  toggleInstitucionSupervisor(inst: any): void {
+    if (this.institucionAsignadaAotroSupervisor(inst)) {
+      const nombre = this.nombreSupervisorAsignado(inst);
+      this.sweetAlert.warning(
+        'Institución Ocupada',
+        `Esta institución ya se encuentra asignada al Supervisor ${nombre}. Cada institución solo puede tener un único Supervisor responsable.`
+      );
+      return;
+    }
+    const id = Number(inst.id_institucion || inst.id);
     const idx = this.supervisorInstitucionesSeleccionadas.indexOf(id);
     if (idx > -1) {
       this.supervisorInstitucionesSeleccionadas.splice(idx, 1);
@@ -131,18 +182,22 @@ export class UsuariosComponent implements OnInit {
   }
 
   institucionSupervisorSeleccionada(id: number): boolean {
-    return this.supervisorInstitucionesSeleccionadas.includes(id);
+    return this.supervisorInstitucionesSeleccionadas.includes(Number(id));
   }
 
   sincronizarInstitucionesSupervisor(supervisorId: number): void {
-    const actuales = this.supervisorInstitucionesSeleccionadas;
+    const actuales = this.supervisorInstitucionesSeleccionadas.map(Number);
     const originales = this.supervisorRelacionesOriginales;
 
     originales.forEach((rel: any) => {
       const relInstId = typeof rel.id_institucion === 'object' ? (rel.id_institucion?.id_institucion || rel.id_institucion?.id) : rel.id_institucion;
-      if (!actuales.includes(relInstId)) {
+      if (!actuales.includes(Number(relInstId))) {
         const relId = rel.id_supervisor_institucion || rel.id;
-        this.http.delete(`${environment.apiUrl}/supervisor-instituciones/${relId}/`).subscribe();
+        if (relId) {
+          this.http.delete(`${environment.apiUrl}/supervisor-instituciones/${relId}/`).subscribe({
+            error: (err) => console.warn('Error al desvincular institución:', err)
+          });
+        }
       }
     });
 
@@ -155,7 +210,9 @@ export class UsuariosComponent implements OnInit {
         this.http.post(`${environment.apiUrl}/supervisor-instituciones/`, {
           id_supervisor: supervisorId,
           id_institucion: instId
-        }).subscribe();
+        }).subscribe({
+          error: (err) => console.warn('Error al vincular institución a supervisor:', err)
+        });
       }
     });
   }
@@ -354,6 +411,17 @@ export class UsuariosComponent implements OnInit {
     if (this.esRolRequiereInstitucion() && !this.usuarioForm.id_institucion) {
       this.sweetAlert.warning('Institución requerida', 'Debes seleccionar la institución educativa a la que pertenecerá el administrador.');
       return;
+    }
+
+    if (this.esRolAdmin() && this.usuarioForm.id_institucion) {
+      const instSel = this.instituciones.find(i => Number(i.id_institucion || i.id) === Number(this.usuarioForm.id_institucion));
+      if (instSel && this.institucionAsignadaAotroAdmin(instSel)) {
+        this.sweetAlert.warning(
+          'Institución con Administrador',
+          `La institución "${instSel.nombre_institucion || instSel.nombre}" ya tiene asignado al Administrador ${this.nombreAdminAsignado(instSel)}. Cada institución solo puede tener un único Administrador activo.`
+        );
+        return;
+      }
     }
 
     const datosEnviar: any = {
