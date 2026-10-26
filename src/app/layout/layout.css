@@ -727,12 +727,6 @@
   background: #f8fafc;
 }
 
-.superadmin-top-breadcrumb {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
 .superadmin-search-box {
   flex: 1;
   max-width: 380px;
