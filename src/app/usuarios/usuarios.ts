@@ -294,21 +294,29 @@ export class UsuariosComponent implements OnInit {
     return forkJoin(operaciones);
   }
 
-  esRolConSede(): boolean {
-    if (!this.usuarioForm.rol) return false;
-    const nom = this.obtenerNombreRol(this.usuarioForm.rol).toLowerCase();
-    return nom.includes('manipuladora') || nom.includes('cocina');
-  }
-
-  get sedesDeInstitucionSeleccionada(): any[] {
-    if (!this.usuarioForm.id_institucion) return [];
-    const instId = Number(this.usuarioForm.id_institucion);
+  obtenerSedesDeInstitucion(idInst: any): any[] {
+    if (!idInst) return [];
+    const instId = typeof idInst === 'object' && idInst !== null
+      ? (idInst.id_institucion ?? idInst.id)
+      : Number(idInst);
     return this.sedes.filter(s => {
       const sInstId = typeof s.id_institucion === 'object' && s.id_institucion !== null
         ? (s.id_institucion.id_institucion ?? s.id_institucion.id)
-        : s.id_institucion;
-      return Number(sInstId) === instId;
+        : Number(s.id_institucion);
+      return Number(sInstId) === Number(instId);
     });
+  }
+
+  esRolConSede(): boolean {
+    if (!this.usuarioForm.rol) return false;
+    if (this.esRolSupervisor()) return false;
+    const nom = this.obtenerNombreRol(this.usuarioForm.rol).toLowerCase();
+    if (nom.includes('super')) return false;
+    return true;
+  }
+
+  get sedesDeInstitucionSeleccionada(): any[] {
+    return this.obtenerSedesDeInstitucion(this.usuarioForm.id_institucion);
   }
 
   onInstitucionChange(): void {
