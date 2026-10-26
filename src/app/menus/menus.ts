@@ -172,12 +172,11 @@ export class MenusComponent implements OnInit {
     if (this.esJefa && !['menus', 'platos'].includes(pestana)) return;
     if (pestana === 'preparaciones') return;
     this.pestanaActiva = pestana;
-    this.cdr.detectChanges();
-  } pestana;
     this.paginaActual = 1;
     this.limpiarFiltros();
     this.cerrarFormulario();
     this.cerrarDetalle();
+    this.cdr.detectChanges();
   }
 
   // =====================================================
