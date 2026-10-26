@@ -720,52 +720,11 @@
   padding: 0 32px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 20px;
   flex-shrink: 0;
   box-sizing: border-box;
   background: #f8fafc;
-}
-
-.superadmin-search-box {
-  flex: 1;
-  max-width: 380px;
-  height: 38px;
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.superadmin-search-icon {
-  position: absolute;
-  left: 14px;
-  font-size: 18px;
-  color: #94a3b8;
-  pointer-events: none;
-}
-
-.superadmin-search-input {
-  width: 100%;
-  height: 100%;
-  padding: 0 16px 0 38px;
-  border: 1px solid #e2e8f0;
-  border-radius: 9999px;
-  background: #ffffff;
-  font-size: 12.5px;
-  color: #0f172a;
-  outline: none;
-  font-family: inherit;
-  transition: all 0.15s ease;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
-}
-
-.superadmin-search-input:focus {
-  border-color: #fac94b;
-  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.18);
-}
-
-.superadmin-search-input::placeholder {
-  color: #94a3b8;
 }
 
 .superadmin-circle-notif {
