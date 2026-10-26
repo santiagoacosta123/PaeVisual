@@ -1,20 +1,109 @@
-/* ========================================
-   CONTENEDOR PANTALLA COMPLETA
-======================================== */
-.split-layout {
+/* ==========================================================================
+   SIRAE - PANTALLA DE INICIO DE SESIÓN
+   Diseño institucional con cocina, acentos diagonales y circuitos tecnológicos
+   ========================================================================== */
+
+:host {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.login-container {
   display: flex;
   width: 100vw;
   height: 100vh;
   overflow: hidden;
-  font-family: 'Inter', 'Roboto', sans-serif;
-  background: #ffffff;
+  background-color: #ffffff;
+  font-family: 'Roboto', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  box-sizing: border-box;
 }
 
-/* ========================================
-   LADO IZQUIERDO: FORMULARIO (50% EXACTO)
-======================================== */
+/* ==========================================================================
+   LADO IZQUIERDO: FOTOGRAFÍA + ACENTOS DIAGONALES
+   ========================================================================== */
+.visual-side {
+  position: relative;
+  width: 53%;
+  height: 100%;
+  overflow: hidden;
+  background-color: #ffffff;
+}
+
+.image-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.chef-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+  /* Difuminado suave hacia el blanco en el borde derecho */
+  -webkit-mask-image: linear-gradient(to right, rgba(0,0,0,1) 80%, rgba(0,0,0,0.1) 98%, transparent 100%);
+  mask-image: linear-gradient(to right, rgba(0,0,0,1) 80%, rgba(0,0,0,0.1) 98%, transparent 100%);
+}
+
+.image-overlay-fade {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 18%;
+  background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.7) 70%, #ffffff 100%);
+  pointer-events: none;
+}
+
+/* ==========================================================================
+   ACENTOS DIAGONALES (AMARILLO Y VERDE)
+   ========================================================================== */
+.diagonal-accents {
+  position: absolute;
+  display: flex;
+  gap: 12px;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.accent-stripe {
+  width: 16px;
+  height: 130px;
+  transform: skewX(-28deg);
+  border-radius: 2px;
+}
+
+.stripe-yellow {
+  background-color: #fab005;
+}
+
+.stripe-green {
+  background-color: #0b6638;
+}
+
+/* Posición superior */
+.top-accents {
+  top: -20px;
+  right: 50px;
+}
+
+/* Posición inferior */
+.bottom-accents {
+  bottom: -20px;
+  right: 50px;
+}
+
+/* ==========================================================================
+   LADO DERECHO: FORMULARIO Y CIRCUITOS TECNOLÓGICOS
+   ========================================================================== */
 .form-side {
-  width: 50%;
+  position: relative;
+  width: 47%;
   height: 100%;
   display: flex;
   align-items: center;
@@ -22,204 +111,296 @@
   background-color: #ffffff;
   padding: 40px;
   box-sizing: border-box;
-  z-index: 10;
 }
 
-.form-content {
+/* Circuitos tecnológicos SVGs en las esquinas */
+.circuit-decoration {
+  position: absolute;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.circuit-top {
+  top: 0;
+  right: 0;
+  width: 320px;
+  height: 220px;
+  max-width: 50%;
+}
+
+.circuit-bottom {
+  bottom: 0;
+  right: 0;
+  width: 320px;
+  height: 220px;
+  max-width: 50%;
+}
+
+.circuit-decoration svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ==========================================================================
+   CONTENIDO DEL FORMULARIO
+   ========================================================================== */
+.form-container {
   width: 100%;
   max-width: 420px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
-/* ========================================
-   ESTILOS DEL LOGO SIRAE
-======================================== */
-.logo-container {
-  margin-bottom: 24px;
+/* LOGO SIRAE */
+.logo-box {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 50px;
 }
 
 .sirae-logo {
-  max-width: 160px;
+  width: 250px;
+  max-width: 100%;
   height: auto;
   object-fit: contain;
   display: block;
 }
 
-.header-text h1 {
-  font-size: 34px;
-  font-weight: 800;
-  color: #0f172a;
-  margin: 0 0 8px 0;
-  letter-spacing: -0.5px;
-}
-
-.header-text p {
-  color: #64748b;
-  font-size: 15px;
-  margin: 0 0 32px 0;
-  line-height: 1.5;
-}
-
+/* FORMULARIO */
 .login-form {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-/* ========================================
-   INPUTS
-======================================== */
-.input-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.input-group label {
-  font-size: 13px;
-  font-weight: 600;
-  color: #334155;
-  margin-left: 2px;
-}
-
-.input-wrapper {
-  position: relative;
-}
-
-.input-wrapper input {
   width: 100%;
-  height: 52px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 14px;
-  padding: 0 16px;
-  font-size: 15px;
-  color: #0f172a;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
-  box-sizing: border-box;
-}
-
-.input-wrapper input::placeholder {
-  color: #94a3b8;
-}
-
-.input-wrapper input:focus {
-  background: #ffffff;
-  border-color: #fbbf24;
-  box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.15);
-  outline: none;
-}
-
-.toggle-password {
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: none;
-  border: none;
-  color: #94a3b8;
-  cursor: pointer;
-  padding: 8px;
   display: flex;
-  border-radius: 8px;
+  flex-direction: column;
+  gap: 28px;
 }
 
-.toggle-password:hover {
-  background: #e2e8f0;
-  color: #475569;
-}
-
-/* ========================================
-   MENSAJES DE ERROR
-======================================== */
-.error-text {
-  font-size: 12px;
-  color: #ef4444;
-  margin-left: 4px;
-}
-
-.error-alert {
-  background: #fef2f2;
-  color: #b91c1c;
-  padding: 12px;
-  border-radius: 12px;
-  font-size: 13px;
-  border: 1px solid #fecaca;
-  text-align: center;
-  font-weight: 500;
-}
-
-/* ========================================
-   BOTÓN PRINCIPAL
-======================================== */
-.submit-btn {
-  height: 52px;
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-  color: white;
-  border: none;
-  border-radius: 14px;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  margin-top: 6px;
-  box-shadow: 0 10px 25px -5px rgba(217, 119, 6, 0.4);
-  transition: opacity 0.2s ease;
-}
-
-.submit-btn:hover:not(:disabled) {
-  opacity: 0.95;
-}
-
-.submit-btn:disabled {
-  opacity: 0.8;
-  cursor: wait;
-}
-
-/* ========================================
-   LADO DERECHO: IMAGEN CON DIFUMINADO Y BORDES REDONDEADOS
-======================================== */
-.image-side {
-  width: 50%;
-  height: 100%;
+/* GRUPO DE CAMPO CON LÍNEA INFERIOR VERDE */
+.field-container {
+  display: flex;
+  flex-direction: column;
   position: relative;
-  background: #ffffff;
+  width: 100%;
+}
+
+.input-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 6px 2px 10px 2px;
+}
+
+.icon-indicator {
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
+  flex-shrink: 0;
+  color: #0b6638;
 }
 
-.large-image {
+.minimal-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 16px;
+  font-weight: 500;
+  color: #1e293b;
+  padding: 0;
+  font-family: inherit;
+}
+
+.minimal-input::placeholder {
+  color: #5d6e64;
+  font-weight: 500;
+  opacity: 0.95;
+}
+
+.green-underline {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  border-radius: 24px 0 0 24px;
-  mask-image: linear-gradient(to right, transparent 0%, black 15%);
-  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 15%);
+  height: 2px;
+  background-color: #0b6638;
+  border-radius: 1px;
+  transition: height 0.2s ease, background-color 0.2s ease;
 }
 
-/* ========================================
-   RESPONSIVO
-======================================== */
+.field-container:focus-within .green-underline {
+  height: 2.5px;
+  background-color: #09572f;
+}
+
+.toggle-visibility-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0b6638;
+  opacity: 0.9;
+  transition: opacity 0.2s ease, transform 0.15s ease;
+}
+
+.toggle-visibility-btn:hover {
+  opacity: 1;
+  transform: scale(1.08);
+}
+
+.field-error {
+  font-size: 12.5px;
+  color: #dc2626;
+  margin-top: 6px;
+  font-weight: 500;
+}
+
+/* ¿OLVIDASTE TU CONTRASEÑA? */
+.forgot-wrapper {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -12px;
+  margin-bottom: 6px;
+}
+
+.forgot-link {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fab005;
+  text-decoration: none;
+  transition: opacity 0.2s ease, text-decoration 0.2s ease;
+}
+
+.forgot-link:hover {
+  text-decoration: underline;
+  opacity: 0.85;
+}
+
+/* ALERTA DE ERROR GENERAL */
+.alert-box {
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-size: 13.5px;
+  font-weight: 500;
+  text-align: center;
+}
+
+/* BOTÓN PILL DE INICIO DE SESIÓN */
+.submit-pill-btn {
+  width: 100%;
+  height: 52px;
+  background-color: #fab005;
+  border: none;
+  border-radius: 9999px;
+  cursor: pointer;
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(250, 176, 5, 0.35);
+  transition: background-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+.submit-pill-btn:hover:not(:disabled) {
+  background-color: #f3a800;
+  transform: translateY(-1.5px);
+  box-shadow: 0 6px 18px rgba(250, 176, 5, 0.45);
+}
+
+.submit-pill-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.submit-pill-btn:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.btn-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: #111827;
+}
+
+.btn-text {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+}
+
+.arrow-svg {
+  display: block;
+  transition: transform 0.2s ease;
+}
+
+.submit-pill-btn:hover:not(:disabled) .arrow-svg {
+  transform: translateX(4px);
+}
+
+.loading-state {
+  color: #111827;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+/* ==========================================================================
+   DISEÑO RESPONSIVO (TABLETS Y MÓVILES)
+   ========================================================================== */
 @media (max-width: 968px) {
-  .split-layout {
-    flex-direction: column-reverse;
+  .login-container {
+    flex-direction: column;
+    height: auto;
+    min-height: 100vh;
     overflow-y: auto;
   }
-  
+
+  .visual-side {
+    width: 100%;
+    height: 38vh;
+    min-height: 240px;
+  }
+
+  .top-accents, .bottom-accents {
+    display: none;
+  }
+
+  .image-overlay-fade {
+    width: 100%;
+    height: 40px;
+    top: auto;
+    bottom: 0;
+    background: linear-gradient(to bottom, transparent, #ffffff);
+  }
+
   .form-side {
     width: 100%;
     height: auto;
-    min-height: 60vh;
-    padding: 40px 24px;
+    padding: 36px 24px 48px 24px;
   }
 
-  .image-side {
-    width: 100%;
-    height: 40vh;
+  .circuit-top {
+    width: 180px;
+    height: 120px;
   }
 
-  .large-image {
-    border-radius: 0 0 24px 24px;
+  .circuit-bottom {
+    width: 180px;
+    height: 120px;
+  }
+
+  .logo-box {
+    margin-bottom: 36px;
+  }
+
+  .sirae-logo {
+    max-width: 200px;
   }
 }
