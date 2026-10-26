@@ -45,6 +45,7 @@ export class FacturasCompraComponent implements OnInit {
   filtroEstado: string = 'TODAS';
   filtroBusqueda: string = '';
   filtroBusquedaBodega: string = '';
+  filtroStockBodega: 'TODOS' | 'OPTIMO' | 'BAJO' = 'TODOS';
 
   // Modal Registro
   modalRegistroAbierto = false;
@@ -185,6 +186,10 @@ export class FacturasCompraComponent implements OnInit {
   get inventarioCentralFiltrado(): InventarioCentralItem[] {
     const txt = this.filtroBusquedaBodega.trim().toLowerCase();
     return this.inventarioCentral.filter((item) => {
+      const cant = Number(item.cantidad_disponible);
+      const min = Number(item.stock_minimo);
+      if (this.filtroStockBodega === 'OPTIMO' && cant <= min) return false;
+      if (this.filtroStockBodega === 'BAJO' && cant > min) return false;
       if (!txt) return true;
       return (
         item.ingrediente_nombre.toLowerCase().includes(txt) ||

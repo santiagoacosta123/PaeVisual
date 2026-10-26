@@ -1,183 +1,140 @@
-<div class="flex w-full flex-col gap-6" style="font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;">
+<div class="flex w-full flex-col gap-5" style="font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;">
   
-  <!-- Sección Principal -->
-  <section class="rounded-[20px] border border-slate-200/80 bg-white p-5 shadow-sm sm:p-7">
-    
-    <!-- Header para Modo Bodega Central Exclusivo -->
-    <header *ngIf="modoExclusivo === 'bodega'" class="mb-6 flex flex-col justify-between gap-4 rounded-xl border border-[#f2ead0] px-6 py-5 sm:flex-row sm:items-center sticky top-[-24px] z-20 shadow-xs"
-      style="background: linear-gradient(135deg, #fffcf0 0%, #ffffff 100%);">
-      <div class="flex items-center gap-4">
-        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-amber-200 bg-amber-50 text-amber-700 shadow-xs">
-          <span class="material-symbols-outlined text-[24px]">warehouse</span>
-        </div>
-        <div>
-          <h1 class="m-0 text-xl font-bold tracking-tight text-slate-900">
-            Bodega Central (Stock Global)
-          </h1>
-          <p class="mb-0 mt-1 text-xs font-medium text-slate-600">
-            Control de existencias globales, balance de ingredientes y semáforo de disponibilidad del operador PAE.
-          </p>
-        </div>
+  <!-- Header para Modo Bodega Central Exclusivo -->
+  <header *ngIf="modoExclusivo === 'bodega'" style="width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 24px; background: linear-gradient(135deg, #fffcf0 0%, #ffffff 100%); border: 1px solid #f2ead0; border-radius: 14px; box-shadow: 0 4px 15px rgba(250, 201, 75, 0.05); position: sticky; top: 0; z-index: 20; box-sizing: border-box; flex-wrap: wrap;">
+    <div style="display: flex; align-items: center; gap: 14px;">
+      <div style="width: 48px; height: 48px; border-radius: 50%; background: #fef3c7; border: 1.5px solid #fde68a; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 2px 6px rgba(245, 158, 11, 0.08);">
+        <span class="material-symbols-outlined" style="font-size: 24px; color: #b45309;">warehouse</span>
       </div>
-      <div class="flex flex-wrap items-center gap-2">
-        <button type="button" (click)="cargarBodega()"
-          class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-[13px] font-bold text-slate-700 shadow-xs transition hover:bg-slate-50"
-          title="Refrescar existencias del inventario central">
-          <span class="material-symbols-outlined text-[18px]">refresh</span>
-          Refrescar
-        </button>
+      <div>
+        <h1 style="margin: 0; color: #0f172a; font-size: 20px; font-weight: 800; letter-spacing: -0.5px;">Bodega Central (Stock Global)</h1>
+        <p style="margin: 3px 0 0; color: #64748b; font-size: 13px;">Control de existencias globales, balance de ingredientes y semáforo de disponibilidad del operador PAE.</p>
       </div>
-    </header>
-
-    <!-- Header para Modo Facturas de Compra Exclusivo -->
-    <header *ngIf="modoExclusivo === 'facturas'" class="mb-6 flex flex-col justify-between gap-4 rounded-xl border border-[#f2ead0] px-6 py-5 sm:flex-row sm:items-center sticky top-[-24px] z-20 shadow-xs"
-      style="background: linear-gradient(135deg, #fffcf0 0%, #ffffff 100%);">
-      <div class="flex items-center gap-4">
-        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-amber-200 bg-amber-50 text-amber-700 shadow-xs">
-          <span class="material-symbols-outlined text-[24px]">receipt_long</span>
-        </div>
-        <div>
-          <h1 class="m-0 text-xl font-bold tracking-tight text-slate-900">
-            Facturas de Compra
-          </h1>
-          <p class="mb-0 mt-1 text-xs font-medium text-slate-600">
-            Registro de compras a proveedores mayoristas y recepción técnica de insumos.
-          </p>
-        </div>
-      </div>
-      <div class="flex flex-wrap items-center gap-2">
-        <button type="button" (click)="abrirModalRegistro()"
-          class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-full px-5 py-2.5 text-[13px] font-bold text-slate-900 shadow-md transition hover:brightness-95"
-          style="background-color: #fac94b;">
-          <span class="material-symbols-outlined text-[18px]">add</span>
-          Registrar Factura
-        </button>
-      </div>
-    </header>
-
-    <!-- Header combinado solo si modoExclusivo === 'ambas' -->
-    <header *ngIf="modoExclusivo === 'ambas'" class="mb-6 flex flex-col justify-between gap-4 rounded-xl border border-[#f2ead0] px-6 py-5 sm:flex-row sm:items-center sticky top-[-24px] z-20 shadow-xs"
-      style="background: linear-gradient(135deg, #fffcf0 0%, #ffffff 100%);">
-      <div class="flex items-center gap-4">
-        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-amber-200 bg-amber-50 text-amber-700 shadow-xs">
-          <span class="material-symbols-outlined text-[24px]">receipt_long</span>
-        </div>
-        <div>
-          <h1 class="m-0 text-xl font-bold tracking-tight text-slate-900">
-            Facturas de Compra & Bodega Central
-          </h1>
-          <p class="mb-0 mt-1 text-xs font-medium text-slate-600">
-            Registro de compras a proveedores mayoristas y control del stock central del operador PAE.
-          </p>
-        </div>
-      </div>
-      <div class="flex flex-wrap items-center gap-2">
-        <button *ngIf="tabActiva === 'facturas'" type="button" (click)="abrirModalRegistro()"
-          class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-full px-5 py-2.5 text-[13px] font-bold text-slate-900 shadow-md transition hover:brightness-95"
-          style="background-color: #fac94b;">
-          <span class="material-symbols-outlined text-[18px]">add</span>
-          Registrar Factura
-        </button>
-      </div>
-    </header>
-
-    <!-- Pestañas de Navegación (Solo visibles en modo 'ambas') -->
-    <div *ngIf="modoExclusivo === 'ambas'" class="mb-6 flex items-center gap-2 border-b border-slate-200 pb-3">
-      <button type="button" (click)="tabActiva = 'facturas'"
-        class="inline-flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-black transition"
-        [ngClass]="tabActiva === 'facturas' ? 'bg-amber-400 text-slate-900 shadow-sm' : 'text-slate-600 hover:bg-slate-100'">
-        <span class="material-symbols-outlined text-[18px]">receipt_long</span>
-        Facturas de Compra
-        <span class="rounded-full bg-slate-900/10 px-2 py-0.5 text-[10px] font-black">{{ facturas.length }}</span>
-      </button>
-
-      <button type="button" (click)="tabActiva = 'bodega'"
-        class="inline-flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-black transition"
-        [ngClass]="tabActiva === 'bodega' ? 'bg-amber-400 text-slate-900 shadow-sm' : 'text-slate-600 hover:bg-slate-100'">
-        <span class="material-symbols-outlined text-[18px]">warehouse</span>
-        Bodega Central (Stock Global)
-        <span class="rounded-full bg-slate-900/10 px-2 py-0.5 text-[10px] font-black">{{ inventarioCentral.length }}</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+      <button type="button" (click)="cargarBodega()"
+        class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-[13px] font-bold text-slate-700 shadow-xs transition hover:bg-slate-50"
+        title="Refrescar existencias del inventario central">
+        <span class="material-symbols-outlined text-[18px]">refresh</span>
+        Refrescar
       </button>
     </div>
+  </header>
+
+  <!-- Header para Modo Facturas de Compra Exclusivo -->
+  <header *ngIf="modoExclusivo === 'facturas'" style="width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 24px; background: linear-gradient(135deg, #fffcf0 0%, #ffffff 100%); border: 1px solid #f2ead0; border-radius: 14px; box-shadow: 0 4px 15px rgba(250, 201, 75, 0.05); position: sticky; top: 0; z-index: 20; box-sizing: border-box; flex-wrap: wrap;">
+    <div style="display: flex; align-items: center; gap: 14px;">
+      <div style="width: 48px; height: 48px; border-radius: 50%; background: #fef3c7; border: 1.5px solid #fde68a; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 2px 6px rgba(245, 158, 11, 0.08);">
+        <span class="material-symbols-outlined" style="font-size: 24px; color: #b45309;">receipt_long</span>
+      </div>
+      <div>
+        <h1 style="margin: 0; color: #0f172a; font-size: 20px; font-weight: 800; letter-spacing: -0.5px;">Facturas de Compra</h1>
+        <p style="margin: 3px 0 0; color: #64748b; font-size: 13px;">Registro de compras a proveedores mayoristas y recepción técnica de insumos.</p>
+      </div>
+    </div>
+    <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+      <button type="button" (click)="abrirModalRegistro()"
+        style="height: 40px; padding: 0 22px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: none; border-radius: 9999px; background: #fac94b; color: #0f172a; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; box-shadow: 0 2px 8px rgba(251, 191, 36, 0.28); transition: all 0.2s ease;">
+        <span class="material-symbols-outlined" style="font-size: 18px; color: #0f172a;">add</span>
+        <span>Registrar Factura</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Header combinado solo si modoExclusivo === 'ambas' -->
+  <header *ngIf="modoExclusivo === 'ambas'" style="width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 24px; background: linear-gradient(135deg, #fffcf0 0%, #ffffff 100%); border: 1px solid #f2ead0; border-radius: 14px; box-shadow: 0 4px 15px rgba(250, 201, 75, 0.05); position: sticky; top: 0; z-index: 20; box-sizing: border-box; flex-wrap: wrap;">
+    <div style="display: flex; align-items: center; gap: 14px;">
+      <div style="width: 48px; height: 48px; border-radius: 50%; background: #fef3c7; border: 1.5px solid #fde68a; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 2px 6px rgba(245, 158, 11, 0.08);">
+        <span class="material-symbols-outlined" style="font-size: 24px; color: #b45309;">receipt_long</span>
+      </div>
+      <div>
+        <h1 style="margin: 0; color: #0f172a; font-size: 20px; font-weight: 800; letter-spacing: -0.5px;">Facturas de Compra & Bodega Central</h1>
+        <p style="margin: 3px 0 0; color: #64748b; font-size: 13px;">Registro de compras a proveedores mayoristas y control del stock central del operador PAE.</p>
+      </div>
+    </div>
+    <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+      <button *ngIf="tabActiva === 'facturas'" type="button" (click)="abrirModalRegistro()"
+        style="height: 40px; padding: 0 22px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: none; border-radius: 9999px; background: #fac94b; color: #0f172a; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; box-shadow: 0 2px 8px rgba(251, 191, 36, 0.28); transition: all 0.2s ease;">
+        <span class="material-symbols-outlined" style="font-size: 18px; color: #0f172a;">add</span>
+        <span>Registrar Factura</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Pestañas de Navegación (Solo visibles en modo 'ambas') -->
+  <div *ngIf="modoExclusivo === 'ambas'" class="flex items-center gap-2 border-b border-slate-200 pb-3">
+    <button type="button" (click)="tabActiva = 'facturas'"
+      class="inline-flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition"
+      [ngClass]="tabActiva === 'facturas' ? 'bg-amber-400 text-slate-900 shadow-xs' : 'text-slate-600 hover:bg-slate-100'">
+      <span class="material-symbols-outlined text-[18px]">receipt_long</span>
+      Facturas de Compra
+      <span class="rounded-full bg-slate-900/10 px-2 py-0.5 text-[10px] font-black">{{ facturas.length }}</span>
+    </button>
+
+    <button type="button" (click)="tabActiva = 'bodega'"
+      class="inline-flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition"
+      [ngClass]="tabActiva === 'bodega' ? 'bg-amber-400 text-slate-900 shadow-xs' : 'text-slate-600 hover:bg-slate-100'">
+      <span class="material-symbols-outlined text-[18px]">warehouse</span>
+      Bodega Central (Stock Global)
+      <span class="rounded-full bg-slate-900/10 px-2 py-0.5 text-[10px] font-black">{{ inventarioCentral.length }}</span>
+    </button>
+  </div>
+
+  <!-- Sección Principal de Contenido (Limpio y alineado como Contratos) -->
+  <section class="rounded-xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-2xs">
 
     <!-- =========================================================================
          PESTAÑA 1: FACTURAS DE COMPRA
          ========================================================================= -->
     <div *ngIf="tabActiva === 'facturas'">
       
-      <!-- Resumen de Métricas Facturación (Diseño Sleek & Minimal) -->
-      <div class="mb-6 grid grid-cols-2 gap-3.5 lg:grid-cols-4">
-        <div class="flex items-center justify-between rounded-xl border border-slate-200/90 bg-white p-3.5 shadow-2xs transition-colors hover:border-amber-300">
-          <div>
-            <span class="block text-[11px] font-bold uppercase tracking-wider text-slate-500">Total Facturas</span>
-            <span class="mt-0.5 block text-xl font-black text-slate-900">{{ facturas.length }}</span>
-          </div>
-          <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
-            <span class="material-symbols-outlined text-[20px]">receipt_long</span>
-          </div>
+      <!-- Barra de Filtros, Búsqueda y Resumen Financiero -->
+      <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
+        
+        <!-- Filtros de Estado con Contador Integrado -->
+        <div class="flex items-center gap-2 flex-wrap">
+          <button type="button" (click)="filtroEstado = 'TODAS'"
+            class="flex cursor-pointer items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-bold transition"
+            [ngClass]="filtroEstado === 'TODAS' ? 'border-amber-400 bg-[#fac94b] text-slate-900 shadow-2xs' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'">
+            Todas
+            <span class="rounded-full bg-slate-900/10 px-1.5 py-0.2 text-[10px] font-black">{{ facturas.length }}</span>
+          </button>
+          <button type="button" (click)="filtroEstado = 'REGISTRADA'"
+            class="flex cursor-pointer items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-bold transition"
+            [ngClass]="filtroEstado === 'REGISTRADA' ? 'border-emerald-500 bg-emerald-600 text-white shadow-2xs' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'">
+            Registradas
+            <span class="rounded-full px-1.5 py-0.2 text-[10px] font-black" [ngClass]="filtroEstado === 'REGISTRADA' ? 'bg-white/20 text-white' : 'bg-emerald-50 text-emerald-700'">{{ totalRegistradas }}</span>
+          </button>
+          <button type="button" (click)="filtroEstado = 'ANULADA'"
+            class="flex cursor-pointer items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-bold transition"
+            [ngClass]="filtroEstado === 'ANULADA' ? 'border-red-500 bg-red-600 text-white shadow-2xs' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'">
+            Anuladas
+            <span class="rounded-full px-1.5 py-0.2 text-[10px] font-black" [ngClass]="filtroEstado === 'ANULADA' ? 'bg-white/20 text-white' : 'bg-red-50 text-red-700'">{{ totalAnuladas }}</span>
+          </button>
         </div>
 
-        <div class="flex items-center justify-between rounded-xl border border-slate-200/90 bg-white p-3.5 shadow-2xs transition-colors hover:border-emerald-300">
-          <div>
-            <span class="block text-[11px] font-bold uppercase tracking-wider text-slate-500">Facturas Activas</span>
-            <span class="mt-0.5 block text-xl font-black text-emerald-700">{{ totalRegistradas }}</span>
+        <!-- Buscador y Resumen de Inversión -->
+        <div class="flex flex-1 items-center justify-end gap-3 min-w-[280px]">
+          <div class="flex flex-1 max-w-md items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 shadow-2xs focus-within:border-amber-400">
+            <span class="material-symbols-outlined text-[18px] text-slate-400">search</span>
+            <input [(ngModel)]="filtroBusqueda" name="buscarFactura" type="search"
+              placeholder="Buscar por número de factura o proveedor..."
+              class="w-full border-0 bg-transparent py-2 text-xs font-medium text-slate-800 outline-none placeholder:text-slate-400" />
           </div>
-          <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
-            <span class="material-symbols-outlined text-[20px]">check_circle</span>
+
+          <div class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200/90 text-xs font-semibold text-slate-600 shadow-2xs">
+            <span>Inversión:</span>
+            <strong class="text-slate-900 font-bold">${{ totalInversion | number:'1.2-2' }}</strong>
           </div>
+
+          <button type="button" (click)="cargarDatos()" [disabled]="cargando"
+            class="inline-flex cursor-pointer items-center justify-center rounded-xl border border-slate-200 bg-white p-2 text-slate-700 hover:bg-slate-50 transition"
+            title="Actualizar facturas">
+            <span class="material-symbols-outlined text-[18px]">refresh</span>
+          </button>
         </div>
 
-        <div class="flex items-center justify-between rounded-xl border border-slate-200/90 bg-white p-3.5 shadow-2xs transition-colors hover:border-red-300">
-          <div>
-            <span class="block text-[11px] font-bold uppercase tracking-wider text-slate-500">Facturas Anuladas</span>
-            <span class="mt-0.5 block text-xl font-black text-red-600">{{ totalAnuladas }}</span>
-          </div>
-          <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-red-50 text-red-600">
-            <span class="material-symbols-outlined text-[20px]">cancel</span>
-          </div>
-        </div>
-
-        <div class="flex items-center justify-between rounded-xl border border-slate-200/90 bg-white p-3.5 shadow-2xs transition-colors hover:border-blue-300">
-          <div>
-            <span class="block text-[11px] font-bold uppercase tracking-wider text-slate-500">Inversión Total</span>
-            <span class="mt-0.5 block text-xl font-black text-slate-900">${{ totalInversion | number:'1.2-2' }}</span>
-          </div>
-          <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
-            <span class="material-symbols-outlined text-[20px]">payments</span>
-          </div>
-        </div>
       </div>
-
-      <!-- Filtros y Búsqueda -->
-      <div class="mb-5 flex flex-wrap items-center gap-3">
-        <button type="button" (click)="filtroEstado = 'TODAS'"
-          class="flex cursor-pointer items-center gap-1.5 rounded-xl border px-3.5 py-2 text-xs font-bold transition"
-          [ngClass]="filtroEstado === 'TODAS' ? 'border-amber-400 bg-amber-400 text-slate-900 shadow-sm' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'">
-          Todas
-        </button>
-        <button type="button" (click)="filtroEstado = 'REGISTRADA'"
-          class="flex cursor-pointer items-center gap-1.5 rounded-xl border px-3.5 py-2 text-xs font-bold transition"
-          [ngClass]="filtroEstado === 'REGISTRADA' ? 'border-emerald-500 bg-emerald-600 text-white shadow-sm' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'">
-          Registradas
-        </button>
-        <button type="button" (click)="filtroEstado = 'ANULADA'"
-          class="flex cursor-pointer items-center gap-1.5 rounded-xl border px-3.5 py-2 text-xs font-bold transition"
-          [ngClass]="filtroEstado === 'ANULADA' ? 'border-red-500 bg-red-600 text-white shadow-sm' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'">
-          Anuladas
-        </button>
-
-        <div class="flex min-w-[240px] flex-1 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 shadow-xs focus-within:border-amber-400">
-          <span class="material-symbols-outlined text-[18px] text-slate-400">search</span>
-          <input [(ngModel)]="filtroBusqueda" name="buscarFactura" type="search"
-            placeholder="Buscar por número de factura o proveedor..."
-            class="w-full border-0 bg-transparent py-2 text-xs font-medium text-slate-800 outline-none placeholder:text-slate-400" />
-        </div>
-
-        <button type="button" (click)="cargarDatos()" [disabled]="cargando"
-          class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-50">
-          <span class="material-symbols-outlined text-[17px]">refresh</span>
-          Actualizar
-        </button>
       </div>
 
       <!-- Tabla de Facturas -->
@@ -262,46 +219,39 @@
          ========================================================================= -->
     <div *ngIf="tabActiva === 'bodega'">
       
-      <!-- Resumen de Métricas Bodega Central (Diseño Sleek & Minimal) -->
-      <div class="mb-6 grid grid-cols-1 gap-3.5 sm:grid-cols-3">
-        <div class="flex items-center justify-between rounded-xl border border-slate-200/90 bg-white p-3.5 shadow-2xs transition-colors hover:border-amber-300">
-          <div>
-            <span class="block text-[11px] font-bold uppercase tracking-wider text-slate-500">Insumos en Bodega</span>
-            <span class="mt-0.5 block text-xl font-black text-slate-900">{{ inventarioCentral.length }}</span>
-          </div>
-          <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
-            <span class="material-symbols-outlined text-[20px]">warehouse</span>
-          </div>
+      <!-- Barra de Filtros y Busqueda Bodega Central (Sin tarjetas pesadas) -->
+      <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
+        
+        <!-- Filtros de Nivel de Stock con Contador Integrado -->
+        <div class="flex items-center gap-2 flex-wrap">
+          <button type="button" (click)="filtroStockBodega = 'TODOS'"
+            class="flex cursor-pointer items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-bold transition"
+            [ngClass]="filtroStockBodega === 'TODOS' ? 'border-amber-400 bg-[#fac94b] text-slate-900 shadow-2xs' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'">
+            Todos los Insumos
+            <span class="rounded-full bg-slate-900/10 px-1.5 py-0.2 text-[10px] font-black">{{ inventarioCentral.length }}</span>
+          </button>
+          <button type="button" (click)="filtroStockBodega = 'OPTIMO'"
+            class="flex cursor-pointer items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-bold transition"
+            [ngClass]="filtroStockBodega === 'OPTIMO' ? 'border-emerald-500 bg-emerald-600 text-white shadow-2xs' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'">
+            Stock Óptimo
+            <span class="rounded-full px-1.5 py-0.2 text-[10px] font-black" [ngClass]="filtroStockBodega === 'OPTIMO' ? 'bg-white/20 text-white' : 'bg-emerald-50 text-emerald-700'">{{ inventarioCentral.length - stockBajoCount }}</span>
+          </button>
+          <button type="button" (click)="filtroStockBodega = 'BAJO'"
+            class="flex cursor-pointer items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-bold transition"
+            [ngClass]="filtroStockBodega === 'BAJO' ? 'border-orange-500 bg-orange-600 text-white shadow-2xs' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'">
+            Bajo Stock / Crítico
+            <span class="rounded-full px-1.5 py-0.2 text-[10px] font-black" [ngClass]="filtroStockBodega === 'BAJO' ? 'bg-white/20 text-white' : 'bg-orange-50 text-orange-700'">{{ stockBajoCount }}</span>
+          </button>
         </div>
 
-        <div class="flex items-center justify-between rounded-xl border border-slate-200/90 bg-white p-3.5 shadow-2xs transition-colors hover:border-emerald-300">
-          <div>
-            <span class="block text-[11px] font-bold uppercase tracking-wider text-slate-500">Stock Óptimo</span>
-            <span class="mt-0.5 block text-xl font-black text-emerald-700">{{ inventarioCentral.length - stockBajoCount }}</span>
+        <!-- Buscador Bodega -->
+        <div class="flex flex-1 items-center justify-end gap-3 min-w-[280px]">
+          <div class="flex flex-1 max-w-md items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 shadow-2xs focus-within:border-amber-400">
+            <span class="material-symbols-outlined text-[18px] text-slate-400">search</span>
+            <input [(ngModel)]="filtroBusquedaBodega" name="buscarBodega" type="search"
+              placeholder="Buscar por insumo o categoría..."
+              class="w-full border-0 bg-transparent py-2 text-xs font-medium text-slate-800 outline-none placeholder:text-slate-400" />
           </div>
-          <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
-            <span class="material-symbols-outlined text-[20px]">task_alt</span>
-          </div>
-        </div>
-
-        <div class="flex items-center justify-between rounded-xl border border-slate-200/90 bg-white p-3.5 shadow-2xs transition-colors hover:border-orange-300">
-          <div>
-            <span class="block text-[11px] font-bold uppercase tracking-wider text-slate-500">Stock Bajo o Crítico</span>
-            <span class="mt-0.5 block text-xl font-black text-orange-600">{{ stockBajoCount }}</span>
-          </div>
-          <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-orange-50 text-orange-600">
-            <span class="material-symbols-outlined text-[20px]">warning</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Buscador Bodega -->
-      <div class="mb-5 flex items-center gap-3">
-        <div class="flex min-w-[260px] flex-1 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 shadow-xs focus-within:border-amber-400">
-          <span class="material-symbols-outlined text-[18px] text-slate-400">search</span>
-          <input [(ngModel)]="filtroBusquedaBodega" name="buscarBodega" type="search"
-            placeholder="Buscar por ingrediente o categoría..."
-            class="w-full border-0 bg-transparent py-2 text-xs font-medium text-slate-800 outline-none placeholder:text-slate-400" />
         </div>
       </div>
 

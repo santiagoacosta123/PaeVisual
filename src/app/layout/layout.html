@@ -223,8 +223,8 @@
         <span class="modern-nav-text">Recepción Entregas</span>
       </a>
 
-      <!-- MENÚS (Para ambos) -->
-      <a routerLink="menus" routerLinkActive="active" class="modern-nav-item" title="Menús">
+      <!-- MENÚS (Exclusivo para Administrador de Institución / Manipuladoras) -->
+      <a *ngIf="!esSuperAdministrador" routerLink="menus" routerLinkActive="active" class="modern-nav-item" title="Menús">
         <span class="material-symbols-outlined modern-nav-icon" aria-hidden="true">restaurant_menu</span>
         <span class="modern-nav-text">Menús</span>
       </a>
