@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
+import { Observable, forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { UsuarioService } from '../services/usuario.service';
 import { RolService } from '../services/rol.service';
 import { BancoDatosService } from '../services/banco-datos.service';
@@ -22,7 +24,8 @@ import { AuthService } from '@core/auth';
 export class UsuariosComponent implements OnInit {
 
   usuarios: any[] = [];
-  roles: any[] = []; // Se llena dinámicamente desde la BD
+  roles: any[] = []; // Opciones para el select según el creador
+  todosLosRoles: any[] = []; // Diccionario completo para mapear nombres en la tabla
   instituciones: any[] = [];
   sedes: any[] = [];
 
@@ -35,13 +38,15 @@ export class UsuariosComponent implements OnInit {
   get opcionesFiltroRol(): any[] {
     return [
       { id_rol: '', nombre_rol: 'Todos los Roles' },
-      ...(this.roles || [])
+      ...((this.todosLosRoles.length > 0 ? this.todosLosRoles : this.roles) || [])
     ];
   }
 
   modoEdicion: boolean = false;
   usuarioSeleccionadoId?: number;
   mostrarModal: boolean = false;
+  mostrarModalDetalleSupervisor: boolean = false;
+  supervisorDetalle: any = null;
 
   filtroTexto: string = '';
   filtroRol: string = '';
@@ -108,10 +113,63 @@ export class UsuariosComponent implements OnInit {
     return nom.includes('admin') && !nom.includes('super');
   }
 
-  esRolSupervisor(): boolean {
-    if (!this.usuarioForm.rol) return false;
-    const nom = this.obtenerNombreRol(this.usuarioForm.rol).toLowerCase();
-    return nom.includes('supervisor') || nom.includes('coordinador');
+  esRolSupervisor(usuario?: any): boolean {
+    const u = usuario || this.usuarioForm;
+    return this.esUsuarioSupervisor(u);
+  }
+
+  esUsuarioSupervisor(u: any): boolean {
+    if (!u) return false;
+    // 1. Chequeo por rol_detalle
+    const nomDetalle = (u.rol_detalle?.nombre_rol || u.rol_detalle?.nombre || '').toLowerCase();
+    if (nomDetalle && (nomDetalle.includes('supervisor') || nomDetalle.includes('coordinador'))) return true;
+
+    // 2. Chequeo por rol directo (string o objeto)
+    if (typeof u.rol === 'string') {
+      const r = u.rol.toLowerCase();
+      if (r.includes('supervisor') || r.includes('coordinador')) return true;
+    }
+    if (typeof u.rol === 'object' && u.rol !== null) {
+      const r = (u.rol.nombre_rol || u.rol.nombre || '').toLowerCase();
+      if (r.includes('supervisor') || r.includes('coordinador')) return true;
+    }
+
+    // 3. Chequeo buscando en el catálogo de roles
+    const idRol = typeof u.rol === 'object' ? (u.rol?.id_rol || u.rol?.id || u.rol?.pk) : u.rol;
+    if (idRol) {
+      const nomCatalog = this.obtenerNombreRol(idRol).toLowerCase();
+      if (nomCatalog.includes('supervisor') || nomCatalog.includes('coordinador')) return true;
+    }
+
+    // 4. Si el backend ya le serializó instituciones_supervisor
+    if (Array.isArray(u.instituciones_supervisor) && u.instituciones_supervisor.length > 0) {
+      return true;
+    }
+
+    return false;
+  }
+
+  contarSedesSupervisor(u: any): number {
+    if (!u?.instituciones_supervisor || !Array.isArray(u.instituciones_supervisor)) return 0;
+    return u.instituciones_supervisor.reduce((acc: number, inst: any) => acc + (inst.sedes?.length || 0), 0);
+  }
+
+  verDetalleInstitucionesSupervisor(u: any): void {
+    this.supervisorDetalle = u;
+    this.mostrarModalDetalleSupervisor = true;
+  }
+
+  cerrarModalDetalleSupervisor(): void {
+    this.mostrarModalDetalleSupervisor = false;
+    this.supervisorDetalle = null;
+  }
+
+  editarDesdeDetalle(): void {
+    const u = this.supervisorDetalle;
+    this.cerrarModalDetalleSupervisor();
+    if (u) {
+      this.abrirFormulario(u);
+    }
   }
 
   esRolAdmin(): boolean {
@@ -185,36 +243,55 @@ export class UsuariosComponent implements OnInit {
     return this.supervisorInstitucionesSeleccionadas.includes(Number(id));
   }
 
-  sincronizarInstitucionesSupervisor(supervisorId: number): void {
+  sincronizarInstitucionesSupervisor(supervisorId: number): Observable<any> {
     const actuales = this.supervisorInstitucionesSeleccionadas.map(Number);
     const originales = this.supervisorRelacionesOriginales;
+    const operaciones: Observable<any>[] = [];
 
+    // 1. Eliminar relaciones desmarcadas
     originales.forEach((rel: any) => {
       const relInstId = typeof rel.id_institucion === 'object' ? (rel.id_institucion?.id_institucion || rel.id_institucion?.id) : rel.id_institucion;
       if (!actuales.includes(Number(relInstId))) {
         const relId = rel.id_supervisor_institucion || rel.id;
         if (relId) {
-          this.http.delete(`${environment.apiUrl}/supervisor-instituciones/${relId}/`).subscribe({
-            error: (err) => console.warn('Error al desvincular institución:', err)
-          });
+          operaciones.push(
+            this.http.delete(`${environment.apiUrl}/supervisor-instituciones/${relId}/`).pipe(
+              catchError(err => {
+                console.warn('Error al desvincular institución:', err);
+                return of(null);
+              })
+            )
+          );
         }
       }
     });
 
+    // 2. Vincular nuevas instituciones marcadas
     actuales.forEach((instId: number) => {
       const yaExiste = originales.some((rel: any) => {
         const relInstId = typeof rel.id_institucion === 'object' ? (rel.id_institucion?.id_institucion || rel.id_institucion?.id) : rel.id_institucion;
         return Number(relInstId) === Number(instId);
       });
       if (!yaExiste) {
-        this.http.post(`${environment.apiUrl}/supervisor-instituciones/`, {
-          id_supervisor: supervisorId,
-          id_institucion: instId
-        }).subscribe({
-          error: (err) => console.warn('Error al vincular institución a supervisor:', err)
-        });
+        operaciones.push(
+          this.http.post(`${environment.apiUrl}/supervisor-instituciones/`, {
+            id_supervisor: supervisorId,
+            id_institucion: instId
+          }).pipe(
+            catchError(err => {
+              console.warn('Error al vincular institución a supervisor:', err);
+              return of(null);
+            })
+          )
+        );
       }
     });
+
+    if (operaciones.length === 0) {
+      return of([]);
+    }
+
+    return forkJoin(operaciones);
   }
 
   esRolConSede(): boolean {
@@ -268,6 +345,8 @@ export class UsuariosComponent implements OnInit {
           nombre_rol: r.nombre_rol || r.nombre || r.name
         }));
 
+        this.todosLosRoles = normalizados;
+
         const usuarioActual = this.authService.obtenerUsuario();
         const esSuper = this.authService.esSuperAdministrador(usuarioActual?.rol);
         const esAdmin = this.authService.esAdministrador(usuarioActual?.rol);
@@ -302,8 +381,14 @@ export class UsuariosComponent implements OnInit {
   obtenerNombreRol(idRol: any): string {
     if (!idRol) return 'Sin Rol';
     const idBuscado = typeof idRol === 'object' ? (idRol.id_rol || idRol.id || idRol.pk) : idRol;
-    const rolEncontrado = this.roles.find(r => r.id_rol == idBuscado);
-    if (!rolEncontrado) return typeof idRol === 'object' ? (idRol.nombre_rol || idRol.nombre || 'Rol') : `Rol ID: ${idRol}`;
+    const catalogo = this.todosLosRoles.length > 0 ? this.todosLosRoles : this.roles;
+    const rolEncontrado = catalogo.find(r => r.id_rol == idBuscado);
+    if (!rolEncontrado) {
+      if (typeof idRol === 'object') {
+        return idRol.nombre_rol || idRol.nombre || 'Rol';
+      }
+      return `Rol ID: ${idRol}`;
+    }
     
     return rolEncontrado.nombre_rol;
   }
@@ -347,7 +432,14 @@ export class UsuariosComponent implements OnInit {
         password: '' 
       };
 
-      if (this.esRolSupervisor() && this.usuarioSeleccionadoId) {
+      // Si el usuario ya trae instituciones_supervisor cargadas, las poblamos de inmediato
+      if (Array.isArray(usuario.instituciones_supervisor) && usuario.instituciones_supervisor.length > 0) {
+        this.supervisorInstitucionesSeleccionadas = usuario.instituciones_supervisor.map((i: any) => Number(i.id_institucion || i.id));
+      }
+
+      // Si es supervisor, consultamos la tabla relacional para tener los id_supervisor_institucion exactos para desvincular
+      const esSupervisor = this.esRolSupervisor(usuario) || this.esRolSupervisor(this.usuarioForm);
+      if (esSupervisor && this.usuarioSeleccionadoId) {
         this.http.get<any[]>(`${environment.apiUrl}/supervisor-instituciones/?id_supervisor=${this.usuarioSeleccionadoId}`).subscribe({
           next: (rels: any) => {
             const lista = Array.isArray(rels) ? rels : (rels.results || []);
@@ -437,14 +529,30 @@ export class UsuariosComponent implements OnInit {
       }
 
       const idEditando = this.usuarioSeleccionadoId;
+      const esSup = this.esRolSupervisor();
       this.usuarioService.actualizarUsuario(idEditando, datosEnviar).subscribe({
         next: () => {
-          if (this.esRolSupervisor()) {
-            this.sincronizarInstitucionesSupervisor(idEditando);
+          if (esSup) {
+            this.sincronizarInstitucionesSupervisor(idEditando).subscribe({
+              next: () => {
+                this.sweetAlert.success('¡Actualizado!', 'El usuario y sus asignaciones se guardaron correctamente.');
+                this.cerrarFormulario();
+                this.cargarUsuarios();
+                this.cargarInstitucionesYSedes();
+              },
+              error: () => {
+                this.sweetAlert.success('¡Actualizado!', 'El usuario se actualizó correctamente.');
+                this.cerrarFormulario();
+                this.cargarUsuarios();
+                this.cargarInstitucionesYSedes();
+              }
+            });
+          } else {
+            this.sweetAlert.success('¡Actualizado!', 'El usuario se actualizó correctamente.');
+            this.cerrarFormulario();
+            this.cargarUsuarios();
+            this.cargarInstitucionesYSedes();
           }
-          this.sweetAlert.success('¡Actualizado!', 'El usuario se actualizó correctamente.');
-          this.cerrarFormulario();
-          this.cargarUsuarios();
         },
         error: (err) => {
           const mensajeError = this.formatearMensajeError(err);
@@ -457,15 +565,31 @@ export class UsuariosComponent implements OnInit {
         return;
       }
 
+      const esSup = this.esRolSupervisor();
       this.usuarioService.crearUsuario(datosEnviar).subscribe({
         next: (nuevoUsuario: any) => {
           const nuevoId = nuevoUsuario?.id_usuario || nuevoUsuario?.id;
-          if (this.esRolSupervisor() && nuevoId) {
-            this.sincronizarInstitucionesSupervisor(nuevoId);
+          if (esSup && nuevoId) {
+            this.sincronizarInstitucionesSupervisor(nuevoId).subscribe({
+              next: () => {
+                this.sweetAlert.success('¡Creado!', 'El usuario y sus asignaciones se registraron correctamente.');
+                this.cerrarFormulario();
+                this.cargarUsuarios();
+                this.cargarInstitucionesYSedes();
+              },
+              error: () => {
+                this.sweetAlert.success('¡Creado!', 'El usuario se registró correctamente.');
+                this.cerrarFormulario();
+                this.cargarUsuarios();
+                this.cargarInstitucionesYSedes();
+              }
+            });
+          } else {
+            this.sweetAlert.success('¡Creado!', 'El usuario se registró correctamente.');
+            this.cerrarFormulario();
+            this.cargarUsuarios();
+            this.cargarInstitucionesYSedes();
           }
-          this.sweetAlert.success('¡Creado!', 'El usuario se registró correctamente.');
-          this.cerrarFormulario();
-          this.cargarUsuarios();
         },
         error: (err) => {
           const mensajeError = this.formatearMensajeError(err);
