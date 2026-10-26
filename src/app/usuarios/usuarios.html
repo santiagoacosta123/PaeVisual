@@ -105,10 +105,6 @@
                     <span>{{ u.instituciones_supervisor.length }} {{ u.instituciones_supervisor.length === 1 ? 'Institución' : 'Instituciones' }}</span>
                     <span class="text-[10px] bg-amber-200/80 text-amber-900 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Ver</span>
                   </button>
-                  <div *ngIf="contarSedesSupervisor(u) > 0" class="text-[10.5px] text-slate-500 font-normal mt-0.5 flex items-center gap-1">
-                    <span class="material-symbols-outlined text-[12px] text-slate-400">pin_drop</span>
-                    {{ contarSedesSupervisor(u) }} {{ contarSedesSupervisor(u) === 1 ? 'sede asociada' : 'sedes asociadas' }}
-                  </div>
                 </div>
                 <ng-template #sinInstitucionesSupervisor>
                   <button
