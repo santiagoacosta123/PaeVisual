@@ -242,3 +242,211 @@
 .btn-action.delete:hover {
   background: #fee2e2;
 }
+
+/* =========================================================
+   MODAL DE CREACIÓN / EDICIÓN ESTILO BANCO DATOS
+   ========================================================= */
+.bd-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.bd-modal {
+  background: #ffffff;
+  width: 620px;
+  max-width: 95%;
+  max-height: 90vh;
+  border-radius: 20px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+  animation: modalEnter 0.2s ease-out;
+}
+
+@keyframes modalEnter {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.bd-modal-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #ffffff;
+}
+
+.bd-modal-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  color: #d97706;
+  letter-spacing: 0.5px;
+  display: block;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.bd-modal-header h2 {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.bd-modal-close {
+  border: none;
+  background: transparent;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #64748b;
+  font-size: 18px;
+  transition: all 0.15s ease;
+}
+
+.bd-modal-close:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.bd-modal-body {
+  padding: 22px 24px;
+  overflow-y: auto;
+  flex: 1;
+  background: #ffffff;
+}
+
+.bd-modal-description {
+  margin: 0 0 18px 0;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.bd-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 600px) {
+  .bd-form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.bd-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.bd-form-group label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #334155;
+  display: block;
+}
+
+.bd-input {
+  width: 100%;
+  height: 42px;
+  padding: 0 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #0f172a;
+  background: #ffffff;
+  outline: none;
+  font-family: inherit;
+  box-sizing: border-box;
+  transition: all 0.15s ease;
+}
+
+.bd-input:focus {
+  border-color: #fbbf24;
+  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.15);
+}
+
+.bd-input::placeholder {
+  color: #94a3b8;
+}
+
+.bd-modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  background: #ffffff;
+}
+
+.bd-cancel {
+  height: 40px;
+  padding: 0 20px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.bd-cancel:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+.bd-save {
+  height: 40px;
+  padding: 0 22px;
+  border: none;
+  border-radius: 8px;
+  background: #fbbf24;
+  color: #000000 !important;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.28);
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.bd-save:hover {
+  background: #f59e0b;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.35);
+}
+
+.bd-save:active {
+  transform: translateY(0);
+}

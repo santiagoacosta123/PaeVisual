@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SiraeService } from '../services/contratos_pae.service';
+import { UsuarioService } from '../services/usuario.service';
 import { CustomSelectComponent } from '../shared/custom-select/custom-select';
 
 @Component({
@@ -21,8 +22,24 @@ export class ContratoDetalleComponent implements OnInit {
   jornadas: any[] = [];
   seccionesMenu: any[] = [];
   contratosSeccionMenu: any[] = [];
-  contrato: any = { codigo: '', institucion: '', zona: 'Norte', fecha_inicio: '', fecha_fin: '', estado: 'Activo' };
+  supervisores: any[] = [];
+  contrato: any = { 
+    codigo: '', 
+    institucion: '', 
+    zona: 'Norte', 
+    fecha_inicio: '', 
+    fecha_fin: '', 
+    estado: 'Activo',
+    cupos: 0,
+    id_usuario_supervisor: null 
+  };
   jornadaSeleccionada: any = null;
+
+  get nombreSupervisorAsignado(): string {
+    if (!this.contrato?.id_usuario_supervisor) return 'Sin asignar';
+    const sup = this.supervisores.find(s => Number(s.id_usuario) === Number(this.contrato.id_usuario_supervisor));
+    return sup ? sup.nombre_completo : `Supervisor #${this.contrato.id_usuario_supervisor}`;
+  }
 
   readonly zonasDisponibles: string[] = [
     'Norte',
@@ -171,6 +188,7 @@ export class ContratoDetalleComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private siraeService: SiraeService,
+    private usuarioService: UsuarioService,
     private cdr: ChangeDetectorRef
   ) { }
 
@@ -242,6 +260,26 @@ export class ContratoDetalleComponent implements OnInit {
         this.cdr.detectChanges();
       }
     });
+
+    // 5. Cargar Supervisores disponibles
+    this.cargarSupervisores();
+  }
+
+  cargarSupervisores(): void {
+    this.usuarioService.getUsuarios().subscribe({
+      next: (datos: any) => {
+        const res = Array.isArray(datos) ? datos : (datos.results || datos.data || []);
+        this.supervisores = res.filter((u: any) => {
+          const rolNom = (u.rol_detalle?.nombre || u.rol_nombre || (typeof u.rol === 'object' ? u.rol.nombre : '') || '').toLowerCase();
+          return rolNom.includes('supervisor') || rolNom.includes('coordinador');
+        }).map((u: any) => ({
+          id_usuario: u.id_usuario || u.id,
+          nombre_completo: `${u.nombre} ${u.apellido}`.trim()
+        }));
+        this.cdr.detectChanges();
+      },
+      error: (err) => console.error('Error cargando supervisores:', err)
+    });
   }
 
   actualizarSedesDeInstitucion() {
@@ -283,13 +321,19 @@ export class ContratoDetalleComponent implements OnInit {
         );
 
         if (contratoEncontrado) {
+          const instId = contratoEncontrado.id_institucion ? (contratoEncontrado.id_institucion?.id_institucion || contratoEncontrado.id_institucion) : null;
+          const supId = contratoEncontrado.id_usuario_supervisor ? (contratoEncontrado.id_usuario_supervisor?.id_usuario || contratoEncontrado.id_usuario_supervisor) : null;
+
           this.contrato = {
             ...contratoEncontrado,
             institucion: contratoEncontrado.institucion || contratoEncontrado.nombre_institucion || 'No especificada',
+            id_institucion: instId,
             zona: contratoEncontrado.zona || contratoEncontrado.nombre_zona || 'No especificada',
             fecha_inicio: contratoEncontrado.fecha_inicio || contratoEncontrado.inicio,
             fecha_fin: contratoEncontrado.fecha_fin || contratoEncontrado.fin,
-            condiciones: contratoEncontrado.condiciones || contratoEncontrado.descripcion || ''
+            condiciones: contratoEncontrado.condiciones || contratoEncontrado.descripcion || '',
+            cupos: contratoEncontrado.cupos || 0,
+            id_usuario_supervisor: supId ? Number(supId) : null
           };
           this.actualizarSedesDeInstitucion();
         } else {
@@ -444,13 +488,19 @@ export class ContratoDetalleComponent implements OnInit {
       return;
     }
 
-    const payload = {
+    const instEncontrada = this.institucionSeleccionadaInfo;
+    const idInst = instEncontrada?.id_institucion || instEncontrada?.id || this.contrato.id_institucion || null;
+
+    const payload: any = {
       numero_cor: this.contrato.codigo || ('COR-2026-' + Math.floor(Math.random() * 1000)),
       institucion: this.contrato.institucion,
+      id_institucion: idInst ? Number(idInst) : null,
       zona: this.contrato.zona || 'Norte',
       fecha_inicio: this.contrato.fecha_inicio || '2026-01-01',
       fecha_fin: this.contrato.fecha_fin || '2026-12-31',
-      estado: this.contrato.estado || 'Activo'
+      estado: this.contrato.estado || 'Activo',
+      cupos: Number(this.contrato.cupos) || 0,
+      id_usuario_supervisor: this.contrato.id_usuario_supervisor ? Number(this.contrato.id_usuario_supervisor) : null
     };
 
     const esNuevo = !this.contratoId || this.contratoId === 'nuevo' || this.contratoId === '0';

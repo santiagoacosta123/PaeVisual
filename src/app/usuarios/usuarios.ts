@@ -1,17 +1,21 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
 import { UsuarioService } from '../services/usuario.service';
 import { RolService } from '../services/rol.service';
+import { BancoDatosService } from '../services/banco-datos.service';
 import { SweetAlertService } from '../sweet-alert.service';
 import { CustomSelectComponent } from '../shared/custom-select/custom-select';
+import { environment } from '@env/environment';
 
 import { AuthService } from '@core/auth';
 
 @Component({
   selector: 'app-usuarios',
   standalone: true,
-  imports: [CommonModule, FormsModule, CustomSelectComponent],
+  imports: [CommonModule, FormsModule, RouterModule, CustomSelectComponent],
   templateUrl: './usuarios.html',
   styleUrls: ['./usuarios.css', '../banco-datos/banco-datos.css']
 })
@@ -19,6 +23,8 @@ export class UsuariosComponent implements OnInit {
 
   usuarios: any[] = [];
   roles: any[] = []; // Se llena dinámicamente desde la BD
+  instituciones: any[] = [];
+  sedes: any[] = [];
 
   readonly tiposDocumento = [
     { value: 'CC', label: 'Cédula de Ciudadanía' },
@@ -47,21 +53,139 @@ export class UsuariosComponent implements OnInit {
     tipo_documento: 'CC',
     numero_documento: '',
     rol: '',
+    id_institucion: null,
+    id_sede: null,
     password: '',
     is_active: true
   };
 
+  supervisorInstitucionesSeleccionadas: number[] = [];
+  supervisorRelacionesOriginales: any[] = [];
+
   constructor(
     private usuarioService: UsuarioService,
     private rolService: RolService,
+    private bancoDatosService: BancoDatosService,
     private sweetAlert: SweetAlertService,
     private cdr: ChangeDetectorRef,
-    private authService: AuthService
+    private authService: AuthService,
+    private http: HttpClient
   ) {}
 
   ngOnInit(): void {
     this.cargarRoles();
     this.cargarUsuarios();
+    this.cargarInstitucionesYSedes();
+  }
+
+  cargarInstitucionesYSedes(): void {
+    this.bancoDatosService.obtenerDatos('instituciones').subscribe({
+      next: (datos: any) => {
+        this.instituciones = Array.isArray(datos) ? datos : (datos.results || datos.data || []);
+        this.cdr.detectChanges();
+      },
+      error: (err) => console.error('Error al cargar instituciones en usuarios:', err)
+    });
+
+    this.bancoDatosService.obtenerDatos('sedes').subscribe({
+      next: (datos: any) => {
+        this.sedes = Array.isArray(datos) ? datos : (datos.results || datos.data || []);
+        this.cdr.detectChanges();
+      },
+      error: (err) => console.error('Error al cargar sedes en usuarios:', err)
+    });
+  }
+
+  esRolConInstitucion(): boolean {
+    if (!this.usuarioForm.rol) return false;
+    const nom = this.obtenerNombreRol(this.usuarioForm.rol).toLowerCase();
+    return !nom.includes('super');
+  }
+
+  esRolRequiereInstitucion(): boolean {
+    if (!this.usuarioForm.rol) return false;
+    const nom = this.obtenerNombreRol(this.usuarioForm.rol).toLowerCase();
+    return nom.includes('admin') && !nom.includes('super');
+  }
+
+  esRolSupervisor(): boolean {
+    if (!this.usuarioForm.rol) return false;
+    const nom = this.obtenerNombreRol(this.usuarioForm.rol).toLowerCase();
+    return nom.includes('supervisor') || nom.includes('coordinador');
+  }
+
+  esRolAdmin(): boolean {
+    if (!this.usuarioForm.rol) return false;
+    const nom = this.obtenerNombreRol(this.usuarioForm.rol).toLowerCase();
+    return nom.includes('admin') && !nom.includes('super');
+  }
+
+  toggleInstitucionSupervisor(id: number): void {
+    const idx = this.supervisorInstitucionesSeleccionadas.indexOf(id);
+    if (idx > -1) {
+      this.supervisorInstitucionesSeleccionadas.splice(idx, 1);
+    } else {
+      this.supervisorInstitucionesSeleccionadas.push(id);
+    }
+    this.cdr.detectChanges();
+  }
+
+  institucionSupervisorSeleccionada(id: number): boolean {
+    return this.supervisorInstitucionesSeleccionadas.includes(id);
+  }
+
+  sincronizarInstitucionesSupervisor(supervisorId: number): void {
+    const actuales = this.supervisorInstitucionesSeleccionadas;
+    const originales = this.supervisorRelacionesOriginales;
+
+    originales.forEach((rel: any) => {
+      const relInstId = typeof rel.id_institucion === 'object' ? (rel.id_institucion?.id_institucion || rel.id_institucion?.id) : rel.id_institucion;
+      if (!actuales.includes(relInstId)) {
+        const relId = rel.id_supervisor_institucion || rel.id;
+        this.http.delete(`${environment.apiUrl}/supervisor-instituciones/${relId}/`).subscribe();
+      }
+    });
+
+    actuales.forEach((instId: number) => {
+      const yaExiste = originales.some((rel: any) => {
+        const relInstId = typeof rel.id_institucion === 'object' ? (rel.id_institucion?.id_institucion || rel.id_institucion?.id) : rel.id_institucion;
+        return Number(relInstId) === Number(instId);
+      });
+      if (!yaExiste) {
+        this.http.post(`${environment.apiUrl}/supervisor-instituciones/`, {
+          id_supervisor: supervisorId,
+          id_institucion: instId
+        }).subscribe();
+      }
+    });
+  }
+
+  esRolConSede(): boolean {
+    if (!this.usuarioForm.rol) return false;
+    const nom = this.obtenerNombreRol(this.usuarioForm.rol).toLowerCase();
+    return nom.includes('manipuladora') || nom.includes('cocina');
+  }
+
+  get sedesDeInstitucionSeleccionada(): any[] {
+    if (!this.usuarioForm.id_institucion) return [];
+    const instId = Number(this.usuarioForm.id_institucion);
+    return this.sedes.filter(s => {
+      const sInstId = typeof s.id_institucion === 'object' && s.id_institucion !== null
+        ? (s.id_institucion.id_institucion ?? s.id_institucion.id)
+        : s.id_institucion;
+      return Number(sInstId) === instId;
+    });
+  }
+
+  onInstitucionChange(): void {
+    if (this.usuarioForm.id_sede) {
+      const existe = this.sedesDeInstitucionSeleccionada.some(
+        s => (s.id_sede || s.id) === Number(this.usuarioForm.id_sede)
+      );
+      if (!existe) {
+        this.usuarioForm.id_sede = null;
+      }
+    }
   }
 
   cargarUsuarios(): void {
@@ -144,17 +268,42 @@ export class UsuariosComponent implements OnInit {
 
   abrirFormulario(usuario?: any): void {
     this.mostrarModal = true;
+    this.supervisorInstitucionesSeleccionadas = [];
+    this.supervisorRelacionesOriginales = [];
     
     if (usuario) {
       this.modoEdicion = true;
       this.usuarioSeleccionadoId = usuario.id_usuario || usuario.id || usuario.pk || usuario.user_id;
       const rolValor = typeof usuario.rol === 'object' ? (usuario.rol?.id_rol || usuario.rol?.id || usuario.rol?.pk) : usuario.rol;
+      const instValor = typeof usuario.id_institucion === 'object' 
+        ? (usuario.id_institucion?.id_institucion || usuario.id_institucion?.id) 
+        : usuario.id_institucion;
+      const sedeValor = typeof usuario.id_sede === 'object'
+        ? (usuario.id_sede?.id_sede || usuario.id_sede?.id)
+        : usuario.id_sede;
 
       this.usuarioForm = { 
         ...usuario, 
         rol: Number(rolValor) || '',
+        id_institucion: instValor ? Number(instValor) : null,
+        id_sede: sedeValor ? Number(sedeValor) : null,
         password: '' 
       };
+
+      if (this.esRolSupervisor() && this.usuarioSeleccionadoId) {
+        this.http.get<any[]>(`${environment.apiUrl}/supervisor-instituciones/?id_supervisor=${this.usuarioSeleccionadoId}`).subscribe({
+          next: (rels: any) => {
+            const lista = Array.isArray(rels) ? rels : (rels.results || []);
+            this.supervisorRelacionesOriginales = lista;
+            this.supervisorInstitucionesSeleccionadas = lista.map((r: any) => {
+              const instId = typeof r.id_institucion === 'object' ? (r.id_institucion?.id_institucion || r.id_institucion?.id) : r.id_institucion;
+              return Number(instId);
+            });
+            this.cdr.detectChanges();
+          },
+          error: (err) => console.error('Error al cargar instituciones del supervisor:', err)
+        });
+      }
       return;
     }
     
@@ -165,9 +314,11 @@ export class UsuariosComponent implements OnInit {
       nombre: '',
       apellido: '',
       correo: '',
-      tipo_documento: '',
+      tipo_documento: 'CC',
       numero_documento: '',
       rol: '',
+      id_institucion: null,
+      id_sede: null,
       password: '',
       is_active: true
     };
@@ -200,9 +351,16 @@ export class UsuariosComponent implements OnInit {
       return;
     }
 
-    const datosEnviar = {
+    if (this.esRolRequiereInstitucion() && !this.usuarioForm.id_institucion) {
+      this.sweetAlert.warning('Institución requerida', 'Debes seleccionar la institución educativa a la que pertenecerá el administrador.');
+      return;
+    }
+
+    const datosEnviar: any = {
       ...this.usuarioForm,
-      rol: Number(this.usuarioForm.rol)
+      rol: Number(this.usuarioForm.rol),
+      id_institucion: this.usuarioForm.id_institucion ? Number(this.usuarioForm.id_institucion) : null,
+      id_sede: this.usuarioForm.id_sede ? Number(this.usuarioForm.id_sede) : null
     };
 
     if (this.modoEdicion && this.usuarioSeleccionadoId) {
@@ -210,8 +368,12 @@ export class UsuariosComponent implements OnInit {
         delete datosEnviar.password;
       }
 
-      this.usuarioService.actualizarUsuario(this.usuarioSeleccionadoId, datosEnviar).subscribe({
+      const idEditando = this.usuarioSeleccionadoId;
+      this.usuarioService.actualizarUsuario(idEditando, datosEnviar).subscribe({
         next: () => {
+          if (this.esRolSupervisor()) {
+            this.sincronizarInstitucionesSupervisor(idEditando);
+          }
           this.sweetAlert.success('¡Actualizado!', 'El usuario se actualizó correctamente.');
           this.cerrarFormulario();
           this.cargarUsuarios();
@@ -228,7 +390,11 @@ export class UsuariosComponent implements OnInit {
       }
 
       this.usuarioService.crearUsuario(datosEnviar).subscribe({
-        next: () => {
+        next: (nuevoUsuario: any) => {
+          const nuevoId = nuevoUsuario?.id_usuario || nuevoUsuario?.id;
+          if (this.esRolSupervisor() && nuevoId) {
+            this.sincronizarInstitucionesSupervisor(nuevoId);
+          }
           this.sweetAlert.success('¡Creado!', 'El usuario se registró correctamente.');
           this.cerrarFormulario();
           this.cargarUsuarios();

@@ -30,10 +30,15 @@
         ></app-custom-select>
       </div>
 
-      <!-- Botón Nuevo Usuario -->
-      <button type="button" (click)="abrirFormulario()" class="h-[38px] px-5 inline-flex items-center justify-center gap-2 border-none rounded-lg bg-[#fac94b] text-black text-[13px] font-bold cursor-pointer whitespace-nowrap shadow-[0_2px_6px_rgba(250,201,75,0.3)] transition-all hover:bg-[#f5b927] hover:-translate-y-[1px]" style="color: #000000 !important;">
-        <span class="material-symbols-outlined text-[18px]" style="color: #000000 !important;">add</span>
-        <span style="color: #000000 !important;">Añadir usuario</span>
+      <!-- Botones Nuevo Usuario -->
+      <a routerLink="/crear-usuario" class="h-[38px] px-4 inline-flex items-center justify-center gap-2 border-none rounded-lg bg-[#fac94b] text-black text-[13px] font-bold cursor-pointer whitespace-nowrap shadow-[0_2px_6px_rgba(250,201,75,0.3)] transition-all hover:bg-[#f5b927] hover:-translate-y-[1px] no-underline" style="color: #000000 !important;">
+        <span class="material-symbols-outlined text-[18px]" style="color: #000000 !important;">person_add</span>
+        <span style="color: #000000 !important;">Asistente de registro</span>
+      </a>
+
+      <button type="button" (click)="abrirFormulario()" class="h-[38px] px-3.5 inline-flex items-center justify-center gap-1.5 border border-slate-300 rounded-lg bg-white text-slate-700 text-[13px] font-semibold cursor-pointer whitespace-nowrap hover:bg-slate-50 transition-all shadow-xs">
+        <span class="material-symbols-outlined text-[18px]">add</span>
+        <span>Añadir rápido</span>
       </button>
     </div>
   </header>
@@ -203,6 +208,68 @@
               name="rol"
               [required]="true"
               [(ngModel)]="usuarioForm.rol"
+            ></app-custom-select>
+          </div>
+
+          <!-- CASO 1: Administrador Institucional o personal vinculado a 1 colegio -->
+          <div class="bd-form-group" style="grid-column: 1 / -1" *ngIf="!esRolSupervisor() && esRolConInstitucion()">
+            <label>
+              {{ esRolAdmin() ? 'Institución Educativa que Administrará' : 'Institución Educativa Asignada' }}
+              <span style="color: #ef4444" *ngIf="esRolRequiereInstitucion()">*</span>
+            </label>
+            <app-custom-select
+              [options]="instituciones"
+              valueField="id_institucion"
+              labelField="nombre_institucion"
+              placeholder="Selecciona la institución educativa..."
+              name="id_institucion"
+              [(ngModel)]="usuarioForm.id_institucion"
+              (ngModelChange)="onInstitucionChange()"
+            ></app-custom-select>
+            <span *ngIf="esRolAdmin()" style="font-size: 11px; color: #64748b; margin-top: 3px; display: block;">
+              Este usuario será el Administrador oficial a cargo de esta institución educativa y sus sedes.
+            </span>
+          </div>
+
+          <!-- CASO 2: Supervisor de circuito con Múltiples Instituciones -->
+          <div class="bd-form-group" style="grid-column: 1 / -1; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px;" *ngIf="esRolSupervisor()">
+            <label style="color: #0f172a; font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: #f59e0b;">domain_add</span>
+              Instituciones Asignadas a este Supervisor (Selección Múltiple)
+            </label>
+            <p style="margin: 0 0 10px 0; font-size: 11px; color: #64748b;">
+              Selecciona todos los colegios que estarán bajo la supervisión de este coordinador:
+            </p>
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px; max-height: 180px; overflow-y: auto; padding-right: 4px;">
+              <div *ngFor="let inst of instituciones"
+                (click)="toggleInstitucionSupervisor(inst.id_institucion || inst.id)"
+                style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; border: 1px solid #cbd5e1; cursor: pointer; transition: all 0.15s; user-select: none; font-size: 12px;"
+                [style.background]="institucionSupervisorSeleccionada(inst.id_institucion || inst.id) ? '#fefce8' : '#ffffff'"
+                [style.border-color]="institucionSupervisorSeleccionada(inst.id_institucion || inst.id) ? '#f59e0b' : '#cbd5e1'">
+                <span class="material-symbols-outlined" style="font-size: 18px;"
+                  [style.color]="institucionSupervisorSeleccionada(inst.id_institucion || inst.id) ? '#d97706' : '#94a3b8'">
+                  {{ institucionSupervisorSeleccionada(inst.id_institucion || inst.id) ? 'check_box' : 'check_box_outline_blank' }}
+                </span>
+                <span style="font-weight: 600; color: #0f172a; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+                  {{ inst.nombre_institucion || inst.nombre }}
+                </span>
+              </div>
+            </div>
+            <div style="margin-top: 8px; font-size: 11px; color: #b45309; font-weight: 700;">
+              ✓ {{ supervisorInstitucionesSeleccionadas.length }} instituciones seleccionadas
+            </div>
+          </div>
+
+          <!-- Selector de Sede cuando la institución tiene sedes y el rol es de sede -->
+          <div class="bd-form-group" style="grid-column: 1 / -1" *ngIf="usuarioForm.id_institucion && sedesDeInstitucionSeleccionada.length > 0 && esRolConSede()">
+            <label>Sede Educativa (Opcional)</label>
+            <app-custom-select
+              [options]="sedesDeInstitucionSeleccionada"
+              valueField="id_sede"
+              labelField="nombre_sede"
+              placeholder="Selecciona una sede específica..."
+              name="id_sede"
+              [(ngModel)]="usuarioForm.id_sede"
             ></app-custom-select>
           </div>
 

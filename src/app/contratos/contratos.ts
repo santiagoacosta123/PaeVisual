@@ -56,11 +56,13 @@ export class ContratosComponent implements OnInit {
         this.contratos = lista.map((c: any) => ({
           id: c.id_contrato || c.id,
           codigo: c.numero_cor || c.codigo,
-          institucion: c.institucion,
+          institucion: c.institucion || c.institucion_nombre || 'Sin institución',
           fechaInicio: c.fecha_inicio,
           fechaFin: c.fecha_fin,
           estado: c.estado,
           zona: c.zona,
+          cupos: c.cupos || 0,
+          supervisor: c.supervisor_nombre || (c.id_usuario_supervisor ? `Supervisor #${c.id_usuario_supervisor}` : 'Sin asignar'),
           expandido: false
         }));
 

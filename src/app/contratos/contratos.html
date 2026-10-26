@@ -37,9 +37,10 @@
             <tr style="border-bottom:1px solid #e2e8f0; color:#64748b; font-weight:600;">
               <th style="padding:10px 12px; font-size:11px; letter-spacing:0.5px;">N° CONTRATO</th>
               <th style="padding:10px 12px; font-size:11px; letter-spacing:0.5px;">INSTITUCIÓN</th>
+              <th style="padding:10px 12px; font-size:11px; letter-spacing:0.5px;">CUPOS</th>
+              <th style="padding:10px 12px; font-size:11px; letter-spacing:0.5px;">SUPERVISOR</th>
               <th style="padding:10px 12px; font-size:11px; letter-spacing:0.5px;">FECHA INICIO</th>
               <th style="padding:10px 12px; font-size:11px; letter-spacing:0.5px;">FECHA FIN</th>
-              <th style="padding:10px 12px; font-size:11px; letter-spacing:0.5px;">ZONA</th>
               <th style="padding:10px 12px; font-size:11px; letter-spacing:0.5px;">ESTADO</th>
               <th style="padding:10px 12px; font-size:11px; letter-spacing:0.5px; text-align:right;">ACCIONES</th>
             </tr>
@@ -55,9 +56,21 @@
                   </span>
                 </td>
                 <td style="padding:12px; color:#0f172a; font-weight:600;">{{ c.institucion }}</td>
+                <td style="padding:12px;">
+                  <span style="background:#fef3c7; color:#92400e; font-size:11px; font-weight:700; padding:3px 8px; border-radius:6px; border:1px solid #fde68a; display:inline-block; white-space:nowrap;">
+                    {{ c.cupos || 0 }} cupos
+                  </span>
+                </td>
+                <td style="padding:12px; color:#475569; font-size:12px;">
+                  <span *ngIf="c.supervisor && c.supervisor !== 'Sin asignar'" style="font-weight:600; color:#0f172a;">
+                    {{ c.supervisor }}
+                  </span>
+                  <span *ngIf="!c.supervisor || c.supervisor === 'Sin asignar'" style="color:#94a3b8; font-style:italic;">
+                    Sin asignar
+                  </span>
+                </td>
                 <td style="padding:12px; color:#64748b;">{{ c.fechaInicio }}</td>
                 <td style="padding:12px; color:#64748b;">{{ c.fechaFin }}</td>
-                <td style="padding:12px; color:#64748b;">{{ c.zona }}</td>
                 <td style="padding:12px;">
                   <span style="padding:3px 10px; border-radius:12px; font-size:11px; font-weight:600;"
                     [style.background]="c.estado === 'Activo' ? '#dcfce7' : (c.estado === 'Finalizado' ? '#f1f5f9' : '#fee2e2')"
@@ -78,7 +91,7 @@
               </tr>
 
               <tr *ngIf="c.expandido">
-                <td colspan="6" style="padding:0 12px 16px 12px;">
+                <td colspan="8" style="padding:0 12px 16px 12px;">
                   <div style="display:flex; flex-direction:column; gap:16px;">
                     <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:14px 16px;">
                       <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap:12px; font-size:12px;">
@@ -89,6 +102,14 @@
                         <div>
                           <span style="display:block; color:#64748b; font-weight:600; font-size:10px; letter-spacing:0.5px; margin-bottom:2px;">INSTITUCIÓN</span>
                           <span style="color:#0f172a; font-weight:700;">{{ c.institucion }}</span>
+                        </div>
+                        <div>
+                          <span style="display:block; color:#64748b; font-weight:600; font-size:10px; letter-spacing:0.5px; margin-bottom:2px;">CUPOS ASIGNADOS</span>
+                          <span style="color:#b45309; font-weight:800;">{{ c.cupos || 0 }} raciones/día</span>
+                        </div>
+                        <div>
+                          <span style="display:block; color:#64748b; font-weight:600; font-size:10px; letter-spacing:0.5px; margin-bottom:2px;">SUPERVISOR ENCARGADO</span>
+                          <span style="color:#0f172a; font-weight:700;">{{ c.supervisor || 'Sin asignar' }}</span>
                         </div>
                         <div>
                           <span style="display:block; color:#64748b; font-weight:600; font-size:10px; letter-spacing:0.5px; margin-bottom:2px;">FECHA INICIO</span>

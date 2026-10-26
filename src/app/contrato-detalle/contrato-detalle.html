@@ -89,6 +89,19 @@
               <span style="margin-left: 8px; font-size: 12px; font-weight: 600; color: #334155;">{{ contrato.estado }}</span>
             </label>
           </div>
+          <div>
+            <label style="display: block; font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 4px;">Cupos Asignados (Raciones/Día) *</label>
+            <input type="number" [(ngModel)]="contrato.cupos" min="0" placeholder="Ej: 350" style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; background: #ffffff; color: #334155; box-sizing: border-box; outline: none;">
+          </div>
+          <div>
+            <label style="display: block; font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 4px;">Supervisor Encargado</label>
+            <select [(ngModel)]="contrato.id_usuario_supervisor" style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; background: #ffffff; color: #334155; box-sizing: border-box; outline: none; cursor: pointer;">
+              <option [ngValue]="null">Sin supervisor asignado...</option>
+              <option *ngFor="let sup of supervisores" [value]="sup.id_usuario">
+                {{ sup.nombre_completo }}
+              </option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -222,7 +235,25 @@
         </span>
       </div>
 
-      <hr style="border: 0; border-top: 1px dashed #e2e8f0; margin: 16px 0;">
+      <hr style="border: 0; border-top: 1px dashed #e2e8f0; margin: 12px 0;">
+
+      <!-- Resumen Cupos y Supervisor -->
+      <div style="margin-bottom: 14px; background: #fffcf0; border: 1px solid #fde68a; border-radius: 8px; padding: 10px;">
+        <span style="font-size: 9px; font-weight: 700; color: #92400e; letter-spacing: 0.5px; display: block; margin-bottom: 2px;">CUPOS CONTRATADOS</span>
+        <div style="font-size: 16px; font-weight: 800; color: #78350f;">
+          {{ contrato?.cupos || 0 }} <span style="font-size: 11px; font-weight: 600; color: #b45309;">raciones/día</span>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px;">
+        <span style="font-size: 9px; font-weight: 700; color: #64748b; letter-spacing: 0.5px; display: block; margin-bottom: 2px;">SUPERVISOR ASIGNADO</span>
+        <div style="font-size: 11px; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 4px;">
+          <span class="material-symbols-outlined" style="font-size: 15px; color: #f59e0b;">shield_person</span>
+          <span>{{ nombreSupervisorAsignado }}</span>
+        </div>
+      </div>
+
+      <hr style="border: 0; border-top: 1px dashed #e2e8f0; margin: 12px 0;">
 
       <div style="margin-bottom: 16px;">
         <span style="font-size: 9px; font-weight: 700; color: #94a3b8; letter-spacing: 0.5px; display: block; margin-bottom: 6px;">SEDES VINCULADAS ({{ sedesInstitucion.length }})</span>
