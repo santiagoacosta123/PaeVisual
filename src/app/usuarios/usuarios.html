@@ -292,13 +292,15 @@
                 </div>
                 
                 <!-- Badge indicador si ya pertenece a otro supervisor -->
-                <span *ngIf="institucionAsignadaAotroSupervisor(inst)" style="font-size: 10px; color: #dc2626; font-weight: 700; padding-left: 26px;">
-                  ⛔ Supervisada por: {{ nombreSupervisorAsignado(inst) }}
+                <span *ngIf="institucionAsignadaAotroSupervisor(inst)" style="font-size: 10.5px; color: #dc2626; font-weight: 700; padding-left: 26px; display: inline-flex; align-items: center; gap: 4px;">
+                  <span class="material-symbols-outlined" style="font-size: 13px;">block</span>
+                  Supervisada por: {{ nombreSupervisorAsignado(inst) }}
                 </span>
               </div>
             </div>
-            <div style="margin-top: 8px; font-size: 11px; color: #b45309; font-weight: 700;">
-              ✓ {{ supervisorInstitucionesSeleccionadas.length }} instituciones seleccionadas
+            <div style="margin-top: 8px; font-size: 11px; color: #b45309; font-weight: 700; display: flex; align-items: center; gap: 4px;">
+              <span class="material-symbols-outlined" style="font-size: 14px;">check_circle</span>
+              {{ supervisorInstitucionesSeleccionadas.length }} instituciones seleccionadas
             </div>
           </div>
 
@@ -347,10 +349,16 @@
           <h2 style="font-size: 19px; font-weight: 800; color: #0f172a; margin: 2px 0 0 0;">
             {{ supervisorDetalle?.nombre }} {{ supervisorDetalle?.apellido }}
           </h2>
-          <div style="font-size: 12px; color: #64748b; margin-top: 3px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-            <span>📧 {{ supervisorDetalle?.correo }}</span>
-            <span>•</span>
-            <span>Doc: {{ supervisorDetalle?.tipo_documento || 'CC' }} {{ supervisorDetalle?.numero_documento }}</span>
+          <div style="font-size: 12.5px; color: #64748b; margin-top: 4px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <span style="display: inline-flex; align-items: center; gap: 4px;">
+              <span class="material-symbols-outlined" style="font-size: 15px; color: #94a3b8;">mail</span>
+              {{ supervisorDetalle?.correo }}
+            </span>
+            <span style="color: #cbd5e1;">•</span>
+            <span style="display: inline-flex; align-items: center; gap: 4px;">
+              <span class="material-symbols-outlined" style="font-size: 15px; color: #94a3b8;">badge</span>
+              {{ supervisorDetalle?.tipo_documento || 'CC' }} {{ supervisorDetalle?.numero_documento }}
+            </span>
           </div>
         </div>
         <button type="button" class="bd-modal-close" (click)="cerrarModalDetalleSupervisor()" title="Cerrar">
