@@ -10,15 +10,23 @@
     .menu-chip { flex: 0 0 auto; width: 105px; scroll-snap-align: start; }
     .cat-count { background: linear-gradient(135deg, #FFA928, #FF8A00); color: #fff; }
 
+    /* Productos de cada categoría: fila deslizable */
+    .prod-scroll { display: flex; gap: 10px; overflow-x: auto; padding: 6px 4px 14px; scroll-snap-type: x proximity; }
+    .prod-scroll::-webkit-scrollbar { height: 6px; }
+    .prod-scroll::-webkit-scrollbar-thumb { background: #FFD9A8; border-radius: 9999px; }
+    .prod-slide { flex: 0 0 clamp(220px, 31%, 280px); scroll-snap-align: start; }
+
     /* Tarjetas de producto compactas */
-    .prod-card { position: relative; background: #fff; border-radius: 16px; padding: 10px 12px; display: flex; align-items: center; gap: 12px; text-align: left; box-shadow: 0 4px 12px -8px rgba(15, 23, 42, .12); border: 1px solid #F8FAFC; transition: transform .2s ease, box-shadow .2s ease; }
+    .prod-card { position: relative; background: #fff; border-radius: 16px; padding: 10px 12px; display: flex; align-items: center; gap: 12px; text-align: left; box-shadow: 0 4px 12px -8px rgba(15, 23, 42, .12); border: 1px solid #F8FAFC; transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; cursor: pointer; }
     .prod-card:hover { transform: translateY(-2px); box-shadow: 0 10px 20px -8px rgba(255, 138, 0, .25); }
+    .prod-card:focus-visible { outline: 2px solid #FF8A00; outline-offset: 2px; }
+    .prod-card.activa { border-color: #FDBA74; box-shadow: 0 0 0 2px #FED7AA, 0 10px 20px -8px rgba(255, 138, 0, .25); }
     .prod-img { width: 44px; height: 44px; border-radius: 9999px; display: flex; align-items: center; justify-content: center; font-size: 22px; line-height: 1; overflow: hidden; border: 2px solid #fff; background: radial-gradient(circle at 30% 25%, #fff, #FFEFD6 72%); box-shadow: 0 4px 10px -4px rgba(255, 138, 0, .35); flex-shrink: 0; }
     .prod-img.warn { background: radial-gradient(circle at 30% 25%, #fff, #FDE9B8 72%); }
     .prod-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
     .prod-badge { position: absolute; top: 6px; right: 6px; width: 20px; height: 20px; border-radius: 9999px; display: flex; align-items: center; justify-content: center; }
 
-    /* Miniatura redonda reutilizable (calendario, modal, última entrega) */
+    /* Miniatura redonda reutilizable */
     .mini-img { display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; border-radius: 9999px; font-size: 16px; line-height: 1; }
     .mini-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
@@ -121,7 +129,6 @@
                             </button>
                         </div>
                         <div class="flex items-center gap-2">
-                            <!-- Botón Entradas: abre el formulario para registrar una entrada -->
                             <button type="button" (click)="abrirModalEntrada()"
                                 class="pill-on inline-flex cursor-pointer items-center gap-1 rounded-full px-3.5 py-1.5 text-xs font-bold transition hover:opacity-90">
                                 <span class="material-symbols-outlined text-[16px]">add_circle</span> Entradas
@@ -206,31 +213,55 @@
                             </span>
                             <h4 class="m-0 text-xs font-black text-slate-900">{{ grupo.nombre }}</h4>
                             <span class="cat-count flex h-4 min-w-[18px] items-center justify-center rounded-full px-1 text-[9px] font-black">{{ grupo.productos.length }}</span>
+                            <span *ngIf="grupo.productos.length > 2" class="ml-auto text-[10px] font-semibold text-slate-400">Desliza para ver más &gt;</span>
                         </div>
 
-                        <!-- Grid de productos compactos -->
-                        <div class="grid grid-cols-1 gap-2.5 pt-3 sm:grid-cols-2 xl:grid-cols-3">
-                            <article *ngFor="let producto of grupo.productos; trackBy: trackProducto" class="prod-card fx-up">
-                                <span class="prod-badge" [title]="nombreTipo(producto)"
-                                    [ngClass]="esPerecedero(producto) ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600'">
-                                    <span class="material-symbols-outlined text-[14px]">{{ esPerecedero(producto) ? 'schedule' : 'check_circle' }}</span>
-                                </span>
+                        <!-- Productos deslizables (de lado) -->
+                        <div class="mt-3 flex items-center gap-2">
+                            <button *ngIf="grupo.productos.length > 2" type="button" class="arrow-btn" aria-label="Productos anteriores"
+                                (click)="filaProductos.scrollBy({ left: -300, behavior: 'smooth' })">
+                                <span class="material-symbols-outlined text-[18px]">chevron_left</span>
+                            </button>
 
-                                <!-- Imagen del producto (si no existe, muestra el emoji) -->
-                                <div class="prod-img" [class.warn]="esPerecedero(producto)">
-                                    <img *ngIf="imagenDe(producto.nombre) as src; else sinFotoProd"
-                                         [src]="src" [alt]="producto.nombre" loading="lazy">
-                                    <ng-template #sinFotoProd><span>{{ emojiDe(producto.nombre) }}</span></ng-template>
-                                </div>
+                            <div #filaProductos class="prod-scroll min-w-0 flex-1">
+                                <!-- Clic en la tarjeta = selecciona el producto y lo muestra en el panel de Inventario -->
+                                <article *ngFor="let producto of grupo.productos; trackBy: trackProducto"
+                                    class="prod-card prod-slide fx-up"
+                                    [class.activa]="tarjetaActiva(producto)"
+                                    role="button" tabindex="0"
+                                    [attr.aria-pressed]="tarjetaActiva(producto)"
+                                    [attr.aria-label]="'Seleccionar ' + producto.nombre"
+                                    (click)="abrirDetalleDesdeCatalogo(producto)"
+                                    (keydown.enter)="abrirDetalleDesdeCatalogo(producto)"
+                                    (keydown.space)="abrirDetalleDesdeCatalogo(producto); $event.preventDefault()">
 
-                                <div class="min-w-0 flex-1">
-                                    <h4 class="m-0 text-xs font-black text-slate-900 truncate">{{ producto.nombre }}</h4>
-                                    <div class="mt-0.5 flex items-center gap-2">
-                                        <span class="text-[10px] font-black" [ngClass]="esPerecedero(producto) ? 'text-amber-600' : 'text-emerald-600'">{{ nombreTipo(producto) }}</span>
-                                        <span class="text-[10px] font-semibold text-slate-400">· Unidad: {{ producto.unidad }}</span>
+                                    <!-- Icono de institución (en vez del reloj / check) -->
+                                    <span class="prod-badge bg-orange-50 text-orange-600" title="Se puede enviar a una institución">
+                                        <span class="material-symbols-outlined text-[14px]">school</span>
+                                    </span>
+
+                                    <!-- Imagen del producto (si no existe, muestra el emoji) -->
+                                    <div class="prod-img" [class.warn]="esPerecedero(producto)">
+                                        <img *ngIf="imagenDe(producto.nombre) as src; else sinFotoProd"
+                                             [src]="src" [alt]="producto.nombre" loading="lazy">
+                                        <ng-template #sinFotoProd><span>{{ emojiDe(producto.nombre) }}</span></ng-template>
                                     </div>
-                                </div>
-                            </article>
+
+                                    <div class="min-w-0 flex-1">
+                                        <h4 class="m-0 text-xs font-black text-slate-900 truncate">{{ producto.nombre }}</h4>
+                                        <div class="mt-0.5 flex flex-wrap items-center gap-x-2">
+                                            <span class="text-[10px] font-black" [ngClass]="esPerecedero(producto) ? 'text-amber-600' : 'text-emerald-600'">{{ nombreTipo(producto) }}</span>
+                                            <span class="text-[10px] font-semibold text-slate-400">· Unidad: {{ producto.unidad }}</span>
+                                        </div>
+                                        <span *ngIf="fueEnviado(producto.nombre)" class="text-[10px] font-black text-emerald-600">✓ Enviado</span>
+                                    </div>
+                                </article>
+                            </div>
+
+                            <button *ngIf="grupo.productos.length > 2" type="button" class="arrow-btn" aria-label="Más productos"
+                                (click)="filaProductos.scrollBy({ left: 300, behavior: 'smooth' })">
+                                <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+                            </button>
                         </div>
                     </div>
 
@@ -240,61 +271,170 @@
                 </div>
             </section>
 
-            <!-- COLUMNA DERECHA: ÚLTIMO REGISTRO SIRAE -->
+            <!-- ================= COLUMNA DERECHA ================= -->
             <aside class="lg:col-span-4 flex flex-col gap-4">
-                <div class="fx-panel p-4 sm:p-5 rounded-3xl">
-                    <div class="flex items-center justify-between border-b border-slate-100 pb-2.5 mb-3">
-                        <div>
-                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Última entrega</span>
-                            <h3 class="text-sm font-black text-slate-900 m-0">Lotes de Entrega SIRAE</h3>
-                        </div>
-                        <span class="bg-orange-100 text-orange-600 text-[11px] font-black px-2.5 py-0.5 rounded-full">{{ ultimoRegistro ? ultimoRegistro.items.length : 0 }} productos</span>
+
+                <!-- ===== SOLO CALENDARIO: lo del día elegido ===== -->
+                <div *ngIf="mostrarCalendario" class="fx-panel p-4 sm:p-5 rounded-3xl">
+                    <div class="border-b border-slate-100 pb-2.5 mb-3">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Calendario de entregas</span>
+                        <h3 class="text-sm font-black text-slate-900 m-0">{{ fechaDiaModal(diaSeleccionado) }}</h3>
                     </div>
 
-                    <ng-container *ngIf="ultimoRegistro as reg; else sinUltimo">
-                        <div class="mb-3 rounded-xl bg-orange-50/60 p-2.5 text-xs">
-                            <div class="flex justify-between">
-                                <span class="text-slate-500">Fecha de entrega</span>
-                                <span class="font-black text-slate-800">{{ fechaCorta(reg.fecha) }}</span>
-                            </div>
-                            <div class="mt-1 flex justify-between">
-                                <span class="text-slate-500">Cantidad total</span>
-                                <span class="font-black text-orange-600">{{ reg.totales }}</span>
-                            </div>
-                        </div>
+                    <p *ngIf="registrosDelDia.length === 0 && vencenDelDia.length === 0"
+                       class="rounded-xl border border-dashed border-slate-200 p-4 text-center text-xs text-slate-500">
+                        Selecciona un día con entregas o vencimientos.
+                    </p>
 
-                        <p class="m-0 mb-2 flex items-center gap-1 text-[11px] font-semibold text-slate-400">
-                            <span class="material-symbols-outlined text-[14px] text-orange-500">touch_app</span>
-                            Haz clic en un producto para ver su detalle
+                    <div *ngFor="let reg of registrosDelDia; trackBy: trackRegistro" class="fx-up mb-3 rounded-xl border border-slate-100 bg-white p-2.5">
+                        <div class="flex items-center justify-between gap-2">
+                            <p class="m-0 truncate text-xs font-black text-slate-900">{{ reg.codigo }} · {{ reg.destino }}</p>
+                            <span class="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[9px] font-black text-amber-700">{{ reg.estado }}</span>
+                        </div>
+                        <div *ngFor="let e of reg.items; trackBy: trackFila" class="mt-2 flex items-center justify-between gap-2">
+                            <div class="flex min-w-0 items-center gap-2">
+                                <div class="mini-img h-7 w-7 bg-orange-50">
+                                    <img *ngIf="imagenDe(e.ingrediente) as src; else sinFotoCal" [src]="src" [alt]="e.ingrediente" loading="lazy">
+                                    <ng-template #sinFotoCal>{{ emojiDe(e.ingrediente) }}</ng-template>
+                                </div>
+                                <span class="truncate text-[11px] font-bold text-slate-700">{{ e.ingrediente }}</span>
+                            </div>
+                            <span class="shrink-0 text-[11px] font-black text-orange-600">{{ e.cantidad }} {{ e.unidad }}</span>
+                        </div>
+                    </div>
+
+                    <div *ngIf="vencenDelDia.length > 0" class="mt-2">
+                        <h4 class="m-0 mb-2 text-[10px] font-black uppercase tracking-wider text-orange-500">Vencen este día</h4>
+                        <div *ngFor="let e of vencenDelDia; trackBy: trackFila" class="flex items-center justify-between gap-2 border-b border-orange-100 py-1.5 last:border-b-0">
+                            <span class="truncate text-[11px] font-bold text-slate-700">{{ e.ingrediente }}</span>
+                            <span class="shrink-0 text-[11px] font-black text-slate-900">{{ e.cantidad }} {{ e.unidad }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== SOLO INVENTARIO / MENÚ: productos seleccionados e historial de envíos ===== -->
+                <div *ngIf="!mostrarCalendario" class="fx-panel p-4 sm:p-5 rounded-3xl">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-2.5 mb-3">
+                        <div>
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Inventario</span>
+                            <h3 class="text-sm font-black text-slate-900 m-0">Productos para enviar</h3>
+                        </div>
+                        <span class="bg-orange-100 text-orange-600 text-[11px] font-black px-2.5 py-0.5 rounded-full">{{ seleccionados.length }} productos</span>
+                    </div>
+
+                    <!-- Pestañas: Inventario / Historial de envíos -->
+                    <div class="mb-3 flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 p-1">
+                        <button type="button" (click)="mostrarHistorialEnvios = false"
+                            [class.pill-on]="!mostrarHistorialEnvios" [class.text-slate-500]="mostrarHistorialEnvios"
+                            class="inline-flex flex-1 cursor-pointer items-center justify-center gap-1 rounded-full px-3 py-1 text-xs font-bold transition">
+                            <span class="material-symbols-outlined text-[14px]">inventory_2</span> Inventario
+                        </button>
+                        <button type="button" (click)="mostrarHistorialEnvios = true"
+                            [class.pill-on]="mostrarHistorialEnvios" [class.text-slate-500]="!mostrarHistorialEnvios"
+                            class="inline-flex flex-1 cursor-pointer items-center justify-center gap-1 rounded-full px-3 py-1 text-xs font-bold transition">
+                            <span class="material-symbols-outlined text-[14px]">history</span> Historial ({{ historialEnvios.length }})
+                        </button>
+                    </div>
+
+                    <!-- ================= VISTA: INVENTARIO ================= -->
+                    <ng-container *ngIf="!mostrarHistorialEnvios; else vistaHistorialEnvios">
+                        <p *ngIf="seleccionados.length === 0" class="rounded-xl border border-dashed border-slate-200 p-4 text-center text-xs text-slate-500">
+                            Toca un producto del catálogo para verlo aquí.
                         </p>
 
-                        <div class="space-y-2 max-h-[360px] overflow-y-auto pr-1">
-                            <div *ngFor="let item of reg.items; trackBy: trackFila"
-                                 (click)="abrirDetalleProducto(item)" (keydown.enter)="abrirDetalleProducto(item)"
-                                 role="button" tabindex="0" [attr.aria-label]="'Ver detalle de ' + item.ingrediente"
-                                 class="cursor-pointer p-2.5 rounded-xl border border-slate-100 bg-white shadow-2xs transition hover:border-orange-200 hover:bg-orange-50/40">
+                        <!-- Mensaje guía -->
+                        <div *ngIf="seleccionados.length > 0" class="mb-3 flex items-start gap-2 rounded-xl border border-orange-200 bg-orange-50 p-2.5 text-[11px] font-semibold text-orange-700" role="note">
+                            <span class="material-symbols-outlined text-[16px]">info</span>
+                            <span>Da clic en el icono de la escuela <span class="material-symbols-outlined align-middle text-[14px]">school</span> para escribir la institución y la cantidad de cada ingrediente.</span>
+                        </div>
+
+                        <div class="space-y-2 max-h-[520px] overflow-y-auto pr-1">
+                            <div *ngFor="let sel of seleccionados; trackBy: trackFila" class="fx-up rounded-xl border border-orange-300 bg-white p-2.5 shadow-2xs">
                                 <div class="flex items-center justify-between gap-2">
-                                    <div class="flex items-center gap-2">
+                                    <div class="flex min-w-0 items-center gap-2">
                                         <div class="mini-img h-8 w-8 bg-orange-50">
-                                            <img *ngIf="imagenDe(item.ingrediente) as src; else sinFotoUlt" [src]="src" [alt]="item.ingrediente" loading="lazy">
-                                            <ng-template #sinFotoUlt>{{ emojiDe(item.ingrediente) }}</ng-template>
+                                            <img *ngIf="imagenDe(sel.ingrediente) as src; else sinFotoSel" [src]="src" [alt]="sel.ingrediente" loading="lazy">
+                                            <ng-template #sinFotoSel>{{ emojiDe(sel.ingrediente) }}</ng-template>
                                         </div>
                                         <div class="min-w-0">
-                                            <h5 class="text-xs font-bold text-slate-800 m-0 truncate">{{ item.ingrediente }}</h5>
-                                            <p class="text-[10px] text-slate-400 m-0 truncate">{{ categoriaDe(item.ingrediente) }} · {{ item.tipoMercado }}</p>
+                                            <h5 class="text-xs font-bold text-slate-800 m-0 truncate">{{ sel.ingrediente }}</h5>
+                                            <p class="text-[10px] text-slate-400 m-0 truncate">{{ categoriaDe(sel.ingrediente) }} · {{ sel.tipoMercado }}</p>
                                         </div>
                                     </div>
-                                    <div class="text-right shrink-0">
-                                        <span class="text-xs font-black text-orange-600">{{ item.cantidad }} {{ item.unidad }}</span>
+                                    <div class="flex shrink-0 items-center gap-1">
+                                        <button type="button" (click)="abrirModalEnvio(sel)"
+                                            [attr.aria-label]="'Enviar ' + sel.ingrediente + ' a una institución'" title="Enviar a una institución"
+                                            class="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full bg-orange-50 text-orange-600 transition hover:bg-orange-100">
+                                            <span class="material-symbols-outlined text-[16px]">school</span>
+                                        </button>
+                                        <button type="button" (click)="quitarSeleccionado(sel)" [attr.aria-label]="'Quitar ' + sel.ingrediente"
+                                            class="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200">
+                                            <span class="material-symbols-outlined text-[15px]">close</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="mt-2 grid grid-cols-2 gap-2 rounded-lg bg-orange-50/60 p-2.5 text-[11px]">
+                                    <div>
+                                        <span class="block text-[9px] font-bold uppercase tracking-wide text-slate-400">Cantidad</span>
+                                        <span class="font-black text-slate-800">{{ sel.cantidad }} {{ sel.unidad }}</span>
+                                    </div>
+                                    <div>
+                                        <span class="block text-[9px] font-bold uppercase tracking-wide text-slate-400">Fecha</span>
+                                        <span class="font-black text-slate-800">{{ fechaCorta(sel.fechaRecepcion) || '—' }}</span>
+                                    </div>
+                                    <div class="col-span-2 flex items-center gap-1.5 border-t border-orange-100 pt-2">
+                                        <span class="material-symbols-outlined text-[16px] text-orange-500">school</span>
+                                        <div class="min-w-0">
+                                            <span class="block text-[9px] font-bold uppercase tracking-wide text-slate-400">Institución</span>
+                                            <span *ngIf="destinosEnviados(sel.ingrediente) as dest; else sinInstitucion" class="font-black text-slate-800">{{ dest }}</span>
+                                            <ng-template #sinInstitucion><span class="font-bold text-slate-400">Sin asignar · toca el icono de la escuela</span></ng-template>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </ng-container>
-                    <ng-template #sinUltimo>
-                        <p class="rounded-xl border border-dashed border-slate-200 p-4 text-center text-xs text-slate-500">
-                            Aún no hay entregas.
+
+                    <!-- ================= VISTA: HISTORIAL DE ENVÍOS ================= -->
+                    <ng-template #vistaHistorialEnvios>
+                        <h4 class="m-0 mb-2 text-[10px] font-black uppercase tracking-wider text-slate-400">Enviado a la institución</h4>
+                        <p *ngIf="historialEnvios.length === 0" class="rounded-xl border border-dashed border-slate-200 p-4 text-center text-xs text-slate-500">
+                            Aún no has enviado nada.
                         </p>
+                        <div class="space-y-2 max-h-[520px] overflow-y-auto pr-1">
+                            <div *ngFor="let envio of historialEnvios; trackBy: trackEnvioHist" class="fx-up rounded-xl border border-slate-100 bg-white p-2.5 shadow-2xs">
+                                <div class="flex items-center justify-between gap-2">
+                                    <div class="flex min-w-0 items-center gap-2">
+                                        <div class="mini-img h-8 w-8 bg-orange-50">
+                                            <img *ngIf="imagenDe(envio.ingrediente) as src; else sinFotoHist" [src]="src" [alt]="envio.ingrediente" loading="lazy">
+                                            <ng-template #sinFotoHist>{{ emojiDe(envio.ingrediente) }}</ng-template>
+                                        </div>
+                                        <div class="min-w-0">
+                                            <h5 class="text-xs font-bold text-slate-800 m-0 truncate">{{ envio.ingrediente }}</h5>
+                                            <p class="text-[10px] text-slate-400 m-0 truncate">{{ envio.destino || '—' }}</p>
+                                        </div>
+                                    </div>
+                                    <span class="shrink-0 text-xs font-black text-orange-600">{{ envio.cantidad }} {{ envio.unidad }}</span>
+                                </div>
+                                <div class="mt-2 grid grid-cols-2 gap-2 rounded-lg bg-orange-50/60 p-2.5 text-[11px]">
+                                    <div>
+                                        <span class="block text-[9px] font-bold uppercase tracking-wide text-slate-400">Fecha de salida</span>
+                                        <span class="font-black text-slate-800">{{ fechaCorta(envio.fechaSalida) || '—' }}</span>
+                                    </div>
+                                    <div>
+                                        <span class="block text-[9px] font-bold uppercase tracking-wide text-slate-400">Fecha de entrega</span>
+                                        <span class="font-black text-slate-800">{{ fechaCorta(envio.fechaEntrega) || '—' }}</span>
+                                    </div>
+                                    <div class="col-span-2 flex items-center gap-1.5 border-t border-orange-100 pt-2">
+                                        <span class="material-symbols-outlined text-[16px] text-orange-500">school</span>
+                                        <div class="min-w-0">
+                                            <span class="block text-[9px] font-bold uppercase tracking-wide text-slate-400">Institución</span>
+                                            <span class="font-black text-slate-800">{{ envio.destino || '—' }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </ng-template>
                 </div>
             </aside>
@@ -539,81 +679,131 @@
     </div>
 </div>
 
-<!-- ================= MODAL: DETALLE DEL PRODUCTO ================= -->
-<div *ngIf="productoDetalle as p" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4" (click)="cerrarDetalleProducto()">
-    <div class="fx-up max-h-[90vh] w-full max-w-[440px] overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Detalle del producto">
+<!-- ================= MODAL: ENVIAR PRODUCTO A UNA INSTITUCIÓN ================= -->
+<div *ngIf="envioProducto as prod" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4" (click)="cerrarModalEnvio()">
+    <div class="fx-up max-h-[92vh] w-full max-w-[640px] overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Enviar producto a una institución">
 
         <!-- Encabezado -->
         <div class="flex items-start justify-between border-b border-slate-200 pb-4">
-            <div>
-                <p class="m-0 text-[10px] font-black uppercase tracking-wider text-orange-500">Detalle del producto</p>
-                <h3 class="m-0 mt-1 text-lg font-black text-slate-900">{{ p.ingrediente }}</h3>
+            <div class="flex items-center gap-3">
+                <div class="ico-naranja flex h-11 w-11 items-center justify-center rounded-2xl shadow-md">
+                    <span class="material-symbols-outlined text-[24px]">school</span>
+                </div>
+                <div>
+                    <p class="m-0 text-[10px] font-black uppercase tracking-wider text-orange-500">Nuevo envío</p>
+                    <h3 class="m-0 mt-0.5 text-lg font-black text-slate-900">Enviar producto a una institución</h3>
+                </div>
             </div>
-            <button type="button" (click)="cerrarDetalleProducto()" aria-label="Cerrar"
-                class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200">
+            <button type="button" (click)="cerrarModalEnvio()" aria-label="Cerrar"
+                class="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200">
                 <span class="material-symbols-outlined text-[20px]">close</span>
             </button>
         </div>
 
-        <!-- Producto y cantidad -->
-        <div class="mt-5 flex items-center justify-between gap-3">
+        <!-- Producto -->
+        <div class="mt-5 flex items-center justify-between gap-3 rounded-2xl border border-orange-100 bg-orange-50/60 p-3">
             <div class="flex min-w-0 items-center gap-3">
-                <div class="mini-img h-14 w-14 bg-orange-50 text-3xl">
-                    <img *ngIf="imagenDe(p.ingrediente) as src; else sinFotoDet" [src]="src" [alt]="p.ingrediente">
-                    <ng-template #sinFotoDet>{{ emojiDe(p.ingrediente) }}</ng-template>
+                <div class="mini-img h-12 w-12 bg-white text-2xl">
+                    <img *ngIf="imagenDe(prod.ingrediente) as src; else sinFotoModalEnvio" [src]="src" [alt]="prod.ingrediente" loading="lazy">
+                    <ng-template #sinFotoModalEnvio>{{ emojiDe(prod.ingrediente) }}</ng-template>
                 </div>
                 <div class="min-w-0">
-                    <p class="m-0 truncate text-sm font-black text-slate-900">{{ p.ingrediente }}</p>
-                    <p class="m-0 truncate text-[11px] text-slate-400">{{ categoriaDe(p.ingrediente) }} · {{ p.tipoMercado }}</p>
+                    <p class="m-0 truncate text-sm font-black text-slate-900">{{ prod.ingrediente }}</p>
+                    <p class="m-0 truncate text-[11px] text-slate-500">{{ categoriaDe(prod.ingrediente) }} · {{ prod.tipoMercado }}</p>
                 </div>
             </div>
-            <span class="shrink-0 text-lg font-black text-orange-600">{{ p.cantidad }} {{ p.unidad }}</span>
+            <div class="shrink-0 text-right">
+                <span class="block text-[9px] font-bold uppercase tracking-wide text-slate-400">Disponible</span>
+                <span class="text-sm font-black text-orange-600">{{ prod.cantidad }} {{ envioUnidad }}</span>
+            </div>
         </div>
 
-        <!-- Estado -->
-        <div class="mt-4 flex items-center justify-between gap-2 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3">
-            <span class="rounded-full border px-3 py-0.5 text-[11px] font-black" [ngClass]="claseEstado(estadoDe(p))">{{ estadoDe(p) }}</span>
-            <span class="text-[11px] font-semibold text-slate-500">{{ textoDias(diasDe(p)) }}</span>
+        <!-- Fechas -->
+        <div class="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <label class="block">
+                <span class="mb-1 block text-[11px] font-bold text-slate-500">Fecha de salida</span>
+                <input type="date" [min]="hoyEnvio" [ngModel]="envioFechaSalida"
+                    (ngModelChange)="envioFechaSalida = $event; alCambiarSalidaEnvio()"
+                    class="fx-input w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-800 outline-none">
+            </label>
+            <label class="block">
+                <span class="mb-1 block text-[11px] font-bold text-slate-500">Fecha de entrega</span>
+                <input type="date" [min]="envioFechaSalida" [(ngModel)]="envioFechaEntrega"
+                    class="fx-input w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-800 outline-none">
+            </label>
         </div>
 
-        <!-- Datos del registro -->
-        <div class="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 rounded-2xl border border-slate-100 bg-slate-50 p-4">
-            <div>
-                <p class="m-0 text-[10px] text-slate-400">Fecha de recepción</p>
-                <p class="m-0 text-xs font-black text-slate-800">{{ fechaCorta(p.fechaRecepcion) || '—' }}</p>
+        <!-- Paso 1: ESCRIBIR la institución (ya no se selecciona de una lista) -->
+        <h4 class="m-0 mt-6 text-sm font-black text-slate-900">1. Escribe la institución</h4>
+        <div class="mt-3 flex items-center gap-2">
+            <input type="text" [(ngModel)]="envioInstitucionTexto" (keydown.enter)="agregarDestinoEscrito()"
+                placeholder="Ej: Liceo de Occidente" autocomplete="off" aria-label="Nombre de la institución"
+                class="fx-input flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-800 outline-none">
+            <button type="button" (click)="agregarDestinoEscrito()"
+                class="pill-on inline-flex cursor-pointer items-center gap-1 rounded-full px-4 py-2 text-xs font-bold transition hover:opacity-90">
+                <span class="material-symbols-outlined text-[16px]">add</span> Agregar
+            </button>
+        </div>
+
+        <!-- Paso 2: cantidad para cada institución -->
+        <h4 class="m-0 mt-6 text-sm font-black text-slate-900">2. Escribe la cantidad para cada una ({{ envioDestinos.length }})</h4>
+
+        <p *ngIf="envioDestinos.length === 0" class="mt-3 rounded-2xl border border-dashed border-slate-200 p-4 text-center text-xs text-slate-500">
+            Aún no has agregado instituciones. Escribe una arriba y pulsa Agregar.
+        </p>
+
+        <div class="mt-3 flex flex-col gap-2.5">
+            <div *ngFor="let destino of envioDestinos; let i = index" class="fx-up rounded-2xl border border-slate-100 bg-slate-50 p-3">
+                <div class="flex flex-wrap items-center gap-3">
+                    <div class="flex min-w-[140px] flex-1 items-center gap-2">
+                        <span class="mini-img h-9 w-9 bg-white">
+                            <img *ngIf="imagenDe(prod.ingrediente) as src; else sinFotoDestino" [src]="src" [alt]="prod.ingrediente" loading="lazy">
+                            <ng-template #sinFotoDestino>{{ emojiDe(prod.ingrediente) }}</ng-template>
+                        </span>
+                        <div class="min-w-0">
+                            <span class="block truncate text-xs font-black text-slate-900">{{ prod.ingrediente }}</span>
+                            <span class="block truncate text-[10px] font-semibold text-slate-400">Para: {{ destino.institucion }}</span>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-1">
+                        <button type="button" (click)="ajustarCantidadDestino(destino, -1)" aria-label="Restar"
+                            class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 hover:bg-orange-50">
+                            <span class="material-symbols-outlined text-[16px]">remove</span>
+                        </button>
+                        <input type="number" min="0" step="any" [(ngModel)]="destino.cantidad" placeholder="0" aria-label="Cantidad"
+                            class="fx-input w-20 rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-center text-xs font-black text-slate-800 outline-none">
+                        <button type="button" (click)="ajustarCantidadDestino(destino, 1)" aria-label="Sumar"
+                            class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 hover:bg-orange-50">
+                            <span class="material-symbols-outlined text-[16px]">add</span>
+                        </button>
+                        <span class="ml-1 text-xs font-black text-slate-700">{{ envioUnidad }}</span>
+                    </div>
+
+                    <button type="button" (click)="quitarDestinoEnvio(i)" aria-label="Quitar institución"
+                        class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-white text-slate-400 hover:bg-red-50 hover:text-red-600">
+                        <span class="material-symbols-outlined text-[18px]">delete</span>
+                    </button>
+                </div>
             </div>
-            <div>
-                <p class="m-0 text-[10px] text-slate-400">Fecha de vencimiento</p>
-                <p class="m-0 text-xs font-black text-slate-800">{{ fechaCorta(p.fechaVencimiento) || '—' }}</p>
-            </div>
-            <div>
-                <p class="m-0 text-[10px] text-slate-400">Frecuencia</p>
-                <p class="m-0 text-xs font-black text-slate-800">{{ p.frecuencia || '—' }}</p>
-            </div>
-            <div>
-                <p class="m-0 text-[10px] text-slate-400">Tipo de mercado</p>
-                <p class="m-0 text-xs font-black text-slate-800">{{ p.tipoMercado || '—' }}</p>
-            </div>
-            <div *ngIf="p.lote">
-                <p class="m-0 text-[10px] text-slate-400">Lote</p>
-                <p class="m-0 text-xs font-black text-slate-800">{{ p.lote }}</p>
-            </div>
-            <div *ngIf="p.codigo">
-                <p class="m-0 text-[10px] text-slate-400">Código de entrega</p>
-                <p class="m-0 text-xs font-black text-slate-800">{{ p.codigo }}</p>
-            </div>
-            <div *ngIf="p.destino">
-                <p class="m-0 text-[10px] text-slate-400">Destino</p>
-                <p class="m-0 text-xs font-black text-slate-800">{{ p.destino }}</p>
-            </div>
-            <div *ngIf="p.hora">
-                <p class="m-0 text-[10px] text-slate-400">Hora registrada</p>
-                <p class="m-0 text-xs font-black text-slate-800">{{ p.hora }}</p>
-            </div>
-            <div *ngIf="p.responsable" class="col-span-2">
-                <p class="m-0 text-[10px] text-slate-400">Responsable</p>
-                <p class="m-0 text-xs font-black text-slate-800">{{ p.responsable }}</p>
-            </div>
+        </div>
+
+        <!-- Total -->
+        <div *ngIf="envioDestinos.length > 0" class="mt-3 flex items-center justify-between rounded-2xl bg-orange-50/60 px-4 py-2.5 text-xs">
+            <span class="font-semibold text-slate-500">Total a enviar</span>
+            <span class="font-black" [ngClass]="totalEnvio > prod.cantidad ? 'text-red-600' : 'text-orange-600'">{{ totalEnvio }} de {{ prod.cantidad }} {{ envioUnidad }}</span>
+        </div>
+
+        <p *ngIf="errorEnvio" class="mt-4 rounded-2xl border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-700" role="alert">{{ errorEnvio }}</p>
+
+        <!-- Acciones -->
+        <div class="mt-6 flex items-center justify-end gap-2 border-t border-slate-100 pt-4">
+            <button type="button" (click)="cerrarModalEnvio()"
+                class="cursor-pointer rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50">Cancelar</button>
+            <button type="button" (click)="enviarAInstituciones()"
+                class="pill-on inline-flex cursor-pointer items-center gap-1 rounded-full px-5 py-2 text-xs font-bold transition hover:opacity-90">
+                <span class="material-symbols-outlined text-[16px]">send</span> Enviar
+            </button>
         </div>
     </div>
 </div>
