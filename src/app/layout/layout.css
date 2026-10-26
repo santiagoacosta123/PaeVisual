@@ -630,3 +630,283 @@
 .nav-icon {
   color: #64748b;
 }
+
+/* =========================================================
+   DISEÑO DEDICADO EXCLUSIVO PARA SUPER ADMINISTRADOR
+   ========================================================= */
+
+.superadmin-sidebar-header {
+  padding: 24px 20px 14px 20px;
+  display: flex;
+  align-items: center;
+}
+
+.superadmin-brand-link {
+  display: flex;
+  flex-direction: column;
+  text-decoration: none;
+}
+
+.superadmin-brand-title {
+  font-size: 26px;
+  font-weight: 900;
+  color: #0f172a;
+  letter-spacing: 2px;
+  line-height: 1;
+}
+
+.superadmin-brand-bar {
+  width: 72px;
+  height: 4px;
+  background: #ffd600;
+  border-radius: 9999px;
+  margin-top: 6px;
+}
+
+.superadmin-category-header {
+  padding: 14px 20px 8px 20px;
+}
+
+.superadmin-category-header span {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  color: #059669; /* green as shown in the screenshot */
+  text-transform: uppercase;
+}
+
+.superadmin-sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 4px 12px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.superadmin-nav-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 44px;
+  padding: 0 16px;
+  border-radius: 9999px;
+  text-decoration: none;
+  color: #334155;
+  font-size: 13.5px;
+  font-weight: 600;
+  transition: all 0.15s ease;
+  box-sizing: border-box;
+}
+
+.superadmin-nav-item-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.superadmin-nav-icon {
+  font-size: 20px;
+  color: #64748b;
+  flex-shrink: 0;
+  transition: color 0.15s ease;
+}
+
+.superadmin-nav-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.superadmin-nav-chevron {
+  font-size: 18px;
+  color: #0f172a;
+  opacity: 0.8;
+  display: none;
+}
+
+.superadmin-nav-item:hover:not(.active) {
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.superadmin-nav-item.active {
+  background: #ffd600; /* vibrant yellow as in screenshot */
+  color: #0f172a;
+  font-weight: 800;
+  box-shadow: 0 4px 14px rgba(250, 201, 75, 0.4);
+}
+
+.superadmin-nav-item.active .superadmin-nav-icon {
+  color: #0f172a;
+}
+
+.superadmin-nav-item.active .superadmin-nav-chevron {
+  display: inline-block;
+}
+
+/* Badges circulares/pills en la barra lateral */
+.superadmin-badge-count {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  line-height: 1;
+}
+
+.badge-green {
+  background: #10b981;
+}
+
+.badge-red {
+  background: #ef4444;
+}
+
+/* Top Header Super Admin */
+.superadmin-top-header {
+  height: 64px;
+  padding: 0 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  background: #f8fafc;
+}
+
+.superadmin-top-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.superadmin-search-box {
+  flex: 1;
+  max-width: 380px;
+  height: 38px;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.superadmin-search-icon {
+  position: absolute;
+  left: 14px;
+  font-size: 18px;
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.superadmin-search-input {
+  width: 100%;
+  height: 100%;
+  padding: 0 16px 0 38px;
+  border: 1px solid #e2e8f0;
+  border-radius: 9999px;
+  background: #ffffff;
+  font-size: 12.5px;
+  color: #0f172a;
+  outline: none;
+  font-family: inherit;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.superadmin-search-input:focus {
+  border-color: #ffd600;
+  box-shadow: 0 0 0 3px rgba(250, 201, 75, 0.18);
+}
+
+.superadmin-search-input::placeholder {
+  color: #94a3b8;
+}
+
+.superadmin-circle-notif {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #475569;
+  position: relative;
+  transition: all 0.15s ease;
+}
+
+.superadmin-circle-notif:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.superadmin-notif-dot {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ef4444;
+  border: 2px solid #ffffff;
+}
+
+.superadmin-user-pill-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: transparent;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.superadmin-user-pill-btn:hover {
+  background: #f1f5f9;
+}
+
+.superadmin-sa-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #ffd600;
+  color: #0f172a;
+  font-weight: 900;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 4px rgba(250, 201, 75, 0.3);
+  flex-shrink: 0;
+}
+
+.superadmin-sa-info {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  line-height: 1.15;
+}
+
+.superadmin-sa-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.superadmin-sa-sub {
+  font-size: 11px;
+  font-weight: 500;
+  color: #64748b;
+}
+

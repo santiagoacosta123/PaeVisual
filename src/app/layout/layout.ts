@@ -12,6 +12,8 @@ import { FormsModule } from '@angular/forms';
 import { NotificacionService } from '../notificaciones/notificacion.service';
 import { Notificacion } from '../notificaciones/notificacion.model';
 import { AuthService } from '../services/auth.service';
+import { SiraeService } from '../features/contratos/services/contratos_pae.service';
+import { FacturasCompraService } from '../services/facturas-compra.service';
 
 @Component({
   selector: 'app-layout',
@@ -30,6 +32,10 @@ export class LayoutComponent implements OnInit {
 
   // Declaración de pageTitle
   pageTitle: string = 'Panel de Control';
+
+  // Badges exclusivos de Super Administrador (valores por defecto según diseño)
+  conteoContratos: number = 12;
+  conteoFacturas: number = 3;
 
   // Control de Roles
   rolUsuario: string = '';
@@ -66,6 +72,8 @@ export class LayoutComponent implements OnInit {
   constructor(
     private notificacionService: NotificacionService,
     private authService: AuthService,
+    private contratosService: SiraeService,
+    private facturasService: FacturasCompraService,
     private cdr: ChangeDetectorRef,
     private router: Router
   ) {
@@ -117,6 +125,29 @@ export class LayoutComponent implements OnInit {
 
     this.cargarNotificacionesHeader();
     this.actualizarTitulo(this.router.url);
+
+    if (this.esSuperAdministrador) {
+      this.contratosService.getContratos().subscribe({
+        next: (data) => {
+          if (Array.isArray(data) && data.length > 0) {
+            this.conteoContratos = data.length;
+            this.cdr.detectChanges();
+          }
+        },
+        error: () => {}
+      });
+
+      this.facturasService.getFacturas().subscribe({
+        next: (data) => {
+          if (Array.isArray(data) && data.length > 0) {
+            const pendientes = data.filter((f: any) => f.estado === 'REGISTRADA').length;
+            this.conteoFacturas = pendientes > 0 ? pendientes : data.length;
+            this.cdr.detectChanges();
+          }
+        },
+        error: () => {}
+      });
+    }
   }
 
   actualizarTitulo(url: string): void {

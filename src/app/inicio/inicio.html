@@ -1,7 +1,136 @@
 <div class="flex flex-col gap-6 relative" style="font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;">
 
-  <!-- ===================== CABECERA PRINCIPAL ===================== -->
-  <header class="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-5 px-6 py-5 rounded-xl border border-[#f2ead0] sticky top-[-24px] z-20 shadow-xs"
+  <!-- =========================================================================
+       CASO 1: SUPER ADMINISTRADOR (DISEÑO DEDICADO SEGÚN ESPECIFICACIÓN EXACTA)
+       ========================================================================= -->
+  <ng-container *ngIf="esSuperAdministrador">
+
+    <!-- TARJETA PRINCIPAL DE BIENVENIDA -->
+    <div class="superadmin-banner-card">
+      <div class="superadmin-banner-content">
+        
+        <!-- Encabezado con ícono y título -->
+        <div class="flex items-start sm:items-center gap-4.5">
+          <div class="superadmin-badge-circle shrink-0">
+            <span class="material-symbols-outlined text-[26px] text-emerald-700">widgets</span>
+          </div>
+          <div>
+            <h1 class="m-0 text-2xl sm:text-[27px] font-black tracking-tight text-slate-900 leading-tight">
+              ¡Bienvenido, <span class="superadmin-highlight">Super Administrador</span>!
+            </h1>
+            <p class="m-0 mt-1.5 text-slate-500 text-[13.5px] font-medium leading-relaxed">
+              Centro de operaciones y gestión central del programa PAE.
+            </p>
+          </div>
+        </div>
+
+        <!-- Fila de Fecha y Botón de Acción -->
+        <div class="flex flex-wrap items-center gap-3.5 pt-2">
+          <!-- Píldora de Fecha -->
+          <div class="superadmin-date-pill">
+            <span class="material-symbols-outlined text-[17px] text-emerald-700">calendar_month</span>
+            <span class="capitalize">{{ fechaActual }}</span>
+          </div>
+
+          <!-- Botón Dorado de Gestión de Contratos -->
+          <a routerLink="/contratos" class="superadmin-btn-action">
+            <span>Gestión de Contratos</span>
+            <span class="text-base font-black">→</span>
+          </a>
+        </div>
+
+      </div>
+
+      <!-- Ilustración Gráfica Derecha: Diagonal con Circuito Tecnológico PAE -->
+      <div class="superadmin-banner-graphic" aria-hidden="true">
+        <svg viewBox="0 0 280 210" preserveAspectRatio="none" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-full">
+          <!-- Polígono amarillo angular -->
+          <path d="M125 0 L280 0 L280 210 L50 210 Z" fill="#ffd600" />
+          <path d="M145 0 L280 0 L280 210 L70 210 Z" fill="#facc15" />
+          
+          <!-- Pistas de circuito verde esmeralda y nodos con centro blanco -->
+          <!-- Pista 1 (Superior) -->
+          <line x1="160" y1="58" x2="280" y2="58" stroke="#065f46" stroke-width="2.5" stroke-linecap="round" />
+          <circle cx="160" cy="58" r="5.5" fill="#ffffff" stroke="#065f46" stroke-width="2.5" />
+
+          <!-- Pista 2 (Media) -->
+          <line x1="185" y1="105" x2="230" y2="105" stroke="#065f46" stroke-width="2.5" stroke-linecap="round" />
+          <line x1="230" y1="105" x2="280" y2="105" stroke="#065f46" stroke-width="2.5" stroke-linecap="round" />
+          <circle cx="230" cy="105" r="5.5" fill="#ffffff" stroke="#065f46" stroke-width="2.5" />
+
+          <!-- Pista 3 (Conectada con codo y nodo central) -->
+          <circle cx="165" cy="155" r="6.5" fill="#ffd600" stroke="#065f46" stroke-width="2.5" />
+          <line x1="171.5" y1="155" x2="260" y2="155" stroke="#065f46" stroke-width="2.5" stroke-linecap="round" />
+          <line x1="165" y1="148.5" x2="165" y2="115" stroke="#065f46" stroke-width="2.5" stroke-linecap="round" />
+          <line x1="165" y1="115" x2="185" y2="105" stroke="#065f46" stroke-width="2.5" stroke-linecap="round" />
+
+          <!-- Pista 4 (Inferior derecha) -->
+          <line x1="215" y1="180" x2="270" y2="180" stroke="#065f46" stroke-width="2.5" stroke-linecap="round" />
+          <circle cx="215" cy="180" r="5" fill="#ffffff" stroke="#065f46" stroke-width="2.5" />
+        </svg>
+      </div>
+    </div>
+
+    <!-- FILA DE 4 TARJETAS MÉTRICAS (KPIs) -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      
+      <!-- KPI 1: Contratos activos (Borde inferior verde) -->
+      <div class="superadmin-kpi-card border-b-green">
+        <div class="superadmin-kpi-top">
+          <div class="superadmin-kpi-icon-wrap">
+            <span class="material-symbols-outlined text-[20px] text-emerald-700">description</span>
+          </div>
+          <span class="superadmin-pill-green">+8%</span>
+        </div>
+        <div class="superadmin-kpi-value">{{ totalContratosActivos }}</div>
+        <div class="superadmin-kpi-label">Contratos activos</div>
+      </div>
+
+      <!-- KPI 2: Facturas pendientes (Borde inferior amarillo) -->
+      <div class="superadmin-kpi-card border-b-yellow">
+        <div class="superadmin-kpi-top">
+          <div class="superadmin-kpi-icon-wrap">
+            <span class="material-symbols-outlined text-[20px] text-emerald-700">receipt_long</span>
+          </div>
+          <span class="superadmin-pill-red">3 por vencer</span>
+        </div>
+        <div class="superadmin-kpi-value">{{ totalFacturasPendientes }}</div>
+        <div class="superadmin-kpi-label">Facturas pendientes</div>
+      </div>
+
+      <!-- KPI 3: Unidades en stock global (Borde inferior verde) -->
+      <div class="superadmin-kpi-card border-b-green">
+        <div class="superadmin-kpi-top">
+          <div class="superadmin-kpi-icon-wrap">
+            <span class="material-symbols-outlined text-[20px] text-emerald-700">inventory_2</span>
+          </div>
+          <span class="superadmin-pill-neutral">estable</span>
+        </div>
+        <div class="superadmin-kpi-value">{{ totalUnidadesStock }}</div>
+        <div class="superadmin-kpi-label">Unidades en stock global</div>
+      </div>
+
+      <!-- KPI 4: Usuarios registrados (Borde inferior amarillo) -->
+      <div class="superadmin-kpi-card border-b-yellow">
+        <div class="superadmin-kpi-top">
+          <div class="superadmin-kpi-icon-wrap">
+            <span class="material-symbols-outlined text-[20px] text-emerald-700">group</span>
+          </div>
+          <span class="superadmin-pill-green">+2 nuevos</span>
+        </div>
+        <div class="superadmin-kpi-value">{{ totalUsuariosRegistrados }}</div>
+        <div class="superadmin-kpi-label">Usuarios registrados</div>
+      </div>
+
+    </div>
+
+  </ng-container>
+
+
+  <!-- =========================================================================
+       CASO 2: ADMINISTRADOR INSTITUCIONAL Y OTROS ROLES (MANTIENE SU CABECERA)
+       ========================================================================= -->
+  <header *ngIf="!esSuperAdministrador" class="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-5 px-6 py-5 rounded-xl border border-[#f2ead0] sticky top-[-24px] z-20 shadow-xs"
     style="background: linear-gradient(135deg, #fffcf0 0%, #ffffff 100%);">
     <div class="flex items-center gap-4">
       <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-amber-200 bg-amber-50 text-amber-700 shadow-xs">
@@ -9,23 +138,17 @@
       </div>
       <div>
         <h1 class="m-0 text-xl font-bold tracking-tight text-slate-900">¡Bienvenido, {{ nombreUsuario }}!</h1>
-        <p class="m-0 mt-0.5 text-slate-500 text-[13px]">{{ rolUsuario }} · Centro de operaciones y gestión central del programa PAE.</p>
+        <p class="m-0 mt-0.5 text-slate-500 text-[13px]">{{ rolUsuario }} · Centro de operaciones y gestión institucional PAE.</p>
       </div>
     </div>
 
     <div class="flex items-center gap-3 flex-wrap">
       <div class="flex items-center gap-2 bg-white border border-slate-200 rounded-full px-4 py-2 shadow-xs text-[12.5px] text-slate-700 font-semibold">
         <span class="material-symbols-outlined text-[16px] text-amber-600">calendar_today</span>
-        <span>{{ fechaActual }}</span>
+        <span class="capitalize">{{ fechaActual }}</span>
       </div>
 
-      <!-- Botón exclusivo para Super Administrador -->
-      <a *ngIf="esSuperAdministrador" routerLink="/contratos" class="h-[38px] px-5 inline-flex items-center justify-center gap-2 border-none rounded-full bg-[#fac94b] text-slate-900 text-[13px] font-bold cursor-pointer whitespace-nowrap shadow-[0_2px_8px_rgba(251,191,36,0.28)] transition-all hover:bg-[#f59e0b] no-underline">
-        <span>Gestión de Contratos</span>
-        <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
-      </a>
-
-      <!-- Botón exclusivo para Administrador -->
+      <!-- Botón exclusivo para Administrador de Institución -->
       <a *ngIf="esAdministrador" routerLink="/ingredientes" class="h-[38px] px-5 inline-flex items-center justify-center gap-2 border-none rounded-full bg-[#fac94b] text-slate-900 text-[13px] font-bold cursor-pointer whitespace-nowrap shadow-[0_2px_8px_rgba(251,191,36,0.28)] transition-all hover:bg-[#f59e0b] no-underline">
         <span>Ir a Inventario</span>
         <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
@@ -34,4 +157,3 @@
   </header>
 
 </div>
-
