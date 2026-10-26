@@ -125,22 +125,10 @@
                   <span class="material-symbols-outlined text-[14px] text-amber-600">apartment</span>
                   {{ u.institucion_nombre }}
                 </div>
-
-                <!-- Si tiene sede específica asignada -->
-                <div *ngIf="u.sede_nombre" class="text-[11px] text-slate-600 font-medium mt-1 flex items-center gap-1">
-                  <span class="material-symbols-outlined text-[13px] text-amber-600">pin_drop</span>
+                <div *ngIf="u.sede_nombre" class="text-[11px] text-slate-500 font-normal mt-0.5 flex items-center gap-1">
+                  <span class="material-symbols-outlined text-[12px] text-slate-400">pin_drop</span>
                   Sede: {{ u.sede_nombre }}
                 </div>
-
-                <!-- Si no tiene sede específica asignada pero la institución tiene sedes registradas (ej. Administrador de colegio) -->
-                <div *ngIf="!u.sede_nombre && obtenerSedesDeInstitucion(u.id_institucion).length > 0" class="text-[10.5px] text-slate-600 font-normal mt-1 flex flex-wrap items-center gap-1">
-                  <span class="material-symbols-outlined text-[12px] text-slate-400">domain</span>
-                  <span class="font-semibold text-slate-700">Sedes ({{ obtenerSedesDeInstitucion(u.id_institucion).length }}):</span>
-                  <span *ngFor="let s of obtenerSedesDeInstitucion(u.id_institucion); let last = last" class="text-slate-600">
-                    {{ s.nombre_sede }}{{ !last ? ' • ' : '' }}
-                  </span>
-                </div>
-
                 <span *ngIf="!u.institucion_nombre && !u.sede_nombre" class="text-slate-400 text-xs italic">—</span>
               </ng-template>
             </td>
