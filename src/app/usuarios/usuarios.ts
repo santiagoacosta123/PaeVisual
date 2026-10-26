@@ -47,6 +47,8 @@ export class UsuariosComponent implements OnInit {
   mostrarModal: boolean = false;
   mostrarModalDetalleSupervisor: boolean = false;
   supervisorDetalle: any = null;
+  usuarioDetalleModal: any = null;
+  institucionesDetalleModal: any[] = [];
 
   filtroTexto: string = '';
   filtroRol: string = '';
@@ -154,18 +156,46 @@ export class UsuariosComponent implements OnInit {
     return u.instituciones_supervisor.reduce((acc: number, inst: any) => acc + (inst.sedes?.length || 0), 0);
   }
 
-  verDetalleInstitucionesSupervisor(u: any): void {
-    this.supervisorDetalle = u;
+  contarSedesTotalDetalle(): number {
+    if (!this.institucionesDetalleModal || !Array.isArray(this.institucionesDetalleModal)) return 0;
+    return this.institucionesDetalleModal.reduce((acc: number, inst: any) => acc + (inst.sedes?.length || 0), 0);
+  }
+
+  verDetalleUsuario(u: any): void {
+    this.usuarioDetalleModal = u;
+    this.supervisorDetalle = u; // Compatibilidad
+    
+    if (this.esUsuarioSupervisor(u)) {
+      this.institucionesDetalleModal = u.instituciones_supervisor || [];
+    } else if (u.id_institucion) {
+      const sedesInst = this.obtenerSedesDeInstitucion(u.id_institucion);
+      const instObj = this.instituciones.find(i => Number(i.id_institucion || i.id) === Number(u.id_institucion));
+      this.institucionesDetalleModal = [{
+        id_institucion: u.id_institucion,
+        nombre_institucion: u.institucion_nombre || instObj?.nombre_institucion || instObj?.nombre || 'Institución Educativa',
+        nit: instObj?.nit || instObj?.codigo_dane || '',
+        sedes: sedesInst
+      }];
+    } else {
+      this.institucionesDetalleModal = [];
+    }
+
     this.mostrarModalDetalleSupervisor = true;
+  }
+
+  verDetalleInstitucionesSupervisor(u: any): void {
+    this.verDetalleUsuario(u);
   }
 
   cerrarModalDetalleSupervisor(): void {
     this.mostrarModalDetalleSupervisor = false;
     this.supervisorDetalle = null;
+    this.usuarioDetalleModal = null;
+    this.institucionesDetalleModal = [];
   }
 
   editarDesdeDetalle(): void {
-    const u = this.supervisorDetalle;
+    const u = this.usuarioDetalleModal || this.supervisorDetalle;
     this.cerrarModalDetalleSupervisor();
     if (u) {
       this.abrirFormulario(u);

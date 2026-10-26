@@ -121,9 +121,17 @@
 
               <!-- Casos regulares (Administrador, Cocina, etc.) -->
               <ng-template #celdaRegular>
-                <div *ngIf="u.institucion_nombre" class="inline-flex items-center gap-1.5 text-[11px] text-slate-800 font-semibold bg-slate-100 px-2.5 py-1 rounded-lg">
-                  <span class="material-symbols-outlined text-[14px] text-amber-600">apartment</span>
-                  {{ u.institucion_nombre }}
+                <div *ngIf="u.institucion_nombre">
+                  <button
+                    type="button"
+                    (click)="verDetalleUsuario(u)"
+                    class="inline-flex items-center gap-1.5 text-[11.5px] font-semibold text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-200/90 px-2.5 py-1 rounded-lg transition-all cursor-pointer shadow-xs group"
+                    title="Clic para ver detalle de la institución y sedes"
+                  >
+                    <span class="material-symbols-outlined text-[15px] text-amber-600 group-hover:scale-110 transition-transform">apartment</span>
+                    <span class="max-w-[210px] truncate text-left">{{ u.institucion_nombre }}</span>
+                    <span class="text-[10px] bg-amber-200/80 text-amber-900 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">VER</span>
+                  </button>
                 </div>
                 <div *ngIf="u.sede_nombre" class="text-[11px] text-slate-500 font-normal mt-0.5 flex items-center gap-1">
                   <span class="material-symbols-outlined text-[12px] text-slate-400">pin_drop</span>
@@ -345,19 +353,21 @@
     <div class="bd-modal" role="dialog" aria-modal="true" (click)="$event.stopPropagation()" style="max-width: 640px; width: 92%;">
       <div class="bd-modal-header" style="background: linear-gradient(135deg, #fffcf0 0%, #ffffff 100%);">
         <div>
-          <span class="bd-modal-eyebrow" style="color: #d97706; font-weight: 800; letter-spacing: 0.5px;">ROL SUPERVISOR PAE</span>
+          <span class="bd-modal-eyebrow" style="color: #d97706; font-weight: 800; letter-spacing: 0.5px;">
+            ROL {{ (obtenerNombreRol(usuarioDetalleModal?.rol || supervisorDetalle?.rol) || 'USUARIO').toUpperCase() }}
+          </span>
           <h2 style="font-size: 19px; font-weight: 800; color: #0f172a; margin: 2px 0 0 0;">
-            {{ supervisorDetalle?.nombre }} {{ supervisorDetalle?.apellido }}
+            {{ (usuarioDetalleModal || supervisorDetalle)?.nombre }} {{ (usuarioDetalleModal || supervisorDetalle)?.apellido }}
           </h2>
           <div style="font-size: 12.5px; color: #64748b; margin-top: 4px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
             <span style="display: inline-flex; align-items: center; gap: 4px;">
               <span class="material-symbols-outlined" style="font-size: 15px; color: #94a3b8;">mail</span>
-              {{ supervisorDetalle?.correo }}
+              {{ (usuarioDetalleModal || supervisorDetalle)?.correo }}
             </span>
             <span style="color: #cbd5e1;">•</span>
             <span style="display: inline-flex; align-items: center; gap: 4px;">
               <span class="material-symbols-outlined" style="font-size: 15px; color: #94a3b8;">badge</span>
-              {{ supervisorDetalle?.tipo_documento || 'CC' }} {{ supervisorDetalle?.numero_documento }}
+              {{ (usuarioDetalleModal || supervisorDetalle)?.tipo_documento || 'CC' }} {{ (usuarioDetalleModal || supervisorDetalle)?.numero_documento }}
             </span>
           </div>
         </div>
@@ -375,10 +385,10 @@
             </div>
             <div>
               <div style="font-size: 18px; font-weight: 800; color: #92400e; line-height: 1;">
-                {{ supervisorDetalle?.instituciones_supervisor?.length || 0 }}
+                {{ institucionesDetalleModal.length }}
               </div>
               <div style="font-size: 11.5px; font-weight: 600; color: #b45309; margin-top: 2px;">
-                {{ (supervisorDetalle?.instituciones_supervisor?.length === 1) ? 'Institución Asignada' : 'Instituciones Asignadas' }}
+                {{ (institucionesDetalleModal.length === 1) ? 'Institución Asignada' : 'Instituciones Asignadas' }}
               </div>
             </div>
           </div>
@@ -389,7 +399,7 @@
             </div>
             <div>
               <div style="font-size: 18px; font-weight: 800; color: #1e293b; line-height: 1;">
-                {{ contarSedesSupervisor(supervisorDetalle) }}
+                {{ contarSedesTotalDetalle() }}
               </div>
               <div style="font-size: 11.5px; font-weight: 600; color: #64748b; margin-top: 2px;">
                 Sedes en Total
@@ -408,8 +418,8 @@
         </div>
 
         <!-- Lista de Instituciones -->
-        <div *ngIf="supervisorDetalle?.instituciones_supervisor?.length > 0; else sinAsignacionesModal" style="display: flex; flex-direction: column; gap: 12px;">
-          <div *ngFor="let inst of supervisorDetalle?.instituciones_supervisor; let idx = index" 
+        <div *ngIf="institucionesDetalleModal.length > 0; else sinAsignacionesModal" style="display: flex; flex-direction: column; gap: 12px;">
+          <div *ngFor="let inst of institucionesDetalleModal; let idx = index" 
                style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 14px 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
             
             <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;">
@@ -459,7 +469,7 @@
           <div style="text-align: center; padding: 36px 16px; background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 14px;">
             <span class="material-symbols-outlined" style="font-size: 44px; color: #94a3b8;">domain_disabled</span>
             <h4 style="margin: 10px 0 4px 0; font-size: 14.5px; font-weight: 700; color: #334155;">Sin instituciones asignadas</h4>
-            <p style="margin: 0; font-size: 12px; color: #64748b;">Este supervisor aún no tiene colegios asignados bajo su responsabilidad.</p>
+            <p style="margin: 0; font-size: 12px; color: #64748b;">Este usuario aún no tiene colegios asignados bajo su responsabilidad.</p>
           </div>
         </ng-template>
       </div>
