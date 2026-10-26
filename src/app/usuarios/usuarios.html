@@ -36,33 +36,28 @@
         ></app-custom-select>
       </div>
 
-      <!-- Botones Nuevo Usuario -->
-      <a routerLink="/crear-usuario" class="h-[38px] px-4 inline-flex items-center justify-center gap-2 border-none rounded-full bg-[#fac94b] text-slate-900 text-[13px] font-bold cursor-pointer whitespace-nowrap shadow-[0_2px_8px_rgba(251,191,36,0.28)] transition-all hover:bg-[#f59e0b] no-underline">
-        <span class="material-symbols-outlined text-[18px]">person_add</span>
-        <span>Asistente</span>
-      </a>
-
-      <button type="button" (click)="abrirFormulario()" class="h-[38px] px-4 inline-flex items-center justify-center gap-1.5 border border-slate-300 rounded-full bg-white text-slate-700 text-[13px] font-bold cursor-pointer whitespace-nowrap hover:bg-slate-50 transition-all shadow-xs">
+      <!-- Botón Nuevo Usuario -->
+      <button type="button" (click)="abrirFormulario()" class="h-10 px-5 inline-flex items-center justify-center gap-2 border-none rounded-full bg-[#fac94b] text-slate-900 text-[13px] font-bold cursor-pointer whitespace-nowrap shadow-[0_2px_8px_rgba(251,191,36,0.28)] transition-all hover:bg-[#f59e0b]">
         <span class="material-symbols-outlined text-[18px]">add</span>
-        <span>Añadir rápido</span>
+        <span>Nuevo Usuario</span>
       </button>
     </div>
   </header>
 
   <!-- ===================== CONTENIDO / TABLA ===================== -->
-  <section class="w-full bg-white rounded-xl p-6 border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
-    <!-- Tabla de Usuarios -->
-    <div class="overflow-x-auto">
+  <section class="w-full bg-white rounded-xl p-5 sm:p-6 border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+    <!-- Tabla de Usuarios con Cabecera Fija y Scroll en Filas -->
+    <div class="overflow-x-auto overflow-y-auto max-h-[calc(100vh-270px)] rounded-xl border border-slate-200/80">
       <table class="w-full border-collapse text-left text-xs">
-        <thead>
-          <tr class="border-b border-slate-200 text-slate-500 font-semibold">
-            <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase">USUARIO</th>
-            <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase">DOCUMENTO</th>
-            <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase">CORREO ELECTRÓNICO</th>
-            <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase">ROL</th>
-            <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase">INSTITUCIÓN / SEDE</th>
-            <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase">ESTADO</th>
-            <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase text-right">ACCIONES</th>
+        <thead class="sticky top-0 z-10 bg-slate-50">
+          <tr class="border-b border-slate-200 text-slate-600 font-bold bg-slate-50">
+            <th class="py-3 px-3.5 text-[11px] tracking-wider uppercase bg-slate-50 sticky top-0 z-10">USUARIO</th>
+            <th class="py-3 px-3.5 text-[11px] tracking-wider uppercase bg-slate-50 sticky top-0 z-10">DOCUMENTO</th>
+            <th class="py-3 px-3.5 text-[11px] tracking-wider uppercase bg-slate-50 sticky top-0 z-10">CORREO ELECTRÓNICO</th>
+            <th class="py-3 px-3.5 text-[11px] tracking-wider uppercase bg-slate-50 sticky top-0 z-10">ROL</th>
+            <th class="py-3 px-3.5 text-[11px] tracking-wider uppercase bg-slate-50 sticky top-0 z-10">INSTITUCIÓN / SEDE</th>
+            <th class="py-3 px-3.5 text-[11px] tracking-wider uppercase bg-slate-50 sticky top-0 z-10">ESTADO</th>
+            <th class="py-3 px-3.5 text-[11px] tracking-wider uppercase text-right bg-slate-50 sticky top-0 z-10">ACCIONES</th>
           </tr>
         </thead>
         <tbody class="text-slate-900">

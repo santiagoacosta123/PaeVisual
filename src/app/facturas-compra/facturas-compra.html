@@ -1,23 +1,15 @@
 <div class="flex w-full flex-col gap-5" style="font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;">
   
-  <!-- Header para Modo Bodega Central Exclusivo -->
+  <!-- Header para Modo Stock Global Exclusivo -->
   <header *ngIf="modoExclusivo === 'bodega'" style="width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 24px; background: linear-gradient(135deg, #fffcf0 0%, #ffffff 100%); border: 1px solid #f2ead0; border-radius: 14px; box-shadow: 0 4px 15px rgba(250, 201, 75, 0.05); position: sticky; top: 0; z-index: 20; box-sizing: border-box; flex-wrap: wrap;">
     <div style="display: flex; align-items: center; gap: 14px;">
       <div style="width: 48px; height: 48px; border-radius: 50%; background: #fef3c7; border: 1.5px solid #fde68a; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 2px 6px rgba(245, 158, 11, 0.08);">
         <span class="material-symbols-outlined" style="font-size: 24px; color: #b45309;">warehouse</span>
       </div>
       <div>
-        <h1 style="margin: 0; color: #0f172a; font-size: 20px; font-weight: 800; letter-spacing: -0.5px;">Bodega Central (Stock Global)</h1>
+        <h1 style="margin: 0; color: #0f172a; font-size: 20px; font-weight: 800; letter-spacing: -0.5px;">Stock Global</h1>
         <p style="margin: 3px 0 0; color: #64748b; font-size: 13px;">Control de existencias globales, balance de ingredientes y semáforo de disponibilidad del operador PAE.</p>
       </div>
-    </div>
-    <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-      <button type="button" (click)="cargarBodega()"
-        class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-[13px] font-bold text-slate-700 shadow-xs transition hover:bg-slate-50"
-        title="Refrescar existencias del inventario central">
-        <span class="material-symbols-outlined text-[18px]">refresh</span>
-        Refrescar
-      </button>
     </div>
   </header>
 
@@ -48,8 +40,8 @@
         <span class="material-symbols-outlined" style="font-size: 24px; color: #b45309;">receipt_long</span>
       </div>
       <div>
-        <h1 style="margin: 0; color: #0f172a; font-size: 20px; font-weight: 800; letter-spacing: -0.5px;">Facturas de Compra & Bodega Central</h1>
-        <p style="margin: 3px 0 0; color: #64748b; font-size: 13px;">Registro de compras a proveedores mayoristas y control del stock central del operador PAE.</p>
+        <h1 style="margin: 0; color: #0f172a; font-size: 20px; font-weight: 800; letter-spacing: -0.5px;">Facturas de Compra & Stock Global</h1>
+        <p style="margin: 3px 0 0; color: #64748b; font-size: 13px;">Registro de compras a proveedores mayoristas y control del stock global del operador PAE.</p>
       </div>
     </div>
     <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
@@ -75,7 +67,7 @@
       class="inline-flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition"
       [ngClass]="tabActiva === 'bodega' ? 'bg-amber-400 text-slate-900 shadow-xs' : 'text-slate-600 hover:bg-slate-100'">
       <span class="material-symbols-outlined text-[18px]">warehouse</span>
-      Bodega Central (Stock Global)
+      Stock Global
       <span class="rounded-full bg-slate-900/10 px-2 py-0.5 text-[10px] font-black">{{ inventarioCentral.length }}</span>
     </button>
   </div>
@@ -122,33 +114,27 @@
               class="w-full border-0 bg-transparent py-2 text-xs font-medium text-slate-800 outline-none placeholder:text-slate-400" />
           </div>
 
-          <div class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200/90 text-xs font-semibold text-slate-600 shadow-2xs">
+          <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200/90 text-xs font-semibold text-slate-600 shadow-2xs">
             <span>Inversión:</span>
             <strong class="text-slate-900 font-bold">${{ totalInversion | number:'1.2-2' }}</strong>
           </div>
-
-          <button type="button" (click)="cargarDatos()" [disabled]="cargando"
-            class="inline-flex cursor-pointer items-center justify-center rounded-xl border border-slate-200 bg-white p-2 text-slate-700 hover:bg-slate-50 transition"
-            title="Actualizar facturas">
-            <span class="material-symbols-outlined text-[18px]">refresh</span>
-          </button>
         </div>
 
       </div>
 
-      <!-- Tabla de Facturas -->
-      <div *ngIf="!cargando" class="overflow-x-auto rounded-2xl border border-slate-200/80">
+      <!-- Tabla de Facturas con Cabecera Fija y Scroll Interno -->
+      <div *ngIf="!cargando" class="overflow-x-auto overflow-y-auto max-h-[calc(100vh-270px)] rounded-xl border border-slate-200/80">
         <table class="w-full min-w-[950px] border-collapse text-left text-[13px]">
-          <thead>
-            <tr class="border-b border-slate-200 bg-slate-50/80 font-bold text-slate-600">
-              <th class="px-4 py-3.5">N° Factura</th>
-              <th class="px-4 py-3.5">Proveedor</th>
-              <th class="px-4 py-3.5">Fecha Compra</th>
-              <th class="px-4 py-3.5 text-center">Ítems</th>
-              <th class="px-4 py-3.5 text-right">Valor Total</th>
-              <th class="px-4 py-3.5 text-center">Estado</th>
-              <th class="px-4 py-3.5">Registrado Por</th>
-              <th class="px-4 py-3.5 text-center">Acciones</th>
+          <thead class="sticky top-0 z-10 bg-slate-50">
+            <tr class="border-b border-slate-200 bg-slate-50 font-bold text-slate-600">
+              <th class="px-4 py-3.5 bg-slate-50 sticky top-0 z-10">N° Factura</th>
+              <th class="px-4 py-3.5 bg-slate-50 sticky top-0 z-10">Proveedor</th>
+              <th class="px-4 py-3.5 bg-slate-50 sticky top-0 z-10">Fecha Compra</th>
+              <th class="px-4 py-3.5 text-center bg-slate-50 sticky top-0 z-10">Ítems</th>
+              <th class="px-4 py-3.5 text-right bg-slate-50 sticky top-0 z-10">Valor Total</th>
+              <th class="px-4 py-3.5 text-center bg-slate-50 sticky top-0 z-10">Estado</th>
+              <th class="px-4 py-3.5 bg-slate-50 sticky top-0 z-10">Registrado Por</th>
+              <th class="px-4 py-3.5 text-center bg-slate-50 sticky top-0 z-10">Acciones</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100">
@@ -254,18 +240,18 @@
         </div>
       </div>
 
-      <!-- Tabla Bodega Central -->
-      <div class="overflow-x-auto rounded-2xl border border-slate-200/80">
+      <!-- Tabla Stock Global con Cabecera Fija y Scroll Interno -->
+      <div class="overflow-x-auto overflow-y-auto max-h-[calc(100vh-270px)] rounded-xl border border-slate-200/80">
         <table class="w-full min-w-[850px] border-collapse text-left text-[13px]">
-          <thead>
-            <tr class="border-b border-slate-200 bg-slate-50/80 font-bold text-slate-600">
-              <th class="px-4 py-3.5">Insumo / Ingrediente</th>
-              <th class="px-4 py-3.5">Categoría</th>
-              <th class="px-4 py-3.5 text-center">Tipo Conservación</th>
-              <th class="px-4 py-3.5 text-center">Stock Disponible</th>
-              <th class="px-4 py-3.5 text-center">Stock Mínimo</th>
-              <th class="px-4 py-3.5 text-center">Estado Bodega</th>
-              <th class="px-4 py-3.5">Última Actualización</th>
+          <thead class="sticky top-0 z-10 bg-slate-50">
+            <tr class="border-b border-slate-200 bg-slate-50 font-bold text-slate-600">
+              <th class="px-4 py-3.5 bg-slate-50 sticky top-0 z-10">Insumo / Ingrediente</th>
+              <th class="px-4 py-3.5 bg-slate-50 sticky top-0 z-10">Categoría</th>
+              <th class="px-4 py-3.5 text-center bg-slate-50 sticky top-0 z-10">Tipo Conservación</th>
+              <th class="px-4 py-3.5 text-center bg-slate-50 sticky top-0 z-10">Stock Disponible</th>
+              <th class="px-4 py-3.5 text-center bg-slate-50 sticky top-0 z-10">Stock Mínimo</th>
+              <th class="px-4 py-3.5 text-center bg-slate-50 sticky top-0 z-10">Estado Stock</th>
+              <th class="px-4 py-3.5 bg-slate-50 sticky top-0 z-10">Última Actualización</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100">

@@ -323,9 +323,17 @@ export class FacturasCompraComponent implements OnInit {
       next: (facturaCreada) => {
         this.guardando = false;
         this.cerrarModalRegistro();
+        this.filtroEstado = 'TODAS';
+        this.filtroBusqueda = '';
+        if (facturaCreada && facturaCreada.numero_factura) {
+          const yaExiste = this.facturas.some(f => f.id_factura === facturaCreada.id_factura);
+          if (!yaExiste) {
+            this.facturas = [facturaCreada, ...this.facturas];
+          }
+        }
         void this.alertas.success(
           'Factura Registrada',
-          `Factura ${facturaCreada.numero_factura} guardada con éxito. Los productos han ingresado a la Bodega Central.`
+          `Factura ${facturaCreada.numero_factura} guardada con éxito. Los productos han ingresado a Stock Global.`
         );
         this.cargarFacturas();
         this.cargarBodega();

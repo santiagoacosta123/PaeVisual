@@ -503,6 +503,8 @@
 .bd-table-wrapper {
   width: 100%;
   overflow-x: auto;
+  overflow-y: auto;
+  max-height: calc(100vh - 295px);
   border-radius: 10px;
   border: 1px solid #f1f5f9;
   box-sizing: border-box;
@@ -516,8 +518,17 @@
   min-width: 650px;
 }
 
+.bd-data-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
 .bd-data-table thead th {
   background: #f8fafc;
+  position: sticky;
+  top: 0;
+  z-index: 10;
   color: #475569;
   font-weight: 700;
   font-size: 12px;
