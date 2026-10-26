@@ -177,11 +177,10 @@
   <!-- ================= SIDEBAR LATERAL SUPER ADMINISTRADOR ================= -->
   <aside class="modern-sidebar">
     
-    <!-- Logo SIRAE con subrayado amarillo según mockup -->
-    <div class="superadmin-sidebar-header">
-      <a routerLink="inicio" class="superadmin-brand-link" title="SIRAE - Sistema PAE">
-        <span class="superadmin-brand-title">SIRAE</span>
-        <div class="superadmin-brand-bar"></div>
+    <!-- Logo SIRAE Oficial Proporcionado y Estético -->
+    <div class="modern-sidebar-logo">
+      <a routerLink="inicio" class="modern-brand" title="SIRAE - Sistema de Información y Registro Alimentario Escolar">
+        <img src="sirae-logo-dark.png" alt="Logo SIRAE" class="modern-brand-img" />
       </a>
     </div>
 
@@ -190,7 +189,7 @@
       <span>MENÚ PRINCIPAL</span>
     </div>
 
-    <!-- Navegación con Íconos, Badges y Chevron activo -->
+    <!-- Navegación con Íconos Limpios y Armonizados (Sin círculos de colores) -->
     <nav class="superadmin-sidebar-nav" aria-label="Menú principal de Super Administrador">
 
       <!-- INICIO -->
@@ -199,16 +198,14 @@
           <span class="material-symbols-outlined superadmin-nav-icon">home</span>
           <span class="superadmin-nav-text">Inicio</span>
         </div>
-        <span class="material-symbols-outlined superadmin-nav-chevron">chevron_right</span>
       </a>
 
-      <!-- CONTRATOS con Contador Verde -->
+      <!-- CONTRATOS -->
       <a routerLink="contratos" routerLinkActive="active" class="superadmin-nav-item" title="Contratos">
         <div class="superadmin-nav-item-left">
           <span class="material-symbols-outlined superadmin-nav-icon">description</span>
           <span class="superadmin-nav-text">Contratos</span>
         </div>
-        <span class="superadmin-badge-count badge-green">{{ conteoContratos }}</span>
       </a>
 
       <!-- BANCO DE DATOS -->
@@ -219,13 +216,12 @@
         </div>
       </a>
 
-      <!-- FACTURAS con Contador Rojo -->
+      <!-- FACTURAS -->
       <a routerLink="facturas-compra" routerLinkActive="active" class="superadmin-nav-item" title="Facturas">
         <div class="superadmin-nav-item-left">
           <span class="material-symbols-outlined superadmin-nav-icon">receipt_long</span>
           <span class="superadmin-nav-text">Facturas</span>
         </div>
-        <span class="superadmin-badge-count badge-red">{{ conteoFacturas }}</span>
       </a>
 
       <!-- STOCK GLOBAL -->
@@ -265,7 +261,7 @@
       
       <!-- Indicador de página -->
       <nav class="superadmin-top-breadcrumb">
-        <span class="material-symbols-outlined text-[20px] text-emerald-700">home</span>
+        <span class="material-symbols-outlined text-[19px] text-slate-500">home</span>
         <span class="font-bold text-slate-800 text-[13.5px]">{{ pageTitle }}</span>
       </nav>
 

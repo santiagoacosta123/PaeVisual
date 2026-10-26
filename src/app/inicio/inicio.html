@@ -1,7 +1,7 @@
 <div class="flex flex-col gap-6 relative" style="font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;">
 
   <!-- =========================================================================
-       CASO 1: SUPER ADMINISTRADOR (DISEÑO DEDICADO SEGÚN ESPECIFICACIÓN EXACTA)
+       CASO 1: SUPER ADMINISTRADOR (DISEÑO DEDICADO Y ARMONIZADO CON LA IDENTIDAD SIRAE)
        ========================================================================= -->
   <ng-container *ngIf="esSuperAdministrador">
 
@@ -12,7 +12,7 @@
         <!-- Encabezado con ícono y título -->
         <div class="flex items-start sm:items-center gap-4.5">
           <div class="superadmin-badge-circle shrink-0">
-            <span class="material-symbols-outlined text-[26px] text-emerald-700">widgets</span>
+            <span class="material-symbols-outlined text-[26px]" style="color: #b45309;">widgets</span>
           </div>
           <div>
             <h1 class="m-0 text-2xl sm:text-[27px] font-black tracking-tight text-slate-900 leading-tight">
@@ -28,7 +28,7 @@
         <div class="flex flex-wrap items-center gap-3.5 pt-2">
           <!-- Píldora de Fecha -->
           <div class="superadmin-date-pill">
-            <span class="material-symbols-outlined text-[17px] text-emerald-700">calendar_month</span>
+            <span class="material-symbols-outlined text-[17px]" style="color: #b45309;">calendar_month</span>
             <span class="capitalize">{{ fechaActual }}</span>
           </div>
 
@@ -41,44 +41,40 @@
 
       </div>
 
-      <!-- Ilustración Gráfica Derecha: Diagonal con Circuito Tecnológico PAE -->
+      <!-- Ilustración Gráfica Derecha: Diagonal Armonizada con el Amarillo SIRAE #fac94b -->
       <div class="superadmin-banner-graphic" aria-hidden="true">
         <svg viewBox="0 0 280 210" preserveAspectRatio="none" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-full">
-          <!-- Polígono amarillo angular -->
-          <path d="M125 0 L280 0 L280 210 L50 210 Z" fill="#ffd600" />
-          <path d="M145 0 L280 0 L280 210 L70 210 Z" fill="#facc15" />
+          <!-- Polígono amarillo angular unificado -->
+          <path d="M125 0 L280 0 L280 210 L50 210 Z" fill="#fac94b" />
+          <path d="M150 0 L280 0 L280 210 L75 210 Z" fill="#fde68a" />
           
-          <!-- Pistas de circuito verde esmeralda y nodos con centro blanco -->
-          <!-- Pista 1 (Superior) -->
-          <line x1="160" y1="58" x2="280" y2="58" stroke="#065f46" stroke-width="2.5" stroke-linecap="round" />
-          <circle cx="160" cy="58" r="5.5" fill="#ffffff" stroke="#065f46" stroke-width="2.5" />
+          <!-- Pistas de circuito elegantes y nodos con centro blanco -->
+          <line x1="160" y1="58" x2="280" y2="58" stroke="#78350f" stroke-width="2.5" stroke-linecap="round" />
+          <circle cx="160" cy="58" r="5.5" fill="#ffffff" stroke="#78350f" stroke-width="2.5" />
 
-          <!-- Pista 2 (Media) -->
-          <line x1="185" y1="105" x2="230" y2="105" stroke="#065f46" stroke-width="2.5" stroke-linecap="round" />
-          <line x1="230" y1="105" x2="280" y2="105" stroke="#065f46" stroke-width="2.5" stroke-linecap="round" />
-          <circle cx="230" cy="105" r="5.5" fill="#ffffff" stroke="#065f46" stroke-width="2.5" />
+          <line x1="185" y1="105" x2="230" y2="105" stroke="#78350f" stroke-width="2.5" stroke-linecap="round" />
+          <line x1="230" y1="105" x2="280" y2="105" stroke="#78350f" stroke-width="2.5" stroke-linecap="round" />
+          <circle cx="230" cy="105" r="5.5" fill="#ffffff" stroke="#78350f" stroke-width="2.5" />
 
-          <!-- Pista 3 (Conectada con codo y nodo central) -->
-          <circle cx="165" cy="155" r="6.5" fill="#ffd600" stroke="#065f46" stroke-width="2.5" />
-          <line x1="171.5" y1="155" x2="260" y2="155" stroke="#065f46" stroke-width="2.5" stroke-linecap="round" />
-          <line x1="165" y1="148.5" x2="165" y2="115" stroke="#065f46" stroke-width="2.5" stroke-linecap="round" />
-          <line x1="165" y1="115" x2="185" y2="105" stroke="#065f46" stroke-width="2.5" stroke-linecap="round" />
+          <circle cx="165" cy="155" r="6.5" fill="#fac94b" stroke="#78350f" stroke-width="2.5" />
+          <line x1="171.5" y1="155" x2="260" y2="155" stroke="#78350f" stroke-width="2.5" stroke-linecap="round" />
+          <line x1="165" y1="148.5" x2="165" y2="115" stroke="#78350f" stroke-width="2.5" stroke-linecap="round" />
+          <line x1="165" y1="115" x2="185" y2="105" stroke="#78350f" stroke-width="2.5" stroke-linecap="round" />
 
-          <!-- Pista 4 (Inferior derecha) -->
-          <line x1="215" y1="180" x2="270" y2="180" stroke="#065f46" stroke-width="2.5" stroke-linecap="round" />
-          <circle cx="215" cy="180" r="5" fill="#ffffff" stroke="#065f46" stroke-width="2.5" />
+          <line x1="215" y1="180" x2="270" y2="180" stroke="#78350f" stroke-width="2.5" stroke-linecap="round" />
+          <circle cx="215" cy="180" r="5" fill="#ffffff" stroke="#78350f" stroke-width="2.5" />
         </svg>
       </div>
     </div>
 
-    <!-- FILA DE 4 TARJETAS MÉTRICAS (KPIs) -->
+    <!-- FILA DE 4 TARJETAS MÉTRICAS (KPIs) - LIMPIAS Y SIN BORDES INFERIORES DE COLORES -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
       
-      <!-- KPI 1: Contratos activos (Borde inferior verde) -->
-      <div class="superadmin-kpi-card border-b-green">
+      <!-- KPI 1: Contratos activos -->
+      <div class="superadmin-kpi-card">
         <div class="superadmin-kpi-top">
           <div class="superadmin-kpi-icon-wrap">
-            <span class="material-symbols-outlined text-[20px] text-emerald-700">description</span>
+            <span class="material-symbols-outlined text-[20px]">description</span>
           </div>
           <span class="superadmin-pill-green">+8%</span>
         </div>
@@ -86,11 +82,11 @@
         <div class="superadmin-kpi-label">Contratos activos</div>
       </div>
 
-      <!-- KPI 2: Facturas pendientes (Borde inferior amarillo) -->
-      <div class="superadmin-kpi-card border-b-yellow">
+      <!-- KPI 2: Facturas pendientes -->
+      <div class="superadmin-kpi-card">
         <div class="superadmin-kpi-top">
           <div class="superadmin-kpi-icon-wrap">
-            <span class="material-symbols-outlined text-[20px] text-emerald-700">receipt_long</span>
+            <span class="material-symbols-outlined text-[20px]">receipt_long</span>
           </div>
           <span class="superadmin-pill-red">3 por vencer</span>
         </div>
@@ -98,11 +94,11 @@
         <div class="superadmin-kpi-label">Facturas pendientes</div>
       </div>
 
-      <!-- KPI 3: Unidades en stock global (Borde inferior verde) -->
-      <div class="superadmin-kpi-card border-b-green">
+      <!-- KPI 3: Unidades en stock global -->
+      <div class="superadmin-kpi-card">
         <div class="superadmin-kpi-top">
           <div class="superadmin-kpi-icon-wrap">
-            <span class="material-symbols-outlined text-[20px] text-emerald-700">inventory_2</span>
+            <span class="material-symbols-outlined text-[20px]">inventory_2</span>
           </div>
           <span class="superadmin-pill-neutral">estable</span>
         </div>
@@ -110,11 +106,11 @@
         <div class="superadmin-kpi-label">Unidades en stock global</div>
       </div>
 
-      <!-- KPI 4: Usuarios registrados (Borde inferior amarillo) -->
-      <div class="superadmin-kpi-card border-b-yellow">
+      <!-- KPI 4: Usuarios registrados -->
+      <div class="superadmin-kpi-card">
         <div class="superadmin-kpi-top">
           <div class="superadmin-kpi-icon-wrap">
-            <span class="material-symbols-outlined text-[20px] text-emerald-700">group</span>
+            <span class="material-symbols-outlined text-[20px]">group</span>
           </div>
           <span class="superadmin-pill-green">+2 nuevos</span>
         </div>
