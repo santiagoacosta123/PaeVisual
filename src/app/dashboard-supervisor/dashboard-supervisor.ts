@@ -1,6 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { AuthService, InstitucionAsignada } from '../core/auth/auth.service';
 import { environment } from '../../environments/environment';
@@ -16,6 +16,7 @@ export class DashboardSupervisor implements OnInit {
   private authService = inject(AuthService);
   private http = inject(HttpClient);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
 
   instituciones: InstitucionAsignada[] = [];
   institucionActiva: InstitucionAsignada | null = null;
@@ -27,15 +28,26 @@ export class DashboardSupervisor implements OnInit {
     const usuario = this.authService.obtenerUsuario();
     this.nombreSupervisor = usuario?.nombre ? `${usuario.nombre} ${usuario.apellido ?? ''}`.trim() : 'Supervisor PAE';
 
-    // 1. Cargar caché inmediata si existe en la sesión
+    // Escuchar si viene con parámetro para cambiar de institución
+    this.route.queryParams.subscribe(params => {
+      if (params['cambiar'] === 'true') {
+        this.deseleccionarInstitucion();
+      }
+    });
+
+    // Suscripción reactiva al estado de la institución activa
+    this.authService.institucionActiva$.subscribe(inst => {
+      this.institucionActiva = inst;
+    });
+
+    // 1. Cargar caché inmediata
     const cacheadas = this.authService.obtenerInstitucionesSupervisor();
     if (cacheadas.length > 0) {
       this.instituciones = cacheadas;
-      this.institucionActiva = this.authService.obtenerInstitucionActiva() || cacheadas[0];
       this.cargando = false;
     }
 
-    // 2. Consultar siempre la lista actualizada al backend
+    // 2. Consultar lista actualizada
     this.cargarInstitucionesServidor();
   }
 
@@ -56,18 +68,20 @@ export class DashboardSupervisor implements OnInit {
           administrador_asignado: item.administrador_asignado,
         }));
 
+        // Si ya había una activa guardada y sigue en la lista, mantenerla;
+        // pero NO forzar selección automática para que el usuario pueda elegir primero
         const activaGuardada = this.authService.obtenerInstitucionActiva();
-        if (activaGuardada && this.instituciones.some(i => i.id_institucion === activaGuardada.id_institucion)) {
-          this.institucionActiva = this.instituciones.find(i => i.id_institucion === activaGuardada.id_institucion) || activaGuardada;
-        } else if (this.instituciones.length > 0) {
-          this.seleccionarInstitucion(this.instituciones[0]);
+        if (activaGuardada) {
+          const encontrada = this.instituciones.find(i => i.id_institucion === activaGuardada.id_institucion);
+          if (encontrada) {
+            this.institucionActiva = encontrada;
+          }
         }
 
         this.cargando = false;
       },
       error: (err) => {
         console.error('Error al cargar instituciones del supervisor:', err);
-        // Si no teníamos datos cacheados, reportar el error
         if (this.instituciones.length === 0) {
           this.errorMensaje = 'No se pudieron sincronizar las instituciones con el servidor. Revisa tu conexión.';
         }
@@ -81,16 +95,27 @@ export class DashboardSupervisor implements OnInit {
     this.authService.establecerInstitucionActiva(inst);
   }
 
-  trabajarCon(inst: InstitucionAsignada, destino: 'entregas' | 'sedes'): void {
-    this.seleccionarInstitucion(inst);
+  deseleccionarInstitucion(): void {
+    this.authService.limpiarInstitucionActiva();
+    this.institucionActiva = null;
+  }
+
+  irA(destino: 'entregas' | 'sedes' | 'reportes'): void {
+    if (!this.institucionActiva) return;
+
     if (destino === 'entregas') {
       this.router.navigate(['/registrar-entrega-alimentos']);
-    } else {
+    } else if (destino === 'sedes') {
       this.router.navigate(['/instituciones']);
+    } else if (destino === 'reportes') {
+      this.router.navigate(['/reportes-consumo']);
     }
   }
 
-  esActiva(inst: InstitucionAsignada): boolean {
-    return !!(this.institucionActiva && this.institucionActiva.id_institucion === inst.id_institucion);
+  get resumenSedes(): string {
+    if (!this.institucionActiva?.sedes || this.institucionActiva.sedes.length === 0) {
+      return 'Sin sedes registradas';
+    }
+    return this.institucionActiva.sedes.map((s: any) => s.nombre_sede).join(', ');
   }
 }

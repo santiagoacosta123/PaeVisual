@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, BehaviorSubject } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 export interface LoginResponse {
@@ -63,10 +63,15 @@ export class AuthService {
   private readonly USUARIO = 'usuario';
   private readonly INSTITUCION_ACTIVA = 'sirae_institucion_activa';
 
+  private institucionActivaSubject = new BehaviorSubject<InstitucionAsignada | null>(null);
+  public institucionActiva$ = this.institucionActivaSubject.asObservable();
+
   constructor(
     private http: HttpClient,
     private router: Router
-  ) {}
+  ) {
+    this.institucionActivaSubject.next(this.obtenerInstitucionActiva());
+  }
 
   private estaDisponibleStorage(): boolean {
     try {
@@ -195,17 +200,6 @@ export class AuthService {
         this.USUARIO,
         JSON.stringify(respuesta.usuario)
       );
-
-      // Si es supervisor, preseleccionar la primera institución asignada si no hay una activa válida
-      if (this.esSupervisor(respuesta.usuario.rol) && respuesta.usuario.instituciones_supervisor?.length) {
-        const guardada = this.obtenerInstitucionActiva();
-        const coincide = guardada && respuesta.usuario.instituciones_supervisor.some(
-          i => i.id_institucion === guardada.id_institucion
-        );
-        if (!coincide) {
-          this.establecerInstitucionActiva(respuesta.usuario.instituciones_supervisor[0]);
-        }
-      }
     }
   }
 
@@ -258,11 +252,6 @@ export class AuthService {
 
     const guardada = localStorage.getItem(this.INSTITUCION_ACTIVA);
     if (!guardada) {
-      const asignadas = this.obtenerInstitucionesSupervisor();
-      if (asignadas.length > 0) {
-        this.establecerInstitucionActiva(asignadas[0]);
-        return asignadas[0];
-      }
       return null;
     }
 
@@ -278,6 +267,15 @@ export class AuthService {
       return;
     }
     localStorage.setItem(this.INSTITUCION_ACTIVA, JSON.stringify(institucion));
+    this.institucionActivaSubject.next(institucion);
+  }
+
+  limpiarInstitucionActiva(): void {
+    if (!this.estaDisponibleStorage()) {
+      return;
+    }
+    localStorage.removeItem(this.INSTITUCION_ACTIVA);
+    this.institucionActivaSubject.next(null);
   }
 
   estaAutenticado(): boolean {
@@ -294,6 +292,7 @@ export class AuthService {
     localStorage.removeItem(this.USUARIO);
     localStorage.removeItem(this.INSTITUCION_ACTIVA);
     localStorage.removeItem('token');
+    this.institucionActivaSubject.next(null);
   }
 
   cerrarSesion(): void {

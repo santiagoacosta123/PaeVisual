@@ -1,207 +1,330 @@
 <section class="mx-auto flex w-full max-w-7xl flex-col gap-6" style="font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
 
-  <!-- Encabezado Principal del Supervisor -->
-  <header class="rounded-3xl border border-amber-200 bg-white p-6 shadow-sm sm:p-8">
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-      <div>
-        <span class="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold uppercase tracking-wide text-amber-800">
-          <span class="material-symbols-outlined text-base">fact_check</span>
-          Panel de supervisión PAE
-        </span>
-        <h1 class="mb-1 mt-3 text-2xl font-black text-slate-900 sm:text-3xl">
-          Bienvenido, {{ nombreSupervisor }}
-        </h1>
-        <p class="m-0 max-w-3xl text-sm leading-6 text-slate-600">
-          Selecciona la institución educativa con la que vas a trabajar hoy. Podrás registrar entregas de alimentos, revisar el inventario y auditar las sedes asociadas.
-        </p>
-      </div>
+  <!-- ========================================================================= -->
+  <!-- PASO 1: SELECCIONAR INSTITUCIÓN (CUANDO NO HAY NINGUNA SELECCIONADA)      -->
+  <!-- ========================================================================= -->
+  <div *ngIf="!institucionActiva" class="flex flex-col gap-6">
 
-      <button type="button" (click)="cargarInstitucionesServidor()" [disabled]="cargando" title="Actualizar datos"
-        class="flex h-11 w-11 cursor-pointer items-center justify-center self-start sm:self-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-amber-50 hover:border-amber-300">
-        <span class="material-symbols-outlined text-[20px]" [class.animate-spin]="cargando">refresh</span>
-      </button>
-    </div>
-  </header>
-
-  <!-- Banner de Institución Activa de Trabajo -->
-  <div *ngIf="institucionActiva as activa"
-    class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 rounded-3xl border-2 border-amber-400 bg-gradient-to-r from-amber-50 via-white to-amber-50/50 p-6 shadow-sm">
-    <div class="flex items-start sm:items-center gap-4">
-      <div class="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl bg-amber-400 text-slate-900 shadow-md">
-        <span class="material-symbols-outlined text-[30px]">apartment</span>
-      </div>
-      <div>
-        <div class="flex items-center gap-2">
-          <span class="text-[11px] font-bold uppercase tracking-wider text-amber-800 bg-amber-200/80 px-2 py-0.5 rounded-full">
-            Institución activa de trabajo
-          </span>
-          <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
-            <span class="material-symbols-outlined text-[13px]">check_circle</span> Seleccionada
-          </span>
-        </div>
-        <h2 class="mt-1 text-xl font-black text-slate-900">
-          {{ activa.nombre_institucion }}
-        </h2>
-        <p class="mt-0.5 text-xs text-slate-500 font-medium">
-          <span *ngIf="activa.nit">NIT: <strong class="text-slate-700">{{ activa.nit }}</strong> · </span>
-          <span>{{ activa.sedes?.length || 0 }} sede(s) registrada(s)</span>
-          <span *ngIf="activa.administrador_asignado?.nombre_completo"> · Administrador: <strong class="text-slate-700">{{ activa.administrador_asignado.nombre_completo }}</strong></span>
-        </p>
-      </div>
-    </div>
-
-    <!-- Acciones Rápidas para la Institución Activa -->
-    <div class="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
-      <button type="button" (click)="trabajarCon(activa, 'entregas')"
-        class="flex-1 lg:flex-none flex items-center justify-center gap-2 rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-950 font-bold text-xs px-4 py-2.5 shadow-sm transition">
-        <span class="material-symbols-outlined text-[18px]">local_shipping</span>
-        Registrar Entrega
-      </button>
-
-      <button type="button" (click)="trabajarCon(activa, 'sedes')"
-        class="flex-1 lg:flex-none flex items-center justify-center gap-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-300 text-slate-800 font-bold text-xs px-4 py-2.5 shadow-sm transition">
-        <span class="material-symbols-outlined text-[18px]">inventory_2</span>
-        Ver Sedes e Inventario
-      </button>
-    </div>
-  </div>
-
-  <!-- Estado de carga -->
-  <div *ngIf="cargando && instituciones.length === 0" class="py-16 text-center text-slate-500 text-sm font-semibold">
-    <span class="material-symbols-outlined animate-spin text-3xl text-amber-500 mb-2 block">progress_activity</span>
-    Cargando tus instituciones asignadas...
-  </div>
-
-  <!-- Error de carga -->
-  <div *ngIf="errorMensaje" class="rounded-2xl border border-red-200 bg-red-50 p-4 text-xs font-semibold text-red-800">
-    {{ errorMensaje }}
-    <button type="button" (click)="cargarInstitucionesServidor()" class="ml-2 underline font-bold cursor-pointer">Reintentar</button>
-  </div>
-
-  <!-- Lista de Instituciones Educativas Asignadas -->
-  <div *ngIf="instituciones.length > 0" class="flex flex-col gap-4">
-    <div class="flex items-center justify-between">
-      <div>
-        <h3 class="m-0 text-lg font-black text-slate-900">
-          Mis Instituciones Asignadas ({{ instituciones.length }})
-        </h3>
-        <p class="m-0 text-xs font-medium text-slate-500">
-          Haz clic en <strong>Trabajar con esta institución</strong> para cambiar la sede activa.
-        </p>
-      </div>
-    </div>
-
-    <!-- Grid de Tarjetas -->
-    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-      <article *ngFor="let inst of instituciones"
-        [ngClass]="esActiva(inst) ? 'border-amber-400 ring-2 ring-amber-400/50 bg-gradient-to-b from-amber-50/30 to-white' : 'border-slate-100 bg-white hover:border-amber-200'"
-        class="rounded-3xl border p-5 shadow-sm transition duration-200 flex flex-col justify-between">
-        
+    <!-- Encabezado de Selección -->
+    <header class="rounded-3xl border border-amber-200 bg-white p-6 shadow-sm sm:p-8">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <!-- Cabecera de la Tarjeta -->
-          <div class="flex items-start justify-between gap-2">
-            <div [ngClass]="esActiva(inst) ? 'bg-amber-400 text-slate-900' : 'bg-amber-100 text-amber-800'"
-              class="flex h-11 w-11 items-center justify-center rounded-2xl shadow-sm">
-              <span class="material-symbols-outlined text-[24px]">school</span>
+          <span class="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold uppercase tracking-wide text-amber-800">
+            <span class="material-symbols-outlined text-base">touch_app</span>
+            Paso 1: Selección inicial
+          </span>
+          <h1 class="mb-1 mt-3 text-2xl font-black text-slate-900 sm:text-3xl">
+            Selecciona la institución con la que vas a trabajar
+          </h1>
+          <p class="m-0 max-w-3xl text-sm leading-6 text-slate-600">
+            Hola, <strong>{{ nombreSupervisor }}</strong>. Para acceder a tus funciones de supervisión (entregas, sedes e inventario y reportes), primero debes elegir la institución educativa en la que vas a operar hoy.
+          </p>
+        </div>
+
+        <button type="button" (click)="cargarInstitucionesServidor()" [disabled]="cargando" title="Actualizar datos"
+          class="flex h-11 w-11 cursor-pointer items-center justify-center self-start sm:self-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-amber-50 hover:border-amber-300">
+          <span class="material-symbols-outlined text-[20px]" [class.animate-spin]="cargando">refresh</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Estado de carga -->
+    <div *ngIf="cargando && instituciones.length === 0" class="py-16 text-center text-slate-500 text-sm font-semibold">
+      <span class="material-symbols-outlined animate-spin text-3xl text-amber-500 mb-2 block">progress_activity</span>
+      Cargando tus instituciones asignadas...
+    </div>
+
+    <!-- Error al cargar -->
+    <div *ngIf="errorMensaje" class="rounded-2xl border border-red-200 bg-red-50 p-4 text-xs font-semibold text-red-800">
+      {{ errorMensaje }}
+      <button type="button" (click)="cargarInstitucionesServidor()" class="ml-2 underline font-bold cursor-pointer">Reintentar</button>
+    </div>
+
+    <!-- Cuadrícula para seleccionar institución -->
+    <div *ngIf="instituciones.length > 0" class="flex flex-col gap-4">
+      <div class="flex items-center justify-between">
+        <h3 class="m-0 text-lg font-black text-slate-900">
+          Instituciones disponibles para ti ({{ instituciones.length }})
+        </h3>
+        <span class="text-xs text-slate-500 font-medium">Toca una para seleccionarla</span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+        <article *ngFor="let inst of instituciones"
+          (click)="seleccionarInstitucion(inst)"
+          class="group cursor-pointer rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-amber-400 hover:shadow-md flex flex-col justify-between">
+
+          <div>
+            <!-- Encabezado de la tarjeta -->
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 border border-amber-200/80 text-amber-700 shadow-sm group-hover:bg-amber-400 group-hover:text-slate-950 transition-colors">
+                <span class="material-symbols-outlined text-[26px]">school</span>
+              </div>
+              <span class="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[10px] font-bold text-emerald-700">
+                {{ inst.estado || 'ACTIVO' }}
+              </span>
             </div>
 
-            <div class="flex items-center gap-1.5">
-              <span *ngIf="esActiva(inst)"
-                class="inline-flex items-center gap-1 rounded-full bg-amber-100 border border-amber-300 px-2 py-0.5 text-[10px] font-bold text-amber-900">
-                <span class="material-symbols-outlined text-[13px]">check</span> Activa
+            <!-- Título y NIT -->
+            <h4 class="m-0 mt-4 text-lg font-black leading-tight text-slate-900 group-hover:text-amber-700 transition-colors">
+              {{ inst.nombre_institucion }}
+            </h4>
+            <p class="m-0 mt-1 text-xs font-semibold text-slate-400">
+              NIT: <span class="text-slate-700">{{ inst.nit || 'Sin NIT' }}</span>
+            </p>
+
+            <!-- Administrador asignado -->
+            <div class="mt-4 flex items-center gap-2 rounded-xl bg-slate-50 p-2.5 text-xs">
+              <span class="material-symbols-outlined text-[18px] text-slate-400">person</span>
+              <div class="flex-1 truncate">
+                <span class="block text-[10px] uppercase font-bold text-slate-400">Administrador:</span>
+                <span class="font-bold text-slate-800 truncate block">
+                  {{ inst.administrador_asignado?.nombre_completo || 'Sin administrador asignado' }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Sedes -->
+            <div class="mt-4">
+              <span class="text-[10px] uppercase font-bold tracking-wide text-slate-400 block mb-1.5">
+                Sedes asociadas ({{ inst.sedes?.length || 0 }}):
+              </span>
+              <div *ngIf="inst.sedes && inst.sedes.length > 0; else noSedes" class="flex flex-wrap gap-1">
+                <span *ngFor="let s of inst.sedes"
+                  class="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700">
+                  <span class="material-symbols-outlined text-[12px] text-slate-400">domain</span>
+                  {{ s.nombre_sede }}
+                </span>
+              </div>
+              <ng-template #noSedes>
+                <span class="text-xs italic text-slate-400">No tiene sedes secundarias registradas</span>
+              </ng-template>
+            </div>
+          </div>
+
+          <!-- Botón de Selección -->
+          <div class="mt-6 pt-4 border-t border-slate-100">
+            <button type="button" (click)="seleccionarInstitucion(inst); $event.stopPropagation()"
+              class="w-full flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-950 font-bold text-xs py-3 px-4 shadow-sm transition">
+              <span class="material-symbols-outlined text-[18px]">check_circle</span>
+              Seleccionar Institución
+            </button>
+          </div>
+
+        </article>
+      </div>
+    </div>
+
+    <!-- Si no tiene ninguna asignada -->
+    <div *ngIf="!cargando && instituciones.length === 0 && !errorMensaje"
+      class="flex flex-col items-center justify-center gap-3 rounded-3xl border border-dashed border-amber-300 bg-amber-50/40 py-16 px-6 text-center">
+      <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
+        <span class="material-symbols-outlined text-[36px]">domain_disabled</span>
+      </div>
+      <h3 class="m-0 text-base font-bold text-slate-800">
+        No tienes instituciones educativas asignadas
+      </h3>
+      <p class="m-0 max-w-md text-xs leading-5 text-slate-600">
+        Comunícate con el Super Administrador para que asigne las instituciones correspondientes a tu cuenta de supervisor.
+      </p>
+      <button type="button" (click)="cargarInstitucionesServidor()"
+        class="mt-2 inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-white px-4 py-2 text-xs font-bold text-amber-800 shadow-sm hover:bg-amber-50">
+        <span class="material-symbols-outlined text-[16px]">refresh</span>
+        Verificar de nuevo
+      </button>
+    </div>
+
+  </div>
+
+
+  <!-- ========================================================================= -->
+  <!-- PASO 2: INSTITUCIÓN SELECCIONADA + OPCIONES DEL MENÚ IZQUIERDO            -->
+  <!-- ========================================================================= -->
+  <div *ngIf="institucionActiva as inst" class="flex flex-col gap-6">
+
+    <!-- ARRIBA: Nombre e información destacada de la institución seleccionada -->
+    <header class="rounded-3xl border-2 border-amber-400 bg-gradient-to-r from-amber-50 via-white to-amber-50/40 p-6 shadow-sm">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+        
+        <div class="flex items-start sm:items-center gap-4">
+          <div class="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-2xl bg-amber-400 text-slate-950 shadow-md">
+            <span class="material-symbols-outlined text-[34px]">school</span>
+          </div>
+
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="inline-flex items-center gap-1 text-[11px] font-black uppercase tracking-wider text-amber-900 bg-amber-200/90 px-2.5 py-0.5 rounded-full">
+                <span class="material-symbols-outlined text-[13px]">check_circle</span>
+                Institución Seleccionada
               </span>
               <span class="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[10px] font-bold text-emerald-700">
                 {{ inst.estado || 'ACTIVO' }}
               </span>
             </div>
-          </div>
 
-          <!-- Nombre y NIT -->
-          <h4 class="m-0 mt-3.5 text-base font-black leading-tight text-slate-900">
-            {{ inst.nombre_institucion }}
-          </h4>
-          <p class="m-0 mt-1 text-[11px] font-semibold text-slate-400">
-            NIT: <span class="text-slate-600">{{ inst.nit || 'Sin NIT' }}</span>
+            <!-- Nombre de la institución arriba -->
+            <h1 class="mb-1 mt-1.5 text-2xl font-black text-slate-900 sm:text-3xl">
+              {{ inst.nombre_institucion }}
+            </h1>
+
+            <!-- Datos de la institución -->
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-600 font-medium">
+              <span *ngIf="inst.nit">NIT: <strong class="text-slate-800">{{ inst.nit }}</strong></span>
+              <span *ngIf="inst.representante_legal">Representante: <strong class="text-slate-800">{{ inst.representante_legal }}</strong></span>
+              <span *ngIf="inst.telefono">Tel: <strong class="text-slate-800">{{ inst.telefono }}</strong></span>
+              <span>Administrador: <strong class="text-slate-800">{{ inst.administrador_asignado?.nombre_completo || 'Sin asignar' }}</strong></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Botón para cambiar de institución -->
+        <button type="button" (click)="deseleccionarInstitucion()"
+          class="flex items-center justify-center gap-2 self-start lg:self-center rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-800 font-bold text-xs px-4 py-2.5 shadow-sm transition">
+          <span class="material-symbols-outlined text-[18px]">sync_alt</span>
+          Cambiar institución
+        </button>
+
+      </div>
+
+      <!-- Sedes registradas de la institución -->
+      <div *ngIf="inst.sedes && inst.sedes.length > 0" class="mt-4 pt-4 border-t border-amber-200/60 flex items-center gap-2 flex-wrap">
+        <span class="text-xs font-bold text-slate-500 uppercase">Sedes registradas:</span>
+        <span *ngFor="let s of inst.sedes" class="inline-flex items-center gap-1 rounded-lg bg-white border border-amber-200 px-2.5 py-1 text-xs font-semibold text-slate-800 shadow-2xs">
+          <span class="material-symbols-outlined text-[14px] text-amber-600">apartment</span>
+          {{ s.nombre_sede }}
+        </span>
+      </div>
+    </header>
+
+
+    <!-- ========================================================================= -->
+    <!-- OPCIONES CON LA INFORMACIÓN CORRESPONDIENTE (DEL MENÚ IZQUIERDO)           -->
+    <!-- ========================================================================= -->
+    <div class="flex flex-col gap-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="m-0 text-xl font-black text-slate-900">
+            Opciones de Gestión para {{ inst.nombre_institucion }}
+          </h2>
+          <p class="m-0 text-xs font-medium text-slate-500">
+            Estas son las opciones de supervisión disponibles en el menú izquierdo para trabajar con esta institución.
           </p>
-
-          <!-- Administrador Asignado -->
-          <div class="mt-3 flex items-center gap-2 rounded-xl bg-slate-50 p-2 text-xs">
-            <span class="material-symbols-outlined text-[16px] text-slate-400">person</span>
-            <div class="flex-1 truncate">
-              <span class="block text-[10px] uppercase font-bold text-slate-400">Administrador:</span>
-              <span class="font-semibold text-slate-700 truncate block">
-                {{ inst.administrador_asignado?.nombre_completo || 'Sin administrador asignado' }}
-              </span>
-            </div>
-          </div>
-
-          <!-- Sedes Asignadas -->
-          <div class="mt-3">
-            <div class="flex items-center justify-between mb-1.5">
-              <span class="text-[10px] uppercase font-bold tracking-wide text-slate-400">
-                Sedes ({{ inst.sedes?.length || 0 }})
-              </span>
-            </div>
-            
-            <div *ngIf="inst.sedes && inst.sedes.length > 0; else sinSedes" class="flex flex-wrap gap-1">
-              <span *ngFor="let s of inst.sedes"
-                class="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700">
-                <span class="material-symbols-outlined text-[12px] text-slate-400">domain</span>
-                {{ s.nombre_sede }}
-              </span>
-            </div>
-            <ng-template #sinSedes>
-              <p class="m-0 text-[11px] italic text-slate-400">No tiene sedes registradas</p>
-            </ng-template>
-          </div>
         </div>
+      </div>
 
-        <!-- Botones de Acción de la Tarjeta -->
-        <div class="mt-5 pt-3 border-t border-slate-100 flex flex-col gap-2">
-          <!-- Botón Seleccionar Institución de Trabajo -->
-          <button type="button" (click)="seleccionarInstitucion(inst)"
-            [ngClass]="esActiva(inst) ? 'bg-amber-500 text-white border-amber-600 shadow-sm' : 'bg-amber-50 text-amber-900 border-amber-200 hover:bg-amber-100'"
-            class="w-full flex cursor-pointer items-center justify-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold transition">
-            <span class="material-symbols-outlined text-[16px]">{{ esActiva(inst) ? 'check_circle' : 'work' }}</span>
-            {{ esActiva(inst) ? 'Institución Activa de Trabajo' : 'Trabajar con esta institución' }}
-          </button>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-          <!-- Accesos directos -->
-          <div class="flex gap-2">
-            <button type="button" (click)="trabajarCon(inst, 'entregas')" title="Registrar entregas de alimentos"
-              class="flex-1 flex cursor-pointer items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 transition">
-              <span class="material-symbols-outlined text-[15px] text-slate-500">local_shipping</span>
-              Entregas
-            </button>
-            <button type="button" (click)="trabajarCon(inst, 'sedes')" title="Ver sedes e inventario"
-              class="flex-1 flex cursor-pointer items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 transition">
-              <span class="material-symbols-outlined text-[15px] text-slate-500">inventory_2</span>
-              Inventario
+        <!-- OPCIÓN 1: REGISTRAR ENTREGA DE ALIMENTOS (local_shipping) -->
+        <article class="rounded-3xl border border-slate-200/90 bg-white p-6 shadow-sm hover:border-amber-400 hover:shadow-md transition-all flex flex-col justify-between">
+          <div>
+            <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 border border-amber-200 text-amber-700 shadow-sm mb-4">
+              <span class="material-symbols-outlined text-[30px]">local_shipping</span>
+            </div>
+
+            <div class="flex items-center gap-2 mb-1">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full">
+                Menú izquierdo: Opción 1
+              </span>
+            </div>
+
+            <h3 class="m-0 text-lg font-black text-slate-900">
+              Registrar Entrega de Alimentos
+            </h3>
+
+            <p class="mt-2 text-xs leading-5 text-slate-600">
+              Gestiona el despacho y recepción de víveres, controla lotes, cantidades y fechas de vencimiento de alimentos para <strong>{{ inst.nombre_institucion }}</strong>.
+            </p>
+
+            <div class="mt-4 rounded-xl bg-slate-50 p-3 text-xs text-slate-600">
+              <span class="block font-bold text-slate-800 mb-1">Estado de entregas:</span>
+              <span>Recepción y control listo para esta institución educativa.</span>
+            </div>
+          </div>
+
+          <div class="mt-6 pt-4 border-t border-slate-100">
+            <button type="button" (click)="irA('entregas')"
+              class="w-full flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-950 font-bold text-xs py-3 px-4 shadow-sm transition">
+              <span class="material-symbols-outlined text-[18px]">local_shipping</span>
+              Ir a Registrar Entregas
             </button>
           </div>
-        </div>
+        </article>
 
-      </article>
-    </div>
-  </div>
+        <!-- OPCIÓN 2: SEDES E INVENTARIO (apartment) -->
+        <article class="rounded-3xl border border-slate-200/90 bg-white p-6 shadow-sm hover:border-amber-400 hover:shadow-md transition-all flex flex-col justify-between">
+          <div>
+            <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 border border-amber-200 text-amber-700 shadow-sm mb-4">
+              <span class="material-symbols-outlined text-[30px]">apartment</span>
+            </div>
 
-  <!-- Estado Vacío: Si no tiene ninguna institución asignada -->
-  <div *ngIf="!cargando && instituciones.length === 0 && !errorMensaje"
-    class="flex flex-col items-center justify-center gap-3 rounded-3xl border border-dashed border-amber-300 bg-amber-50/40 py-16 px-6 text-center">
-    <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
-      <span class="material-symbols-outlined text-[36px]">domain_disabled</span>
+            <div class="flex items-center gap-2 mb-1">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full">
+                Menú izquierdo: Opción 2
+              </span>
+            </div>
+
+            <h3 class="m-0 text-lg font-black text-slate-900">
+              Sedes e Inventario
+            </h3>
+
+            <p class="mt-2 text-xs leading-5 text-slate-600">
+              Consulta el detalle de las sedes asociadas y monitorea el stock de ingredientes y saldos de alimentos para <strong>{{ inst.nombre_institucion }}</strong>.
+            </p>
+
+            <div class="mt-4 rounded-xl bg-slate-50 p-3 text-xs text-slate-600">
+              <span class="block font-bold text-slate-800 mb-1">Sedes disponibles ({{ inst.sedes?.length || 0 }}):</span>
+              <span class="truncate block">{{ resumenSedes }}</span>
+            </div>
+          </div>
+
+          <div class="mt-6 pt-4 border-t border-slate-100">
+            <button type="button" (click)="irA('sedes')"
+              class="w-full flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-300 text-slate-800 font-bold text-xs py-3 px-4 shadow-sm transition">
+              <span class="material-symbols-outlined text-[18px]">apartment</span>
+              Ver Sedes e Inventario
+            </button>
+          </div>
+        </article>
+
+        <!-- OPCIÓN 3: REPORTES DE CONSUMO (analytics) -->
+        <article class="rounded-3xl border border-slate-200/90 bg-white p-6 shadow-sm hover:border-amber-400 hover:shadow-md transition-all flex flex-col justify-between">
+          <div>
+            <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 border border-amber-200 text-amber-700 shadow-sm mb-4">
+              <span class="material-symbols-outlined text-[30px]">analytics</span>
+            </div>
+
+            <div class="flex items-center gap-2 mb-1">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full">
+                Menú izquierdo: Opción 3
+              </span>
+            </div>
+
+            <h3 class="m-0 text-lg font-black text-slate-900">
+              Reportes de Consumo
+            </h3>
+
+            <p class="mt-2 text-xs leading-5 text-slate-600">
+              Genera y audita reportes de asistencia diaria, entregas consolidadas y cumplimiento del PAE para <strong>{{ inst.nombre_institucion }}</strong>.
+            </p>
+
+            <div class="mt-4 rounded-xl bg-slate-50 p-3 text-xs text-slate-600">
+              <span class="block font-bold text-slate-800 mb-1">Informes disponibles:</span>
+              <span>Consumos diarios, reportes mensuales y estadísticas.</span>
+            </div>
+          </div>
+
+          <div class="mt-6 pt-4 border-t border-slate-100">
+            <button type="button" (click)="irA('reportes')"
+              class="w-full flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-300 text-slate-800 font-bold text-xs py-3 px-4 shadow-sm transition">
+              <span class="material-symbols-outlined text-[18px]">analytics</span>
+              Consultar Reportes
+            </button>
+          </div>
+        </article>
+
+      </div>
     </div>
-    <h3 class="m-0 text-base font-bold text-slate-800">
-      No tienes instituciones educativas asignadas
-    </h3>
-    <p class="m-0 max-w-md text-xs leading-5 text-slate-600">
-      El Super Administrador aún no te ha asignado instituciones bajo tu supervisión. Una vez asignadas en el módulo de usuarios, aparecerán aquí automáticamente para que puedas gestionarlas.
-    </p>
-    <button type="button" (click)="cargarInstitucionesServidor()"
-      class="mt-2 inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-white px-4 py-2 text-xs font-bold text-amber-800 shadow-sm hover:bg-amber-50">
-      <span class="material-symbols-outlined text-[16px]">refresh</span>
-      Verificar de nuevo
-    </button>
+
   </div>
 
 </section>

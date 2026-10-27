@@ -137,6 +137,10 @@ export class LayoutComponent implements OnInit {
     if (this.esSupervisor) {
       this.institucionesSupervisor = this.authService.obtenerInstitucionesSupervisor();
       this.institucionActiva = this.authService.obtenerInstitucionActiva();
+      this.authService.institucionActiva$.subscribe((inst) => {
+        this.institucionActiva = inst;
+        this.cdr.detectChanges();
+      });
       this.cargarInstitucionesSupervisor();
     }
 
@@ -272,13 +276,21 @@ export class LayoutComponent implements OnInit {
         const guardada = this.authService.obtenerInstitucionActiva();
         if (guardada && this.institucionesSupervisor.some(i => i.id_institucion === guardada.id_institucion)) {
           this.institucionActiva = this.institucionesSupervisor.find(i => i.id_institucion === guardada.id_institucion) || guardada;
-        } else if (this.institucionesSupervisor.length > 0) {
-          this.seleccionarInstitucionSupervisor(this.institucionesSupervisor[0]);
+        } else {
+          this.institucionActiva = null;
         }
         this.cdr.detectChanges();
       },
       error: () => {}
     });
+  }
+
+  cambiarInstitucion(): void {
+    this.authService.limpiarInstitucionActiva();
+    this.institucionActiva = null;
+    this.mostrarSelectorInstitucion = false;
+    this.router.navigate(['/dashboard-supervisor'], { queryParams: { cambiar: 'true' } });
+    this.cdr.detectChanges();
   }
 
   toggleSelectorInstitucion(): void {
