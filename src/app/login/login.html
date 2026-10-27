@@ -1,31 +1,37 @@
-<div class="login-container">
+<div class="min-h-screen w-screen flex flex-col lg:flex-row bg-white overflow-x-hidden font-sans select-none">
 
   <!-- ================= LADO IZQUIERDO: FOTOGRAFÍA CON ACENTOS DIAGONALES ================= -->
-  <div class="visual-side">
-    <div class="image-wrapper">
-      <img src="/cocineras.jpg" alt="Personal de cocina SIRAE" class="chef-image" />
-      <div class="image-overlay-fade"></div>
+  <div class="w-full lg:w-[53%] h-64 sm:h-80 md:h-96 lg:h-screen relative overflow-hidden bg-white shrink-0">
+    <div class="w-full h-full relative">
+      <img 
+        src="/cocineras.jpg" 
+        alt="Personal de cocina SIRAE" 
+        class="w-full h-full object-cover object-center block"
+      />
+      <!-- Difuminado suave hacia el blanco -->
+      <div class="absolute inset-y-0 right-0 w-32 bg-gradient-to-r from-transparent via-white/50 to-white pointer-events-none hidden lg:block"></div>
+      <div class="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white to-transparent pointer-events-none lg:hidden"></div>
     </div>
 
     <!-- Acentos diagonales superiores (amarillo y verde) -->
-    <div class="diagonal-accents top-accents" aria-hidden="true">
-      <div class="accent-stripe stripe-yellow"></div>
-      <div class="accent-stripe stripe-green"></div>
+    <div class="absolute -top-5 right-12 hidden lg:flex gap-3 pointer-events-none z-10" aria-hidden="true">
+      <div class="w-4 h-32 bg-[#fab005] -skew-x-[28deg] rounded-xs shadow-sm"></div>
+      <div class="w-4 h-32 bg-[#0b6638] -skew-x-[28deg] rounded-xs shadow-sm"></div>
     </div>
 
     <!-- Acentos diagonales inferiores (amarillo y verde) -->
-    <div class="diagonal-accents bottom-accents" aria-hidden="true">
-      <div class="accent-stripe stripe-yellow"></div>
-      <div class="accent-stripe stripe-green"></div>
+    <div class="absolute -bottom-5 right-12 hidden lg:flex gap-3 pointer-events-none z-10" aria-hidden="true">
+      <div class="w-4 h-32 bg-[#fab005] -skew-x-[28deg] rounded-xs shadow-sm"></div>
+      <div class="w-4 h-32 bg-[#0b6638] -skew-x-[28deg] rounded-xs shadow-sm"></div>
     </div>
   </div>
 
   <!-- ================= LADO DERECHO: FORMULARIO Y CIRCUITOS TECNOLÓGICOS ================= -->
-  <div class="form-side">
+  <div class="w-full lg:w-[47%] min-h-[calc(100vh-16rem)] lg:min-h-screen flex items-center justify-center p-6 sm:p-10 lg:p-12 relative bg-white">
 
     <!-- Circuito tecnológico superior derecho -->
-    <div class="circuit-decoration circuit-top" aria-hidden="true">
-      <svg viewBox="0 0 320 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <div class="absolute top-0 right-0 w-56 sm:w-72 lg:w-80 max-w-[45%] pointer-events-none z-0" aria-hidden="true">
+      <svg viewBox="0 0 320 220" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-auto block">
         <!-- Pistas verdes -->
         <path d="M320 30 H220 L195 5 M195 5 H140 L120 25 H80" stroke="#0b6638" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
         <circle cx="80" cy="25" r="4.5" fill="#0b6638" />
@@ -45,8 +51,8 @@
     </div>
 
     <!-- Circuito tecnológico inferior derecho -->
-    <div class="circuit-decoration circuit-bottom" aria-hidden="true">
-      <svg viewBox="0 0 320 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <div class="absolute bottom-0 right-0 w-56 sm:w-72 lg:w-80 max-w-[45%] pointer-events-none z-0" aria-hidden="true">
+      <svg viewBox="0 0 320 220" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-auto block">
         <!-- Pistas verdes -->
         <path d="M320 160 H260 L240 140 H180 L160 160 H110" stroke="#0b6638" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
         <circle cx="110" cy="160" r="4.5" fill="#0b6638" />
@@ -66,20 +72,20 @@
     </div>
 
     <!-- Contenido central del formulario -->
-    <div class="form-container">
+    <div class="w-full max-w-[420px] mx-auto flex flex-col items-center relative z-10 py-6">
       
-      <!-- LOGO OFICIAL SIRAE -->
-      <div class="logo-box">
-        <img src="/sirae-logo.png" alt="SIRAE" class="sirae-logo" />
+      <!-- LOGO SIRAE OFICIAL DE LA IMAGEN -->
+      <div class="mb-10 sm:mb-12 flex justify-center w-full">
+        <img src="/sirae-logo.png" alt="SIRAE" class="w-56 sm:w-64 max-w-full h-auto object-contain block" />
       </div>
 
       <!-- FORMULARIO REACTIVO -->
-      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="w-full flex flex-col gap-7">
         
         <!-- CAMPO: CORREO ELECTRÓNICO -->
-        <div class="field-container">
-          <div class="input-row">
-            <span class="icon-indicator" aria-hidden="true">
+        <div class="flex flex-col w-full group">
+          <div class="flex items-center gap-3.5 pb-2">
+            <span class="text-[#0b6638] shrink-0" aria-hidden="true">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0b6638" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="2" y="4" width="20" height="16" rx="2"></rect>
                 <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
@@ -91,19 +97,19 @@
               formControlName="correo"
               placeholder="Correo electrónico"
               autocomplete="email"
-              class="minimal-input"
+              class="w-full bg-transparent border-none outline-none text-slate-800 text-base placeholder:text-[#5d6e64] placeholder:font-medium p-0 focus:ring-0 focus:outline-none"
             />
           </div>
-          <div class="green-underline"></div>
-          <span class="field-error" *ngIf="correo?.invalid && (correo?.dirty || correo?.touched)">
+          <div class="w-full h-[2px] bg-[#0b6638] rounded-xs transition-all group-focus-within:h-[2.5px] group-focus-within:bg-[#084b29]"></div>
+          <span class="text-xs text-red-600 font-medium mt-1.5" *ngIf="correo?.invalid && (correo?.dirty || correo?.touched)">
             Ingresa un correo electrónico válido
           </span>
         </div>
 
         <!-- CAMPO: CONTRASEÑA -->
-        <div class="field-container">
-          <div class="input-row">
-            <span class="icon-indicator" aria-hidden="true">
+        <div class="flex flex-col w-full group">
+          <div class="flex items-center gap-3.5 pb-2">
+            <span class="text-[#0b6638] shrink-0" aria-hidden="true">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0b6638" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                 <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
@@ -116,11 +122,11 @@
               formControlName="clave"
               placeholder="Contraseña"
               autocomplete="current-password"
-              class="minimal-input"
+              class="w-full bg-transparent border-none outline-none text-slate-800 text-base placeholder:text-[#5d6e64] placeholder:font-medium p-0 focus:ring-0 focus:outline-none"
             />
             <button 
               type="button"
-              class="toggle-visibility-btn"
+              class="text-[#0b6638] hover:opacity-80 transition cursor-pointer p-0 bg-transparent border-none shrink-0"
               (click)="alternarClave()"
               tabindex="-1"
               aria-label="Mostrar u ocultar contraseña"
@@ -137,32 +143,41 @@
               </svg>
             </button>
           </div>
-          <div class="green-underline"></div>
-          <span class="field-error" *ngIf="clave?.invalid && (clave?.dirty || clave?.touched)">
+          <div class="w-full h-[2px] bg-[#0b6638] rounded-xs transition-all group-focus-within:h-[2.5px] group-focus-within:bg-[#084b29]"></div>
+          <span class="text-xs text-red-600 font-medium mt-1.5" *ngIf="clave?.invalid && (clave?.dirty || clave?.touched)">
             Mínimo 6 caracteres
           </span>
         </div>
 
         <!-- ¿OLVIDASTE TU CONTRASEÑA? -->
-        <div class="forgot-wrapper">
-          <a href="javascript:void(0)" class="forgot-link">¿Olvidaste tu contraseña?</a>
+        <div class="flex justify-end -mt-3">
+          <a 
+            href="#" 
+            class="text-sm font-semibold text-[#fab005] hover:underline transition cursor-pointer"
+          >
+            ¿Olvidaste tu contraseña?
+          </a>
         </div>
 
         <!-- ALERTA DE ERROR GENERAL -->
-        <div class="alert-box" *ngIf="errorMensaje">
+        <div class="bg-red-50 border border-red-200 text-red-700 text-xs sm:text-sm font-medium p-3 rounded-xl text-center" *ngIf="errorMensaje">
           {{ errorMensaje }}
         </div>
 
         <!-- BOTÓN PILL DE INICIAR SESIÓN -->
-        <button type="submit" class="submit-pill-btn" [disabled]="cargando">
-          <span *ngIf="!cargando" class="btn-inner">
-            <span class="btn-text">Iniciar sesión</span>
-            <svg class="arrow-svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+        <button 
+          type="submit" 
+          class="w-full h-[52px] bg-[#fab005] hover:bg-[#f3a800] text-slate-900 font-bold text-base sm:text-lg rounded-full flex items-center justify-center gap-2.5 shadow-[0_4px_14px_rgba(250,176,5,0.35)] hover:shadow-[0_6px_18px_rgba(250,176,5,0.45)] transition duration-200 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed group"
+          [disabled]="cargando"
+        >
+          <span *ngIf="!cargando" class="flex items-center justify-center gap-2.5">
+            <span>Iniciar sesión</span>
+            <svg class="transition-transform duration-200 group-hover:translate-x-1" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
               <line x1="4" y1="12" x2="19" y2="12"></line>
               <polyline points="13 6 19 12 13 18"></polyline>
             </svg>
           </span>
-          <span *ngIf="cargando" class="loading-state">Iniciando sesión...</span>
+          <span *ngIf="cargando" class="font-semibold text-base text-slate-900">Iniciando sesión...</span>
         </button>
 
       </form>
