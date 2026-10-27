@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
+import { Store } from '@ngrx/store';
+import { login as loginAction } from '../store/action';
 
 @Component({
   selector: 'app-login',
@@ -21,6 +23,7 @@ export class LoginComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private cdr = inject(ChangeDetectorRef);
+  private store = inject(Store);
 
   loginForm!: FormGroup;
   cargando: boolean = false;
@@ -79,6 +82,18 @@ export class LoginComponent implements OnInit {
         }
 
         this.authService.guardarSesion(response);
+
+        // Guardar sesión en el store de NgRx (mismo patrón que proyecto ngrx)
+        this.store.dispatch(loginAction({
+          username: response.usuario?.correo || credenciales.correo,
+          token: response.access || '',
+          rol: response.usuario?.rol || '',
+          nombre: `${response.usuario?.nombre || ''} ${response.usuario?.apellido || ''}`.trim(),
+          id_usuario: response.usuario?.id_usuario || 0,
+          institucion: response.usuario?.institucion_nombre || response.usuario?.institucion || '',
+          mensaje: 'Inicio de sesión exitoso'
+        }));
+
         this.cargando = false;
         this.cdr.detectChanges();
 

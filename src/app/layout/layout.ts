@@ -11,6 +11,9 @@ import { filter, timeout, catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { Store } from '@ngrx/store';
+import { logout as logoutAction } from '../store/action';
+import { AuthState } from '../store/reducer';
 import { NotificacionService } from '../notificaciones/notificacion.service';
 import { Notificacion } from '../notificaciones/notificacion.model';
 import { AuthService, InstitucionAsignada } from '../services/auth.service';
@@ -84,7 +87,8 @@ export class LayoutComponent implements OnInit {
     private facturasService: FacturasCompraService,
     private http: HttpClient,
     private cdr: ChangeDetectorRef,
-    private router: Router
+    private router: Router,
+    private store: Store<{ auth: AuthState }>
   ) {
     // Escuchar los cambios de ruta para actualizar el título automáticamente
     this.router.events.pipe(
@@ -95,6 +99,13 @@ export class LayoutComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    // Lectura del estado global NgRx (patrón igual a la referencia ngrx)
+    this.store.select(estado => estado.auth).subscribe(estado => {
+      if (estado?.username) {
+        console.log('[NgRx] Sesión activa:', estado.username, estado.rol);
+      }
+    });
+
     const usuario = this.authService.obtenerUsuario();
 
     if (usuario) {
@@ -377,6 +388,7 @@ export class LayoutComponent implements OnInit {
   }
 
   cerrarSesion(): void {
+    this.store.dispatch(logoutAction());
     this.authService.cerrarSesion();
   }
 }
