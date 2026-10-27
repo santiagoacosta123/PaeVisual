@@ -51,59 +51,6 @@
       </div>
     </div>
 
-    <!-- FILA DE 4 TARJETAS MÉTRICAS (KPIs) - LIMPIAS Y SIN BORDES INFERIORES DE COLORES -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-      
-      <!-- KPI 1: Contratos activos -->
-      <div class="superadmin-kpi-card">
-        <div class="superadmin-kpi-top">
-          <div class="superadmin-kpi-icon-wrap">
-            <span class="material-symbols-outlined text-[20px]">description</span>
-          </div>
-          <span class="superadmin-pill-green">+8%</span>
-        </div>
-        <div class="superadmin-kpi-value">{{ totalContratosActivos }}</div>
-        <div class="superadmin-kpi-label">Contratos activos</div>
-      </div>
-
-      <!-- KPI 2: Facturas pendientes -->
-      <div class="superadmin-kpi-card">
-        <div class="superadmin-kpi-top">
-          <div class="superadmin-kpi-icon-wrap">
-            <span class="material-symbols-outlined text-[20px]">receipt_long</span>
-          </div>
-          <span class="superadmin-pill-red">3 por vencer</span>
-        </div>
-        <div class="superadmin-kpi-value">{{ totalFacturasPendientes }}</div>
-        <div class="superadmin-kpi-label">Facturas pendientes</div>
-      </div>
-
-      <!-- KPI 3: Unidades en stock global -->
-      <div class="superadmin-kpi-card">
-        <div class="superadmin-kpi-top">
-          <div class="superadmin-kpi-icon-wrap">
-            <span class="material-symbols-outlined text-[20px]">inventory_2</span>
-          </div>
-          <span class="superadmin-pill-neutral">estable</span>
-        </div>
-        <div class="superadmin-kpi-value">{{ totalUnidadesStock }}</div>
-        <div class="superadmin-kpi-label">Unidades en stock global</div>
-      </div>
-
-      <!-- KPI 4: Usuarios registrados -->
-      <div class="superadmin-kpi-card">
-        <div class="superadmin-kpi-top">
-          <div class="superadmin-kpi-icon-wrap">
-            <span class="material-symbols-outlined text-[20px]">group</span>
-          </div>
-          <span class="superadmin-pill-green">+2 nuevos</span>
-        </div>
-        <div class="superadmin-kpi-value">{{ totalUsuariosRegistrados }}</div>
-        <div class="superadmin-kpi-label">Usuarios registrados</div>
-      </div>
-
-    </div>
-
   </ng-container>
 
 
