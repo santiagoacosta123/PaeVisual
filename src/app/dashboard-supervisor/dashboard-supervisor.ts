@@ -2,6 +2,8 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
+import { of } from 'rxjs';
+import { timeout, catchError } from 'rxjs/operators';
 import { AuthService, InstitucionAsignada } from '../core/auth/auth.service';
 import { environment } from '../../environments/environment';
 
@@ -53,38 +55,39 @@ export class DashboardSupervisor implements OnInit {
 
   cargarInstitucionesServidor(): void {
     this.errorMensaje = '';
-    this.http.get<any>(`${environment.apiUrl}/instituciones/`).subscribe({
+    this.http.get<any>(`${environment.apiUrl}/instituciones/`).pipe(
+      timeout(6000),
+      catchError(err => {
+        console.warn('Timeout o error al sincronizar instituciones:', err);
+        return of([]);
+      })
+    ).subscribe({
       next: (resp) => {
         const lista = Array.isArray(resp) ? resp : (resp?.results ?? []);
-        this.instituciones = lista.map((item: any) => ({
-          id_institucion: item.id_institucion ?? item.id,
-          nombre_institucion: item.nombre_institucion ?? item.nombre,
-          nit: item.nit ?? '',
-          sedes: Array.isArray(item.sedes) ? item.sedes : [],
-          representante_legal: item.representante_legal,
-          telefono: item.telefono,
-          correo_contacto: item.correo_contacto,
-          estado: item.estado ?? 'ACTIVO',
-          administrador_asignado: item.administrador_asignado,
-        }));
+        if (lista.length > 0) {
+          this.instituciones = lista.map((item: any) => ({
+            id_institucion: item.id_institucion ?? item.id,
+            nombre_institucion: item.nombre_institucion ?? item.nombre,
+            nit: item.nit ?? '',
+            sedes: Array.isArray(item.sedes) ? item.sedes : [],
+            representante_legal: item.representante_legal,
+            telefono: item.telefono,
+            correo_contacto: item.correo_contacto,
+            estado: item.estado ?? 'ACTIVO',
+            administrador_asignado: item.administrador_asignado,
+          }));
 
-        // Si ya había una activa guardada y sigue en la lista, mantenerla;
-        // pero NO forzar selección automática para que el usuario pueda elegir primero
-        const activaGuardada = this.authService.obtenerInstitucionActiva();
-        if (activaGuardada) {
-          const encontrada = this.instituciones.find(i => i.id_institucion === activaGuardada.id_institucion);
-          if (encontrada) {
-            this.institucionActiva = encontrada;
+          const activaGuardada = this.authService.obtenerInstitucionActiva();
+          if (activaGuardada) {
+            const encontrada = this.instituciones.find(i => i.id_institucion === activaGuardada.id_institucion);
+            if (encontrada) {
+              this.institucionActiva = encontrada;
+            }
           }
         }
-
         this.cargando = false;
       },
-      error: (err) => {
-        console.error('Error al cargar instituciones del supervisor:', err);
-        if (this.instituciones.length === 0) {
-          this.errorMensaje = 'No se pudieron sincronizar las instituciones con el servidor. Revisa tu conexión.';
-        }
+      error: () => {
         this.cargando = false;
       }
     });

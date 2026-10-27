@@ -1,125 +1,153 @@
 <style>
-/* Estilos de Instituciones: misma línea visual (naranja SIRAE) del resto de pantallas */
-.fx-panel { position: relative; background: #fff; border-radius: 28px; border: 1px solid #F1F5F9; box-shadow: 0 10px 30px -18px rgba(15, 23, 42, .18); }
+/* Estilos de Instituciones y Sedes: misma línea visual SIRAE */
+.fx-panel { position: relative; background: #fff; border-radius: 24px; border: 1px solid #F1F5F9; box-shadow: 0 10px 30px -18px rgba(15, 23, 42, .18); }
 .ico-naranja { background: linear-gradient(135deg, #FFA928 0%, #FF8A00 100%); color: #fff; }
 .ico-suave { background: #FFF1DB; color: #FF8A00; }
 .pill-on { background: linear-gradient(135deg, #FFA928, #FF8A00); color: #fff; box-shadow: 0 6px 14px -6px rgba(255, 138, 0, .7); }
 .fx-input:focus { border-color: #FF9500; box-shadow: 0 0 0 3px rgba(255, 149, 0, .18); }
 
-/* Tarjeta de institución */
-.inst-card { background: #fff; border-radius: 28px; border: 1px solid #F1F5F9; padding: 22px; box-shadow: 0 10px 26px -16px rgba(15, 23, 42, .18); transition: transform .3s ease, box-shadow .3s ease; }
-.inst-card:hover { transform: translateY(-4px); box-shadow: 0 20px 36px -16px rgba(255, 138, 0, .35); }
+/* Tarjeta de Sede */
+.sede-card { background: #fff; border-radius: 24px; border: 1px solid #F1F5F9; padding: 22px; box-shadow: 0 8px 24px -14px rgba(15, 23, 42, .12); transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease; }
+.sede-card:hover { transform: translateY(-4px); box-shadow: 0 18px 34px -14px rgba(255, 138, 0, .28); border-color: #FED7AA; }
 
 /* Tarjeta de ingrediente */
-.prod-card { position: relative; background: #fff; border-radius: 28px; padding: 64px 16px 16px; text-align: center; box-shadow: 0 10px 26px -14px rgba(15, 23, 42, .15); border: 1px solid #F8FAFC; transition: transform .3s ease, box-shadow .3s ease; }
-.prod-card:hover { transform: translateY(-6px); box-shadow: 0 20px 36px -14px rgba(255, 138, 0, .35); }
-.prod-img { position: absolute; top: -44px; left: 50%; transform: translateX(-50%); width: 100px; height: 100px; border-radius: 9999px; display: flex; align-items: center; justify-content: center; font-size: 50px; line-height: 1; overflow: hidden; border: 6px solid #fff; background: radial-gradient(circle at 30% 25%, #fff, #FFEFD6 72%); box-shadow: 0 12px 24px -10px rgba(255, 138, 0, .45); transition: transform .45s cubic-bezier(.2, .9, .3, 1.2); }
-.prod-card:hover .prod-img { transform: translateX(-50%) scale(1.08); }
+.prod-card { position: relative; background: #fff; border-radius: 24px; padding: 60px 16px 16px; text-align: center; box-shadow: 0 8px 24px -14px rgba(15, 23, 42, .12); border: 1px solid #F8FAFC; transition: transform .25s ease, box-shadow .25s ease; }
+.prod-card:hover { transform: translateY(-5px); box-shadow: 0 18px 32px -12px rgba(255, 138, 0, .28); }
+.prod-img { position: absolute; top: -40px; left: 50%; transform: translateX(-50%); width: 90px; height: 90px; border-radius: 9999px; display: flex; align-items: center; justify-content: center; font-size: 46px; line-height: 1; overflow: hidden; border: 5px solid #fff; background: radial-gradient(circle at 30% 25%, #fff, #FFEFD6 72%); box-shadow: 0 10px 22px -8px rgba(255, 138, 0, .4); transition: transform .35s cubic-bezier(.2, .9, .3, 1.2); }
+.prod-card:hover .prod-img { transform: translateX(-50%) scale(1.06); }
 .prod-emoji { display: inline-block; animation: fxFloat 4s ease-in-out infinite; }
 
 /* Animaciones */
-@keyframes fxUp { from { opacity: 0; transform: translateY(16px) scale(.98); } to { opacity: 1; transform: none; } }
-@keyframes fxFloat { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-5px) rotate(4deg); } }
-.fx-up { animation: fxUp .5s cubic-bezier(.2, .8, .2, 1) both; }
+@keyframes fxUp { from { opacity: 0; transform: translateY(14px) scale(.99); } to { opacity: 1; transform: none; } }
+@keyframes fxFloat { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-4px) rotate(3deg); } }
+.fx-up { animation: fxUp .4s cubic-bezier(.2, .8, .2, 1) both; }
 </style>
 
 <div class="flex w-full flex-col gap-6" style="font-family: 'Roboto', sans-serif;">
 
   <!-- ===================================================== -->
-  <!--  LISTA: SEDES ASIGNADAS                                 -->
+  <!--  LISTA: SEDES DE LA INSTITUCIÓN SELECCIONADA         -->
   <!-- ===================================================== -->
   <section *ngIf="!seleccionada" class="w-full">
 
-    <!-- Encabezado -->
+    <!-- Encabezado con Institución Activa -->
     <header class="mb-6 flex flex-col justify-between gap-4 rounded-3xl border border-slate-100 bg-white p-5 shadow-sm sm:flex-row sm:items-center">
       <div class="flex items-center gap-3">
         <div class="ico-naranja flex h-12 w-12 items-center justify-center rounded-2xl shadow-md">
-          <span class="material-symbols-outlined text-[26px]">school</span>
+          <span class="material-symbols-outlined text-[26px]">apartment</span>
         </div>
         <div>
           <h1 class="m-0 text-xl font-black tracking-tight text-slate-900">Mis sedes</h1>
-          <p class="m-0 text-xs font-medium text-slate-500">Estas son las sedes que tienes asignadas.</p>
+          <p class="m-0 text-xs font-medium text-slate-500">
+            <span *ngIf="institucionActiva">
+              Sedes asignadas a <strong>{{ institucionActiva.nombre_institucion }}</strong>
+            </span>
+            <span *ngIf="!institucionActiva">
+              Sedes educativas asignadas para supervisión
+            </span>
+          </p>
         </div>
       </div>
-      <button type="button" (click)="cargar()" title="Actualizar lista" aria-label="Actualizar lista"
-        class="flex h-10 w-10 cursor-pointer items-center justify-center self-end rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:bg-orange-50 sm:self-auto">
-        <span class="material-symbols-outlined text-[20px]" [class.animate-spin]="cargando">refresh</span>
-      </button>
+
+      <div class="flex items-center gap-2 self-end sm:self-auto">
+        <!-- Indicador de institución actual -->
+        <div *ngIf="institucionActiva" class="flex items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50/80 px-3 py-1.5 text-xs">
+          <span class="material-symbols-outlined text-[17px] text-amber-600">school</span>
+          <span class="font-bold text-amber-900 truncate max-w-[200px]" [title]="institucionActiva.nombre_institucion">
+            {{ institucionActiva.nombre_institucion }}
+          </span>
+          <button type="button" (click)="irACambiarInstitucion()"
+            class="ml-1 cursor-pointer rounded-lg bg-amber-200/70 px-2 py-0.5 text-[11px] font-bold text-amber-900 hover:bg-amber-300 transition">
+            Cambiar
+          </button>
+        </div>
+
+        <button type="button" (click)="sincronizarServidor()" title="Actualizar lista" aria-label="Actualizar lista"
+          class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:bg-orange-50">
+          <span class="material-symbols-outlined text-[20px]" [class.animate-spin]="cargando">refresh</span>
+        </button>
+      </div>
     </header>
 
-    <!-- Aviso cuando se usan datos de ejemplo -->
-    <div *ngIf="avisoRespaldo" role="alert"
-      class="mb-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs font-semibold text-amber-800">
-      {{ avisoRespaldo }}
-      <button type="button" (click)="cargar()" class="ml-2 cursor-pointer underline">Reintentar</button>
-    </div>
-
     <!-- Buscador y filtro -->
-    <div class="mb-5 flex flex-col gap-3 sm:flex-row">
-      <div class="relative w-full sm:w-96">
-        <span class="material-symbols-outlined pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[19px] text-slate-400">search</span>
-        <input type="text" [(ngModel)]="textoBusqueda" placeholder="Buscar sede o administrador..." autocomplete="off"
-          aria-label="Buscar sede o administrador"
-          class="fx-input w-full rounded-full border border-slate-200 bg-white py-2.5 pl-11 pr-4 text-xs font-medium text-slate-800 outline-none" />
+    <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex flex-1 flex-col gap-3 sm:flex-row">
+        <div class="relative w-full sm:w-96">
+          <span class="material-symbols-outlined pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[19px] text-slate-400">search</span>
+          <input type="text" [(ngModel)]="textoBusqueda" placeholder="Buscar sede por nombre, código DANE o dirección..." autocomplete="off"
+            aria-label="Buscar sede"
+            class="fx-input w-full rounded-full border border-slate-200 bg-white py-2.5 pl-11 pr-4 text-xs font-medium text-slate-800 outline-none" />
+        </div>
+        <select [(ngModel)]="filtroEstado" aria-label="Filtrar por estado"
+          class="fx-input cursor-pointer rounded-full border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-700 outline-none">
+          <option *ngFor="let e of opcionesEstado" [ngValue]="e">{{ e === 'Todos' ? 'Todos los estados' : (e === 'ACTIVO' ? 'Activas' : 'Inactivas') }}</option>
+        </select>
       </div>
-      <select [(ngModel)]="filtroEstado" aria-label="Filtrar por estado"
-        class="fx-input cursor-pointer rounded-full border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-700 outline-none">
-        <option *ngFor="let e of opcionesEstado" [ngValue]="e">{{ e === 'Todos' ? 'Todos los estados' : e }}</option>
-      </select>
+
+      <span class="text-xs font-bold text-slate-400">
+        {{ filtradas.length }} {{ filtradas.length === 1 ? 'sede disponible' : 'sedes disponibles' }}
+      </span>
     </div>
 
-    <p *ngIf="cargando && instituciones.length === 0" class="py-10 text-center text-xs font-semibold text-slate-500" role="status">
-      Cargando tus sedes...
-    </p>
+    <!-- Indicador de carga cuando no hay nada aún -->
+    <div *ngIf="cargando && sedes.length === 0" class="py-12 text-center text-xs font-semibold text-slate-500">
+      <div class="inline-block h-6 w-6 animate-spin rounded-full border-2 border-amber-500 border-t-transparent"></div>
+      <p class="mt-2 text-xs text-slate-400">Cargando tus sedes...</p>
+    </div>
 
-    <!-- Tarjetas -->
-    <div class="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-      <article *ngFor="let inst of filtradas; trackBy: trackInstitucion" class="inst-card fx-up">
-        <div class="flex items-start justify-between">
-          <div class="ico-suave flex h-12 w-12 items-center justify-center rounded-2xl">
-            <span class="material-symbols-outlined text-[24px]">school</span>
+    <!-- Cuadrícula de Tarjetas de Sedes -->
+    <div *ngIf="filtradas.length > 0" class="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+      <article *ngFor="let sede of filtradas; trackBy: trackSede" class="sede-card fx-up flex flex-col justify-between">
+        <div>
+          <!-- Cabecera de la tarjeta -->
+          <div class="flex items-start justify-between">
+            <div class="ico-suave flex h-12 w-12 items-center justify-center rounded-2xl shadow-sm">
+              <span class="material-symbols-outlined text-[24px]">domain</span>
+            </div>
+            <span [ngClass]="claseEstado(sede.estado)" class="rounded-full border px-2.5 py-0.5 text-[11px] font-bold">
+              {{ sede.estado || 'ACTIVO' }}
+            </span>
           </div>
-          <span [ngClass]="claseEstado(inst.estado)" class="rounded-full border px-2.5 py-0.5 text-[11px] font-bold">{{ inst.estado }}</span>
+
+          <!-- Nombre de la sede -->
+          <h3 class="m-0 mt-4 text-lg font-black leading-tight text-slate-900">{{ sede.nombre_sede }}</h3>
+
+          <!-- Institución a la que pertenece -->
+          <p class="m-0 mt-1 flex items-center gap-1.5 text-xs font-medium text-slate-500">
+            <span class="material-symbols-outlined text-[15px] text-amber-500">school</span>
+            <span class="truncate">{{ sede.nombre_institucion || 'Institución educativa' }}</span>
+          </p>
+
+          <!-- Datos de la sede -->
+          <div class="mt-4 space-y-2 rounded-2xl bg-slate-50 p-3.5 text-xs">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-bold text-slate-400">Código DANE:</span>
+              <span class="font-mono font-bold text-slate-800">{{ sede.codigo_dane || '—' }}</span>
+            </div>
+            <div class="flex items-start justify-between gap-2">
+              <span class="text-[11px] font-bold text-slate-400">Dirección:</span>
+              <span class="font-medium text-slate-700 text-right truncate max-w-[170px]" [title]="sede.direccion">
+                {{ sede.direccion || '—' }}
+              </span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-bold text-slate-400">Teléfono:</span>
+              <span class="font-medium text-slate-700">{{ sede.telefono || '—' }}</span>
+            </div>
+          </div>
         </div>
 
-        <h3 class="m-0 mt-4 text-lg font-black leading-tight text-slate-900">{{ inst.nombre }}</h3>
-        <p *ngIf="inst.nit" class="m-0 mt-0.5 text-[11px] font-semibold text-slate-400">NIT: {{ inst.nit }}</p>
-        <p class="m-0 mt-1 text-xs font-medium text-slate-500">Administrador: {{ inst.administrador || '—' }}</p>
-
-        <!-- Sedes asociadas a la institución -->
-        <div *ngIf="inst.sedes && inst.sedes.length > 0" class="mt-3 flex flex-wrap gap-1">
-          <span *ngFor="let s of inst.sedes" class="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700">
-            <span class="material-symbols-outlined text-[13px] text-slate-400">domain</span>
-            {{ s.nombre_sede }}
-          </span>
-        </div>
-
-        <div class="mt-4 grid grid-cols-3 divide-x divide-slate-100 border-y border-slate-100 py-3 text-left">
-          <div class="pr-2">
-            <span class="block text-[10px] font-bold uppercase tracking-wide text-slate-400">Matriculados</span>
-            <span class="text-base font-black text-slate-900">{{ inst.matriculados }}</span>
-          </div>
-          <div class="px-3">
-            <span class="block text-[10px] font-bold uppercase tracking-wide text-slate-400">Asistencia prom.</span>
-            <span class="text-base font-black text-slate-900">{{ inst.asistenciaPromedio }}%</span>
-          </div>
-          <div class="pl-3">
-            <span class="block text-[10px] font-bold uppercase tracking-wide text-slate-400">Inventario</span>
-            <span class="text-base font-black text-slate-900">{{ inst.diasInventario }} días</span>
-          </div>
-        </div>
-
-        <div class="mt-4 flex gap-2">
-          <button type="button" (click)="seleccionarParaTrabajar(inst)"
-            [ngClass]="inst.esActiva ? 'bg-amber-500 text-white border-amber-600 shadow-sm' : 'bg-amber-50 text-amber-900 border-amber-200 hover:bg-amber-100'"
-            class="flex-1 flex cursor-pointer items-center justify-center gap-1.5 rounded-full border px-3 py-2 text-xs font-bold transition">
-            <span class="material-symbols-outlined text-[16px]">{{ inst.esActiva ? 'check_circle' : 'work' }}</span>
-            {{ inst.esActiva ? 'Institución Activa' : 'Trabajar con esta' }}
-          </button>
-          <button type="button" (click)="abrir(inst)"
-            class="flex cursor-pointer items-center justify-center gap-1.5 rounded-full border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-50">
+        <!-- Botones de Acción -->
+        <div class="mt-5 flex gap-2 border-t border-slate-100 pt-4">
+          <button type="button" (click)="abrir(sede)"
+            class="flex-1 flex cursor-pointer items-center justify-center gap-1.5 rounded-full border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-50 shadow-sm">
             <span class="material-symbols-outlined text-[16px]">visibility</span>
-            Ver
+            Ver sede
+          </button>
+          <button type="button" (click)="irAEntregas(sede)"
+            class="flex cursor-pointer items-center justify-center gap-1.5 rounded-full border border-amber-300 bg-amber-50 px-3.5 py-2 text-xs font-bold text-amber-900 transition hover:bg-amber-100 shadow-sm">
+            <span class="material-symbols-outlined text-[16px]">local_shipping</span>
+            Entregas
           </button>
         </div>
       </article>
@@ -127,95 +155,99 @@
 
     <!-- Sin resultados -->
     <div *ngIf="!cargando && filtradas.length === 0" class="flex flex-col items-center gap-3 rounded-3xl border border-slate-100 bg-white py-14 text-center">
-      <span class="material-symbols-outlined text-[34px] text-slate-300">search_off</span>
+      <span class="material-symbols-outlined text-[36px] text-slate-300">search_off</span>
       <p class="m-0 text-xs font-bold text-slate-700">
-        {{ instituciones.length === 0 ? 'Aún no tienes sedes asignadas.' : 'Ninguna sede coincide con tu búsqueda.' }}
+        <span *ngIf="!institucionActiva">
+          No has seleccionado ninguna institución educativa.
+        </span>
+        <span *ngIf="institucionActiva && sedes.length === 0">
+          No se encontraron sedes asignadas a esta institución.
+        </span>
+        <span *ngIf="sedes.length > 0">
+          Ninguna sede coincide con tu búsqueda.
+        </span>
       </p>
-      <button *ngIf="hayFiltros" type="button" (click)="limpiarFiltros()"
-        class="cursor-pointer rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50">
-        Limpiar filtros
-      </button>
+      <div class="flex gap-2">
+        <button *ngIf="!institucionActiva" type="button" (click)="irACambiarInstitucion()"
+          class="cursor-pointer rounded-full bg-amber-500 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-amber-600 transition">
+          Seleccionar Institución
+        </button>
+        <button *ngIf="hayFiltros" type="button" (click)="limpiarFiltros()"
+          class="cursor-pointer rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition">
+          Limpiar filtros
+        </button>
+      </div>
     </div>
   </section>
 
   <!-- ===================================================== -->
   <!--  DETALLE DE UNA SEDE (SOLO LECTURA)                     -->
   <!-- ===================================================== -->
-  <section *ngIf="seleccionada as inst" class="w-full">
-
-    <!-- Entregas registradas: cada producto una sola vez, con su cantidad total y la fecha de registro. -->
-    <ng-template #listaEntregas let-lista>
-      <p *ngIf="cargandoEntregas" class="m-0 py-6 text-center text-xs font-semibold text-slate-500" role="status">Cargando entregas...</p>
-
-      <div *ngIf="errorEntregas" class="rounded-2xl border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-700" role="alert">
-        {{ errorEntregas }}
-        <button *ngIf="seleccionada" type="button" (click)="cargarEntregas(seleccionada)" class="ml-2 cursor-pointer underline">Reintentar</button>
-      </div>
-
-      <div *ngIf="!cargandoEntregas && !errorEntregas && entregasUnidas.length === 0"
-        class="rounded-2xl border border-dashed border-slate-200 p-5 text-center text-xs text-slate-500">
-        Aún no hay entregas registradas para esta sede.
-      </div>
-
-      <div *ngIf="lista.length > 0" class="max-h-[420px] space-y-3 overflow-y-auto pr-1">
-        <div *ngFor="let e of lista; trackBy: trackEntrega" class="rounded-2xl border border-slate-100 bg-white p-3">
-          <div class="flex items-center justify-between gap-2">
-            <div class="flex items-center gap-2.5">
-              <div class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-orange-50 text-xl">
-                <img *ngIf="mostrarImagen(e.ingrediente)" [src]="urlImagen(e.ingrediente)" [alt]="e.ingrediente" loading="lazy"
-                  (error)="marcarFallo(e.ingrediente)" class="h-full w-full rounded-full object-cover" />
-                <span *ngIf="!mostrarImagen(e.ingrediente)">{{ e.emoji }}</span>
-              </div>
-              <div>
-                <h5 class="m-0 text-xs font-bold text-slate-800">{{ e.ingrediente }}</h5>
-                <p class="m-0 text-[10px] text-slate-400">Registrado: {{ fechaHora(e.fechaRegistro) }}</p>
-              </div>
-            </div>
-            <div class="text-right">
-              <span class="block text-[9px] font-bold uppercase text-slate-400">Cantidad</span>
-              <span class="text-sm font-black text-orange-600">{{ e.cantidad }} {{ e.unidad }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </ng-template>
+  <section *ngIf="seleccionada as sede" class="w-full">
 
     <button type="button" (click)="volver()"
-      class="mb-3 inline-flex cursor-pointer items-center gap-1 text-xs font-bold text-orange-600 hover:text-orange-700">
+      class="mb-4 inline-flex cursor-pointer items-center gap-1.5 text-xs font-bold text-orange-600 hover:text-orange-700 transition">
       <span class="material-symbols-outlined text-[18px]">chevron_left</span>
       Volver a mis sedes
     </button>
 
     <!-- Encabezado del detalle -->
-    <header class="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
+    <header class="mb-5 flex flex-col justify-between gap-4 rounded-3xl border border-slate-100 bg-white p-6 shadow-sm sm:flex-row sm:items-start">
       <div>
-        <h1 class="m-0 text-2xl font-black tracking-tight text-slate-900">{{ inst.nombre }}</h1>
-        <p class="m-0 mt-1 text-xs font-medium text-slate-500">Administrador: {{ inst.administrador || '—' }}</p>
+        <div class="flex items-center gap-2">
+          <h1 class="m-0 text-2xl font-black tracking-tight text-slate-900">{{ sede.nombre_sede }}</h1>
+          <span [ngClass]="claseEstado(sede.estado)" class="rounded-full border px-2.5 py-0.5 text-[11px] font-bold">
+            {{ sede.estado || 'ACTIVO' }}
+          </span>
+        </div>
+        <p class="m-0 mt-1 flex items-center gap-1.5 text-xs font-medium text-slate-500">
+          <span class="material-symbols-outlined text-[16px] text-amber-500">school</span>
+          {{ sede.nombre_institucion }}
+        </p>
+
+        <div class="mt-3 flex flex-wrap gap-2 text-xs">
+          <span *ngIf="sede.codigo_dane" class="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2.5 py-1 text-slate-600 font-medium">
+            <span class="material-symbols-outlined text-[14px]">pin</span> DANE: <strong>{{ sede.codigo_dane }}</strong>
+          </span>
+          <span *ngIf="sede.direccion" class="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2.5 py-1 text-slate-600 font-medium">
+            <span class="material-symbols-outlined text-[14px]">location_on</span> {{ sede.direccion }}
+          </span>
+          <span *ngIf="sede.telefono" class="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2.5 py-1 text-slate-600 font-medium">
+            <span class="material-symbols-outlined text-[14px]">call</span> {{ sede.telefono }}
+          </span>
+        </div>
       </div>
-      <span class="inline-flex items-center gap-1.5 self-start rounded-full border border-purple-200 bg-purple-50 px-3 py-1 text-[11px] font-bold text-purple-700">
-        <span class="material-symbols-outlined text-[15px]">lock</span>
-        Solo lectura
-      </span>
+
+      <div class="flex items-center gap-2">
+        <button type="button" (click)="irAEntregas(sede)"
+          class="flex cursor-pointer items-center gap-1.5 rounded-full bg-amber-500 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-amber-600 transition">
+          <span class="material-symbols-outlined text-[16px]">local_shipping</span>
+          Registrar Entrega
+        </button>
+        <span class="inline-flex items-center gap-1 rounded-full border border-purple-200 bg-purple-50 px-3 py-1.5 text-[11px] font-bold text-purple-700">
+          <span class="material-symbols-outlined text-[15px]">lock</span>
+          Supervisión
+        </span>
+      </div>
     </header>
 
-    <!-- Pestañas (solo Inventario y Entregas) -->
+    <!-- Pestañas (Inventario y Entregas) -->
     <nav class="mb-6 flex gap-1 overflow-x-auto rounded-full border border-slate-200 bg-white p-1 shadow-sm" aria-label="Secciones de la sede">
       <button type="button" *ngFor="let p of pestanas" (click)="cambiarPestana(p.id)"
         [class.pill-on]="pestana === p.id" [class.text-slate-500]="pestana !== p.id"
-        [attr.aria-current]="pestana === p.id ? 'page' : null"
         class="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold transition">
         <span class="material-symbols-outlined text-[16px]">{{ p.icono }}</span>
         {{ p.nombre }}
       </button>
     </nav>
 
-    <!-- ============ INVENTARIO (TARJETAS) ============ -->
+    <!-- ============ INVENTARIO DE LA SEDE ============ -->
     <div *ngIf="pestana === 'inventario'">
       <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <h2 class="m-0 text-lg font-black text-slate-900">Inventario de la sede</h2>
-        <span class="text-[11px] font-semibold text-slate-400">Ingredientes del banco de datos SIRAE · saldos de ejemplo</span>
+        <h2 class="m-0 text-lg font-black text-slate-900">Inventario disponible en sede</h2>
+        <span class="text-[11px] font-semibold text-slate-400">Alimentos e insumos registrados en SIRAE</span>
       </div>
-      <div class="grid grid-cols-1 gap-x-5 gap-y-14 pt-10 sm:grid-cols-2 xl:grid-cols-3">
+      <div class="grid grid-cols-1 gap-x-5 gap-y-12 pt-8 sm:grid-cols-2 xl:grid-cols-3">
         <article *ngFor="let p of inventario; trackBy: trackProducto" class="prod-card fx-up">
           <span [ngClass]="claseEstado(p.estado)" class="absolute right-4 top-4 rounded-full border px-2 py-0.5 text-[10px] font-bold">{{ p.estado }}</span>
           <div class="prod-img">
@@ -243,11 +275,46 @@
       </div>
     </div>
 
-    <!-- ============ ENTREGAS ============ -->
+    <!-- ============ HISTORIAL DE ENTREGAS ============ -->
     <div *ngIf="pestana === 'entregas'" class="fx-panel p-6">
-      <h2 class="m-0 mb-1 text-lg font-black text-slate-900">Historial de entregas</h2>
-      <p class="m-0 mb-4 text-xs font-medium text-slate-500">Productos entregados a esta sede, con su cantidad total.</p>
-      <ng-container *ngTemplateOutlet="listaEntregas; context: { $implicit: entregasUnidas }"></ng-container>
+      <div class="mb-4 flex items-center justify-between">
+        <div>
+          <h2 class="m-0 text-lg font-black text-slate-900">Historial de entregas</h2>
+          <p class="m-0 text-xs font-medium text-slate-500">Alimentos recibidos en {{ sede.nombre_sede }}.</p>
+        </div>
+      </div>
+
+      <p *ngIf="cargandoEntregas" class="m-0 py-6 text-center text-xs font-semibold text-slate-500" role="status">
+        Cargando entregas...
+      </p>
+
+      <div *ngIf="!cargandoEntregas && entregasUnidas.length === 0"
+        class="rounded-2xl border border-dashed border-slate-200 p-8 text-center text-xs text-slate-500">
+        Aún no hay entregas registradas para esta sede.
+      </div>
+
+      <div *ngIf="entregasUnidas.length > 0" class="max-h-[420px] space-y-3 overflow-y-auto pr-1">
+        <div *ngFor="let e of entregasUnidas; trackBy: trackEntrega" class="rounded-2xl border border-slate-100 bg-white p-3 hover:bg-slate-50 transition">
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2.5">
+              <div class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-orange-50 text-xl">
+                <img *ngIf="mostrarImagen(e.ingrediente)" [src]="urlImagen(e.ingrediente)" [alt]="e.ingrediente" loading="lazy"
+                  (error)="marcarFallo(e.ingrediente)" class="h-full w-full rounded-full object-cover" />
+                <span *ngIf="!mostrarImagen(e.ingrediente)">{{ e.emoji }}</span>
+              </div>
+              <div>
+                <h5 class="m-0 text-xs font-bold text-slate-800">{{ e.ingrediente }}</h5>
+                <p class="m-0 text-[10px] text-slate-400">Registrado: {{ fechaHora(e.fechaRegistro) }}</p>
+              </div>
+            </div>
+            <div class="text-right">
+              <span class="block text-[9px] font-bold uppercase text-slate-400">Cantidad</span>
+              <span class="text-sm font-black text-orange-600">{{ e.cantidad }} {{ e.unidad }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
+
 </div>

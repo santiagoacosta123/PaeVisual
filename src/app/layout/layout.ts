@@ -7,7 +7,8 @@ import {
   Router,
   NavigationEnd
 } from '@angular/router';
-import { filter } from 'rxjs/operators';
+import { filter, timeout, catchError } from 'rxjs/operators';
+import { of } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { NotificacionService } from '../notificaciones/notificacion.service';
@@ -141,7 +142,9 @@ export class LayoutComponent implements OnInit {
         this.institucionActiva = inst;
         this.cdr.detectChanges();
       });
-      this.cargarInstitucionesSupervisor();
+      if (this.institucionesSupervisor.length === 0) {
+        this.cargarInstitucionesSupervisor();
+      }
     }
 
     if (this.esSuperAdministrador) {
@@ -262,24 +265,27 @@ export class LayoutComponent implements OnInit {
   }
 
   cargarInstitucionesSupervisor(): void {
-    this.http.get<any>(`${environment.apiUrl}/instituciones/`).subscribe({
+    this.http.get<any>(`${environment.apiUrl}/instituciones/`).pipe(
+      timeout(5000),
+      catchError(() => of([]))
+    ).subscribe({
       next: (resp) => {
         const lista = Array.isArray(resp) ? resp : (resp?.results ?? []);
-        this.institucionesSupervisor = lista.map((item: any) => ({
-          id_institucion: item.id_institucion ?? item.id,
-          nombre_institucion: item.nombre_institucion ?? item.nombre,
-          nit: item.nit ?? '',
-          sedes: item.sedes ?? [],
-          administrador_asignado: item.administrador_asignado,
-        }));
+        if (lista.length > 0) {
+          this.institucionesSupervisor = lista.map((item: any) => ({
+            id_institucion: item.id_institucion ?? item.id,
+            nombre_institucion: item.nombre_institucion ?? item.nombre,
+            nit: item.nit ?? '',
+            sedes: item.sedes ?? [],
+            administrador_asignado: item.administrador_asignado,
+          }));
 
-        const guardada = this.authService.obtenerInstitucionActiva();
-        if (guardada && this.institucionesSupervisor.some(i => i.id_institucion === guardada.id_institucion)) {
-          this.institucionActiva = this.institucionesSupervisor.find(i => i.id_institucion === guardada.id_institucion) || guardada;
-        } else {
-          this.institucionActiva = null;
+          const guardada = this.authService.obtenerInstitucionActiva();
+          if (guardada && this.institucionesSupervisor.some(i => i.id_institucion === guardada.id_institucion)) {
+            this.institucionActiva = this.institucionesSupervisor.find(i => i.id_institucion === guardada.id_institucion) || guardada;
+          }
+          this.cdr.detectChanges();
         }
-        this.cdr.detectChanges();
       },
       error: () => {}
     });
