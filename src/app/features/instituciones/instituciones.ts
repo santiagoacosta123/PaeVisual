@@ -194,7 +194,7 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
   private readonly urlInstituciones = `${environment.apiUrl}/instituciones/`;
 
   // Catálogo de ingredientes del servidor: solo se usa como respaldo para productos que no estén en ARCHIVOS_IMAGEN
-  private readonly urlIngredientes = `${environment.apiUrl}/ingredientes`;
+  private readonly urlIngredientes = `${environment.apiUrl}/ingredientes/`;
   // Raíz del servidor (apiUrl sin el "/api" final), p. ej. http://127.0.0.1:8000
   private readonly origenServidor = /^https?:/i.test(environment.apiUrl)
     ? environment.apiUrl.replace(/\/api\/?$/, '')

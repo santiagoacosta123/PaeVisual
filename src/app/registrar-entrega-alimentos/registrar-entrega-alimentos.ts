@@ -7,6 +7,7 @@ import { catchError, map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { SweetAlertService } from '../sweet-alert.service';
 import { EntregasService } from '../services/entregas.service';
+import { AuthService } from '../core/auth/auth.service';
 
 // Opciones de los catálogos (se definen aquí para no depender de la forma exacta de los tipos del servicio)
 interface IngredienteOpcion { id: number; nombre: string; }
@@ -231,11 +232,42 @@ export class RegistrarEntregaAlimentosComponent implements OnInit {
     private entregasService: EntregasService,
     private alertas: SweetAlertService,
     private http: HttpClient,
+    private authService: AuthService,
   ) {}
 
   ngOnInit(): void {
     this.cargarCatalogos();
     this.cargarHistorial();
+    this.cargarInstitucionesSupervisor();
+  }
+
+  private cargarInstitucionesSupervisor(): void {
+    const activa = this.authService.obtenerInstitucionActiva();
+    const cacheadas = this.authService.obtenerInstitucionesSupervisor();
+    if (cacheadas.length > 0) {
+      this.instituciones = cacheadas.map(i => i.nombre_institucion);
+      if (activa && this.instituciones.includes(activa.nombre_institucion)) {
+        this.institucionLote = activa.nombre_institucion;
+      } else {
+        this.institucionLote = this.instituciones[0];
+      }
+    }
+
+    this.http.get<any>(`${environment.apiUrl}/instituciones/`).subscribe({
+      next: (resp) => {
+        const lista = Array.isArray(resp) ? resp : (resp?.results ?? []);
+        if (lista.length > 0) {
+          this.instituciones = lista.map((i: any) => i.nombre_institucion ?? i.nombre);
+          const activaActual = this.authService.obtenerInstitucionActiva();
+          if (activaActual && this.instituciones.includes(activaActual.nombre_institucion)) {
+            this.institucionLote = activaActual.nombre_institucion;
+          } else {
+            this.institucionLote = this.instituciones[0];
+          }
+        }
+      },
+      error: () => {}
+    });
   }
 
   // Esc cierra la ventana abierta (primero los modales, al final el detalle del panel)

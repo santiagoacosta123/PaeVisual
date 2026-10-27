@@ -5,6 +5,7 @@ import { HttpClient } from '@angular/common/http';
 import { Subscription } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '@env/environment';
+import { AuthService } from '../core/auth/auth.service';
 
 type EstadoInventario = 'Ok' | 'Bajo' | 'Crítico';
 type FiltroEstado = 'Todos' | EstadoInventario;
@@ -23,6 +24,9 @@ interface Institucion {
   modalidad: string;
   ultimaActualizacion: string;  // texto o fecha
   estado: EstadoInventario;
+  nit?: string;
+  sedes?: any[];
+  esActiva?: boolean;
 }
 
 // Tarjeta de ingrediente (datos de ejemplo hasta conectar el inventario de cada institución)
@@ -163,12 +167,13 @@ function normalizar(s: string): string {
 export class InstitucionesComponent implements OnInit, OnDestroy {
 
   private http = inject(HttpClient);
+  private authService = inject(AuthService);
 
   // Ruta de las instituciones asignadas al supervisor que inició sesión (el backend filtra por el usuario)
   private readonly urlInstituciones = `${environment.apiUrl}/instituciones/`;
 
   // Catálogo de ingredientes del servidor: solo se usa como respaldo para productos que no estén en ARCHIVOS_IMAGEN
-  private readonly urlIngredientes = `${environment.apiUrl}/ingredientes`;
+  private readonly urlIngredientes = `${environment.apiUrl}/ingredientes/`;
   // Raíz del servidor (apiUrl sin el "/api" final), p. ej. http://127.0.0.1:8000
   private readonly origenServidor = /^https?:/i.test(environment.apiUrl)
     ? environment.apiUrl.replace(/\/api\/?$/, '')
@@ -178,7 +183,7 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
 
   instituciones: Institucion[] = [];
   cargando = false;
-  avisoRespaldo = '';           // se llena cuando se muestran instituciones de ejemplo
+  avisoRespaldo = '';           // se llena cuando se muestran instituciones de ejemplo o avisos
   private usandoRespaldo = false;
 
   // Lista
@@ -203,16 +208,6 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
   errorEntregas = '';
   private subEntregas?: Subscription;
 
-  // Instituciones de ejemplo: solo se usan si el servidor no responde o no devuelve nada
-  private readonly institucionesBase: Institucion[] = [
-    this.crear(1, 'I.E. Técnica Agropecuaria', 'Claudia Martínez', 386, 91, 18, 'Vereda El Carmen', 'Santa Rosa de Cabal', 'Almuerzo preparado en sitio', 'Hoy, 8:42 a. m.'),
-    this.crear(2, 'I.E. Santa Rosa', 'Julián Torres', 248, 88, 7, 'Barrio Centro', 'Santa Rosa de Cabal', 'Almuerzo preparado en sitio', 'Hoy, 8:42 a. m.'),
-    this.crear(3, 'I.E. San José', 'Marcela Rojas', 172, 93, 22, 'Calle Principal', 'Dosquebradas', 'Almuerzo preparado en sitio', 'Hoy, 8:42 a. m.'),
-    this.crear(4, 'I.E. La Esperanza', 'Andrés Gómez', 310, 85, 3, 'Vereda La Esperanza', 'Pereira', 'Almuerzo transportado', 'Hoy, 8:42 a. m.'),
-    this.crear(5, 'I.E. El Rosal', 'Luz Dary Pineda', 126, 90, 12, 'Vereda El Rosal', 'Dosquebradas', 'Almuerzo preparado en sitio', 'Hoy, 8:42 a. m.'),
-    this.crear(6, 'I.E. Nuestra Señora del Carmen', 'Hernán Castro', 355, 87, 9, 'Barrio El Carmen', 'Pereira', 'Almuerzo preparado en sitio', 'Hoy, 8:42 a. m.'),
-  ];
-
   ngOnInit(): void {
     this.cargar();
     this.cargarImagenes();
@@ -233,23 +228,38 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
       map(d => (Array.isArray(d) ? d : (d?.results ?? [])) as any[])
     ).subscribe({
       next: (lista) => {
-        this.instituciones = lista.map((item, i) => this.aInstitucion(item, i));
+        const activa = this.authService.obtenerInstitucionActiva();
+        this.instituciones = lista.map((item, i) => {
+          const inst = this.aInstitucion(item, i);
+          inst.esActiva = activa ? Number(inst.id) === Number(activa.id_institucion) : i === 0;
+          return inst;
+        });
         this.usandoRespaldo = false;
+
         if (this.instituciones.length === 0) {
-          this.instituciones = this.institucionesBase;
-          this.usandoRespaldo = true;
-          this.avisoRespaldo = 'El servidor no devolvió instituciones asignadas. Se muestran instituciones de ejemplo.';
+          this.avisoRespaldo = 'No tienes instituciones educativas asignadas actualmente. Comunícate con el Super Administrador.';
+        } else if (!activa && this.instituciones.length > 0) {
+          this.seleccionarParaTrabajar(this.instituciones[0]);
         }
         this.cargando = false;
       },
       error: (error) => {
         console.error('Error al cargar instituciones:', error);
-        this.instituciones = this.institucionesBase;
-        this.usandoRespaldo = true;
-        this.avisoRespaldo = `No se pudieron cargar tus instituciones: ${this.describirError(error)}. Se muestran instituciones de ejemplo.`;
+        this.usandoRespaldo = false;
+        this.avisoRespaldo = `No se pudieron cargar tus instituciones: ${this.describirError(error)}.`;
         this.cargando = false;
       },
     });
+  }
+
+  seleccionarParaTrabajar(inst: Institucion): void {
+    this.authService.establecerInstitucionActiva({
+      id_institucion: Number(inst.id),
+      nombre_institucion: inst.nombre,
+      nit: inst.nit,
+      sedes: inst.sedes,
+    });
+    this.instituciones.forEach(i => i.esActiva = (Number(i.id) === Number(inst.id)));
   }
 
   private describirError(error: any): string {
@@ -263,10 +273,11 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
 
   // Acepta los distintos nombres de campo que pueda traer el backend
   private aInstitucion(item: any, indice: number): Institucion {
-    return this.crear(
+    const inst = this.crear(
       item?.id ?? item?.id_institucion ?? indice + 1,
       leerTexto(item, 'nombre', 'nombre_institucion', 'institucion') || `Institución ${indice + 1}`,
-      leerTexto(item, 'administrador', 'nombre_administrador', 'administrador_nombre'),
+      leerTexto(item, 'administrador', 'nombre_administrador', 'administrador_nombre')
+        || item?.administrador_asignado?.nombre_completo || '',
       leerNumero(item, 'matriculados', 'estudiantes', 'estudiantes_matriculados', 'ninos_matriculados', 'cupos'),
       leerNumero(item, 'asistencia_promedio', 'asistenciaPromedio', 'asistencia'),
       leerNumero(item, 'dias_inventario', 'diasInventario', 'cobertura_dias'),
@@ -275,6 +286,9 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
       leerTexto(item, 'modalidad', 'modalidad_pae'),
       leerTexto(item, 'ultima_actualizacion', 'updated_at', 'fecha_actualizacion'),
     );
+    inst.nit = leerTexto(item, 'nit');
+    inst.sedes = Array.isArray(item?.sedes) ? item.sedes : [];
+    return inst;
   }
 
   private crear(

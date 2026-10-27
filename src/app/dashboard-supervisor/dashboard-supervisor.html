@@ -1,12 +1,207 @@
-<section class="mx-auto flex w-full max-w-6xl flex-col gap-6">
+<section class="mx-auto flex w-full max-w-7xl flex-col gap-6" style="font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+
+  <!-- Encabezado Principal del Supervisor -->
   <header class="rounded-3xl border border-amber-200 bg-white p-6 shadow-sm sm:p-8">
-    <span class="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold uppercase tracking-wide text-amber-800">
-      <span class="material-symbols-outlined text-base">fact_check</span>
-      Panel de supervisión PAE
-    </span>
-    <h1 class="mb-2 mt-4 text-2xl font-black text-slate-900 sm:text-3xl">Gestión de entregas e inventario</h1>
-    <p class="m-0 max-w-3xl text-sm leading-6 text-slate-600">
-    </p>
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div>
+        <span class="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold uppercase tracking-wide text-amber-800">
+          <span class="material-symbols-outlined text-base">fact_check</span>
+          Panel de supervisión PAE
+        </span>
+        <h1 class="mb-1 mt-3 text-2xl font-black text-slate-900 sm:text-3xl">
+          Bienvenido, {{ nombreSupervisor }}
+        </h1>
+        <p class="m-0 max-w-3xl text-sm leading-6 text-slate-600">
+          Selecciona la institución educativa con la que vas a trabajar hoy. Podrás registrar entregas de alimentos, revisar el inventario y auditar las sedes asociadas.
+        </p>
+      </div>
+
+      <button type="button" (click)="cargarInstitucionesServidor()" [disabled]="cargando" title="Actualizar datos"
+        class="flex h-11 w-11 cursor-pointer items-center justify-center self-start sm:self-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-amber-50 hover:border-amber-300">
+        <span class="material-symbols-outlined text-[20px]" [class.animate-spin]="cargando">refresh</span>
+      </button>
+    </div>
   </header>
 
-  
+  <!-- Banner de Institución Activa de Trabajo -->
+  <div *ngIf="institucionActiva as activa"
+    class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 rounded-3xl border-2 border-amber-400 bg-gradient-to-r from-amber-50 via-white to-amber-50/50 p-6 shadow-sm">
+    <div class="flex items-start sm:items-center gap-4">
+      <div class="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl bg-amber-400 text-slate-900 shadow-md">
+        <span class="material-symbols-outlined text-[30px]">apartment</span>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-amber-800 bg-amber-200/80 px-2 py-0.5 rounded-full">
+            Institución activa de trabajo
+          </span>
+          <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+            <span class="material-symbols-outlined text-[13px]">check_circle</span> Seleccionada
+          </span>
+        </div>
+        <h2 class="mt-1 text-xl font-black text-slate-900">
+          {{ activa.nombre_institucion }}
+        </h2>
+        <p class="mt-0.5 text-xs text-slate-500 font-medium">
+          <span *ngIf="activa.nit">NIT: <strong class="text-slate-700">{{ activa.nit }}</strong> · </span>
+          <span>{{ activa.sedes?.length || 0 }} sede(s) registrada(s)</span>
+          <span *ngIf="activa.administrador_asignado?.nombre_completo"> · Administrador: <strong class="text-slate-700">{{ activa.administrador_asignado.nombre_completo }}</strong></span>
+        </p>
+      </div>
+    </div>
+
+    <!-- Acciones Rápidas para la Institución Activa -->
+    <div class="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
+      <button type="button" (click)="trabajarCon(activa, 'entregas')"
+        class="flex-1 lg:flex-none flex items-center justify-center gap-2 rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-950 font-bold text-xs px-4 py-2.5 shadow-sm transition">
+        <span class="material-symbols-outlined text-[18px]">local_shipping</span>
+        Registrar Entrega
+      </button>
+
+      <button type="button" (click)="trabajarCon(activa, 'sedes')"
+        class="flex-1 lg:flex-none flex items-center justify-center gap-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-300 text-slate-800 font-bold text-xs px-4 py-2.5 shadow-sm transition">
+        <span class="material-symbols-outlined text-[18px]">inventory_2</span>
+        Ver Sedes e Inventario
+      </button>
+    </div>
+  </div>
+
+  <!-- Estado de carga -->
+  <div *ngIf="cargando && instituciones.length === 0" class="py-16 text-center text-slate-500 text-sm font-semibold">
+    <span class="material-symbols-outlined animate-spin text-3xl text-amber-500 mb-2 block">progress_activity</span>
+    Cargando tus instituciones asignadas...
+  </div>
+
+  <!-- Error de carga -->
+  <div *ngIf="errorMensaje" class="rounded-2xl border border-red-200 bg-red-50 p-4 text-xs font-semibold text-red-800">
+    {{ errorMensaje }}
+    <button type="button" (click)="cargarInstitucionesServidor()" class="ml-2 underline font-bold cursor-pointer">Reintentar</button>
+  </div>
+
+  <!-- Lista de Instituciones Educativas Asignadas -->
+  <div *ngIf="instituciones.length > 0" class="flex flex-col gap-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <h3 class="m-0 text-lg font-black text-slate-900">
+          Mis Instituciones Asignadas ({{ instituciones.length }})
+        </h3>
+        <p class="m-0 text-xs font-medium text-slate-500">
+          Haz clic en <strong>Trabajar con esta institución</strong> para cambiar la sede activa.
+        </p>
+      </div>
+    </div>
+
+    <!-- Grid de Tarjetas -->
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+      <article *ngFor="let inst of instituciones"
+        [ngClass]="esActiva(inst) ? 'border-amber-400 ring-2 ring-amber-400/50 bg-gradient-to-b from-amber-50/30 to-white' : 'border-slate-100 bg-white hover:border-amber-200'"
+        class="rounded-3xl border p-5 shadow-sm transition duration-200 flex flex-col justify-between">
+        
+        <div>
+          <!-- Cabecera de la Tarjeta -->
+          <div class="flex items-start justify-between gap-2">
+            <div [ngClass]="esActiva(inst) ? 'bg-amber-400 text-slate-900' : 'bg-amber-100 text-amber-800'"
+              class="flex h-11 w-11 items-center justify-center rounded-2xl shadow-sm">
+              <span class="material-symbols-outlined text-[24px]">school</span>
+            </div>
+
+            <div class="flex items-center gap-1.5">
+              <span *ngIf="esActiva(inst)"
+                class="inline-flex items-center gap-1 rounded-full bg-amber-100 border border-amber-300 px-2 py-0.5 text-[10px] font-bold text-amber-900">
+                <span class="material-symbols-outlined text-[13px]">check</span> Activa
+              </span>
+              <span class="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[10px] font-bold text-emerald-700">
+                {{ inst.estado || 'ACTIVO' }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Nombre y NIT -->
+          <h4 class="m-0 mt-3.5 text-base font-black leading-tight text-slate-900">
+            {{ inst.nombre_institucion }}
+          </h4>
+          <p class="m-0 mt-1 text-[11px] font-semibold text-slate-400">
+            NIT: <span class="text-slate-600">{{ inst.nit || 'Sin NIT' }}</span>
+          </p>
+
+          <!-- Administrador Asignado -->
+          <div class="mt-3 flex items-center gap-2 rounded-xl bg-slate-50 p-2 text-xs">
+            <span class="material-symbols-outlined text-[16px] text-slate-400">person</span>
+            <div class="flex-1 truncate">
+              <span class="block text-[10px] uppercase font-bold text-slate-400">Administrador:</span>
+              <span class="font-semibold text-slate-700 truncate block">
+                {{ inst.administrador_asignado?.nombre_completo || 'Sin administrador asignado' }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Sedes Asignadas -->
+          <div class="mt-3">
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-[10px] uppercase font-bold tracking-wide text-slate-400">
+                Sedes ({{ inst.sedes?.length || 0 }})
+              </span>
+            </div>
+            
+            <div *ngIf="inst.sedes && inst.sedes.length > 0; else sinSedes" class="flex flex-wrap gap-1">
+              <span *ngFor="let s of inst.sedes"
+                class="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700">
+                <span class="material-symbols-outlined text-[12px] text-slate-400">domain</span>
+                {{ s.nombre_sede }}
+              </span>
+            </div>
+            <ng-template #sinSedes>
+              <p class="m-0 text-[11px] italic text-slate-400">No tiene sedes registradas</p>
+            </ng-template>
+          </div>
+        </div>
+
+        <!-- Botones de Acción de la Tarjeta -->
+        <div class="mt-5 pt-3 border-t border-slate-100 flex flex-col gap-2">
+          <!-- Botón Seleccionar Institución de Trabajo -->
+          <button type="button" (click)="seleccionarInstitucion(inst)"
+            [ngClass]="esActiva(inst) ? 'bg-amber-500 text-white border-amber-600 shadow-sm' : 'bg-amber-50 text-amber-900 border-amber-200 hover:bg-amber-100'"
+            class="w-full flex cursor-pointer items-center justify-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold transition">
+            <span class="material-symbols-outlined text-[16px]">{{ esActiva(inst) ? 'check_circle' : 'work' }}</span>
+            {{ esActiva(inst) ? 'Institución Activa de Trabajo' : 'Trabajar con esta institución' }}
+          </button>
+
+          <!-- Accesos directos -->
+          <div class="flex gap-2">
+            <button type="button" (click)="trabajarCon(inst, 'entregas')" title="Registrar entregas de alimentos"
+              class="flex-1 flex cursor-pointer items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 transition">
+              <span class="material-symbols-outlined text-[15px] text-slate-500">local_shipping</span>
+              Entregas
+            </button>
+            <button type="button" (click)="trabajarCon(inst, 'sedes')" title="Ver sedes e inventario"
+              class="flex-1 flex cursor-pointer items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 transition">
+              <span class="material-symbols-outlined text-[15px] text-slate-500">inventory_2</span>
+              Inventario
+            </button>
+          </div>
+        </div>
+
+      </article>
+    </div>
+  </div>
+
+  <!-- Estado Vacío: Si no tiene ninguna institución asignada -->
+  <div *ngIf="!cargando && instituciones.length === 0 && !errorMensaje"
+    class="flex flex-col items-center justify-center gap-3 rounded-3xl border border-dashed border-amber-300 bg-amber-50/40 py-16 px-6 text-center">
+    <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
+      <span class="material-symbols-outlined text-[36px]">domain_disabled</span>
+    </div>
+    <h3 class="m-0 text-base font-bold text-slate-800">
+      No tienes instituciones educativas asignadas
+    </h3>
+    <p class="m-0 max-w-md text-xs leading-5 text-slate-600">
+      El Super Administrador aún no te ha asignado instituciones bajo tu supervisión. Una vez asignadas en el módulo de usuarios, aparecerán aquí automáticamente para que puedas gestionarlas.
+    </p>
+    <button type="button" (click)="cargarInstitucionesServidor()"
+      class="mt-2 inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-white px-4 py-2 text-xs font-bold text-amber-800 shadow-sm hover:bg-amber-50">
+      <span class="material-symbols-outlined text-[16px]">refresh</span>
+      Verificar de nuevo
+    </button>
+  </div>
+
+</section>

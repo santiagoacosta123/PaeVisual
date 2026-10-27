@@ -10,6 +10,18 @@ export interface LoginResponse {
   usuario: AuthenticatedUser;
 }
 
+export interface InstitucionAsignada {
+  id_institucion: number;
+  nombre_institucion: string;
+  nit?: string;
+  sedes?: any[];
+  representante_legal?: string;
+  telefono?: string;
+  correo_contacto?: string;
+  estado?: string;
+  administrador_asignado?: any;
+}
+
 export interface AuthenticatedUser {
   id_usuario: number;
   nombre: string;
@@ -22,6 +34,7 @@ export interface AuthenticatedUser {
   institucion_nombre?: string;
   id_sede?: number;
   sede_nombre?: string;
+  instituciones_supervisor?: InstitucionAsignada[];
   is_superuser?: boolean;
   debe_cambiar_password?: boolean;
 }
@@ -48,6 +61,7 @@ export class AuthService {
   private readonly ACCESS_TOKEN = 'access_token';
   private readonly REFRESH_TOKEN = 'refresh_token';
   private readonly USUARIO = 'usuario';
+  private readonly INSTITUCION_ACTIVA = 'sirae_institucion_activa';
 
   constructor(
     private http: HttpClient,
@@ -181,6 +195,17 @@ export class AuthService {
         this.USUARIO,
         JSON.stringify(respuesta.usuario)
       );
+
+      // Si es supervisor, preseleccionar la primera institución asignada si no hay una activa válida
+      if (this.esSupervisor(respuesta.usuario.rol) && respuesta.usuario.instituciones_supervisor?.length) {
+        const guardada = this.obtenerInstitucionActiva();
+        const coincide = guardada && respuesta.usuario.instituciones_supervisor.some(
+          i => i.id_institucion === guardada.id_institucion
+        );
+        if (!coincide) {
+          this.establecerInstitucionActiva(respuesta.usuario.instituciones_supervisor[0]);
+        }
+      }
     }
   }
 
@@ -218,6 +243,43 @@ export class AuthService {
     }
   }
 
+  obtenerInstitucionesSupervisor(): InstitucionAsignada[] {
+    const usuario = this.obtenerUsuario();
+    if (!usuario || !this.esSupervisor(usuario.rol)) {
+      return [];
+    }
+    return usuario.instituciones_supervisor ?? [];
+  }
+
+  obtenerInstitucionActiva(): InstitucionAsignada | null {
+    if (!this.estaDisponibleStorage()) {
+      return null;
+    }
+
+    const guardada = localStorage.getItem(this.INSTITUCION_ACTIVA);
+    if (!guardada) {
+      const asignadas = this.obtenerInstitucionesSupervisor();
+      if (asignadas.length > 0) {
+        this.establecerInstitucionActiva(asignadas[0]);
+        return asignadas[0];
+      }
+      return null;
+    }
+
+    try {
+      return JSON.parse(guardada) as InstitucionAsignada;
+    } catch {
+      return null;
+    }
+  }
+
+  establecerInstitucionActiva(institucion: InstitucionAsignada): void {
+    if (!this.estaDisponibleStorage() || !institucion) {
+      return;
+    }
+    localStorage.setItem(this.INSTITUCION_ACTIVA, JSON.stringify(institucion));
+  }
+
   estaAutenticado(): boolean {
     return !!this.obtenerToken();
   }
@@ -230,6 +292,7 @@ export class AuthService {
     localStorage.removeItem(this.ACCESS_TOKEN);
     localStorage.removeItem(this.REFRESH_TOKEN);
     localStorage.removeItem(this.USUARIO);
+    localStorage.removeItem(this.INSTITUCION_ACTIVA);
     localStorage.removeItem('token');
   }
 

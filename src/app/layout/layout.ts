@@ -9,11 +9,13 @@ import {
 } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { FormsModule } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
 import { NotificacionService } from '../notificaciones/notificacion.service';
 import { Notificacion } from '../notificaciones/notificacion.model';
-import { AuthService } from '../services/auth.service';
+import { AuthService, InstitucionAsignada } from '../services/auth.service';
 import { SiraeService } from '../features/contratos/services/contratos_pae.service';
 import { FacturasCompraService } from '../services/facturas-compra.service';
+import { environment } from '../../environments/environment';
 
 @Component({
   selector: 'app-layout',
@@ -46,6 +48,11 @@ export class LayoutComponent implements OnInit {
   esGestor: boolean = false;
   institucionUsuario: string = '';
 
+  // Institución Activa de Trabajo para Supervisor
+  institucionActiva: InstitucionAsignada | null = null;
+  institucionesSupervisor: InstitucionAsignada[] = [];
+  mostrarSelectorInstitucion = false;
+
   // Estado del perfil
   mostrarPerfil = false;
   vistaActual = 'perfil';
@@ -74,6 +81,7 @@ export class LayoutComponent implements OnInit {
     private authService: AuthService,
     private contratosService: SiraeService,
     private facturasService: FacturasCompraService,
+    private http: HttpClient,
     private cdr: ChangeDetectorRef,
     private router: Router
   ) {
@@ -125,6 +133,12 @@ export class LayoutComponent implements OnInit {
 
     this.cargarNotificacionesHeader();
     this.actualizarTitulo(this.router.url);
+
+    if (this.esSupervisor) {
+      this.institucionesSupervisor = this.authService.obtenerInstitucionesSupervisor();
+      this.institucionActiva = this.authService.obtenerInstitucionActiva();
+      this.cargarInstitucionesSupervisor();
+    }
 
     if (this.esSuperAdministrador) {
       this.contratosService.getContratos().subscribe({
@@ -243,9 +257,49 @@ export class LayoutComponent implements OnInit {
     });
   }
 
+  cargarInstitucionesSupervisor(): void {
+    this.http.get<any>(`${environment.apiUrl}/instituciones/`).subscribe({
+      next: (resp) => {
+        const lista = Array.isArray(resp) ? resp : (resp?.results ?? []);
+        this.institucionesSupervisor = lista.map((item: any) => ({
+          id_institucion: item.id_institucion ?? item.id,
+          nombre_institucion: item.nombre_institucion ?? item.nombre,
+          nit: item.nit ?? '',
+          sedes: item.sedes ?? [],
+          administrador_asignado: item.administrador_asignado,
+        }));
+
+        const guardada = this.authService.obtenerInstitucionActiva();
+        if (guardada && this.institucionesSupervisor.some(i => i.id_institucion === guardada.id_institucion)) {
+          this.institucionActiva = this.institucionesSupervisor.find(i => i.id_institucion === guardada.id_institucion) || guardada;
+        } else if (this.institucionesSupervisor.length > 0) {
+          this.seleccionarInstitucionSupervisor(this.institucionesSupervisor[0]);
+        }
+        this.cdr.detectChanges();
+      },
+      error: () => {}
+    });
+  }
+
+  toggleSelectorInstitucion(): void {
+    this.mostrarSelectorInstitucion = !this.mostrarSelectorInstitucion;
+    if (this.mostrarSelectorInstitucion) {
+      this.mostrarPerfil = false;
+      this.mostrarNotificaciones = false;
+    }
+  }
+
+  seleccionarInstitucionSupervisor(inst: InstitucionAsignada): void {
+    this.authService.establecerInstitucionActiva(inst);
+    this.institucionActiva = inst;
+    this.mostrarSelectorInstitucion = false;
+    this.cdr.detectChanges();
+  }
+
   cerrarPanel(): void {
     this.mostrarPerfil = false;
     this.mostrarNotificaciones = false;
+    this.mostrarSelectorInstitucion = false;
   }
 
   irA(vista: string): void {
