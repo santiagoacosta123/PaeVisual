@@ -15,41 +15,124 @@
       </div>
     </div>
 
-    <!-- Botón Añadir (Pill dorado estandarizado) -->
-    <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+    <!-- Acciones de Cabecera: Selector de Tablas Arriba + Botón Añadir -->
+    <div class="bd-page-header-actions">
+
+      <!-- Selector Desplegable "Todas las tablas principales" -->
+      <div class="bd-top-selector-wrapper">
+        <button
+          type="button"
+          class="bd-top-dropdown-btn"
+          (click)="toggleDesplegableTablas($event)"
+          [class.is-open]="tablasDesplegadas"
+          title="Seleccionar tabla principal"
+          aria-haspopup="true"
+          [attr.aria-expanded]="tablasDesplegadas"
+        >
+          <span class="bd-top-btn-title">Tablas principales</span>
+          <span class="material-symbols-outlined bd-top-chevron" [class.rotated]="tablasDesplegadas">
+            expand_more
+          </span>
+        </button>
+
+        <!-- Menú Flotante Desplegable (Popover) -->
+        <div
+          *ngIf="tablasDesplegadas"
+          class="bd-top-popover-menu"
+          (click)="$event.stopPropagation()"
+        >
+          <div class="bd-popover-header">
+            <span class="bd-popover-title">Tablas principales</span>
+            <button type="button" (click)="tablasDesplegadas = false; $event.stopPropagation()"
+              class="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
+              title="Cerrar">
+              <span class="material-symbols-outlined text-[18px]">close</span>
+            </button>
+          </div>
+
+          <!-- Buscador de tablas -->
+          <div class="bd-tab-search-wrapper">
+            <span class="material-symbols-outlined bd-tab-search-icon">search</span>
+            <input
+              type="text"
+              [(ngModel)]="filtroBusquedaTablas"
+              placeholder="Buscar tabla..."
+              class="bd-tab-search-input"
+              (click)="$event.stopPropagation()"
+            />
+            <button
+              *ngIf="filtroBusquedaTablas"
+              type="button"
+              class="bd-tab-search-clear"
+              (click)="filtroBusquedaTablas = ''; $event.stopPropagation()"
+              title="Borrar búsqueda"
+            >
+              ✕
+            </button>
+          </div>
+
+          <!-- Lista de tablas -->
+          <div class="bd-popover-tabs-list">
+            <button
+              *ngFor="let t of tabsFiltradas"
+              type="button"
+              class="bd-popover-item"
+              [class.active]="tabActual === t.id"
+              (click)="seleccionarTab(t.id)"
+            >
+              <div class="bd-popover-item-left">
+                <span class="material-symbols-outlined bd-popover-item-icon">{{ t.icon }}</span>
+                <span class="bd-popover-item-name">{{ t.nombre }}</span>
+              </div>
+              <span *ngIf="tabActual === t.id" class="bd-popover-active-badge">Activa</span>
+            </button>
+
+            <div *ngIf="tabsFiltradas.length === 0" class="bd-empty-tabs-search">
+              <span class="material-symbols-outlined" style="font-size:20px; color:#94a3b8;">search_off</span>
+              <span>No se encontraron tablas</span>
+              <button
+                type="button"
+                class="bd-reset-search-btn"
+                (click)="filtroBusquedaTablas = ''; $event.stopPropagation()"
+              >
+                Limpiar búsqueda
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Botón Añadir (Pill dorado estandarizado) -->
       <button type="button" class="bd-btn-add" (click)="abrirModal()">
         <span class="material-symbols-outlined" aria-hidden="true">add</span>
         <span>Añadir {{ tab.singular }}</span>
       </button>
+
     </div>
   </header>
 
 
-  <!-- ===================== CONTENEDOR DE DOS COLUMNAS ===================== -->
+  <!-- ===================== CONTENEDOR PRINCIPAL ===================== -->
   <div class="bd-main-grid">
 
-    <!-- ================= COLUMNA 1: TABLAS PRINCIPALES ================= -->
-    <aside class="bd-sidebar-card" aria-label="Menú de tablas principales">
-      <h2 class="bd-sidebar-title">Tablas principales</h2>
-
-      <nav class="bd-master-nav">
-        <button
-          *ngFor="let t of tabs"
-          type="button"
-          class="bd-nav-item"
-          [class.active]="tabActual === t.id"
-          [attr.aria-current]="tabActual === t.id ? 'page' : null"
-          (click)="cambiarTab(t.id)"
-        >
-          <span class="material-symbols-outlined bd-nav-icon" aria-hidden="true">{{ t.icon }}</span>
-          <span class="bd-nav-text">{{ t.nombre }}</span>
-        </button>
-      </nav>
-    </aside>
-
-
-    <!-- ================= COLUMNA 2: TABLA Y CONTROLES ================= -->
+    <!-- ================= TABLA Y CONTROLES A ANCHO COMPLETO ================= -->
     <main class="bd-table-card">
+
+      <!-- Cabecera de la tabla activa -->
+      <div class="bd-table-heading-row">
+        <div class="bd-table-heading-left">
+          <div class="bd-table-heading-icon-badge">
+            <span class="material-symbols-outlined">{{ tab.icon }}</span>
+          </div>
+          <div>
+            <h2 class="bd-table-heading-title">{{ tab.nombre }}</h2>
+            <span class="bd-table-heading-sub">
+              {{ datos ? datos.length + ' ' + (datos.length === 1 ? tab.singular : tab.nombre.toLowerCase()) + ' en el sistema' : 'Cargando datos...' }}
+            </span>
+          </div>
+        </div>
+      </div>
 
       <!-- Barra de Filtros Superiores -->
       <div class="bd-filters-bar">
@@ -76,39 +159,18 @@
         </div>
 
         <!-- Selector Estado -->
-        <div class="bd-filter-group">
-          <label class="bd-filter-label" for="select-estado">Estado</label>
-          <div class="bd-select-wrapper">
-            <select
-              id="select-estado"
-              [(ngModel)]="filtroEstado"
-              (change)="onFiltroCambio()"
-              class="bd-filter-select"
-            >
-              <option value="TODOS">Todos</option>
-              <option value="ACTIVO">Activo</option>
-              <option value="INACTIVO">Inactivo</option>
-            </select>
-            <span class="material-symbols-outlined bd-select-chevron" aria-hidden="true">expand_more</span>
-          </div>
-        </div>
-
-        <!-- Selector Ordenar Por -->
-        <div class="bd-filter-group">
-          <label class="bd-filter-label" for="select-orden">Ordenar por</label>
-          <div class="bd-select-wrapper">
-            <select
-              id="select-orden"
-              [(ngModel)]="ordenPor"
-              (change)="onFiltroCambio()"
-              class="bd-filter-select"
-            >
-              <option value="recientes">Más recientes</option>
-              <option value="az">Nombre (A-Z)</option>
-              <option value="za">Nombre (Z-A)</option>
-            </select>
-            <span class="material-symbols-outlined bd-select-chevron" aria-hidden="true">expand_more</span>
-          </div>
+        <div class="bd-filter-group" style="width: 140px;">
+          <label class="bd-filter-label">Estado</label>
+          <app-custom-select
+            [options]="opcionesFiltroEstado"
+            valueField="value"
+            labelField="label"
+            placeholder="Seleccionar..."
+            [allowClear]="true"
+            size="md"
+            [(ngModel)]="filtroEstado"
+            (ngModelChange)="onFiltroCambio()"
+          ></app-custom-select>
         </div>
 
         <!-- Botón Filtros -->
@@ -182,9 +244,9 @@
       <div *ngIf="!cargando && !errorCarga && totalRegistros === 0" class="bd-state-card empty">
         <span class="material-symbols-outlined state-icon" aria-hidden="true">inbox</span>
         <h3>No hay registros disponibles en {{ tab.nombre }}</h3>
-        <p *ngIf="busquedaTexto || filtroEstado !== 'TODOS'">No se encontraron registros que coincidan con los filtros aplicados.</p>
-        <p *ngIf="!busquedaTexto && filtroEstado === 'TODOS' && tabActual === 'sedes' && filtroInstitucionSede !== 'TODAS'">No hay sedes registradas para la institución seleccionada.</p>
-        <p *ngIf="!busquedaTexto && filtroEstado === 'TODOS' && (tabActual !== 'sedes' || filtroInstitucionSede === 'TODAS')">Crea el primer registro para empezar a gestionarlo.</p>
+        <p *ngIf="busquedaTexto || (filtroEstado && filtroEstado !== 'TODOS')">No se encontraron registros que coincidan con los filtros aplicados.</p>
+        <p *ngIf="!busquedaTexto && (!filtroEstado || filtroEstado === 'TODOS') && tabActual === 'sedes' && filtroInstitucionSede !== 'TODAS'">No hay sedes registradas para la institución seleccionada.</p>
+        <p *ngIf="!busquedaTexto && (!filtroEstado || filtroEstado === 'TODOS') && (tabActual !== 'sedes' || filtroInstitucionSede === 'TODAS')">Crea el primer registro para empezar a gestionarlo.</p>
         <button type="button" class="bd-btn-add" (click)="abrirModal()">
           <span class="material-symbols-outlined" aria-hidden="true">add</span>
           <span>Añadir {{ tab.singular }}</span>

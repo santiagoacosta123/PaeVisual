@@ -210,61 +210,76 @@
     <!-- Navegación con Íconos Limpios y Armonizados (Sin elementos redundantes) -->
     <nav class="superadmin-sidebar-nav" aria-label="Menú principal de Super Administrador">
 
-      <!-- INICIO -->
-      <a routerLink="inicio" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="superadmin-nav-item" title="Inicio">
-        <div class="superadmin-nav-item-left">
-          <span class="material-symbols-outlined superadmin-nav-icon">home</span>
-          <span class="superadmin-nav-text">Inicio</span>
-        </div>
-      </a>
+      <!-- SECCIÓN 1: VISTA GENERAL -->
+      <div class="superadmin-nav-group">
+        <span class="superadmin-group-label">Visión General</span>
+        
+        <!-- INICIO -->
+        <a routerLink="inicio" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="superadmin-nav-item" title="Inicio">
+          <div class="superadmin-nav-item-left">
+            <span class="material-symbols-outlined superadmin-nav-icon">space_dashboard</span>
+            <span class="superadmin-nav-text">Inicio</span>
+          </div>
+        </a>
+      </div>
 
-      <!-- CONTRATOS -->
-      <a routerLink="contratos" routerLinkActive="active" class="superadmin-nav-item" title="Contratos">
-        <div class="superadmin-nav-item-left">
-          <span class="material-symbols-outlined superadmin-nav-icon">description</span>
-          <span class="superadmin-nav-text">Contratos</span>
-        </div>
-      </a>
+      <!-- SECCIÓN 2: OPERACIÓN Y PROGRAMA PAE -->
+      <div class="superadmin-nav-group">
+        <span class="superadmin-group-label">Operación PAE</span>
 
-      <!-- BANCO DE DATOS -->
-      <a routerLink="banco-datos" routerLinkActive="active" class="superadmin-nav-item" title="Banco de Datos">
-        <div class="superadmin-nav-item-left">
-          <span class="material-symbols-outlined superadmin-nav-icon">database</span>
-          <span class="superadmin-nav-text">Banco de Datos</span>
-        </div>
-      </a>
+        <!-- CONTRATOS -->
+        <a routerLink="contratos" routerLinkActive="active" class="superadmin-nav-item" title="Contratos">
+          <div class="superadmin-nav-item-left">
+            <span class="material-symbols-outlined superadmin-nav-icon">description</span>
+            <span class="superadmin-nav-text">Contratos</span>
+          </div>
+        </a>
 
-      <!-- FACTURAS -->
-      <a routerLink="facturas-compra" routerLinkActive="active" class="superadmin-nav-item" title="Facturas">
-        <div class="superadmin-nav-item-left">
-          <span class="material-symbols-outlined superadmin-nav-icon">receipt_long</span>
-          <span class="superadmin-nav-text">Facturas</span>
-        </div>
-      </a>
+        <!-- FACTURAS -->
+        <a routerLink="facturas-compra" routerLinkActive="active" class="superadmin-nav-item" title="Facturas de Compra">
+          <div class="superadmin-nav-item-left">
+            <span class="material-symbols-outlined superadmin-nav-icon">receipt_long</span>
+            <span class="superadmin-nav-text">Facturas</span>
+          </div>
+        </a>
 
-      <!-- STOCK GLOBAL -->
-      <a routerLink="bodega-central" routerLinkActive="active" class="superadmin-nav-item" title="Stock Global">
-        <div class="superadmin-nav-item-left">
-          <span class="material-symbols-outlined superadmin-nav-icon">inventory_2</span>
-          <span class="superadmin-nav-text">Stock Global</span>
-        </div>
-      </a>
+        <!-- STOCK GLOBAL -->
+        <a routerLink="bodega-central" routerLinkActive="active" class="superadmin-nav-item" title="Stock Global">
+          <div class="superadmin-nav-item-left">
+            <span class="material-symbols-outlined superadmin-nav-icon">warehouse</span>
+            <span class="superadmin-nav-text">Stock Global</span>
+          </div>
+        </a>
+      </div>
 
-      <!-- USUARIOS -->
-      <a routerLink="usuarios" routerLinkActive="active" class="superadmin-nav-item" title="Usuarios">
-        <div class="superadmin-nav-item-left">
-          <span class="material-symbols-outlined superadmin-nav-icon">group</span>
-          <span class="superadmin-nav-text">Usuarios</span>
-        </div>
-      </a>
+      <!-- SECCIÓN 3: CONFIGURACIÓN Y MAESTROS -->
+      <div class="superadmin-nav-group">
+        <span class="superadmin-group-label">Administración</span>
+
+        <!-- BANCO DE DATOS -->
+        <a routerLink="banco-datos" routerLinkActive="active" class="superadmin-nav-item" title="Banco de Datos">
+          <div class="superadmin-nav-item-left">
+            <span class="material-symbols-outlined superadmin-nav-icon">database</span>
+            <span class="superadmin-nav-text">Banco de Datos</span>
+          </div>
+        </a>
+
+        <!-- USUARIOS -->
+        <a routerLink="usuarios" routerLinkActive="active" class="superadmin-nav-item" title="Usuarios y Roles">
+          <div class="superadmin-nav-item-left">
+            <span class="material-symbols-outlined superadmin-nav-icon">manage_accounts</span>
+            <span class="superadmin-nav-text">Usuarios</span>
+          </div>
+        </a>
+      </div>
 
     </nav>
 
     <!-- Pie del Sidebar: Cerrar Sesión -->
-    <div class="modern-sidebar-bottom">
-      <button type="button" class="modern-nav-item modern-logout-btn" (click)="cerrarSesion()" title="Cerrar sesión">
-        <span class="material-symbols-outlined modern-nav-icon" aria-hidden="true">logout</span>
-        <span class="modern-nav-text">Cerrar Sesión</span>
+    <div class="superadmin-sidebar-bottom">
+      <button type="button" class="superadmin-logout-btn" (click)="cerrarSesion()" title="Cerrar sesión">
+        <span class="material-symbols-outlined superadmin-logout-icon" aria-hidden="true">logout</span>
+        <span>Cerrar Sesión</span>
       </button>
     </div>
 

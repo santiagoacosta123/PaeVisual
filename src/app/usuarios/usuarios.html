@@ -24,17 +24,6 @@
         <input type="text" [(ngModel)]="filtroTexto" placeholder="Buscar por nombre, doc o correo..." class="border-none bg-transparent outline-none text-[13px] text-slate-900 w-full placeholder-slate-400 font-sans">
       </div>
 
-      <!-- Filtro Rol -->
-      <div class="w-44 sm:w-52">
-        <app-custom-select
-          [options]="opcionesFiltroRol"
-          valueField="id_rol"
-          labelField="nombre_rol"
-          placeholder="Todos los Roles"
-          size="sm"
-          [(ngModel)]="filtroRol"
-        ></app-custom-select>
-      </div>
 
       <!-- Botón Nuevo Usuario -->
       <button type="button" (click)="abrirFormulario()" class="h-10 px-5 inline-flex items-center justify-center gap-2 border-none rounded-full bg-[#fac94b] text-slate-900 text-[13px] font-bold cursor-pointer whitespace-nowrap shadow-[0_2px_8px_rgba(251,191,36,0.28)] transition-all hover:bg-[#f59e0b]">
@@ -174,7 +163,7 @@
 
     <!-- Pie de tabla: Paginación -->
     <div class="flex items-center justify-between pt-3.5 mt-3.5 border-t border-slate-100 text-xs text-slate-500">
-      <span>Mostrando {{ usuariosFiltrados.length }} de {{ usuarios.length }} registros</span>
+      <span>Mostrando {{ usuariosFiltrados.length }} de {{ usuariosBase.length }} registros</span>
       <div class="flex items-center gap-1.5">
         <button type="button" class="w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 inline-flex items-center justify-center cursor-pointer">
           <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>

@@ -2,8 +2,12 @@ import { Component, OnInit, ChangeDetectorRef, Input, Output, EventEmitter } fro
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { SiraeService } from '../services/contratos_pae.service';
 import { UsuarioService } from '../services/usuario.service';
+import { RolService } from '../services/rol.service';
+import { AuthService } from '../services/auth.service';
+import { environment } from '../../environments/environment';
 import { CustomSelectComponent } from '../shared/custom-select/custom-select';
 
 @Component({
@@ -23,6 +27,8 @@ export class ContratoDetalleComponent implements OnInit {
   seccionesMenu: any[] = [];
   contratosSeccionMenu: any[] = [];
   supervisores: any[] = [];
+  cargandoSupervisores = false;
+  rolesCatalogo: any[] = [];
   contrato: any = { 
     codigo: '', 
     institucion: '', 
@@ -189,6 +195,9 @@ export class ContratoDetalleComponent implements OnInit {
     private router: Router,
     private siraeService: SiraeService,
     private usuarioService: UsuarioService,
+    private rolService: RolService,
+    private authService: AuthService,
+    private http: HttpClient,
     private cdr: ChangeDetectorRef
   ) { }
 
@@ -266,20 +275,105 @@ export class ContratoDetalleComponent implements OnInit {
   }
 
   cargarSupervisores(): void {
-    this.usuarioService.getUsuarios().subscribe({
-      next: (datos: any) => {
-        const res = Array.isArray(datos) ? datos : (datos.results || datos.data || []);
-        this.supervisores = res.filter((u: any) => {
-          const rolNom = (u.rol_detalle?.nombre || u.rol_nombre || (typeof u.rol === 'object' ? u.rol.nombre : '') || '').toLowerCase();
-          return rolNom.includes('supervisor') || rolNom.includes('coordinador');
-        }).map((u: any) => ({
-          id_usuario: u.id_usuario || u.id,
-          nombre_completo: `${u.nombre} ${u.apellido}`.trim()
+    this.cargandoSupervisores = true;
+    const token = this.authService.obtenerToken()?.replace(/^(Bearer|Token)\s+/i, '').trim();
+    let headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    if (token) headers = headers.set('Authorization', `Bearer ${token}`);
+
+    // 1. Cargar catálogo de roles para resolver IDs de supervisor
+    this.rolService.getRoles().subscribe({
+      next: (datosRoles: any) => {
+        const rolesArr = Array.isArray(datosRoles) ? datosRoles : (datosRoles.results || datosRoles.data || []);
+        this.rolesCatalogo = rolesArr.map((r: any) => ({
+          id_rol: Number(r.id_rol || r.id || r.pk),
+          nombre: (r.nombre_rol || r.nombre || '').toLowerCase()
         }));
-        this.cdr.detectChanges();
+        this.obtenerUsuariosSupervisores(headers);
       },
-      error: (err) => console.error('Error cargando supervisores:', err)
+      error: () => {
+        this.obtenerUsuariosSupervisores(headers);
+      }
     });
+  }
+
+  private obtenerUsuariosSupervisores(headers: HttpHeaders): void {
+    this.http.get<any[]>(`${environment.apiUrl}/usuarios/`, { headers }).subscribe({
+      next: (datos: any) => {
+        this.procesarUsuariosSupervisores(datos);
+      },
+      error: (errHttp) => {
+        console.warn('Fallo petición directa a /usuarios/, intentando usuarioService:', errHttp);
+        this.usuarioService.getUsuarios().subscribe({
+          next: (datosFallback: any) => {
+            this.procesarUsuariosSupervisores(datosFallback);
+          },
+          error: (err) => {
+            console.error('Error al cargar supervisores:', err);
+            this.cargandoSupervisores = false;
+            this.cdr.detectChanges();
+          }
+        });
+      }
+    });
+  }
+
+  private procesarUsuariosSupervisores(datos: any): void {
+    const res = Array.isArray(datos) ? datos : (datos.results || datos.data || []);
+
+    // IDs de roles que corresponden a supervisor o coordinador
+    const supervisorRolIds = this.rolesCatalogo
+      .filter(r => r.nombre.includes('supervisor') || r.nombre.includes('coordinador'))
+      .map(r => r.id_rol);
+
+    const filtrados = res.filter((u: any) => {
+      // 1. Chequeo por rol_detalle
+      const nomDetalle = (u.rol_detalle?.nombre_rol || u.rol_detalle?.nombre || u.rol_nombre || '').toLowerCase();
+      if (nomDetalle && (nomDetalle.includes('supervisor') || nomDetalle.includes('coordinador'))) return true;
+
+      // 2. Chequeo por rol string
+      if (typeof u.rol === 'string') {
+        const r = u.rol.toLowerCase();
+        if (r.includes('supervisor') || r.includes('coordinador')) return true;
+      }
+
+      // 3. Chequeo por rol objeto
+      if (typeof u.rol === 'object' && u.rol !== null) {
+        const r = (u.rol.nombre_rol || u.rol.nombre || '').toLowerCase();
+        if (r.includes('supervisor') || r.includes('coordinador')) return true;
+      }
+
+      // 4. Chequeo por ID en roles cargados o ID 27 por defecto
+      const idRol = typeof u.rol === 'object' ? (u.rol?.id_rol || u.rol?.id) : Number(u.rol);
+      if (idRol && (supervisorRolIds.includes(idRol) || idRol === 27)) return true;
+
+      // 5. Si tiene instituciones_supervisor asignadas
+      if (Array.isArray(u.instituciones_supervisor) && u.instituciones_supervisor.length > 0) return true;
+
+      // 6. Si el correo contiene 'supervisor'
+      if (u.correo && typeof u.correo === 'string' && u.correo.toLowerCase().includes('supervisor')) return true;
+
+      return false;
+    });
+
+    this.supervisores = filtrados.map((u: any) => ({
+      id_usuario: Number(u.id_usuario || u.id),
+      nombre_completo: `${u.nombre || ''} ${u.apellido || ''}`.trim() || u.correo || `Supervisor #${u.id_usuario || u.id}`
+    }));
+
+    // Si el contrato ya tiene un supervisor asignado que no esté en la lista filtrada, preservarlo
+    if (this.contrato?.id_usuario_supervisor) {
+      const supIdNum = Number(this.contrato.id_usuario_supervisor);
+      const existe = this.supervisores.some(s => Number(s.id_usuario) === supIdNum);
+      if (!existe) {
+        this.supervisores.unshift({
+          id_usuario: supIdNum,
+          nombre_completo: this.contrato.supervisor_nombre || `Supervisor #${supIdNum}`
+        });
+      }
+    }
+
+    this.cargandoSupervisores = false;
+    this.cdr.detectChanges();
   }
 
   actualizarSedesDeInstitucion() {

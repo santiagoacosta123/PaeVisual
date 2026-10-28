@@ -45,6 +45,7 @@ interface TabConfig {
   icon: string;
   /** Nombre de la clave primaria que devuelve el backend. */
   idField: string;
+  categoria?: 'institucional' | 'inventario' | 'operacion';
   campos: CampoConfig[];
 }
 
@@ -115,6 +116,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       singular: 'institución',
       icon: 'account_balance',
       idField: 'id_institucion',
+      categoria: 'institucional',
       campos: [
         { name: 'nombre_institucion', label: 'Nombre de la institución', type: 'text', required: true, placeholder: 'Ej: I.E. San Agustín' },
         { name: 'nit', label: 'NIT / Código', type: 'text', required: true, placeholder: 'Ej: 900.123.456-7' },
@@ -140,6 +142,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       singular: 'sede',
       icon: 'location_on',
       idField: 'id_sede',
+      categoria: 'institucional',
       campos: [
         { name: 'nombre_sede', label: 'Nombre de la sede', type: 'text', required: true, placeholder: 'Ej: Sede Principal' },
         { name: 'id_institucion', label: 'Institución educativa', type: 'select', required: true, source: 'instituciones' },
@@ -165,6 +168,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       singular: 'ingrediente',
       icon: 'eco',
       idField: 'id_ingrediente',
+      categoria: 'inventario',
       campos: [
         { name: 'nombre_ingrediente', label: 'Nombre del ingrediente', type: 'text', required: true, placeholder: 'Ej: Tomate Chonto' },
         { name: 'id_categoria_inventario', label: 'Categoría', type: 'select', required: true, source: 'categorias_inventario' },
@@ -190,6 +194,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       singular: 'proveedor',
       icon: 'local_shipping',
       idField: 'id_proveedor',
+      categoria: 'inventario',
       campos: [
         { name: 'nombre', label: 'Razón social / Proveedor', type: 'text', required: true, placeholder: 'Ej: Distribuidora Mayorista S.A.S' },
         { name: 'nit', label: 'NIT / Cédula', type: 'text', placeholder: 'Ej: 900.123.456-7' },
@@ -216,6 +221,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       singular: 'unidad de medida',
       icon: 'balance',
       idField: 'id_unidad_medida',
+      categoria: 'inventario',
       campos: [
         { name: 'nombre', label: 'Nombre', type: 'text', required: true, placeholder: 'Ej: Kilogramo' },
         { name: 'abreviatura', label: 'Abreviatura', type: 'text', required: true, placeholder: 'Ej: kg' }
@@ -227,6 +233,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       singular: 'categoría',
       icon: 'grid_view',
       idField: 'id_categoria_inventario',
+      categoria: 'inventario',
       campos: [
         { name: 'nombre_categoria', label: 'Nombre categoría', type: 'text', required: true, placeholder: 'Ej: Lácteos' }
       ]
@@ -237,6 +244,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       singular: 'tipo de mercado',
       icon: 'shopping_basket',
       idField: 'id_tipo_mercado',
+      categoria: 'inventario',
       campos: [
         { name: 'nombre_tipo', label: 'Tipo de mercado', type: 'text', required: true, placeholder: 'Ej: Perecederos' }
       ]
@@ -247,6 +255,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       singular: 'grado',
       icon: 'school',
       idField: 'id_grado',
+      categoria: 'operacion',
       campos: [
         { name: 'nombre_grado', label: 'Nombre del grado', type: 'text', required: true, placeholder: 'Ej: Primero' }
       ]
@@ -257,6 +266,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       singular: 'jornada',
       icon: 'calendar_month',
       idField: 'id_jornada',
+      categoria: 'operacion',
       campos: [
         { name: 'nombre_jornada', label: 'Nombre de la jornada', type: 'text', required: true, placeholder: 'Ej: Mañana' }
       ]
@@ -267,6 +277,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       singular: 'sección',
       icon: 'lunch_dining',
       idField: 'id_seccion',
+      categoria: 'operacion',
       campos: [
         { name: 'nombre_seccion', label: 'Nombre de la sección', type: 'text', required: true, placeholder: 'Ej: Desayuno' },
         { name: 'id_jornada', label: 'Jornada', type: 'select', required: true, source: 'jornadas' }
@@ -278,6 +289,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       singular: 'turno',
       icon: 'schedule',
       idField: 'id_turno',
+      categoria: 'operacion',
       campos: [
         { name: 'nombre_turno', label: 'Nombre del turno', type: 'text', required: true },
         { name: 'hora_inicio', label: 'Hora de inicio', type: 'time', required: true },
@@ -290,6 +302,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       singular: 'rol',
       icon: 'shield',
       idField: 'id_rol',
+      categoria: 'operacion',
       campos: [
         { name: 'nombre', label: 'Nombre', type: 'text', required: true },
         { name: 'descripcion', label: 'Descripción', type: 'textarea' }
@@ -301,6 +314,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       singular: 'gramaje',
       icon: 'scale',
       idField: 'id_gramaje',
+      categoria: 'inventario',
       campos: [
         { name: 'id_ingrediente', label: 'Ingrediente', type: 'select', required: true, source: 'ingredientes' },
         { name: 'id_grado', label: 'Grado', type: 'select', required: true, source: 'grados' },
@@ -314,9 +328,34 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
 
   // ============================================================
   // ESTADO
-  // ============================================================
-
   tabActual: string = 'instituciones';
+
+  // ============================================================
+  // ORGANIZACIÓN Y DESPLEGABLE DE TABLAS PRINCIPALES
+  // ============================================================
+  tablasDesplegadas: boolean = false;
+  filtroBusquedaTablas: string = '';
+  filtroCategoriaTablas: 'TODAS' | 'institucional' | 'inventario' | 'operacion' = 'TODAS';
+
+  toggleDesplegableTablas(event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    this.tablasDesplegadas = !this.tablasDesplegadas;
+  }
+
+  seleccionarTab(tabId: string): void {
+    this.cambiarTab(tabId);
+    this.tablasDesplegadas = false;
+  }
+
+  get tabsFiltradas(): TabConfig[] {
+    const q = this.filtroBusquedaTablas.trim().toLowerCase();
+    if (!q) return this.tabs;
+    return this.tabs.filter(t =>
+      t.nombre.toLowerCase().includes(q) || t.singular.toLowerCase().includes(q)
+    );
+  }
 
   datos: any[] = [];
   cargando = false;
@@ -479,7 +518,11 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
   // BUSCADOR, FILTROS Y ORDENAMIENTO
   // ============================================================
   busquedaTexto: string = '';
-  filtroEstado: string = 'TODOS';
+  filtroEstado: string = '';
+  readonly opcionesFiltroEstado: any[] = [
+    { value: 'ACTIVO', label: 'Activo' },
+    { value: 'INACTIVO', label: 'Inactivo' }
+  ];
   ordenPor: string = 'recientes';
   mostrarFiltrosAvanzados: boolean = false;
 
@@ -497,6 +540,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       this.cerrarModal();
     }
     this.cerrarMenuAccion();
+    this.tablasDesplegadas = false;
   }
 
   @HostListener('document:click', ['$event'])
@@ -504,6 +548,9 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
     const target = event.target as HTMLElement;
     if (!target.closest('.row-actions-container')) {
       this.cerrarMenuAccion();
+    }
+    if (!target.closest('.bd-top-selector-wrapper')) {
+      this.tablasDesplegadas = false;
     }
   }
 
@@ -597,10 +644,14 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
     }
 
     // Filtro por Estado
-    if (this.filtroEstado !== 'TODOS') {
+    if (this.filtroEstado && this.filtroEstado !== 'TODOS') {
       resultado = resultado.filter(item => {
-        const est = String(item.estado || '').toUpperCase();
-        return est === this.filtroEstado;
+        if (this.filtroEstado === 'ACTIVO') {
+          return this.isEstadoActivo(item);
+        } else if (this.filtroEstado === 'INACTIVO') {
+          return this.isEstadoInactivo(item);
+        }
+        return true;
       });
     }
 
@@ -693,7 +744,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
     }
     this.tabActual = tabId;
     this.busquedaTexto = '';
-    this.filtroEstado = 'TODOS';
+    this.filtroEstado = '';
     this.ordenPor = 'recientes';
     this.paginaActual = 1;
     this.menuAccionAbiertoId = null;
@@ -704,7 +755,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
     this.filtroInstitucionSede = idInstitucion;
     this.tabActual = 'sedes';
     this.busquedaTexto = '';
-    this.filtroEstado = 'TODOS';
+    this.filtroEstado = '';
     this.paginaActual = 1;
     this.cargarDatos();
   }
