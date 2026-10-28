@@ -107,6 +107,8 @@ interface EntradaFila {
 
 // Una institución (o sede) a la que va el producto, con la cantidad que se le envía
 interface EnvioDestino {
+  idInstitucion: number;
+  idSede?: number;
   institucion: string;
   cantidad: number | null;
 }
@@ -122,6 +124,36 @@ interface EnvioRegistro {
   fechaSalida: string;
   fechaEntrega: string;
   enviadoEl: string;       // fecha en que se registró el envío
+}
+
+interface RegistroEntregaEnvio {
+  id_entrega?: number | string;
+  id?: number | string;
+  id_institucion?: number | string | ReferenciaInstitucion | null;
+  id_sede?: number | string | ReferenciaInstitucion | null;
+  institucion?: string | ReferenciaInstitucion | null;
+  sede?: string | ReferenciaInstitucion | null;
+  institucion_nombre?: string | null;
+  sede_nombre?: string | null;
+  destino_nombre?: string | null;
+  destino?: string | null;
+  ingrediente_nombre?: string | null;
+  ingrediente?: string | ReferenciaInstitucion | null;
+  cantidad?: number | string | null;
+  unidad?: string | null;
+  fecha_salida?: string | null;
+  fecha_entrega?: string | null;
+  created_at?: string | null;
+  fecha_creacion?: string | null;
+}
+
+interface ReferenciaInstitucion {
+  id?: number | string;
+  id_institucion?: number | string;
+  id_sede?: number | string;
+  nombre?: string;
+  nombre_institucion?: string;
+  nombre_ingrediente?: string;
 }
 
 interface CategoriaOpcion {
@@ -142,6 +174,12 @@ type FiltroEstado = 'Todos' | 'Vigente' | 'Próximo a vencer' | 'Vencido';
   styleUrls: ['./registrar-entrega-alimentos.css'],
 })
 export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
+
+  ingredientes: IngredienteOpcion[] = [];
+  tiposMercado: TipoMercadoOpcion[] = [];
+  cargandoCatalogos = true;
+  errorMensaje = '';
+  errorCatalogos = '';
 
   // ===================== PRODUCTOS BASE =====================
   // Se usan cuando el servidor no devuelve ingredientes, para que el inventario nunca salga vacío.
@@ -181,42 +219,13 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     'Aceite': 'Litros', 'Leche': 'Litros', 'Huevos': 'Unidades',
   };
 
-  // ===================== CACHÉ EN EL NAVEGADOR (carga instantánea) =====================
-  // Se muestra lo último que se sabía y se refresca en segundo plano.
-  private readonly claveCacheIngredientes = 'sirae_cat_ingredientes';
-  private readonly claveCacheTipos = 'sirae_cat_tipos_mercado';
-  // La caché del historial es POR institución: así nunca se ve lo de otra institución
-  private get claveCacheEntregas(): string { return `sirae_cache_entregas_${this.idInstitucion ?? 'todas'}`; }
-
-  private leerCache<T>(clave: string): T | null {
-    try {
-      const valor = JSON.parse(localStorage.getItem(clave) || 'null');
-      return valor ?? null;
-    } catch { return null; }
-  }
-
-  private guardarCache(clave: string, valor: unknown): void {
-    try { localStorage.setItem(clave, JSON.stringify(valor)); } catch { /* sin espacio o bloqueado */ }
-  }
-
-  // Llama a este método al cerrar sesión (junto con la limpieza de la institución activa en AuthService)
-  limpiarCacheLocal(): void {
-    try {
-      localStorage.removeItem(this.claveCacheIngredientes);
-      localStorage.removeItem(this.claveCacheTipos);
-      localStorage.removeItem(this.claveCacheEntregas);
-    } catch { /* nada */ }
-  }
-
-  // Arrancan con la caché (o con los productos base) para que la pantalla NUNCA salga vacía
-  ingredientes: IngredienteOpcion[] = this.leerCache<IngredienteOpcion[]>(this.claveCacheIngredientes) ?? this.productosBase;
-  tiposMercado: TipoMercadoOpcion[] = this.leerCache<TipoMercadoOpcion[]>(this.claveCacheTipos) ?? this.tiposBase;
-  cargandoCatalogos = false;   // ya hay algo que mostrar; el servidor solo actualiza en segundo plano
-  errorMensaje = '';
-  errorCatalogos = '';   // aviso fijo en el modal cuando los catálogos no llegaron del servidor
-
-  // ===================== INSTITUCIÓN (nombre de la activa, para textos por defecto) =====================
-  institucionLote = '';
+  // ===================== INSTITUCIÓN =====================
+  instituciones: string[] = ['Liceo de Occidente'];
+  institucionLote = 'Liceo de Occidente';
+  institucionesDestinoEnvio: InstitucionAsignada[] = [];
+  institucionEnvioSeleccionada: number | null = null;
+  envioInstitucionTexto = '';
+  guardandoEnvio = false;
 
   // ===================== MENÚ / CATEGORÍAS =====================
   categoriaMenu = 'Todos';   // categoría elegida en la vista Menú
@@ -231,6 +240,8 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
   // ===================== HISTORIAL DE ENTREGAS =====================
   // Si te da error 404 al cargar la tabla, pon aquí la misma ruta que usa registrar() en entregas.service.ts
   private readonly urlEntregas = `${environment.apiUrl}/entregas/`;
+  private readonly claveCacheIngredientes = 'sirae_cache_ingredientes';
+  private readonly claveCacheTipos = 'sirae_cache_tipos_mercado';
 
   mostrarModalEntrega = false;
   cargandoHistorial = false;
@@ -242,11 +253,14 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
   idSede: number | null = null;          // opcional: viene de "Entregas" en Mis sedes (?sede=ID)
   ahoraTexto = '';
   private subInstitucion?: Subscription;
+  private subRuta?: Subscription;
   private reloj?: ReturnType<typeof setInterval>;
 
   // Se llena en ngOnInit con la caché de la institución activa
   private entregasRaw: any[] = [];
   historial: FilaEntrega[] = [];
+  historialEnvios: EnvioRegistro[] = [];
+  readonly destinosEnvioSeleccionados = new Set<string>();
 
   // Filtros: se aplican al instante, sin botón
   textoFiltro = '';
@@ -278,94 +292,173 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    const sede = Number(this.route.snapshot.queryParamMap.get('sede'));
-    this.idSede = sede > 0 ? sede : null;
+    this.institucionActiva = this.authService.obtenerInstitucionActiva();
+    const usuario = this.authService.obtenerUsuario();
+    this.idInstitucion = this.institucionActiva?.id_institucion ?? usuario?.id_institucion ?? null;
+    this.prepararInstitucionesDestino();
 
-    this.aplicarInstitucion(this.authService.obtenerInstitucionActiva(), false);
-
-    // Sin institución elegida no se puede trabajar en Inventario: se vuelve a la pantalla de selección
-    if (!this.institucionActiva) {
-      this.router.navigate(['/dashboard-supervisor'], { queryParams: { cambiar: 'true' } });
-      return;
-    }
-
-    this.reconstruirHistorial();   // pinta YA con la caché / productos base, sin esperar al servidor
-    this.cargarCatalogos();
-    this.cargarHistorial();
-
-    // Si el supervisor cambia de institución, se recarga todo con la nueva
-    this.subInstitucion = this.authService.institucionActiva$.subscribe(inst => {
-      if ((inst?.id_institucion ?? null) !== this.idInstitucion) {
-        if (!inst) {
-          this.router.navigate(['/dashboard-supervisor'], { queryParams: { cambiar: 'true' } });
-          return;
-        }
-        // Al cambiar de institución, la sede elegida antes ya no aplica
-        this.idSede = null;
-        this.aplicarInstitucion(inst, true);
+    this.subInstitucion = this.authService.institucionActiva$.subscribe(institucion => {
+      const idAnterior = this.idInstitucion;
+      this.institucionActiva = institucion;
+      this.idInstitucion = institucion?.id_institucion ?? this.authService.obtenerUsuario()?.id_institucion ?? null;
+      this.prepararInstitucionesDestino();
+      if (idAnterior !== this.idInstitucion) this.cargarHistorial();
+      this.cdr.markForCheck();
+    });
+    this.subRuta = this.route.queryParamMap.subscribe(params => {
+      const sede = Number(params.get('sede'));
+      const idSede = Number.isInteger(sede) && sede > 0 ? sede : null;
+      if (idSede !== this.idSede) {
+        this.idSede = idSede;
+        this.cargarHistorial();
       }
+      this.cdr.markForCheck();
     });
 
     this.actualizarReloj();
-    this.reloj = setInterval(() => { this.actualizarReloj(); this.cdr.markForCheck(); }, 30000);
+    this.reloj = setInterval(() => this.actualizarReloj(), 60_000);
+    this.cargarHistorial();
+    this.cargarCatalogos();
+    this.cargarInstitucionesSupervisor();
   }
 
   ngOnDestroy(): void {
     this.subInstitucion?.unsubscribe();
-    if (this.reloj) clearInterval(this.reloj);
+    this.subRuta?.unsubscribe();
+    if (this.reloj !== undefined) clearInterval(this.reloj);
   }
 
-  // Nombre que se muestra en el encabezado
   get nombreInstitucion(): string {
-    return this.institucionActiva?.nombre_institucion ?? 'Sin institución seleccionada';
+    const usuario = this.authService.obtenerUsuario();
+    return this.institucionActiva?.nombre_institucion
+      ?? usuario?.institucion_nombre
+      ?? usuario?.institucion
+      ?? 'Institución';
   }
 
-  // Sede activa (cuando se llega desde "Entregas" en Mis sedes)
   get nombreSede(): string {
-    const s = (this.institucionActiva?.sedes ?? []).find((x: any) => Number(x.id_sede) === this.idSede);
-    return (s as any)?.nombre_sede ?? '';
+    const sede = this.institucionActiva?.sedes?.find(item =>
+      Number(item.id_sede ?? item.id) === this.idSede,
+    );
+    return sede?.nombre_sede ?? '';
+  }
+
+  get destinosDisponibles(): string[] {
+    if (this.idInstitucion === null) return [];
+    const institucion = this.nombreInstitucion;
+    const sedes = this.institucionActiva?.sedes ?? [];
+    if (this.idSede !== null) {
+      const sedeActiva = sedes.find(item => Number(item.id_sede ?? item.id) === this.idSede);
+      return sedeActiva?.nombre_sede ? [`${institucion} - ${sedeActiva.nombre_sede}`] : [institucion];
+    }
+    return [
+      institucion,
+      ...sedes
+        .filter(item => item.nombre_sede)
+        .map(item => `${institucion} - ${item.nombre_sede}`),
+    ];
+  }
+
+  get entradasHistorial(): FilaEntrega[] {
+    return this.historial.filter(entrega => !!entrega.destino || !!entrega.responsable);
   }
 
   private actualizarReloj(): void {
     this.ahoraTexto = new Date().toLocaleString('es-CO', {
-      day: '2-digit', month: '2-digit', year: 'numeric',
-      hour: '2-digit', minute: '2-digit', hour12: true,
+      dateStyle: 'short',
+      timeStyle: 'short',
     });
   }
 
-  // Cambia la institución activa: usa su caché y (si recargar) vuelve a pedir sus entregas
-  private aplicarInstitucion(inst: InstitucionAsignada | null, recargar: boolean): void {
-    this.institucionActiva = inst;
-    this.idInstitucion = inst?.id_institucion ?? null;
-    this.institucionLote = inst?.nombre_institucion ?? '';
-
-    this.entregasRaw = this.leerCache<any[]>(this.claveCacheEntregas) ?? [];
-    this.seleccionados = [];
-    this.productoDetalle = null;
-
-    if (recargar) {
-      this.reconstruirHistorial();
-      this.cargarHistorial();
-      this.cdr.markForCheck();
+  private guardarCache<T>(clave: string, datos: T): void {
+    try {
+      localStorage.setItem(clave, JSON.stringify(datos));
+    } catch (error) {
+      console.warn(`No se pudo guardar la caché "${clave}".`, error);
     }
   }
 
-  // Datos de institución / sede que se envían al guardar una entrega
-  private datosInstitucion(): Record<string, number> {
-    const datos: Record<string, number> = {};
-    if (this.idInstitucion != null) datos['id_institucion'] = this.idInstitucion;
-    if (this.idSede != null) datos['id_sede'] = this.idSede;
-    return datos;
+  private prepararInstitucionesDestino(): void {
+    const disponibles = [...this.authService.obtenerInstitucionesSupervisor()];
+    const activa = this.authService.obtenerInstitucionActiva();
+    if (activa && !disponibles.some(i => i.id_institucion === activa.id_institucion)) {
+      disponibles.push(activa);
+    }
+    this.institucionesDestinoEnvio = disponibles.filter(i => Number.isInteger(i.id_institucion) && i.id_institucion > 0);
+    this.institucionEnvioSeleccionada =
+      this.institucionesDestinoEnvio.find(i => i.id_institucion === activa?.id_institucion)?.id_institucion
+      ?? this.institucionesDestinoEnvio[0]?.id_institucion
+      ?? null;
   }
 
-  // Seguro extra: si el backend devuelve entregas de varias instituciones, se descartan las que no son de la activa.
-  // (Las que no traen institución se dejan pasar: no hay forma de saber de cuál son.)
+  private datosInstitucion(destino?: string): { id_institucion?: number; id_sede?: number } {
+    const institucionActiva = this.institucionActiva?.id_institucion ?? this.idInstitucion ?? undefined;
+    const destinoSeleccionado = destino ?? this.entradaDestino;
+    const sede = this.institucionActiva?.sedes?.find(item =>
+      destinoSeleccionado.endsWith(` - ${item.nombre_sede}`),
+    );
+    const idSede = sede ? Number(sede.id_sede ?? sede.id) : this.idSede ?? undefined;
+    return {
+      ...(institucionActiva !== undefined ? { id_institucion: institucionActiva } : {}),
+      ...(idSede !== undefined ? { id_sede: idSede } : {}),
+    };
+  }
+
   private soloDeInstitucion(lista: any[]): any[] {
-    if (this.idInstitucion == null) return lista;
     return lista.filter(item => {
-      const raw = item.id_institucion
-        ?? (typeof item.institucion === 'number' ? item.institucion : (item.institucion?.id_institucion ?? item.institucion?.id));
-      return raw == null || Number(raw) === this.idInstitucion;
+      const referenciaInstitucion = item.id_institucion
+        ?? (typeof item.institucion === 'object' && item.institucion !== null
+          ? item.institucion.id_institucion ?? item.institucion.id
+          : item.institucion);
+      if (this.idInstitucion !== null && referenciaInstitucion != null
+        && Number(referenciaInstitucion) !== this.idInstitucion) return false;
+
+      if (this.idSede !== null) {
+        const referenciaSede = item.id_sede
+          ?? (typeof item.sede === 'object' && item.sede !== null
+            ? item.sede.id_sede ?? item.sede.id
+            : item.sede);
+        if (referenciaSede != null) return Number(referenciaSede) === this.idSede;
+        const destino = typeof item.destino === 'string' ? item.destino : '';
+        if (destino.includes(' - ')) {
+          return this.normalizarNombre(destino).endsWith(this.normalizarNombre(` - ${this.nombreSede}`));
+        }
+        return false;
+      }
+      return true;
+    });
+  }
+
+  private normalizarNombre(valor: string): string {
+    return valor.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
+  }
+
+  private cargarInstitucionesSupervisor(): void {
+    const activa = this.authService.obtenerInstitucionActiva();
+    const cacheadas = this.authService.obtenerInstitucionesSupervisor();
+    if (cacheadas.length > 0) {
+      this.instituciones = cacheadas.map(i => i.nombre_institucion);
+      if (activa && this.instituciones.includes(activa.nombre_institucion)) {
+        this.institucionLote = activa.nombre_institucion;
+      } else {
+        this.institucionLote = this.instituciones[0];
+      }
+    }
+
+    this.http.get<any>(`${environment.apiUrl}/instituciones/`).subscribe({
+      next: (resp) => {
+        const lista = Array.isArray(resp) ? resp : (resp?.results ?? []);
+        if (lista.length > 0) {
+          this.instituciones = lista.map((i: any) => i.nombre_institucion ?? i.nombre);
+          const activaActual = this.authService.obtenerInstitucionActiva();
+          if (activaActual && this.instituciones.includes(activaActual.nombre_institucion)) {
+            this.institucionLote = activaActual.nombre_institucion;
+          } else {
+            this.institucionLote = this.instituciones[0];
+          }
+        }
+      },
+      error: () => {}
     });
   }
 
@@ -561,7 +654,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
         unidad: f.unidad,
         fecha_entrega: this.fechaRecepcionLote,
         fecha_vencimiento: f.fechaVencimiento,
-        ...this.datosInstitucion(),
+        ...this.datosInstitucion(this.entradaDestino),
         observaciones: '',
       } as any).pipe(
         map(() => ({ ok: true, fila: f })),
@@ -626,7 +719,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       next: (lista) => {
         if (idPedido !== this.idInstitucion) return;   // llegó tarde: ya se cambió de institución
         this.entregasRaw = lista;
-        this.guardarCache(this.claveCacheEntregas, lista);
+        this.historialEnvios = this.registrosEnvioDe(lista);
         this.reconstruirHistorial();
         this.cargandoHistorial = false;
         this.cdr.markForCheck();
@@ -709,6 +802,48 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       responsable: this.texto(item.responsable) || this.texto(item.responsable_nombre) || this.texto(item.usuario) || extra?.responsable || '',
       estadoEntrega: item.estado ?? '',
     };
+  }
+
+  private registrosEnvioDe(lista: readonly RegistroEntregaEnvio[]): EnvioRegistro[] {
+    return lista.flatMap((item, index) => {
+      const referencia = item.id_institucion ?? item.institucion;
+      const referenciaSede = item.id_sede ?? item.sede;
+      const idInstitucion = typeof referencia === 'object' && referencia !== null
+        ? referencia.id_institucion ?? referencia.id
+        : referencia;
+      const idSede = typeof referenciaSede === 'object' && referenciaSede !== null
+        ? referenciaSede.id_sede ?? referenciaSede.id
+        : referenciaSede;
+      const nombre = item.institucion_nombre
+        || this.nombreReferencia(referencia)
+        || item.destino_nombre
+        || item.destino
+        || '';
+      const destino = item.destino
+        || (item.sede_nombre || this.nombreReferencia(referenciaSede)
+          ? `${nombre} - ${item.sede_nombre || this.nombreReferencia(referenciaSede)}`
+          : nombre);
+
+      if ((idInstitucion == null || idInstitucion === '') && !nombre) return [];
+
+      return [{
+        id: Number(item.id_entrega ?? item.id ?? index),
+        idInstitucion: idInstitucion == null ? null : Number(idInstitucion),
+        ingrediente: item.ingrediente_nombre || this.nombreReferencia(item.ingrediente),
+        cantidad: item.cantidad == null || item.cantidad === '' ? 0 : Number(item.cantidad),
+        unidad: item.unidad ?? '',
+        destino,
+        fechaSalida: this.soloFecha(item.fecha_salida ?? item.fecha_entrega),
+        fechaEntrega: this.soloFecha(item.fecha_entrega),
+        enviadoEl: this.soloFecha(item.created_at ?? item.fecha_creacion ?? item.fecha_entrega),
+      }];
+    });
+  }
+
+  private nombreReferencia(valor: string | number | ReferenciaInstitucion | null | undefined): string {
+    if (typeof valor === 'string') return valor;
+    if (typeof valor !== 'object' || valor === null) return '';
+    return valor.nombre_institucion ?? valor.nombre ?? valor.nombre_ingrediente ?? '';
   }
 
   // Acepta texto o un objeto { nombre }. Un número (id) no es un nombre.
@@ -1047,22 +1182,8 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     return this.seleccionados.some(s => s.idIngrediente === producto.id);
   }
 
-  // ===================== DESTINOS: SOLO LA INSTITUCIÓN ACTIVA Y SUS SEDES =====================
-  // Si la institución tiene sedes, los destinos son "Institución - Sede".
-  // Si no tiene sedes, el único destino es la institución misma.
-  get destinosDisponibles(): string[] {
-    const inst = this.institucionActiva;
-    if (!inst) return [];
-    const sedes = (inst.sedes ?? [])
-      .map((s: any) => s.nombre_sede as string)
-      .filter((n: string) => !!n);
-    return sedes.length > 0
-      ? sedes.map((n: string) => `${inst.nombre_institucion} - ${n}`)
-      : [inst.nombre_institucion];
-  }
-
-  // ===================== ENVIAR A LA INSTITUCIÓN / SEDES =====================
-  // Flujo: icono de la escuela en un producto seleccionado -> ventana emergente -> se ELIGE la institución o sede
+  // ===================== ENVIAR A LAS INSTITUCIONES =====================
+  // Flujo: icono de la escuela en un producto seleccionado -> se elige la institución o sede
   // (puede ser más de una), la cantidad de cada una, la fecha de salida y la de entrega -> Enviar ->
   // queda en la pestaña Historial (un registro por destino).
   envioProducto: FilaEntrega | null = null;   // producto de la ventana emergente (null = cerrada)
@@ -1073,31 +1194,6 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
   errorEnvio = '';
   hoyEnvio = this.fechaHoy();
   mostrarHistorialEnvios = false;
-
-  // Cuando tengas la ruta del backend para envíos, cambia el guardado en enviarAInstituciones() por una llamada http.post
-  // (enviando id_institucion e id_sede)
-  private readonly claveEnvios = 'sirae_envios_institucion';
-  private enviosGuardados: EnvioRegistro[] = this.leerEnvios();
-
-  // Solo se ven los envíos de la institución activa (no se mezclan con los de otras)
-  get historialEnvios(): EnvioRegistro[] {
-    return this.enviosGuardados.filter(e => e.idInstitucion === this.idInstitucion);
-  }
-
-  // NUEVO: entradas de inventario registradas (lo más reciente primero) para mostrarlas en el panel Historial
-  get entradasHistorial(): FilaEntrega[] {
-    return [...this.historial]
-      .sort((a, b) =>
-        b.fechaRecepcion.localeCompare(a.fechaRecepcion) || ((b.id ?? 0) - (a.id ?? 0)))
-      .slice(0, 50);
-  }
-
-  private leerEnvios(): EnvioRegistro[] {
-    try {
-      const datos = JSON.parse(localStorage.getItem(this.claveEnvios) || '[]');
-      return Array.isArray(datos) ? datos : [];
-    } catch { return []; }
-  }
 
   trackEnvioHist = (_: number, r: EnvioRegistro) => r.id;
 
@@ -1116,32 +1212,79 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
 
   // Clic en el icono de la escuela de un producto
   abrirModalEnvio(item: FilaEntrega): void {
+    this.prepararInstitucionesDestino();
     this.hoyEnvio = this.fechaHoy();
     this.envioProducto = item;
     this.envioUnidad = this.normalizarUnidad(item.unidad) || 'Kg';
     this.envioFechaSalida = this.hoyEnvio;
     this.envioFechaEntrega = this.hoyEnvio;
-    // Si solo hay un destino posible (institución sin sedes), ya queda elegido
-    this.envioDestinos = this.destinosDisponibles.length === 1
-      ? [{ institucion: this.destinosDisponibles[0], cantidad: null }]
-      : [];
+    this.envioDestinos = [];
+    this.destinosEnvioSeleccionados.clear();
+    this.envioInstitucionTexto = '';
     this.errorEnvio = '';
   }
 
   cerrarModalEnvio(): void {
     this.envioProducto = null;
+    this.envioInstitucionTexto = '';
   }
 
-  estaDestino(nombre: string): boolean {
-    return this.envioDestinos.some(d => d.institucion === nombre);
+  // Agrega a la lista la institución que se escribió
+  agregarDestinoEscrito(): void {
+    const institucion = this.institucionesDestinoEnvio.find(
+      item => item.id_institucion === this.institucionEnvioSeleccionada,
+    );
+    if (!institucion) {
+      this.errorEnvio = 'No hay una institución asignada para enviar el producto.';
+      return;
+    }
+    const nombre = this.envioInstitucionTexto.trim() || institucion.nombre_institucion;
+    const existe = this.envioDestinos.some(d =>
+      d.idInstitucion === institucion.id_institucion
+      && this.normalizarNombre(d.institucion) === this.normalizarNombre(nombre),
+    );
+    if (existe) {
+      this.errorEnvio = 'Esa institución ya está en la lista.';
+    } else {
+      this.errorEnvio = '';
+      this.envioDestinos.push({
+        idInstitucion: institucion.id_institucion,
+        institucion: nombre,
+        cantidad: null,
+      });
+    }
+    this.envioInstitucionTexto = '';
   }
 
-  // Un clic agrega el destino; otro clic lo quita
-  alternarDestino(nombre: string): void {
-    const i = this.envioDestinos.findIndex(d => d.institucion === nombre);
-    if (i >= 0) this.envioDestinos.splice(i, 1);
-    else this.envioDestinos.push({ institucion: nombre, cantidad: null });
+  alternarDestino(destino: string): void {
+    const existente = this.envioDestinos.find(item => item.institucion === destino);
+    if (existente) {
+      this.envioDestinos = this.envioDestinos.filter(item => item !== existente);
+      this.destinosEnvioSeleccionados.delete(destino);
+      return;
+    }
+
+    const sede = this.institucionActiva?.sedes?.find(item =>
+      destino.endsWith(` - ${item.nombre_sede}`),
+    );
+    const idInstitucion = this.institucionActiva?.id_institucion ?? this.idInstitucion;
+    if (idInstitucion === null || idInstitucion === undefined) {
+      this.errorEnvio = 'No se encontró el identificador de la institución seleccionada.';
+      return;
+    }
+
     this.errorEnvio = '';
+    this.destinosEnvioSeleccionados.add(destino);
+    this.envioDestinos.push({
+      idInstitucion,
+      ...(sede ? { idSede: Number(sede.id_sede ?? sede.id) } : {}),
+      institucion: destino,
+      cantidad: null,
+    });
+  }
+
+  estaDestino(destino: string): boolean {
+    return this.destinosEnvioSeleccionados.has(destino);
   }
 
   quitarDestinoEnvio(indice: number): void {
@@ -1188,34 +1331,74 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     if (this.envioFechaSalida < hoy) { this.errorEnvio = 'La fecha de salida no puede ser anterior a hoy.'; return; }
     if (this.envioFechaEntrega < this.envioFechaSalida) { this.errorEnvio = 'La fecha de entrega no puede ser anterior a la de salida.'; return; }
 
-    const registros: EnvioRegistro[] = destinos.map((d, i) => ({
-      id: Date.now() + i,
-      idInstitucion: this.idInstitucion,
-      ingrediente: prod.ingrediente,
-      cantidad: d.cantidad!,
-      unidad: this.envioUnidad,
-      destino: d.institucion,
-      fechaSalida: this.envioFechaSalida,
-      fechaEntrega: this.envioFechaEntrega,
-      enviadoEl: hoy,
-    }));
-
-    const actualizado = [...registros, ...this.enviosGuardados];   // lo más reciente primero
-    try {
-      localStorage.setItem(this.claveEnvios, JSON.stringify(actualizado));
-    } catch {
-      this.errorEnvio = 'No se pudo guardar el envío en este navegador.';
+    if (!prod.idIngrediente || !prod.idTipoMercado || !prod.fechaVencimiento) {
+      this.errorEnvio = 'Al producto le faltan datos requeridos para registrar el envío.';
       return;
     }
 
-    this.enviosGuardados = actualizado;
-    this.envioProducto = null;
-    this.errorEnvio = '';
-    this.mostrarHistorialEnvios = true;   // se abre el Historial para ver que quedó registrado
-    void this.alertas.success(
-      'Envío registrado',
-      `${prod.ingrediente} se envió a ${registros.length} destino(s), con salida el ${this.fechaCorta(registros[0].fechaSalida)}.`
+    this.guardandoEnvio = true;
+    const peticiones = destinos.map(destino =>
+      this.entregasService.registrar({
+        id_ingrediente: prod.idIngrediente!,
+        id_tipo_mercado: prod.idTipoMercado!,
+        id_institucion: destino.idInstitucion,
+        ...(destino.idSede ? { id_sede: destino.idSede } : {}),
+        fecha_entrega: this.envioFechaEntrega,
+        fecha_salida: this.envioFechaSalida,
+        fecha_vencimiento: prod.fechaVencimiento,
+        cantidad: destino.cantidad!,
+        observaciones: '',
+        frecuencia: prod.frecuencia,
+        unidad: this.envioUnidad,
+        destino: destino.institucion,
+      }).pipe(
+        map(() => ({ ok: true, destino })),
+        catchError(error => {
+          console.error(`Error al enviar ${prod.ingrediente} a ${destino.institucion}:`, error);
+          return of({ ok: false, destino });
+        }),
+      ),
     );
+
+    forkJoin(peticiones).subscribe(resultados => {
+      this.guardandoEnvio = false;
+      const exitosos = resultados.filter(resultado => resultado.ok);
+      const fallidos = resultados.filter(resultado => !resultado.ok);
+      const registros: EnvioRegistro[] = exitosos.map(({ destino }, index) => ({
+        id: Date.now() + index,
+        idInstitucion: destino.idInstitucion,
+        ingrediente: prod.ingrediente,
+        cantidad: destino.cantidad!,
+        unidad: this.envioUnidad,
+        destino: destino.institucion,
+        fechaSalida: this.envioFechaSalida,
+        fechaEntrega: this.envioFechaEntrega,
+        enviadoEl: hoy,
+      }));
+
+      this.historialEnvios = [...registros, ...this.historialEnvios];
+      this.envioDestinos = fallidos.map(({ destino }) => destino);
+      this.destinosEnvioSeleccionados.clear();
+      this.envioDestinos.forEach(destino => this.destinosEnvioSeleccionados.add(destino.institucion));
+      if (exitosos.length > 0) this.cargarHistorial();
+
+      if (fallidos.length > 0) {
+        this.errorEnvio = `Se registraron ${exitosos.length} envío(s); no se pudieron registrar ${fallidos.length}. Corrige el problema e inténtalo de nuevo.`;
+        void this.alertas.error('Envío incompleto', this.errorEnvio);
+        this.cdr.markForCheck();
+        return;
+      }
+
+      this.envioProducto = null;
+      this.envioInstitucionTexto = '';
+      this.errorEnvio = '';
+      this.mostrarHistorialEnvios = true;
+      void this.alertas.success(
+        'Envío registrado',
+        `${prod.ingrediente} se envió a ${registros.length} destino(s), con entrega el ${this.fechaCorta(this.envioFechaEntrega)}.`,
+      );
+      this.cdr.markForCheck();
+    });
   }
 
   // ===================== CALENDARIO DE ENTREGAS =====================
