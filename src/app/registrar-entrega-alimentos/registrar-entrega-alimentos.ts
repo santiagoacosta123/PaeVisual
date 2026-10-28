@@ -1,13 +1,14 @@
-import { Component, HostListener, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
-import { Observable, forkJoin, of } from 'rxjs';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { ActivatedRoute, Router } from '@angular/router';
+import { Observable, Subscription, forkJoin, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { SweetAlertService } from '../sweet-alert.service';
 import { EntregasService } from '../services/entregas.service';
-import { AuthService } from '../core/auth/auth.service';
+import { AuthService, InstitucionAsignada } from '../core/auth/auth.service';
 
 // Opciones de los catálogos (se definen aquí para no depender de la forma exacta de los tipos del servicio)
 interface IngredienteOpcion { id: number; nombre: string; }
@@ -104,7 +105,7 @@ interface EntradaFila {
   perecedero: boolean;
 }
 
-// Una institución a la que va el producto, con la cantidad que se le envía
+// Una institución (o sede) a la que va el producto, con la cantidad que se le envía
 interface EnvioDestino {
   institucion: string;
   cantidad: number | null;
@@ -113,6 +114,7 @@ interface EnvioDestino {
 // Un envío ya hecho (se muestra en el historial)
 interface EnvioRegistro {
   id: number;
+  idInstitucion: number | null;   // institución activa cuando se hizo el envío (para no mezclar instituciones)
   ingrediente: string;
   cantidad: number;
   unidad: string;
@@ -139,17 +141,12 @@ type FiltroEstado = 'Todos' | 'Vigente' | 'Próximo a vencer' | 'Vencido';
   templateUrl: './registrar-entrega-alimentos.html',
   styleUrls: ['./registrar-entrega-alimentos.css'],
 })
-export class RegistrarEntregaAlimentosComponent implements OnInit {
-
-  ingredientes: IngredienteOpcion[] = [];
-  tiposMercado: TipoMercadoOpcion[] = [];
-  cargandoCatalogos = true;
-  errorMensaje = '';
-  errorCatalogos = '';   // aviso fijo en el modal cuando los catálogos no llegaron del servidor
+export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
 
   // ===================== PRODUCTOS BASE =====================
   // Se usan cuando el servidor no devuelve ingredientes, para que el inventario nunca salga vacío.
   // IMPORTANTE: para poder GUARDAR, estos ids (1, 2, 3...) deben existir en la tabla de ingredientes del backend.
+  // (Van PRIMERO en la clase porque los campos de abajo los usan para pintar al instante.)
   private readonly productosBase: IngredienteOpcion[] = [
     { id: 1,  nombre: 'Arroz' },
     { id: 2,  nombre: 'Frijol' },
@@ -184,9 +181,42 @@ export class RegistrarEntregaAlimentosComponent implements OnInit {
     'Aceite': 'Litros', 'Leche': 'Litros', 'Huevos': 'Unidades',
   };
 
-  // ===================== INSTITUCIÓN =====================
-  instituciones: string[] = ['Liceo de Occidente'];
-  institucionLote = 'Liceo de Occidente';
+  // ===================== CACHÉ EN EL NAVEGADOR (carga instantánea) =====================
+  // Se muestra lo último que se sabía y se refresca en segundo plano.
+  private readonly claveCacheIngredientes = 'sirae_cat_ingredientes';
+  private readonly claveCacheTipos = 'sirae_cat_tipos_mercado';
+  // La caché del historial es POR institución: así nunca se ve lo de otra institución
+  private get claveCacheEntregas(): string { return `sirae_cache_entregas_${this.idInstitucion ?? 'todas'}`; }
+
+  private leerCache<T>(clave: string): T | null {
+    try {
+      const valor = JSON.parse(localStorage.getItem(clave) || 'null');
+      return valor ?? null;
+    } catch { return null; }
+  }
+
+  private guardarCache(clave: string, valor: unknown): void {
+    try { localStorage.setItem(clave, JSON.stringify(valor)); } catch { /* sin espacio o bloqueado */ }
+  }
+
+  // Llama a este método al cerrar sesión (junto con la limpieza de la institución activa en AuthService)
+  limpiarCacheLocal(): void {
+    try {
+      localStorage.removeItem(this.claveCacheIngredientes);
+      localStorage.removeItem(this.claveCacheTipos);
+      localStorage.removeItem(this.claveCacheEntregas);
+    } catch { /* nada */ }
+  }
+
+  // Arrancan con la caché (o con los productos base) para que la pantalla NUNCA salga vacía
+  ingredientes: IngredienteOpcion[] = this.leerCache<IngredienteOpcion[]>(this.claveCacheIngredientes) ?? this.productosBase;
+  tiposMercado: TipoMercadoOpcion[] = this.leerCache<TipoMercadoOpcion[]>(this.claveCacheTipos) ?? this.tiposBase;
+  cargandoCatalogos = false;   // ya hay algo que mostrar; el servidor solo actualiza en segundo plano
+  errorMensaje = '';
+  errorCatalogos = '';   // aviso fijo en el modal cuando los catálogos no llegaron del servidor
+
+  // ===================== INSTITUCIÓN (nombre de la activa, para textos por defecto) =====================
+  institucionLote = '';
 
   // ===================== MENÚ / CATEGORÍAS =====================
   categoriaMenu = 'Todos';   // categoría elegida en la vista Menú
@@ -206,6 +236,15 @@ export class RegistrarEntregaAlimentosComponent implements OnInit {
   cargandoHistorial = false;
   errorHistorial = false;
 
+  // ===================== INSTITUCIÓN SELECCIONADA =====================
+  institucionActiva: InstitucionAsignada | null = null;
+  idInstitucion: number | null = null;   // institución cuyas entregas se muestran
+  idSede: number | null = null;          // opcional: viene de "Entregas" en Mis sedes (?sede=ID)
+  ahoraTexto = '';
+  private subInstitucion?: Subscription;
+  private reloj?: ReturnType<typeof setInterval>;
+
+  // Se llena en ngOnInit con la caché de la institución activa
   private entregasRaw: any[] = [];
   historial: FilaEntrega[] = [];
 
@@ -233,40 +272,100 @@ export class RegistrarEntregaAlimentosComponent implements OnInit {
     private alertas: SweetAlertService,
     private http: HttpClient,
     private authService: AuthService,
+    private cdr: ChangeDetectorRef,
+    private route: ActivatedRoute,
+    private router: Router,
   ) {}
 
   ngOnInit(): void {
-    this.cargarCatalogos();
-    this.cargarHistorial();
-    this.cargarInstitucionesSupervisor();
-  }
+    const sede = Number(this.route.snapshot.queryParamMap.get('sede'));
+    this.idSede = sede > 0 ? sede : null;
 
-  private cargarInstitucionesSupervisor(): void {
-    const activa = this.authService.obtenerInstitucionActiva();
-    const cacheadas = this.authService.obtenerInstitucionesSupervisor();
-    if (cacheadas.length > 0) {
-      this.instituciones = cacheadas.map(i => i.nombre_institucion);
-      if (activa && this.instituciones.includes(activa.nombre_institucion)) {
-        this.institucionLote = activa.nombre_institucion;
-      } else {
-        this.institucionLote = this.instituciones[0];
-      }
+    this.aplicarInstitucion(this.authService.obtenerInstitucionActiva(), false);
+
+    // Sin institución elegida no se puede trabajar en Inventario: se vuelve a la pantalla de selección
+    if (!this.institucionActiva) {
+      this.router.navigate(['/dashboard-supervisor'], { queryParams: { cambiar: 'true' } });
+      return;
     }
 
-    this.http.get<any>(`${environment.apiUrl}/instituciones/`).subscribe({
-      next: (resp) => {
-        const lista = Array.isArray(resp) ? resp : (resp?.results ?? []);
-        if (lista.length > 0) {
-          this.instituciones = lista.map((i: any) => i.nombre_institucion ?? i.nombre);
-          const activaActual = this.authService.obtenerInstitucionActiva();
-          if (activaActual && this.instituciones.includes(activaActual.nombre_institucion)) {
-            this.institucionLote = activaActual.nombre_institucion;
-          } else {
-            this.institucionLote = this.instituciones[0];
-          }
+    this.reconstruirHistorial();   // pinta YA con la caché / productos base, sin esperar al servidor
+    this.cargarCatalogos();
+    this.cargarHistorial();
+
+    // Si el supervisor cambia de institución, se recarga todo con la nueva
+    this.subInstitucion = this.authService.institucionActiva$.subscribe(inst => {
+      if ((inst?.id_institucion ?? null) !== this.idInstitucion) {
+        if (!inst) {
+          this.router.navigate(['/dashboard-supervisor'], { queryParams: { cambiar: 'true' } });
+          return;
         }
-      },
-      error: () => {}
+        // Al cambiar de institución, la sede elegida antes ya no aplica
+        this.idSede = null;
+        this.aplicarInstitucion(inst, true);
+      }
+    });
+
+    this.actualizarReloj();
+    this.reloj = setInterval(() => { this.actualizarReloj(); this.cdr.markForCheck(); }, 30000);
+  }
+
+  ngOnDestroy(): void {
+    this.subInstitucion?.unsubscribe();
+    if (this.reloj) clearInterval(this.reloj);
+  }
+
+  // Nombre que se muestra en el encabezado
+  get nombreInstitucion(): string {
+    return this.institucionActiva?.nombre_institucion ?? 'Sin institución seleccionada';
+  }
+
+  // Sede activa (cuando se llega desde "Entregas" en Mis sedes)
+  get nombreSede(): string {
+    const s = (this.institucionActiva?.sedes ?? []).find((x: any) => Number(x.id_sede) === this.idSede);
+    return (s as any)?.nombre_sede ?? '';
+  }
+
+  private actualizarReloj(): void {
+    this.ahoraTexto = new Date().toLocaleString('es-CO', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit', hour12: true,
+    });
+  }
+
+  // Cambia la institución activa: usa su caché y (si recargar) vuelve a pedir sus entregas
+  private aplicarInstitucion(inst: InstitucionAsignada | null, recargar: boolean): void {
+    this.institucionActiva = inst;
+    this.idInstitucion = inst?.id_institucion ?? null;
+    this.institucionLote = inst?.nombre_institucion ?? '';
+
+    this.entregasRaw = this.leerCache<any[]>(this.claveCacheEntregas) ?? [];
+    this.seleccionados = [];
+    this.productoDetalle = null;
+
+    if (recargar) {
+      this.reconstruirHistorial();
+      this.cargarHistorial();
+      this.cdr.markForCheck();
+    }
+  }
+
+  // Datos de institución / sede que se envían al guardar una entrega
+  private datosInstitucion(): Record<string, number> {
+    const datos: Record<string, number> = {};
+    if (this.idInstitucion != null) datos['id_institucion'] = this.idInstitucion;
+    if (this.idSede != null) datos['id_sede'] = this.idSede;
+    return datos;
+  }
+
+  // Seguro extra: si el backend devuelve entregas de varias instituciones, se descartan las que no son de la activa.
+  // (Las que no traen institución se dejan pasar: no hay forma de saber de cuál son.)
+  private soloDeInstitucion(lista: any[]): any[] {
+    if (this.idInstitucion == null) return lista;
+    return lista.filter(item => {
+      const raw = item.id_institucion
+        ?? (typeof item.institucion === 'number' ? item.institucion : (item.institucion?.id_institucion ?? item.institucion?.id));
+      return raw == null || Number(raw) === this.idInstitucion;
     });
   }
 
@@ -281,7 +380,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit {
   }
 
   cargarCatalogos(): void {
-    this.cargandoCatalogos = true;
+    // No se activa "cargando": la pantalla ya tiene productos (caché o base) y se actualiza sola al llegar el servidor
     this.errorMensaje = '';
     this.errorCatalogos = '';
     forkJoin({
@@ -291,11 +390,17 @@ export class RegistrarEntregaAlimentosComponent implements OnInit {
       next: ({ ingredientes, tiposMercado }) => {
         this.ingredientes = ingredientes.length > 0 ? ingredientes : this.productosBase;
         this.tiposMercado = tiposMercado.length > 0 ? tiposMercado : this.tiposBase;
+
+        // Solo se guarda en caché lo que sí llegó del servidor (nunca los productos base)
+        if (ingredientes.length > 0) this.guardarCache(this.claveCacheIngredientes, ingredientes);
+        if (tiposMercado.length > 0) this.guardarCache(this.claveCacheTipos, tiposMercado);
+
         this.cargandoCatalogos = false;
         if (tiposMercado.length === 0) {
           this.errorCatalogos = 'El servidor no devolvió tipos de mercado; se usan Perecedero y No perecedero locales. Para guardar deben existir en el backend.';
         }
         this.reconstruirHistorial(); // ya hay nombres de catálogo para la tabla (y arma la lista del lote)
+        this.cdr.markForCheck();
       },
       error: (error) => {
         console.error('Error al cargar catálogos de entregas:', error);
@@ -307,6 +412,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit {
         if (this.tiposMercado.length === 0) this.tiposMercado = this.tiposBase;
         this.cargandoCatalogos = false;
         this.reconstruirHistorial();
+        this.cdr.markForCheck();
       },
     });
   }
@@ -455,6 +561,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit {
         unidad: f.unidad,
         fecha_entrega: this.fechaRecepcionLote,
         fecha_vencimiento: f.fechaVencimiento,
+        ...this.datosInstitucion(),
         observaciones: '',
       } as any).pipe(
         map(() => ({ ok: true, fila: f })),
@@ -475,6 +582,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit {
       resultados.filter(r => r.ok).forEach(r => (r.fila.cantidad = null));
 
       if (guardadas > 0) {
+        this.mostrarHistorialEnvios = true;   // NUEVO: el panel de la izquierda queda en Historial para ver lo registrado
         // El inventario recién guardado queda visible: sin filtros, ordenado por fecha (el más reciente primero) y abierto
         this.limpiarFiltros();
         this.ordenColumna = 'fechaRecepcion';
@@ -494,6 +602,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit {
         void this.alertas.error('El inventario quedó incompleto', this.errorMensaje);
       }
       this.cargarHistorial();
+      this.cdr.markForCheck();
     });
   }
 
@@ -501,21 +610,33 @@ export class RegistrarEntregaAlimentosComponent implements OnInit {
   //  HISTORIAL: carga de la tabla
   // =====================================================
   cargarHistorial(): void {
-    this.cargandoHistorial = true;
+    // Solo se muestra "Cargando entregas…" si no hay nada guardado de antes; si hay caché, se refresca en silencio
+    this.cargandoHistorial = this.entregasRaw.length === 0;
     this.errorHistorial = false;
 
-    this.http.get<any>(this.urlEntregas).pipe(
-      map(d => (Array.isArray(d) ? d : (d?.results ?? [])) as any[])
+    const idPedido = this.idInstitucion;
+    let params = new HttpParams();
+    if (this.idInstitucion != null) params = params.set('id_institucion', this.idInstitucion);
+    if (this.idSede != null) params = params.set('id_sede', this.idSede);
+
+    this.http.get<any>(this.urlEntregas, { params }).pipe(
+      map(d => (Array.isArray(d) ? d : (d?.results ?? [])) as any[]),
+      map(lista => this.soloDeInstitucion(lista))
     ).subscribe({
       next: (lista) => {
+        if (idPedido !== this.idInstitucion) return;   // llegó tarde: ya se cambió de institución
         this.entregasRaw = lista;
+        this.guardarCache(this.claveCacheEntregas, lista);
         this.reconstruirHistorial();
         this.cargandoHistorial = false;
+        this.cdr.markForCheck();
       },
       error: (error) => {
         console.error('Error al consultar entregas:', error);
         this.cargandoHistorial = false;
-        this.errorHistorial = true;
+        // Si hay datos de caché en pantalla no se muestra el error: se sigue viendo lo último conocido
+        this.errorHistorial = this.entregasRaw.length === 0;
+        this.cdr.markForCheck();
       },
     });
   }
@@ -614,7 +735,6 @@ export class RegistrarEntregaAlimentosComponent implements OnInit {
   // Si viene el nombre de un producto (botón + de su tarjeta), el modal abre filtrado en ese producto.
   // Las cantidades ya escritas se conservan (también alimentan el panel "Tu selección").
   abrirModalEntrega(producto?: string): void {
-    this.institucionLote = this.institucionLote || this.instituciones[0];
     this.fechaRecepcionLote = this.fechaHoy();       // siempre abre con la fecha de hoy
     this.busquedaLote = producto ?? '';
     this.categoriaLote = 'Todos';
@@ -927,23 +1047,50 @@ export class RegistrarEntregaAlimentosComponent implements OnInit {
     return this.seleccionados.some(s => s.idIngrediente === producto.id);
   }
 
-  // ===================== ENVIAR A LAS INSTITUCIONES =====================
-  // Flujo: icono de la escuela en un producto seleccionado -> ventana emergente -> se ESCRIBE la institución
+  // ===================== DESTINOS: SOLO LA INSTITUCIÓN ACTIVA Y SUS SEDES =====================
+  // Si la institución tiene sedes, los destinos son "Institución - Sede".
+  // Si no tiene sedes, el único destino es la institución misma.
+  get destinosDisponibles(): string[] {
+    const inst = this.institucionActiva;
+    if (!inst) return [];
+    const sedes = (inst.sedes ?? [])
+      .map((s: any) => s.nombre_sede as string)
+      .filter((n: string) => !!n);
+    return sedes.length > 0
+      ? sedes.map((n: string) => `${inst.nombre_institucion} - ${n}`)
+      : [inst.nombre_institucion];
+  }
+
+  // ===================== ENVIAR A LA INSTITUCIÓN / SEDES =====================
+  // Flujo: icono de la escuela en un producto seleccionado -> ventana emergente -> se ELIGE la institución o sede
   // (puede ser más de una), la cantidad de cada una, la fecha de salida y la de entrega -> Enviar ->
-  // queda en la pestaña Historial (un registro por institución).
+  // queda en la pestaña Historial (un registro por destino).
   envioProducto: FilaEntrega | null = null;   // producto de la ventana emergente (null = cerrada)
   envioUnidad = 'Kg';
   envioFechaSalida = '';
   envioFechaEntrega = '';
   envioDestinos: EnvioDestino[] = [];
-  envioInstitucionTexto = '';                 // institución que se está escribiendo
   errorEnvio = '';
   hoyEnvio = this.fechaHoy();
   mostrarHistorialEnvios = false;
 
   // Cuando tengas la ruta del backend para envíos, cambia el guardado en enviarAInstituciones() por una llamada http.post
+  // (enviando id_institucion e id_sede)
   private readonly claveEnvios = 'sirae_envios_institucion';
-  historialEnvios: EnvioRegistro[] = this.leerEnvios();
+  private enviosGuardados: EnvioRegistro[] = this.leerEnvios();
+
+  // Solo se ven los envíos de la institución activa (no se mezclan con los de otras)
+  get historialEnvios(): EnvioRegistro[] {
+    return this.enviosGuardados.filter(e => e.idInstitucion === this.idInstitucion);
+  }
+
+  // NUEVO: entradas de inventario registradas (lo más reciente primero) para mostrarlas en el panel Historial
+  get entradasHistorial(): FilaEntrega[] {
+    return [...this.historial]
+      .sort((a, b) =>
+        b.fechaRecepcion.localeCompare(a.fechaRecepcion) || ((b.id ?? 0) - (a.id ?? 0)))
+      .slice(0, 50);
+  }
 
   private leerEnvios(): EnvioRegistro[] {
     try {
@@ -959,7 +1106,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit {
     return this.historialEnvios.some(e => e.ingrediente === nombre);
   }
 
-  // Instituciones a las que ya se envió este producto ("Ola, Sanna"); '' si aún no se ha enviado
+  // Destinos a los que ya se envió este producto; '' si aún no se ha enviado
   destinosEnviados(nombre: string): string {
     const lista = this.historialEnvios
       .filter(e => e.ingrediente === nombre)
@@ -974,28 +1121,27 @@ export class RegistrarEntregaAlimentosComponent implements OnInit {
     this.envioUnidad = this.normalizarUnidad(item.unidad) || 'Kg';
     this.envioFechaSalida = this.hoyEnvio;
     this.envioFechaEntrega = this.hoyEnvio;
-    this.envioDestinos = [];            // la institución se escribe, ya no viene pre-elegida
-    this.envioInstitucionTexto = '';
+    // Si solo hay un destino posible (institución sin sedes), ya queda elegido
+    this.envioDestinos = this.destinosDisponibles.length === 1
+      ? [{ institucion: this.destinosDisponibles[0], cantidad: null }]
+      : [];
     this.errorEnvio = '';
   }
 
   cerrarModalEnvio(): void {
     this.envioProducto = null;
-    this.envioInstitucionTexto = '';
   }
 
-  // Agrega a la lista la institución que se escribió
-  agregarDestinoEscrito(): void {
-    const nombre = this.envioInstitucionTexto.trim();
-    if (!nombre) return;
-    const existe = this.envioDestinos.some(d => d.institucion.toLowerCase() === nombre.toLowerCase());
-    if (existe) {
-      this.errorEnvio = 'Esa institución ya está en la lista.';
-    } else {
-      this.errorEnvio = '';
-      this.envioDestinos.push({ institucion: nombre, cantidad: null });
-    }
-    this.envioInstitucionTexto = '';
+  estaDestino(nombre: string): boolean {
+    return this.envioDestinos.some(d => d.institucion === nombre);
+  }
+
+  // Un clic agrega el destino; otro clic lo quita
+  alternarDestino(nombre: string): void {
+    const i = this.envioDestinos.findIndex(d => d.institucion === nombre);
+    if (i >= 0) this.envioDestinos.splice(i, 1);
+    else this.envioDestinos.push({ institucion: nombre, cantidad: null });
+    this.errorEnvio = '';
   }
 
   quitarDestinoEnvio(indice: number): void {
@@ -1024,13 +1170,10 @@ export class RegistrarEntregaAlimentosComponent implements OnInit {
     const prod = this.envioProducto;
     if (!prod) return;
 
-    // Si dejó una institución escrita sin pulsar "Agregar", se agrega sola
-    if (this.envioInstitucionTexto.trim()) this.agregarDestinoEscrito();
-
     const hoy = this.fechaHoy();
     const destinos = this.envioDestinos;
 
-    if (destinos.length === 0) { this.errorEnvio = 'Escribe al menos una institución.'; return; }
+    if (destinos.length === 0) { this.errorEnvio = 'Elige al menos una institución o sede.'; return; }
 
     const sinCantidad = destinos.filter(d => !d.cantidad || d.cantidad <= 0);
     if (sinCantidad.length > 0) {
@@ -1047,6 +1190,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit {
 
     const registros: EnvioRegistro[] = destinos.map((d, i) => ({
       id: Date.now() + i,
+      idInstitucion: this.idInstitucion,
       ingrediente: prod.ingrediente,
       cantidad: d.cantidad!,
       unidad: this.envioUnidad,
@@ -1056,7 +1200,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit {
       enviadoEl: hoy,
     }));
 
-    const actualizado = [...registros, ...this.historialEnvios];   // lo más reciente primero
+    const actualizado = [...registros, ...this.enviosGuardados];   // lo más reciente primero
     try {
       localStorage.setItem(this.claveEnvios, JSON.stringify(actualizado));
     } catch {
@@ -1064,14 +1208,13 @@ export class RegistrarEntregaAlimentosComponent implements OnInit {
       return;
     }
 
-    this.historialEnvios = actualizado;
+    this.enviosGuardados = actualizado;
     this.envioProducto = null;
-    this.envioInstitucionTexto = '';
     this.errorEnvio = '';
     this.mostrarHistorialEnvios = true;   // se abre el Historial para ver que quedó registrado
     void this.alertas.success(
       'Envío registrado',
-      `${prod.ingrediente} se envió a ${registros.length} institución(es), con salida el ${this.fechaCorta(registros[0].fechaSalida)}.`
+      `${prod.ingrediente} se envió a ${registros.length} destino(s), con salida el ${this.fechaCorta(registros[0].fechaSalida)}.`
     );
   }
 
@@ -1104,7 +1247,11 @@ export class RegistrarEntregaAlimentosComponent implements OnInit {
 
   abrirModalEntrada(): void {
     this.entradaFecha = this.fechaHoy();
-    this.entradaDestino = this.institucionLote || this.instituciones[0] || '';
+    // Si el usuario llegó desde una sede concreta, esa sede queda como destino; si no, el primer destino disponible
+    const sedeActual = this.nombreSede
+      ? this.destinosDisponibles.find(d => d.endsWith(` - ${this.nombreSede}`))
+      : undefined;
+    this.entradaDestino = sedeActual ?? this.destinosDisponibles[0] ?? '';
     this.entradaResponsable = '';
     this.busquedaEntrada = '';
     this.entradaFilas = [];
@@ -1223,7 +1370,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit {
     const filas = this.entradaFilas;
 
     if (!this.entradaFecha) { this.errorEntrada = 'Selecciona la fecha de entrega.'; return; }
-    if (!this.entradaDestino.trim()) { this.errorEntrada = 'Escribe el destino.'; return; }
+    if (!this.entradaDestino.trim()) { this.errorEntrada = 'Elige el destino.'; return; }
     if (!this.entradaResponsable.trim()) { this.errorEntrada = 'Escribe el nombre del responsable.'; return; }
     if (filas.length === 0) { this.errorEntrada = 'Toca los productos que entran para agregarlos.'; return; }
     const sinCantidad = filas.filter(f => !f.cantidad || f.cantidad <= 0);
@@ -1250,6 +1397,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit {
         unidad: f.unidad,
         fecha_entrega: this.entradaFecha,
         fecha_vencimiento: auto.vencimiento,
+        ...this.datosInstitucion(),
         destino: this.entradaDestino.trim(),
         responsable: this.entradaResponsable.trim(),
         observaciones: '',
@@ -1277,6 +1425,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit {
       }));
 
       if (guardadas > 0) {
+        this.mostrarHistorialEnvios = true;   // NUEVO: el panel de la izquierda queda en Historial
         // El calendario salta al día registrado para que se vea la entrada
         const [anio, mes] = this.entradaFecha.split('-').map(Number);
         this.mesCalendario = new Date(anio, mes - 1, 1);
@@ -1292,6 +1441,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit {
         this.entradaFilas = fallidas;
         this.errorEntrada = `Se guardaron ${guardadas} y fallaron ${fallidas.length}. ` + (motivoFallo ? `Motivo: ${motivoFallo}.` : '');
       }
+      this.cdr.markForCheck();
     });
   }
 
@@ -1805,7 +1955,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit {
       <head><meta charset="UTF-8"></head>
       <body>
         <table>
-          <tr><td colspan="8" ${titulo}>Resumen por producto (total recibido)</td></tr>
+          <tr><td colspan="8" ${titulo}>Resumen por producto (total recibido) - ${esc(this.nombreInstitucion)}</td></tr>
         </table>
         <table border="1">
           <thead><tr>

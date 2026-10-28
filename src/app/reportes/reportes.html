@@ -1,23 +1,24 @@
 <style>
 /* Misma línea visual (naranja SIRAE) del resto de pantallas */
+.fx-roboto, .fx-roboto *:not(.material-symbols-outlined) { font-family: 'Roboto', sans-serif; }
 .fx-panel { position: relative; background: #fff; border-radius: 28px; border: 1px solid #F1F5F9; box-shadow: 0 10px 30px -18px rgba(15, 23, 42, .18); }
-.ico-naranja { background: linear-gradient(135deg, #FFA928 0%, #FF8A00 100%); color: #fff; }
-.ico-suave { background: #FFF1DB; color: #FF8A00; }
-.btn-naranja { background: linear-gradient(135deg, #FFA928 0%, #FF8A00 100%); color: #fff; box-shadow: 0 10px 20px -8px rgba(255, 138, 0, .7); transition: transform .2s ease, filter .2s ease; }
+.ico-naranja { background: linear-gradient(135deg, #faa911 0%, #e69a0c 100%); color: #fff; }
+.ico-suave { background: #FFF4DC; color: #faa911; }
+.btn-naranja { background: linear-gradient(135deg, #faa911 0%, #e69a0c 100%); color: #fff; box-shadow: 0 10px 20px -8px rgba(250, 169, 17, .7); transition: transform .2s ease, filter .2s ease; }
 .btn-naranja:hover:not(:disabled) { filter: brightness(1.06); transform: translateY(-2px); }
 .btn-naranja:active:not(:disabled) { transform: scale(.97); }
-.pill-on { background: linear-gradient(135deg, #FFA928, #FF8A00); color: #fff; box-shadow: 0 6px 14px -6px rgba(255, 138, 0, .7); }
-.fx-input:focus { border-color: #FF9500; box-shadow: 0 0 0 3px rgba(255, 149, 0, .18); outline: none; }
+.pill-on { background: linear-gradient(135deg, #faa911, #e69a0c); color: #fff; box-shadow: 0 6px 14px -6px rgba(250, 169, 17, .7); }
+.fx-input:focus { border-color: #faa911; box-shadow: 0 0 0 3px rgba(250, 169, 17, .18); outline: none; }
 .fx-lift { transition: transform .25s ease, box-shadow .25s ease; }
-.fx-lift:hover { transform: translateY(-3px); box-shadow: 0 16px 30px -18px rgba(255, 138, 0, .4); }
-.barra-naranja { background: linear-gradient(90deg, #FFC15A, #FF8A00); }
+.fx-lift:hover { transform: translateY(-3px); box-shadow: 0 16px 30px -18px rgba(250, 169, 17, .4); }
+.barra-naranja { background: linear-gradient(90deg, #FDCB5E, #faa911); }
 .tabla-scroll { max-height: 520px; overflow: auto; }
 .tabla-scroll thead th { position: sticky; top: 0; z-index: 1; }
 @keyframes fxUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 .fx-up { animation: fxUp .45s cubic-bezier(.2, .8, .2, 1) both; }
 </style>
 
-<section class="mx-auto flex w-full max-w-6xl flex-col gap-6" style="font-family: 'Roboto', sans-serif;">
+<section class="fx-roboto mx-auto flex w-full max-w-6xl flex-col gap-6">
 
   <!-- ============ ENCABEZADO ============ -->
   <header class="flex flex-col gap-4 rounded-3xl border border-slate-100 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-6">
@@ -26,7 +27,7 @@
         <span class="material-symbols-outlined text-[30px]">summarize</span>
       </div>
       <div>
-        <span class="text-[11px] font-bold uppercase tracking-wider text-orange-500">Reportes PAE</span>
+        <span class="text-[11px] font-bold uppercase tracking-wider text-[#faa911]">Reportes PAE</span>
         <h1 class="m-0 text-2xl font-black tracking-tight text-slate-900">Reporte global de sedes</h1>
         <p class="m-0 text-xs font-medium text-slate-500">Cupos, entregas de alimentos y salidas de inventario de las sedes de tu institución.</p>
       </div>
@@ -137,7 +138,7 @@
     <div class="fx-panel fx-lift fx-up p-5">
       <div class="ico-suave mb-3 flex h-10 w-10 items-center justify-center rounded-xl"><span class="material-symbols-outlined text-[22px]">local_shipping</span></div>
       <p class="m-0 text-[11px] font-bold uppercase tracking-wide text-slate-400">Entregas</p>
-      <p class="m-0 text-2xl font-black text-orange-600">{{ totales.entregas }}</p>
+      <p class="m-0 text-2xl font-black text-[#e69a0c]">{{ totales.entregas }}</p>
       <p class="m-0 text-[11px] text-slate-400">{{ totales.kilos }} kg recibidos</p>
     </div>
     <div class="fx-panel fx-lift fx-up p-5">
@@ -149,7 +150,7 @@
     <div class="fx-panel fx-lift fx-up col-span-2 p-5 lg:col-span-1">
       <div class="ico-suave mb-3 flex h-10 w-10 items-center justify-center rounded-xl"><span class="material-symbols-outlined text-[22px]">inventory_2</span></div>
       <p class="m-0 text-[11px] font-bold uppercase tracking-wide text-slate-400">Salidas de inventario</p>
-      <p class="m-0 text-2xl font-black text-orange-600">{{ totalMovimientos }}</p>
+      <p class="m-0 text-2xl font-black text-[#e69a0c]">{{ totalMovimientos }}</p>
       <p class="m-0 text-[11px] text-slate-400">movimientos registrados</p>
     </div>
   </div>
@@ -161,7 +162,7 @@
         <h2 class="m-0 text-base font-black text-slate-900">Resumen por sede</h2>
         <p class="m-0 text-[11px] font-medium text-slate-500">Haz clic en el título de una columna para ordenar, o en una sede para ver sus entregas día a día.</p>
       </div>
-      <span class="rounded-full bg-orange-100 px-3 py-1 text-xs font-black text-orange-600">
+      <span class="rounded-full bg-orange-100 px-3 py-1 text-xs font-black text-[#e69a0c]">
         {{ resumenSedes.length }} {{ resumenSedes.length === 1 ? 'sede' : 'sedes' }}
       </span>
     </div>
@@ -171,32 +172,32 @@
         <thead class="bg-orange-50/70 text-[11px] uppercase tracking-wider text-slate-500">
           <tr>
             <th scope="col" class="px-5 py-3 font-bold">
-              <button type="button" (click)="ordenarPor('nombre')" class="inline-flex cursor-pointer items-center gap-1 font-bold uppercase tracking-wider hover:text-orange-600">
+              <button type="button" (click)="ordenarPor('nombre')" class="inline-flex cursor-pointer items-center gap-1 font-bold uppercase tracking-wider hover:text-[#e69a0c]">
                 Sede <span class="material-symbols-outlined text-[14px]">{{ iconoOrden('nombre') }}</span>
               </button>
             </th>
             <th scope="col" class="px-5 py-3 text-right font-bold">
-              <button type="button" (click)="ordenarPor('cupos')" class="inline-flex cursor-pointer items-center gap-1 font-bold uppercase tracking-wider hover:text-orange-600">
+              <button type="button" (click)="ordenarPor('cupos')" class="inline-flex cursor-pointer items-center gap-1 font-bold uppercase tracking-wider hover:text-[#e69a0c]">
                 Cupos <span class="material-symbols-outlined text-[14px]">{{ iconoOrden('cupos') }}</span>
               </button>
             </th>
             <th scope="col" class="px-5 py-3 text-right font-bold">
-              <button type="button" (click)="ordenarPor('entregas')" class="inline-flex cursor-pointer items-center gap-1 font-bold uppercase tracking-wider hover:text-orange-600">
+              <button type="button" (click)="ordenarPor('entregas')" class="inline-flex cursor-pointer items-center gap-1 font-bold uppercase tracking-wider hover:text-[#e69a0c]">
                 Entregas <span class="material-symbols-outlined text-[14px]">{{ iconoOrden('entregas') }}</span>
               </button>
             </th>
             <th scope="col" class="px-5 py-3 text-right font-bold">
-              <button type="button" (click)="ordenarPor('kilos')" class="inline-flex cursor-pointer items-center gap-1 font-bold uppercase tracking-wider hover:text-orange-600">
+              <button type="button" (click)="ordenarPor('kilos')" class="inline-flex cursor-pointer items-center gap-1 font-bold uppercase tracking-wider hover:text-[#e69a0c]">
                 Kg recibidos <span class="material-symbols-outlined text-[14px]">{{ iconoOrden('kilos') }}</span>
               </button>
             </th>
             <th scope="col" class="px-5 py-3 text-right font-bold">
-              <button type="button" (click)="ordenarPor('novedades')" class="inline-flex cursor-pointer items-center gap-1 font-bold uppercase tracking-wider hover:text-orange-600">
+              <button type="button" (click)="ordenarPor('novedades')" class="inline-flex cursor-pointer items-center gap-1 font-bold uppercase tracking-wider hover:text-[#e69a0c]">
                 Novedades <span class="material-symbols-outlined text-[14px]">{{ iconoOrden('novedades') }}</span>
               </button>
             </th>
             <th scope="col" class="px-5 py-3 text-right font-bold">
-              <button type="button" (click)="ordenarPor('dias')" class="inline-flex cursor-pointer items-center gap-1 font-bold uppercase tracking-wider hover:text-orange-600">
+              <button type="button" (click)="ordenarPor('dias')" class="inline-flex cursor-pointer items-center gap-1 font-bold uppercase tracking-wider hover:text-[#e69a0c]">
                 Días <span class="material-symbols-outlined text-[14px]">{{ iconoOrden('dias') }}</span>
               </button>
             </th>
@@ -214,14 +215,14 @@
               </div>
             </td>
             <td class="px-5 py-3 text-right font-black text-slate-800">{{ s.cupos }}</td>
-            <td class="px-5 py-3 text-right text-base font-black text-orange-600">{{ s.entregas }}</td>
+            <td class="px-5 py-3 text-right text-base font-black text-[#e69a0c]">{{ s.entregas }}</td>
             <td class="px-5 py-3 text-right font-bold text-slate-700">{{ s.kilos }}</td>
             <td class="px-5 py-3 text-right font-bold" [ngClass]="s.novedades > 0 ? 'text-amber-600' : 'text-slate-400'">{{ s.novedades }}</td>
             <td class="px-5 py-3 text-right font-bold text-slate-700">{{ s.dias }}</td>
             <td class="max-w-[200px] truncate px-5 py-3 text-slate-600" [title]="s.ingredienteTop">{{ s.ingredienteTop }}</td>
             <td class="px-5 py-3 text-center">
               <button type="button" (click)="abrirSede(s); $event.stopPropagation()" [attr.aria-label]="'Ver detalle de ' + s.nombre"
-                class="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-orange-300 bg-white text-orange-600 transition hover:bg-orange-50">
+                class="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-[#faa911] bg-white text-[#e69a0c] transition hover:bg-orange-50">
                 <span class="material-symbols-outlined text-[18px]">visibility</span>
               </button>
             </td>
@@ -231,7 +232,7 @@
           <tr>
             <td class="px-5 py-3 font-black text-slate-900">Total</td>
             <td class="px-5 py-3 text-right font-black text-slate-900">{{ totales.cupos }}</td>
-            <td class="px-5 py-3 text-right font-black text-orange-600">{{ totales.entregas }}</td>
+            <td class="px-5 py-3 text-right font-black text-[#e69a0c]">{{ totales.entregas }}</td>
             <td class="px-5 py-3 text-right font-black text-slate-900">{{ totales.kilos }}</td>
             <td class="px-5 py-3 text-right font-black text-slate-900">{{ totales.novedades }}</td>
             <td class="px-5 py-3 text-right font-black text-slate-900">{{ totales.dias }}</td>
@@ -251,83 +252,18 @@
     </div>
   </section>
 
-  <!-- ============ SALIDAS DE INVENTARIO (DATOS REALES) ============ -->
-  <section class="fx-panel overflow-hidden">
-    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
-      <div>
-        <h2 class="m-0 text-base font-black text-slate-900">Salidas registradas de inventario</h2>
-        <p class="m-0 text-[11px] font-medium text-slate-500">Movimientos guardados por el sistema. No calcula consumo teórico de recetas.</p>
-      </div>
-      <div class="flex items-center gap-2">
-        <span class="rounded-full bg-orange-100 px-3 py-1 text-xs font-black text-orange-600">
-          {{ salidasFiltradas.length }} {{ salidasFiltradas.length === 1 ? 'registro' : 'registros' }}
-        </span>
-        <button type="button" (click)="exportarCsv()" [disabled]="cargando || salidasFiltradas.length === 0"
-          class="inline-flex cursor-pointer items-center gap-1 rounded-full border border-orange-300 bg-white px-3 py-1 text-xs font-bold text-orange-600 transition hover:bg-orange-50 disabled:cursor-not-allowed disabled:opacity-50">
-          <span class="material-symbols-outlined text-[16px]">download</span> CSV
-        </button>
-      </div>
-    </div>
-
-    <div class="tabla-scroll">
-      <table class="w-full min-w-[680px] border-collapse text-left text-sm">
-        <thead class="bg-orange-50/70 text-[11px] uppercase tracking-wider text-slate-500">
-          <tr>
-            <th scope="col" class="px-5 py-3 font-bold">Fecha</th>
-            <th scope="col" class="px-5 py-3 font-bold">Ingrediente</th>
-            <th scope="col" class="px-5 py-3 text-right font-bold">Cantidad</th>
-            <th scope="col" class="px-5 py-3 font-bold">Unidad</th>
-            <th scope="col" class="px-5 py-3 font-bold">Observaciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let salida of salidasFiltradas" class="border-t border-slate-100 transition hover:bg-orange-50/40">
-            <td class="whitespace-nowrap px-5 py-3 font-medium text-slate-600">{{ salida.fecha || 'Sin fecha' }}</td>
-            <td class="px-5 py-3 font-bold text-slate-900">{{ salida.ingrediente }}</td>
-            <td class="px-5 py-3 text-right text-base font-black text-orange-600">{{ salida.cantidad }}</td>
-            <td class="px-5 py-3">
-              <span class="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-xs font-bold text-slate-600">{{ salida.unidad || '—' }}</span>
-            </td>
-            <td class="max-w-[260px] truncate px-5 py-3 text-slate-500" [title]="salida.observaciones || ''">{{ salida.observaciones || '—' }}</td>
-          </tr>
-
-          <!-- Cargando -->
-          <ng-container *ngIf="cargando">
-            <tr *ngFor="let fila of [1, 2, 3, 4]" class="border-t border-slate-100" aria-hidden="true">
-              <td class="px-5 py-4"><div class="h-3 w-20 animate-pulse rounded-full bg-slate-100"></div></td>
-              <td class="px-5 py-4"><div class="h-3 w-32 animate-pulse rounded-full bg-slate-100"></div></td>
-              <td class="px-5 py-4"><div class="ml-auto h-3 w-12 animate-pulse rounded-full bg-slate-100"></div></td>
-              <td class="px-5 py-4"><div class="h-3 w-10 animate-pulse rounded-full bg-slate-100"></div></td>
-              <td class="px-5 py-4"><div class="h-3 w-40 animate-pulse rounded-full bg-slate-100"></div></td>
-            </tr>
-          </ng-container>
-        </tbody>
-      </table>
-    </div>
-
-    <p *ngIf="cargando" class="sr-only" role="status">Cargando movimientos registrados...</p>
-
-    <!-- Sin resultados -->
-    <div *ngIf="!cargando && salidasFiltradas.length === 0" class="flex flex-col items-center gap-3 px-6 py-14 text-center">
-      <div class="ico-suave flex h-14 w-14 items-center justify-center rounded-2xl">
-        <span class="material-symbols-outlined text-[28px]">search_off</span>
-      </div>
-      <p class="m-0 text-sm font-black text-slate-800">No hay salidas en el periodo seleccionado</p>
-      <p class="m-0 max-w-sm text-xs font-medium text-slate-500">Cambia las fechas o presiona "Actualizar datos" para volver a consultar.</p>
-    </div>
-  </section>
 </section>
 
 <!-- ================= VENTANA EMERGENTE: DETALLE DE UNA SEDE ================= -->
 <div *ngIf="sedeDetalle as sede" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4" (click)="cerrarSede()">
-  <div class="fx-up max-h-[90vh] w-full max-w-[760px] overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl"
+  <div class="fx-roboto fx-up max-h-[90vh] w-full max-w-[760px] overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl"
     (click)="$event.stopPropagation()" role="dialog" aria-modal="true" [attr.aria-label]="'Detalle de ' + sede.nombre"
     style="font-family: 'Roboto', sans-serif;">
 
     <!-- Encabezado -->
     <div class="flex items-start justify-between gap-3 border-b border-slate-200 pb-4">
       <div>
-        <p class="m-0 text-[10px] font-black uppercase tracking-wider text-orange-500">Detalle de la sede</p>
+        <p class="m-0 text-[10px] font-black uppercase tracking-wider text-[#faa911]">Detalle de la sede</p>
         <h3 class="m-0 mt-1 text-lg font-black text-slate-900">{{ sede.nombre }}</h3>
         <p class="m-0 mt-0.5 text-[11px] text-slate-400">
           {{ fechaDesde || fechaHasta ? 'Del ' + (fechaCorta(fechaDesde) || 'inicio') + ' al ' + (fechaCorta(fechaHasta) || 'hoy') : 'Todo el periodo disponible' }}
@@ -347,11 +283,11 @@
       </div>
       <div class="rounded-2xl border border-slate-100 bg-slate-50 p-3">
         <p class="m-0 text-[10px] font-bold uppercase text-slate-400">Entregas</p>
-        <p class="m-0 text-lg font-black text-orange-600">{{ sede.entregas }}</p>
+        <p class="m-0 text-lg font-black text-[#e69a0c]">{{ sede.entregas }}</p>
       </div>
       <div class="rounded-2xl border border-slate-100 bg-slate-50 p-3">
         <p class="m-0 text-[10px] font-bold uppercase text-slate-400">Kg recibidos</p>
-        <p class="m-0 text-lg font-black text-orange-600">{{ sede.kilos }}</p>
+        <p class="m-0 text-lg font-black text-[#e69a0c]">{{ sede.kilos }}</p>
       </div>
       <div class="rounded-2xl border border-slate-100 bg-slate-50 p-3">
         <p class="m-0 text-[10px] font-bold uppercase text-slate-400">Novedades</p>
@@ -365,7 +301,7 @@
       <div class="flex flex-wrap gap-2">
         <span *ngFor="let i of ingredientesSede" class="inline-flex items-center gap-1.5 rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-xs font-bold text-orange-700">
           {{ i.ingrediente }}
-          <span class="rounded-full bg-white px-1.5 text-[10px] font-black text-orange-600">{{ i.veces }}×</span>
+          <span class="rounded-full bg-white px-1.5 text-[10px] font-black text-[#e69a0c]">{{ i.veces }}×</span>
         </span>
         <span *ngIf="ingredientesSede.length === 0" class="text-xs text-slate-500">Sin entregas en el rango seleccionado.</span>
       </div>
@@ -384,7 +320,7 @@
           <p class="m-0 truncate text-[11px] text-slate-500">{{ e.ingrediente }} · {{ e.tipoMercado }}</p>
         </div>
         <div class="flex items-center gap-3">
-          <span class="whitespace-nowrap text-xs font-black text-orange-600">{{ e.cantidad }} {{ e.unidad }}</span>
+          <span class="whitespace-nowrap text-xs font-black text-[#e69a0c]">{{ e.cantidad }} {{ e.unidad }}</span>
           <span class="whitespace-nowrap rounded-full px-2.5 py-0.5 text-[11px] font-bold" [ngClass]="claseEstado(e.estado)">{{ etiquetaEstado(e.estado) }}</span>
         </div>
       </div>
