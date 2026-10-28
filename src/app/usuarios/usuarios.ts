@@ -35,10 +35,31 @@ export class UsuariosComponent implements OnInit {
     { value: 'TI', label: 'Tarjeta de Identidad' }
   ];
 
+  get esSuperAdmin(): boolean {
+    const usuarioActual = this.authService.obtenerUsuario();
+    if (!usuarioActual) return false;
+    return !!(
+      usuarioActual.is_superuser ||
+      this.authService.esSuperAdministrador(usuarioActual.rol)
+    );
+  }
+
   get opcionesFiltroRol(): any[] {
+    const catalogo = this.todosLosRoles.length > 0 ? this.todosLosRoles : this.roles;
+    let rolesOpciones = catalogo;
+
+    if (this.esSuperAdmin) {
+      rolesOpciones = catalogo.filter((r: any) => {
+        const nom = (r.nombre_rol || r.nombre || '').toLowerCase();
+        const esAdminRol = (nom === 'administrador' || nom === 'admin' || (nom.includes('admin') && !nom.includes('super')));
+        const esSupervRol = nom.includes('supervisor') || nom.includes('coordinador');
+        return esAdminRol || esSupervRol;
+      });
+    }
+
     return [
       { id_rol: '', nombre_rol: 'Todos los Roles' },
-      ...((this.todosLosRoles.length > 0 ? this.todosLosRoles : this.roles) || [])
+      ...(rolesOpciones || [])
     ];
   }
 
@@ -149,6 +170,39 @@ export class UsuariosComponent implements OnInit {
     }
 
     return false;
+  }
+
+  esUsuarioAdmin(u: any): boolean {
+    if (!u) return false;
+    // 1. Chequeo por rol_detalle
+    const nomDetalle = (u.rol_detalle?.nombre_rol || u.rol_detalle?.nombre || '').toLowerCase();
+    if (nomDetalle && nomDetalle.includes('admin') && !nomDetalle.includes('super')) return true;
+
+    // 2. Chequeo por rol directo (string o objeto)
+    if (typeof u.rol === 'string') {
+      const r = u.rol.toLowerCase();
+      if (r.includes('admin') && !r.includes('super')) return true;
+    }
+    if (typeof u.rol === 'object' && u.rol !== null) {
+      const r = (u.rol.nombre_rol || u.rol.nombre || '').toLowerCase();
+      if (r.includes('admin') && !r.includes('super')) return true;
+    }
+
+    // 3. Chequeo buscando en el catálogo de roles
+    const idRol = typeof u.rol === 'object' ? (u.rol?.id_rol || u.rol?.id || u.rol?.pk) : u.rol;
+    if (idRol) {
+      const nomCatalog = this.obtenerNombreRol(idRol).toLowerCase();
+      if (nomCatalog.includes('admin') && !nomCatalog.includes('super')) return true;
+    }
+
+    return false;
+  }
+
+  esUsuarioVisible(u: any): boolean {
+    if (this.esSuperAdmin) {
+      return this.esUsuarioAdmin(u) || this.esUsuarioSupervisor(u);
+    }
+    return true;
   }
 
   contarSedesSupervisor(u: any): number {
@@ -386,7 +440,7 @@ export class UsuariosComponent implements OnInit {
         this.todosLosRoles = normalizados;
 
         const usuarioActual = this.authService.obtenerUsuario();
-        const esSuper = this.authService.esSuperAdministrador(usuarioActual?.rol);
+        const esSuper = this.esSuperAdmin;
         const esAdmin = this.authService.esAdministrador(usuarioActual?.rol);
 
         if (esSuper) {
@@ -431,8 +485,12 @@ export class UsuariosComponent implements OnInit {
     return rolEncontrado.nombre_rol;
   }
 
+  get usuariosBase(): any[] {
+    return this.usuarios.filter(u => this.esUsuarioVisible(u));
+  }
+
   get usuariosFiltrados(): any[] {
-    return this.usuarios.filter(u => {
+    return this.usuariosBase.filter(u => {
       const textoMatch = 
         (u.nombre?.toLowerCase() || '').includes(this.filtroTexto.toLowerCase()) ||
         (u.apellido?.toLowerCase() || '').includes(this.filtroTexto.toLowerCase()) ||

@@ -12,6 +12,7 @@ import {
   FacturasCompraService,
   InventarioCentralItem,
 } from '../services/facturas-compra.service';
+import { CustomSelectComponent } from '../shared/custom-select/custom-select';
 
 interface FilaDetalleForm {
   id_ingrediente: number | null;
@@ -24,7 +25,7 @@ interface FilaDetalleForm {
 @Component({
   selector: 'app-facturas-compra',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, CustomSelectComponent],
   templateUrl: './facturas-compra.html',
   styleUrl: './facturas-compra.css',
 })
@@ -37,7 +38,22 @@ export class FacturasCompraComponent implements OnInit {
   catalogoIngredientes: any[] = [];
   catalogoProveedores: any[] = [];
 
+  get opcionesProveedores(): any[] {
+    return (this.catalogoProveedores || []).map(p => ({
+      id: p.nombre,
+      label: p.nit ? `${p.nombre} (NIT: ${p.nit})` : p.nombre
+    }));
+  }
+
+  get opcionesIngredientes(): any[] {
+    return (this.catalogoIngredientes || []).map(ing => ({
+      id: ing.id_ingrediente,
+      label: `${ing.nombre_ingrediente} (${ing.unidad_abreviatura || ing.unidad_nombre || 'Kg'})`
+    }));
+  }
+
   cargando = true;
+  cargandoBodega = true;
   guardando = false;
   procesandoAnulacion = false;
 
@@ -123,13 +139,16 @@ export class FacturasCompraComponent implements OnInit {
   }
 
   cargarBodega(): void {
+    this.cargandoBodega = true;
     this.facturasService.getInventarioCentral().subscribe({
       next: (data) => {
         this.inventarioCentral = data;
+        this.cargandoBodega = false;
         this.cdr.detectChanges();
       },
       error: (err) => {
         console.error('Error al cargar inventario central:', err);
+        this.cargandoBodega = false;
         this.cdr.detectChanges();
       },
     });
@@ -267,6 +286,12 @@ export class FacturasCompraComponent implements OnInit {
     if (!id) return '';
     const ing = this.catalogoIngredientes.find((i) => i.id_ingrediente === Number(id));
     return ing?.unidad_abreviatura || ing?.unidad_nombre || 'Unid';
+  }
+
+  obtenerNombreIngrediente(id: number | null): string {
+    if (!id) return '';
+    const ing = this.catalogoIngredientes.find((i) => i.id_ingrediente === Number(id));
+    return ing?.nombre || '';
   }
 
   guardarFactura(): void {
