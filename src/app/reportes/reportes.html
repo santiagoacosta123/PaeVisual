@@ -28,7 +28,7 @@
       <div>
         <span class="text-[11px] font-bold uppercase tracking-wider text-orange-500">Reportes PAE</span>
         <h1 class="m-0 text-2xl font-black tracking-tight text-slate-900">Reporte global de sedes</h1>
-        <p class="m-0 text-xs font-medium text-slate-500">Estudiantes atendidos, comidas servidas y salidas de inventario de tus sedes.</p>
+        <p class="m-0 text-xs font-medium text-slate-500">Cupos, entregas de alimentos y salidas de inventario de las sedes de tu institución.</p>
       </div>
     </div>
     <button type="button" (click)="exportarCsvSedes()" [disabled]="cargando || resumenSedes.length === 0"
@@ -38,11 +38,17 @@
     </button>
   </header>
 
-  <!-- Aviso de datos de ejemplo -->
-  <div *ngIf="avisoEjemplo" role="status"
+  <!-- Qué datos usa este reporte -->
+  <div class="flex items-start gap-3 rounded-2xl border border-sky-100 bg-sky-50/70 p-4 text-xs font-medium leading-5 text-sky-900">
+    <span class="material-symbols-outlined mt-0.5 text-[20px] text-sky-600">info</span>
+    <p class="m-0">Este reporte usa los datos disponibles hoy: sedes, cupos de los contratos y entregas de alimentos. La asistencia y las raciones servidas se sumarán cuando el sistema las ponga a disposición del Supervisor.</p>
+  </div>
+
+  <!-- Aviso de datos incompletos -->
+  <div *ngIf="avisoDatos" role="status"
     class="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50/70 p-4 text-xs font-medium leading-5 text-amber-900">
-    <span class="material-symbols-outlined mt-0.5 text-[20px] text-amber-600">info</span>
-    <p class="m-0">{{ avisoEjemplo }}</p>
+    <span class="material-symbols-outlined mt-0.5 text-[20px] text-amber-600">warning</span>
+    <p class="m-0">{{ avisoDatos }}</p>
   </div>
 
   <!-- ============ FILTROS ============ -->
@@ -74,7 +80,7 @@
           <select [(ngModel)]="sedeFiltro"
             class="fx-input w-full cursor-pointer rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-sm font-semibold text-slate-800">
             <option value="Todas">Todas las sedes</option>
-            <option *ngFor="let nombre of sedesDisponibles" [value]="nombre">{{ nombre }}</option>
+            <option *ngFor="let sede of sedesDisponibles" [ngValue]="sede.id">{{ sede.nombre }}</option>
           </select>
         </span>
       </label>
@@ -120,23 +126,25 @@
       <div class="ico-suave mb-3 flex h-10 w-10 items-center justify-center rounded-xl"><span class="material-symbols-outlined text-[22px]">school</span></div>
       <p class="m-0 text-[11px] font-bold uppercase tracking-wide text-slate-400">Sedes</p>
       <p class="m-0 text-2xl font-black text-slate-900">{{ totales.sedes }}</p>
-      <p class="m-0 text-[11px] text-slate-400">{{ totales.dias }} días con servicio</p>
+      <p class="m-0 text-[11px] text-slate-400">{{ totales.dias }} días con entregas</p>
     </div>
     <div class="fx-panel fx-lift fx-up p-5">
       <div class="ico-suave mb-3 flex h-10 w-10 items-center justify-center rounded-xl"><span class="material-symbols-outlined text-[22px]">groups</span></div>
-      <p class="m-0 text-[11px] font-bold uppercase tracking-wide text-slate-400">Estudiantes matriculados</p>
-      <p class="m-0 text-2xl font-black text-slate-900">{{ totales.matriculados }}</p>
+      <p class="m-0 text-[11px] font-bold uppercase tracking-wide text-slate-400">Cupos contratados</p>
+      <p class="m-0 text-2xl font-black text-slate-900">{{ totales.cupos }}</p>
+      <p class="m-0 text-[11px] text-slate-400">estudiantes en contratos vigentes</p>
     </div>
     <div class="fx-panel fx-lift fx-up p-5">
-      <div class="ico-suave mb-3 flex h-10 w-10 items-center justify-center rounded-xl"><span class="material-symbols-outlined text-[22px]">fact_check</span></div>
-      <p class="m-0 text-[11px] font-bold uppercase tracking-wide text-slate-400">Asistencia promedio</p>
-      <p class="m-0 text-2xl font-black text-slate-900">{{ totales.asistencia }}%</p>
+      <div class="ico-suave mb-3 flex h-10 w-10 items-center justify-center rounded-xl"><span class="material-symbols-outlined text-[22px]">local_shipping</span></div>
+      <p class="m-0 text-[11px] font-bold uppercase tracking-wide text-slate-400">Entregas</p>
+      <p class="m-0 text-2xl font-black text-orange-600">{{ totales.entregas }}</p>
+      <p class="m-0 text-[11px] text-slate-400">{{ totales.kilos }} kg recibidos</p>
     </div>
     <div class="fx-panel fx-lift fx-up p-5">
-      <div class="ico-suave mb-3 flex h-10 w-10 items-center justify-center rounded-xl"><span class="material-symbols-outlined text-[22px]">restaurant</span></div>
-      <p class="m-0 text-[11px] font-bold uppercase tracking-wide text-slate-400">Raciones servidas</p>
-      <p class="m-0 text-2xl font-black text-orange-600">{{ totales.raciones }}</p>
-      <p class="m-0 text-[11px] text-slate-400">{{ totales.kilos }} kg utilizados</p>
+      <div class="ico-suave mb-3 flex h-10 w-10 items-center justify-center rounded-xl"><span class="material-symbols-outlined text-[22px]">report</span></div>
+      <p class="m-0 text-[11px] font-bold uppercase tracking-wide text-slate-400">Novedades</p>
+      <p class="m-0 text-2xl font-black text-slate-900">{{ totales.novedades }}</p>
+      <p class="m-0 text-[11px] text-slate-400">con novedad o rechazadas</p>
     </div>
     <div class="fx-panel fx-lift fx-up col-span-2 p-5 lg:col-span-1">
       <div class="ico-suave mb-3 flex h-10 w-10 items-center justify-center rounded-xl"><span class="material-symbols-outlined text-[22px]">inventory_2</span></div>
@@ -151,7 +159,7 @@
     <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
       <div>
         <h2 class="m-0 text-base font-black text-slate-900">Resumen por sede</h2>
-        <p class="m-0 text-[11px] font-medium text-slate-500">Haz clic en el título de una columna para ordenar, o en una sede para ver su detalle día a día.</p>
+        <p class="m-0 text-[11px] font-medium text-slate-500">Haz clic en el título de una columna para ordenar, o en una sede para ver sus entregas día a día.</p>
       </div>
       <span class="rounded-full bg-orange-100 px-3 py-1 text-xs font-black text-orange-600">
         {{ resumenSedes.length }} {{ resumenSedes.length === 1 ? 'sede' : 'sedes' }}
@@ -168,23 +176,23 @@
               </button>
             </th>
             <th scope="col" class="px-5 py-3 text-right font-bold">
-              <button type="button" (click)="ordenarPor('matriculados')" class="inline-flex cursor-pointer items-center gap-1 font-bold uppercase tracking-wider hover:text-orange-600">
-                Matriculados <span class="material-symbols-outlined text-[14px]">{{ iconoOrden('matriculados') }}</span>
-              </button>
-            </th>
-            <th scope="col" class="px-5 py-3 font-bold">
-              <button type="button" (click)="ordenarPor('asistenciaPromedio')" class="inline-flex cursor-pointer items-center gap-1 font-bold uppercase tracking-wider hover:text-orange-600">
-                Asistencia promedio <span class="material-symbols-outlined text-[14px]">{{ iconoOrden('asistenciaPromedio') }}</span>
+              <button type="button" (click)="ordenarPor('cupos')" class="inline-flex cursor-pointer items-center gap-1 font-bold uppercase tracking-wider hover:text-orange-600">
+                Cupos <span class="material-symbols-outlined text-[14px]">{{ iconoOrden('cupos') }}</span>
               </button>
             </th>
             <th scope="col" class="px-5 py-3 text-right font-bold">
-              <button type="button" (click)="ordenarPor('raciones')" class="inline-flex cursor-pointer items-center gap-1 font-bold uppercase tracking-wider hover:text-orange-600">
-                Raciones <span class="material-symbols-outlined text-[14px]">{{ iconoOrden('raciones') }}</span>
+              <button type="button" (click)="ordenarPor('entregas')" class="inline-flex cursor-pointer items-center gap-1 font-bold uppercase tracking-wider hover:text-orange-600">
+                Entregas <span class="material-symbols-outlined text-[14px]">{{ iconoOrden('entregas') }}</span>
               </button>
             </th>
             <th scope="col" class="px-5 py-3 text-right font-bold">
               <button type="button" (click)="ordenarPor('kilos')" class="inline-flex cursor-pointer items-center gap-1 font-bold uppercase tracking-wider hover:text-orange-600">
-                Kg <span class="material-symbols-outlined text-[14px]">{{ iconoOrden('kilos') }}</span>
+                Kg recibidos <span class="material-symbols-outlined text-[14px]">{{ iconoOrden('kilos') }}</span>
+              </button>
+            </th>
+            <th scope="col" class="px-5 py-3 text-right font-bold">
+              <button type="button" (click)="ordenarPor('novedades')" class="inline-flex cursor-pointer items-center gap-1 font-bold uppercase tracking-wider hover:text-orange-600">
+                Novedades <span class="material-symbols-outlined text-[14px]">{{ iconoOrden('novedades') }}</span>
               </button>
             </th>
             <th scope="col" class="px-5 py-3 text-right font-bold">
@@ -192,7 +200,7 @@
                 Días <span class="material-symbols-outlined text-[14px]">{{ iconoOrden('dias') }}</span>
               </button>
             </th>
-            <th scope="col" class="px-5 py-3 font-bold">Plato más servido</th>
+            <th scope="col" class="px-5 py-3 font-bold">Ingrediente más entregado</th>
             <th scope="col" class="px-5 py-3 text-center font-bold">Detalle</th>
           </tr>
         </thead>
@@ -205,19 +213,12 @@
                 <span class="font-bold text-slate-900">{{ s.nombre }}</span>
               </div>
             </td>
-            <td class="px-5 py-3 text-right font-black text-slate-800">{{ s.matriculados }}</td>
-            <td class="px-5 py-3">
-              <div class="flex items-center gap-2">
-                <div class="h-2 w-24 overflow-hidden rounded-full bg-slate-100">
-                  <div class="h-full rounded-full" [ngClass]="claseAsistencia(s.asistenciaPromedio)" [style.width.%]="s.asistenciaPromedio"></div>
-                </div>
-                <span class="text-xs font-black text-slate-700">{{ s.asistenciaPromedio }}%</span>
-              </div>
-            </td>
-            <td class="px-5 py-3 text-right text-base font-black text-orange-600">{{ s.raciones }}</td>
+            <td class="px-5 py-3 text-right font-black text-slate-800">{{ s.cupos }}</td>
+            <td class="px-5 py-3 text-right text-base font-black text-orange-600">{{ s.entregas }}</td>
             <td class="px-5 py-3 text-right font-bold text-slate-700">{{ s.kilos }}</td>
+            <td class="px-5 py-3 text-right font-bold" [ngClass]="s.novedades > 0 ? 'text-amber-600' : 'text-slate-400'">{{ s.novedades }}</td>
             <td class="px-5 py-3 text-right font-bold text-slate-700">{{ s.dias }}</td>
-            <td class="max-w-[200px] truncate px-5 py-3 text-slate-600" [title]="s.platoTop">{{ s.platoTop }}</td>
+            <td class="max-w-[200px] truncate px-5 py-3 text-slate-600" [title]="s.ingredienteTop">{{ s.ingredienteTop }}</td>
             <td class="px-5 py-3 text-center">
               <button type="button" (click)="abrirSede(s); $event.stopPropagation()" [attr.aria-label]="'Ver detalle de ' + s.nombre"
                 class="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-orange-300 bg-white text-orange-600 transition hover:bg-orange-50">
@@ -229,10 +230,10 @@
         <tfoot *ngIf="resumenSedes.length > 1" class="border-t-2 border-orange-200 bg-orange-50/50 text-sm">
           <tr>
             <td class="px-5 py-3 font-black text-slate-900">Total</td>
-            <td class="px-5 py-3 text-right font-black text-slate-900">{{ totales.matriculados }}</td>
-            <td class="px-5 py-3 text-xs font-black text-slate-700">{{ totales.asistencia }}%</td>
-            <td class="px-5 py-3 text-right font-black text-orange-600">{{ totales.raciones }}</td>
+            <td class="px-5 py-3 text-right font-black text-slate-900">{{ totales.cupos }}</td>
+            <td class="px-5 py-3 text-right font-black text-orange-600">{{ totales.entregas }}</td>
             <td class="px-5 py-3 text-right font-black text-slate-900">{{ totales.kilos }}</td>
+            <td class="px-5 py-3 text-right font-black text-slate-900">{{ totales.novedades }}</td>
             <td class="px-5 py-3 text-right font-black text-slate-900">{{ totales.dias }}</td>
             <td class="px-5 py-3"></td>
             <td class="px-5 py-3"></td>
@@ -245,8 +246,8 @@
       <div class="ico-suave flex h-14 w-14 items-center justify-center rounded-2xl">
         <span class="material-symbols-outlined text-[28px]">search_off</span>
       </div>
-      <p class="m-0 text-sm font-black text-slate-800">No hay datos de sedes en este periodo</p>
-      <p class="m-0 max-w-sm text-xs font-medium text-slate-500">Cambia las fechas o la sede, o usa "Ver todo" en el rango rápido.</p>
+      <p class="m-0 text-sm font-black text-slate-800">No hay sedes para mostrar</p>
+      <p class="m-0 max-w-sm text-xs font-medium text-slate-500">Cambia las fechas o la sede, o usa "Ver todo" en el rango rápido. Si el problema sigue, revisa que la institución tenga sedes registradas.</p>
     </div>
   </section>
 
@@ -341,62 +342,57 @@
     <!-- Indicadores de la sede -->
     <div class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
       <div class="rounded-2xl border border-slate-100 bg-slate-50 p-3">
-        <p class="m-0 text-[10px] font-bold uppercase text-slate-400">Matriculados</p>
-        <p class="m-0 text-lg font-black text-slate-900">{{ sede.matriculados }}</p>
+        <p class="m-0 text-[10px] font-bold uppercase text-slate-400">Cupos</p>
+        <p class="m-0 text-lg font-black text-slate-900">{{ sede.cupos }}</p>
       </div>
       <div class="rounded-2xl border border-slate-100 bg-slate-50 p-3">
-        <p class="m-0 text-[10px] font-bold uppercase text-slate-400">Asistencia</p>
-        <p class="m-0 text-lg font-black text-slate-900">{{ sede.asistenciaPromedio }}%</p>
+        <p class="m-0 text-[10px] font-bold uppercase text-slate-400">Entregas</p>
+        <p class="m-0 text-lg font-black text-orange-600">{{ sede.entregas }}</p>
       </div>
       <div class="rounded-2xl border border-slate-100 bg-slate-50 p-3">
-        <p class="m-0 text-[10px] font-bold uppercase text-slate-400">Raciones</p>
-        <p class="m-0 text-lg font-black text-orange-600">{{ sede.raciones }}</p>
-      </div>
-      <div class="rounded-2xl border border-slate-100 bg-slate-50 p-3">
-        <p class="m-0 text-[10px] font-bold uppercase text-slate-400">Kg utilizados</p>
+        <p class="m-0 text-[10px] font-bold uppercase text-slate-400">Kg recibidos</p>
         <p class="m-0 text-lg font-black text-orange-600">{{ sede.kilos }}</p>
       </div>
-    </div>
-
-    <!-- Comidas servidas en la sede -->
-    <div class="mt-5">
-      <h4 class="m-0 mb-2 text-sm font-black text-slate-900">Comidas servidas</h4>
-      <div class="flex flex-wrap gap-2">
-        <span *ngFor="let c of comidasSede" class="inline-flex items-center gap-1.5 rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-xs font-bold text-orange-700">
-          {{ c.plato }}
-          <span class="rounded-full bg-white px-1.5 text-[10px] font-black text-orange-600">{{ c.veces }}×</span>
-        </span>
+      <div class="rounded-2xl border border-slate-100 bg-slate-50 p-3">
+        <p class="m-0 text-[10px] font-bold uppercase text-slate-400">Novedades</p>
+        <p class="m-0 text-lg font-black text-slate-900">{{ sede.novedades }}</p>
       </div>
     </div>
 
-    <!-- Día a día -->
+    <!-- Ingredientes entregados en la sede -->
+    <div class="mt-5">
+      <h4 class="m-0 mb-2 text-sm font-black text-slate-900">Ingredientes entregados</h4>
+      <div class="flex flex-wrap gap-2">
+        <span *ngFor="let i of ingredientesSede" class="inline-flex items-center gap-1.5 rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-xs font-bold text-orange-700">
+          {{ i.ingrediente }}
+          <span class="rounded-full bg-white px-1.5 text-[10px] font-black text-orange-600">{{ i.veces }}×</span>
+        </span>
+        <span *ngIf="ingredientesSede.length === 0" class="text-xs text-slate-500">Sin entregas en el rango seleccionado.</span>
+      </div>
+    </div>
+
+    <!-- Entregas día a día -->
     <div class="mt-5 flex items-center justify-between">
-      <h4 class="m-0 text-sm font-black text-slate-900">Día a día</h4>
-      <span class="text-[11px] font-semibold text-sky-600">{{ registrosSede.length }} días</span>
+      <h4 class="m-0 text-sm font-black text-slate-900">Entregas</h4>
+      <span class="text-[11px] font-semibold text-sky-600">{{ entregasSede.length }} {{ entregasSede.length === 1 ? 'entrega' : 'entregas' }}</span>
     </div>
     <div class="mt-2 max-h-[300px] overflow-y-auto rounded-2xl border border-slate-200">
-      <div *ngFor="let r of registrosSede; trackBy: trackRegistro"
+      <div *ngFor="let e of entregasSede; trackBy: trackEntrega"
         class="flex flex-col gap-2 border-b border-slate-100 px-4 py-3 last:border-b-0 sm:flex-row sm:items-center sm:justify-between">
         <div class="min-w-0">
-          <p class="m-0 text-xs font-black text-slate-900">{{ diaSemana(r.fecha) }} {{ fechaCorta(r.fecha) }}</p>
-          <p class="m-0 truncate text-[11px] text-slate-500">{{ r.plato }}</p>
+          <p class="m-0 text-xs font-black text-slate-900">{{ diaSemana(e.fecha) }} {{ fechaCorta(e.fecha) }}</p>
+          <p class="m-0 truncate text-[11px] text-slate-500">{{ e.ingrediente }} · {{ e.tipoMercado }}</p>
         </div>
         <div class="flex items-center gap-3">
-          <div class="flex items-center gap-2">
-            <div class="h-2 w-24 overflow-hidden rounded-full bg-slate-100">
-              <div class="h-full rounded-full" [ngClass]="claseAsistencia(porcentajeAsistencia(r))" [style.width.%]="porcentajeAsistencia(r)"></div>
-            </div>
-            <span class="w-9 text-right text-[11px] font-black text-slate-700">{{ porcentajeAsistencia(r) }}%</span>
-          </div>
-          <span class="whitespace-nowrap text-[11px] text-slate-500"><b class="text-slate-900">{{ r.asistieron }}</b>/{{ r.matriculados }} est.</span>
-          <span class="whitespace-nowrap text-xs font-black text-orange-600">{{ r.raciones }} rac.</span>
+          <span class="whitespace-nowrap text-xs font-black text-orange-600">{{ e.cantidad }} {{ e.unidad }}</span>
+          <span class="whitespace-nowrap rounded-full px-2.5 py-0.5 text-[11px] font-bold" [ngClass]="claseEstado(e.estado)">{{ etiquetaEstado(e.estado) }}</span>
         </div>
       </div>
-      <p *ngIf="registrosSede.length === 0" class="m-0 p-6 text-center text-xs text-slate-500">Esta sede no tiene días en el rango seleccionado.</p>
+      <p *ngIf="entregasSede.length === 0" class="m-0 p-6 text-center text-xs text-slate-500">Esta sede no tiene entregas en el rango seleccionado.</p>
     </div>
 
     <div class="mt-5 flex justify-end">
-      <button type="button" (click)="exportarCsvSede()" [disabled]="registrosSede.length === 0"
+      <button type="button" (click)="exportarCsvSede()" [disabled]="entregasSede.length === 0"
         class="btn-naranja inline-flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2 text-sm font-black disabled:cursor-not-allowed disabled:opacity-50">
         <span class="material-symbols-outlined text-[20px]">download</span>
         Exportar esta sede (CSV)

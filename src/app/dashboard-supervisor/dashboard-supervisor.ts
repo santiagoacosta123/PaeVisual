@@ -53,45 +53,57 @@ export class DashboardSupervisor implements OnInit {
     this.cargarInstitucionesServidor();
   }
 
+  /**
+   * Trae del servidor las instituciones asignadas al supervisor (el backend ya filtra por supervisor).
+   * Si el servidor responde, su lista reemplaza a la guardada; si falla, se deja la que ya había.
+   */
   cargarInstitucionesServidor(): void {
     this.errorMensaje = '';
+    this.cargando = this.instituciones.length === 0;
+
     this.http.get<any>(`${environment.apiUrl}/instituciones/`).pipe(
       timeout(6000),
       catchError(err => {
         console.warn('Timeout o error al sincronizar instituciones:', err);
-        return of([]);
+        return of(null);
       })
-    ).subscribe({
-      next: (resp) => {
-        const lista = Array.isArray(resp) ? resp : (resp?.results ?? []);
-        if (lista.length > 0) {
-          this.instituciones = lista.map((item: any) => ({
-            id_institucion: item.id_institucion ?? item.id,
-            nombre_institucion: item.nombre_institucion ?? item.nombre,
-            nit: item.nit ?? '',
-            sedes: Array.isArray(item.sedes) ? item.sedes : [],
-            representante_legal: item.representante_legal,
-            telefono: item.telefono,
-            correo_contacto: item.correo_contacto,
-            estado: item.estado ?? 'ACTIVO',
-            administrador_asignado: item.administrador_asignado,
-          }));
+    ).subscribe(resp => {
+      this.cargando = false;
 
-          const activaGuardada = this.authService.obtenerInstitucionActiva();
-          if (activaGuardada) {
-            const encontrada = this.instituciones.find(i => i.id_institucion === activaGuardada.id_institucion);
-            if (encontrada) {
-              this.institucionActiva = encontrada;
-            }
-          }
+      if (resp === null) {
+        if (this.instituciones.length === 0) {
+          this.errorMensaje = 'No se pudieron cargar tus instituciones. Verifica la conexión e intenta nuevamente.';
         }
-        this.cargando = false;
-      },
-      error: () => {
-        this.cargando = false;
+        return;
+      }
+
+      const lista = Array.isArray(resp) ? resp : (resp?.results ?? []);
+      this.instituciones = lista.map((item: any) => ({
+        id_institucion: item.id_institucion ?? item.id,
+        nombre_institucion: item.nombre_institucion ?? item.nombre,
+        nit: item.nit ?? '',
+        sedes: Array.isArray(item.sedes) ? item.sedes : [],
+        representante_legal: item.representante_legal,
+        telefono: item.telefono,
+        correo_contacto: item.correo_contacto,
+        estado: item.estado ?? 'ACTIVO',
+        administrador_asignado: item.administrador_asignado,
+      }));
+
+      // Si la institución que había quedado seleccionada ya no está asignada, se quita
+      const activaGuardada = this.authService.obtenerInstitucionActiva();
+      if (activaGuardada) {
+        const encontrada = this.instituciones.find(i => i.id_institucion === activaGuardada.id_institucion);
+        if (encontrada) {
+          this.institucionActiva = encontrada;
+        } else {
+          this.deseleccionarInstitucion();
+        }
       }
     });
   }
+
+  trackInstitucion = (_: number, inst: InstitucionAsignada) => inst.id_institucion;
 
   seleccionarInstitucion(inst: InstitucionAsignada): void {
     this.institucionActiva = inst;

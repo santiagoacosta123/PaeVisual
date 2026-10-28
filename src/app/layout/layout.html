@@ -8,27 +8,27 @@
 
     <!-- Logo / Imagen SIRAE -->
     <div style="display:flex; align-items:center; justify-content:center; margin-bottom:20px; padding:4px;">
-      <img src="sirae-logo.png" alt="Logo SIRAE" style="height:45px; width:auto; object-fit:contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.04));" />
+      <img src="sirae-logo-dark.png" alt="Logo SIRAE" style="width:100%; max-width:68px; height:auto; object-fit:contain;" />
     </div>
 
     <!-- Navegación Lateral por Iconos -->
     <nav class="flex flex-col gap-2 flex-1 items-center" style="overflow-y:auto; width:100%;">
-      <a routerLink="dashboard-supervisor" routerLinkActive="active-icon-link" title="Inicio Supervisor"
+      <a *ngIf="institucionActiva" routerLink="dashboard-supervisor" routerLinkActive="active-icon-link" title="Inicio Supervisor"
          style="display:flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:14px; text-decoration:none; color:#64748b; transition:all 0.2s;">
         <span class="material-symbols-outlined nav-icon" style="font-size:24px;">space_dashboard</span>
       </a>
 
-      <a routerLink="registrar-entrega-alimentos" routerLinkActive="active-icon-link" title="Registrar entrega de alimentos"
+      <a *ngIf="institucionActiva" routerLink="registrar-entrega-alimentos" routerLinkActive="active-icon-link" title="Registrar entrega de alimentos"
          style="display:flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:14px; text-decoration:none; color:#64748b; transition:all 0.2s;">
         <span class="material-symbols-outlined nav-icon" style="font-size:24px;">local_shipping</span>
       </a>
 
-      <a routerLink="instituciones" routerLinkActive="active-icon-link" title="Sedes"
+      <a *ngIf="institucionActiva" routerLink="instituciones" routerLinkActive="active-icon-link" title="Sedes"
          style="display:flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:14px; text-decoration:none; color:#64748b; transition:all 0.2s;">
         <span class="material-symbols-outlined nav-icon" style="font-size:24px;">apartment</span>
       </a>
 
-      <a routerLink="reportes-consumo" routerLinkActive="active-icon-link" title="Reportes"
+      <a *ngIf="institucionActiva" routerLink="reportes-consumo" routerLinkActive="active-icon-link" title="Reportes"
          style="display:flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:14px; text-decoration:none; color:#64748b; transition:all 0.2s;">
         <span class="material-symbols-outlined nav-icon" style="font-size:24px;">analytics</span>
       </a>
@@ -51,7 +51,7 @@
       <div style="display:flex; align-items:center; gap:16px;">
         <div>
           <h1 style="font-size:22px; font-weight:700; color:#1a1a1a; margin:0; position:relative;">
-            {{ pageTitle }}
+            {{ tituloEncabezado }}
             <div style="width: 32px; height: 4px; background: #fac94b; border-radius: 2px; margin-top: 4px;"></div>
           </h1>
         </div>
@@ -77,6 +77,7 @@
           <span class="material-symbols-outlined" style="font-size:16px; color:#94a3b8;">touch_app</span>
           <span style="font-size:12px; font-weight:600; color:#64748b;">Selecciona una institución para comenzar</span>
         </div>
+
       </div>
 
       <div style="display:flex; align-items:center; gap:16px; position:relative;">
@@ -450,12 +451,11 @@
         <span class="modern-nav-text">Recepción Entregas</span>
       </a>
 
-      <!-- inventario (Exclusivo para Administrador de Institución ) -->
-      <a *ngIf="esAdministrador " routerLink="ingredientes" routerLinkActive="active" class="modern-nav-item" title="Inventario">
-        <span class="material-symbols-outlined modern-nav-icon" aria-hidden="true">inventory</span>
-        <span class="modern-nav-text">Inventario</span>
+      <!-- MENÚS (Exclusivo para Administrador de Institución / Manipuladoras) -->
+      <a routerLink="menus" routerLinkActive="active" class="modern-nav-item" title="Menús">
+        <span class="material-symbols-outlined modern-nav-icon" aria-hidden="true">restaurant_menu</span>
+        <span class="modern-nav-text">Menús</span>
       </a>
-
 
       <!-- USUARIOS -->
       <a routerLink="usuarios" routerLinkActive="active" class="modern-nav-item" title="Usuarios">

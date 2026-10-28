@@ -1,10 +1,13 @@
-import { ChangeDetectorRef, Component, HostListener, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
-import { TimeoutError, forkJoin, of } from 'rxjs';
+import { Observable, Subscription, TimeoutError, forkJoin, of } from 'rxjs';
 import { catchError, take, timeout } from 'rxjs/operators';
+import { AuthService, InstitucionAsignada } from '@core/auth';
 import { SweetAlertService } from '../sweet-alert.service';
+import { Entrega, EntregasService } from '../features/entregas/services/entregas.service';
+import { SiraeService } from '../features/contratos/services/contratos_pae.service';
 import {
   IngredienteInventario,
   InventarioOperativoService,
@@ -17,51 +20,53 @@ interface SalidaPresentacion extends SalidaInventarioRegistro {
   unidad: string;
 }
 
+/** Una sede de la institución con los cupos de sus contratos vigentes */
+interface SedeBase {
+  id: number;
+  nombre: string;
+  cupos: number;
+}
+
 /**
- * Un registro = lo que pasó en UNA sede en UN día.
- * Es la única forma de dato que necesita el reporte global: todo lo demás
- * (totales, asistencia, platos, detalle por sede) se calcula aquí a partir de estos registros.
+ * Una entrega de alimentos ya asignada a una sede. Es la única forma de dato del reporte de sedes:
+ * totales, tabla por sede, detalle y CSV se calculan a partir de estas filas.
  */
-interface RegistroDiario {
-  fecha: string;          // YYYY-MM-DD
+interface EntregaSede {
+  id: number;
+  fecha: string;            // YYYY-MM-DD
   sedeId: number;
-  sede: string;           // nombre de la sede
-  matriculados: number;   // estudiantes matriculados ese día
-  asistieron: number;     // estudiantes que asistieron / comieron
-  raciones: number;       // raciones servidas
-  kilos: number;          // kg de alimento utilizados
-  plato: string;          // comida servida
+  sede: string;
+  ingrediente: string;
+  tipoMercado: string;
+  cantidad: number;
+  unidad: string;
+  estado: string;           // EN_TRANSITO | RECIBIDA | CON_NOVEDAD | RECHAZADA
+  kilos: number;            // kg efectivamente recibidos (0 si no es peso, está en tránsito o fue rechazada)
 }
 
 interface ResumenSede {
   id: number;
   nombre: string;
-  matriculados: number;
-  asistenciaPromedio: number;   // 0-100
-  raciones: number;
+  cupos: number;
+  entregas: number;
   kilos: number;
-  dias: number;                 // días con servicio en el periodo
-  platoTop: string;             // plato más servido
-}
-
-interface ComidaReporte {
-  plato: string;
-  veces: number;
-  raciones: number;
-  sedes: string[];
+  novedades: number;        // entregas con novedad o rechazadas
+  dias: number;             // días distintos con entregas
+  ingredienteTop: string;   // ingrediente más entregado
+  ultimaEntrega: string;
 }
 
 interface TotalesReporte {
   sedes: number;
-  matriculados: number;
-  asistencia: number;
-  raciones: number;
+  cupos: number;
+  entregas: number;
   kilos: number;
+  novedades: number;
   dias: number;
-  platos: number;
+  ingredientes: number;
 }
 
-type ColumnaSede = 'nombre' | 'matriculados' | 'asistenciaPromedio' | 'raciones' | 'kilos' | 'dias';
+type ColumnaSede = 'nombre' | 'cupos' | 'entregas' | 'kilos' | 'novedades' | 'dias';
 
 /** Si el servidor no responde en este tiempo, se muestra un error en vez de quedarse cargando */
 const TIEMPO_MAXIMO_MS = 20000;
@@ -69,13 +74,27 @@ const TIEMPO_MAXIMO_MS = 20000;
 /** Convierte cualquier valor (incluso null o undefined) en texto, sin fallar */
 const texto = (valor: unknown): string => (valor === null || valor === undefined ? '' : String(valor));
 
+/** El backend puede responder con una lista o con { results: [...] } */
+const listaDe = (datos: unknown): any[] => {
+  if (Array.isArray(datos)) return datos;
+  const resultados = (datos as { results?: unknown } | null)?.results;
+  return Array.isArray(resultados) ? resultados : [];
+};
+
+const ETIQUETAS_ESTADO: Record<string, string> = {
+  EN_TRANSITO: 'En tránsito',
+  RECIBIDA: 'Recibida',
+  CON_NOVEDAD: 'Con novedad',
+  RECHAZADA: 'Rechazada',
+};
+
 @Component({
   selector: 'app-reportes-consumo',
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './reportes.html',
 })
-export class Reportes implements OnInit {
+export class Reportes implements OnInit, OnDestroy {
   // ===================== SALIDAS DE INVENTARIO (datos reales) =====================
   salidas: SalidaPresentacion[] = [];
   cargando = true;
@@ -83,25 +102,44 @@ export class Reportes implements OnInit {
   fechaDesde = '';
   fechaHasta = '';
 
-  // ===================== REPORTE GLOBAL DE SEDES =====================
-  registros: RegistroDiario[] = [];
-  avisoEjemplo = '';
-  sedeFiltro = 'Todas';
-  ordenColumna: ColumnaSede = 'raciones';
+  // ===================== REPORTE DE SEDES (sedes + cupos + entregas) =====================
+  institucionActiva: InstitucionAsignada | null = null;
+  sedesBase: SedeBase[] = [];
+  entregas: EntregaSede[] = [];
+  avisoDatos = '';
+  sedeFiltro: 'Todas' | number = 'Todas';
+  ordenColumna: ColumnaSede = 'kilos';
   ordenDireccion: 'asc' | 'desc' = 'desc';
   sedeDetalle: ResumenSede | null = null;
 
   private versionDatos = 0;
-  private cache: { clave: string; resumen: ResumenSede[]; comidas: ComidaReporte[]; totales: TotalesReporte } | null = null;
+  private suscripcion?: Subscription;
+  private cache: { clave: string; resumen: ResumenSede[]; totales: TotalesReporte } | null = null;
 
   constructor(
     private readonly inventarioService: InventarioOperativoService,
+    private readonly entregasService: EntregasService,
+    private readonly sirae: SiraeService,
+    private readonly auth: AuthService,
     private readonly alertas: SweetAlertService,
     private readonly cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit(): void {
-    this.cargar();
+    // Emite al abrir la pantalla y cada vez que el supervisor cambia de institución
+    this.suscripcion = this.auth.institucionActiva$.subscribe(institucion => {
+      const cambio = institucion?.id_institucion !== this.institucionActiva?.id_institucion;
+      this.institucionActiva = institucion;
+      if (cambio) {
+        this.sedeFiltro = 'Todas';
+        this.sedeDetalle = null;
+      }
+      this.cargar();
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.suscripcion?.unsubscribe();
   }
 
   // Esc cierra el detalle de la sede
@@ -113,9 +151,15 @@ export class Reportes implements OnInit {
   cargar(): void {
     this.cargando = true;
     this.errorMensaje = '';
+    const idInstitucion = this.institucionActiva?.id_institucion;
+    const fallos: string[] = [];
 
-    // Reporte global de sedes (estudiantes y comidas)
-    this.cargarRegistros();
+    // Lo que no sea indispensable no rompe el reporte: si falla, se avisa y se sigue con lo demás
+    const opcional = <T>(nombre: string) => catchError<T, Observable<null>>((error: unknown) => {
+      console.warn(`No se pudo cargar ${nombre} para el reporte:`, error);
+      fallos.push(nombre);
+      return of(null);
+    });
 
     forkJoin({
       // Las salidas son lo único indispensable: si fallan, se muestra el error
@@ -137,12 +181,18 @@ export class Reportes implements OnInit {
           return of<UnidadInventario[]>([]);
         }),
       ),
+      // Reporte de sedes: sedes de la institución, cupos de los contratos y entregas de alimentos
+      sedes: this.sirae.getSedes(idInstitucion).pipe(take(1), timeout(TIEMPO_MAXIMO_MS), opcional<any[]>('las sedes')),
+      contratos: this.sirae.getContratos().pipe(take(1), timeout(TIEMPO_MAXIMO_MS), opcional<any[]>('los contratos')),
+      entregas: this.entregasService.cargar().pipe(take(1), timeout(TIEMPO_MAXIMO_MS), opcional<Entrega[]>('las entregas')),
     }).subscribe({
-      next: ({ salidas, ingredientes, unidades }) => {
+      next: ({ salidas, ingredientes, unidades, sedes, contratos, entregas }) => {
         this.salidas = salidas
           .map(salida => this.presentar(salida, ingredientes, unidades))
           // Lo más reciente primero
           .sort((a, b) => texto(b.fecha).localeCompare(texto(a.fecha)));
+
+        this.armarReporteSedes(sedes, contratos, entregas, fallos);
         this.cargando = false;
         this.cdr.markForCheck();
       },
@@ -213,66 +263,80 @@ export class Reportes implements OnInit {
   }
 
   // =====================================================
-  //  REPORTE GLOBAL DE SEDES
+  //  REPORTE DE SEDES
   // =====================================================
 
   /**
-   * Carga los registros diarios por sede (asistencia + comida servida).
-   *
-   * ► PARA USAR DATOS REALES: reemplaza el cuerpo de este método por la llamada a tu backend.
-   *   Cada elemento debe tener la forma de RegistroDiario (fecha, sedeId, sede, matriculados,
-   *   asistieron, raciones, kilos, plato). Ejemplo (inyecta HttpClient y environment):
-   *
-   *     this.http.get<RegistroDiario[]>(`${environment.apiUrl}/reportes/sedes/`).subscribe(datos => {
-   *       this.registros = datos;
-   *       this.avisoEjemplo = '';
-   *       this.versionDatos++;
-   *       this.cdr.markForCheck();
-   *     });
-   *
-   *   Todo lo demás (totales, asistencia, platos, detalle por sede, filtros, orden y CSV) ya funciona
-   *   sobre esos registros y no hay que tocarlo.
+   * Une las tres fuentes (sedes, contratos y entregas) en las dos listas que usa el reporte.
+   * Cualquiera puede venir en null si su consulta falló: en ese caso se avisa y se usa lo que haya.
    */
-  private cargarRegistros(): void {
-    this.registros = this.generarRegistrosEjemplo();
-    this.avisoEjemplo = 'Estás viendo datos de ejemplo. Conecta cargarRegistros() al servidor (en reportes.ts) para ver los datos reales de tus sedes.';
-    this.versionDatos++;
-  }
+  private armarReporteSedes(sedes: any[] | null, contratos: any[] | null, entregas: Entrega[] | null, fallos: string[]): void {
+    const idInstitucion = this.institucionActiva?.id_institucion;
 
-  /** Datos de ejemplo: 30 días hábiles para 2 sedes (estables, no cambian al recargar) */
-  private generarRegistrosEjemplo(): RegistroDiario[] {
-    const sedes = [
-      { id: 1, nombre: 'Institucion educativa la Milagrosa', matriculados: 420, base: 90 },
-      { id: 2, nombre: 'Liceo de Occidente',                  matriculados: 310, base: 80 },
-    ];
-    const platos = ['Arroz con pollo', 'Frijoles con arroz', 'Pasta con carne molida', 'Lentejas con plátano', 'Sancocho de res'];
+    // 1) Sedes de la institución (si la consulta falló, las que ya trae la institución activa)
+    let origen = listaDe(sedes);
+    if (origen.length === 0) origen = listaDe(this.institucionActiva?.sedes);
+    const mapaSedes = new Map<number, SedeBase>();
+    for (const item of origen) {
+      const id = Number(item.id_sede ?? item.id);
+      if (!id) continue;
+      mapaSedes.set(id, { id, nombre: texto(item.nombre_sede ?? item.nombre) || `Sede ${id}`, cupos: 0 });
+    }
 
-    const lista: RegistroDiario[] = [];
-    const hoy = new Date();
-    let indice = 0;
-    for (let atras = 0; atras < 42; atras++) {
-      const dia = new Date(hoy);
-      dia.setDate(hoy.getDate() - atras);
-      if (dia.getDay() === 0 || dia.getDay() === 6) continue;   // sin fines de semana
-      indice++;
+    // 2) Cupos: suma de los contratos vigentes de cada sede
+    for (const contrato of listaDe(contratos)) {
+      const idSede = Number(contrato.id_sede);
+      if (!idSede || !this.contratoVigente(contrato)) continue;
+      if (idInstitucion && Number(contrato.id_institucion) !== idInstitucion && !mapaSedes.has(idSede)) continue;
+      const sede = mapaSedes.get(idSede);
+      if (sede) sede.cupos += Number(contrato.cupos) || 0;
+    }
 
-      for (const sede of sedes) {
-        const variacion = ((indice * 7 + sede.id * 13) % 11) - 5;                 // -5 a +5 puntos
-        const porcentaje = Math.min(100, Math.max(60, sede.base + variacion));
-        const asistieron = Math.round(sede.matriculados * porcentaje / 100);
-        lista.push({
-          fecha: this.isoDe(dia),
-          sedeId: sede.id,
-          sede: sede.nombre,
-          matriculados: sede.matriculados,
-          asistieron,
-          raciones: asistieron,
-          kilos: Math.round(asistieron * 0.165 * 100) / 100,
-          plato: platos[(indice + sede.id) % platos.length],
-        });
+    // 3) Entregas de la institución que sí tienen sede
+    const delaInstitucion = (entregas ?? []).filter(e =>
+      !idInstitucion || e.idInstitucion === idInstitucion || (e.idSede !== undefined && mapaSedes.has(e.idSede)));
+    const sinSede = delaInstitucion.filter(e => !e.idSede).length;
+    const conSede = delaInstitucion.filter(e => !!e.idSede);
+
+    // Si una entrega es de una sede que no llegó en la lista, la sede se agrega para no perder datos
+    for (const e of conSede) {
+      if (!mapaSedes.has(e.idSede!)) {
+        mapaSedes.set(e.idSede!, { id: e.idSede!, nombre: e.sedeNombre || `Sede ${e.idSede}`, cupos: 0 });
       }
     }
-    return lista;
+
+    this.sedesBase = Array.from(mapaSedes.values());
+    this.entregas = conSede.map(e => this.aEntregaSede(e, mapaSedes.get(e.idSede!)!.nombre));
+    this.versionDatos++;
+
+    const avisos: string[] = [];
+    if (fallos.length > 0) avisos.push(`No se pudieron cargar ${fallos.join(', ')}. Los datos de esas partes pueden estar incompletos; usa "Actualizar datos" para reintentar.`);
+    if (sinSede > 0) avisos.push(`${sinSede} ${sinSede === 1 ? 'entrega no tiene' : 'entregas no tienen'} sede asignada y no se cuentan por sede.`);
+    this.avisoDatos = avisos.join(' ');
+  }
+
+  private contratoVigente(contrato: any): boolean {
+    const estado = texto(contrato.estado).toLowerCase();
+    return !['finaliz', 'vencid', 'cancel', 'inactiv', 'terminad'].some(palabra => estado.includes(palabra));
+  }
+
+  private aEntregaSede(e: Entrega, nombreSede: string): EntregaSede {
+    const estado = texto(e.estado).toUpperCase() || 'EN_TRANSITO';
+    // Solo cuenta lo que ya se recibió, y solo si se mide en kilos
+    const recibida = estado === 'RECIBIDA' || estado === 'CON_NOVEDAD';
+    const cantidad = e.cantidadRecibida ?? e.cantidad ?? 0;
+    return {
+      id: Number(e.id) || 0,
+      fecha: texto(e.fechaRecepcion).slice(0, 10),
+      sedeId: Number(e.idSede),
+      sede: nombreSede,
+      ingrediente: e.ingrediente || 'Sin nombre',
+      tipoMercado: e.tipoMercado,
+      cantidad: Number(e.cantidad) || 0,
+      unidad: e.unidad,
+      estado,
+      kilos: recibida && e.unidad === 'Kg' ? Number(cantidad) || 0 : 0,
+    };
   }
 
   // ---------- Filtros ----------
@@ -291,16 +355,15 @@ export class Reportes implements OnInit {
     this.fechaHasta = this.isoDe(hoy);
   }
 
-  get sedesDisponibles(): string[] {
-    return Array.from(new Set(this.registros.map(r => r.sede))).sort((a, b) => a.localeCompare(b, 'es'));
+  get sedesDisponibles(): SedeBase[] {
+    return [...this.sedesBase].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
   }
 
-  private get registrosFiltrados(): RegistroDiario[] {
-    return this.registros.filter(r =>
-      (!this.fechaDesde || r.fecha >= this.fechaDesde) &&
-      (!this.fechaHasta || r.fecha <= this.fechaHasta) &&
-      (this.sedeFiltro === 'Todas' || r.sede === this.sedeFiltro)
-    );
+  /** Entregas dentro de las fechas del filtro (todas las sedes) */
+  private get entregasEnFechas(): EntregaSede[] {
+    return this.entregas.filter(e =>
+      (!this.fechaDesde || e.fecha >= this.fechaDesde) &&
+      (!this.fechaHasta || e.fecha <= this.fechaHasta));
   }
 
   // ---------- Orden de la tabla ----------
@@ -328,91 +391,71 @@ export class Reportes implements OnInit {
   }
 
   get resumenSedes(): ResumenSede[] { return this.calculo.resumen; }
-  get comidasFiltradas(): ComidaReporte[] { return this.calculo.comidas; }
   get totales(): TotalesReporte { return this.calculo.totales; }
 
   private calcular(clave: string) {
-    const registros = this.registrosFiltrados;
+    const entregas = this.entregasEnFechas;
+    const sedes = this.sedesBase.filter(s => this.sedeFiltro === 'Todas' || s.id === this.sedeFiltro);
 
-    // Resumen por sede
-    const porSede = new Map<number, RegistroDiario[]>();
-    for (const r of registros) {
-      const lista = porSede.get(r.sedeId) ?? [];
-      lista.push(r);
-      porSede.set(r.sedeId, lista);
-    }
     const dir = this.ordenDireccion === 'asc' ? 1 : -1;
-    const resumen = Array.from(porSede.values())
-      .map(lista => this.resumirSede(lista))
+    const resumen = sedes
+      .map(sede => this.resumirSede(sede, entregas.filter(e => e.sedeId === sede.id)))
       .sort((a, b) => {
         const x = a[this.ordenColumna];
         const y = b[this.ordenColumna];
-        return (typeof x === 'string' ? x.localeCompare(String(y), 'es') : (x as number) - (y as number)) * dir;
+        return (typeof x === 'string' ? x.localeCompare(String(y), 'es') : (x as number) - (y as number)) * dir
+          || a.nombre.localeCompare(b.nombre, 'es');
       });
 
-    // Comidas servidas
-    const porPlato = new Map<string, { veces: number; raciones: number; sedes: Set<string> }>();
-    for (const r of registros) {
-      const p = porPlato.get(r.plato) ?? { veces: 0, raciones: 0, sedes: new Set<string>() };
-      p.veces++;
-      p.raciones += r.raciones;
-      p.sedes.add(r.sede);
-      porPlato.set(r.plato, p);
-    }
-    const comidas: ComidaReporte[] = Array.from(porPlato.entries())
-      .map(([plato, p]) => ({ plato, veces: p.veces, raciones: p.raciones, sedes: Array.from(p.sedes) }))
-      .sort((a, b) => b.veces - a.veces || b.raciones - a.raciones);
-
-    // Totales
-    const matriculadosDia = registros.reduce((suma, r) => suma + r.matriculados, 0);
-    const asistieron = registros.reduce((suma, r) => suma + r.asistieron, 0);
+    const delPeriodo = entregas.filter(e => sedes.some(s => s.id === e.sedeId));
     const totales: TotalesReporte = {
       sedes: resumen.length,
-      matriculados: resumen.reduce((suma, s) => suma + s.matriculados, 0),
-      asistencia: matriculadosDia > 0 ? Math.round(asistieron / matriculadosDia * 100) : 0,
-      raciones: registros.reduce((suma, r) => suma + r.raciones, 0),
-      kilos: this.redondear(registros.reduce((suma, r) => suma + r.kilos, 0)),
-      dias: new Set(registros.map(r => r.fecha)).size,
-      platos: comidas.length,
+      cupos: resumen.reduce((suma, s) => suma + s.cupos, 0),
+      entregas: resumen.reduce((suma, s) => suma + s.entregas, 0),
+      kilos: this.redondear(resumen.reduce((suma, s) => suma + s.kilos, 0)),
+      novedades: resumen.reduce((suma, s) => suma + s.novedades, 0),
+      dias: new Set(delPeriodo.map(e => e.fecha)).size,
+      ingredientes: new Set(delPeriodo.map(e => e.ingrediente)).size,
     };
 
-    return { clave, resumen, comidas, totales };
+    return { clave, resumen, totales };
   }
 
-  private resumirSede(lista: RegistroDiario[]): ResumenSede {
-    const ultimo = lista.reduce((a, b) => (b.fecha > a.fecha ? b : a));
-    const matriculadosDia = lista.reduce((suma, r) => suma + r.matriculados, 0);
-    const asistieron = lista.reduce((suma, r) => suma + r.asistieron, 0);
-
+  private resumirSede(sede: SedeBase, lista: EntregaSede[]): ResumenSede {
     const conteo = new Map<string, number>();
-    lista.forEach(r => conteo.set(r.plato, (conteo.get(r.plato) ?? 0) + 1));
-    const platoTop = Array.from(conteo.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] ?? '—';
+    lista.forEach(e => conteo.set(e.ingrediente, (conteo.get(e.ingrediente) ?? 0) + 1));
+    const ingredienteTop = Array.from(conteo.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] ?? '—';
 
     return {
-      id: ultimo.sedeId,
-      nombre: ultimo.sede,
-      matriculados: ultimo.matriculados,
-      asistenciaPromedio: matriculadosDia > 0 ? Math.round(asistieron / matriculadosDia * 100) : 0,
-      raciones: lista.reduce((suma, r) => suma + r.raciones, 0),
-      kilos: this.redondear(lista.reduce((suma, r) => suma + r.kilos, 0)),
-      dias: new Set(lista.map(r => r.fecha)).size,
-      platoTop,
+      id: sede.id,
+      nombre: sede.nombre,
+      cupos: sede.cupos,
+      entregas: lista.length,
+      kilos: this.redondear(lista.reduce((suma, e) => suma + e.kilos, 0)),
+      novedades: lista.filter(e => e.estado === 'CON_NOVEDAD' || e.estado === 'RECHAZADA').length,
+      dias: new Set(lista.map(e => e.fecha)).size,
+      ingredienteTop,
+      ultimaEntrega: lista.reduce((ultima, e) => (e.fecha > ultima ? e.fecha : ultima), ''),
     };
-  }
-
-  // Ancho de la barra de cada plato (el más servido = 100%)
-  porcentajeVeces(veces: number): number {
-    const max = Math.max(1, ...this.comidasFiltradas.map(c => c.veces));
-    return Math.round(veces / max * 100);
-  }
-
-  claseAsistencia(porcentaje: number): string {
-    return porcentaje >= 85 ? 'bg-emerald-500' : porcentaje >= 70 ? 'bg-amber-500' : 'bg-red-500';
   }
 
   trackSede = (_: number, s: ResumenSede) => s.id;
-  trackComida = (_: number, c: ComidaReporte) => c.plato;
-  trackRegistro = (_: number, r: RegistroDiario) => `${r.fecha}-${r.sedeId}-${r.plato}`;
+  trackEntrega = (_: number, e: EntregaSede) => e.id;
+
+  // ---------- Estado de una entrega ----------
+
+  etiquetaEstado(estado: string): string {
+    return ETIQUETAS_ESTADO[estado] ?? estado;
+  }
+
+  claseEstado(estado: string): string {
+    switch (estado) {
+      case 'RECIBIDA': return 'bg-emerald-50 text-emerald-700';
+      case 'CON_NOVEDAD': return 'bg-amber-50 text-amber-700';
+      case 'RECHAZADA': return 'bg-red-50 text-red-700';
+      default: return 'bg-sky-50 text-sky-700';
+    }
+  }
 
   // ---------- Detalle de una sede (ventana emergente) ----------
 
@@ -424,33 +467,22 @@ export class Reportes implements OnInit {
     this.sedeDetalle = null;
   }
 
-  // Días de la sede elegida dentro de las fechas del filtro (lo más reciente primero)
-  get registrosSede(): RegistroDiario[] {
+  // Entregas de la sede elegida dentro de las fechas del filtro (lo más reciente primero)
+  get entregasSede(): EntregaSede[] {
     if (!this.sedeDetalle) return [];
     const id = this.sedeDetalle.id;
-    return this.registros
-      .filter(r => r.sedeId === id &&
-        (!this.fechaDesde || r.fecha >= this.fechaDesde) &&
-        (!this.fechaHasta || r.fecha <= this.fechaHasta))
-      .sort((a, b) => b.fecha.localeCompare(a.fecha));
+    return this.entregasEnFechas
+      .filter(e => e.sedeId === id)
+      .sort((a, b) => b.fecha.localeCompare(a.fecha) || b.id - a.id);
   }
 
-  // Platos de la sede elegida, del más servido al menos servido
-  get comidasSede(): { plato: string; veces: number; raciones: number }[] {
-    const mapa = new Map<string, { veces: number; raciones: number }>();
-    for (const r of this.registrosSede) {
-      const p = mapa.get(r.plato) ?? { veces: 0, raciones: 0 };
-      p.veces++;
-      p.raciones += r.raciones;
-      mapa.set(r.plato, p);
-    }
+  // Ingredientes de la sede elegida, del más entregado al menos entregado
+  get ingredientesSede(): { ingrediente: string; veces: number }[] {
+    const mapa = new Map<string, number>();
+    for (const e of this.entregasSede) mapa.set(e.ingrediente, (mapa.get(e.ingrediente) ?? 0) + 1);
     return Array.from(mapa.entries())
-      .map(([plato, p]) => ({ plato, ...p }))
+      .map(([ingrediente, veces]) => ({ ingrediente, veces }))
       .sort((a, b) => b.veces - a.veces);
-  }
-
-  porcentajeAsistencia(r: RegistroDiario): number {
-    return r.matriculados > 0 ? Math.round(r.asistieron / r.matriculados * 100) : 0;
   }
 
   // ---------- Exportar ----------
@@ -464,24 +496,24 @@ export class Reportes implements OnInit {
     }
     const t = this.totales;
     this.descargarCsv(`reporte-global-sedes-${this.hoyISO()}.csv`, [
-      ['Sede', 'Matriculados', 'Asistencia promedio (%)', 'Raciones servidas', 'Kg utilizados', 'Días de servicio', 'Plato más servido'],
-      ...sedes.map(s => [s.nombre, s.matriculados, s.asistenciaPromedio, s.raciones, s.kilos, s.dias, s.platoTop].map(texto)),
-      ['TOTAL', t.matriculados, t.asistencia, t.raciones, t.kilos, t.dias, ''].map(texto),
+      ['Sede', 'Cupos', 'Entregas', 'Kg recibidos', 'Entregas con novedad o rechazadas', 'Días con entregas', 'Ingrediente más entregado', 'Última entrega'],
+      ...sedes.map(s => [s.nombre, s.cupos, s.entregas, s.kilos, s.novedades, s.dias, s.ingredienteTop, s.ultimaEntrega].map(texto)),
+      ['TOTAL', t.cupos, t.entregas, t.kilos, t.novedades, t.dias, '', ''].map(texto),
     ]);
     void this.alertas.success('Reporte exportado', 'Se descargó el resumen por sede.');
   }
 
-  // Día a día de la sede abierta
+  // Entregas de la sede abierta
   exportarCsvSede(): void {
     const sede = this.sedeDetalle;
-    const filas = this.registrosSede;
+    const filas = this.entregasSede;
     if (!sede || filas.length === 0) {
-      void this.alertas.warning('Sin registros', 'Esta sede no tiene días en el rango seleccionado.');
+      void this.alertas.warning('Sin registros', 'Esta sede no tiene entregas en el rango seleccionado.');
       return;
     }
     this.descargarCsv(`sede-${sede.id}-${this.hoyISO()}.csv`, [
-      ['Fecha', 'Sede', 'Plato', 'Matriculados', 'Asistieron', 'Asistencia (%)', 'Raciones', 'Kg utilizados'],
-      ...filas.map(r => [r.fecha, r.sede, r.plato, r.matriculados, r.asistieron, this.porcentajeAsistencia(r), r.raciones, r.kilos].map(texto)),
+      ['Fecha', 'Sede', 'Ingrediente', 'Tipo de mercado', 'Cantidad', 'Unidad', 'Estado', 'Kg recibidos'],
+      ...filas.map(e => [e.fecha, e.sede, e.ingrediente, e.tipoMercado, e.cantidad, e.unidad, this.etiquetaEstado(e.estado), e.kilos].map(texto)),
     ]);
   }
 
@@ -513,10 +545,12 @@ export class Reportes implements OnInit {
     return this.isoDe(new Date());
   }
 
-  // Con ";" Excel en español separa bien las columnas
+  // Con ";" Excel en español separa bien las columnas.
+  // Si un texto empieza con = + @ (o - seguido de letra) Excel lo tomaría como fórmula: se le antepone un apóstrofo.
   private descargarCsv(nombreArchivo: string, filas: string[][]): void {
+    const seguro = (valor: string) => (/^[=+@\t\r]|^-(?![\d.,])/.test(valor) ? `'${valor}` : valor);
     const contenido = filas
-      .map(fila => fila.map(valor => `"${valor.replace(/"/g, '""')}"`).join(';'))
+      .map(fila => fila.map(valor => `"${seguro(valor).replace(/"/g, '""')}"`).join(';'))
       .join('\r\n');
 
     const url = URL.createObjectURL(new Blob(['\uFEFF', contenido], { type: 'text/csv;charset=utf-8' }));
