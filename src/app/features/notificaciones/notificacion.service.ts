@@ -17,7 +17,26 @@ export class NotificacionService {
     return this.http.get<Notificacion[]>(`${this.apiUrl}/`);
   }
 
-  // Crear nueva
+    // Enviar notificación con imagen opcional
+  enviarNotificacion(
+    titulo: string,
+    mensaje: string,
+    imagen?: File | null
+  ): Observable<any> {
+    const formulario = new FormData();
+
+    formulario.append('titulo', titulo.trim());
+    formulario.append('mensaje', mensaje.trim());
+
+    if (imagen) {
+      formulario.append('imagen', imagen, imagen.name);
+    }
+
+    return this.http.post<any>(
+      `${this.apiUrl}/enviar/`,
+      formulario
+    );
+  }
   crearNotificacion(notificacion: Notificacion): Observable<Notificacion> {
     return this.http.post<Notificacion>(`${this.apiUrl}/`, notificacion);
   }
