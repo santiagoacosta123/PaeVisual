@@ -47,6 +47,17 @@ export class ContratoDetalleComponent implements OnInit {
     return sup ? sup.nombre_completo : `Supervisor #${this.contrato.id_usuario_supervisor}`;
   }
 
+  get opcionesSupervisores(): any[] {
+    const lista = (this.supervisores || []).map(s => ({
+      id_usuario: Number(s.id_usuario),
+      nombre_completo: s.nombre_completo
+    }));
+    return [
+      { id_usuario: null, nombre_completo: 'Sin supervisor asignado...' },
+      ...lista
+    ];
+  }
+
   readonly zonasDisponibles: string[] = [
     'Norte',
     'Sur',

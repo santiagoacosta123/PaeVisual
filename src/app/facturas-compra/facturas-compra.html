@@ -135,14 +135,8 @@
 
       </div>
 
-      <!-- Loading State Facturas -->
-      <div *ngIf="cargando" style="padding:48px 20px; text-align:center; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px;">
-        <div style="width:36px; height:36px; border:3px solid #fde68a; border-top-color:#d97706; border-radius:50%; animation:spin 0.8s linear infinite;"></div>
-        <span style="font-size:13px; font-weight:600; color:#64748b;">Cargando facturas de compra...</span>
-      </div>
-
       <!-- Tabla de Facturas con Cabecera Fija y Scroll Interno -->
-      <div *ngIf="!cargando" style="overflow-x:auto; overflow-y:auto; max-height:calc(100vh - 270px); border-radius:12px; border:1px solid #f1f5f9;">
+      <div style="overflow-x:auto; overflow-y:auto; max-height:calc(100vh - 270px); border-radius:12px; border:1px solid #f1f5f9;">
         <table style="width:100%; border-collapse:collapse; text-align:left; font-size:13px; min-width:850px;">
           <thead style="position:sticky; top:0; z-index:10; background:#f8fafc;">
             <tr style="border-bottom:1px solid #e2e8f0; color:#64748b; font-weight:600; background:#f8fafc;">
@@ -206,7 +200,7 @@
       </div>
 
       <!-- Pie de Tabla: Paginación / Resumen -->
-      <div *ngIf="!cargando" style="display:flex; justify-content:space-between; align-items:center; padding-top:6px; border-top:1px solid #f1f5f9;">
+      <div style="display:flex; justify-content:space-between; align-items:center; padding-top:6px; border-top:1px solid #f1f5f9;">
         <span style="font-size:12px; color:#64748b;">
           Mostrando {{ facturasFiltradas.length }} de {{ facturas.length }} facturas registradas
         </span>
@@ -260,14 +254,8 @@
 
       </div>
 
-      <!-- Loading State Bodega Central -->
-      <div *ngIf="cargandoBodega" style="padding:48px 20px; text-align:center; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px;">
-        <div style="width:36px; height:36px; border:3px solid #fde68a; border-top-color:#d97706; border-radius:50%; animation:spin 0.8s linear infinite;"></div>
-        <span style="font-size:13px; font-weight:600; color:#64748b;">Cargando inventario de Stock Global...</span>
-      </div>
-
       <!-- Tabla Stock Global -->
-      <div *ngIf="!cargandoBodega" style="overflow-x:auto; overflow-y:auto; max-height:calc(100vh - 270px); border-radius:12px; border:1px solid #f1f5f9;">
+      <div style="overflow-x:auto; overflow-y:auto; max-height:calc(100vh - 270px); border-radius:12px; border:1px solid #f1f5f9;">
         <table style="width:100%; border-collapse:collapse; text-align:left; font-size:13px; min-width:850px;">
           <thead style="position:sticky; top:0; z-index:10; background:#f8fafc;">
             <tr style="border-bottom:1px solid #e2e8f0; color:#64748b; font-weight:600; background:#f8fafc;">
@@ -331,7 +319,7 @@
       </div>
 
       <!-- Pie de Tabla Bodega -->
-      <div *ngIf="!cargandoBodega" style="display:flex; justify-content:space-between; align-items:center; padding-top:6px; border-top:1px solid #f1f5f9;">
+      <div style="display:flex; justify-content:space-between; align-items:center; padding-top:6px; border-top:1px solid #f1f5f9;">
         <span style="font-size:12px; color:#64748b;">
           Mostrando {{ inventarioCentralFiltrado.length }} de {{ inventarioCentral.length }} insumos en bodega
         </span>
