@@ -1,9 +1,9 @@
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Subscription, of } from 'rxjs';
+import { Subscription, forkJoin, of } from 'rxjs';
 import { map, timeout, catchError } from 'rxjs/operators';
 import { environment } from '@env/environment';
 import { AuthService, InstitucionAsignada } from '../core/auth/auth.service';
@@ -11,6 +11,11 @@ import { AuthService, InstitucionAsignada } from '../core/auth/auth.service';
 type EstadoInventario = 'Ok' | 'Bajo' | 'Crítico';
 type FiltroEstado = 'Todos' | 'ACTIVO' | 'INACTIVO';
 type Pestana = 'inventario' | 'entregas';
+
+// NUEVO: filtros y vista del inventario
+type FiltroInv = 'Todos' | 'Ok' | 'Bajo' | 'Por vencer' | 'Agotado';
+type OrdenInv = 'urgencia' | 'nombre' | 'vence';
+type VistaInv = 'tarjetas' | 'tabla';
 
 // Tarjeta de Sede individual
 export interface SedeCard {
@@ -25,6 +30,8 @@ export interface SedeCard {
   matriculados?: number;
   asistenciaPromedio?: number;
   diasInventario?: number;
+  // true cuando la "sede" es en realidad la institución completa (la institución no maneja sedes)
+  esInstitucion?: boolean;
 }
 
 // Tarjeta de ingrediente para la sede
@@ -36,7 +43,14 @@ export interface ProductoInventario {
   saldo: number;
   vence: string;
   nivel: number;
+  cobertura: number; // NUEVO: días de cobertura
   estado: 'Ok' | 'Bajo' | 'Por vencer' | 'Agotado';
+}
+
+// NUEVO: productos agrupados por categoría
+export interface GrupoInventario {
+  categoria: string;
+  productos: ProductoInventario[];
 }
 
 // Entrega tal como llega del servidor
@@ -55,6 +69,19 @@ export interface EntregaUnida {
   unidad: string;
   cantidad: number;
   fechaRegistro: string;
+}
+
+// Envío hecho desde "Registrar entrega de alimentos" (panel "Enviado a la institución")
+export interface EnvioRegistro {
+  id: number;
+  idInstitucion: number | null;
+  ingrediente: string;
+  cantidad: number;
+  unidad: string;
+  destino: string;
+  fechaSalida: string;
+  fechaEntrega: string;
+  enviadoEl: string;
 }
 
 const EMOJI_PRODUCTO: Record<string, string> = {
@@ -135,6 +162,11 @@ function normalizar(s: string): string {
   return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
 }
 
+// Saca la lista de una respuesta que puede venir como arreglo o como { results: [...] }
+function listaDe(d: any): any[] {
+  return (Array.isArray(d) ? d : (d?.results ?? [])) as any[];
+}
+
 @Component({
   selector: 'app-instituciones',
   standalone: true,
@@ -148,12 +180,18 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
 
   private readonly urlInstituciones = `${environment.apiUrl}/instituciones/`;
   private readonly urlIngredientes = `${environment.apiUrl}/ingredientes/`;
+  // La misma ruta que usa la pantalla de registrar entregas
+  private readonly urlEntregas = `${environment.apiUrl}/entregas/`;
+  // Misma clave que usa la pantalla de registrar para guardar los envíos
+  private readonly claveEnvios = 'sirae_envios_institucion';
   private readonly origenServidor = /^https?:/i.test(environment.apiUrl)
     ? environment.apiUrl.replace(/\/api\/?$/, '')
     : 'http://127.0.0.1:8000';
 
   private imagenesIngredientes = new Map<string, string>();
   private imagenesFallidas = new Set<string>();
+  // id -> nombre de ingrediente (por si el backend solo manda el id)
+  private nombresIngredientes = new Map<number, string>();
   private subInstitucion?: Subscription;
   private subEntregas?: Subscription;
 
@@ -179,9 +217,25 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
   ];
 
   inventario: ProductoInventario[] = [];
+
+  // NUEVO: filtros y vista del inventario
+  textoInv = '';
+  categoriaInv = 'Todas';
+  filtroInv: FiltroInv = 'Todos';
+  ordenInv: OrdenInv = 'urgencia';
+  vistaInv: VistaInv = 'tarjetas';
+  estadosInv: FiltroInv[] = ['Todos', 'Ok', 'Bajo', 'Por vencer', 'Agotado'];
+
   entregasUnidas: EntregaUnida[] = [];
+  enviosSede: EnvioRegistro[] = [];   // envíos que llegan a esta sede
   cargandoEntregas = false;
   errorEntregas = '';
+
+  // true cuando la institución elegida NO maneja sedes: no se muestra la lista de sedes,
+  // se abre directamente la institución (inventario y entregas)
+  get sinSedes(): boolean {
+    return !!this.institucionActiva && (this.institucionActiva.sedes?.length ?? 0) === 0;
+  }
 
   ngOnInit(): void {
     // 1. Carga inmediata desde el almacenamiento local / AuthService (0 ms de bloqueo)
@@ -191,6 +245,7 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
     this.construirListaSedes();
 
     // 2. Suscripción a cambios de institución activa
+    //    (si cambia en cualquier pantalla, esta pantalla se actualiza sola)
     this.subInstitucion = this.authService.institucionActiva$.subscribe(inst => {
       this.institucionActiva = inst;
       this.construirListaSedes();
@@ -208,48 +263,68 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
 
   // =====================================================
   //  CONSTRUCCIÓN DE LISTA DE SEDES
+  //  Solo se muestra la institución ELEGIDA y sus sedes.
+  //  Si no hay ninguna elegida, se vuelve a la pantalla de selección.
   // =====================================================
   construirListaSedes(): void {
-    let sedesEncontradas: SedeCard[] = [];
-
-    if (this.institucionActiva) {
-      const sedesInst = this.institucionActiva.sedes || [];
-      sedesEncontradas = sedesInst.map((s: any, idx: number) => ({
-        id_sede: Number(s.id_sede ?? (idx + 1)),
-        nombre_sede: s.nombre_sede || `Sede ${idx + 1}`,
-        codigo_dane: s.codigo_dane || '',
-        direccion: s.direccion || '',
-        telefono: s.telefono || '',
-        estado: s.estado || 'ACTIVO',
-        id_institucion: this.institucionActiva?.id_institucion,
-        nombre_institucion: this.institucionActiva?.nombre_institucion,
-        matriculados: s.matriculados ?? 120,
-        asistenciaPromedio: s.asistencia_promedio ?? 95,
-        diasInventario: s.dias_inventario ?? 14,
-      }));
-    } else if (this.institucionesSupervisor.length > 0) {
-      for (const inst of this.institucionesSupervisor) {
-        const sedesInst = inst.sedes || [];
-        for (const s of sedesInst) {
-          sedesEncontradas.push({
-            id_sede: Number(s.id_sede),
-            nombre_sede: s.nombre_sede,
-            codigo_dane: s.codigo_dane || '',
-            direccion: s.direccion || '',
-            telefono: s.telefono || '',
-            estado: s.estado || 'ACTIVO',
-            id_institucion: inst.id_institucion,
-            nombre_institucion: inst.nombre_institucion,
-            matriculados: s.matriculados ?? 120,
-            asistenciaPromedio: s.asistencia_promedio ?? 95,
-            diasInventario: s.dias_inventario ?? 14,
-          });
-        }
-      }
+    if (!this.institucionActiva) {
+      this.sedes = [];
+      this.seleccionada = null;
+      this.cargando = false;
+      this.irACambiarInstitucion();
+      return;
     }
 
-    this.sedes = sedesEncontradas;
+    const inst = this.institucionActiva;
+    const sedesInst = inst.sedes || [];
+
+    this.sedes = sedesInst.map((s: any, idx: number) => ({
+      id_sede: Number(s.id_sede ?? (idx + 1)),
+      nombre_sede: s.nombre_sede || `Sede ${idx + 1}`,
+      codigo_dane: s.codigo_dane || '',
+      direccion: s.direccion || '',
+      telefono: s.telefono || '',
+      estado: s.estado || 'ACTIVO',
+      id_institucion: inst.id_institucion,
+      nombre_institucion: inst.nombre_institucion,
+      matriculados: s.matriculados ?? 120,
+      asistenciaPromedio: s.asistencia_promedio ?? 95,
+      diasInventario: s.dias_inventario ?? 14,
+    }));
+
     this.cargando = false;
+
+    if (this.sinSedes) {
+      // Institución sin sedes: se abre la institución directamente
+      this.abrirInstitucionSinSedes();
+    } else if (
+      this.seleccionada &&
+      (this.seleccionada.esInstitucion ||
+        this.seleccionada.id_institucion !== inst.id_institucion)
+    ) {
+      // Se cambió a una institución con sedes (o a otra): se vuelve a la lista de sedes
+      this.subEntregas?.unsubscribe();
+      this.cargandoEntregas = false;
+      this.seleccionada = null;
+    }
+  }
+
+  // La institución que no maneja sedes se muestra como una sola unidad (sin lista de sedes)
+  private abrirInstitucionSinSedes(): void {
+    const inst = this.institucionActiva!;
+    if (this.seleccionada?.esInstitucion && this.seleccionada.id_institucion === inst.id_institucion) return;
+
+    this.abrir({
+      id_sede: 0,
+      nombre_sede: inst.nombre_institucion,
+      codigo_dane: '',
+      direccion: '',
+      telefono: (inst as any).telefono ?? '',
+      estado: (inst as any).estado ?? 'ACTIVO',
+      id_institucion: inst.id_institucion,
+      nombre_institucion: inst.nombre_institucion,
+      esInstitucion: true,
+    });
   }
 
   // Sincroniza las instituciones y sus sedes en segundo plano
@@ -260,10 +335,10 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
 
     this.http.get<any>(this.urlInstituciones).pipe(
       timeout(6000),
-      map(d => (Array.isArray(d) ? d : (d?.results ?? [])) as any[]),
+      map(d => listaDe(d)),
       catchError(err => {
         console.warn('Sincronización en segundo plano de instituciones:', err);
-        return of([]);
+        return of([] as any[]);
       })
     ).subscribe((lista) => {
       this.cargando = false;
@@ -284,12 +359,15 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
           const encontrada = this.institucionesSupervisor.find(
             i => i.id_institucion === this.institucionActiva?.id_institucion
           );
-          if (encontrada) {
-            this.institucionActiva = encontrada;
+          // Solo se actualiza si algo cambió; la suscripción a institucionActiva$
+          // se encarga de reconstruir la lista (evita reconstruir dos veces).
+          if (
+            encontrada &&
+            JSON.stringify(encontrada) !== JSON.stringify(this.institucionActiva)
+          ) {
             this.authService.establecerInstitucionActiva(encontrada);
           }
         }
-        this.construirListaSedes();
       }
     });
   }
@@ -333,18 +411,21 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
 
   irAEntregas(sede: SedeCard): void {
     this.router.navigate(['/registrar-entrega-alimentos'], {
-      queryParams: { sede: sede.id_sede }
+      queryParams: sede.esInstitucion ? {} : { sede: sede.id_sede }
     });
   }
 
   abrir(sede: SedeCard): void {
     this.seleccionada = sede;
     this.pestana = 'inventario';
+    this.limpiarFiltrosInv();
     this.inventario = this.inventarioDe(sede);
     this.cargarEntregas(sede);
   }
 
   volver(): void {
+    // Si la institución no maneja sedes no hay lista a la cual volver
+    if (this.sinSedes) return;
     this.subEntregas?.unsubscribe();
     this.cargandoEntregas = false;
     this.seleccionada = null;
@@ -376,44 +457,127 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
   }
 
   // =====================================================
-  //  ENTREGAS
+  //  ENTREGAS (lo registrado en "Registrar entrega de alimentos")
   // =====================================================
   cargarEntregas(sede: SedeCard): void {
     this.subEntregas?.unsubscribe();
     this.errorEntregas = '';
     this.entregasUnidas = [];
+    this.enviosSede = this.leerEnviosDeSede(sede);
     this.cargandoEntregas = true;
 
-    const idInst = sede.id_institucion || this.institucionActiva?.id_institucion;
-    const url = `${this.urlInstituciones}${idInst}/entregas/`;
+    const idInst = sede.id_institucion ?? this.institucionActiva?.id_institucion;
+    const idSede = !sede.esInstitucion && sede.id_sede > 0 ? sede.id_sede : null;
 
-    this.subEntregas = this.http.get<any>(url).pipe(
-      timeout(5000),
-      map(d => (Array.isArray(d) ? d : (d?.results ?? [])) as any[]),
-      catchError(() => {
-        // En caso de que no haya entregas en el backend, usamos datos de muestra para visualización
-        return of(this.entregasMuestra());
+    let params = new HttpParams();
+    if (idInst != null) params = params.set('id_institucion', idInst);
+    if (idSede != null) params = params.set('id_sede', idSede);
+
+    const entregas$ = this.http.get<any>(this.urlEntregas, { params }).pipe(
+      timeout(8000),
+      map(d => listaDe(d)),
+      catchError(err => {
+        console.error('Error al cargar entregas:', err);
+        this.errorEntregas = 'No se pudieron cargar las entregas. Revisa la conexión con el servidor.';
+        return of([] as any[]);
       })
-    ).subscribe({
-      next: (lista) => {
-        const crudas = (lista || []).map(item => this.aEntregaCruda(item));
-        this.entregasUnidas = this.unirEntregas(crudas);
+    );
+
+    // Se piden también los ingredientes para poder poner el nombre cuando el backend solo manda el id
+    const ingredientes$ = this.http.get<any>(this.urlIngredientes).pipe(
+      timeout(4000),
+      map(d => listaDe(d)),
+      catchError(() => of([] as any[]))
+    );
+
+    this.subEntregas = forkJoin({ entregas: entregas$, ingredientes: ingredientes$ }).subscribe({
+      next: ({ entregas, ingredientes }) => {
+        for (const ing of ingredientes) {
+          const id = Number(ing?.id ?? ing?.id_ingrediente);
+          const nombre = leerTexto(ing, 'nombre', 'nombre_ingrediente', 'ingrediente');
+          if (!Number.isNaN(id) && nombre) this.nombresIngredientes.set(id, nombre);
+        }
+
+        const propias = this.soloDeEstaSede(entregas, idInst, sede);
+        this.entregasUnidas = this.unirEntregas(propias.map(item => this.aEntregaCruda(item)));
         this.cargandoEntregas = false;
       },
       error: (err) => {
         console.error('Error al cargar entregas:', err);
-        this.entregasUnidas = this.unirEntregas(this.entregasMuestra());
+        this.errorEntregas = 'No se pudieron cargar las entregas.';
         this.cargandoEntregas = false;
       }
     });
   }
 
+  // Envíos guardados en el navegador que van a esta institución / sede
+  private leerEnviosDeSede(sede: SedeCard): EnvioRegistro[] {
+    let todos: EnvioRegistro[] = [];
+    try {
+      const datos = JSON.parse(localStorage.getItem(this.claveEnvios) || '[]');
+      todos = Array.isArray(datos) ? datos : [];
+    } catch { return []; }
+
+    const idInst = sede.id_institucion ?? this.institucionActiva?.id_institucion ?? null;
+    const nombreInst = normalizar(sede.nombre_institucion ?? '');
+
+    return todos.filter(e => {
+      if (idInst != null && e.idInstitucion != null && Number(e.idInstitucion) !== Number(idInst)) return false;
+      const destino = normalizar(e.destino ?? '');
+      if (sede.esInstitucion) return destino === nombreInst || destino.startsWith(`${nombreInst} - `) || !destino.includes(' - ');
+      return destino.endsWith(normalizar(` - ${sede.nombre_sede}`));
+    });
+  }
+
+  trackEnvio(_: number, e: EnvioRegistro): number {
+    return e.id;
+  }
+
+  // Seguro extra: deja solo lo de la institución (y la sede, si se eligió una)
+  private soloDeEstaSede(lista: any[], idInst: number | null | undefined, sede: SedeCard): any[] {
+    const filtraSede = !sede.esInstitucion && sede.id_sede > 0;
+
+    return lista.filter(item => {
+      const rawInst = item.id_institucion
+        ?? (typeof item.institucion === 'number' ? item.institucion : (item.institucion?.id_institucion ?? item.institucion?.id));
+      if (idInst != null && rawInst != null && Number(rawInst) !== Number(idInst)) return false;
+
+      if (filtraSede) {
+        const rawSede = item.id_sede
+          ?? (typeof item.sede === 'number' ? item.sede : (item.sede?.id_sede ?? item.sede?.id));
+        if (rawSede != null) return Number(rawSede) === sede.id_sede;
+
+        // Sin id de sede: si el destino viene como "Institución - Sede", debe terminar en esta sede
+        const destino = typeof item.destino === 'string' ? item.destino : '';
+        if (destino.includes(' - ')) return normalizar(destino).endsWith(normalizar(` - ${sede.nombre_sede}`));
+      }
+      return true;
+    });
+  }
+
   private aEntregaCruda(item: any): EntregaCruda {
+    // 1) nombre directo; 2) objeto { nombre }; 3) id -> nombre del catálogo
+    let ingrediente = leerTexto(item, 'ingrediente_nombre', 'nombre_ingrediente', 'producto', 'nombre_producto');
+    if (!ingrediente) {
+      const ing = item?.ingrediente;
+      if (ing && typeof ing === 'object') {
+        ingrediente = String(ing.nombre ?? ing.name ?? '');
+      } else if (typeof ing === 'string' && Number.isNaN(Number(ing))) {
+        ingrediente = ing;
+      }
+    }
+    if (!ingrediente) {
+      const id = item?.id_ingrediente ?? (typeof item?.ingrediente === 'number' ? item.ingrediente : null);
+      if (id != null) ingrediente = this.nombresIngredientes.get(Number(id)) ?? '';
+    }
+
     return {
-      ingrediente: leerTexto(item, 'ingrediente', 'producto', 'nombre_producto', 'nombre_ingrediente', 'nombre') || 'Producto',
+      ingrediente: ingrediente || 'Producto',
       unidad: leerTexto(item, 'unidad', 'unidad_medida', 'unidad_de_medida') || 'Kg',
-      cantidad: leerNumero(item, 'cantidad', 'cantidad_entregada', 'total') || 10,
-      fechaRegistro: leerTexto(item, 'fecha_registro', 'fechaRegistro', 'fecha', 'created_at') || this.hoy(),
+      cantidad: leerNumero(item, 'cantidad', 'cantidad_entregada', 'total'),
+      // Primero la fecha/hora en que se registró; si no existe, la fecha de entrega
+      fechaRegistro: leerTexto(item, 'created_at', 'fecha_creacion', 'fecha_registro', 'fechaRegistro',
+        'fecha_entrega', 'fecha_recepcion', 'fecha') || this.hoy(),
     };
   }
 
@@ -456,6 +620,7 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
     return Number.isNaN(t) ? 0 : t;
   }
 
+  // Datos de ejemplo (ya no se usan para el historial; se dejan por si los necesitas para pruebas)
   private entregasMuestra(): EntregaCruda[] {
     const hoy = this.hoy();
     const f = (dias: number, hora: string) => `${this.sumarDias(hoy, dias)}T${hora}`;
@@ -508,9 +673,130 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
         saldo,
         vence: this.sumarDias(this.hoy(), diasVence),
         nivel: Math.max(0, Math.min(100, Math.round((cobertura / (p.perecedero ? 7 : 30)) * 100))),
+        cobertura,
         estado,
       };
     });
+  }
+
+  // =====================================================
+  //  INVENTARIO: RESUMEN, FILTROS Y AGRUPACIÓN (NUEVO)
+  // =====================================================
+  get resumenInv(): Record<FiltroInv, number> {
+    const c = (e: string) => this.inventario.filter(p => p.estado === e).length;
+    return {
+      Todos: this.inventario.length,
+      Ok: c('Ok'),
+      Bajo: c('Bajo'),
+      'Por vencer': c('Por vencer'),
+      Agotado: c('Agotado'),
+    };
+  }
+
+  get requierenAccion(): number {
+    const r = this.resumenInv;
+    return r.Bajo + r['Por vencer'] + r.Agotado;
+  }
+
+  get categoriasInv(): string[] {
+    return ['Todas', ...Array.from(new Set(this.inventario.map(p => p.categoria))).sort()];
+  }
+
+  private pesoEstado(p: ProductoInventario): number {
+    return { Agotado: 0, Bajo: 1, 'Por vencer': 2, Ok: 3 }[p.estado];
+  }
+
+  get inventarioFiltrado(): ProductoInventario[] {
+    const q = this.textoInv.trim().toLowerCase();
+    return this.inventario
+      .filter(p =>
+        (this.filtroInv === 'Todos' || p.estado === this.filtroInv) &&
+        (this.categoriaInv === 'Todas' || p.categoria === this.categoriaInv) &&
+        (!q || p.nombre.toLowerCase().includes(q) || p.categoria.toLowerCase().includes(q)))
+      .sort((a, b) => {
+        if (this.ordenInv === 'nombre') return a.nombre.localeCompare(b.nombre);
+        if (this.ordenInv === 'vence') return (a.vence || '9999').localeCompare(b.vence || '9999');
+        return this.pesoEstado(a) - this.pesoEstado(b) || a.nombre.localeCompare(b.nombre);
+      });
+  }
+
+  get gruposInv(): GrupoInventario[] {
+    const mapa = new Map<string, ProductoInventario[]>();
+    for (const p of this.inventarioFiltrado) {
+      mapa.set(p.categoria, [...(mapa.get(p.categoria) ?? []), p]);
+    }
+    return Array.from(mapa, ([categoria, productos]) => ({ categoria, productos }));
+  }
+
+  get hayFiltrosInv(): boolean {
+    return !!this.textoInv.trim() || this.categoriaInv !== 'Todas' || this.filtroInv !== 'Todos';
+  }
+
+  limpiarFiltrosInv(): void {
+    this.textoInv = '';
+    this.categoriaInv = 'Todas';
+    this.filtroInv = 'Todos';
+  }
+
+  necesitaEnvio(p: ProductoInventario): boolean {
+    return p.estado !== 'Ok';
+  }
+
+  // Lleva a Registrar entrega con el producto (y la sede) ya elegidos
+  enviarProducto(p: ProductoInventario): void {
+    const queryParams: Record<string, string | number> = { producto: p.nombre };
+    if (this.seleccionada && !this.seleccionada.esInstitucion) {
+      queryParams['sede'] = this.seleccionada.id_sede;
+    }
+    this.router.navigate(['/registrar-entrega-alimentos'], { queryParams });
+  }
+
+  textoCobertura(p: ProductoInventario): string {
+    return p.cobertura > 0 ? `${p.cobertura} ${p.cobertura === 1 ? 'día' : 'días'}` : '—';
+  }
+
+  claseKpi(e: FiltroInv): string {
+    return { Todos: 'text-slate-900', Ok: 'text-emerald-600', Bajo: 'text-amber-600', 'Por vencer': 'text-orange-600', Agotado: 'text-red-600' }[e];
+  }
+
+  // Texto de color según el estado (para las tarjetas compactas)
+  claseTextoEstado(estado: string): string {
+    return { Ok: 'text-emerald-600', Bajo: 'text-amber-600', 'Por vencer': 'text-orange-600', Agotado: 'text-red-600' }[estado] ?? 'text-slate-500';
+  }
+
+  // Imagen de la categoría (archivos de la carpeta public; si falta, se usa el emoji)
+  imagenCategoria(categoria: string): string {
+    const c = normalizar(categoria);
+    let archivo = 'otros.png';
+    if (c.includes('carne') || c.includes('huevo')) archivo = 'carne.png';
+    else if (c.includes('lacteo')) archivo = 'lacteos.png';
+    else if (c.includes('grano') || c.includes('cereal')) archivo = 'granos.png';
+    else if (c.includes('fruta')) archivo = 'frutas.png';
+    else if (c.includes('verdura')) archivo = 'verduras.png';
+    else if (c.includes('despensa')) archivo = 'sal.png';
+    return `${RUTA_IMAGENES}${archivo}`;
+  }
+
+  // Icono de la categoría
+  iconoCategoria(categoria: string): string {
+    const c = normalizar(categoria);
+    if (c.includes('carne') || c.includes('huevo')) return '🥩';
+    if (c.includes('lacteo')) return '🥛';
+    if (c.includes('grano') || c.includes('cereal')) return '🌾';
+    if (c.includes('fruta')) return '🍎';
+    if (c.includes('verdura')) return '🥕';
+    if (c.includes('despensa')) return '🫒';
+    return '🍽️';
+  }
+
+  // Avance (%) de la barra de deslizamiento de una fila
+  progresoFila(el: HTMLElement | null | undefined): number {
+    if (!el || !el.scrollWidth) return 100;
+    return Math.min(100, Math.max(10, ((el.scrollLeft + el.clientWidth) / el.scrollWidth) * 100));
+  }
+
+  trackGrupo(_: number, g: GrupoInventario): string {
+    return g.categoria;
   }
 
   // =====================================================
@@ -519,8 +805,8 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
   private cargarImagenes(): void {
     this.http.get<any>(this.urlIngredientes).pipe(
       timeout(4000),
-      map(d => (Array.isArray(d) ? d : (d?.results ?? [])) as any[]),
-      catchError(() => of([]))
+      map(d => listaDe(d)),
+      catchError(() => of([] as any[]))
     ).subscribe((lista) => {
       const mapa = new Map<string, string>();
       for (const item of lista) {
