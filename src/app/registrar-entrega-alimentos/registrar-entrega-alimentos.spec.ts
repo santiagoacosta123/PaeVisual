@@ -258,6 +258,98 @@ describe('RegistrarEntregaAlimentosComponent', () => {
     expect(alertas.error).toHaveBeenCalled();
   });
 
+  describe('envío a instituciones', () => {
+    function prepararEnvio(): void {
+      const hoy = component.fechaHoy();
+      component.envioProducto = {
+        id: 10,
+        idIngrediente: 3,
+        idTipoMercado: 1,
+        ingrediente: 'Arroz',
+        tipoMercado: 'Granos',
+        categoria: 'Granos',
+        frecuencia: 'Semanal',
+        cantidad: 12,
+        unidad: 'Kg',
+        fechaRecepcion: hoy,
+        fechaVencimiento: '2099-12-31',
+      };
+      component.envioFechaSalida = hoy;
+      component.envioFechaEntrega = hoy;
+      component.institucionesDestinoEnvio = [{
+        id_institucion: 7,
+        nombre_institucion: 'Liceo de Occidente',
+      }];
+      component.institucionEnvioSeleccionada = 7;
+      component.agregarDestinoEscrito();
+      component.envioDestinos[0].cantidad = 5;
+    }
+
+    it('registra el envío en el servidor asociado a la institución asignada', () => {
+      prepararEnvio();
+
+      component.enviarAInstituciones();
+
+      const createRequest = httpTestingController.expectOne(esPost);
+      expect(createRequest.request.body).toEqual({
+        id_ingrediente: 3,
+        id_tipo_mercado: 1,
+        id_institucion: 7,
+        fecha_entrega: component.fechaHoy(),
+        fecha_salida: component.fechaHoy(),
+        fecha_vencimiento: '2099-12-31',
+        cantidad: 5,
+        observaciones: '',
+        frecuencia: 'Semanal',
+        unidad: 'Kg',
+        destino: 'Liceo de Occidente',
+      });
+      createRequest.flush({});
+
+      const histories = httpTestingController.match(
+        request => request.url.endsWith('/entregas/') && request.method === 'GET',
+      );
+      expect(histories.length).toBe(2);
+      histories.forEach(request => request.flush([{
+        id_entrega: 55,
+        id_ingrediente: 3,
+        id_institucion: 7,
+        ingrediente_nombre: 'Arroz',
+        institucion_nombre: 'Liceo de Occidente',
+        cantidad: 5,
+        unidad: 'Kg',
+        fecha_entrega: component.fechaHoy(),
+        fecha_vencimiento: '2099-12-31',
+      }]));
+
+      expect(component.historialEnvios[0]).toMatchObject({
+        id: 55,
+        ingrediente: 'Arroz',
+        destino: 'Liceo de Occidente',
+      });
+      expect(alertas.success).toHaveBeenCalledWith(
+        'Envío registrado',
+        expect.stringContaining('se envió a 1 destino(s)'),
+      );
+      expect(component.envioProducto).toBeNull();
+    });
+
+    it('mantiene el envío pendiente y muestra el error cuando el servidor lo rechaza', () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      prepararEnvio();
+
+      component.enviarAInstituciones();
+      httpTestingController.expectOne(esPost)
+        .flush({}, { status: 500, statusText: 'Server Error' });
+
+      expect(component.guardandoEnvio).toBe(false);
+      expect(component.envioProducto).not.toBeNull();
+      expect(component.envioDestinos).toHaveLength(1);
+      expect(component.errorEnvio).toContain('no se pudieron registrar 1');
+      expect(alertas.error).toHaveBeenCalledWith('Envío incompleto', component.errorEnvio);
+    });
+  });
+
   describe('calendario de entregas', () => {
     const entrega = (fechaRecepcion: string, ingrediente: string, fechaVencimiento: string, id: number) => ({
       id, idIngrediente: id, idTipoMercado: 1, ingrediente, tipoMercado: 'Granos', categoria: 'Granos' as const,

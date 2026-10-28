@@ -41,12 +41,17 @@ export interface TipoMercadoOpcion {
 export interface EntregaPayload {
   id_ingrediente: number;
   id_tipo_mercado: number;
+  id_institucion?: number;
+  id_sede?: number;
   fecha_entrega: string;
+  fecha_salida?: string;
   fecha_vencimiento: string;
   cantidad: number;
   observaciones: string;
   frecuencia: string;
   unidad: string;
+  destino?: string;
+  responsable?: string;
   id_usuario_supervisor?: number;
 }
 
