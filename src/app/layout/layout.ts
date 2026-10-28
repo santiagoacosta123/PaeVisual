@@ -36,10 +36,14 @@ export class LayoutComponent implements OnInit {
   // Declaración de pageTitle
   pageTitle: string = 'Panel de Control';
 
-  // Título de la cabecera: el supervisor que aún no eligió institución ve "Bienvenido: <nombre>"
+  // ¿El supervisor está en su pantalla de inicio?
+  get enInicioSupervisor(): boolean {
+    return this.esSupervisor && this.router.url.split('?')[0].startsWith('/dashboard-supervisor');
+  }
+
+  // Título de la cabecera: en el inicio del supervisor se ve "Bienvenido: <nombre>"
   get tituloEncabezado(): string {
-    const enInicioSupervisor = this.esSupervisor && this.router.url.split('?')[0].startsWith('/dashboard-supervisor');
-    return enInicioSupervisor && !this.institucionActiva ? `Bienvenido: ${this.perfil.nombre}` : this.pageTitle;
+    return this.enInicioSupervisor ? `Bienvenido: ${this.perfil.nombre}` : this.pageTitle;
   }
 
   // Badges exclusivos de Super Administrador (valores por defecto según diseño)

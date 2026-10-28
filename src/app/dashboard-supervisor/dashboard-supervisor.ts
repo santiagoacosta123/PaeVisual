@@ -6,6 +6,7 @@ import { of } from 'rxjs';
 import { timeout, catchError } from 'rxjs/operators';
 import { AuthService, InstitucionAsignada } from '../core/auth/auth.service';
 import { environment } from '../../environments/environment';
+import { IMAGENES_INSTITUCION } from './imagenes-instituciones';
 
 @Component({
   standalone: true,
@@ -104,6 +105,11 @@ export class DashboardSupervisor implements OnInit {
   }
 
   trackInstitucion = (_: number, inst: InstitucionAsignada) => inst.id_institucion;
+
+  // Fotos de las tarjetas (vienen en imagenes-instituciones.ts). Si hay más instituciones que fotos, se repiten en orden.
+  imagenDe(indice: number): string {
+    return IMAGENES_INSTITUCION[indice % IMAGENES_INSTITUCION.length];
+  }
 
   seleccionarInstitucion(inst: InstitucionAsignada): void {
     this.institucionActiva = inst;
