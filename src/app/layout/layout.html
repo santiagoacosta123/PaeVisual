@@ -1,47 +1,97 @@
+ 
+<style>
+  /* Barra lateral que se expande al acercar el mouse y EMPUJA el contenido
+     (el <main> ocupa el espacio que queda), así nunca tapa nada. */
+  .sv-slot {
+    position: relative; flex-shrink: 0; width: 84px; display: flex; flex-direction: column; z-index: 20;
+    transition: width .25s cubic-bezier(.2, .8, .2, 1);
+  }
+  .sv-slot:hover, .sv-slot:has(:focus-visible) { width: 200px; transition-delay: .12s; }
+
+  .sv-side {
+    flex: 1; min-height: 0; background: #fff; border-right: 1px solid #e0e0e0;
+    display: flex; flex-direction: column; align-items: stretch;
+    padding: 16px 8px; box-sizing: border-box; overflow: hidden;
+  }
+
+  .sv-logo { display: flex; align-items: center; justify-content: center; margin-bottom: 20px; padding: 4px; }
+  .sv-logo img { width: 100%; max-width: 68px; height: auto; object-fit: contain; }
+
+  .sv-nav { display: flex; flex-direction: column; gap: 8px; flex: 1; overflow-y: auto; overflow-x: hidden; }
+  .sv-nav::-webkit-scrollbar { display: none; }
+
+  /* El icono nunca se mueve; el nombre aparece al expandir */
+  .sv-link {
+    display: flex; align-items: center; gap: 12px;
+    width: 100%; height: 48px; padding: 0 22px; box-sizing: border-box;
+    border-radius: 14px; border: none; background: none; cursor: pointer;
+    text-decoration: none; color: #64748b; white-space: nowrap; overflow: hidden;
+    font-family: 'Roboto', sans-serif; font-size: 13px; font-weight: 600;
+    transition: background .2s ease, color .2s ease;
+  }
+  .sv-link:focus:not(:focus-visible) { outline: none; }
+  .sv-link:hover { background: #fff7e6; color: #e69a0c; }
+  .sv-link.sv-active { background: #fff1d0; color: #e69a0c; }
+  .sv-link .sv-icon { font-size: 24px; flex: none; }
+  .sv-label { opacity: 0; transition: opacity .2s ease; }
+  .sv-slot:hover .sv-label, .sv-slot:has(:focus-visible) .sv-label { opacity: 1; transition-delay: .15s; }
+
+  .sv-bottom { border-top: 1px solid #eeeeee; padding-top: 14px; margin-top: 10px; }
+  .sv-link.sv-logout { color: #e53935; }
+  .sv-link.sv-logout:hover { background: #fdecea; color: #c62828; }
+</style>
+
+
 <!-- ================================================================= -->
-<!-- CASO 1: SUPERVISOR (SE CONSERVA TAL CUAL SU DISEÑO ORIGINAL)     -->
+<!-- CASO 1: SUPERVISOR                                                -->
 <!-- ================================================================= -->
 <div *ngIf="esSupervisor" class="flex min-h-screen" style="background:#f8fafc; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; overflow:hidden; height:100vh;">
 
-  <!-- Sidebar Compacto para Supervisor -->
-  <aside style="width:84px; background:#fff; border-right:1px solid #e0e0e0; display:flex; flex-direction:column; align-items:center; padding:16px 8px; box-sizing:border-box; flex-shrink:0;">
+  <!-- Sidebar del Supervisor: iconos, y al acercar el mouse se muestran los nombres -->
+  <div class="sv-slot">
+    <aside class="sv-side" aria-label="Menú del supervisor">
 
-    <!-- Logo / Imagen SIRAE -->
-    <div style="display:flex; align-items:center; justify-content:center; margin-bottom:20px; padding:4px;">
-      <img src="sirae-logo-dark.png" alt="Logo SIRAE" style="width:100%; max-width:68px; height:auto; object-fit:contain;" />
-    </div>
+      <!-- Logo / Imagen SIRAE -->
+      <div class="sv-logo">
+        <img src="sirae-logo-dark.png" alt="Logo SIRAE" />
+      </div>
 
-    <!-- Navegación Lateral por Iconos -->
-    <nav class="flex flex-col gap-2 flex-1 items-center" style="overflow-y:auto; width:100%;">
-      <a *ngIf="institucionActiva" routerLink="dashboard-supervisor" routerLinkActive="active-icon-link" title="Inicio Supervisor"
-         style="display:flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:14px; text-decoration:none; color:#64748b; transition:all 0.2s;">
-        <span class="material-symbols-outlined nav-icon" style="font-size:24px;">space_dashboard</span>
-      </a>
+      <!-- Navegación -->
+      <nav class="sv-nav">
+        <a *ngIf="institucionActiva" routerLink="dashboard-supervisor" routerLinkActive="sv-active" class="sv-link"
+           aria-label="Inicio Supervisor">
+          <span class="material-symbols-outlined sv-icon">space_dashboard</span>
+          <span class="sv-label">Inicio</span>
+        </a>
 
-      <a *ngIf="institucionActiva" routerLink="registrar-entrega-alimentos" routerLinkActive="active-icon-link" title="Registrar entrega de alimentos"
-         style="display:flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:14px; text-decoration:none; color:#64748b; transition:all 0.2s;">
-        <span class="material-symbols-outlined nav-icon" style="font-size:24px;">local_shipping</span>
-      </a>
+        <a *ngIf="institucionActiva" routerLink="registrar-entrega-alimentos" routerLinkActive="sv-active" class="sv-link"
+           aria-label="Registrar entrega de alimentos">
+          <span class="material-symbols-outlined sv-icon">local_shipping</span>
+          <span class="sv-label">Registrar entrega</span>
+        </a>
 
-      <a *ngIf="institucionActiva" routerLink="instituciones" routerLinkActive="active-icon-link" title="Sedes"
-         style="display:flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:14px; text-decoration:none; color:#64748b; transition:all 0.2s;">
-        <span class="material-symbols-outlined nav-icon" style="font-size:24px;">apartment</span>
-      </a>
+        <a *ngIf="institucionActiva" routerLink="instituciones" routerLinkActive="sv-active" class="sv-link"
+           aria-label="Sedes">
+          <span class="material-symbols-outlined sv-icon">apartment</span>
+          <span class="sv-label">Sedes e inventario</span>
+        </a>
 
-      <a *ngIf="institucionActiva" routerLink="reportes-consumo" routerLinkActive="active-icon-link" title="Reportes"
-         style="display:flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:14px; text-decoration:none; color:#64748b; transition:all 0.2s;">
-        <span class="material-symbols-outlined nav-icon" style="font-size:24px;">analytics</span>
-      </a>
-    </nav>
+        <a *ngIf="institucionActiva" routerLink="reportes-consumo" routerLinkActive="sv-active" class="sv-link"
+           aria-label="Reportes">
+          <span class="material-symbols-outlined sv-icon">analytics</span>
+          <span class="sv-label">Reportes</span>
+        </a>
+      </nav>
 
-    <!-- Cerrar sesión inferior -->
-    <div style="border-top:1px solid #eeeeee; padding-top:14px; margin-top:10px; width:100%; display:flex; justify-content:center;">
-      <button type="button" (click)="cerrarSesion()" title="Cerrar sesión"
-        style="display:flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:14px; background:none; border:none; cursor:pointer; color:#e53935; transition:all 0.2s;">
-        <span class="material-symbols-outlined" style="font-size:24px;">logout</span>
-      </button>
-    </div>
-  </aside>
+      <!-- Cerrar sesión inferior -->
+      <div class="sv-bottom">
+        <button type="button" (click)="cerrarSesion()" class="sv-link sv-logout" aria-label="Cerrar sesión">
+          <span class="material-symbols-outlined sv-icon">logout</span>
+          <span class="sv-label">Cerrar sesión</span>
+        </button>
+      </div>
+    </aside>
+  </div>
 
   <!-- Área Principal Supervisor -->
   <main style="flex:1; min-width:0; max-width:100%; padding:24px 32px; position:relative; overflow-y:auto; overflow-x:hidden; display:flex; flex-direction:column; gap:20px; box-sizing:border-box;">

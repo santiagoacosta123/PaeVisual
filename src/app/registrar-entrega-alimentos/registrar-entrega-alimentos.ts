@@ -2,7 +2,7 @@ import { ChangeDetectorRef, Component, HostListener, OnDestroy, OnInit } from '@
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { Observable, Subscription, forkJoin, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
@@ -10,25 +10,24 @@ import { SweetAlertService } from '../sweet-alert.service';
 import { EntregasService } from '../services/entregas.service';
 import { AuthService, InstitucionAsignada } from '../core/auth/auth.service';
 
-// Opciones de los catálogos (se definen aquí para no depender de la forma exacta de los tipos del servicio)
+// ===================== TIPOS =====================
 interface IngredienteOpcion { id: number; nombre: string; }
 interface TipoMercadoOpcion { id: number; nombre: string; }
 
-// Fila que se muestra en la tabla del historial
+
 interface FilaEntrega {
   id?: number;
   idIngrediente: number | null;
   idTipoMercado: number | null;
   ingrediente: string;
-  tipoMercado: string;                   // nombre del catálogo
-  categoria: 'Granos' | 'Perecederos';   // para colores y alertas
+  tipoMercado: string;
+  categoria: 'Granos' | 'Perecederos';
   frecuencia: string;
   cantidad: number;
   unidad: string;
-  fechaRecepcion: string;                // YYYY-MM-DD
-  fechaVencimiento: string;              // YYYY-MM-DD
+  fechaRecepcion: string;      // YYYY-MM-DD
+  fechaVencimiento: string;    // YYYY-MM-DD
 
-  // Opcionales: alimentan el modal "Registro del día" y el panel de detalle (si el backend no los envía, se muestra "—")
   codigo?: string;
   lote?: string;
   destino?: string;
@@ -37,28 +36,6 @@ interface FilaEntrega {
   estadoEntrega?: string;
 }
 
-// Fila de la carga por lote (una por ingrediente del inventario)
-interface FilaLote {
-  idIngrediente: number;
-  nombre: string;
-  cantidad: number | null;
-  unidad: string;
-  idTipoMercado: number | null;  // Perecedero / No perecedero (catálogo de tipos de mercado)
-  frecuenciaDias: number | null; // cada cuántos días llega (8, 20, ...)
-  diasVigencia: number | null;   // duración que tuvo la última entrega (recepción -> vencimiento)
-  fechaVencimiento: string;
-  tieneHistorial: boolean;
-}
-
-// Inventario: todas las entregas recibidas en una misma fecha
-interface Factura {
-  fecha: string;                 // YYYY-MM-DD
-  folio: string;                 // CI-AAAAMMDD
-  items: FilaEntrega[];
-  alertas: number;               // productos vencidos o por vencer
-}
-
-// Producto del catálogo que se ve como tarjeta en la vista Menú
 interface ProductoCatalogo {
   id: number;
   nombre: string;
@@ -67,26 +44,29 @@ interface ProductoCatalogo {
   idTipoMercado: number | null;
 }
 
-// Grupo de productos de una misma categoría
-interface GrupoMenu {
-  nombre: string;
-  emoji: string;
+interface SubgrupoMenu {
+  nombre: string;                 // '' si la categoría no tiene subgrupos
   productos: ProductoCatalogo[];
 }
 
-// Un día del calendario mensual
-interface DiaCalendario {
-  iso: string;            // YYYY-MM-DD
-  numero: number;         // número del día
-  enMes: boolean;         // false = día del mes anterior o siguiente
-  esHoy: boolean;
-  seleccionado: boolean;
-  entregas: number;       // productos recibidos ese día
-  estado: 'Vigente' | 'Próximo a vencer' | 'Vencido' | null;   // el peor estado entre los productos del día
-  vencen: number;         // productos que vencen ese día
+interface GrupoPagina {
+  nombre: string;
+  emoji: string;
+  total: number;                  // productos de la categoría con los filtros actuales
+  subgrupos: SubgrupoMenu[];
 }
 
-// Un registro (entrega) dentro del modal "Registro del día"
+interface DiaCalendario {
+  iso: string;
+  numero: number;
+  enMes: boolean;
+  esHoy: boolean;
+  seleccionado: boolean;
+  entregas: number;
+  estado: 'Vigente' | 'Próximo a vencer' | 'Vencido' | null;
+  vencen: number;
+}
+
 interface RegistroDia {
   codigo: string;
   descripcion: string;
@@ -97,7 +77,6 @@ interface RegistroDia {
   items: FilaEntrega[];
 }
 
-// Fila del formulario "Entradas" (un producto que entra)
 interface EntradaFila {
   idIngrediente: number | null;
   cantidad: number | null;
@@ -105,7 +84,6 @@ interface EntradaFila {
   perecedero: boolean;
 }
 
-// Una institución (o sede) a la que va el producto, con la cantidad que se le envía
 interface EnvioDestino {
   idInstitucion: number;
   idSede?: number;
@@ -113,17 +91,25 @@ interface EnvioDestino {
   cantidad: number | null;
 }
 
-// Un envío ya hecho (se muestra en el historial)
 interface EnvioRegistro {
   id: number;
-  idInstitucion: number | null;   // institución activa cuando se hizo el envío (para no mezclar instituciones)
+  idInstitucion: number | null;
   ingrediente: string;
   cantidad: number;
   unidad: string;
   destino: string;
   fechaSalida: string;
   fechaEntrega: string;
-  enviadoEl: string;       // fecha en que se registró el envío
+  enviadoEl: string;
+}
+
+interface ReferenciaInstitucion {
+  id?: number | string;
+  id_institucion?: number | string;
+  id_sede?: number | string;
+  nombre?: string;
+  nombre_institucion?: string;
+  nombre_ingrediente?: string;
 }
 
 interface RegistroEntregaEnvio {
@@ -147,24 +133,25 @@ interface RegistroEntregaEnvio {
   fecha_creacion?: string | null;
 }
 
-interface ReferenciaInstitucion {
-  id?: number | string;
-  id_institucion?: number | string;
-  id_sede?: number | string;
-  nombre?: string;
-  nombre_institucion?: string;
-  nombre_ingrediente?: string;
-}
-
 interface CategoriaOpcion {
   nombre: string;
   emoji: string;
   total: number;
 }
 
-type Columna = 'fechaRecepcion' | 'ingrediente' | 'tipoMercado' | 'cantidad' | 'fechaVencimiento' | 'estado';
+// Lo que se muestra en cada tarjeta deslizable del menú
+interface ResumenProducto {
+  cantidad: number;           // cantidad de la última entrada
+  unidad: string;
+  fechaIngreso: string;
+  fechaVencimiento: string;
+  estado: string;             // Vigente | Próximo a vencer | Vencido
+  textoVence: string;         // "Vence en 5 días"
+  totalRecibido: number;      // suma de las entradas con la misma unidad
+  entradas: number;
+}
+
 type FiltroMercado = 'Todos' | 'Granos' | 'Perecederos';
-type FiltroEstado = 'Todos' | 'Vigente' | 'Próximo a vencer' | 'Vencido';
 
 @Component({
   selector: 'app-registrar-entrega-alimentos',
@@ -175,16 +162,15 @@ type FiltroEstado = 'Todos' | 'Vigente' | 'Próximo a vencer' | 'Vencido';
 })
 export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
 
+  // ===================== CATÁLOGOS =====================
   ingredientes: IngredienteOpcion[] = [];
   tiposMercado: TipoMercadoOpcion[] = [];
   cargandoCatalogos = true;
   errorMensaje = '';
   errorCatalogos = '';
 
-  // ===================== PRODUCTOS BASE =====================
-  // Se usan cuando el servidor no devuelve ingredientes, para que el inventario nunca salga vacío.
-  // IMPORTANTE: para poder GUARDAR, estos ids (1, 2, 3...) deben existir en la tabla de ingredientes del backend.
-  // (Van PRIMERO en la clase porque los campos de abajo los usan para pintar al instante.)
+  // Productos base: se usan si el servidor no devuelve ingredientes.
+  // IMPORTANTE: para poder GUARDAR, estos ids deben existir en la tabla de ingredientes del backend.
   private readonly productosBase: IngredienteOpcion[] = [
     { id: 1,  nombre: 'Arroz' },
     { id: 2,  nombre: 'Frijol' },
@@ -208,78 +194,47 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     { id: 20, nombre: 'Cebolla' },
   ];
 
-  // Tipos de mercado de respaldo (solo si el servidor no los entrega)
   private readonly tiposBase: TipoMercadoOpcion[] = [
     { id: 1, nombre: 'Perecedero' },
     { id: 2, nombre: 'No perecedero' },
   ];
 
-  // Unidad sugerida para los productos que aún no tienen historial
   private readonly unidadPorDefecto: Record<string, string> = {
     'Aceite': 'Litros', 'Leche': 'Litros', 'Huevos': 'Unidades',
   };
 
-  // ===================== INSTITUCIÓN =====================
-  instituciones: string[] = ['Liceo de Occidente'];
-  institucionLote = 'Liceo de Occidente';
-  institucionesDestinoEnvio: InstitucionAsignada[] = [];
-  institucionEnvioSeleccionada: number | null = null;
-  envioInstitucionTexto = '';
-  guardandoEnvio = false;
-
-  // ===================== MENÚ / CATEGORÍAS =====================
-  categoriaMenu = 'Todos';   // categoría elegida en la vista Menú
-  categoriaLote = 'Todos';   // categoría elegida en el modal
-
-  // ===================== CARGA POR LOTE =====================
-  fechaRecepcionLote = this.fechaHoy();
-  filasLote: FilaLote[] = [];
-  guardandoLote = false;
-  busquedaLote = '';
-
-  // ===================== HISTORIAL DE ENTREGAS =====================
-  // Si te da error 404 al cargar la tabla, pon aquí la misma ruta que usa registrar() en entregas.service.ts
-  private readonly urlEntregas = `${environment.apiUrl}/entregas/`;
   private readonly claveCacheIngredientes = 'sirae_cache_ingredientes';
   private readonly claveCacheTipos = 'sirae_cache_tipos_mercado';
 
-  mostrarModalEntrega = false;
+  // ===================== HISTORIAL (entradas y envíos) =====================
+  // Si te da error 404 al cargar, usa la misma ruta que registrar() en entregas.service.ts
+  private readonly urlEntregas = `${environment.apiUrl}/entregas/`;
+
   cargandoHistorial = false;
   errorHistorial = false;
 
-  // ===================== INSTITUCIÓN SELECCIONADA =====================
+  private entregasRaw: any[] = [];     // solo ENTRADAS de inventario (sin fecha_salida)
+  historial: FilaEntrega[] = [];       // entradas ya convertidas en filas
+  historialEnvios: EnvioRegistro[] = [];
+  readonly destinosEnvioSeleccionados = new Set<string>();
+
+  // ===================== INSTITUCIÓN ACTIVA =====================
   institucionActiva: InstitucionAsignada | null = null;
-  idInstitucion: number | null = null;   // institución cuyas entregas se muestran
-  idSede: number | null = null;          // opcional: viene de "Entregas" en Mis sedes (?sede=ID)
+  idInstitucion: number | null = null;
+  idSede: number | null = null;          // viene de "Entregas" en Mis sedes (?sede=ID)
   ahoraTexto = '';
   private subInstitucion?: Subscription;
   private subRuta?: Subscription;
   private reloj?: ReturnType<typeof setInterval>;
 
-  // Se llena en ngOnInit con la caché de la institución activa
-  private entregasRaw: any[] = [];
-  historial: FilaEntrega[] = [];
-  historialEnvios: EnvioRegistro[] = [];
-  readonly destinosEnvioSeleccionados = new Set<string>();
-
-  // Filtros: se aplican al instante, sin botón
+  // ===================== FILTROS Y MENÚ =====================
   textoFiltro = '';
-  fechaDesde = '';
-  fechaHasta = '';
-  ingredienteFiltro = 'Todos';
   filtroMercado: FiltroMercado = 'Todos';
-  filtroEstado: FiltroEstado = 'Todos';
+  categoriaMenu = 'Todos';
 
-  // Orden de la tabla (clic en el título de cada columna)
-  ordenColumna: Columna = 'fechaRecepcion';
-  ordenDireccion: 'asc' | 'desc' = 'desc';
-
-  // Paginación
+  // ===================== PAGINACIÓN DEL MENÚ =====================
   paginaActual = 1;
-  porPagina = 10;
-  opcionesPorPagina = [10, 25, 50];
-  filasEsqueleto = [1, 2, 3, 4, 5];
-  columnasEsqueleto = [1, 2, 3, 4, 5, 6];
+  readonly porPagina = 4;
 
   constructor(
     private entregasService: EntregasService,
@@ -288,23 +243,25 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private cdr: ChangeDetectorRef,
     private route: ActivatedRoute,
-    private router: Router,
   ) {}
 
   ngOnInit(): void {
+    // Pinta al instante con la caché (o con los productos base) y se actualiza cuando llega el servidor
+    this.ingredientes = this.leerCache<IngredienteOpcion[]>(this.claveCacheIngredientes) ?? this.productosBase;
+    this.tiposMercado = this.leerCache<TipoMercadoOpcion[]>(this.claveCacheTipos) ?? this.tiposBase;
+
     this.institucionActiva = this.authService.obtenerInstitucionActiva();
     const usuario = this.authService.obtenerUsuario();
     this.idInstitucion = this.institucionActiva?.id_institucion ?? usuario?.id_institucion ?? null;
-    this.prepararInstitucionesDestino();
 
     this.subInstitucion = this.authService.institucionActiva$.subscribe(institucion => {
       const idAnterior = this.idInstitucion;
       this.institucionActiva = institucion;
       this.idInstitucion = institucion?.id_institucion ?? this.authService.obtenerUsuario()?.id_institucion ?? null;
-      this.prepararInstitucionesDestino();
       if (idAnterior !== this.idInstitucion) this.cargarHistorial();
       this.cdr.markForCheck();
     });
+
     this.subRuta = this.route.queryParamMap.subscribe(params => {
       const sede = Number(params.get('sede'));
       const idSede = Number.isInteger(sede) && sede > 0 ? sede : null;
@@ -316,10 +273,13 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     });
 
     this.actualizarReloj();
-    this.reloj = setInterval(() => this.actualizarReloj(), 60_000);
+    this.reloj = setInterval(() => {
+      this.actualizarReloj();
+      this.cdr.markForCheck();
+    }, 60_000);
+
     this.cargarHistorial();
     this.cargarCatalogos();
-    this.cargarInstitucionesSupervisor();
   }
 
   ngOnDestroy(): void {
@@ -328,6 +288,15 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     if (this.reloj !== undefined) clearInterval(this.reloj);
   }
 
+  // Esc cierra la ventana abierta
+  @HostListener('document:keydown.escape')
+  alPresionarEsc(): void {
+    if (this.envioProducto) { this.cerrarModalEnvio(); return; }
+    if (this.mostrarModalEntrada && !this.guardandoEntrada) { this.cerrarModalEntrada(); return; }
+    if (this.modalDiaAbierto) this.cerrarModalDia();
+  }
+
+  // ===================== DATOS DE LA INSTITUCIÓN =====================
   get nombreInstitucion(): string {
     const usuario = this.authService.obtenerUsuario();
     return this.institucionActiva?.nombre_institucion
@@ -359,17 +328,16 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     ];
   }
 
+  // Entradas registradas desde "Entradas" (tienen destino o responsable)
   get entradasHistorial(): FilaEntrega[] {
     return this.historial.filter(entrega => !!entrega.destino || !!entrega.responsable);
   }
 
   private actualizarReloj(): void {
-    this.ahoraTexto = new Date().toLocaleString('es-CO', {
-      dateStyle: 'short',
-      timeStyle: 'short',
-    });
+    this.ahoraTexto = new Date().toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' });
   }
 
+  // ===================== CACHÉ LOCAL =====================
   private guardarCache<T>(clave: string, datos: T): void {
     try {
       localStorage.setItem(clave, JSON.stringify(datos));
@@ -378,19 +346,16 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     }
   }
 
-  private prepararInstitucionesDestino(): void {
-    const disponibles = [...this.authService.obtenerInstitucionesSupervisor()];
-    const activa = this.authService.obtenerInstitucionActiva();
-    if (activa && !disponibles.some(i => i.id_institucion === activa.id_institucion)) {
-      disponibles.push(activa);
+  private leerCache<T>(clave: string): T | null {
+    try {
+      const valor = JSON.parse(localStorage.getItem(clave) || 'null');
+      return Array.isArray(valor) && valor.length > 0 ? (valor as T) : null;
+    } catch {
+      return null;
     }
-    this.institucionesDestinoEnvio = disponibles.filter(i => Number.isInteger(i.id_institucion) && i.id_institucion > 0);
-    this.institucionEnvioSeleccionada =
-      this.institucionesDestinoEnvio.find(i => i.id_institucion === activa?.id_institucion)?.id_institucion
-      ?? this.institucionesDestinoEnvio[0]?.id_institucion
-      ?? null;
   }
 
+  // ===================== UTILIDADES =====================
   private datosInstitucion(destino?: string): { id_institucion?: number; id_sede?: number } {
     const institucionActiva = this.institucionActiva?.id_institucion ?? this.idInstitucion ?? undefined;
     const destinoSeleccionado = destino ?? this.entradaDestino;
@@ -433,417 +398,10 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     return valor.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
   }
 
-  private cargarInstitucionesSupervisor(): void {
-    const activa = this.authService.obtenerInstitucionActiva();
-    const cacheadas = this.authService.obtenerInstitucionesSupervisor();
-    if (cacheadas.length > 0) {
-      this.instituciones = cacheadas.map(i => i.nombre_institucion);
-      if (activa && this.instituciones.includes(activa.nombre_institucion)) {
-        this.institucionLote = activa.nombre_institucion;
-      } else {
-        this.institucionLote = this.instituciones[0];
-      }
-    }
-
-    this.http.get<any>(`${environment.apiUrl}/instituciones/`).subscribe({
-      next: (resp) => {
-        const lista = Array.isArray(resp) ? resp : (resp?.results ?? []);
-        if (lista.length > 0) {
-          this.instituciones = lista.map((i: any) => i.nombre_institucion ?? i.nombre);
-          const activaActual = this.authService.obtenerInstitucionActiva();
-          if (activaActual && this.instituciones.includes(activaActual.nombre_institucion)) {
-            this.institucionLote = activaActual.nombre_institucion;
-          } else {
-            this.institucionLote = this.instituciones[0];
-          }
-        }
-      },
-      error: () => {}
-    });
-  }
-
-  // Esc cierra la ventana abierta (primero los modales, al final el detalle del panel)
-  @HostListener('document:keydown.escape')
-  alPresionarEsc(): void {
-    if (this.envioProducto) { this.cerrarModalEnvio(); return; }
-    if (this.mostrarModalEntrada && !this.guardandoEntrada) { this.cerrarModalEntrada(); return; }
-    if (this.modalDiaAbierto) { this.cerrarModalDia(); return; }
-    if (this.mostrarModalEntrega) { this.cerrarModalEntrega(); return; }
-    if (this.productoDetalle) this.cerrarDetalleProducto();
-  }
-
-  cargarCatalogos(): void {
-    // No se activa "cargando": la pantalla ya tiene productos (caché o base) y se actualiza sola al llegar el servidor
-    this.errorMensaje = '';
-    this.errorCatalogos = '';
-    forkJoin({
-      ingredientes: this.entregasService.cargarIngredientes() as unknown as Observable<IngredienteOpcion[]>,
-      tiposMercado: this.entregasService.cargarTiposMercado() as unknown as Observable<TipoMercadoOpcion[]>,
-    }).subscribe({
-      next: ({ ingredientes, tiposMercado }) => {
-        this.ingredientes = ingredientes.length > 0 ? ingredientes : this.productosBase;
-        this.tiposMercado = tiposMercado.length > 0 ? tiposMercado : this.tiposBase;
-
-        // Solo se guarda en caché lo que sí llegó del servidor (nunca los productos base)
-        if (ingredientes.length > 0) this.guardarCache(this.claveCacheIngredientes, ingredientes);
-        if (tiposMercado.length > 0) this.guardarCache(this.claveCacheTipos, tiposMercado);
-
-        this.cargandoCatalogos = false;
-        if (tiposMercado.length === 0) {
-          this.errorCatalogos = 'El servidor no devolvió tipos de mercado; se usan Perecedero y No perecedero locales. Para guardar deben existir en el backend.';
-        }
-        this.reconstruirHistorial(); // ya hay nombres de catálogo para la tabla (y arma la lista del lote)
-        this.cdr.markForCheck();
-      },
-      error: (error) => {
-        console.error('Error al cargar catálogos de entregas:', error);
-        const motivo = this.describirError(error);
-        this.errorCatalogos = `No se pudieron cargar los catálogos del servidor: ${motivo}. Se muestran productos de ejemplo; para guardar debe funcionar la conexión.`;
-        void this.alertas.error('No se pudo cargar el formulario', this.errorCatalogos);
-        // El formulario sigue usable con los productos y tipos de respaldo
-        if (this.ingredientes.length === 0) this.ingredientes = this.productosBase;
-        if (this.tiposMercado.length === 0) this.tiposMercado = this.tiposBase;
-        this.cargandoCatalogos = false;
-        this.reconstruirHistorial();
-        this.cdr.markForCheck();
-      },
-    });
-  }
-
-  // Traduce el error HTTP a un motivo que se entienda
-  private describirError(error: any): string {
-    const estado = error?.status;
-    if (estado === 0) return 'no hay conexión con el servidor (¿está encendido el backend?)';
-    if (estado === 401) return 'la sesión expiró; inicia sesión de nuevo';
-    if (estado === 403) return 'no tienes permiso para esta acción (403)';
-    if (estado === 404) return 'la ruta no existe en el servidor (404); revisa la URL de la API';
-    if (estado === 400) {
-      const detalle = typeof error.error === 'string' ? error.error : JSON.stringify(error.error ?? '');
-      return `el servidor rechazó los datos (400): ${detalle.slice(0, 160)}`;
-    }
-    return estado ? `error ${estado} del servidor` : 'error desconocido';
-  }
-
-  // Fecha de hoy en hora local (YYYY-MM-DD). Pública: la usa el botón "Hoy" del formulario
-  fechaHoy(): string {
-    const hoy = new Date();
-    const mes = String(hoy.getMonth() + 1).padStart(2, '0');
-    const dia = String(hoy.getDate()).padStart(2, '0');
-    return `${hoy.getFullYear()}-${mes}-${dia}`;
-  }
-
-  // "viernes, 16 de octubre de 2026"
-  fechaLarga(iso: string): string {
-    if (!iso) return '';
-    const [y, m, d] = iso.split('-').map(Number);
-    return new Date(y, m - 1, d).toLocaleDateString('es-CO', {
-      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-    });
-  }
-
-  // =====================================================
-  //  CARGA POR LOTE: escribir solo la cantidad de cada producto
-  // =====================================================
-  // Arma una fila por ingrediente, autocompletada con su última entrega.
-  // conservar = true mantiene las cantidades ya escritas (por si el historial termina de cargar con el modal abierto)
-  private prepararLote(conservar = true): void {
-    const previas = new Map<number, number | null>();
-    if (conservar) this.filasLote.forEach(f => previas.set(f.idIngrediente, f.cantidad));
-
-    this.filasLote = this.ingredientes.map(ing => {
-      const ultima = this.historial
-        .filter(e => e.idIngrediente === ing.id)
-        .sort((a, b) => b.fechaRecepcion.localeCompare(a.fechaRecepcion))[0];
-
-      const dias = ultima && ultima.fechaRecepcion && ultima.fechaVencimiento
-        ? this.diasEntre(ultima.fechaRecepcion, ultima.fechaVencimiento)
-        : 0;
-
-      const fila: FilaLote = {
-        idIngrediente: ing.id,
-        nombre: ing.nombre,
-        cantidad: previas.get(ing.id) ?? null,
-        unidad: ultima ? this.normalizarUnidad(ultima.unidad) : (this.unidadPorDefecto[ing.nombre] ?? 'Kg'),
-        idTipoMercado: ultima?.idTipoMercado ?? null,
-        frecuenciaDias: ultima ? this.diasDeFrecuencia(ultima.frecuencia) : null,
-        diasVigencia: dias > 0 ? dias : null,
-        fechaVencimiento: '',
-        tieneHistorial: !!ultima,
-      };
-      this.recalcularVencimiento(fila);
-      return fila;
-    });
-  }
-
-  // "Cada 8 días" -> 8 | "Semanal" -> 7 | "Quincenal" -> 15 | "Mensual" -> 30
-  private diasDeFrecuencia(texto: string): number | null {
-    const t = (texto || '').toLowerCase();
-    const num = t.match(/\d+/);
-    if (num) return Number(num[0]);
-    if (t.includes('seman')) return 7;
-    if (t.includes('quinc')) return 15;
-    if (t.includes('mens')) return 30;
-    if (t.includes('dia')) return 1;
-    return null;
-  }
-
-  private textoFrecuencia(dias: number): string {
-    return dias === 1 ? 'Cada día' : `Cada ${dias} días`;
-  }
-
-  private recalcularVencimiento(f: FilaLote): void {
-    if (f.diasVigencia == null || !this.fechaRecepcionLote) return;
-    f.fechaVencimiento = this.sumarDiasISO(this.fechaRecepcionLote, f.diasVigencia);
-  }
-
-  alCambiarFechaLote(fecha: string): void {
-    this.fechaRecepcionLote = fecha;
-    this.filasLote.forEach(f => this.recalcularVencimiento(f));
-  }
-
-  get filasLoteVisibles(): FilaLote[] {
-    const q = this.busquedaLote.trim().toLowerCase();
-    return this.filasLote.filter(f =>
-      (this.categoriaLote === 'Todos' || this.categoriaDe(f.nombre) === this.categoriaLote) &&
-      (!q || f.nombre.toLowerCase().includes(q))
-    );
-  }
-
-  get filasConCantidad(): FilaLote[] {
-    return this.filasLote.filter(f => f.cantidad != null && f.cantidad > 0);
-  }
-
-  filaIncompleta(f: FilaLote): boolean {
-    return !f.unidad || !f.idTipoMercado || !f.frecuenciaDias || f.frecuenciaDias < 1 || !f.fechaVencimiento;
-  }
-
-  trackLote = (_: number, f: FilaLote) => f.idIngrediente;
-
-  guardarLote(): void {
-    const filas = this.filasConCantidad;
-
-    if (this.tiposMercado.length === 0 || this.ingredientes.length === 0) {
-      return this.mostrarError('No hay catálogos cargados. Actualiza el catálogo e intenta de nuevo.');
-    }
-    if (filas.length === 0) {
-      return this.mostrarError('Escribe la cantidad de al menos un producto.');
-    }
-    if (!this.fechaRecepcionLote) {
-      return this.mostrarError('Selecciona la fecha de recepción.');
-    }
-    const incompletas = filas.filter(f => this.filaIncompleta(f));
-    if (incompletas.length > 0) {
-      return this.mostrarError(`Completa los datos marcados en rojo: ${incompletas.map(f => f.nombre).join(', ')}.`);
-    }
-    const fechasMalas = filas.filter(f => f.fechaVencimiento < this.fechaRecepcionLote);
-    if (fechasMalas.length > 0) {
-      return this.mostrarError(`El vencimiento es anterior a la recepción en: ${fechasMalas.map(f => f.nombre).join(', ')}.`);
-    }
-
-    this.errorMensaje = '';
-    this.guardandoLote = true;
-
-    // Una petición por producto; si una falla, las demás se siguen guardando
-    let motivoFallo = '';
-    const peticiones = filas.map(f =>
-      this.entregasService.registrar({
-        id_ingrediente: f.idIngrediente,
-        id_tipo_mercado: f.idTipoMercado!,
-        frecuencia: this.textoFrecuencia(f.frecuenciaDias!),
-        cantidad: f.cantidad!,
-        unidad: f.unidad,
-        fecha_entrega: this.fechaRecepcionLote,
-        fecha_vencimiento: f.fechaVencimiento,
-        ...this.datosInstitucion(this.entradaDestino),
-        observaciones: '',
-      } as any).pipe(
-        map(() => ({ ok: true, fila: f })),
-        catchError(error => {
-          console.error('Error al registrar', f.nombre, error);
-          motivoFallo = this.describirError(error);
-          return of({ ok: false, fila: f });
-        }),
-      )
-    );
-
-    forkJoin(peticiones).subscribe(resultados => {
-      this.guardandoLote = false;
-      const fallidas = resultados.filter(r => !r.ok).map(r => r.fila);
-      const guardadas = resultados.length - fallidas.length;
-
-      // Quita la cantidad de las que sí se guardaron; las fallidas se quedan para reintentar
-      resultados.filter(r => r.ok).forEach(r => (r.fila.cantidad = null));
-
-      if (guardadas > 0) {
-        this.mostrarHistorialEnvios = true;   // NUEVO: el panel de la izquierda queda en Historial para ver lo registrado
-        // El inventario recién guardado queda visible: sin filtros, ordenado por fecha (el más reciente primero) y abierto
-        this.limpiarFiltros();
-        this.ordenColumna = 'fechaRecepcion';
-        this.ordenDireccion = 'desc';
-        this.facturasAbiertas.add(this.fechaRecepcionLote);
-      }
-
-      if (fallidas.length === 0) {
-        void this.alertas.success('Inventario guardado', `Se registraron ${guardadas} producto(s) con fecha ${this.fechaCorta(this.fechaRecepcionLote)}.`);
-        this.vista = 'facturas';
-        this.mostrarModalEntrega = false;
-      } else {
-        this.errorMensaje =
-          `Se guardaron ${guardadas} y fallaron ${fallidas.length}: ${fallidas.map(f => f.nombre).join(', ')}. ` +
-          (motivoFallo ? `Motivo: ${motivoFallo}. ` : '') +
-          'Sus cantidades siguen en la lista para que intentes de nuevo.';
-        void this.alertas.error('El inventario quedó incompleto', this.errorMensaje);
-      }
-      this.cargarHistorial();
-      this.cdr.markForCheck();
-    });
-  }
-
-  // =====================================================
-  //  HISTORIAL: carga de la tabla
-  // =====================================================
-  cargarHistorial(): void {
-    // Solo se muestra "Cargando entregas…" si no hay nada guardado de antes; si hay caché, se refresca en silencio
-    this.cargandoHistorial = this.entregasRaw.length === 0;
-    this.errorHistorial = false;
-
-    const idPedido = this.idInstitucion;
-    let params = new HttpParams();
-    if (this.idInstitucion != null) params = params.set('id_institucion', this.idInstitucion);
-    if (this.idSede != null) params = params.set('id_sede', this.idSede);
-
-    this.http.get<any>(this.urlEntregas, { params }).pipe(
-      map(d => (Array.isArray(d) ? d : (d?.results ?? [])) as any[]),
-      map(lista => this.soloDeInstitucion(lista))
-    ).subscribe({
-      next: (lista) => {
-        if (idPedido !== this.idInstitucion) return;   // llegó tarde: ya se cambió de institución
-        this.entregasRaw = lista;
-        this.historialEnvios = this.registrosEnvioDe(lista);
-        this.reconstruirHistorial();
-        this.cargandoHistorial = false;
-        this.cdr.markForCheck();
-      },
-      error: (error) => {
-        console.error('Error al consultar entregas:', error);
-        this.cargandoHistorial = false;
-        // Si hay datos de caché en pantalla no se muestra el error: se sigue viendo lo último conocido
-        this.errorHistorial = this.entregasRaw.length === 0;
-        this.cdr.markForCheck();
-      },
-    });
-  }
-
-  // Convierte lo que devuelve el backend en filas con nombres (usa los catálogos por id)
-  private reconstruirHistorial(): void {
-    this.historial = this.entregasRaw.map(item => this.aFila(item));
-    this.prepararLote(true); // la lista del lote usa el historial para autocompletar
-
-    // Si hay un producto abierto en el panel de detalle, se actualiza con los datos nuevos
-    if (this.productoDetalle) {
-      const abierto = this.productoDetalle;
-      this.productoDetalle = this.historial.find(e => this.esMismoProducto(e, abierto)) ?? null;
-    }
-
-    // Lo mismo con los productos elegidos en el menú: se actualizan con su última entrada
-    this.seleccionados = this.seleccionados
-      .map(sel => this.historial
-        .filter(e => e.idIngrediente === sel.idIngrediente)
-        .sort((a, b) => b.fechaRecepcion.localeCompare(a.fechaRecepcion) || ((b.id ?? 0) - (a.id ?? 0)))[0])
-      .filter((e): e is FilaEntrega => !!e);
-  }
-
-  private aFila(item: any): FilaEntrega {
-    const idIngrediente = item.id_ingrediente ??
-      (typeof item.ingrediente === 'number' ? item.ingrediente : item.ingrediente?.id);
-    const idTipo = item.id_tipo_mercado ??
-      (typeof item.tipo_mercado === 'number' ? item.tipo_mercado : item.tipo_mercado?.id);
-
-    const ingrediente =
-      this.texto(item.ingrediente_nombre) ||
-      this.texto(item.nombre_ingrediente) ||
-      this.texto(item.ingrediente) ||
-      this.ingredientes.find(i => i.id === idIngrediente)?.nombre || '';
-
-    const tipoMercado =
-      this.texto(item.tipo_mercado_nombre) ||
-      this.texto(item.nombre_tipo_mercado) ||
-      this.texto(item.tipo_mercado) ||
-      this.tiposMercado.find(t => t.id === idTipo)?.nombre || '';
-
-    const nombreMercado = tipoMercado.toLowerCase();
-    const esPerecedero = nombreMercado.includes('perecedero') && !nombreMercado.includes('no perecedero');
-
-    const idIng = idIngrediente != null ? Number(idIngrediente) : (this.ingredientes.find(i => i.nombre === ingrediente)?.id ?? null);
-    const idTip = idTipo != null ? Number(idTipo) : (this.tiposMercado.find(t => t.nombre === tipoMercado)?.id ?? null);
-
-    const fechaRecepcion = this.soloFecha(item.fecha_entrega ?? item.fecha_recepcion ?? item.fechaRecepcion);
-    const extra = this.extraDe(item.id, idIng, fechaRecepcion, Number(item.cantidad) || 0);
-
-    return {
-      id: item.id,
-      idIngrediente: idIng,
-      idTipoMercado: idTip,
-      ingrediente,
-      tipoMercado,
-      categoria: esPerecedero ? 'Perecederos' : 'Granos',
-      frecuencia: item.frecuencia || '',
-      cantidad: Number(item.cantidad) || 0,
-      unidad: item.unidad || '',
-      fechaRecepcion,
-      fechaVencimiento: this.soloFecha(item.fecha_vencimiento ?? item.fechaVencimiento),
-
-      // Opcionales para el panel de detalle y el modal "Registro del día":
-      // se aceptan varios nombres de campo; si el backend no envía ninguno quedan vacíos y se muestra "—"
-      codigo: item.codigo ?? item.codigo_entrega ?? '',
-      lote: item.lote ?? item.numero_lote ?? '',
-      destino: this.texto(item.destino) || this.texto(item.destino_nombre) || this.texto(item.institucion) || extra?.destino || '',
-      hora: this.horaDe(item.hora_salida ?? item.hora ?? item.hora_registro ?? item.created_at ?? item.fecha_creacion) || extra?.hora || '',
-      responsable: this.texto(item.responsable) || this.texto(item.responsable_nombre) || this.texto(item.usuario) || extra?.responsable || '',
-      estadoEntrega: item.estado ?? '',
-    };
-  }
-
-  private registrosEnvioDe(lista: readonly RegistroEntregaEnvio[]): EnvioRegistro[] {
-    return lista.flatMap((item, index) => {
-      const referencia = item.id_institucion ?? item.institucion;
-      const referenciaSede = item.id_sede ?? item.sede;
-      const idInstitucion = typeof referencia === 'object' && referencia !== null
-        ? referencia.id_institucion ?? referencia.id
-        : referencia;
-      const idSede = typeof referenciaSede === 'object' && referenciaSede !== null
-        ? referenciaSede.id_sede ?? referenciaSede.id
-        : referenciaSede;
-      const nombre = item.institucion_nombre
-        || this.nombreReferencia(referencia)
-        || item.destino_nombre
-        || item.destino
-        || '';
-      const destino = item.destino
-        || (item.sede_nombre || this.nombreReferencia(referenciaSede)
-          ? `${nombre} - ${item.sede_nombre || this.nombreReferencia(referenciaSede)}`
-          : nombre);
-
-      if ((idInstitucion == null || idInstitucion === '') && !nombre) return [];
-
-      return [{
-        id: Number(item.id_entrega ?? item.id ?? index),
-        idInstitucion: idInstitucion == null ? null : Number(idInstitucion),
-        ingrediente: item.ingrediente_nombre || this.nombreReferencia(item.ingrediente),
-        cantidad: item.cantidad == null || item.cantidad === '' ? 0 : Number(item.cantidad),
-        unidad: item.unidad ?? '',
-        destino,
-        fechaSalida: this.soloFecha(item.fecha_salida ?? item.fecha_entrega),
-        fechaEntrega: this.soloFecha(item.fecha_entrega),
-        enviadoEl: this.soloFecha(item.created_at ?? item.fecha_creacion ?? item.fecha_entrega),
-      }];
-    });
-  }
-
-  private nombreReferencia(valor: string | number | ReferenciaInstitucion | null | undefined): string {
-    if (typeof valor === 'string') return valor;
-    if (typeof valor !== 'object' || valor === null) return '';
-    return valor.nombre_institucion ?? valor.nombre ?? valor.nombre_ingrediente ?? '';
+  // Un envío es una entrega con fecha de salida; el resto son entradas de inventario.
+  // El backend debe guardar y devolver "fecha_salida".
+  private esEnvio(item: any): boolean {
+    return !!item?.fecha_salida;
   }
 
   // Acepta texto o un objeto { nombre }. Un número (id) no es un nombre.
@@ -867,21 +425,10 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     return d.toLocaleTimeString('es-CO', { hour: 'numeric', minute: '2-digit', hour12: true });
   }
 
-  // Si viene el nombre de un producto (botón + de su tarjeta), el modal abre filtrado en ese producto.
-  // Las cantidades ya escritas se conservan (también alimentan el panel "Tu selección").
-  abrirModalEntrega(producto?: string): void {
-    this.fechaRecepcionLote = this.fechaHoy();       // siempre abre con la fecha de hoy
-    this.busquedaLote = producto ?? '';
-    this.categoriaLote = 'Todos';
-    this.errorMensaje = '';
-    this.prepararLote(true);
-    this.mostrarModalEntrega = true;
-  }
-
-  // Muestra un error de validación; abre el modal si se guardó desde el panel lateral
-  private mostrarError(mensaje: string): void {
-    this.errorMensaje = mensaje;
-    this.mostrarModalEntrega = true;
+  private nombreReferencia(valor: string | number | ReferenciaInstitucion | null | undefined): string {
+    if (typeof valor === 'string') return valor;
+    if (typeof valor !== 'object' || valor === null) return '';
+    return valor.nombre_institucion ?? valor.nombre ?? valor.nombre_ingrediente ?? '';
   }
 
   private normalizarUnidad(valor: string): string {
@@ -898,6 +445,14 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     return `${d.getFullYear()}-${mes}-${dia}`;
   }
 
+  private isoDeFecha(d: Date): string {
+    return this.aISO(d);
+  }
+
+  private primerDiaDelMes(d: Date): Date {
+    return new Date(d.getFullYear(), d.getMonth(), 1);
+  }
+
   private sumarDiasISO(iso: string, dias: number): string {
     const d = new Date(iso + 'T00:00:00');
     d.setDate(d.getDate() + dias);
@@ -910,12 +465,239 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     return Math.round((b - a) / 86400000);
   }
 
-  cerrarModalEntrega(): void {
-    this.mostrarModalEntrega = false;
+  // "Cada 8 días" -> 8 | "Semanal" -> 7 | "Quincenal" -> 15 | "Mensual" -> 30
+  private diasDeFrecuencia(texto: string): number | null {
+    const t = (texto || '').toLowerCase();
+    const num = t.match(/\d+/);
+    if (num) return Number(num[0]);
+    if (t.includes('seman')) return 7;
+    if (t.includes('quinc')) return 15;
+    if (t.includes('mens')) return 30;
+    if (t.includes('dia')) return 1;
+    return null;
+  }
+
+  private textoFrecuencia(dias: number): string {
+    return dias === 1 ? 'Cada día' : `Cada ${dias} días`;
+  }
+
+  // Traduce el error HTTP a un motivo que se entienda
+  private describirError(error: any): string {
+    const estado = error?.status;
+    if (estado === 0) return 'no hay conexión con el servidor (¿está encendido el backend?)';
+    if (estado === 401) return 'la sesión expiró; inicia sesión de nuevo';
+    if (estado === 403) return 'no tienes permiso para esta acción (403)';
+    if (estado === 404) return 'la ruta no existe en el servidor (404); revisa la URL de la API';
+    if (estado === 400) {
+      const detalle = typeof error.error === 'string' ? error.error : JSON.stringify(error.error ?? '');
+      return `el servidor rechazó los datos (400): ${detalle.slice(0, 160)}`;
+    }
+    return estado ? `error ${estado} del servidor` : 'error desconocido';
+  }
+
+  // Fecha de hoy en hora local (YYYY-MM-DD)
+  fechaHoy(): string {
+    return this.aISO(new Date());
+  }
+
+  // dd/mm/aaaa
+  fechaCorta(iso: string): string {
+    if (!iso) return '';
+    const [y, m, d] = iso.split('-');
+    return `${d}/${m}/${y}`;
+  }
+
+  // "18 de septiembre de 2026"
+  fechaDiaModal(iso: string): string {
+    if (!iso) return '';
+    const [y, m, d] = iso.split('-').map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString('es-CO', {
+      day: 'numeric', month: 'long', year: 'numeric',
+    });
   }
 
   // =====================================================
-  //  MENÚ: tarjetas de producto, categorías y lo registrado
+  //  CARGA DE CATÁLOGOS
+  // =====================================================
+  cargarCatalogos(): void {
+    this.errorMensaje = '';
+    this.errorCatalogos = '';
+    forkJoin({
+      ingredientes: this.entregasService.cargarIngredientes() as unknown as Observable<IngredienteOpcion[]>,
+      tiposMercado: this.entregasService.cargarTiposMercado() as unknown as Observable<TipoMercadoOpcion[]>,
+    }).subscribe({
+      next: ({ ingredientes, tiposMercado }) => {
+        this.ingredientes = ingredientes.length > 0 ? ingredientes : this.productosBase;
+        this.tiposMercado = tiposMercado.length > 0 ? tiposMercado : this.tiposBase;
+
+        // Solo se guarda en caché lo que sí llegó del servidor (nunca los productos base)
+        if (ingredientes.length > 0) this.guardarCache(this.claveCacheIngredientes, ingredientes);
+        if (tiposMercado.length > 0) this.guardarCache(this.claveCacheTipos, tiposMercado);
+
+        this.cargandoCatalogos = false;
+        if (tiposMercado.length === 0) {
+          this.errorCatalogos = 'El servidor no devolvió tipos de mercado; se usan Perecedero y No perecedero locales. Para guardar deben existir en el backend.';
+        }
+        this.reconstruirHistorial();
+        this.cdr.markForCheck();
+      },
+      error: (error) => {
+        console.error('Error al cargar catálogos de entregas:', error);
+        const motivo = this.describirError(error);
+        this.errorCatalogos = `No se pudieron cargar los catálogos del servidor: ${motivo}. Se muestran productos de ejemplo; para guardar debe funcionar la conexión.`;
+        void this.alertas.error('No se pudo cargar el catálogo', this.errorCatalogos);
+        if (this.ingredientes.length === 0) this.ingredientes = this.productosBase;
+        if (this.tiposMercado.length === 0) this.tiposMercado = this.tiposBase;
+        this.cargandoCatalogos = false;
+        this.reconstruirHistorial();
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  // =====================================================
+  //  CARGA DEL HISTORIAL (entradas y envíos)
+  // =====================================================
+  cargarHistorial(): void {
+    // Solo se muestra "Cargando entregas…" si no hay nada de antes; si hay datos, se refresca en silencio
+    this.cargandoHistorial = this.entregasRaw.length === 0 && this.historialEnvios.length === 0;
+    this.errorHistorial = false;
+
+    const idPedido = this.idInstitucion;
+    const sedePedida = this.idSede;
+    let params = new HttpParams();
+    if (this.idInstitucion != null) params = params.set('id_institucion', this.idInstitucion);
+    if (this.idSede != null) params = params.set('id_sede', this.idSede);
+
+    this.http.get<any>(this.urlEntregas, { params }).pipe(
+      map(d => (Array.isArray(d) ? d : (d?.results ?? [])) as any[]),
+      map(lista => this.soloDeInstitucion(lista)),
+    ).subscribe({
+      next: (lista) => {
+        // Llegó tarde: ya se cambió de institución o de sede
+        if (idPedido !== this.idInstitucion || sedePedida !== this.idSede) return;
+
+        // Las entradas de inventario y los envíos se separan por "fecha_salida"
+        const envios = lista.filter(item => this.esEnvio(item));
+        this.entregasRaw = lista.filter(item => !this.esEnvio(item));
+        this.historialEnvios = this.registrosEnvioDe(envios);
+
+        this.reconstruirHistorial();
+        this.cargandoHistorial = false;
+        this.cdr.markForCheck();
+      },
+      error: (error) => {
+        console.error('Error al consultar entregas:', error);
+        this.cargandoHistorial = false;
+        this.errorHistorial = this.entregasRaw.length === 0;
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  // Convierte lo que devuelve el backend en filas con nombres (usa los catálogos por id)
+  private reconstruirHistorial(): void {
+    this.historial = this.entregasRaw.map(item => this.aFila(item));
+
+    // Los productos elegidos en el menú se actualizan con su última entrada
+    this.seleccionados = this.seleccionados
+      .map(sel => this.ultimaEntradaDe(sel.idIngrediente))
+      .filter((e): e is FilaEntrega => !!e);
+  }
+
+  private ultimaEntradaDe(idIngrediente: number | null): FilaEntrega | undefined {
+    return this.historial
+      .filter(e => e.idIngrediente === idIngrediente)
+      .sort((a, b) => b.fechaRecepcion.localeCompare(a.fechaRecepcion) || ((b.id ?? 0) - (a.id ?? 0)))[0];
+  }
+
+  private aFila(item: any): FilaEntrega {
+    const idIngrediente = item.id_ingrediente ??
+      (typeof item.ingrediente === 'number' ? item.ingrediente : item.ingrediente?.id);
+    const idTipo = item.id_tipo_mercado ??
+      (typeof item.tipo_mercado === 'number' ? item.tipo_mercado : item.tipo_mercado?.id);
+
+    const ingrediente =
+      this.texto(item.ingrediente_nombre) ||
+      this.texto(item.nombre_ingrediente) ||
+      this.texto(item.ingrediente) ||
+      this.ingredientes.find(i => i.id === idIngrediente)?.nombre || '';
+
+    const tipoMercado =
+      this.texto(item.tipo_mercado_nombre) ||
+      this.texto(item.nombre_tipo_mercado) ||
+      this.texto(item.tipo_mercado) ||
+      this.tiposMercado.find(t => t.id === idTipo)?.nombre || '';
+
+    const nombreMercado = tipoMercado.toLowerCase();
+    const esPerecedero = nombreMercado.includes('perecedero') && !nombreMercado.includes('no perecedero');
+
+    const idIng = idIngrediente != null
+      ? Number(idIngrediente)
+      : (this.ingredientes.find(i => i.nombre === ingrediente)?.id ?? null);
+    const idTip = idTipo != null
+      ? Number(idTipo)
+      : (this.tiposMercado.find(t => t.nombre === tipoMercado)?.id ?? null);
+
+    const fechaRecepcion = this.soloFecha(item.fecha_entrega ?? item.fecha_recepcion ?? item.fechaRecepcion);
+    const extra = this.extraDe(item.id, idIng, fechaRecepcion, Number(item.cantidad) || 0);
+
+    return {
+      id: item.id,
+      idIngrediente: idIng,
+      idTipoMercado: idTip,
+      ingrediente,
+      tipoMercado,
+      categoria: esPerecedero ? 'Perecederos' : 'Granos',
+      frecuencia: item.frecuencia || '',
+      cantidad: Number(item.cantidad) || 0,
+      unidad: item.unidad || '',
+      fechaRecepcion,
+      fechaVencimiento: this.soloFecha(item.fecha_vencimiento ?? item.fechaVencimiento),
+
+      codigo: item.codigo ?? item.codigo_entrega ?? '',
+      lote: item.lote ?? item.numero_lote ?? '',
+      destino: this.texto(item.destino) || this.texto(item.destino_nombre) || this.texto(item.institucion) || extra?.destino || '',
+      hora: this.horaDe(item.hora_salida ?? item.hora ?? item.hora_registro ?? item.created_at ?? item.fecha_creacion) || extra?.hora || '',
+      responsable: this.texto(item.responsable) || this.texto(item.responsable_nombre) || this.texto(item.usuario) || extra?.responsable || '',
+      estadoEntrega: item.estado ?? '',
+    };
+  }
+
+  private registrosEnvioDe(lista: readonly RegistroEntregaEnvio[]): EnvioRegistro[] {
+    return lista.flatMap((item, index) => {
+      const referencia = item.id_institucion ?? item.institucion;
+      const referenciaSede = item.id_sede ?? item.sede;
+      const idInstitucion = typeof referencia === 'object' && referencia !== null
+        ? referencia.id_institucion ?? referencia.id
+        : referencia;
+      const nombreSede = item.sede_nombre || this.nombreReferencia(referenciaSede);
+      const nombre = item.institucion_nombre
+        || this.nombreReferencia(referencia)
+        || item.destino_nombre
+        || item.destino
+        || '';
+      const destino = item.destino || (nombreSede ? `${nombre} - ${nombreSede}` : nombre);
+
+      if ((idInstitucion == null || idInstitucion === '') && !nombre) return [];
+
+      return [{
+        id: Number(item.id_entrega ?? item.id ?? index),
+        idInstitucion: idInstitucion == null ? null : Number(idInstitucion),
+        ingrediente: item.ingrediente_nombre || this.nombreReferencia(item.ingrediente)
+          || this.ingredientes.find(i => i.id === Number(item.ingrediente))?.nombre || '',
+        cantidad: item.cantidad == null || item.cantidad === '' ? 0 : Number(item.cantidad),
+        unidad: item.unidad ?? '',
+        destino,
+        fechaSalida: this.soloFecha(item.fecha_salida ?? item.fecha_entrega),
+        fechaEntrega: this.soloFecha(item.fecha_entrega),
+        enviadoEl: this.soloFecha(item.created_at ?? item.fecha_creacion ?? item.fecha_entrega),
+      }];
+    });
+  }
+
+  // =====================================================
+  //  MENÚ: emojis, imágenes y categorías
   // =====================================================
   emojiDe(nombre: string): string {
     const n = (nombre || '').toLowerCase();
@@ -932,8 +714,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     return mapa.find(([claves]) => claves.some(k => n.includes(k)))?.[1] ?? '🍽️';
   }
 
-  // Imagen del producto desde la carpeta public/ (devuelve null si no hay foto: ahí se usa el emoji)
-  // El orden importa: lo más específico primero ("molida" antes que "carne", "deslactosad" antes que "leche").
+  // El orden importa: lo más específico primero ("molida" antes que "carne", "deslactosad" antes que "leche")
   private readonly imagenesProducto: { clave: string; archivo: string }[] = [
     { clave: 'molida',      archivo: 'molida.png' },
     { clave: 'carne',       archivo: 'carne.png' },
@@ -945,20 +726,17 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     { clave: 'frijol',      archivo: 'frijoles.png' },
     { clave: 'harina',      archivo: 'harina.png' },
     { clave: 'deslactosad', archivo: 'deslatosada.png' },   // el archivo se llama "deslatosada.png"
-    { clave: 'leche',       archivo: 'leche.png' },          // renombra "leche .png" -> "leche.png"
+    { clave: 'leche',       archivo: 'leche.png' },
     { clave: 'queso',       archivo: 'queso.png' },
   ];
 
+  // Imagen del producto desde public/ (null = se usa el emoji)
   imagenDe(nombre: string): string | null {
-    const n = (nombre ?? '')
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')   // quita tildes: "Plátano" -> "platano"
-      .toLowerCase();
+    const n = this.normalizarNombre(nombre ?? '');
     const hallada = this.imagenesProducto.find(i => n.includes(i.clave));
-    return hallada ? '/' + hallada.archivo : null;   // si usas src/assets: '/assets/' + hallada.archivo
+    return hallada ? '/' + hallada.archivo : null;
   }
 
-  // Imagen de cada categoría (chips deslizables y encabezados de grupo).
   private readonly imagenesCategoria: Record<string, string> = {
     'Todos':             'plato.png',
     'Granos y cereales': 'granos.png',
@@ -996,34 +774,22 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     return e[categoria] ?? '📦';
   }
 
-  private armarCategorias(nombres: string[]): CategoriaOpcion[] {
+  get categoriasMenu(): CategoriaOpcion[] {
     const conteo = new Map<string, number>();
-    nombres.forEach(n => {
-      const cat = this.categoriaDe(n);
+    this.ingredientes.forEach(i => {
+      const cat = this.categoriaDe(i.nombre);
       conteo.set(cat, (conteo.get(cat) ?? 0) + 1);
     });
     const lista = Array.from(conteo.entries())
       .sort((a, b) => a[0].localeCompare(b[0], 'es'))
       .map(([nombre, total]) => ({ nombre, emoji: this.emojiDeCategoria(nombre), total }));
-    return [{ nombre: 'Todos', emoji: this.emojiDeCategoria('Todos'), total: nombres.length }, ...lista];
+    return [{ nombre: 'Todos', emoji: this.emojiDeCategoria('Todos'), total: this.ingredientes.length }, ...lista];
   }
 
-  // Categorías de la vista Menú (según el catálogo de productos)
-  get categoriasMenu(): CategoriaOpcion[] {
-    return this.armarCategorias(this.ingredientes.map(i => i.nombre));
-  }
-
-  // Categorías del modal (según los ingredientes disponibles para registrar)
-  get categoriasLote(): CategoriaOpcion[] {
-    return this.armarCategorias(this.filasLote.map(f => f.nombre));
-  }
-
-  // Todos los productos del catálogo, con su unidad y tipo (se toman de su última entrega si existe)
+  // Todos los productos del catálogo, con su unidad y tipo (se toman de su última entrada si existe)
   private get catalogoMenu(): ProductoCatalogo[] {
     return this.ingredientes.map(ing => {
-      const ultima = this.historial
-        .filter(e => e.idIngrediente === ing.id)
-        .sort((a, b) => b.fechaRecepcion.localeCompare(a.fechaRecepcion))[0];
+      const ultima = this.ultimaEntradaDe(ing.id);
       return {
         id: ing.id,
         nombre: ing.nombre,
@@ -1034,30 +800,17 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     }).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
   }
 
-  // Productos que se ven en las tarjetas (aplica buscador, mercado y categoría)
+  // Productos que se ven en las tarjetas (aplica buscador, tipo y categoría)
   get productosMenu(): ProductoCatalogo[] {
     const q = this.textoFiltro.trim().toLowerCase();
     return this.catalogoMenu.filter(p =>
       (this.filtroMercado === 'Todos' || (this.filtroMercado === 'Perecederos') === this.esPerecedero(p)) &&
       (this.categoriaMenu === 'Todos' || p.categoria === this.categoriaMenu) &&
-      (!q || p.nombre.toLowerCase().includes(q) || p.categoria.toLowerCase().includes(q) || this.nombreTipo(p).toLowerCase().includes(q))
+      (!q || p.nombre.toLowerCase().includes(q) || p.categoria.toLowerCase().includes(q) || this.nombreTipo(p).toLowerCase().includes(q)),
     );
   }
 
-  // Los mismos productos, organizados por categoría
-  get gruposMenu(): GrupoMenu[] {
-    const mapa = new Map<string, ProductoCatalogo[]>();
-    for (const p of this.productosMenu) {
-      const lista = mapa.get(p.categoria) ?? [];
-      lista.push(p);
-      mapa.set(p.categoria, lista);
-    }
-    return Array.from(mapa.entries())
-      .sort(([a], [b]) => a.localeCompare(b, 'es'))
-      .map(([nombre, productos]) => ({ nombre, emoji: this.emojiDeCategoria(nombre), productos }));
-  }
-
-  // Si el producto ya tuvo entregas se usa su tipo de mercado; si no, se deduce por el nombre
+  // Si el producto ya tuvo entradas se usa su tipo de mercado; si no, se deduce por el nombre
   private readonly perecederosPorNombre = [
     'pollo', 'carne', 'res', 'cerdo', 'pescado', 'huevo', 'leche', 'queso', 'yogur', 'papa', 'yuca',
     'plátano', 'platano', 'zanahoria', 'tomate', 'cebolla', 'lechuga', 'banano', 'manzana', 'naranja',
@@ -1075,89 +828,187 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     return tipo || (this.esPerecedero(p) ? 'Perecedero' : 'No perecedero');
   }
 
-  trackGrupo(_: number, g: GrupoMenu): string {
-    return g.nombre;
-  }
-
   trackProducto(_: number, p: ProductoCatalogo): number {
     return p.id;
   }
 
-  // Lo que se registró de un producto: última entrada y total recibido
-  registroDe(nombre: string): {
-    fechaIngreso: string; cantidadIngresada: number; unidad: string; totalRecibido: number; entradas: number;
-  } | null {
+  // Datos de la última entrada del producto y total recibido (null si aún no tiene entradas)
+  registroDe(idIngrediente: number | null): ResumenProducto | null {
     const entradas = this.historial
-      .filter(e => e.ingrediente === nombre)
+      .filter(e => e.idIngrediente === idIngrediente)
       .sort((a, b) => b.fechaRecepcion.localeCompare(a.fechaRecepcion) || ((b.id ?? 0) - (a.id ?? 0)));
     if (entradas.length === 0) return null;
 
     const ultima = entradas[0];
     const total = entradas
-      .filter(e => this.normalizarUnidad(e.unidad) === this.normalizarUnidad(ultima.unidad))   // solo suma entradas con la misma unidad
+      .filter(e => this.normalizarUnidad(e.unidad) === this.normalizarUnidad(ultima.unidad))
       .reduce((suma, e) => suma + e.cantidad, 0);
 
     return {
+      cantidad: ultima.cantidad,
+      unidad: this.normalizarUnidad(ultima.unidad) || ultima.unidad,
       fechaIngreso: ultima.fechaRecepcion,
-      cantidadIngresada: ultima.cantidad,
-      unidad: ultima.unidad,
+      fechaVencimiento: ultima.fechaVencimiento,
+      estado: this.estadoDe(ultima),
+      textoVence: this.textoDias(this.diasDe(ultima)),
       totalRecibido: Math.round(total * 100) / 100,
       entradas: entradas.length,
     };
   }
 
-  // Último registro: todo lo que entró en la fecha de recepción más reciente
-  get ultimoRegistro(): { fecha: string; items: FilaEntrega[]; totales: string } | null {
-    const fechas = this.historial.map(e => e.fechaRecepcion).filter(f => !!f);
-    if (fechas.length === 0) return null;
+  textoDias(d: number): string {
+    if (d >= 99999) return '';
+    if (d < -1) return `Vencido hace ${Math.abs(d)} días`;
+    if (d === -1) return 'Venció ayer';
+    if (d === 0) return 'Vence hoy';
+    if (d === 1) return 'Vence mañana';
+    return `Vence en ${d} días`;
+  }
 
-    const fecha = fechas.reduce((a, b) => (a > b ? a : b));
-    const items = this.historial
-      .filter(e => e.fechaRecepcion === fecha)
-      .sort((a, b) => (b.id ?? 0) - (a.id ?? 0) || a.ingrediente.localeCompare(b.ingrediente, 'es'));
+  // =====================================================
+  //  PAGINACIÓN DEL MENÚ (por producto, agrupado por categoría)
+  // =====================================================
+  private readonly ordenSubgrupo: Record<string, number> = { Carnes: 0, Huevos: 1 };
 
-    // Se normaliza la unidad para que "Kg" y "kg" se sumen juntas (72 Kg y no "6 Kg · 66 kg")
-    const porUnidad = new Map<string, number>();
-    for (const e of items) {
-      const u = this.normalizarUnidad(e.unidad) || 'Sin unidad';
-      porUnidad.set(u, (porUnidad.get(u) ?? 0) + e.cantidad);
+  // En "Carnes y huevos" se separan Carnes y Huevos; en las demás categorías no hay subgrupos
+  private subgrupoDe(p: ProductoCatalogo): string {
+    if (p.categoria !== 'Carnes y huevos') return '';
+    return this.normalizarNombre(p.nombre).includes('huevo') ? 'Huevos' : 'Carnes';
+  }
+
+  private get productosMenuOrdenados(): ProductoCatalogo[] {
+    return [...this.productosMenu].sort((a, b) =>
+      a.categoria.localeCompare(b.categoria, 'es')
+      || (this.ordenSubgrupo[this.subgrupoDe(a)] ?? 0) - (this.ordenSubgrupo[this.subgrupoDe(b)] ?? 0)
+      || a.nombre.localeCompare(b.nombre, 'es'));
+  }
+
+  get totalProductosMenu(): number {
+    return this.productosMenu.length;
+  }
+
+  get totalPaginas(): number {
+    return Math.max(1, Math.ceil(this.totalProductosMenu / this.porPagina));
+  }
+
+  // Página real (nunca se sale de rango) sin modificar el estado dentro de un getter
+  get paginaEfectiva(): number {
+    return Math.min(Math.max(1, this.paginaActual), this.totalPaginas);
+  }
+
+  get desdeMostrado(): number {
+    return this.totalProductosMenu === 0 ? 0 : (this.paginaEfectiva - 1) * this.porPagina + 1;
+  }
+
+  get hastaMostrado(): number {
+    return Math.min(this.paginaEfectiva * this.porPagina, this.totalProductosMenu);
+  }
+
+  private get productosPagina(): ProductoCatalogo[] {
+    const inicio = (this.paginaEfectiva - 1) * this.porPagina;
+    return this.productosMenuOrdenados.slice(inicio, inicio + this.porPagina);
+  }
+
+  get gruposPagina(): GrupoPagina[] {
+    const totales = new Map<string, number>();
+    this.productosMenu.forEach(p => totales.set(p.categoria, (totales.get(p.categoria) ?? 0) + 1));
+
+    const grupos = new Map<string, GrupoPagina>();
+    for (const p of this.productosPagina) {
+      let grupo = grupos.get(p.categoria);
+      if (!grupo) {
+        grupo = {
+          nombre: p.categoria,
+          emoji: this.emojiDeCategoria(p.categoria),
+          total: totales.get(p.categoria) ?? 0,
+          subgrupos: [],
+        };
+        grupos.set(p.categoria, grupo);
+      }
+      const nombreSub = this.subgrupoDe(p);
+      let sub = grupo.subgrupos.find(s => s.nombre === nombreSub);
+      if (!sub) {
+        sub = { nombre: nombreSub, productos: [] };
+        grupo.subgrupos.push(sub);
+      }
+      sub.productos.push(p);
     }
-    const totales = Array.from(porUnidad.entries())
-      .map(([unidad, total]) => `${Math.round(total * 100) / 100} ${unidad}`)
-      .join(' · ');
+    return Array.from(grupos.values());
+  }
 
-    return { fecha, items, totales };
+  // 1 … 4 5 6 … 12
+  get numerosPagina(): (number | '…')[] {
+    const total = this.totalPaginas;
+    const actual = this.paginaEfectiva;
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+
+    const orden = Array.from(new Set([1, total, actual - 1, actual, actual + 1]))
+      .filter(n => n >= 1 && n <= total)
+      .sort((a, b) => a - b);
+
+    const salida: (number | '…')[] = [];
+    orden.forEach((n, i) => {
+      if (i > 0 && n - orden[i - 1] > 1) salida.push('…');
+      salida.push(n);
+    });
+    return salida;
+  }
+
+  // Acepta number | string para que compile con el *ngIf de la plantilla
+  irAPagina(p: number | string): void {
+    const n = Number(p);
+    if (!Number.isInteger(n) || n < 1 || n > this.totalPaginas) return;
+    this.paginaActual = n;
+    document.getElementById('catalogo-top')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  trackGrupo(_: number, g: { nombre: string }): string {
+    return g.nombre;
+  }
+
+  trackSubgrupo(_: number, s: SubgrupoMenu): string {
+    return s.nombre;
   }
 
   // =====================================================
-  //  DETALLE DEL PRODUCTO
+  //  FILTROS
   // =====================================================
-  productoDetalle: FilaEntrega | null = null;
-
-  // Clic en un producto registrado: muestra su detalle. Segundo clic sobre el mismo = lo cierra.
-  abrirDetalleProducto(item: FilaEntrega): void {
-    this.productoDetalle = this.esMismoProducto(this.productoDetalle, item) ? null : item;
+  setMercado(m: FiltroMercado): void {
+    this.filtroMercado = m;
+    this.paginaActual = 1;
   }
 
-  cerrarDetalleProducto(): void {
-    this.productoDetalle = null;
+  // Lo que se exporta a Excel: respeta el buscador y el tipo de producto, del más reciente al más antiguo
+  get historialFiltrado(): FilaEntrega[] {
+    const texto = this.textoFiltro.trim().toLowerCase();
+    return this.historial
+      .filter(e => {
+        if (this.filtroMercado !== 'Todos' && e.categoria !== this.filtroMercado) return false;
+        if (!texto) return true;
+        return e.ingrediente.toLowerCase().includes(texto)
+          || e.tipoMercado.toLowerCase().includes(texto)
+          || e.frecuencia.toLowerCase().includes(texto)
+          || this.estadoDe(e).toLowerCase().includes(texto);
+      })
+      .sort((a, b) =>
+        b.fechaRecepcion.localeCompare(a.fechaRecepcion) || ((b.id ?? 0) - (a.id ?? 0)));
   }
 
-  // Productos elegidos en el menú: se muestran en el panel de Inventario con los datos de su entrada
+  // =====================================================
+  //  PRODUCTOS SELECCIONADOS (panel de Inventario)
+  // =====================================================
   seleccionados: FilaEntrega[] = [];
 
-  // Clic en una tarjeta del menú: la agrega al inventario (su última entrada). Otro clic la quita.
+  // Clic o toque en la tarjeta: la agrega al panel; otro clic la quita.
   abrirDetalleDesdeCatalogo(producto: ProductoCatalogo): void {
-    const existente = this.seleccionados.findIndex(s => s.idIngrediente === producto.id);
-    if (existente >= 0) {
-      this.seleccionados.splice(existente, 1);
-      return;
-    }
+    if (this.swipeReciente) return;   // el clic que sigue a un deslizamiento se ignora
+    if (this.tarjetaActiva(producto)) this.quitarPorProducto(producto);
+    else this.agregarSeleccionado(producto);
+  }
 
-    const ultima = this.historial
-      .filter(e => e.idIngrediente === producto.id)
-      .sort((a, b) => b.fechaRecepcion.localeCompare(a.fechaRecepcion) || ((b.id ?? 0) - (a.id ?? 0)))[0];
-
+  private agregarSeleccionado(producto: ProductoCatalogo): void {
+    if (this.tarjetaActiva(producto)) return;
+    const ultima = this.ultimaEntradaDe(producto.id);
     if (!ultima) {
       void this.alertas.warning('Sin inventario', `${producto.nombre} todavía no tiene entradas en el inventario.`);
       return;
@@ -1165,28 +1016,83 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     this.seleccionados.push(ultima);
   }
 
+  private quitarPorProducto(producto: ProductoCatalogo): void {
+    this.seleccionados = this.seleccionados.filter(s => s.idIngrediente !== producto.id);
+  }
+
+  // ===================== DESLIZAR EL PRODUCTO =====================
+  // Deslizar la tarjeta a la derecha  -> el producto aparece en el panel con sus detalles.
+  // Deslizar la tarjeta a la izquierda -> se quita del panel.
+  readonly umbralSwipe = 70;            // píxeles que hay que arrastrar
+  swipeId: number | null = null;        // tarjeta que se está arrastrando
+  swipeDx = 0;                          // cuánto se ha movido
+  private swipeInicio: { id: number; x: number; y: number; activo: boolean } | null = null;
+  private swipeReciente = false;
+
+  alIniciarDeslizar(ev: PointerEvent, p: ProductoCatalogo): void {
+    if (ev.pointerType === 'mouse' && ev.button !== 0) return;
+    this.swipeInicio = { id: p.id, x: ev.clientX, y: ev.clientY, activo: false };
+  }
+
+  alMoverDeslizar(ev: PointerEvent): void {
+    const s = this.swipeInicio;
+    if (!s) return;
+    const dx = ev.clientX - s.x;
+    const dy = ev.clientY - s.y;
+    if (!s.activo) {
+      // Solo cuenta si el gesto es más horizontal que vertical (así el scroll normal sigue funcionando)
+      if (Math.abs(dx) < 10 || Math.abs(dx) < Math.abs(dy)) return;
+      s.activo = true;
+      this.swipeId = s.id;
+      (ev.currentTarget as HTMLElement).setPointerCapture?.(ev.pointerId);
+    }
+    this.swipeDx = Math.max(-120, Math.min(120, dx));
+  }
+
+  alTerminarDeslizar(p: ProductoCatalogo): void {
+    const s = this.swipeInicio;
+    this.swipeInicio = null;
+    if (!s?.activo) return;
+
+    const dx = this.swipeDx;
+    this.swipeId = null;
+    this.swipeDx = 0;
+    this.swipeReciente = true;
+    setTimeout(() => (this.swipeReciente = false), 80);
+
+    if (dx >= this.umbralSwipe) {
+      this.mostrarHistorialEnvios = false;   // el panel muestra la pestaña Inventario
+      this.agregarSeleccionado(p);
+    } else if (dx <= -this.umbralSwipe) {
+      this.quitarPorProducto(p);
+    }
+  }
+
+  cancelarDeslizar(): void {
+    this.swipeInicio = null;
+    this.swipeId = null;
+    this.swipeDx = 0;
+  }
+
   quitarSeleccionado(item: FilaEntrega): void {
     this.seleccionados = this.seleccionados.filter(s => s.idIngrediente !== item.idIngrediente);
   }
 
-  // Para resaltar la fila elegida (usa el id si existe)
-  esMismoProducto(a: FilaEntrega | null, b: FilaEntrega | null): boolean {
-    if (!a || !b) return false;
-    return a.id != null && b.id != null
-      ? a.id === b.id
-      : a.ingrediente === b.ingrediente && a.fechaRecepcion === b.fechaRecepcion;
-  }
-
-  // ¿La tarjeta del menú está seleccionada?
   tarjetaActiva(producto: ProductoCatalogo): boolean {
     return this.seleccionados.some(s => s.idIngrediente === producto.id);
   }
 
-  // ===================== ENVIAR A LAS INSTITUCIONES =====================
+  trackFila(_: number, e: FilaEntrega): any {
+    return e.id ?? `${e.ingrediente}-${e.fechaRecepcion}-${e.cantidad}`;
+  }
+
+  // =====================================================
+  //  ENVIAR A LAS INSTITUCIONES
+  // =====================================================
   // Flujo: icono de la escuela en un producto seleccionado -> se elige la institución o sede
   // (puede ser más de una), la cantidad de cada una, la fecha de salida y la de entrega -> Enviar ->
   // queda en la pestaña Historial (un registro por destino).
-  envioProducto: FilaEntrega | null = null;   // producto de la ventana emergente (null = cerrada)
+  envioProducto: FilaEntrega | null = null;
   envioUnidad = 'Kg';
   envioFechaSalida = '';
   envioFechaEntrega = '';
@@ -1194,10 +1100,11 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
   errorEnvio = '';
   hoyEnvio = this.fechaHoy();
   mostrarHistorialEnvios = false;
+  guardandoEnvio = false;
 
   trackEnvioHist = (_: number, r: EnvioRegistro) => r.id;
 
-  // ¿Este producto ya aparece en el historial de envíos? (marca "✓ Enviado" en la tarjeta)
+  // ¿Este producto ya aparece en el historial de envíos?
   fueEnviado(nombre: string): boolean {
     return this.historialEnvios.some(e => e.ingrediente === nombre);
   }
@@ -1210,9 +1117,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     return Array.from(new Set(lista)).join(', ');
   }
 
-  // Clic en el icono de la escuela de un producto
   abrirModalEnvio(item: FilaEntrega): void {
-    this.prepararInstitucionesDestino();
     this.hoyEnvio = this.fechaHoy();
     this.envioProducto = item;
     this.envioUnidad = this.normalizarUnidad(item.unidad) || 'Kg';
@@ -1220,40 +1125,11 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     this.envioFechaEntrega = this.hoyEnvio;
     this.envioDestinos = [];
     this.destinosEnvioSeleccionados.clear();
-    this.envioInstitucionTexto = '';
     this.errorEnvio = '';
   }
 
   cerrarModalEnvio(): void {
     this.envioProducto = null;
-    this.envioInstitucionTexto = '';
-  }
-
-  // Agrega a la lista la institución que se escribió
-  agregarDestinoEscrito(): void {
-    const institucion = this.institucionesDestinoEnvio.find(
-      item => item.id_institucion === this.institucionEnvioSeleccionada,
-    );
-    if (!institucion) {
-      this.errorEnvio = 'No hay una institución asignada para enviar el producto.';
-      return;
-    }
-    const nombre = this.envioInstitucionTexto.trim() || institucion.nombre_institucion;
-    const existe = this.envioDestinos.some(d =>
-      d.idInstitucion === institucion.id_institucion
-      && this.normalizarNombre(d.institucion) === this.normalizarNombre(nombre),
-    );
-    if (existe) {
-      this.errorEnvio = 'Esa institución ya está en la lista.';
-    } else {
-      this.errorEnvio = '';
-      this.envioDestinos.push({
-        idInstitucion: institucion.id_institucion,
-        institucion: nombre,
-        cantidad: null,
-      });
-    }
-    this.envioInstitucionTexto = '';
   }
 
   alternarDestino(destino: string): void {
@@ -1288,7 +1164,8 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
   }
 
   quitarDestinoEnvio(indice: number): void {
-    this.envioDestinos.splice(indice, 1);
+    const [quitado] = this.envioDestinos.splice(indice, 1);
+    if (quitado) this.destinosEnvioSeleccionados.delete(quitado.institucion);
   }
 
   // Botones - y + de la cantidad
@@ -1311,7 +1188,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
 
   enviarAInstituciones(): void {
     const prod = this.envioProducto;
-    if (!prod) return;
+    if (!prod || this.guardandoEnvio) return;
 
     const hoy = this.fechaHoy();
     const destinos = this.envioDestinos;
@@ -1336,7 +1213,9 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       return;
     }
 
+    this.errorEnvio = '';
     this.guardandoEnvio = true;
+
     const peticiones = destinos.map(destino =>
       this.entregasService.registrar({
         id_ingrediente: prod.idIngrediente!,
@@ -1351,7 +1230,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
         frecuencia: prod.frecuencia,
         unidad: this.envioUnidad,
         destino: destino.institucion,
-      }).pipe(
+      } as any).pipe(
         map(() => ({ ok: true, destino })),
         catchError(error => {
           console.error(`Error al enviar ${prod.ingrediente} a ${destino.institucion}:`, error);
@@ -1362,8 +1241,10 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
 
     forkJoin(peticiones).subscribe(resultados => {
       this.guardandoEnvio = false;
-      const exitosos = resultados.filter(resultado => resultado.ok);
-      const fallidos = resultados.filter(resultado => !resultado.ok);
+      const exitosos = resultados.filter(r => r.ok);
+      const fallidos = resultados.filter(r => !r.ok);
+
+      // Se muestran al instante; al recargar el historial se reemplazan por los del servidor
       const registros: EnvioRegistro[] = exitosos.map(({ destino }, index) => ({
         id: Date.now() + index,
         idInstitucion: destino.idInstitucion,
@@ -1390,7 +1271,6 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       }
 
       this.envioProducto = null;
-      this.envioInstitucionTexto = '';
       this.errorEnvio = '';
       this.mostrarHistorialEnvios = true;
       void this.alertas.success(
@@ -1401,7 +1281,9 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ===================== CALENDARIO DE ENTREGAS =====================
+  // =====================================================
+  //  CALENDARIO DE ENTREGAS
+  // =====================================================
   mostrarCalendario = false;
   mesCalendario = this.primerDiaDelMes(new Date());
   diaSeleccionado = this.isoDeFecha(new Date());
@@ -1415,9 +1297,141 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     this.mostrarCalendario = true;
   }
 
-  // ===================== REGISTRAR ENTRADA (botón "Entradas" del calendario) =====================
-  // El formulario pide solo: fecha, destino y los productos (con cantidad y si son perecederos o no).
-  // El vencimiento y la frecuencia se calculan solos con la última entrega de cada producto.
+  get tituloMes(): string {
+    return `${this.nombresMeses[this.mesCalendario.getMonth()]} ${this.mesCalendario.getFullYear()}`;
+  }
+
+  mesAnterior(): void {
+    this.mesCalendario = new Date(this.mesCalendario.getFullYear(), this.mesCalendario.getMonth() - 1, 1);
+  }
+
+  mesSiguiente(): void {
+    this.mesCalendario = new Date(this.mesCalendario.getFullYear(), this.mesCalendario.getMonth() + 1, 1);
+  }
+
+  irAHoy(): void {
+    const hoy = new Date();
+    this.mesCalendario = this.primerDiaDelMes(hoy);
+    this.diaSeleccionado = this.isoDeFecha(hoy);
+  }
+
+  // Si se toca un día gris (de otro mes), el calendario cambia a ese mes. Además abre "Registro del día"
+  seleccionarDia(iso: string): void {
+    this.diaSeleccionado = iso;
+    const [anio, mes] = iso.split('-').map(Number);
+    if (anio !== this.mesCalendario.getFullYear() || mes - 1 !== this.mesCalendario.getMonth()) {
+      this.mesCalendario = new Date(anio, mes - 1, 1);
+    }
+    this.modalDiaAbierto = true;
+  }
+
+  // El buscador de arriba también filtra el calendario por producto
+  private get historialCalendario(): FilaEntrega[] {
+    const q = this.textoFiltro.trim().toLowerCase();
+    return q ? this.historial.filter(e => e.ingrediente.toLowerCase().includes(q)) : this.historial;
+  }
+
+  // Semanas completas (de lunes a domingo) del mes que se está viendo
+  get diasCalendario(): DiaCalendario[] {
+    const lista = this.historialCalendario;
+    const hoy = this.isoDeFecha(new Date());
+    const primero = this.mesCalendario;
+    const desplazamiento = (primero.getDay() + 6) % 7;   // la semana empieza en lunes
+
+    const dias: DiaCalendario[] = [];
+    for (let i = 0; i < 42; i++) {
+      const fecha = new Date(primero.getFullYear(), primero.getMonth(), 1 - desplazamiento + i);
+      const iso = this.isoDeFecha(fecha);
+      const recibidos = lista.filter(e => e.fechaRecepcion === iso);
+      dias.push({
+        iso,
+        numero: fecha.getDate(),
+        enMes: fecha.getMonth() === primero.getMonth(),
+        esHoy: iso === hoy,
+        seleccionado: iso === this.diaSeleccionado,
+        entregas: recibidos.length,
+        estado: this.peorEstado(recibidos),
+        vencen: lista.filter(e => e.fechaVencimiento === iso).length,
+      });
+    }
+    return dias[35].enMes ? dias : dias.slice(0, 35);   // si la sexta semana está vacía, no se muestra
+  }
+
+  private peorEstado(items: FilaEntrega[]): DiaCalendario['estado'] {
+    if (items.length === 0) return null;
+    const estados = items.map(e => this.estadoDe(e));
+    if (estados.includes('Vencido')) return 'Vencido';
+    if (estados.includes('Próximo a vencer')) return 'Próximo a vencer';
+    return 'Vigente';
+  }
+
+  get entregasDelDia(): FilaEntrega[] {
+    return this.historialCalendario
+      .filter(e => e.fechaRecepcion === this.diaSeleccionado)
+      .sort((a, b) => a.ingrediente.localeCompare(b.ingrediente, 'es'));
+  }
+
+  get vencenDelDia(): FilaEntrega[] {
+    return this.historialCalendario
+      .filter(e => e.fechaVencimiento === this.diaSeleccionado)
+      .sort((a, b) => a.ingrediente.localeCompare(b.ingrediente, 'es'));
+  }
+
+  claseChipEstado(estado: string | null): string {
+    if (estado === 'Vencido') return 'est-bad';
+    if (estado === 'Próximo a vencer') return 'est-warn';
+    return 'est-ok';
+  }
+
+  trackDia(_: number, d: DiaCalendario): string {
+    return d.iso;
+  }
+
+  // ===================== MODAL "REGISTRO DEL DÍA" =====================
+  modalDiaAbierto = false;
+
+  cerrarModalDia(): void {
+    this.modalDiaAbierto = false;
+  }
+
+  // Entregas del día elegido agrupadas por código (si no hay código, usa el folio CI-AAAAMMDD)
+  get registrosDelDia(): RegistroDia[] {
+    const mapa = new Map<string, RegistroDia>();
+    for (const e of this.entregasDelDia) {
+      const codigo = e.codigo || 'CI-' + e.fechaRecepcion.replace(/-/g, '');
+      let reg = mapa.get(codigo);
+      if (!reg) {
+        reg = {
+          codigo,
+          descripcion: 'Lote de entrega SIRAE',
+          estado: e.estadoEntrega || 'Recibida',
+          destino: '—',
+          hora: '—',
+          responsable: '—',
+          items: [],
+        };
+        mapa.set(codigo, reg);
+      }
+      reg.items.push(e);
+    }
+    // Destino, hora y responsable: el primero que tenga algún producto del lote
+    for (const reg of mapa.values()) {
+      reg.destino = reg.items.find(i => i.destino)?.destino || this.nombreInstitucion || '—';
+      reg.hora = reg.items.find(i => i.hora)?.hora || '—';
+      reg.responsable = reg.items.find(i => i.responsable)?.responsable || '—';
+    }
+    return Array.from(mapa.values());
+  }
+
+  trackRegistro(_: number, r: RegistroDia): string {
+    return r.codigo;
+  }
+
+  // =====================================================
+  //  REGISTRAR ENTRADA (botón "Entradas" del calendario)
+  // =====================================================
+  // El formulario pide: fecha, destino, responsable y los productos (con cantidad y si son perecederos o no).
+  // El vencimiento y la frecuencia se calculan solos con la última entrada de cada producto.
   mostrarModalEntrada = false;
   entradaFecha = this.fechaHoy();
   entradaDestino = '';
@@ -1430,7 +1444,6 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
 
   abrirModalEntrada(): void {
     this.entradaFecha = this.fechaHoy();
-    // Si el usuario llegó desde una sede concreta, esa sede queda como destino; si no, el primer destino disponible
     const sedeActual = this.nombreSede
       ? this.destinosDisponibles.find(d => d.endsWith(` - ${this.nombreSede}`))
       : undefined;
@@ -1483,13 +1496,12 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     this.entradaFilas.splice(indice, 1);
   }
 
-  // Botones - y + de la cantidad
   ajustarCantidadEntrada(fila: EntradaFila, paso: number): void {
     const nueva = Math.max(0, Math.round(((fila.cantidad ?? 0) + paso) * 100) / 100);
     fila.cantidad = nueva > 0 ? nueva : null;
   }
 
-  // Al elegir el producto se sugiere su unidad y si es perecedero (por su última entrega o por su nombre)
+  // Al elegir el producto se sugiere su unidad y si es perecedero (por su última entrada o por su nombre)
   alElegirProductoEntrada(fila: EntradaFila): void {
     const producto = this.catalogoMenu.find(p => p.id === fila.idIngrediente);
     if (!producto) return;
@@ -1506,11 +1518,9 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     return tipo?.id ?? null;
   }
 
-  // Vencimiento y frecuencia: se repiten los de la última entrega del producto; si no hay, valores por defecto
+  // Vencimiento y frecuencia: se repiten los de la última entrada; si no hay, valores por defecto
   private datosAutomaticos(fila: EntradaFila): { vencimiento: string; frecuencia: string } {
-    const ultima = this.historial
-      .filter(e => e.idIngrediente === fila.idIngrediente)
-      .sort((a, b) => b.fechaRecepcion.localeCompare(a.fechaRecepcion))[0];
+    const ultima = this.ultimaEntradaDe(fila.idIngrediente);
 
     const diasUltima = ultima && ultima.fechaRecepcion && ultima.fechaVencimiento
       ? this.diasEntre(ultima.fechaRecepcion, ultima.fechaVencimiento)
@@ -1525,7 +1535,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
   }
 
   // ---- Respaldo en este navegador ----
-  // Si el backend no guarda destino / responsable / hora, se recuerdan aquí para lo registrado desde "Entradas"
+  // Si el backend no guarda destino / responsable / hora, se recuerdan aquí
   private readonly claveExtras = 'sirae_entradas_extra';
   private extras: Record<string, { destino: string; responsable: string; hora: string }> = this.leerExtras();
 
@@ -1550,6 +1560,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
   }
 
   guardarEntrada(): void {
+    if (this.guardandoEntrada) return;
     const filas = this.entradaFilas;
 
     if (!this.entradaFecha) { this.errorEntrada = 'Selecciona la fecha de entrega.'; return; }
@@ -1580,7 +1591,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
         unidad: f.unidad,
         fecha_entrega: this.entradaFecha,
         fecha_vencimiento: auto.vencimiento,
-        ...this.datosInstitucion(),
+        ...this.datosInstitucion(this.entradaDestino),
         destino: this.entradaDestino.trim(),
         responsable: this.entradaResponsable.trim(),
         observaciones: '',
@@ -1608,7 +1619,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       }));
 
       if (guardadas > 0) {
-        this.mostrarHistorialEnvios = true;   // NUEVO: el panel de la izquierda queda en Historial
+        this.mostrarHistorialEnvios = true;   // el panel lateral queda en Historial para ver lo registrado
         // El calendario salta al día registrado para que se vea la entrada
         const [anio, mes] = this.entradaFecha.split('-').map(Number);
         this.mesCalendario = new Date(anio, mes - 1, 1);
@@ -1626,318 +1637,6 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       }
       this.cdr.markForCheck();
     });
-  }
-
-  get tituloMes(): string {
-    return `${this.nombresMeses[this.mesCalendario.getMonth()]} ${this.mesCalendario.getFullYear()}`;
-  }
-
-  mesAnterior(): void {
-    this.mesCalendario = new Date(this.mesCalendario.getFullYear(), this.mesCalendario.getMonth() - 1, 1);
-  }
-
-  mesSiguiente(): void {
-    this.mesCalendario = new Date(this.mesCalendario.getFullYear(), this.mesCalendario.getMonth() + 1, 1);
-  }
-
-  irAHoy(): void {
-    const hoy = new Date();
-    this.mesCalendario = this.primerDiaDelMes(hoy);
-    this.diaSeleccionado = this.isoDeFecha(hoy);
-  }
-
-  // Si se toca un día gris (de otro mes), el calendario cambia a ese mes. Además abre el modal "Registro del día"
-  seleccionarDia(iso: string): void {
-    this.diaSeleccionado = iso;
-    const [anio, mes] = iso.split('-').map(Number);
-    if (anio !== this.mesCalendario.getFullYear() || mes - 1 !== this.mesCalendario.getMonth()) {
-      this.mesCalendario = new Date(anio, mes - 1, 1);
-    }
-    this.modalDiaAbierto = true;
-  }
-
-  // El buscador de arriba también filtra el calendario por producto
-  private get historialCalendario(): FilaEntrega[] {
-    const q = this.textoFiltro.trim().toLowerCase();
-    return q ? this.historial.filter(e => e.ingrediente.toLowerCase().includes(q)) : this.historial;
-  }
-
-  // Semanas completas (de lunes a domingo) del mes que se está viendo
-  get diasCalendario(): DiaCalendario[] {
-    const lista = this.historialCalendario;
-    const hoy = this.isoDeFecha(new Date());
-    const primero = this.mesCalendario;
-    const desplazamiento = (primero.getDay() + 6) % 7;   // la semana empieza en lunes
-
-    const dias: DiaCalendario[] = [];
-    for (let i = 0; i < 42; i++) {
-      const fecha = new Date(primero.getFullYear(), primero.getMonth(), 1 - desplazamiento + i);
-      const iso = this.isoDeFecha(fecha);
-      const recibidos = lista.filter(e => e.fechaRecepcion === iso);
-      dias.push({
-        iso,
-        numero: fecha.getDate(),
-        enMes: fecha.getMonth() === primero.getMonth(),
-        esHoy: iso === hoy,
-        seleccionado: iso === this.diaSeleccionado,
-        entregas: recibidos.length,
-        estado: this.peorEstado(recibidos),
-        vencen: lista.filter(e => e.fechaVencimiento === iso).length,
-      });
-    }
-    return dias[35].enMes ? dias : dias.slice(0, 35);   // si la sexta semana está vacía, no se muestra
-  }
-
-  private peorEstado(items: FilaEntrega[]): DiaCalendario['estado'] {
-    if (items.length === 0) return null;
-    const estados = items.map(e => this.estadoDe(e));
-    if (estados.includes('Vencido')) return 'Vencido';
-    if (estados.includes('Próximo a vencer')) return 'Próximo a vencer';
-    return 'Vigente';
-  }
-
-  // Detalle del día elegido
-  get entregasDelDia(): FilaEntrega[] {
-    return this.historialCalendario
-      .filter(e => e.fechaRecepcion === this.diaSeleccionado)
-      .sort((a, b) => a.ingrediente.localeCompare(b.ingrediente, 'es'));
-  }
-
-  get vencenDelDia(): FilaEntrega[] {
-    return this.historialCalendario
-      .filter(e => e.fechaVencimiento === this.diaSeleccionado)
-      .sort((a, b) => a.ingrediente.localeCompare(b.ingrediente, 'es'));
-  }
-
-  claseChipEstado(estado: string | null): string {
-    if (estado === 'Vencido') return 'est-bad';
-    if (estado === 'Próximo a vencer') return 'est-warn';
-    return 'est-ok';
-  }
-
-  trackDia(_: number, d: DiaCalendario): string {
-    return d.iso;
-  }
-
-  // ===================== MODAL "REGISTRO DEL DÍA" =====================
-  modalDiaAbierto = false;
-
-  cerrarModalDia(): void {
-    this.modalDiaAbierto = false;
-  }
-
-  // "18 de septiembre de 2025" (fechaLarga ya existe y lleva el día de la semana)
-  fechaDiaModal(iso: string): string {
-    if (!iso) return '';
-    const [y, m, d] = iso.split('-').map(Number);
-    return new Date(y, m - 1, d).toLocaleDateString('es-CO', {
-      day: 'numeric', month: 'long', year: 'numeric',
-    });
-  }
-
-  // Entregas del día elegido agrupadas por código (si no hay código, usa el folio CI-AAAAMMDD)
-  get registrosDelDia(): RegistroDia[] {
-    const mapa = new Map<string, RegistroDia>();
-    for (const e of this.entregasDelDia) {
-      const codigo = e.codigo || 'CI-' + e.fechaRecepcion.replace(/-/g, '');
-      let reg = mapa.get(codigo);
-      if (!reg) {
-        reg = {
-          codigo,
-          descripcion: 'Lote de entrega SIRAE',
-          estado: e.estadoEntrega || 'Recibida',
-          destino: e.destino || this.institucionLote || '—',
-          hora: e.hora || '—',
-          responsable: e.responsable || '—',
-          items: [],
-        };
-        mapa.set(codigo, reg);
-      }
-      reg.items.push(e);
-    }
-    // Destino, hora y responsable: el primero que tenga algún producto del lote
-    for (const reg of mapa.values()) {
-      reg.destino = reg.items.find(i => i.destino)?.destino || this.institucionLote || '—';
-      reg.hora = reg.items.find(i => i.hora)?.hora || '—';
-      reg.responsable = reg.items.find(i => i.responsable)?.responsable || '—';
-    }
-    return Array.from(mapa.values());
-  }
-
-  trackRegistro(_: number, r: RegistroDia): string {
-    return r.codigo;
-  }
-
-  private primerDiaDelMes(d: Date): Date {
-    return new Date(d.getFullYear(), d.getMonth(), 1);
-  }
-
-  private isoDeFecha(d: Date): string {
-    const mes = String(d.getMonth() + 1).padStart(2, '0');
-    const dia = String(d.getDate()).padStart(2, '0');
-    return `${d.getFullYear()}-${mes}-${dia}`;
-  }
-
-  // Botones - y + de la tarjeta del modal
-  ajustarCantidad(fila: FilaLote, paso: number): void {
-    const nueva = Math.max(0, Math.round(((fila.cantidad ?? 0) + paso) * 100) / 100);
-    fila.cantidad = nueva > 0 ? nueva : null;
-  }
-
-  // Quita un producto del panel "Tu selección"
-  quitarDeLote(fila: FilaLote): void {
-    fila.cantidad = null;
-  }
-
-  get totalCantidadLote(): number {
-    const total = this.filasConCantidad.reduce((suma, f) => suma + (f.cantidad ?? 0), 0);
-    return Math.round(total * 100) / 100;
-  }
-
-  // =====================================================
-  //  INVENTARIOS (entregas agrupadas por fecha de recepción)
-  // =====================================================
-  vista: 'menu' | 'facturas' | 'detalle' = 'menu';
-  private facturasAbiertas = new Set<string>();
-
-  get facturas(): Factura[] {
-    const mapa = new Map<string, FilaEntrega[]>();
-    for (const e of this.historialFiltrado) {
-      const lista = mapa.get(e.fechaRecepcion) ?? [];
-      lista.push(e);
-      mapa.set(e.fechaRecepcion, lista);
-    }
-    return Array.from(mapa.entries())
-      .map(([fecha, items]) => ({
-        fecha,
-        folio: 'CI-' + fecha.replace(/-/g, ''),
-        items: [...items].sort((a, b) => a.ingrediente.localeCompare(b.ingrediente, 'es')),
-        alertas: items.filter(e => this.estadoDe(e) !== 'Vigente').length,
-      }))
-      .sort((a, b) => b.fecha.localeCompare(a.fecha));
-  }
-
-  trackFactura(_: number, f: Factura): string {
-    return f.fecha;
-  }
-
-  toggleFactura(fecha: string): void {
-    if (this.facturasAbiertas.has(fecha)) this.facturasAbiertas.delete(fecha);
-    else this.facturasAbiertas.add(fecha);
-  }
-
-  estaAbierta(fecha: string): boolean {
-    return this.facturasAbiertas.has(fecha);
-  }
-
-  // =====================================================
-  //  FILTROS (al instante)
-  // =====================================================
-  get ingredientesHistorial(): string[] {
-    return Array.from(new Set(this.historial.map(e => e.ingrediente))).filter(n => !!n).sort((a, b) => a.localeCompare(b, 'es'));
-  }
-
-  get hayFiltros(): boolean {
-    return !!this.textoFiltro.trim() || !!this.fechaDesde || !!this.fechaHasta
-      || this.ingredienteFiltro !== 'Todos' || this.filtroMercado !== 'Todos' || this.filtroEstado !== 'Todos';
-  }
-
-  setMercado(m: FiltroMercado): void {
-    this.filtroMercado = m;
-    this.paginaActual = 1;
-  }
-
-  // Clic en una tarjeta: filtra por ese estado; otro clic lo quita
-  setEstado(est: FiltroEstado): void {
-    this.filtroEstado = (est !== 'Todos' && this.filtroEstado === est) ? 'Todos' : est;
-    this.paginaActual = 1;
-  }
-
-  limpiarFiltros(): void {
-    this.textoFiltro = '';
-    this.fechaDesde = '';
-    this.fechaHasta = '';
-    this.ingredienteFiltro = 'Todos';
-    this.filtroMercado = 'Todos';
-    this.filtroEstado = 'Todos';
-    this.paginaActual = 1;
-  }
-
-  get historialFiltrado(): FilaEntrega[] {
-    const texto = this.textoFiltro.trim().toLowerCase();
-
-    const lista = this.historial.filter(e => {
-      if (this.ingredienteFiltro !== 'Todos' && e.ingrediente !== this.ingredienteFiltro) return false;
-      if (this.filtroMercado !== 'Todos' && e.categoria !== this.filtroMercado) return false;
-      if (this.filtroEstado !== 'Todos' && this.estadoDe(e) !== this.filtroEstado) return false;
-      if (this.fechaDesde && e.fechaRecepcion < this.fechaDesde) return false;
-      if (this.fechaHasta && e.fechaRecepcion > this.fechaHasta) return false;
-      if (texto) {
-        const coincide =
-          e.ingrediente.toLowerCase().includes(texto) ||
-          e.tipoMercado.toLowerCase().includes(texto) ||
-          e.frecuencia.toLowerCase().includes(texto) ||
-          this.estadoDe(e).toLowerCase().includes(texto);
-        if (!coincide) return false;
-      }
-      return true;
-    });
-
-    const dir = this.ordenDireccion === 'asc' ? 1 : -1;
-    return lista.sort((a, b) => {
-      let r = 0;
-      switch (this.ordenColumna) {
-        case 'ingrediente':       r = a.ingrediente.localeCompare(b.ingrediente, 'es'); break;
-        case 'tipoMercado':       r = a.tipoMercado.localeCompare(b.tipoMercado, 'es'); break;
-        case 'cantidad':          r = a.cantidad - b.cantidad; break;
-        case 'fechaVencimiento':  r = a.fechaVencimiento.localeCompare(b.fechaVencimiento); break;
-        case 'estado':            r = this.diasDe(a) - this.diasDe(b); break;
-        default:                  r = a.fechaRecepcion.localeCompare(b.fechaRecepcion) || ((a.id ?? 0) - (b.id ?? 0));
-      }
-      return r * dir;
-    });
-  }
-
-  // Resalta lo que escribes en el buscador (ej. "frijol") dentro de la tabla
-  resaltarHtml(valor: any): string {
-    const s = String(valor ?? '');
-    const q = this.textoFiltro.trim();
-    const esc = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    if (!q) return esc(s);
-
-    const lower = s.toLowerCase();
-    const ql = q.toLowerCase();
-    let salida = '';
-    let i = 0;
-    while (i < s.length) {
-      const k = lower.indexOf(ql, i);
-      if (k === -1) { salida += esc(s.slice(i)); break; }
-      salida += esc(s.slice(i, k)) + '<mark>' + esc(s.slice(k, k + q.length)) + '</mark>';
-      i = k + q.length;
-    }
-    return salida;
-  }
-
-  // =====================================================
-  //  ORDEN
-  // =====================================================
-  ordenar(col: Columna): void {
-    if (this.ordenColumna === col) {
-      this.ordenDireccion = this.ordenDireccion === 'asc' ? 'desc' : 'asc';
-    } else {
-      this.ordenColumna = col;
-      this.ordenDireccion = col === 'fechaRecepcion' ? 'desc' : 'asc';
-    }
-    this.paginaActual = 1;
-  }
-
-  iconoOrden(col: Columna): string {
-    if (this.ordenColumna !== col) return 'unfold_more';
-    return this.ordenDireccion === 'asc' ? 'arrow_upward' : 'arrow_downward';
-  }
-
-  trackFila(_: number, e: FilaEntrega): any {
-    return e.id ?? `${e.ingrediente}-${e.fechaRecepcion}-${e.cantidad}`;
   }
 
   // =====================================================
@@ -1963,96 +1662,10 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     return 'Vigente';
   }
 
-  claseEstado(estado: string): string {
-    switch (estado) {
-      case 'Vigente':
-        return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-      case 'Vencido':
-        return 'bg-red-50 text-red-700 border-red-200';
-      default:
-        return 'bg-orange-50 text-orange-700 border-orange-200';
-    }
-  }
-
-  textoDias(d: number): string {
-    if (d >= 99999) return '';
-    if (d < -1) return `Vencido hace ${Math.abs(d)} días`;
-    if (d === -1) return 'Venció ayer';
-    if (d === 0) return 'Vence hoy';
-    if (d === 1) return 'Vence mañana';
-    return `Vence en ${d} días`;
-  }
-
-  // dd/mm/aaaa
-  fechaCorta(iso: string): string {
-    if (!iso) return '';
-    const [y, m, d] = iso.split('-');
-    return `${d}/${m}/${y}`;
-  }
-
-  get resumen(): { total: number; vigentes: number; porVencer: number; vencidos: number } {
-    let vigentes = 0, porVencer = 0, vencidos = 0;
-    for (const e of this.historial) {
-      const estado = this.estadoDe(e);
-      if (estado === 'Vigente') vigentes++;
-      else if (estado === 'Vencido') vencidos++;
-      else porVencer++;
-    }
-    return { total: this.historial.length, vigentes, porVencer, vencidos };
-  }
-
-  // Productos vencidos o por vencer (alimenta la barra de alerta)
-  get alertasVencimiento(): any[] {
-    return this.historial
-      .filter(e => e.fechaVencimiento)
-      .map(e => ({ ...e, dias: this.diasDe(e) }))
-      .filter(e => e.dias <= this.umbralAlerta(e))
-      .sort((x, y) => x.dias - y.dias);
-  }
-
   // =====================================================
-  //  PAGINACIÓN
+  //  EXPORTAR A EXCEL (respeta el buscador y el tipo de producto)
   // =====================================================
-  get totalPaginas(): number {
-    return Math.max(1, Math.ceil(this.historialFiltrado.length / this.porPagina));
-  }
-
-  // Muestra máximo 5 números de página alrededor de la actual
-  get paginasVisibles(): number[] {
-    const total = this.totalPaginas;
-    let fin = Math.min(total, Math.max(1, this.paginaActual - 2) + 4);
-    const ini = Math.max(1, fin - 4);
-    fin = Math.min(total, ini + 4);
-    return Array.from({ length: fin - ini + 1 }, (_, i) => ini + i);
-  }
-
-  get historialPaginado(): FilaEntrega[] {
-    if (this.paginaActual > this.totalPaginas) this.paginaActual = this.totalPaginas;
-    const inicio = (this.paginaActual - 1) * this.porPagina;
-    return this.historialFiltrado.slice(inicio, inicio + this.porPagina);
-  }
-
-  get desdeRegistro(): number {
-    return this.historialFiltrado.length === 0 ? 0 : (this.paginaActual - 1) * this.porPagina + 1;
-  }
-
-  get hastaRegistro(): number {
-    return Math.min(this.paginaActual * this.porPagina, this.historialFiltrado.length);
-  }
-
-  irAPagina(p: number): void {
-    if (p >= 1 && p <= this.totalPaginas) this.paginaActual = p;
-  }
-
-  cambiarPorPagina(n: number): void {
-    this.porPagina = Number(n) || 10;
-    this.paginaActual = 1;
-  }
-
-  // =====================================================
-  //  EXPORTAR A EXCEL (respeta los filtros y el orden)
-  // =====================================================
-  // Resumen: un renglón por producto y unidad con el total recibido (así el producto no se repite).
+  // Resumen: un renglón por producto y unidad con el total recibido.
   // No mezcla unidades distintas: "Leche en Litros" y "Leche en Kg" salen en renglones separados.
   private resumenPorProducto(lista: FilaEntrega[]) {
     interface Resumen {
@@ -2061,9 +1674,9 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       tipoMercado: string;
       total: number;
       entregas: number;
-      ultimaFecha: string;    // fecha de la entrega más reciente
-      estadoUltima: string;   // estado de esa entrega más reciente
-      proxVence: string;      // vencimiento más cercano que todavía no ha pasado
+      ultimaFecha: string;
+      estadoUltima: string;
+      proxVence: string;
     }
 
     const mapa = new Map<string, Resumen>();
@@ -2105,7 +1718,6 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     const th = 'style="background:#FF8A00;color:#FFFFFF;font-weight:bold;text-align:center"';
     const titulo = 'style="font-size:14pt;font-weight:bold;border:none"';
 
-    // ---------- Tabla 1: resumen por producto ----------
     const filasResumen = this.resumenPorProducto(lista).map(r => `
       <tr>
         <td><b>${esc(r.ingrediente)}</b></td>
@@ -2118,7 +1730,6 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
         <td>${esc(r.estadoUltima)}</td>
       </tr>`).join('');
 
-    // ---------- Tabla 2: detalle de cada entrega ----------
     const filasDetalle = lista.map(e => `
       <tr>
         <td>${this.fechaCorta(e.fechaRecepcion)}</td>
@@ -2167,7 +1778,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `historial_entregas_${new Date().toISOString().split('T')[0]}.xls`;
+    a.download = `historial_entregas_${this.fechaHoy()}.xls`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
