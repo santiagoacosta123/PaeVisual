@@ -50,7 +50,7 @@ export const inicializarEstados: AuthState = obtenerEstadoInicial();
 
 export const authReduce = createReducer(
   inicializarEstados,
-  on(login, (state, datos) => ({
+  on(login, (state: AuthState, datos: any): AuthState => ({
     ...state,
     username: datos.username,
     nombre: datos.nombre || datos.username,
@@ -61,7 +61,7 @@ export const authReduce = createReducer(
     mensaje: datos.mensaje || '',
     autenticado: true,
   })),
-  on(logout, () => ({
+  on(logout, (): AuthState => ({
     username: '',
     nombre: '',
     token: '',
