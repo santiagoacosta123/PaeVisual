@@ -3,8 +3,12 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
+import { AuthService } from '../core/auth/auth.service';
 import { NotificacionService } from './notificacion.service';
-import { Notificacion } from './notificacion.model';
+import {
+  Notificacion,
+  NotificacionDestinatario
+} from './notificacion.model';
 
 @Component({
   selector: 'app-notificaciones',
@@ -30,9 +34,13 @@ export class NotificacionesComponent implements OnInit {
 
   imagenSeleccionada: File | null = null;
   vistaPreviaImagen: string | null = null;
+  destinatarios: NotificacionDestinatario[] = [];
+  destinatarioSeleccionadoId: number | null = null;
+  cargandoDestinatarios = false;
 
   constructor(
-    private notificacionService: NotificacionService
+    private notificacionService: NotificacionService,
+    private authService: AuthService
   ) {}
 
   ngOnInit(): void {
@@ -54,6 +62,8 @@ export class NotificacionesComponent implements OnInit {
   abrirModalCrear(): void {
     this.modoEdicion = false;
     this.idEdicion = null;
+    this.destinatarios = [];
+    this.destinatarioSeleccionadoId = null;
 
     this.notificacionForm = {
       titulo: '',
@@ -64,6 +74,44 @@ export class NotificacionesComponent implements OnInit {
 
     this.limpiarImagen();
     this.mostrarModal = true;
+
+    if (this.requiereSeleccionDestinatario) {
+      this.cargandoDestinatarios = true;
+      this.notificacionService.obtenerDestinatarios()
+        .pipe(finalize(() => this.cargandoDestinatarios = false))
+        .subscribe({
+          next: (destinatarios) => {
+            this.destinatarios = destinatarios;
+          },
+          error: (err: any) => {
+            console.error('Error al cargar los destinatarios:', err);
+            alert(
+              err?.error?.error ||
+              'No se pudieron cargar los destinatarios disponibles.'
+            );
+          }
+        });
+    }
+  }
+
+  get puedeEnviarNotificaciones(): boolean {
+    const rol = this.authService.normalizarRol(
+      this.authService.obtenerUsuario()?.rol
+    );
+    return this.authService.esAdministrador(rol)
+      || this.authService.esSupervisor(rol)
+      || this.authService.esJefa(rol)
+      || rol === 'manipuladora'
+      || rol === 'manipuladora de alimentos';
+  }
+
+  get requiereSeleccionDestinatario(): boolean {
+    const rol = this.authService.normalizarRol(
+      this.authService.obtenerUsuario()?.rol
+    );
+    return this.authService.esSupervisor(rol)
+      || rol === 'manipuladora'
+      || rol === 'manipuladora de alimentos';
   }
 
   abrirModalEditar(noti: Notificacion): void {
@@ -146,6 +194,14 @@ export class NotificacionesComponent implements OnInit {
       return;
     }
 
+    if (
+      this.requiereSeleccionDestinatario
+      && this.destinatarioSeleccionadoId === null
+    ) {
+      alert('Selecciona el destinatario de la notificación.');
+      return;
+    }
+
     if (titulo.length > 150) {
       alert('El título no puede superar los 150 caracteres.');
       return;
@@ -167,12 +223,13 @@ export class NotificacionesComponent implements OnInit {
       .enviarNotificacion(
         titulo,
         mensaje,
-        this.imagenSeleccionada
+        this.imagenSeleccionada,
+        this.destinatarioSeleccionadoId
       )
       .pipe(finalize(() => this.enviando = false))
       .subscribe({
-        next: (respuesta: any) => {
-          const cantidad = respuesta?.cantidad_destinatarios;
+        next: (respuesta) => {
+          const cantidad = respuesta.cantidad_destinatarios;
 
           this.mostrarModal = false;
           this.limpiarImagen();
@@ -192,7 +249,7 @@ export class NotificacionesComponent implements OnInit {
             );
           } else {
             alert(
-              respuesta?.mensaje ?? 'Notificación enviada correctamente.'
+              respuesta.mensaje || 'Notificación enviada correctamente.'
             );
           }
         },
@@ -213,18 +270,18 @@ export class NotificacionesComponent implements OnInit {
   }
 
   marcarLeida(id?: number): void {
-  if (id === undefined) {
-    return;
-  }
-
-  this.notificacionService.marcarComoLeida(id).subscribe({
-    next: () => this.cargarNotificaciones(),
-    error: (err: any) => {
-      console.error('Error al marcar como leída:', err);
-      alert('No se pudo marcar la notificación como leída.');
+    if (id === undefined) {
+      return;
     }
-  });
-}
+
+    this.notificacionService.marcarComoLeida(id).subscribe({
+      next: () => this.cargarNotificaciones(),
+      error: (err: any) => {
+        console.error('Error al marcar como leída:', err);
+        alert('No se pudo marcar la notificación como leída.');
+      }
+    });
+  }
   eliminar(id?: number): void {
     if (id === undefined) {
       return;
@@ -247,7 +304,6 @@ export class NotificacionesComponent implements OnInit {
   }
 
   obtenerImagen(noti: Notificacion): string | null {
-    const datos = noti as any;
-    return datos.imagen_url || datos.imagen || null;
+    return noti.imagen_url || null;
   }
 }

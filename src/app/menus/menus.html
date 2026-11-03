@@ -428,7 +428,7 @@
 
   <!-- MODAL: DETALLE PLATO -->
   <div *ngIf="mostrarDetallePlato" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-    <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xl w-full max-w-xl max-h-[90vh] overflow-y-auto space-y-4">
+    <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto space-y-4">
       
       <!-- Encabezado del Modal -->
       <div class="flex items-center justify-between pb-3 border-b border-slate-100">
@@ -503,11 +503,149 @@
         </table>
       </div>
 
+      <section *ngIf="esAdministrador" class="border border-slate-200 rounded-xl p-4 space-y-3">
+        <div>
+          <h4 class="text-sm font-bold text-slate-900 m-0">Ingredientes de la receta</h4>
+          <p class="text-xs text-slate-500 mt-1 mb-0">
+            Define si la cantidad es por niño o para una preparación completa. La unidad corresponde al ingrediente.
+          </p>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-2.5 text-xs">
+          <label class="font-semibold text-slate-600">
+            Ingrediente
+            <select [(ngModel)]="recetaForm.id_ingrediente" class="mt-1 w-full px-2.5 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900">
+              <option value="">Selecciona...</option>
+              <option *ngFor="let ingrediente of ingredientesCatalogo" [value]="ingrediente.id_ingrediente">
+                {{ ingrediente.nombre_ingrediente }}
+              </option>
+            </select>
+          </label>
+          <label class="font-semibold text-slate-600">
+            Cantidad
+            <input type="number" min="0.01" step="0.01" [(ngModel)]="recetaForm.cantidad" class="mt-1 w-full px-2.5 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900">
+          </label>
+          <label class="font-semibold text-slate-600">
+            Base
+            <select [(ngModel)]="recetaForm.base_cantidad" class="mt-1 w-full px-2.5 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900">
+              <option value="POR_NINO">Por niño</option>
+              <option value="TOTAL_PREPARACION">Total de preparación</option>
+            </select>
+          </label>
+          <label *ngIf="recetaForm.base_cantidad === 'TOTAL_PREPARACION'" class="font-semibold text-slate-600">
+            Niños de esa base
+            <input type="number" min="1" step="1" [(ngModel)]="recetaForm.porciones_base" class="mt-1 w-full px-2.5 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900">
+          </label>
+        </div>
+        <div class="flex justify-end gap-2">
+          <button *ngIf="recetaForm.id_receta_componente" type="button" (click)="resetRecetaForm()" class="px-3 py-1.5 rounded-lg border border-slate-300 text-slate-700 text-xs">
+            Cancelar edición
+          </button>
+          <button type="button" (click)="guardarRecetaComponente()" class="px-3 py-1.5 rounded-lg bg-amber-400 hover:bg-amber-500 text-amber-950 font-semibold text-xs">
+            {{ recetaForm.id_receta_componente ? 'Actualizar ingrediente' : 'Agregar ingrediente' }}
+          </button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full border-collapse text-left text-xs">
+            <thead>
+              <tr class="border-b border-slate-200 text-slate-500">
+                <th class="py-2 px-2">INGREDIENTE</th>
+                <th class="py-2 px-2">CANTIDAD BASE</th>
+                <th class="py-2 px-2">BASE</th>
+                <th class="py-2 px-2 text-right">ACCIONES</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let componente of recetaComponentes" class="border-b border-slate-100">
+                <td class="py-2 px-2">{{ nombreIngrediente(componente.id_ingrediente) }}</td>
+                <td class="py-2 px-2">{{ componente.cantidad }}</td>
+                <td class="py-2 px-2">
+                  <ng-container [ngSwitch]="componente.base_cantidad">
+                    <span *ngSwitchCase="'POR_NINO'">Por niño</span>
+                    <span *ngSwitchCase="'TOTAL_PREPARACION'">Total para {{ componente.porciones_base }} niños</span>
+                    <span *ngSwitchDefault class="text-rose-700">Pendiente de definir</span>
+                  </ng-container>
+                </td>
+                <td class="py-2 px-2 text-right">
+                  <button type="button" (click)="editarRecetaComponente(componente)" class="text-slate-700 hover:text-slate-950 mr-2">Editar</button>
+                  <button type="button" (click)="eliminarRecetaComponente(componente.id_receta_componente)" class="text-rose-700 hover:text-rose-900">Quitar</button>
+                </td>
+              </tr>
+              <tr *ngIf="recetaComponentes.length === 0">
+                <td colspan="4" class="py-3 text-center text-slate-400 italic">No hay ingredientes registrados para este plato.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section *ngIf="esJefa" class="bg-amber-50 border border-amber-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-end gap-3">
+        <label class="flex-1 text-xs font-semibold text-slate-700">
+          Menú para calcular las cantidades
+          <select [(ngModel)]="menuSugerenciaId" class="mt-1 w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900">
+            <option [ngValue]="null">Selecciona un menú...</option>
+            <option *ngFor="let menu of menusParaSugerencia" [ngValue]="menu.id_menu">
+              {{ menu.fecha }} · {{ menu.nombre_jornada }} · {{ menu.ninos_presentes }} niños
+            </option>
+          </select>
+        </label>
+        <button type="button" (click)="solicitarSugerenciaReceta()" [disabled]="cargandoSugerencia" class="px-4 py-2 rounded-lg bg-amber-400 hover:bg-amber-500 disabled:opacity-60 text-amber-950 font-bold text-xs">
+          {{ cargandoSugerencia ? 'Calculando...' : 'Sugerencia de IA' }}
+        </button>
+      </section>
+
       <!-- Pie del Modal -->
       <div class="flex justify-end pt-3 border-t border-slate-100">
         <button type="button" (click)="cerrarDetalle()" class="bg-white border border-slate-300 text-slate-700 font-semibold px-4 py-1.5 rounded-xl text-xs hover:bg-slate-50 cursor-pointer">Cerrar</button>
       </div>
 
+    </div>
+  </div>
+
+  <div *ngIf="mostrarSugerenciaReceta && sugerenciaReceta" class="fixed inset-0 bg-slate-900/60 flex items-center justify-center p-4 z-[60]">
+    <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xl w-full max-w-2xl max-h-[85vh] overflow-y-auto space-y-4">
+      <div class="flex items-start justify-between gap-4 border-b border-slate-100 pb-3">
+        <div>
+          <h3 class="text-base font-bold text-slate-900 m-0">Sugerencia para {{ sugerenciaReceta.nombre_plato }}</h3>
+          <p class="text-xs text-slate-500 mt-1 mb-0">
+            Cantidades calculadas para {{ sugerenciaReceta.ninos_presentes }} niños según la receta y el inventario.
+          </p>
+        </div>
+        <button type="button" (click)="mostrarSugerenciaReceta = false" class="text-slate-500 hover:text-slate-900" aria-label="Cerrar sugerencia">✕</button>
+      </div>
+      <p class="rounded-lg bg-amber-50 border border-amber-200 p-3 text-xs text-amber-900">
+        Es solo una propuesta: no cambia la receta, el menú ni el inventario. Verifica las porciones y requisitos nutricionales antes de usarla.
+      </p>
+      <div class="overflow-x-auto">
+        <table class="w-full border-collapse text-left text-xs">
+          <thead>
+            <tr class="border-b border-slate-200 text-slate-500">
+              <th class="py-2 px-2">INGREDIENTE</th>
+              <th class="py-2 px-2">POR NIÑO</th>
+              <th class="py-2 px-2">TOTAL NECESARIO</th>
+              <th class="py-2 px-2">DISPONIBLE</th>
+              <th class="py-2 px-2">ESTADO</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let ingrediente of sugerenciaReceta.ingredientes" class="border-b border-slate-100">
+              <td class="py-2 px-2 font-semibold">{{ ingrediente.nombre }}</td>
+              <td class="py-2 px-2">{{ ingrediente.cantidad_por_nino }} {{ ingrediente.unidad }}</td>
+              <td class="py-2 px-2">{{ ingrediente.cantidad_total }} {{ ingrediente.unidad }}</td>
+              <td class="py-2 px-2">{{ ingrediente.unidad_compatible ? ingrediente.cantidad_disponible : '—' }} {{ ingrediente.unidad }}</td>
+              <td class="py-2 px-2">
+                <span *ngIf="!ingrediente.unidad_compatible" class="text-amber-800">Unidad no comparable</span>
+                <span *ngIf="ingrediente.unidad_compatible && ingrediente.alcanza" class="text-emerald-700">Alcanza</span>
+                <span *ngIf="ingrediente.unidad_compatible && !ingrediente.alcanza" class="text-rose-700">Insuficiente</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="flex justify-end border-t border-slate-100 pt-3">
+        <button type="button" (click)="mostrarSugerenciaReceta = false" class="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold">
+          Cerrar
+        </button>
+      </div>
     </div>
   </div>
 

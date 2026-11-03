@@ -115,7 +115,7 @@ export class LoginComponent implements OnInit {
 
   abrirModalRecuperar(): void {
     this.mostrarModalRecuperar = true;
-    this.correoRecuperacion = '';
+    this.correoRecuperacion = this.correo?.value?.trim() ?? '';
     this.errorRecuperacion = '';
     this.mensajeRecuperacion = '';
     this.enlaceRecuperacionDesarrollo = '';
@@ -146,6 +146,8 @@ export class LoginComponent implements OnInit {
 
     this.errorRecuperacion = '';
     this.mensajeRecuperacion = '';
+    this.enlaceRecuperacionDesarrollo = '';
+    this.codigoRecuperacionDesarrollo = '';
     this.enviandoRecuperacion = true;
     this.authService.recuperarContrasena({ correo }).subscribe({
       next: (response) => {

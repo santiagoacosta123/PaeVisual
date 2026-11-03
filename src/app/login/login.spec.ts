@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
+import { provideMockStore } from '@ngrx/store/testing';
 import { AuthService } from '../services/auth.service';
 import { LoginComponent } from './login';
 import { of } from 'rxjs';
@@ -29,6 +30,7 @@ describe('LoginComponent', () => {
       imports: [LoginComponent],
       providers: [
         provideRouter([]),
+        provideMockStore(),
         {
           provide: AuthService,
           useValue: authServiceMock,
@@ -175,6 +177,37 @@ describe('LoginComponent', () => {
     expect(component.mensajeRecuperacion).toContain('código');
     expect(component.enlaceRecuperacionDesarrollo).toBe('');
     expect(component.enviandoRecuperacion).toBe(false);
+  });
+
+  it('opens the recovery dialog from the forgot-password link', () => {
+    const buttons = Array.from(
+      fixture.nativeElement.querySelectorAll('button')
+    ) as HTMLButtonElement[];
+    const forgotPasswordButton = buttons.find((button) =>
+      button.textContent?.includes('¿Olvidaste tu contraseña?')
+    );
+
+    expect(forgotPasswordButton).toBeTruthy();
+    forgotPasswordButton?.click();
+    fixture.detectChanges();
+
+    expect(component.mostrarModalRecuperar).toBe(true);
+    expect(fixture.nativeElement.textContent).toContain('Enviar código');
+  });
+
+  it('shows the continue action only after the recovery code is requested', () => {
+    authServiceMock.recuperarContrasena.mockReturnValue(of({
+      mensaje: 'Si el correo está registrado, recibirás un código de verificación.',
+    }));
+    component.loginForm.controls['correo'].setValue('ana@example.com');
+
+    component.abrirModalRecuperar();
+    component.enviarCorreoRecuperacion();
+    fixture.detectChanges();
+
+    expect(component.correoRecuperacion).toBe('ana@example.com');
+    expect(fixture.nativeElement.textContent)
+      .toContain('Ingresar código y cambiar contraseña');
   });
 
   it('continues to the code verification form with the requested email', () => {
