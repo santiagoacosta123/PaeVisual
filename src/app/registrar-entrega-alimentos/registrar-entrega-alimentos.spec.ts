@@ -13,6 +13,17 @@ describe('RegistrarEntregaAlimentosComponent', () => {
 
   const esPost = (r: { url: string; method: string }) => r.url.endsWith('/entregas/') && r.method === 'POST';
   const esGet = (r: { url: string; method: string }) => r.url.endsWith('/entregas/') && r.method === 'GET';
+  const inventarioArroz = (cantidad = 15) => [{
+    id_inventario_central: 1,
+    id_ingrediente: 3,
+    ingrediente_nombre: 'Arroz',
+    categoria_nombre: 'Granos',
+    tipo_conservacion: 'No perecedero',
+    cantidad_disponible: cantidad,
+    stock_minimo: 5,
+    unidad_medida_abreviatura: 'Kg',
+  }];
+  const tiposMercado = [{ id_tipo_mercado: 1, nombre_tipo: 'Granos' }];
 
   // Fecha ISO local a N días de hoy
   const isoEn = (dias: number): string => {
@@ -30,6 +41,11 @@ describe('RegistrarEntregaAlimentosComponent', () => {
   // Responde todas las consultas GET pendientes del historial
   function responderHistorial(datos: unknown[] = []): void {
     httpTestingController.match(esGet).forEach(r => r.flush(datos));
+  }
+
+  function responderCatalogos(inventario = inventarioArroz(), tipos = tiposMercado): void {
+    httpTestingController.expectOne(r => r.url.endsWith('/inventario-central/')).flush(inventario);
+    httpTestingController.expectOne(r => r.url.endsWith('/tipos-mercado/')).flush(tipos);
   }
 
   // Pide el historial de nuevo y lo responde
@@ -72,12 +88,7 @@ describe('RegistrarEntregaAlimentosComponent', () => {
     fixture.detectChanges();
 
     httpTestingController = TestBed.inject(HttpTestingController);
-    httpTestingController.expectOne(r => r.url.endsWith('/ingredientes/')).flush([
-      { id_ingrediente: 3, nombre_ingrediente: 'Arroz' },
-    ]);
-    httpTestingController.expectOne(r => r.url.endsWith('/tipos-mercado/')).flush([
-      { id_tipo_mercado: 1, nombre_tipo: 'Granos' },
-    ]);
+    responderCatalogos();
     responderHistorial([]);
     fixture.detectChanges();
   });
@@ -91,18 +102,128 @@ describe('RegistrarEntregaAlimentosComponent', () => {
       expect(component.cargandoCatalogos).toBe(false);
     });
 
-    it('guarda en caché lo que llega del servidor', () => {
-      const cache = JSON.parse(localStorage.getItem('sirae_cache_ingredientes') || 'null');
-      expect(cache).toMatchObject([{ id: 3, nombre: 'Arroz' }]);
+    it('usa el inventario central para obtener productos, cantidad, categoría y unidad', () => {
+      const arroz = component.productosMenu[0];
+
+      expect(arroz).toMatchObject({ id: 3, nombre: 'Arroz', categoria: 'Granos', unidad: 'Kg' });
+      expect(component.totalDisponible(arroz)).toBe(15);
     });
 
-    it('usa los productos y tipos de ejemplo cuando el servidor no devuelve datos', () => {
+    it('filtra por conservación y usa las categorías que devuelve el inventario central', () => {
       component.cargarCatalogos();
-      httpTestingController.expectOne(r => r.url.endsWith('/ingredientes/')).flush([]);
-      httpTestingController.expectOne(r => r.url.endsWith('/tipos-mercado/')).flush([]);
+      responderCatalogos([
+        ...inventarioArroz(),
+        {
+          id_inventario_central: 2,
+          id_ingrediente: 4,
+          ingrediente_nombre: 'Leche',
+          categoria_nombre: 'Lácteos',
+          tipo_conservacion: 'Perecedero',
+          cantidad_disponible: 99,
+          stock_minimo: 10,
+          unidad_medida_abreviatura: 'L',
+        },
+      ]);
 
-      expect(component.ingredientes.length).toBeGreaterThan(1);
-      expect(component.ingredientes.map(i => i.nombre)).toContain('Arroz');
+      expect(component.categoriasMenu.map(categoria => categoria.nombre)).toEqual(['Todos', 'Granos', 'Lácteos']);
+
+      component.filtroMercado = 'Perecederos';
+      expect(component.productosMenu.map(producto => producto.nombre)).toEqual(['Leche']);
+
+      component.filtroMercado = 'Granos';
+      expect(component.productosMenu.map(producto => producto.nombre)).toEqual(['Arroz']);
+
+      component.filtroMercado = 'Todos';
+      component.categoriaMenu = component.categoriasMenu.find(categoria => categoria.nombre === 'Lácteos')!.nombre;
+      expect(component.productosMenu.map(producto => producto.nombre)).toEqual(['Leche']);
+    });
+
+    it('asigna el tipo de mercado por conservación, no por categoría, para todos los productos', () => {
+      component.cargarCatalogos();
+      responderCatalogos([
+        ...inventarioArroz().map(item => ({ ...item, tipo_conservacion: null })),
+        {
+          id_inventario_central: 4,
+          id_ingrediente: 20,
+          ingrediente_nombre: 'Galletas',
+          categoria_nombre: 'Mecato',
+          tipo_conservacion: 'no_perecedero',
+          cantidad_disponible: '60.000',
+          stock_minimo: '10.000',
+          unidad_medida_abreviatura: 'kg',
+        },
+        {
+          id_inventario_central: 5,
+          id_ingrediente: 12,
+          ingrediente_nombre: 'Frijoles',
+          categoria_nombre: 'Verduras',
+          tipo_conservacion: 'no_perecedero',
+          cantidad_disponible: '22.000',
+          stock_minimo: '22.000',
+          unidad_medida_abreviatura: 'kg',
+        },
+        {
+          id_inventario_central: 2,
+          id_ingrediente: 1,
+          ingrediente_nombre: 'Leche',
+          categoria_nombre: 'Lacteos',
+          tipo_conservacion: 'no_perecedero',
+          cantidad_disponible: '99.000',
+          stock_minimo: '0.000',
+          unidad_medida_abreviatura: 'L',
+        },
+        {
+          id_inventario_central: 3,
+          id_ingrediente: 8,
+          ingrediente_nombre: 'Huevos',
+          categoria_nombre: 'Lacteos',
+          tipo_conservacion: null,
+          cantidad_disponible: '246.000',
+          stock_minimo: '0.000',
+          unidad_medida_abreviatura: 'u',
+        },
+      ], [
+        { id_tipo_mercado: 1, nombre_tipo: 'Perecedero' },
+        { id_tipo_mercado: 2, nombre_tipo: 'No perecedero' },
+        { id_tipo_mercado: 10, nombre_tipo: 'Perecederos' },
+      ]);
+
+      expect(component.productosMenu.map(producto => ({
+        nombre: producto.nombre,
+        idTipoMercado: producto.idTipoMercado,
+        esPerecedero: component.esPerecedero(producto),
+      }))).toEqual([
+        { nombre: 'Arroz', idTipoMercado: 2, esPerecedero: false },
+        { nombre: 'Frijoles', idTipoMercado: 2, esPerecedero: false },
+        { nombre: 'Galletas', idTipoMercado: 2, esPerecedero: false },
+        { nombre: 'Huevos', idTipoMercado: 10, esPerecedero: true },
+        { nombre: 'Leche', idTipoMercado: 2, esPerecedero: false },
+      ]);
+    });
+
+    it('usa la categoría central cuando no hay conservación, aunque el historial tenga otro tipo', () => {
+      cargarEntradas([entradaArroz({ id_tipo_mercado: 1 })]);
+      component.tiposMercado = [
+        { id: 1, nombre: 'Perecedero' },
+        { id: 2, nombre: 'No perecedero' },
+        { id: 4, nombre: 'Perecederos' },
+      ];
+      component.cargarCatalogos();
+      responderCatalogos(inventarioArroz().map(item => ({ ...item, tipo_conservacion: null })), [
+        { id_tipo_mercado: 1, nombre_tipo: 'Perecedero' },
+        { id_tipo_mercado: 2, nombre_tipo: 'No perecedero' },
+        { id_tipo_mercado: 4, nombre_tipo: 'Perecederos' },
+      ]);
+
+      expect(component.productosMenu[0].idTipoMercado).toBe(2);
+      expect(component.esPerecedero(component.productosMenu[0])).toBe(false);
+    });
+
+    it('no muestra productos fuera del inventario central cuando el inventario está vacío', () => {
+      component.cargarCatalogos();
+      responderCatalogos([], []);
+
+      expect(component.ingredientes).toEqual([]);
       expect(component.tiposMercado.map(t => t.nombre)).toEqual(['Perecedero', 'No perecedero']);
     });
 
@@ -110,11 +231,12 @@ describe('RegistrarEntregaAlimentosComponent', () => {
       vi.spyOn(console, 'error').mockImplementation(() => {});
 
       component.cargarCatalogos();
-      httpTestingController.expectOne(r => r.url.endsWith('/ingredientes/'))
+      httpTestingController.expectOne(r => r.url.endsWith('/inventario-central/'))
         .flush({}, { status: 500, statusText: 'Server Error' });
       httpTestingController.match(r => r.url.endsWith('/tipos-mercado/'));
 
       expect(alertas.error).toHaveBeenCalledWith('No se pudo cargar el catálogo', expect.stringContaining('error 500'));
+      expect(component.ingredientes).toEqual([]);
       expect(component.cargandoCatalogos).toBe(false);
     });
   });
@@ -123,16 +245,16 @@ describe('RegistrarEntregaAlimentosComponent', () => {
   describe('menú de productos', () => {
     it('lista los productos del catálogo agrupados por categoría', () => {
       expect(component.productosMenu.map(p => p.nombre)).toEqual(['Arroz']);
-      expect(component.productosMenu[0].categoria).toBe('Granos y cereales');
+      expect(component.productosMenu[0].categoria).toBe('Granos');
       expect(component.productosMenu[0].unidad).toBe('Kg');
-      expect(component.gruposPagina.map(g => g.nombre)).toEqual(['Granos y cereales']);
+      expect(component.gruposPagina.map(g => g.nombre)).toEqual(['Granos']);
       expect(component.gruposPagina[0].productos.length).toBe(1);
-      expect(component.categoriasMenu.map(c => c.nombre)).toEqual(['Todos', 'Granos y cereales']);
+      expect(component.categoriasMenu.map(c => c.nombre)).toEqual(['Todos', 'Granos']);
     });
 
     it('filtra por tipo de mercado, categoría y texto de búsqueda', () => {
       component.ingredientes = [
-        { id: 1, nombre: 'Arroz' }, { id: 2, nombre: 'Leche' }, { id: 3, nombre: 'Pollo' },
+        { id: 10, nombre: 'Arroz' }, { id: 11, nombre: 'Leche' }, { id: 12, nombre: 'Pollo' },
       ];
 
       component.filtroMercado = 'Perecederos';
@@ -179,7 +301,7 @@ describe('RegistrarEntregaAlimentosComponent', () => {
     });
 
     it('pagina los productos de 4 en 4', () => {
-      component.ingredientes = Array.from({ length: 10 }, (_, i) => ({ id: i + 1, nombre: `Producto ${String(i + 1).padStart(2, '0')}` }));
+      component.ingredientes = Array.from({ length: 10 }, (_, i) => ({ id: i + 100, nombre: `Producto ${String(i + 1).padStart(2, '0')}` }));
 
       expect(component.totalProductosMenu).toBe(10);
       expect(component.totalPaginas).toBe(3);
@@ -204,7 +326,7 @@ describe('RegistrarEntregaAlimentosComponent', () => {
 
   // ===================== HISTORIAL, TOTALES E INVENTARIO =====================
   describe('historial, totales e inventario', () => {
-    it('calcula lo disponible como entradas menos envíos', () => {
+    it('usa el saldo del inventario central aunque haya entradas y envíos en el historial', () => {
       cargarEntradas([
         entradaArroz({ id: 1, cantidad: 10 }),
         entradaArroz({ id: 2, cantidad: 5, fecha_entrega: '2026-10-15' }),
@@ -216,7 +338,7 @@ describe('RegistrarEntregaAlimentosComponent', () => {
       expect(component.historial.length).toBe(2);
       expect(component.historialEnvios.length).toBe(1);
       expect(component.tieneEntradas(arroz)).toBe(true);
-      expect(component.totalDisponible(arroz)).toBe(11);
+      expect(component.totalDisponible(arroz)).toBe(15);
       expect(component.fueEnviado('Arroz')).toBe(true);
     });
 
@@ -257,6 +379,8 @@ describe('RegistrarEntregaAlimentosComponent', () => {
     });
 
     it('marca como agotado el producto que se envió completo', () => {
+      component.cargarCatalogos();
+      responderCatalogos(inventarioArroz(0));
       cargarEntradas([
         entradaArroz({ cantidad: 10 }),
         { id: 9, id_ingrediente: 3, ingrediente_nombre: 'Arroz', destino: 'Liceo', cantidad: 10, unidad: 'Kg',
@@ -301,11 +425,46 @@ describe('RegistrarEntregaAlimentosComponent', () => {
       expect(component.seleccionados.length).toBe(0);
     });
 
-    it('avisa si el producto todavía no tiene entradas', () => {
+    it('permite seleccionar productos con saldo central aunque no tengan historial de entregas', () => {
+      deslizar(component.productosMenu[0], 100);
+
+      expect(component.seleccionados).toMatchObject([{
+        idIngrediente: 3,
+        ingrediente: 'Arroz',
+        cantidad: 15,
+        unidad: 'Kg',
+      }]);
+      expect(alertas.warning).not.toHaveBeenCalled();
+    });
+
+    it('completa el tipo y vencimiento si la última entrada no los tiene', () => {
+      cargarEntradas([entradaArroz({ id_tipo_mercado: null, fecha_vencimiento: '' })]);
+      deslizar(component.productosMenu[0], 100);
+
+      expect(component.seleccionados[0].idTipoMercado).toBe(1);
+      expect(component.seleccionados[0].fechaVencimiento).toBeTruthy();
+
+      component.fijarCantidadEnviar(component.seleccionados[0], 5);
+      component.enviarSeleccionados();
+
+      const peticion = httpTestingController.expectOne(esPost);
+      expect(peticion.request.body.id_tipo_mercado).toBe(1);
+      expect(peticion.request.body.fecha_vencimiento).toBeTruthy();
+      peticion.flush({});
+      responderHistorial([]);
+      responderCatalogos(inventarioArroz(10));
+    });
+
+    it('avisa cuando el producto no tiene saldo disponible en el inventario central', () => {
+      component.cargarCatalogos();
+      responderCatalogos(inventarioArroz(0));
       deslizar(component.productosMenu[0], 100);
 
       expect(component.seleccionados.length).toBe(0);
-      expect(alertas.warning).toHaveBeenCalledWith('Sin inventario', expect.stringContaining('Arroz'));
+      expect(alertas.warning).toHaveBeenCalledWith(
+        'Sin inventario',
+        expect.stringContaining('inventario central'),
+      );
     });
 
     it('quita un producto con el botón de cerrar de la tarjeta', () => {
@@ -398,6 +557,7 @@ describe('RegistrarEntregaAlimentosComponent', () => {
         { id_entrega: 55, id_ingrediente: 3, id_institucion: 7, ingrediente_nombre: 'Arroz', institucion_nombre: 'Liceo de Occidente',
           cantidad: 5, unidad: 'Kg', fecha_entrega: hoy, fecha_salida: hoy },
       ]);
+      responderCatalogos(inventarioArroz(10));
 
       expect(component.historialEnvios[0]).toMatchObject({ id: 55, ingrediente: 'Arroz', destino: 'Liceo de Occidente', cantidad: 5 });
       expect(component.totalDisponible(component.productosMenu[0])).toBe(10);
@@ -405,6 +565,96 @@ describe('RegistrarEntregaAlimentosComponent', () => {
         'Envío registrado',
         expect.stringContaining('1 producto(s) enviados a Liceo de Occidente'),
       );
+    });
+
+    it('registra un producto del inventario central sin historial usando su categoría de mercado', () => {
+      cargarEntradas([]);
+      deslizar(component.productosMenu[0], 100);
+      const sel = component.seleccionados[0];
+      component.fijarCantidadEnviar(sel, 5);
+
+      component.enviarSeleccionados();
+
+      const peticion = httpTestingController.expectOne(esPost);
+      expect(peticion.request.body.id_tipo_mercado).toBe(1);
+      peticion.flush({});
+      responderHistorial([]);
+      responderCatalogos(inventarioArroz(10));
+
+      expect(alertas.success).toHaveBeenCalledWith(
+        'Envío registrado',
+        expect.stringContaining('1 producto(s) enviados a Liceo de Occidente'),
+      );
+    });
+
+    it('registra Arroz con tipo de mercado y vencimiento derivados del inventario real', () => {
+      component.cargarCatalogos();
+      responderCatalogos([
+        {
+          id_inventario_central: 5,
+          id_ingrediente: 3,
+          ingrediente_nombre: 'Arroz',
+          categoria_nombre: 'Granos',
+          tipo_conservacion: null,
+          cantidad_disponible: '18.000',
+          stock_minimo: '20.000',
+          unidad_medida_abreviatura: 'kg',
+        },
+      ], [
+        { id_tipo_mercado: 1, nombre_tipo: 'Perecedero' },
+        { id_tipo_mercado: 2, nombre_tipo: 'No perecedero' },
+        { id_tipo_mercado: 4, nombre_tipo: 'Perecederos' },
+      ]);
+      cargarEntradas([]);
+      deslizar(component.productosMenu[0], 100);
+      expect(component.seleccionados[0].idTipoMercado).toBe(2);
+      component.fijarCantidadEnviar(component.seleccionados[0], 5);
+
+      component.enviarSeleccionados();
+
+      const peticion = httpTestingController.expectOne(esPost);
+      expect(peticion.request.body.id_tipo_mercado).toBe(2);
+      expect(peticion.request.body.fecha_vencimiento).toBeTruthy();
+      peticion.flush({});
+      responderHistorial([]);
+      responderCatalogos(inventarioArroz(10));
+
+      expect(alertas.success).toHaveBeenCalled();
+    });
+
+    it('recalcula el tipo de mercado de productos ya seleccionados antes de enviar', () => {
+      const sel = component.seleccionados[0];
+      sel.idTipoMercado = null;
+      sel.fechaVencimiento = '';
+      component.fijarCantidadEnviar(sel, 5);
+
+      component.enviarSeleccionados();
+
+      const peticion = httpTestingController.expectOne(esPost);
+      expect(peticion.request.body.id_tipo_mercado).toBe(2);
+      expect(peticion.request.body.fecha_vencimiento).toBeTruthy();
+      peticion.flush({});
+      responderHistorial([]);
+      responderCatalogos(inventarioArroz(10));
+
+      expect(alertas.success).toHaveBeenCalled();
+    });
+
+    it('reemplaza un vencimiento anterior a hoy antes de enviar', () => {
+      const sel = component.seleccionados[0];
+      sel.fechaVencimiento = '2026-10-17';
+      component.fijarCantidadEnviar(sel, 5);
+
+      component.enviarSeleccionados();
+
+      const peticion = httpTestingController.expectOne(esPost);
+      expect(new Date(`${peticion.request.body.fecha_vencimiento}T00:00:00`).getTime())
+        .toBeGreaterThan(new Date(`${component.fechaHoy()}T00:00:00`).getTime());
+      peticion.flush({});
+      responderHistorial([]);
+      responderCatalogos(inventarioArroz(10));
+
+      expect(alertas.success).toHaveBeenCalled();
     });
 
     it('mantiene el producto en el panel y muestra el error cuando el servidor lo rechaza', () => {
@@ -534,6 +784,7 @@ describe('RegistrarEntregaAlimentosComponent', () => {
         expect(component.historial.length).toBe(1);
         expect(component.historial[0]).toMatchObject({ destino: 'Liceo de Occidente', responsable: 'Ana Pérez', cantidad: 12.5 });
         responderHistorial([]);
+        responderCatalogos();
       });
 
       it('usa 7 días de vigencia para un producto perecedero', () => {
@@ -546,6 +797,7 @@ describe('RegistrarEntregaAlimentosComponent', () => {
         expect(peticion.request.body.fecha_vencimiento).toBe('2026-10-17');
         peticion.flush({ id: 99 });
         responderHistorial([]);
+        responderCatalogos();
       });
 
       it('deja solo los productos fallidos para reintentar', () => {

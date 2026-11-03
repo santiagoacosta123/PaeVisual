@@ -91,7 +91,7 @@ export const routes: Routes = [
         path: 'registrar-entrega-alimentos',
         component: RegistrarEntregaAlimentosComponent,
         canActivate: [roleGuard],
-        data: { roles: ['supervisor', 'coordinador', 'coordinador pae'] }
+        data: { roles: ['superadministrador', 'super administrador', 'super admin', 'supervisor'] }
       },
 
       {

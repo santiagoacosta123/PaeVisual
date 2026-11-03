@@ -46,14 +46,23 @@ export class FacturasCompraComponent implements OnInit {
   }
 
   get opcionesIngredientes(): any[] {
-    return (this.catalogoIngredientes || []).map(ing => ({
-      id: ing.id_ingrediente,
-      label: `${ing.nombre_ingrediente} (${ing.unidad_abreviatura || ing.unidad_nombre || 'Kg'})`
-    }));
+    const ingredientes = new Map<number, string>();
+    for (const item of this.inventarioCentral || []) {
+      const id = Number(item.id_ingrediente);
+      if (Number.isFinite(id) && item.ingrediente_nombre) {
+        ingredientes.set(
+          id,
+          `${item.ingrediente_nombre} (${item.unidad_medida_abreviatura || item.unidad_medida_nombre || 'Kg'})`
+        );
+      }
+    }
+
+    return Array.from(ingredientes, ([id, label]) => ({ id, label }));
   }
 
   cargando = true;
   cargandoBodega = true;
+  errorBodega = '';
   guardando = false;
   procesandoAnulacion = false;
 
@@ -140,15 +149,18 @@ export class FacturasCompraComponent implements OnInit {
 
   cargarBodega(): void {
     this.cargandoBodega = true;
+    this.errorBodega = '';
     this.facturasService.getInventarioCentral().subscribe({
       next: (data) => {
         this.inventarioCentral = data;
         this.cargandoBodega = false;
+        this.errorBodega = '';
         this.cdr.detectChanges();
       },
       error: (err) => {
         console.error('Error al cargar inventario central:', err);
         this.cargandoBodega = false;
+        this.errorBodega = 'No se pudo consultar Stock Global. Intenta actualizarlo antes de seleccionar insumos.';
         this.cdr.detectChanges();
       },
     });
@@ -161,7 +173,8 @@ export class FacturasCompraComponent implements OnInit {
 
     this.http.get<any>(`${environment.apiUrl}/ingredientes/`, { headers }).subscribe({
       next: (res) => {
-        this.catalogoIngredientes = Array.isArray(res) ? res : (res?.results || []);
+        const lista = Array.isArray(res) ? res : (res?.results ?? res?.value ?? []);
+        this.catalogoIngredientes = Array.isArray(lista) ? lista : [];
       },
       error: (err) => {
         console.error('Error al cargar catálogo de ingredientes:', err);
@@ -244,6 +257,7 @@ export class FacturasCompraComponent implements OnInit {
   abrirModalRegistro(): void {
     this.formFactura = this.formularioVacio();
     this.modalRegistroAbierto = true;
+    this.cargarBodega();
     this.cdr.detectChanges();
   }
 
@@ -284,14 +298,14 @@ export class FacturasCompraComponent implements OnInit {
 
   obtenerUnidadIngrediente(id: number | null): string {
     if (!id) return '';
-    const ing = this.catalogoIngredientes.find((i) => i.id_ingrediente === Number(id));
-    return ing?.unidad_abreviatura || ing?.unidad_nombre || 'Unid';
+    const itemCentral = this.inventarioCentral.find(item => item.id_ingrediente === Number(id));
+    return itemCentral?.unidad_medida_abreviatura || itemCentral?.unidad_medida_nombre || 'Unid';
   }
 
   obtenerNombreIngrediente(id: number | null): string {
     if (!id) return '';
-    const ing = this.catalogoIngredientes.find((i) => i.id_ingrediente === Number(id));
-    return ing?.nombre || '';
+    const itemCentral = this.inventarioCentral.find(item => item.id_ingrediente === Number(id));
+    return itemCentral?.ingrediente_nombre || '';
   }
 
   guardarFactura(): void {

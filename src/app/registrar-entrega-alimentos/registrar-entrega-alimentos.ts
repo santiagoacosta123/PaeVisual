@@ -3,12 +3,14 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { ActivatedRoute } from '@angular/router';
-import { Observable, Subscription, concat, forkJoin, of } from 'rxjs';
+import { Subscription, concat, forkJoin, of } from 'rxjs';
 import { catchError, map, toArray } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { SweetAlertService } from '../sweet-alert.service';
 import { EntregasService } from '../services/entregas.service';
 import { AuthService, InstitucionAsignada } from '../core/auth/auth.service';
+import { FacturasCompraService, InventarioCentralItem } from '../services/facturas-compra.service';
+import type { TipoMercadoOpcion } from '../features/entregas/services/entregas.service';
 
 // ===================== TIPOS =====================
 interface Opcion { id: number; nombre: string; }
@@ -23,7 +25,10 @@ interface FilaEntrega {
   loteRegistro?: string;      // igual para los productos guardados juntos
 }
 
-interface ProductoCatalogo { id: number; nombre: string; categoria: string; unidad: string; idTipoMercado: number | null; }
+interface ProductoCatalogo {
+  id: number; nombre: string; categoria: string; unidad: string;
+  idTipoMercado: number | null; tipoMercado?: string;
+}
 interface GrupoPagina { nombre: string; emoji: string; total: number; productos: ProductoCatalogo[]; }
 interface CategoriaOpcion { nombre: string; emoji: string; total: number; }
 interface DiaCalendario {
@@ -66,15 +71,13 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
   ingredientes: Opcion[] = [];
   tiposMercado: Opcion[] = [];
   cargandoCatalogos = true;
+  private saldosInventario = new Map<number, number>();
+  private unidadesInventario = new Map<number, string>();
+  private categoriasInventario = new Map<number, string>();
+  private tiposInventario = new Map<number, string>();
 
-  // Se usan si el servidor no devuelve datos. Para GUARDAR, estos ids deben existir en el backend.
-  private readonly productosBase: Opcion[] = [
-    'Arroz', 'Frijol', 'Lentejas', 'Pasta', 'Harina de maíz', 'Azúcar', 'Sal', 'Aceite', 'Panela', 'Avena',
-    'Leche', 'Huevos', 'Pollo', 'Carne de res', 'Papa', 'Yuca', 'Plátano', 'Zanahoria', 'Tomate', 'Cebolla',
-  ].map((nombre, i) => ({ id: i + 1, nombre }));
   private readonly tiposBase: Opcion[] = [{ id: 1, nombre: 'Perecedero' }, { id: 2, nombre: 'No perecedero' }];
   private readonly unidadPorDefecto: Record<string, string> = { Aceite: 'Litros', Leche: 'Litros', Huevos: 'Unidades' };
-  private readonly claveCacheIngredientes = 'sirae_cache_ingredientes';
   private readonly claveCacheTipos = 'sirae_cache_tipos_mercado';
 
   // ===================== HISTORIAL =====================
@@ -84,8 +87,6 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
   private entregasRaw: any[] = [];          // solo ENTRADAS (sin fecha_salida)
   historial: FilaEntrega[] = [];
   historialEnvios: EnvioRegistro[] = [];
-  private totalesDisponibles = new Map<string, number>();   // entradas − envíos por producto
-  private productosConEntradas = new Set<string>();
 
   // ===================== INSTITUCIÓN ACTIVA =====================
   institucionActiva: InstitucionAsignada | null = null;
@@ -107,13 +108,13 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     private entregasService: EntregasService,
     private alertas: SweetAlertService,
     private http: HttpClient,
+    private facturasCompraService: FacturasCompraService,
     private authService: AuthService,
     private cdr: ChangeDetectorRef,
     private route: ActivatedRoute,
   ) {}
 
   ngOnInit(): void {
-    this.ingredientes = this.leerCache<Opcion[]>(this.claveCacheIngredientes) ?? this.productosBase;
     this.tiposMercado = this.leerCache<Opcion[]>(this.claveCacheTipos) ?? this.tiposBase;
 
     this.institucionActiva = this.authService.obtenerInstitucionActiva();
@@ -223,6 +224,20 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     return (v || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
   }
 
+  private claveTipoMercado(valor: string | null | undefined): 'perecedero' | 'no perecedero' | null {
+    const normalizado = this.norm(valor ?? '').replace(/[_-]+/g, ' ').replace(/\s+/g, ' ');
+    if (normalizado.startsWith('no perecedero') || normalizado.startsWith('grano')) return 'no perecedero';
+    if (normalizado.startsWith('perecedero')) return 'perecedero';
+    return null;
+  }
+
+  private tipoConservacionVisible(valor: string | null | undefined): string {
+    const clave = this.claveTipoMercado(valor);
+    if (clave === 'no perecedero') return 'No perecedero';
+    if (clave === 'perecedero') return 'Perecedero';
+    return valor?.trim() ?? '';
+  }
+
   // Acepta texto o un objeto { nombre }. Un número (id) no es un nombre.
   private texto(v: any): string {
     if (v == null || typeof v === 'number') return '';
@@ -263,6 +278,13 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     const d = new Date(iso + 'T00:00:00');
     d.setDate(d.getDate() + dias);
     return this.aISO(d);
+  }
+
+  private fechaVencimientoParaEnvio(producto: ProductoCatalogo, fechaVencimiento?: string): string {
+    const hoy = this.fechaHoy();
+    const fechaNormalizada = this.soloFecha(fechaVencimiento);
+    if (fechaNormalizada && fechaNormalizada >= hoy) return fechaNormalizada;
+    return this.sumarDiasISO(hoy, this.esPerecedero(producto) ? 7 : 90);
   }
 
   private diasEntre(desde: string, hasta: string): number {
@@ -315,22 +337,45 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
 
   // ===================== CARGA DE CATÁLOGOS =====================
   cargarCatalogos(): void {
-    forkJoin({
-      ingredientes: this.entregasService.cargarIngredientes() as unknown as Observable<Opcion[]>,
-      tiposMercado: this.entregasService.cargarTiposMercado() as unknown as Observable<Opcion[]>,
-    }).subscribe({
-      next: ({ ingredientes, tiposMercado }) => {
-        this.ingredientes = ingredientes.length ? ingredientes : this.productosBase;
+    this.cargandoCatalogos = true;
+    this.ingredientes = [];
+    this.saldosInventario.clear();
+    this.unidadesInventario.clear();
+    this.categoriasInventario.clear();
+    this.tiposInventario.clear();
+    forkJoin([
+      this.facturasCompraService.getInventarioCentral(),
+      this.entregasService.cargarTiposMercado(),
+    ]).subscribe({
+      next: ([inventarioCentral, tiposMercado]: readonly [InventarioCentralItem[], TipoMercadoOpcion[]]) => {
+        this.saldosInventario = new Map(inventarioCentral.map(item => [
+          item.id_ingrediente,
+          Number(item.cantidad_disponible) || 0,
+        ] as const));
+        this.unidadesInventario = new Map(inventarioCentral.map(item => [
+          item.id_ingrediente,
+          item.unidad_medida_abreviatura || item.unidad_medida_nombre || 'Kg',
+        ] as const));
+        this.categoriasInventario = new Map(inventarioCentral.map(item => [
+          item.id_ingrediente,
+          item.categoria_nombre || 'General',
+        ] as const));
+        this.tiposInventario = new Map(inventarioCentral.map(item => [
+          item.id_ingrediente,
+          this.tipoConservacionVisible(item.tipo_conservacion),
+        ] as const));
+        this.ingredientes = inventarioCentral.map(item => ({
+          id: item.id_ingrediente,
+          nombre: item.ingrediente_nombre || `Ingrediente ${item.id_ingrediente}`,
+        }));
         this.tiposMercado = tiposMercado.length ? tiposMercado : this.tiposBase;
-        // Solo se guarda en caché lo que sí llegó del servidor
-        if (ingredientes.length) this.guardarCache(this.claveCacheIngredientes, ingredientes);
         if (tiposMercado.length) this.guardarCache(this.claveCacheTipos, tiposMercado);
         this.terminarCatalogos();
       },
       error: error => {
-        console.error('Error al cargar catálogos de entregas:', error);
+        console.error('Error al cargar el inventario central para registrar entregas:', error);
         void this.alertas.error('No se pudo cargar el catálogo',
-          `No se pudieron cargar los catálogos del servidor: ${this.describirError(error)}. Se muestran productos de ejemplo; para guardar debe funcionar la conexión.`);
+          `No se pudo cargar el inventario central: ${this.describirError(error)}. No se mostrarán productos desactualizados.`);
         this.terminarCatalogos();
       },
     });
@@ -378,13 +423,18 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     this.seleccionados = this.seleccionados
       .map(s => this.ultimaEntradaDe(s.idIngrediente))
       .filter((e): e is FilaEntrega => !!e);
-    this.recalcularTotales();
   }
 
   private ultimaEntradaDe(idIngrediente: number | null): FilaEntrega | undefined {
     return this.historial
       .filter(e => e.idIngrediente === idIngrediente)
       .sort((a, b) => b.fechaRecepcion.localeCompare(a.fechaRecepcion) || ((b.id ?? 0) - (a.id ?? 0)))[0];
+  }
+
+  private claveProducto(id: number | null | undefined, nombre: string): string {
+    const n = this.norm(nombre);
+    const idFinal = id ?? this.ingredientes.find(i => this.norm(i.nombre) === n)?.id ?? null;
+    return idFinal != null ? `id:${idFinal}` : `n:${n}`;
   }
 
   private aFila(item: any): FilaEntrega {
@@ -508,37 +558,12 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     return this.historialEnvios.some(e => e.ingrediente === nombre);
   }
 
-  // ===================== TOTAL DISPONIBLE (entradas − envíos) =====================
-  // Clave = id del producto (si no se encuentra, el nombre sin tildes)
-  private claveProducto(id: number | null | undefined, nombre: string): string {
-    const n = this.norm(nombre);
-    const idFinal = id ?? this.ingredientes.find(i => this.norm(i.nombre) === n)?.id ?? null;
-    return idFinal != null ? `id:${idFinal}` : `n:${n}`;
-  }
-
-  private recalcularTotales(): void {
-    const mapa = new Map<string, number>();
-    const conEntradas = new Set<string>();
-    for (const e of this.historial) {
-      const k = this.claveProducto(e.idIngrediente, e.ingrediente);
-      mapa.set(k, (mapa.get(k) ?? 0) + e.cantidad);
-      conEntradas.add(k);
-    }
-    for (const v of this.historialEnvios) {
-      const k = this.claveProducto(null, v.ingrediente);
-      mapa.set(k, (mapa.get(k) ?? 0) - v.cantidad);
-    }
-    mapa.forEach((valor, k) => mapa.set(k, Math.max(0, Math.round(valor * 100) / 100)));
-    this.totalesDisponibles = mapa;
-    this.productosConEntradas = conEntradas;
-  }
-
   tieneEntradas(p: ProductoCatalogo): boolean {
-    return this.productosConEntradas.has(this.claveProducto(p.id, p.nombre));
+    return this.saldosInventario.has(p.id);
   }
 
   totalDisponible(p: ProductoCatalogo): number {
-    return this.totalesDisponibles.get(this.claveProducto(p.id, p.nombre)) ?? 0;
+    return this.saldosInventario.get(p.id) ?? 0;
   }
 
   // ===================== INVENTARIO (ventana emergente) =====================
@@ -615,22 +640,47 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     return e[c] ?? '📦';
   }
 
+  private idTipoMercadoDeProducto(producto: ProductoCatalogo): number | null {
+    const esPerecedero = this.esPerecedero(producto);
+    const claveEsperada = esPerecedero ? 'perecedero' : 'no perecedero';
+    const tipoPorNombre = this.tiposMercado.find(opcion => this.claveTipoMercado(opcion.nombre) === claveEsperada);
+    if (tipoPorNombre) return tipoPorNombre.id;
+
+    // Respaldo para los IDs estándar del catálogo cuando el servidor varía las etiquetas.
+    const idEstandar = esPerecedero ? 1 : 2;
+    return this.tiposMercado.find(opcion => opcion.id === idEstandar)?.id ?? null;
+  }
+
   get categoriasMenu(): CategoriaOpcion[] {
     const conteo = new Map<string, number>();
-    this.ingredientes.forEach(i => { const c = this.categoriaDe(i.nombre); conteo.set(c, (conteo.get(c) ?? 0) + 1); });
+    this.catalogoMenu.forEach(producto => {
+      conteo.set(producto.categoria, (conteo.get(producto.categoria) ?? 0) + 1);
+    });
     const lista = Array.from(conteo.entries()).sort((a, b) => a[0].localeCompare(b[0], 'es'))
       .map(([nombre, total]) => ({ nombre, emoji: this.emojiDeCategoria(nombre), total }));
-    return [{ nombre: 'Todos', emoji: this.emojiDeCategoria('Todos'), total: this.ingredientes.length }, ...lista];
+    return [{ nombre: 'Todos', emoji: this.emojiDeCategoria('Todos'), total: this.catalogoMenu.length }, ...lista];
   }
 
   // Todos los productos del catálogo, con su unidad y tipo (de su última entrada si existe)
   private get catalogoMenu(): ProductoCatalogo[] {
     return this.ingredientes.map(ing => {
       const ultima = this.ultimaEntradaDe(ing.id);
+      const categoria = this.categoriasInventario.get(ing.id) ?? this.categoriaDe(ing.nombre);
+      const tipoMercado = this.tiposInventario.get(ing.id) || undefined;
+      const producto = {
+        id: ing.id,
+        nombre: ing.nombre,
+        categoria,
+        unidad: this.unidadesInventario.get(ing.id)
+          ?? (ultima ? this.normalizarUnidad(ultima.unidad) : (this.unidadPorDefecto[ing.nombre] ?? 'Kg')),
+        idTipoMercado: null,
+        tipoMercado,
+      };
+
       return {
-        id: ing.id, nombre: ing.nombre, categoria: this.categoriaDe(ing.nombre),
-        unidad: ultima ? this.normalizarUnidad(ultima.unidad) : (this.unidadPorDefecto[ing.nombre] ?? 'Kg'),
-        idTipoMercado: ultima?.idTipoMercado ?? null,
+        ...producto,
+        idTipoMercado: this.idTipoMercadoDeProducto(producto),
+        tipoMercado,
       };
     }).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
   }
@@ -640,7 +690,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     const q = this.textoFiltro.trim().toLowerCase();
     return this.catalogoMenu.filter(p =>
       (this.filtroMercado === 'Todos' || (this.filtroMercado === 'Perecederos') === this.esPerecedero(p))
-      && (this.categoriaMenu === 'Todos' || p.categoria === this.categoriaMenu)
+      && (this.categoriaMenu === 'Todos' || this.norm(p.categoria) === this.norm(this.categoriaMenu))
       && (!q || [p.nombre, this.nombreMostrado(p.nombre), p.categoria, this.nombreTipo(p)].some(t => t.toLowerCase().includes(q))));
   }
 
@@ -651,14 +701,21 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
   ];
 
   esPerecedero(p: ProductoCatalogo): boolean {
-    const tipo = this.tiposMercado.find(t => t.id === p.idTipoMercado)?.nombre.toLowerCase();
-    if (tipo) return tipo.includes('perecedero') && !tipo.includes('no perecedero');
+    const tipo = this.claveTipoMercado(
+      p.tipoMercado ?? this.tiposMercado.find(t => t.id === p.idTipoMercado)?.nombre,
+    );
+    if (tipo === 'no perecedero') return false;
+    if (tipo === 'perecedero') return true;
+    const categoria = this.norm(p.categoria);
+    if (['carn', 'huevo', 'lact', 'verd', 'frut'].some(prefijo => categoria.startsWith(prefijo))) return true;
+    if (['grano', 'mecato', 'despensa'].some(prefijo => categoria.startsWith(prefijo))) return false;
     return p.nombre.toLowerCase().split(/\s+/).some(w =>
       this.perecederosPorNombre.some(k => w === k || (k.length >= 4 && w.startsWith(k))));
   }
 
   nombreTipo(p: ProductoCatalogo): string {
-    return this.tiposMercado.find(t => t.id === p.idTipoMercado)?.nombre || (this.esPerecedero(p) ? 'Perecedero' : 'No perecedero');
+    return p.tipoMercado || this.tiposMercado.find(t => t.id === p.idTipoMercado)?.nombre
+      || (this.esPerecedero(p) ? 'Perecedero' : 'No perecedero');
   }
 
   // Solo cambia lo que se ve en las tarjetas; imágenes, categorías y envíos usan el nombre original
@@ -731,9 +788,26 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
 
   private agregarSeleccionado(p: ProductoCatalogo): void {
     if (this.tarjetaActiva(p)) return;
+    if (this.totalDisponible(p) <= 0) {
+      void this.alertas.warning('Sin inventario', `${p.nombre} no tiene cantidad disponible en el inventario central.`);
+      return;
+    }
+
     const ultima = this.ultimaEntradaDe(p.id);
-    if (!ultima) { void this.alertas.warning('Sin inventario', `${p.nombre} todavía no tiene entradas en el inventario.`); return; }
-    this.seleccionados.push(ultima);
+    const fechaHoy = this.fechaHoy();
+    this.seleccionados.push({
+      ...ultima,
+      idIngrediente: p.id,
+      idTipoMercado: this.idTipoMercadoDeProducto(p),
+      ingrediente: p.nombre,
+      tipoMercado: p.tipoMercado ?? ultima?.tipoMercado ?? this.nombreTipo(p),
+      categoria: this.esPerecedero(p) ? 'Perecederos' : 'Granos',
+      frecuencia: ultima?.frecuencia || 'Cada 8 días',
+      cantidad: this.totalDisponible(p),
+      unidad: p.unidad || ultima?.unidad || 'Kg',
+      fechaRecepcion: ultima?.fechaRecepcion || fechaHoy,
+      fechaVencimiento: this.fechaVencimientoParaEnvio(p, ultima?.fechaVencimiento),
+    });
   }
 
   private quitarPorProducto(p: ProductoCatalogo): void {
@@ -782,7 +856,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
   guardandoEnvio = false;
 
   disponibleDe(sel: FilaEntrega): number {
-    return this.totalesDisponibles.get(this.claveProducto(sel.idIngrediente, sel.ingrediente)) ?? 0;
+    return sel.idIngrediente == null ? 0 : this.saldosInventario.get(sel.idIngrediente) ?? 0;
   }
 
   cantidadEnviarDe(sel: FilaEntrega): number {
@@ -805,15 +879,36 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
 
   enviarSeleccionados(): void {
     if (this.guardandoEnvio) return;
-    const items = this.productosParaEnviar;
+    const items = this.productosParaEnviar.map(sel => {
+      const producto = this.catalogoMenu.find(p => p.id === sel.idIngrediente);
+      if (!producto) return sel;
+      return {
+        ...sel,
+        idTipoMercado: this.idTipoMercadoDeProducto(producto),
+        fechaVencimiento: this.fechaVencimientoParaEnvio(producto, sel.fechaVencimiento),
+      };
+    });
     const fallo = (m: string) => { this.errorEnvioPanel = m; };
     this.errorEnvioPanel = '';
 
     if (!items.length) return fallo('Escribe la cantidad a enviar de al menos un producto.');
     const excedidos = items.filter(s => this.cantidadEnviarDe(s) > this.disponibleDe(s));
     if (excedidos.length) return fallo(`No puedes enviar más de lo disponible: ${excedidos.map(s => s.ingrediente).join(', ')}.`);
-    const incompletos = items.filter(s => !s.idIngrediente || !s.idTipoMercado || !s.fechaVencimiento);
-    if (incompletos.length) return fallo(`Faltan datos requeridos para registrar el envío de: ${incompletos.map(s => s.ingrediente).join(', ')}.`);
+    const incompletos = items.flatMap(s => {
+      const producto = this.catalogoMenu.find(p => p.id === s.idIngrediente);
+      const mercadoEsperado = producto
+        ? (this.esPerecedero(producto) ? 'Perecedero' : 'No perecedero')
+        : 'sin producto de catálogo';
+      const faltantes = [
+        !s.idIngrediente ? 'ingrediente' : '',
+        !s.idTipoMercado
+          ? `tipo de mercado (categoría: ${producto?.categoria || 'sin dato'}; conservación: ${this.tiposInventario.get(s.idIngrediente ?? -1) || 'sin dato'}; esperado: ${mercadoEsperado}; opciones: ${this.tiposMercado.map(tipo => `${tipo.id}=${tipo.nombre}`).join(', ') || 'ninguna'})`
+          : '',
+        !s.fechaVencimiento ? 'fecha de vencimiento' : '',
+      ].filter(Boolean);
+      return faltantes.length ? [`${s.ingrediente} (${faltantes.join(', ')})`] : [];
+    });
+    if (incompletos.length) return fallo(`Faltan datos requeridos para registrar el envío: ${incompletos.join('; ')}.`);
 
     const destino = this.destinosDisponibles[0] || this.nombreInstitucion;
     const datos = this.datosInstitucion(destino);
@@ -851,8 +946,11 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       }));
       this.historialEnvios = [...registros, ...this.historialEnvios];
       exitosos.forEach(r => this.fijarCantidadEnviar(r.sel, null));
-      this.recalcularTotales();
-      if (exitosos.length) { this.mostrarHistorialEnvios = true; this.cargarHistorial(); }
+      if (exitosos.length) {
+        this.mostrarHistorialEnvios = true;
+        this.cargarHistorial();
+        this.cargarCatalogos();
+      }
 
       if (fallidos.length) {
         this.errorEnvioPanel = `Se enviaron ${exitosos.length} producto(s). No se pudo enviar: ${fallidos.map(r => `${r.sel.ingrediente} (${r.motivo})`).join('; ')}.`;
@@ -1088,6 +1186,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
         this.mesCalendario = new Date(anio, mes - 1, 1);
         this.diaSeleccionado = this.entradaFecha;
         this.cargarHistorial();
+        this.cargarCatalogos();
       }
 
       if (!fallidas.length) {

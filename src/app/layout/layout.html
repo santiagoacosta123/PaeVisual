@@ -64,7 +64,7 @@
           <span class="sv-label">Inicio</span>
         </a>
 
-        <a *ngIf="institucionActiva" routerLink="registrar-entrega-alimentos" routerLinkActive="sv-active" class="sv-link"
+        <a *ngIf="institucionActiva && rolUsuario === 'supervisor'" routerLink="registrar-entrega-alimentos" routerLinkActive="sv-active" class="sv-link"
            aria-label="Registrar entrega de alimentos">
           <span class="material-symbols-outlined sv-icon">local_shipping</span>
           <span class="sv-label">Registrar entrega</span>
@@ -298,6 +298,13 @@
           <div class="superadmin-nav-item-left">
             <span class="material-symbols-outlined superadmin-nav-icon">warehouse</span>
             <span class="superadmin-nav-text">Stock Global</span>
+          </div>
+        </a>
+
+        <a routerLink="registrar-entrega-alimentos" routerLinkActive="active" class="superadmin-nav-item" title="Registrar entrega">
+          <div class="superadmin-nav-item-left">
+            <span class="material-symbols-outlined superadmin-nav-icon">local_shipping</span>
+            <span class="superadmin-nav-text">Registrar entrega</span>
           </div>
         </a>
       </div>
