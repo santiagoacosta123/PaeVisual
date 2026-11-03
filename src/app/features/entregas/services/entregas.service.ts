@@ -223,7 +223,7 @@ export class EntregasService {
 
   // "Granos / No perecederos", "granos", etc. -> 'Granos'   |   "Perecederos" -> 'Perecederos'
   normalizarMercado(valor: any): string {
-    const v = String(valor ?? '').toLowerCase().trim();
+    const v = String(valor ?? '').toLowerCase().trim().replace(/[_-]+/g, ' ');
     if (v.startsWith('perecedero')) return 'Perecederos';
     if (v.startsWith('grano') || v.startsWith('no perecedero')) return 'Granos';
     return String(valor ?? '');

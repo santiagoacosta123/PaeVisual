@@ -7,15 +7,18 @@ import { Subscription, forkJoin, of } from 'rxjs';
 import { map, timeout, catchError } from 'rxjs/operators';
 import { environment } from '@env/environment';
 import { AuthService, InstitucionAsignada } from '../core/auth/auth.service';
+import { FacturasCompraService, InventarioCentralItem } from '../services/facturas-compra.service';
 
-type EstadoInventario = 'Ok' | 'Bajo' | 'Crítico';
 type FiltroEstado = 'Todos' | 'ACTIVO' | 'INACTIVO';
 type Pestana = 'inventario' | 'entregas';
 
 // NUEVO: filtros y vista del inventario
-type FiltroInv = 'Todos' | 'Ok' | 'Bajo' | 'Por vencer' | 'Agotado';
-type OrdenInv = 'urgencia' | 'nombre' | 'vence';
+type FiltroInv = 'Todos' | 'Óptimo' | 'Bajo Stock' | 'Agotado';
+type OrdenInv = 'urgencia' | 'nombre';
 type VistaInv = 'tarjetas' | 'tabla';
+
+const API_TIMEOUT_MS = 8000;
+const MAX_STOCK_PERCENTAGE = 100;
 
 // Tarjeta de Sede individual
 export interface SedeCard {
@@ -39,12 +42,12 @@ export interface ProductoInventario {
   nombre: string;
   emoji: string;
   categoria: string;
+  conservacion: string;
   unidad: string;
   saldo: number;
-  vence: string;
+  stockMinimo: number;
   nivel: number;
-  cobertura: number; // NUEVO: días de cobertura
-  estado: 'Ok' | 'Bajo' | 'Por vencer' | 'Agotado';
+  estado: 'Óptimo' | 'Bajo Stock' | 'Agotado';
 }
 
 // NUEVO: productos agrupados por categoría
@@ -135,12 +138,16 @@ const ARCHIVOS_IMAGEN: Record<string, string> = {
   'plato': 'plato.png',
 };
 
-function leerTexto(item: any, ...claves: string[]): string {
+function leerTexto(item: unknown, ...claves: string[]): string {
+  if (item === null || typeof item !== 'object' || Array.isArray(item)) return '';
+  const record = item as Record<string, unknown>;
   for (const k of claves) {
-    const v = item?.[k];
+    const v = record[k];
     if (v == null) continue;
     if (typeof v === 'object') {
-      const nombre = String(v.nombre ?? v.name ?? '');
+      if (v === null || Array.isArray(v)) continue;
+      const objeto = v as Record<string, unknown>;
+      const nombre = String(objeto['nombre'] ?? objeto['name'] ?? '');
       if (nombre.trim() !== '') return nombre;
       continue;
     }
@@ -149,10 +156,12 @@ function leerTexto(item: any, ...claves: string[]): string {
   return '';
 }
 
-function leerNumero(item: any, ...claves: string[]): number {
+function leerNumero(item: unknown, ...claves: string[]): number {
+  if (item === null || typeof item !== 'object' || Array.isArray(item)) return 0;
+  const record = item as Record<string, unknown>;
   for (const k of claves) {
-    if (item?.[k] == null || item[k] === '') continue;
-    const v = Number(item[k]);
+    if (record[k] == null || record[k] === '') continue;
+    const v = Number(record[k]);
     if (!Number.isNaN(v)) return v;
   }
   return 0;
@@ -164,7 +173,7 @@ function normalizar(s: string): string {
 
 // Saca la lista de una respuesta que puede venir como arreglo o como { results: [...] }
 function listaDe(d: any): any[] {
-  return (Array.isArray(d) ? d : (d?.results ?? [])) as any[];
+  return (Array.isArray(d) ? d : (d?.results ?? d?.value ?? [])) as any[];
 }
 
 @Component({
@@ -177,6 +186,7 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
   private http = inject(HttpClient);
   private authService = inject(AuthService);
   private router = inject(Router);
+  private facturasCompraService = inject(FacturasCompraService);
 
   private readonly urlInstituciones = `${environment.apiUrl}/instituciones/`;
   private readonly urlIngredientes = `${environment.apiUrl}/ingredientes/`;
@@ -194,6 +204,7 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
   private nombresIngredientes = new Map<number, string>();
   private subInstitucion?: Subscription;
   private subEntregas?: Subscription;
+  private subInventario?: Subscription;
 
   // Institución y Sedes
   institucionActiva: InstitucionAsignada | null = null;
@@ -217,6 +228,8 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
   ];
 
   inventario: ProductoInventario[] = [];
+  cargandoInventario = false;
+  errorInventario = '';
 
   // NUEVO: filtros y vista del inventario
   textoInv = '';
@@ -224,7 +237,7 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
   filtroInv: FiltroInv = 'Todos';
   ordenInv: OrdenInv = 'urgencia';
   vistaInv: VistaInv = 'tarjetas';
-  estadosInv: FiltroInv[] = ['Todos', 'Ok', 'Bajo', 'Por vencer', 'Agotado'];
+  estadosInv: FiltroInv[] = ['Todos', 'Óptimo', 'Bajo Stock', 'Agotado'];
 
   entregasUnidas: EntregaUnida[] = [];
   enviosSede: EnvioRegistro[] = [];   // envíos que llegan a esta sede
@@ -259,6 +272,7 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.subInstitucion?.unsubscribe();
     this.subEntregas?.unsubscribe();
+    this.subInventario?.unsubscribe();
   }
 
   // =====================================================
@@ -304,7 +318,9 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
     ) {
       // Se cambió a una institución con sedes (o a otra): se vuelve a la lista de sedes
       this.subEntregas?.unsubscribe();
+      this.subInventario?.unsubscribe();
       this.cargandoEntregas = false;
+      this.cargandoInventario = false;
       this.seleccionada = null;
     }
   }
@@ -419,7 +435,7 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
     this.seleccionada = sede;
     this.pestana = 'inventario';
     this.limpiarFiltrosInv();
-    this.inventario = this.inventarioDe(sede);
+    this.cargarInventario();
     this.cargarEntregas(sede);
   }
 
@@ -427,7 +443,9 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
     // Si la institución no maneja sedes no hay lista a la cual volver
     if (this.sinSedes) return;
     this.subEntregas?.unsubscribe();
+    this.subInventario?.unsubscribe();
     this.cargandoEntregas = false;
+    this.cargandoInventario = false;
     this.seleccionada = null;
   }
 
@@ -437,23 +455,22 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
 
   claseEstado(estado?: string): string {
     const est = (estado || '').toUpperCase();
-    if (est === 'ACTIVO' || est === 'OK' || est === 'RECIBIDA') {
+    if (est === 'ACTIVO' || est === 'OK' || est === 'ÓPTIMO' || est === 'RECIBIDA') {
       return 'border-emerald-200 bg-emerald-50 text-emerald-700';
     }
-    if (est === 'BAJO' || est === 'DESPACHADA' || est === 'POR VENCER') {
+    if (est === 'BAJO' || est === 'BAJO STOCK' || est === 'DESPACHADA') {
       return 'border-amber-200 bg-amber-50 text-amber-700';
     }
+    if (est === 'AGOTADO') return 'border-red-200 bg-red-50 text-red-700';
     return 'border-slate-200 bg-slate-50 text-slate-600';
   }
 
   claseBarra(estado: string): string {
-    return estado === 'Ok' ? 'bg-emerald-500' : estado === 'Bajo' ? 'bg-amber-500' : 'bg-red-500';
+    return estado === 'Óptimo' ? 'bg-emerald-500' : estado === 'Bajo Stock' ? 'bg-amber-500' : 'bg-red-500';
   }
 
   barraProducto(p: ProductoInventario): string {
-    if (p.estado === 'Ok') return this.claseBarra('Ok');
-    if (p.estado === 'Bajo' || p.estado === 'Por vencer') return this.claseBarra('Bajo');
-    return this.claseBarra('Crítico');
+    return this.claseBarra(p.estado);
   }
 
   // =====================================================
@@ -612,7 +629,7 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
 
   emojiDe(nombre: string): string {
     const n = normalizar(nombre);
-    return EMOJI_PRODUCTO[n] ?? this.catalogoMuestra.find(p => normalizar(p.nombre) === n)?.emoji ?? '📦';
+    return EMOJI_PRODUCTO[n] ?? '📦';
   }
 
   private marcaTiempo(valor: string): number {
@@ -637,45 +654,46 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
   // =====================================================
   //  INVENTARIO DE SEDE
   // =====================================================
-  private readonly catalogoMuestra = [
-    { nombre: 'Arroz',    emoji: '🌾', categoria: 'Granos y cereales', unidad: 'Kg',       porNino: 0.08, perecedero: false },
-    { nombre: 'Fríjol',   emoji: '🫘', categoria: 'Granos y cereales', unidad: 'Kg',       porNino: 0.04, perecedero: false },
-    { nombre: 'Lenteja',  emoji: '🫘', categoria: 'Granos y cereales', unidad: 'Kg',       porNino: 0.03, perecedero: false },
-    { nombre: 'Aceite',   emoji: '🫒', categoria: 'Despensa',          unidad: 'Litros',   porNino: 0.01, perecedero: false },
-    { nombre: 'Pollo',    emoji: '🍗', categoria: 'Carnes y huevos',   unidad: 'Kg',       porNino: 0.07, perecedero: true },
-    { nombre: 'Huevos',   emoji: '🥚', categoria: 'Carnes y huevos',   unidad: 'Unidades', porNino: 0.5,  perecedero: true },
-    { nombre: 'Leche',    emoji: '🥛', categoria: 'Lácteos',           unidad: 'Litros',   porNino: 0.2,  perecedero: true },
-    { nombre: 'Papa',     emoji: '🥔', categoria: 'Verduras',          unidad: 'Kg',       porNino: 0.1,  perecedero: true },
-    { nombre: 'Plátano',  emoji: '🍌', categoria: 'Frutas',            unidad: 'Kg',       porNino: 0.08, perecedero: true },
-  ];
+  private cargarInventario(): void {
+    this.subInventario?.unsubscribe();
+    this.cargandoInventario = true;
+    this.errorInventario = '';
+    this.inventario = [];
 
-  private inventarioDe(s: SedeCard): ProductoInventario[] {
-    const matriculados = s.matriculados ?? 120;
-    const asistencia = s.asistenciaPromedio ?? 95;
-    const diasInventario = s.diasInventario ?? 12;
-    const asistentes = matriculados * (asistencia / 100);
+    this.subInventario = this.facturasCompraService.getInventarioCentral()
+      .pipe(timeout(API_TIMEOUT_MS))
+      .subscribe({
+      next: (items: InventarioCentralItem[]) => {
+        this.inventario = items.map(item => {
+          const saldo = Number(item.cantidad_disponible) || 0;
+          const stockMinimo = Number(item.stock_minimo) || 0;
+          const estado: ProductoInventario['estado'] = saldo <= 0
+            ? 'Agotado'
+            : saldo <= stockMinimo
+              ? 'Bajo Stock'
+              : 'Óptimo';
 
-    return this.catalogoMuestra.map((p, indice) => {
-      const cobertura = p.perecedero ? Math.min(diasInventario, 7) : diasInventario;
-      const saldo = Math.round(asistentes * p.porNino * cobertura * 10) / 10;
-      const diasVence = p.perecedero ? 4 + (indice % 4) : 90 + indice * 10;
-
-      let estado: ProductoInventario['estado'] = 'Ok';
-      if (saldo <= 0) estado = 'Agotado';
-      else if (cobertura < 4) estado = 'Bajo';
-      else if (p.perecedero && diasVence <= 4) estado = 'Por vencer';
-
-      return {
-        nombre: p.nombre,
-        emoji: p.emoji,
-        categoria: p.categoria,
-        unidad: p.unidad,
-        saldo,
-        vence: this.sumarDias(this.hoy(), diasVence),
-        nivel: Math.max(0, Math.min(100, Math.round((cobertura / (p.perecedero ? 7 : 30)) * 100))),
-        cobertura,
-        estado,
-      };
+          return {
+            nombre: item.ingrediente_nombre,
+            emoji: this.emojiDe(item.ingrediente_nombre),
+            categoria: item.categoria_nombre || 'General',
+            conservacion: item.tipo_conservacion || 'No perecedero',
+            unidad: item.unidad_medida_abreviatura || item.unidad_medida_nombre || 'Kg',
+            saldo,
+            stockMinimo,
+            nivel: stockMinimo > 0
+              ? Math.min(MAX_STOCK_PERCENTAGE, Math.round((saldo / stockMinimo) * MAX_STOCK_PERCENTAGE))
+              : (saldo > 0 ? MAX_STOCK_PERCENTAGE : 0),
+            estado,
+          };
+        });
+        this.cargandoInventario = false;
+      },
+      error: (error) => {
+        console.error('Error al cargar el inventario del supervisor:', error);
+        this.cargandoInventario = false;
+        this.errorInventario = 'No se pudo cargar el inventario. Verifica la conexión e intenta nuevamente.';
+      },
     });
   }
 
@@ -686,16 +704,15 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
     const c = (e: string) => this.inventario.filter(p => p.estado === e).length;
     return {
       Todos: this.inventario.length,
-      Ok: c('Ok'),
-      Bajo: c('Bajo'),
-      'Por vencer': c('Por vencer'),
+      'Óptimo': c('Óptimo'),
+      'Bajo Stock': c('Bajo Stock'),
       Agotado: c('Agotado'),
     };
   }
 
   get requierenAccion(): number {
     const r = this.resumenInv;
-    return r.Bajo + r['Por vencer'] + r.Agotado;
+    return r['Bajo Stock'] + r.Agotado;
   }
 
   get categoriasInv(): string[] {
@@ -703,7 +720,7 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
   }
 
   private pesoEstado(p: ProductoInventario): number {
-    return { Agotado: 0, Bajo: 1, 'Por vencer': 2, Ok: 3 }[p.estado];
+    return { Agotado: 0, 'Bajo Stock': 1, Óptimo: 2 }[p.estado];
   }
 
   get inventarioFiltrado(): ProductoInventario[] {
@@ -715,7 +732,6 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
         (!q || p.nombre.toLowerCase().includes(q) || p.categoria.toLowerCase().includes(q)))
       .sort((a, b) => {
         if (this.ordenInv === 'nombre') return a.nombre.localeCompare(b.nombre);
-        if (this.ordenInv === 'vence') return (a.vence || '9999').localeCompare(b.vence || '9999');
         return this.pesoEstado(a) - this.pesoEstado(b) || a.nombre.localeCompare(b.nombre);
       });
   }
@@ -739,7 +755,7 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
   }
 
   necesitaEnvio(p: ProductoInventario): boolean {
-    return p.estado !== 'Ok';
+    return p.estado !== 'Óptimo';
   }
 
   // Lleva a Registrar entrega con el producto (y la sede) ya elegidos
@@ -751,17 +767,13 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
     this.router.navigate(['/registrar-entrega-alimentos'], { queryParams });
   }
 
-  textoCobertura(p: ProductoInventario): string {
-    return p.cobertura > 0 ? `${p.cobertura} ${p.cobertura === 1 ? 'día' : 'días'}` : '—';
-  }
-
   claseKpi(e: FiltroInv): string {
-    return { Todos: 'text-slate-900', Ok: 'text-emerald-600', Bajo: 'text-amber-600', 'Por vencer': 'text-orange-600', Agotado: 'text-red-600' }[e];
+    return { Todos: 'text-slate-900', 'Óptimo': 'text-emerald-600', 'Bajo Stock': 'text-amber-600', Agotado: 'text-red-600' }[e];
   }
 
   // Texto de color según el estado (para las tarjetas compactas)
-  claseTextoEstado(estado: string): string {
-    return { Ok: 'text-emerald-600', Bajo: 'text-amber-600', 'Por vencer': 'text-orange-600', Agotado: 'text-red-600' }[estado] ?? 'text-slate-500';
+  claseTextoEstado(estado: ProductoInventario['estado']): string {
+    return { 'Óptimo': 'text-emerald-600', 'Bajo Stock': 'text-amber-600', Agotado: 'text-red-600' }[estado] ?? 'text-slate-500';
   }
 
   // Imagen de la categoría (archivos de la carpeta public; si falta, se usa el emoji)
