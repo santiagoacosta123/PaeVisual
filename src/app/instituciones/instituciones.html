@@ -34,11 +34,48 @@
 
 <div class="fx-roboto flex w-full flex-col gap-6">
 
+  <section *ngIf="!seleccionada && !institucionActiva && puedeSeleccionarInstitucion"
+    class="w-full rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
+    <header class="mb-6">
+      <h1 class="m-0 text-xl font-black tracking-tight text-slate-900">Instituciones</h1>
+      <p class="mt-1 text-sm font-medium text-slate-500">Selecciona una institución para consultar sus sedes e inventario.</p>
+    </header>
+
+    <div *ngIf="cargando" class="py-8 text-center text-sm font-semibold text-slate-500">
+      Cargando instituciones...
+    </div>
+
+    <div *ngIf="errorInstituciones" class="mb-4 rounded-xl bg-rose-50 p-4 text-sm font-semibold text-rose-700">
+      {{ errorInstituciones }}
+      <button type="button" (click)="sincronizarServidor()" class="ml-2 underline">Reintentar</button>
+    </div>
+
+    <div *ngIf="!cargando && institucionesSupervisor.length === 0 && !errorInstituciones"
+      class="py-8 text-center text-sm font-semibold text-slate-500">
+      No hay instituciones registradas para mostrar.
+    </div>
+
+    <div *ngIf="institucionesSupervisor.length > 0" class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <button *ngFor="let institucion of institucionesSupervisor"
+        type="button"
+        (click)="seleccionarInstitucion(institucion)"
+        class="sede-card flex cursor-pointer items-center gap-4 text-left">
+        <span class="ico-suave flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl">
+          <span class="material-symbols-outlined text-[24px]">apartment</span>
+        </span>
+        <span class="min-w-0">
+          <span class="block truncate font-bold text-slate-900">{{ institucion.nombre_institucion }}</span>
+          <span class="block text-xs text-slate-500">{{ institucion.sedes?.length ?? 0 }} sedes</span>
+        </span>
+      </button>
+    </div>
+  </section>
+
   <!-- ===================================================== -->
   <!--  LISTA: SEDES DE LA INSTITUCIÓN SELECCIONADA         -->
   <!--  (no se muestra si la institución no maneja sedes)    -->
   <!-- ===================================================== -->
-  <section *ngIf="!seleccionada" class="w-full">
+  <section *ngIf="!seleccionada && institucionActiva" class="w-full">
 
     <!-- Encabezado con Institución Activa -->
     <header class="mb-6 flex flex-col justify-between gap-4 rounded-3xl border border-slate-100 bg-white p-5 shadow-sm sm:flex-row sm:items-center">
