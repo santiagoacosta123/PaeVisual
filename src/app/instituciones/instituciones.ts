@@ -199,6 +199,8 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
   institucionActiva: InstitucionAsignada | null = null;
   institucionesSupervisor: InstitucionAsignada[] = [];
   sedes: SedeCard[] = [];
+  puedeSeleccionarInstitucion = false;
+  errorInstituciones = '';
 
   cargando = false;
   avisoRespaldo = '';
@@ -241,6 +243,9 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
     // 1. Carga inmediata desde el almacenamiento local / AuthService (0 ms de bloqueo)
     this.institucionActiva = this.authService.obtenerInstitucionActiva();
     this.institucionesSupervisor = this.authService.obtenerInstitucionesSupervisor();
+    const usuario = this.authService.obtenerUsuario();
+    this.puedeSeleccionarInstitucion = this.authService.esSuperAdministrador(usuario?.rol)
+      || this.authService.esAdministrador(usuario?.rol);
 
     this.construirListaSedes();
 
@@ -271,7 +276,9 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
       this.sedes = [];
       this.seleccionada = null;
       this.cargando = false;
-      this.irACambiarInstitucion();
+      if (!this.puedeSeleccionarInstitucion) {
+        this.irACambiarInstitucion();
+      }
       return;
     }
 
@@ -332,12 +339,14 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
     if (this.sedes.length === 0) {
       this.cargando = true;
     }
+    this.errorInstituciones = '';
 
     this.http.get<any>(this.urlInstituciones).pipe(
       timeout(6000),
       map(d => listaDe(d)),
       catchError(err => {
         console.warn('Sincronización en segundo plano de instituciones:', err);
+        this.errorInstituciones = 'No se pudieron cargar las instituciones. Revisa tu conexión e inténtalo de nuevo.';
         return of([] as any[]);
       })
     ).subscribe((lista) => {
@@ -406,7 +415,18 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
   //  ACCIONES
   // =====================================================
   irACambiarInstitucion(): void {
+    if (this.puedeSeleccionarInstitucion) {
+      this.authService.limpiarInstitucionActiva();
+      this.institucionActiva = null;
+      this.construirListaSedes();
+      return;
+    }
     this.router.navigate(['/dashboard-supervisor'], { queryParams: { cambiar: 'true' } });
+  }
+
+  seleccionarInstitucion(inst: InstitucionAsignada): void {
+    this.authService.establecerInstitucionActiva(inst);
+    this.institucionActiva = inst;
   }
 
   irAEntregas(sede: SedeCard): void {
