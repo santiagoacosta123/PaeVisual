@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Subscription, forkJoin, of } from 'rxjs';
-import { map, timeout, catchError } from 'rxjs/operators';
+import { catchError, finalize, map, throwIfEmpty, timeout } from 'rxjs/operators';
 import { environment } from '@env/environment';
 import { AuthService, InstitucionAsignada } from '../core/auth/auth.service';
 import { FacturasCompraService, InventarioCentralItem } from '../services/facturas-compra.service';
@@ -360,13 +360,16 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
     this.http.get<any>(this.urlInstituciones).pipe(
       timeout(6000),
       map(d => listaDe(d)),
+      throwIfEmpty(() => new Error('La respuesta de instituciones llegó vacía.')),
       catchError(err => {
         console.warn('Sincronización en segundo plano de instituciones:', err);
         this.errorInstituciones = 'No se pudieron cargar las instituciones. Revisa tu conexión e inténtalo de nuevo.';
         return of([] as any[]);
+      }),
+      finalize(() => {
+        this.cargando = false;
       })
     ).subscribe((lista) => {
-      this.cargando = false;
       if (lista.length > 0) {
         this.institucionesSupervisor = lista.map((item: any) => ({
           id_institucion: item.id_institucion ?? item.id,

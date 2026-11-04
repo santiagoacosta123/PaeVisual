@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { of } from 'rxjs';
-import { timeout, catchError } from 'rxjs/operators';
+import { catchError, finalize, throwIfEmpty, timeout } from 'rxjs/operators';
 import { AuthService, InstitucionAsignada } from '../core/auth/auth.service';
 import { environment } from '../../environments/environment';
 import { IMAGENES_INSTITUCION } from './imagenes-instituciones';
@@ -64,13 +64,15 @@ export class DashboardSupervisor implements OnInit {
 
     this.http.get<any>(`${environment.apiUrl}/instituciones/`).pipe(
       timeout(6000),
+      throwIfEmpty(() => new Error('La respuesta de instituciones llegó vacía.')),
       catchError(err => {
         console.warn('Timeout o error al sincronizar instituciones:', err);
         return of(null);
+      }),
+      finalize(() => {
+        this.cargando = false;
       })
     ).subscribe(resp => {
-      this.cargando = false;
-
       if (resp === null) {
         if (this.instituciones.length === 0) {
           this.errorMensaje = 'No se pudieron cargar tus instituciones. Verifica la conexión e intenta nuevamente.';
