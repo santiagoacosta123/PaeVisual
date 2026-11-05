@@ -248,7 +248,10 @@ export class LayoutComponent implements OnInit {
         this.listaNotificaciones = data;
         this.notificacionesNoLeidas = data.filter((n: Notificacion) => !n.leida).length;
       },
-      error: (err: any) => console.error('Error al cargar notificaciones en layout', err)
+      error: () => {
+        this.listaNotificaciones = [];
+        this.notificacionesNoLeidas = 0;
+      }
     });
   }
 

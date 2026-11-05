@@ -86,7 +86,6 @@ export class DashboardSupervisor implements OnInit {
     this.http.get<any>(`${environment.apiUrl}/instituciones/`).pipe(
       timeout(20000),
       catchError(err => {
-        console.warn('Timeout o error al sincronizar instituciones:', err);
         return of(null);
       })
     ).subscribe(resp => {
@@ -99,7 +98,7 @@ export class DashboardSupervisor implements OnInit {
       }
 
       const lista = Array.isArray(resp) ? resp : (resp?.results ?? []);
-      this.instituciones = lista.map((item: any) => ({
+      const institucionesServidor = lista.map((item: any) => ({
         id_institucion: item.id_institucion ?? item.id,
         nombre_institucion: item.nombre_institucion ?? item.nombre,
         nit: item.nit ?? '',
@@ -111,7 +110,22 @@ export class DashboardSupervisor implements OnInit {
         administrador_asignado: item.administrador_asignado,
       }));
 
-      if (lista.length === 0 && this.instituciones.length === 0) {
+      const asignadasIds = new Set(
+        (asignadasUsuario ?? [])
+          .map((item: InstitucionAsignada) => item.id_institucion ?? (item as any).id)
+          .filter((id): id is number => id !== undefined && id !== null)
+          .map((id) => Number(id))
+      );
+
+      if (asignadasIds.size > 0) {
+        this.instituciones = institucionesServidor.filter((item: InstitucionAsignada) =>
+          asignadasIds.has(Number(item.id_institucion))
+        );
+      } else if (institucionesServidor.length > 0) {
+        this.instituciones = institucionesServidor;
+      }
+
+      if (this.instituciones.length === 0) {
         this.cargarInstitucionesDesdePerfil(usuario?.id_usuario);
       }
 

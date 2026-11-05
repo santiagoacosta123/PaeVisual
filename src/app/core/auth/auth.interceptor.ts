@@ -1,12 +1,9 @@
-import { HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http';
+import { HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
-import { Router } from '@angular/router';
-import { catchError, throwError } from 'rxjs';
 import { AuthService } from './auth.service';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
-  const router = inject(Router);
   const token = authService.obtenerToken();
   const requestPath = new URL(req.url, 'http://localhost').pathname.replace(/\/+$/, '');
   const isPublicAuthRequest = [
@@ -26,13 +23,5 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     });
   }
 
-  return next(authReq).pipe(
-    catchError((error: HttpErrorResponse) => {
-      if (error.status === 401 && !isPublicAuthRequest) {
-        authService.limpiarSesion();
-        router.navigate(['/login']);
-      }
-      return throwError(() => error);
-    })
-  );
+  return next(authReq);
 };
