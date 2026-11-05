@@ -259,8 +259,8 @@
           </button>
         </article>
 
-        <!-- OPCIÓN 2: SEDES E INVENTARIO -->
-        <article class="opt-card" style="--c1:#2AB26D; --c2:#168A4A; --tint:#DDF6E8; --glow:rgba(22,138,74,.5); --on:#ffffff; animation-delay:110ms;"
+        <!-- OPCIÓN 2: SEDES -->
+        <article *ngIf="(inst.sedes?.length || 0) > 0" class="opt-card" style="--c1:#2AB26D; --c2:#168A4A; --tint:#DDF6E8; --glow:rgba(22,138,74,.5); --on:#ffffff; animation-delay:110ms;"
           (click)="irA('sedes')">
           <div class="flex items-start justify-between">
             <div class="opt-icon"><span class="material-symbols-outlined text-[26px]">apartment</span></div>
@@ -268,9 +268,9 @@
           </div>
 
           <div>
-            <h3 class="m-0 text-lg font-black leading-tight text-slate-900">Sedes e Inventario</h3>
+            <h3 class="m-0 text-lg font-black leading-tight text-slate-900">Sedes</h3>
             <p class="m-0 mt-1.5 text-xs leading-5 text-slate-600">
-              Consulta tus sedes y monitorea el stock de ingredientes y los saldos de alimentos.
+              Consulta las sedes educativas asignadas a tu institución.
             </p>
           </div>
 
@@ -282,7 +282,7 @@
           </div>
 
           <button type="button" class="opt-btn" (click)="irA('sedes'); $event.stopPropagation()">
-            Ver Sedes e Inventario
+            Ver Sedes
             <span class="material-symbols-outlined opt-arrow text-[18px]">arrow_forward</span>
           </button>
         </article>

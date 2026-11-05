@@ -70,10 +70,10 @@
           <span class="sv-label">Registrar entrega</span>
         </a>
 
-        <a *ngIf="institucionActiva" routerLink="instituciones" routerLinkActive="sv-active" class="sv-link"
+        <a *ngIf="institucionActiva && tieneSedes" routerLink="instituciones" routerLinkActive="sv-active" class="sv-link"
            aria-label="Sedes">
           <span class="material-symbols-outlined sv-icon">apartment</span>
-          <span class="sv-label">Sedes e inventario</span>
+          <span class="sv-label">Sedes</span>
         </a>
 
         <a *ngIf="institucionActiva" routerLink="reportes-consumo" routerLinkActive="sv-active" class="sv-link"
