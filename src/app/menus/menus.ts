@@ -729,7 +729,7 @@ export class MenusComponent implements OnInit {
   // =====================================================
   exportarExcel(): void {
     if (this.itemsFiltrados.length === 0) {
-      alert('No hay registros para exportar.');
+      void this.sweetAlert.warning('No hay registros para exportar', 'Aplica otros filtros o agrega información antes de exportar.');
       return;
     }
 

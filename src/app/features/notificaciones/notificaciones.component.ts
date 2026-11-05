@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NotificacionService } from './notificacion.service';
 import { Notificacion } from './notificacion.model';
+import { SweetAlertService } from '../../core/services/sweet-alert.service';
 
 @Component({
   selector: 'app-notificaciones',
@@ -19,7 +20,10 @@ export class NotificacionesComponent implements OnInit {
   idEdicion: number | null = null;
   mostrarModal: boolean = false;
 
-  constructor(private notificacionService: NotificacionService) {}
+  constructor(
+    private notificacionService: NotificacionService,
+    private sweetAlert: SweetAlertService
+  ) {}
 
   ngOnInit(): void {
     this.cargarNotificaciones();
@@ -55,14 +59,14 @@ export class NotificacionesComponent implements OnInit {
 
   guardarNotificacion(): void {
     if (!this.notificacionForm.titulo || !this.notificacionForm.mensaje) {
-      alert('Por favor completa todos los campos requeridos.');
+      void this.sweetAlert.warning('Completa el aviso', 'Escribe el título y el mensaje de la notificación.');
       return;
     }
 
     if (this.modoEdicion && this.idEdicion !== null) {
       this.notificacionService.actualizarNotificacion(this.idEdicion, this.notificacionForm).subscribe({
         next: () => {
-          alert('Notificación actualizada con éxito');
+          void this.sweetAlert.success('Notificación actualizada', 'Los cambios se guardaron correctamente.');
           this.cargarNotificaciones();
           this.cerrarModal();
         },
@@ -71,7 +75,7 @@ export class NotificacionesComponent implements OnInit {
     } else {
       this.notificacionService.crearNotificacion(this.notificacionForm).subscribe({
         next: () => {
-          alert('Notificación creada y enviada con éxito');
+          void this.sweetAlert.success('Notificación enviada', 'La notificación se creó y envió correctamente.');
           this.cargarNotificaciones();
           this.cerrarModal();
         },
@@ -92,14 +96,19 @@ export class NotificacionesComponent implements OnInit {
 
   eliminar(id?: number): void {
     if (id === undefined) return;
-    if (confirm('¿Estás seguro de eliminar esta notificación?')) {
+    void this.sweetAlert.confirm(
+      '¿Eliminar esta notificación?',
+      'Esta acción eliminará la notificación seleccionada.',
+      'Sí, eliminar'
+    ).then((resultado) => {
+      if (!resultado.isConfirmed) return;
       this.notificacionService.eliminarNotificacion(id).subscribe({
         next: () => {
-          alert('Notificación eliminada');
+          void this.sweetAlert.success('Notificación eliminada', 'La notificación fue eliminada.');
           this.cargarNotificaciones();
         },
         error: (err: any) => console.error('Error al eliminar', err)
       });
-    }
+    });
   }
 }

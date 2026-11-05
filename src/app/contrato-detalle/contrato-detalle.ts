@@ -9,6 +9,7 @@ import { RolService } from '../services/rol.service';
 import { AuthService } from '../services/auth.service';
 import { environment } from '../../environments/environment';
 import { CustomSelectComponent } from '../shared/custom-select/custom-select';
+import { SweetAlertService } from '../core/services/sweet-alert.service';
 
 @Component({
   selector: 'app-contrato-detalle',
@@ -209,7 +210,8 @@ export class ContratoDetalleComponent implements OnInit {
     private rolService: RolService,
     private authService: AuthService,
     private http: HttpClient,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private sweetAlert: SweetAlertService
   ) { }
 
   ngOnInit() {
@@ -589,7 +591,7 @@ export class ContratoDetalleComponent implements OnInit {
 
   guardarTodo() {
     if (!this.contrato.institucion) {
-      alert('Por favor, selecciona o ingresa la instituciÃ³n educativa.');
+      void this.sweetAlert.warning('Institución requerida', 'Selecciona o ingresa la institución educativa.');
       return;
     }
 
@@ -643,7 +645,7 @@ export class ContratoDetalleComponent implements OnInit {
         },
         error: (err) => {
           console.error('Error al crear contrato', err);
-          alert('Hubo un error al crear el contrato.');
+          void this.sweetAlert.error('No se pudo crear el contrato', 'Ocurrió un error al guardar el contrato.');
         }
       });
     } else {
@@ -654,7 +656,7 @@ export class ContratoDetalleComponent implements OnInit {
         },
         error: (err) => {
           console.error('Error al actualizar contrato', err);
-          alert('Hubo un error al actualizar el contrato.');
+          void this.sweetAlert.error('No se pudo actualizar el contrato', 'Ocurrió un error al guardar los cambios.');
         }
       });
     }
