@@ -7,6 +7,7 @@ import { timeout, catchError } from 'rxjs/operators';
 import { AuthService, InstitucionAsignada } from '../core/auth/auth.service';
 import { environment } from '../../environments/environment';
 import { IMAGENES_INSTITUCION } from './imagenes-instituciones';
+import { SweetAlertService } from '../core/services/sweet-alert.service';
 
 @Component({
   standalone: true,
@@ -20,6 +21,7 @@ export class DashboardSupervisor implements OnInit {
   private http = inject(HttpClient);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
+  private alertas = inject(SweetAlertService);
 
   instituciones: InstitucionAsignada[] = [];
   institucionActiva: InstitucionAsignada | null = null;
@@ -174,6 +176,10 @@ export class DashboardSupervisor implements OnInit {
   seleccionarInstitucion(inst: InstitucionAsignada): void {
     this.institucionActiva = inst;
     this.authService.establecerInstitucionActiva(inst);
+    void this.alertas.supervisorSuccess(
+      'Institución activa',
+      `${inst.nombre_institucion} quedó seleccionada para continuar con el seguimiento asignado.`
+    );
   }
 
   deseleccionarInstitucion(): void {

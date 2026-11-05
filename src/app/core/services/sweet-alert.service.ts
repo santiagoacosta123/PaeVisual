@@ -3,6 +3,73 @@ import Swal from 'sweetalert2';
 
 @Injectable({ providedIn: 'root' })
 export class SweetAlertService {
+  supervisorSuccess(title: string, text?: string) {
+    return Swal.fire({
+      icon: 'success',
+      title,
+      text,
+      confirmButtonColor: '#D97706',
+      background: '#FFFBEB',
+      color: '#78350F',
+      customClass: {
+        popup: 'bd-supervisor-alert',
+        confirmButton: 'bd-sweet-confirm'
+      }
+    });
+  }
+
+  supervisorWarning(title: string, text?: string, confirmButtonText = 'Entendido') {
+    return Swal.fire({
+      icon: 'warning',
+      title,
+      text,
+      confirmButtonColor: '#D97706',
+      confirmButtonText,
+      background: '#FFFBEB',
+      color: '#78350F',
+      customClass: {
+        popup: 'bd-supervisor-alert',
+        confirmButton: 'bd-sweet-confirm'
+      }
+    });
+  }
+
+  supervisorError(title: string, text?: string) {
+    return Swal.fire({
+      icon: 'error',
+      title,
+      text,
+      confirmButtonColor: '#DC2626',
+      confirmButtonText: 'Entendido',
+      background: '#FFF7F7',
+      color: '#7F1D1D',
+      customClass: {
+        popup: 'bd-supervisor-alert',
+        confirmButton: 'bd-sweet-confirm'
+      }
+    });
+  }
+
+  supervisorConfirm(title: string, text?: string, confirmButtonText = 'Sí, continuar') {
+    return Swal.fire({
+      icon: 'question',
+      title,
+      text,
+      showCancelButton: true,
+      confirmButtonColor: '#D97706',
+      cancelButtonColor: '#64748B',
+      confirmButtonText,
+      cancelButtonText: 'Cancelar',
+      background: '#FFFBEB',
+      color: '#78350F',
+      reverseButtons: true,
+      customClass: {
+        popup: 'bd-supervisor-alert',
+        confirmButton: 'bd-sweet-confirm'
+      }
+    });
+  }
+
   success(title: string, text?: string) {
     return Swal.fire({
       title,

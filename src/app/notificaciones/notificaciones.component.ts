@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
 import { AuthService } from '../core/auth/auth.service';
+import { SweetAlertService } from '../core/services/sweet-alert.service';
 import { NotificacionService } from './notificacion.service';
 import {
   Notificacion,
@@ -40,7 +41,8 @@ export class NotificacionesComponent implements OnInit {
 
   constructor(
     private notificacionService: NotificacionService,
-    private authService: AuthService
+    private authService: AuthService,
+    private alertas: SweetAlertService
   ) {}
 
   ngOnInit(): void {
@@ -54,7 +56,10 @@ export class NotificacionesComponent implements OnInit {
       },
       error: (err: any) => {
         console.error('Error al cargar notificaciones:', err);
-        alert('No se pudieron cargar las notificaciones.');
+        void this.alertas.supervisorError(
+          'No se pudieron cargar tus avisos',
+          'No fue posible consultar las notificaciones asignadas. Verifica tu conexión e inténtalo nuevamente.'
+        );
       }
     });
   }
@@ -85,9 +90,9 @@ export class NotificacionesComponent implements OnInit {
           },
           error: (err: any) => {
             console.error('Error al cargar los destinatarios:', err);
-            alert(
-              err?.error?.error ||
-              'No se pudieron cargar los destinatarios disponibles.'
+            void this.alertas.supervisorWarning(
+              'Destinatarios no disponibles',
+              err?.error?.error || 'No fue posible cargar los destinatarios para esta asignación.'
             );
           }
         });
@@ -140,7 +145,7 @@ export class NotificacionesComponent implements OnInit {
     }
 
     if (!archivo.type.startsWith('image/')) {
-      alert('Selecciona un archivo de imagen válido.');
+      void this.alertas.supervisorWarning('Imagen no válida', 'Selecciona un archivo con formato de imagen.');
       input.value = '';
       this.limpiarImagen();
       return;
@@ -149,7 +154,7 @@ export class NotificacionesComponent implements OnInit {
     const limiteBytes = 5 * 1024 * 1024;
 
     if (archivo.size > limiteBytes) {
-      alert('La fotografía no puede superar los 5 MB.');
+      void this.alertas.supervisorWarning('Imagen demasiado pesada', 'La fotografía no puede superar los 5 MB.');
       input.value = '';
       this.limpiarImagen();
       return;
@@ -164,7 +169,7 @@ export class NotificacionesComponent implements OnInit {
     };
 
     lector.onerror = () => {
-      alert('No se pudo mostrar la vista previa de la fotografía.');
+      void this.alertas.supervisorWarning('Vista previa no disponible', 'No se pudo mostrar la fotografía seleccionada.');
       this.limpiarImagen();
       input.value = '';
     };
@@ -190,7 +195,7 @@ export class NotificacionesComponent implements OnInit {
     const mensaje = this.notificacionForm.mensaje?.trim() ?? '';
 
     if (!titulo || !mensaje) {
-      alert('Escribe el título y el mensaje de la notificación.');
+      void this.alertas.supervisorWarning('Completa el aviso', 'Escribe el título y el mensaje antes de enviarlo.');
       return;
     }
 
@@ -198,21 +203,22 @@ export class NotificacionesComponent implements OnInit {
       this.requiereSeleccionDestinatario
       && this.destinatarioSeleccionadoId === null
     ) {
-      alert('Selecciona el destinatario de la notificación.');
+      void this.alertas.supervisorWarning('Selecciona el destinatario', 'Elige a quién estará dirigido el aviso.');
       return;
     }
 
     if (titulo.length > 150) {
-      alert('El título no puede superar los 150 caracteres.');
+      void this.alertas.supervisorWarning('Título demasiado largo', 'El título no puede superar los 150 caracteres.');
       return;
     }
 
     // El backend proporcionado utiliza el endpoint "enviar"
     // para crear notificaciones y distribuirlas según el rol.
     if (this.modoEdicion) {
-      alert(
+      void this.alertas.supervisorWarning(
         'La edición no está disponible en el envío de notificaciones. ' +
-        'Crea una nueva notificación para comunicar el cambio.'
+        'Crea una nueva notificación para comunicar el cambio.',
+        'Los avisos enviados se conservan como registro de comunicación.'
       );
       return;
     }
@@ -244,12 +250,14 @@ export class NotificacionesComponent implements OnInit {
           this.cargarNotificaciones();
 
           if (typeof cantidad === 'number') {
-            alert(
-              `Notificación enviada correctamente a ${cantidad} destinatario(s).`
+            void this.alertas.supervisorSuccess(
+              'Aviso enviado',
+              `La notificación fue entregada correctamente a ${cantidad} destinatario(s).`
             );
           } else {
-            alert(
-              respuesta.mensaje || 'Notificación enviada correctamente.'
+            void this.alertas.supervisorSuccess(
+              'Aviso enviado',
+              respuesta.mensaje || 'La notificación fue enviada correctamente.'
             );
           }
         },
@@ -261,7 +269,8 @@ export class NotificacionesComponent implements OnInit {
             err?.error?.detail ||
             err?.error?.mensaje;
 
-          alert(
+          void this.alertas.supervisorError(
+            'No se pudo enviar el aviso',
             detalle ||
             'No se pudo enviar la notificación. Verifica tu sesión y la conexión con el backend.'
           );
@@ -278,7 +287,7 @@ export class NotificacionesComponent implements OnInit {
       next: () => this.cargarNotificaciones(),
       error: (err: any) => {
         console.error('Error al marcar como leída:', err);
-        alert('No se pudo marcar la notificación como leída.');
+        void this.alertas.supervisorWarning('No se pudo actualizar el aviso', 'La notificación no pudo marcarse como leída.');
       }
     });
   }
@@ -287,19 +296,22 @@ export class NotificacionesComponent implements OnInit {
       return;
     }
 
-    if (!confirm('¿Estás seguro de eliminar esta notificación?')) {
-      return;
-    }
-
-    this.notificacionService.eliminarNotificacion(id).subscribe({
-      next: () => {
-        alert('Notificación eliminada.');
-        this.cargarNotificaciones();
-      },
-      error: (err: any) => {
-        console.error('Error al eliminar:', err);
-        alert('No se pudo eliminar la notificación.');
-      }
+    void this.alertas.supervisorConfirm(
+      '¿Eliminar este aviso?',
+      'La notificación desaparecerá del historial.',
+      'Sí, eliminar'
+    ).then((resultado) => {
+      if (!resultado.isConfirmed) return;
+      this.notificacionService.eliminarNotificacion(id).subscribe({
+        next: () => {
+          void this.alertas.supervisorSuccess('Aviso eliminado', 'La notificación fue eliminada correctamente.');
+          this.cargarNotificaciones();
+        },
+        error: (err: any) => {
+          console.error('Error al eliminar:', err);
+          void this.alertas.supervisorError('No se pudo eliminar el aviso', 'Verifica tu sesión e inténtalo nuevamente.');
+        }
+      });
     });
   }
 

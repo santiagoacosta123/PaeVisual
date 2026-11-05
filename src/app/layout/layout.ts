@@ -346,9 +346,16 @@ export class LayoutComponent implements OnInit {
   }
 
   cambiarInstitucion(): void {
+    const nombreActual = this.institucionActiva?.nombre_institucion;
     this.authService.limpiarInstitucionActiva();
     this.institucionActiva = null;
     this.mostrarSelectorInstitucion = false;
+    if (nombreActual) {
+      void this.sweetAlert.info(
+        'Selección de institución reiniciada',
+        `Puedes volver a seleccionar una institución. ${nombreActual} quedó disponible en el listado.`
+      );
+    }
     this.router.navigate(['/dashboard-supervisor'], { queryParams: { cambiar: 'true' } });
     this.cdr.detectChanges();
   }
@@ -366,6 +373,10 @@ export class LayoutComponent implements OnInit {
     this.institucionActiva = inst;
     this.mostrarSelectorInstitucion = false;
     this.cdr.detectChanges();
+    void this.sweetAlert.supervisorSuccess(
+      'Institución seleccionada',
+      `${inst.nombre_institucion} quedó activa para supervisar entregas, sedes y reportes.`
+    );
     void this.router.navigate(['/dashboard-supervisor']);
   }
 
@@ -428,10 +439,12 @@ export class LayoutComponent implements OnInit {
 
     if (!this.passwordForm.actual || !this.passwordForm.nueva || !this.passwordForm.confirmar) {
       this.passwordError = 'Por favor completa todos los campos.';
+      void this.sweetAlert.supervisorWarning('Completa todos los campos', 'Debes ingresar la contraseña actual y confirmar la nueva.');
       return;
     }
     if (this.passwordForm.nueva !== this.passwordForm.confirmar) {
       this.passwordError = 'Las nuevas contraseñas no coinciden.';
+      void this.sweetAlert.supervisorWarning('Contraseñas diferentes', 'La nueva contraseña y su confirmación deben coincidir.');
       return;
     }
 
@@ -446,6 +459,7 @@ export class LayoutComponent implements OnInit {
         this.passwordMensaje = response.mensaje || 'Contraseña actualizada correctamente.';
         this.passwordForm = { actual: '', nueva: '', confirmar: '' };
         this.cdr.detectChanges();
+        void this.sweetAlert.supervisorSuccess('Contraseña actualizada', this.passwordMensaje);
         setTimeout(() => this.vistaActual = 'perfil', 1200);
       },
       error: (err: any) => {
@@ -454,6 +468,7 @@ export class LayoutComponent implements OnInit {
           || err.error?.detail
           || 'No fue posible actualizar la contraseña. Inténtalo nuevamente.';
         this.cdr.detectChanges();
+        void this.sweetAlert.supervisorError('No se pudo cambiar la contraseña', this.passwordError);
       }
     });
   }
