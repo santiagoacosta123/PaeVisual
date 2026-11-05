@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { of } from 'rxjs';
-import { timeout, catchError } from 'rxjs/operators';
+import { catchError, finalize, throwIfEmpty, timeout } from 'rxjs/operators';
 import { AuthService, InstitucionAsignada } from '../core/auth/auth.service';
 import { environment } from '../../environments/environment';
 import { IMAGENES_INSTITUCION } from './imagenes-instituciones';
@@ -86,14 +86,16 @@ export class DashboardSupervisor implements OnInit {
     }, 12000);
 
     this.http.get<any>(`${environment.apiUrl}/instituciones/`).pipe(
-      timeout(20000),
+      timeout(6000),
+      throwIfEmpty(() => new Error('La respuesta de instituciones llegó vacía.')),
       catchError(err => {
         return of(null);
+      }),
+      finalize(() => {
+        window.clearTimeout(limiteCarga);
+        this.cargando = false;
       })
     ).subscribe(resp => {
-      window.clearTimeout(limiteCarga);
-      this.cargando = false;
-
       if (resp === null) {
         this.cargarInstitucionesDesdePerfil(usuario?.id_usuario);
         return;

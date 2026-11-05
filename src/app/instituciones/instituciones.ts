@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Subscription, forkJoin, of } from 'rxjs';
-import { map, timeout, catchError } from 'rxjs/operators';
+import { catchError, finalize, map, throwIfEmpty, timeout } from 'rxjs/operators';
 import { environment } from '@env/environment';
 import { AuthService, InstitucionAsignada } from '../core/auth/auth.service';
 import { FacturasCompraService, InventarioCentralItem } from '../services/facturas-compra.service';
@@ -210,6 +210,8 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
   institucionActiva: InstitucionAsignada | null = null;
   institucionesSupervisor: InstitucionAsignada[] = [];
   sedes: SedeCard[] = [];
+  puedeSeleccionarInstitucion = false;
+  errorInstituciones = '';
 
   cargando = false;
   avisoRespaldo = '';
@@ -254,6 +256,9 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
     // 1. Carga inmediata desde el almacenamiento local / AuthService (0 ms de bloqueo)
     this.institucionActiva = this.authService.obtenerInstitucionActiva();
     this.institucionesSupervisor = this.authService.obtenerInstitucionesSupervisor();
+    const usuario = this.authService.obtenerUsuario();
+    this.puedeSeleccionarInstitucion = this.authService.esSuperAdministrador(usuario?.rol)
+      || this.authService.esAdministrador(usuario?.rol);
 
     this.construirListaSedes();
 
@@ -285,7 +290,9 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
       this.sedes = [];
       this.seleccionada = null;
       this.cargando = false;
-      this.irACambiarInstitucion();
+      if (!this.puedeSeleccionarInstitucion) {
+        this.irACambiarInstitucion();
+      }
       return;
     }
 
@@ -348,16 +355,21 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
     if (this.sedes.length === 0) {
       this.cargando = true;
     }
+    this.errorInstituciones = '';
 
     this.http.get<any>(this.urlInstituciones).pipe(
       timeout(6000),
       map(d => listaDe(d)),
+      throwIfEmpty(() => new Error('La respuesta de instituciones llegó vacía.')),
       catchError(err => {
         console.warn('Sincronización en segundo plano de instituciones:', err);
+        this.errorInstituciones = 'No se pudieron cargar las instituciones. Revisa tu conexión e inténtalo de nuevo.';
         return of([] as any[]);
+      }),
+      finalize(() => {
+        this.cargando = false;
       })
     ).subscribe((lista) => {
-      this.cargando = false;
       if (lista.length > 0) {
         this.institucionesSupervisor = lista.map((item: any) => ({
           id_institucion: item.id_institucion ?? item.id,
@@ -422,7 +434,18 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
   //  ACCIONES
   // =====================================================
   irACambiarInstitucion(): void {
+    if (this.puedeSeleccionarInstitucion) {
+      this.authService.limpiarInstitucionActiva();
+      this.institucionActiva = null;
+      this.construirListaSedes();
+      return;
+    }
     this.router.navigate(['/dashboard-supervisor'], { queryParams: { cambiar: 'true' } });
+  }
+
+  seleccionarInstitucion(inst: InstitucionAsignada): void {
+    this.authService.establecerInstitucionActiva(inst);
+    this.institucionActiva = inst;
   }
 
   irAEntregas(sede: SedeCard): void {
