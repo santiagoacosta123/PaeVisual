@@ -22,6 +22,13 @@ export interface InstitucionAsignada {
   administrador_asignado?: any;
 }
 
+export interface SedeActiva {
+  id_sede: number;
+  nombre_sede: string;
+  id_institucion?: number;
+  nombre_institucion?: string;
+}
+
 export interface AuthenticatedUser {
   id_usuario: number;
   nombre: string;
@@ -62,9 +69,12 @@ export class AuthService {
   private readonly REFRESH_TOKEN = 'refresh_token';
   private readonly USUARIO = 'usuario';
   private readonly INSTITUCION_ACTIVA = 'sirae_institucion_activa';
+  private readonly SEDE_ACTIVA = 'sirae_sede_activa';
 
   private institucionActivaSubject = new BehaviorSubject<InstitucionAsignada | null>(null);
   public institucionActiva$ = this.institucionActivaSubject.asObservable();
+  private sedeActivaSubject = new BehaviorSubject<SedeActiva | null>(this.obtenerSedeActiva());
+  public sedeActiva$ = this.sedeActivaSubject.asObservable();
 
   constructor(
     private http: HttpClient,
@@ -280,6 +290,29 @@ export class AuthService {
     }
     localStorage.setItem(this.INSTITUCION_ACTIVA, JSON.stringify(institucion));
     this.institucionActivaSubject.next(institucion);
+    this.limpiarSedeActiva();
+  }
+
+  obtenerSedeActiva(): SedeActiva | null {
+    if (!this.estaDisponibleStorage()) return null;
+    try {
+      const guardada = localStorage.getItem(this.SEDE_ACTIVA);
+      return guardada ? JSON.parse(guardada) as SedeActiva : null;
+    } catch {
+      return null;
+    }
+  }
+
+  establecerSedeActiva(sede: SedeActiva): void {
+    if (!this.estaDisponibleStorage()) return;
+    localStorage.setItem(this.SEDE_ACTIVA, JSON.stringify(sede));
+    this.sedeActivaSubject.next(sede);
+  }
+
+  limpiarSedeActiva(): void {
+    if (!this.estaDisponibleStorage()) return;
+    localStorage.removeItem(this.SEDE_ACTIVA);
+    this.sedeActivaSubject.next(null);
   }
 
   limpiarInstitucionActiva(): void {
@@ -288,6 +321,7 @@ export class AuthService {
     }
     localStorage.removeItem(this.INSTITUCION_ACTIVA);
     this.institucionActivaSubject.next(null);
+    this.limpiarSedeActiva();
   }
 
   estaAutenticado(): boolean {

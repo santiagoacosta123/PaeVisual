@@ -3,7 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Observable, Subscription, forkJoin, of } from 'rxjs';
 import { catchError, take, timeout } from 'rxjs/operators';
-import { AuthService, InstitucionAsignada } from '@core/auth';
+import { Router } from '@angular/router';
+import { AuthService, InstitucionAsignada, SedeActiva } from '@core/auth';
 import { SweetAlertService } from '../sweet-alert.service';
 import { Entrega, EntregasService } from '../features/entregas/services/entregas.service';
 import { SiraeService } from '../features/contratos/services/contratos_pae.service';
@@ -30,6 +31,11 @@ interface EntregaSede {
   unidad: string;
   estado: string;           // EN_TRANSITO | RECIBIDA | CON_NOVEDAD | RECHAZADA
   kilos: number;            // kg efectivamente recibidos (0 si no es peso, está en tránsito o fue rechazada)
+  cantidadRecibida: number | null;
+  cantidadRechazada: number | null;
+  receptor: string;
+  motivo: string;
+  observaciones: string;
 }
 
 interface ResumenSede {
@@ -90,6 +96,7 @@ export class Reportes implements OnInit, OnDestroy {
 
   // ===================== REPORTE DE SEDES (sedes + cupos + entregas) =====================
   institucionActiva: InstitucionAsignada | null = null;
+  sedeActiva: SedeActiva | null = null;
   sedesBase: SedeBase[] = [];
   entregas: EntregaSede[] = [];
   avisoDatos = '';
@@ -97,10 +104,15 @@ export class Reportes implements OnInit, OnDestroy {
   ordenColumna: ColumnaSede = 'kilos';
   ordenDireccion: 'asc' | 'desc' = 'desc';
   sedeDetalle: ResumenSede | null = null;
+  entregaDetalle: EntregaSede | null = null;
+  estadoFiltro = 'TODAS';
+  textoBusqueda = '';
 
   private versionDatos = 0;
   private suscripcion?: Subscription;
+  private suscripcionSede?: Subscription;
   private cache: { clave: string; resumen: ResumenSede[]; totales: TotalesReporte } | null = null;
+  private actualizacionAutomatica?: ReturnType<typeof setInterval>;
 
   constructor(
     private readonly entregasService: EntregasService,
@@ -108,6 +120,7 @@ export class Reportes implements OnInit, OnDestroy {
     private readonly auth: AuthService,
     private readonly alertas: SweetAlertService,
     private readonly cdr: ChangeDetectorRef,
+    private readonly router: Router,
   ) {}
 
   ngOnInit(): void {
@@ -121,16 +134,25 @@ export class Reportes implements OnInit, OnDestroy {
       }
       this.cargar();
     });
+    this.actualizacionAutomatica = setInterval(() => this.cargar(), 60000);
   }
 
   ngOnDestroy(): void {
     this.suscripcion?.unsubscribe();
+    this.suscripcionSede?.unsubscribe();
+    if (this.actualizacionAutomatica) clearInterval(this.actualizacionAutomatica);
+  }
+
+  @HostListener('window:focus')
+  actualizarAlRecuperarFoco(): void {
+    this.cargar();
   }
 
   // Esc cierra el detalle de la sede
   @HostListener('document:keydown.escape')
   alPresionarEsc(): void {
-    if (this.sedeDetalle) this.cerrarSede();
+    if (this.entregaDetalle) this.cerrarEntrega();
+    else if (this.sedeDetalle) this.cerrarSede();
   }
 
   cargar(): void {
@@ -155,6 +177,12 @@ export class Reportes implements OnInit, OnDestroy {
       this.cargando = false;
       this.cdr.markForCheck();
     });
+    this.suscripcionSede = this.auth.sedeActiva$.subscribe(sede => {
+      this.sedeActiva = sede;
+      this.sedeFiltro = sede?.id_sede ?? 'Todas';
+      this.cdr.markForCheck();
+      this.cargar();
+    });
   }
 
   // =====================================================
@@ -178,6 +206,16 @@ export class Reportes implements OnInit, OnDestroy {
       mapaSedes.set(id, { id, nombre: texto(item.nombre_sede ?? item.nombre) || `Sede ${id}`, cupos: 0 });
     }
 
+    const institucionSinSedes = mapaSedes.size === 0 &&
+      !listaDe(this.institucionActiva?.sedes).length;
+    if (institucionSinSedes && idInstitucion) {
+      mapaSedes.set(0, {
+        id: 0,
+        nombre: this.institucionActiva?.nombre_institucion || 'Institución',
+        cupos: 0,
+      });
+    }
+
     // 2) Cupos: suma de los contratos vigentes de cada sede
     for (const contrato of listaDe(contratos)) {
       const idSede = Number(contrato.id_sede);
@@ -190,22 +228,25 @@ export class Reportes implements OnInit, OnDestroy {
     // 3) Entregas de la institución que sí tienen sede
     const delaInstitucion = (entregas ?? []).filter(e =>
       !idInstitucion || e.idInstitucion === idInstitucion || (e.idSede !== undefined && mapaSedes.has(e.idSede)));
-    const sinSede = delaInstitucion.filter(e => !e.idSede).length;
-    const conSede = delaInstitucion.filter(e => !!e.idSede);
+    const sinSede = delaInstitucion.filter(e => !e.idSede && !institucionSinSedes).length;
+    const conSede = delaInstitucion.filter(e => !!e.idSede || institucionSinSedes);
 
     // Si una entrega es de una sede que no llegó en la lista, la sede se agrega para no perder datos
     for (const e of conSede) {
-      if (!mapaSedes.has(e.idSede!)) {
+      if (e.idSede && !mapaSedes.has(e.idSede!)) {
         mapaSedes.set(e.idSede!, { id: e.idSede!, nombre: e.sedeNombre || `Sede ${e.idSede}`, cupos: 0 });
       }
     }
 
     this.sedesBase = Array.from(mapaSedes.values());
-    this.entregas = conSede.map(e => this.aEntregaSede(e, mapaSedes.get(e.idSede!)!.nombre));
+    this.entregas = conSede.map(e => this.aEntregaSede(
+      e,
+      e.idSede ? mapaSedes.get(e.idSede!)?.nombre || e.sedeNombre || `Sede ${e.idSede}` : this.institucionActiva?.nombre_institucion || 'Institución'
+    ));
     this.versionDatos++;
 
     const avisos: string[] = [];
-    if (fallos.length > 0) avisos.push(`No se pudieron cargar ${fallos.join(', ')}. Los datos de esas partes pueden estar incompletos; usa "Actualizar datos" para reintentar.`);
+    if (fallos.length > 0) avisos.push(`No se pudieron cargar ${fallos.join(', ')}. El historial reintentará la actualización automáticamente.`);
     if (sinSede > 0) avisos.push(`${sinSede} ${sinSede === 1 ? 'entrega no tiene' : 'entregas no tienen'} sede asignada y no se cuentan por sede.`);
     this.avisoDatos = avisos.join(' ');
   }
@@ -231,6 +272,11 @@ export class Reportes implements OnInit, OnDestroy {
       unidad: e.unidad,
       estado,
       kilos: recibida && e.unidad === 'Kg' ? Number(cantidad) || 0 : 0,
+      cantidadRecibida: e.cantidadRecibida ?? null,
+      cantidadRechazada: e.cantidadRechazada ?? null,
+      receptor: texto(e.usuarioReceptorNombre),
+      motivo: texto(e.motivoRechazo),
+      observaciones: texto(e.observaciones),
     };
   }
 
@@ -252,6 +298,28 @@ export class Reportes implements OnInit, OnDestroy {
 
   get sedesDisponibles(): SedeBase[] {
     return [...this.sedesBase].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+  }
+
+  get entregasHistorial(): EntregaSede[] {
+    const busqueda = this.textoBusqueda.trim().toLocaleLowerCase('es');
+    const sedes = new Set(this.sedesBase
+      .filter(s => this.sedeFiltro === 'Todas' || s.id === this.sedeFiltro)
+      .map(s => s.id));
+
+    return this.entregasEnFechas
+      .filter(e => sedes.has(e.sedeId))
+      .filter(e => this.estadoFiltro === 'TODAS' || e.estado === this.estadoFiltro)
+      .filter(e => !busqueda || [e.ingrediente, e.sede, e.tipoMercado, e.receptor]
+        .some(valor => valor.toLocaleLowerCase('es').includes(busqueda)))
+      .sort((a, b) => b.fecha.localeCompare(a.fecha) || b.id - a.id);
+  }
+
+  contarEstado(estado: string): number {
+    const sedes = new Set(this.sedesBase
+      .filter(s => this.sedeFiltro === 'Todas' || s.id === this.sedeFiltro)
+      .map(s => s.id));
+    return this.entregasEnFechas
+      .filter(e => sedes.has(e.sedeId) && (estado === 'TODAS' || e.estado === estado)).length;
   }
 
   /** Entregas dentro de las fechas del filtro (todas las sedes) */
@@ -360,6 +428,20 @@ export class Reportes implements OnInit, OnDestroy {
 
   cerrarSede(): void {
     this.sedeDetalle = null;
+  }
+
+  abrirEntrega(entrega: EntregaSede): void {
+    this.entregaDetalle = entrega;
+  }
+
+  cerrarEntrega(): void {
+    this.entregaDetalle = null;
+  }
+
+  reponerEntrega(entrega: EntregaSede): void {
+    void this.router.navigate(['/registrar-entrega-alimentos'], {
+      queryParams: { sede: entrega.sedeId }
+    });
   }
 
   // Entregas de la sede elegida dentro de las fechas del filtro (lo más reciente primero)

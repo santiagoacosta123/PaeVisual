@@ -13,7 +13,7 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { NotificacionService } from '../notificaciones/notificacion.service';
 import { Notificacion } from '../notificaciones/notificacion.model';
-import { AuthService, InstitucionAsignada } from '../services/auth.service';
+import { AuthService, InstitucionAsignada, SedeActiva } from '../services/auth.service';
 import { SiraeService } from '../features/contratos/services/contratos_pae.service';
 import { FacturasCompraService } from '../services/facturas-compra.service';
 import { environment } from '../../environments/environment';
@@ -62,6 +62,7 @@ export class LayoutComponent implements OnInit {
 
   // Institución Activa de Trabajo para Supervisor
   institucionActiva: InstitucionAsignada | null = null;
+  sedeActiva: SedeActiva | null = null;
   institucionesSupervisor: InstitucionAsignada[] = [];
   mostrarSelectorInstitucion = false;
 
@@ -154,6 +155,11 @@ export class LayoutComponent implements OnInit {
         this.institucionActiva = inst;
         this.cdr.detectChanges();
       });
+      this.sedeActiva = this.authService.obtenerSedeActiva();
+      this.authService.sedeActiva$.subscribe((sede) => {
+        this.sedeActiva = sede;
+        this.cdr.detectChanges();
+      });
       if (this.institucionesSupervisor.length === 0) {
         this.cargarInstitucionesSupervisor();
       }
@@ -207,7 +213,7 @@ export class LayoutComponent implements OnInit {
       '/menus': 'Menús',
       '/facturas-compra': 'Facturas',
       '/bodega-central': 'Bodega Central',
-      '/reportes-consumo': 'Reportes',
+      '/reportes-consumo': 'Historial de entregas',
       '/notificaciones': 'Notificaciones'
     };
 
@@ -375,7 +381,7 @@ export class LayoutComponent implements OnInit {
     this.cdr.detectChanges();
     void this.sweetAlert.supervisorSuccess(
       'Institución seleccionada',
-      `${inst.nombre_institucion} quedó activa para supervisar entregas, sedes y reportes.`
+      `${inst.nombre_institucion} quedó activa para supervisar entregas, sedes e historial.`
     );
     void this.router.navigate(['/dashboard-supervisor']);
   }

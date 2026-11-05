@@ -369,6 +369,11 @@
 
         <!-- Botones de Acción -->
         <div class="mt-5 flex gap-2 border-t border-slate-100 pt-4">
+          <button type="button" (click)="seleccionarSede(s)"
+            class="flex-1 flex cursor-pointer items-center justify-center gap-1.5 rounded-full bg-[#faa911] px-3.5 py-2 text-xs font-bold text-white transition hover:bg-[#e69a0c] shadow-sm">
+            <span class="material-symbols-outlined text-[16px]">location_on</span>
+            {{ s.esInstitucion ? 'Trabajar en la institución' : 'Trabajar en esta sede' }}
+          </button>
           <button type="button" (click)="irAEntregas(s)"
             class="flex-1 flex cursor-pointer items-center justify-center gap-1.5 rounded-full border border-[#faa911] bg-amber-50 px-3.5 py-2 text-xs font-bold text-amber-900 transition hover:bg-amber-100 shadow-sm">
             <span class="material-symbols-outlined text-[16px]">local_shipping</span>
