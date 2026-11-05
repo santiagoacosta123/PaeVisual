@@ -184,20 +184,12 @@
           </div>
         </div>
 
-        <!-- Botones de Acción -->
-        <div class="mt-5 flex gap-2 border-t border-slate-100 pt-4">
-          <!-- "Ver sedes" solo aparece si la institución tiene sedes -->
-          <button *ngIf="institucionActiva?.sedes?.length" type="button" (click)="abrir(sede)"
-            class="flex-1 flex cursor-pointer items-center justify-center gap-1.5 rounded-full border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-50 shadow-sm">
-            <span class="material-symbols-outlined text-[16px]">visibility</span>
-            Ver sedes
-          </button>
-          <!-- "Entregas" abre Registrar entrega con el nombre de esta sede -->
+        <!-- Botón de Acción -->
+        <div class="mt-5 flex border-t border-slate-100 pt-4">
           <button type="button" (click)="irAEntregas(sede)"
-            class="flex cursor-pointer items-center justify-center gap-1.5 rounded-full border border-[#faa911] bg-amber-50 px-3.5 py-2 text-xs font-bold text-amber-900 transition hover:bg-amber-100 shadow-sm"
-            [class.flex-1]="!institucionActiva?.sedes?.length">
+            class="w-full flex cursor-pointer items-center justify-center gap-1.5 rounded-full border border-[#faa911] bg-amber-50 px-4 py-2.5 text-xs font-bold text-amber-900 transition hover:bg-amber-100 shadow-sm">
             <span class="material-symbols-outlined text-[16px]">local_shipping</span>
-            Entregas
+            Registrar entrega
           </button>
         </div>
       </article>
