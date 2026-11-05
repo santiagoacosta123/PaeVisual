@@ -88,6 +88,27 @@
     /* Tarjeta de inventario (panel Factura) */
     .inv-card { background: #fff; border: 1px solid #F1F5F9; border-radius: 18px; overflow: hidden; box-shadow: 0 6px 16px -10px rgba(15, 23, 42, .2); }
     .inv-card-cantidad { padding: 10px 12px; background: #FFF7ED; border-top: 1px solid #FFEDD5; border-bottom: 1px solid #FFEDD5; }
+    .inv-item { background: #fff; border: 1px solid #F1F5F9; border-radius: 16px; padding: 10px 12px; box-shadow: 0 4px 12px -8px rgba(15, 23, 42, .08); transition: all .2s ease; }
+    .inv-item:hover { border-color: #FED7AA; box-shadow: 0 6px 16px -8px rgba(255, 138, 0, .18); }
+    .custom-scroll { scrollbar-width: thin; scrollbar-color: #FED7AA transparent; }
+    .custom-scroll::-webkit-scrollbar { width: 5px; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: #FED7AA; border-radius: 9999px; }
+
+    /* Panel lateral sticky: acompaña al usuario al hacer scroll */
+    @media (min-width: 1024px) {
+        .panel-sticky {
+            position: -webkit-sticky;
+            position: sticky;
+            top: 24px;
+            align-self: start;
+            max-height: calc(100vh - 36px);
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #FED7AA transparent;
+        }
+        .panel-sticky::-webkit-scrollbar { width: 6px; }
+        .panel-sticky::-webkit-scrollbar-thumb { background: #FED7AA; border-radius: 9999px; }
+    }
 </style>
 
 <!-- Foto redonda del producto (o su emoji). Uso: <ng-container *ngTemplateOutlet="foto; context: { n: nombre, c: 'h-9 w-9 bg-orange-50' }"> -->
@@ -294,8 +315,8 @@
                 </div>
             </section>
 
-            <!-- ================= COLUMNA DERECHA ================= -->
-            <aside class="flex flex-col gap-4 lg:col-span-4">
+            <!-- ================= COLUMNA DERECHA (FIJA AL HACER SCROLL) ================= -->
+            <aside class="panel-sticky flex flex-col gap-4 lg:col-span-4">
 
                 <!-- ===== SOLO HISTORIAL: entradas registradas, una tarjeta por fecha y destino ===== -->
                 <div *ngIf="mostrarCalendario" class="fx-panel rounded-3xl p-4 sm:p-5">
@@ -367,76 +388,87 @@
                                 <span class="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Factura</span>
                                 <h3 class="m-0 text-sm font-black text-slate-900">Productos para enviar</h3>
                             </div>
-                            <span class="rounded-full bg-orange-100 px-2.5 py-0.5 text-[11px] font-black text-orange-600">{{ seleccionados.length }} productos</span>
+                            <span class="rounded-full bg-orange-100 px-2.5 py-0.5 text-[11px] font-black text-orange-600">
+                                {{ seleccionados.length }} {{ seleccionados.length === 1 ? 'producto' : 'productos' }}
+                            </span>
                         </div>
                     </div>
 
-                    <p *ngIf="seleccionados.length === 0" class="rounded-xl border border-dashed border-slate-200 p-4 text-center text-xs text-slate-500">Desliza un producto del catálogo hacia la derecha para verlo aquí.</p>
+                    <p *ngIf="seleccionados.length === 0" class="rounded-xl border border-dashed border-slate-200 p-4 text-center text-xs text-slate-500">
+                        Desliza un producto del catálogo hacia la derecha para verlo aquí.
+                    </p>
 
-                    <div class="flex max-h-[620px] flex-col gap-3 overflow-y-auto pr-1">
-                        <article *ngFor="let sel of seleccionados; trackBy: trackPor" class="inv-card fx-up" [attr.aria-label]="sel.ingrediente">
-                            <header class="flex items-center justify-between gap-2 px-3 pb-2.5 pt-3">
-                                <div class="flex min-w-0 items-center gap-2.5">
-                                    <ng-container *ngTemplateOutlet="foto; context: { n: sel.ingrediente, c: 'h-11 w-11 bg-orange-50 text-xl' }"></ng-container>
+                    <!-- Lista compacta y organizada de productos seleccionados -->
+                    <div *ngIf="seleccionados.length > 0" class="max-h-[320px] overflow-y-auto space-y-2 pr-1 custom-scroll">
+                        <article *ngFor="let sel of seleccionados; trackBy: trackPor" class="inv-item fx-up" [attr.aria-label]="sel.ingrediente">
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="flex min-w-0 items-center gap-2">
+                                    <ng-container *ngTemplateOutlet="foto; context: { n: sel.ingrediente, c: 'h-9 w-9 shrink-0 rounded-xl bg-orange-50 text-lg shadow-xs' }"></ng-container>
                                     <div class="min-w-0">
-                                        <h5 class="m-0 truncate text-sm font-black text-slate-900">{{ sel.ingrediente }}</h5>
-                                        <p class="m-0 truncate text-[11px] font-semibold text-slate-400">{{ categoriaDe(sel.ingrediente) }} · {{ sel.tipoMercado }}</p>
+                                        <h5 class="m-0 truncate text-xs font-black text-slate-900" [title]="sel.ingrediente">{{ sel.ingrediente }}</h5>
+                                        <p class="m-0 truncate text-[10px] font-bold text-orange-600">
+                                            Disp: {{ disponibleDe(sel) | number:'1.0-2' }} {{ sel.unidad }}
+                                        </p>
                                     </div>
                                 </div>
                                 <button type="button" (click)="quitarSeleccionado(sel)" [attr.aria-label]="'Quitar ' + sel.ingrediente"
-                                    class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200">
-                                    <span class="material-symbols-outlined text-[16px]">close</span>
+                                    class="flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition">
+                                    <span class="material-symbols-outlined text-[15px]">close</span>
                                 </button>
-                            </header>
-
-                            <div class="inv-card-cantidad">
-                                <span class="block text-[10px] font-bold text-slate-500">Cantidad disponible</span>
-                                <p class="m-0 mt-0.5 text-sm font-black leading-snug text-slate-900">Tienes <span class="text-xl text-orange-600">{{ disponibleDe(sel) | number:'1.0-2' }}</span> <span class="text-orange-600">{{ unidadTexto(sel.unidad, disponibleDe(sel)) }}</span> de {{ nombreMinuscula(sel.ingrediente) }}</p>
                             </div>
 
-                            <!-- El botón Enviar es uno solo, debajo de todos los productos -->
-                            <div class="px-3 py-3">
-                                <span class="mb-1.5 block text-[10px] font-bold text-slate-500">Cantidad a enviar</span>
+                            <!-- Fila compacta de cantidad a enviar -->
+                            <div class="mt-2 flex items-center justify-between gap-2 rounded-xl bg-orange-50/70 px-2.5 py-1.5 border border-orange-100/70">
+                                <span class="text-[10px] font-bold text-slate-600">A enviar:</span>
                                 <div class="flex items-center gap-1.5">
-                                    <button type="button" class="cant-btn" aria-label="Restar" (click)="ajustarCantidadEnviar(sel, -1)"><span class="material-symbols-outlined text-[16px]">remove</span></button>
+                                    <button type="button" class="cant-btn !h-6 !w-6" aria-label="Restar" (click)="ajustarCantidadEnviar(sel, -1)">
+                                        <span class="material-symbols-outlined text-[14px]">remove</span>
+                                    </button>
                                     <input type="number" min="0" [max]="disponibleDe(sel)" step="any" placeholder="0"
                                         [ngModel]="cantidadEnviarDe(sel) || null" (ngModelChange)="fijarCantidadEnviar(sel, $event)"
                                         [attr.aria-label]="'Cantidad de ' + sel.ingrediente + ' a enviar'"
-                                        class="fx-input min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-center text-sm font-black text-slate-800 outline-none">
-                                    <button type="button" class="cant-btn" aria-label="Sumar" (click)="ajustarCantidadEnviar(sel, 1)"><span class="material-symbols-outlined text-[16px]">add</span></button>
-                                    <span class="shrink-0 text-xs font-black text-slate-700">{{ sel.unidad }}</span>
+                                        class="fx-input !h-7 w-16 rounded-lg border border-slate-200 bg-white px-1 text-center text-xs font-black text-slate-800 outline-none">
+                                    <button type="button" class="cant-btn !h-6 !w-6" aria-label="Sumar" (click)="ajustarCantidadEnviar(sel, 1)">
+                                        <span class="material-symbols-outlined text-[14px]">add</span>
+                                    </button>
+                                    <span class="min-w-[18px] text-[10px] font-bold text-slate-600">{{ sel.unidad }}</span>
                                 </div>
-                                <p class="m-0 mt-1.5 text-[10px] font-semibold" [ngClass]="cantidadEnviarDe(sel) > disponibleDe(sel) ? 'text-red-600' : 'text-slate-400'">
-                                    {{ cantidadEnviarDe(sel) > disponibleDe(sel) ? 'No puedes enviar más de lo disponible' : 'Disponible: ' + disponibleDe(sel) + ' ' + sel.unidad }}
-                                </p>
                             </div>
+
+                            <p *ngIf="cantidadEnviarDe(sel) > disponibleDe(sel)" class="m-0 mt-1 text-[10px] font-bold text-red-600">
+                                No puedes enviar más de {{ disponibleDe(sel) }} {{ sel.unidad }}
+                            </p>
                         </article>
                     </div>
 
-                    <!-- Un solo botón para enviar (uno o varios productos) -->
-                    <div *ngIf="seleccionados.length > 0" class="mt-3">
-                        <div class="mb-3 grid grid-cols-1 gap-2.5 rounded-2xl border border-slate-100 bg-slate-50 p-3">
+                    <!-- Datos del envío y botón único de enviar -->
+                    <div *ngIf="seleccionados.length > 0" class="mt-3 border-t border-slate-100 pt-3">
+                        <div class="mb-3 grid grid-cols-1 gap-2 rounded-2xl border border-slate-100 bg-slate-50 p-2.5">
                             <label class="block">
                                 <span class="mb-1 block text-[10px] font-bold text-slate-500">Fecha de envío <span class="text-red-500">*</span></span>
-                                <input type="date" [(ngModel)]="envioFecha" (ngModelChange)="errorEnvioPanel = ''" aria-label="Fecha de envío" class="fx-input campo" [class.invalido]="!envioFecha">
+                                <input type="date" [(ngModel)]="envioFecha" (ngModelChange)="errorEnvioPanel = ''" aria-label="Fecha de envío" class="fx-input campo !py-1.5" [class.invalido]="!envioFecha">
                             </label>
                             <label class="block">
                                 <span class="mb-1 block text-[10px] font-bold text-slate-500">Responsable (quién envía) <span class="text-red-500">*</span></span>
-                                <input type="text" [(ngModel)]="envioResponsable" (ngModelChange)="errorEnvioPanel = ''" placeholder="Escribe tu nombre" autocomplete="off" aria-label="Responsable del envío" class="fx-input campo" [class.invalido]="!envioResponsable.trim()">
+                                <input type="text" [(ngModel)]="envioResponsable" (ngModelChange)="errorEnvioPanel = ''" placeholder="Escribe tu nombre" autocomplete="off" aria-label="Responsable del envío" class="fx-input campo !py-1.5" [class.invalido]="!envioResponsable.trim()">
                             </label>
                         </div>
                         <p *ngIf="errorEnvioPanel" class="m-0 mb-2 rounded-xl border border-red-200 bg-red-50 p-2 text-[11px] font-semibold text-red-700" role="alert">{{ errorEnvioPanel }}</p>
                         <button type="button" (click)="enviarSeleccionados()" [disabled]="guardandoEnvio || productosParaEnviar.length === 0"
                             class="pill-on flex w-full cursor-pointer items-center justify-center gap-2 rounded-full px-4 py-2.5 text-xs font-bold transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">
                             <span class="material-symbols-outlined text-[18px]">{{ guardandoEnvio ? 'hourglass_top' : 'send' }}</span>
-                            {{ guardandoEnvio ? 'Enviando...' : (seleccionados.length === 1 ? 'Enviar' : 'Enviar todos' + (productosParaEnviar.length ? ' (' + productosParaEnviar.length + ')' : '')) }}
+                            {{ guardandoEnvio ? 'Enviando...' : (seleccionados.length === 1 ? 'Enviar producto' : 'Enviar todos (' + productosParaEnviar.length + ')') }}
                         </button>
                     </div>
 
-                    <div class="mt-4 border-t border-slate-100 pt-4">
-                        <button type="button" (click)="mostrarModalInventario = true" class="pill-on flex w-full cursor-pointer items-center justify-center gap-2 rounded-full px-4 py-2.5 text-xs font-bold transition hover:opacity-90">
-                            <span class="material-symbols-outlined text-[18px]">inventory_2</span> Ver inventario
-                            <span class="rounded-full bg-white/25 px-2 py-0.5 text-[10px] font-black">{{ inventarioDisponible.length }} disponibles · {{ inventarioNoDisponible.length }} no disponibles</span>
+                    <div class="mt-3 border-t border-slate-100 pt-3">
+                        <button type="button" (click)="mostrarModalInventario = true" class="flex w-full cursor-pointer items-center justify-between rounded-full border border-orange-200 bg-orange-50/70 px-4 py-2 text-xs font-bold text-orange-800 transition hover:bg-orange-100 shadow-xs">
+                            <span class="flex items-center gap-1.5">
+                                <span class="material-symbols-outlined text-[18px] text-orange-600">inventory_2</span> Ver inventario
+                            </span>
+                            <span class="rounded-full bg-white px-2 py-0.5 text-[10px] font-black text-orange-700 shadow-xs">
+                                {{ inventarioDisponible.length }} disp. · {{ inventarioNoDisponible.length }} agotados
+                            </span>
                         </button>
                     </div>
                 </div>
@@ -673,12 +705,6 @@
             <div><p class="m-0 text-[10px] text-slate-400">Registrado el</p><p class="m-0 text-xs font-black text-slate-800">{{ d.fechaRegistro ? fechaCorta(d.fechaRegistro) : '—' }}<ng-container *ngIf="d.hora"> · {{ d.hora }}</ng-container></p></div>
             <div><p class="m-0 text-[10px] text-slate-400">Responsable (quién lo hizo)</p><p class="m-0 text-xs font-black text-slate-800">{{ d.responsable || 'Sin responsable' }}</p></div>
             <div><p class="m-0 text-[10px] text-slate-400">Productos</p><p class="m-0 text-xs font-black text-slate-800">{{ detalleLista.length }}</p></div>
-        </div>
-
-        <!-- Entradas antiguas sin responsable: se puede escribir quién la hizo -->
-        <div *ngIf="!d.responsable" class="mt-3 flex items-center gap-2 rounded-2xl border border-dashed border-emerald-300 bg-emerald-50/50 p-3">
-            <input type="text" [(ngModel)]="responsableManual" (keydown.enter)="asignarResponsableEntrada()" placeholder="Escribe quién hizo esta entrada" autocomplete="off" aria-label="Responsable de la entrada" class="fx-input campo">
-            <button type="button" (click)="asignarResponsableEntrada()" class="pill-on shrink-0 cursor-pointer rounded-full px-4 py-2 text-xs font-bold transition hover:opacity-90">Guardar</button>
         </div>
 
         <h4 class="m-0 mt-5 text-sm font-black text-slate-900">Productos de esta entrada</h4>

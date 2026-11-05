@@ -5,7 +5,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Subscription, forkJoin, of } from 'rxjs';
 import { catchError, finalize, map, throwIfEmpty, timeout } from 'rxjs/operators';
-import { environment } from '@env/environment';
+import { environment } from '../../environments/environment';
 import { AuthService, InstitucionAsignada } from '../core/auth/auth.service';
 import { FacturasCompraService, InventarioCentralItem } from '../services/facturas-compra.service';
 
@@ -35,6 +35,19 @@ export interface SedeCard {
   diasInventario?: number;
   // true cuando la "sede" es en realidad la institución completa (la institución no maneja sedes)
   esInstitucion?: boolean;
+  raw?: any;
+}
+
+export interface InstitucionSede {
+  id_institucion: number;
+  nombre_institucion: string;
+  nit?: string;
+  representante_legal?: string;
+  telefono?: string;
+  correo_contacto?: string;
+  estado?: string;
+  administrador_asignado?: any;
+  total_sedes?: number;
 }
 
 // Tarjeta de ingrediente para la sede
@@ -223,6 +236,11 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
 
   // Detalle de sede (solo lectura)
   seleccionada: SedeCard | null = null;
+  institucionSeleccionada: InstitucionAsignada | null = null;
+  sedesDeInstitucion: SedeCard[] = [];
+  cargandoSedesInstitucion = false;
+  institucionesSede: InstitucionSede[] = [];
+  cargandoInstitucionesSede = false;
   pestana: Pestana = 'inventario';
   pestanas: { id: Pestana; nombre: string; icono: string }[] = [
     { id: 'inventario', nombre: 'Inventario de la Sede', icono: 'inventory_2' },
@@ -306,28 +324,23 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
       direccion: s.direccion || '',
       telefono: s.telefono || '',
       estado: s.estado || 'ACTIVO',
-      id_institucion: inst.id_institucion,
-      nombre_institucion: inst.nombre_institucion,
+      id_institucion: s.id_institucion ?? inst.id_institucion,
+      nombre_institucion: s.nombre_institucion ?? inst.nombre_institucion,
       matriculados: s.matriculados ?? 120,
       asistenciaPromedio: s.asistencia_promedio ?? 95,
       diasInventario: s.dias_inventario ?? 14,
+      raw: s,
     }));
 
     this.cargando = false;
 
     if (this.sinSedes) {
-      // Institución sin sedes: se abre la institución directamente
-      this.abrirInstitucionSinSedes();
+      this.seleccionada = null;
     } else if (
       this.seleccionada &&
       (this.seleccionada.esInstitucion ||
         this.seleccionada.id_institucion !== inst.id_institucion)
     ) {
-      // Se cambió a una institución con sedes (o a otra): se vuelve a la lista de sedes
-      this.subEntregas?.unsubscribe();
-      this.subInventario?.unsubscribe();
-      this.cargandoEntregas = false;
-      this.cargandoInventario = false;
       this.seleccionada = null;
     }
   }
@@ -448,27 +461,263 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
     this.institucionActiva = inst;
   }
 
+  // Lleva a "Registrar entrega" con la institución y la sede de la tarjeta ya enviadas
   irAEntregas(sede: SedeCard): void {
-    this.router.navigate(['/registrar-entrega-alimentos'], {
-      queryParams: sede.esInstitucion ? {} : { sede: sede.id_sede }
-    });
+    const queryParams: Record<string, string | number> = {};
+
+    if (sede.id_institucion != null) queryParams['institucion'] = sede.id_institucion;
+
+    if (!sede.esInstitucion) {
+      queryParams['sede'] = sede.id_sede;
+      queryParams['nombreSede'] = sede.nombre_sede;
+      // Mismo formato "Institución - Sede" que usa leerEnviosDeSede() para el destino
+      queryParams['destino'] = `${sede.nombre_institucion} - ${sede.nombre_sede}`;
+    } else {
+      queryParams['destino'] = sede.nombre_institucion ?? '';
+    }
+
+    this.router.navigate(['/registrar-entrega-alimentos'], { queryParams });
   }
 
   abrir(sede: SedeCard): void {
     this.seleccionada = sede;
-    this.pestana = 'inventario';
-    this.limpiarFiltrosInv();
-    this.cargarInventario();
-    this.cargarEntregas(sede);
+    this.cargarSedesDeInstitucion(sede);
   }
 
   volver(): void {
-    // Si la institución no maneja sedes no hay lista a la cual volver
-    if (this.sinSedes) return;
-    this.subEntregas?.unsubscribe();
-    this.subInventario?.unsubscribe();
-    this.cargandoEntregas = false;
-    this.cargandoInventario = false;
+    this.seleccionada = null;
+    this.sedesDeInstitucion = [];
+    this.institucionSeleccionada = null;
+    this.cargandoSedesInstitucion = false;
+    this.institucionesSede = [];
+    this.cargandoInstitucionesSede = false;
+  }
+
+  // =====================================================
+  //  SEDES DE LA INSTITUCIÓN
+  // =====================================================
+  cargarSedesDeInstitucion(sede: SedeCard): void {
+    this.cargandoSedesInstitucion = true;
+    this.sedesDeInstitucion = [];
+
+    const idInst = sede.id_institucion ?? this.institucionActiva?.id_institucion;
+    const nombreInst = normalizar(sede.nombre_institucion ?? this.institucionActiva?.nombre_institucion ?? '');
+
+    // Buscar la institución correspondiente en institucionesSupervisor o institucionActiva
+    let instEncontrada: InstitucionAsignada | null = null;
+    if (idInst != null) {
+      instEncontrada = this.institucionesSupervisor.find(i => Number(i.id_institucion) === Number(idInst)) ?? null;
+    }
+    if (!instEncontrada && nombreInst) {
+      instEncontrada = this.institucionesSupervisor.find(i => normalizar(i.nombre_institucion) === nombreInst) ?? null;
+    }
+    if (!instEncontrada && this.institucionActiva) {
+      if (idInst == null || Number(this.institucionActiva.id_institucion) === Number(idInst)) {
+        instEncontrada = this.institucionActiva;
+      }
+    }
+
+    this.institucionSeleccionada = instEncontrada ?? {
+      id_institucion: Number(idInst ?? 0),
+      nombre_institucion: sede.nombre_institucion || this.institucionActiva?.nombre_institucion || 'Institución educativa',
+      nit: '',
+      sedes: []
+    };
+
+    const resolverSedes = (sedesRaw: any[]) => {
+      if (Array.isArray(sedesRaw) && sedesRaw.length > 0) {
+        this.sedesDeInstitucion = sedesRaw.map((s: any, idx: number) => ({
+          id_sede: Number(s.id_sede ?? s.id ?? (idx + 1)),
+          nombre_sede: s.nombre_sede ?? s.nombre ?? `Sede ${idx + 1}`,
+          codigo_dane: s.codigo_dane ?? '',
+          direccion: s.direccion ?? '',
+          telefono: s.telefono ?? '',
+          estado: s.estado ?? 'ACTIVO',
+          id_institucion: Number(idInst ?? this.institucionSeleccionada?.id_institucion ?? 0),
+          nombre_institucion: this.institucionSeleccionada?.nombre_institucion ?? sede.nombre_institucion,
+          matriculados: s.matriculados ?? s.total_estudiantes,
+          asistenciaPromedio: s.asistencia_promedio,
+          diasInventario: s.dias_inventario,
+          raw: s,
+        }));
+      } else {
+        this.sedesDeInstitucion = [sede];
+      }
+      this.cargandoSedesInstitucion = false;
+    };
+
+    if (instEncontrada && Array.isArray(instEncontrada.sedes) && instEncontrada.sedes.length > 0) {
+      resolverSedes(instEncontrada.sedes);
+    } else if (this.sedes.length > 0) {
+      const propias = this.sedes.filter(s => {
+        if (idInst != null && s.id_institucion != null) {
+          return Number(s.id_institucion) === Number(idInst);
+        }
+        return true;
+      });
+      resolverSedes(propias.length > 0 ? propias : [sede]);
+    } else {
+      this.http.get<any>(this.urlInstituciones).pipe(
+        timeout(5000),
+        map(d => listaDe(d)),
+        catchError(() => of([]))
+      ).subscribe(lista => {
+        const encontrada = lista.find((item: any) =>
+          (idInst != null && Number(item.id_institucion ?? item.id) === Number(idInst)) ||
+          (nombreInst && normalizar(item.nombre_institucion ?? item.nombre ?? '') === nombreInst)
+        );
+        if (encontrada) {
+          this.institucionSeleccionada = {
+            id_institucion: encontrada.id_institucion ?? encontrada.id,
+            nombre_institucion: encontrada.nombre_institucion ?? encontrada.nombre,
+            nit: encontrada.nit ?? '',
+            representante_legal: encontrada.representante_legal,
+            telefono: encontrada.telefono,
+            correo_contacto: encontrada.correo_contacto,
+            estado: encontrada.estado ?? 'ACTIVO',
+            sedes: encontrada.sedes ?? []
+          };
+          resolverSedes(encontrada.sedes ?? []);
+        } else {
+          resolverSedes([sede]);
+        }
+      });
+    }
+  }
+
+  // =====================================================
+  //  INSTITUCIONES DE LA SEDE
+  // =====================================================
+  cargarInstitucionesDeSede(sede: SedeCard): void {
+    this.cargandoInstitucionesSede = true;
+    this.institucionesSede = [];
+
+    const resolver = (institucionesDisponibles: any[]) => {
+      const mapa = new Map<number | string, InstitucionSede>();
+
+      // 1. Si la sede tiene instituciones directas en su objeto raw
+      const raw = sede.raw;
+      if (raw) {
+        if (Array.isArray(raw.instituciones)) {
+          for (const item of raw.instituciones) {
+            const inst = this.mapearAInstitucionSede(item);
+            if (inst) mapa.set(inst.id_institucion || inst.nombre_institucion, inst);
+          }
+        }
+        if (raw.institucion && typeof raw.institucion === 'object') {
+          const inst = this.mapearAInstitucionSede(raw.institucion);
+          if (inst) mapa.set(inst.id_institucion || inst.nombre_institucion, inst);
+        }
+      }
+
+      // 2. Buscar en la lista de instituciones (supervisor / servidor)
+      for (const item of institucionesDisponibles) {
+        const idInst = Number(item.id_institucion ?? item.id);
+        const sedesDeInst = Array.isArray(item.sedes) ? item.sedes : [];
+        const tieneEstaSede = sedesDeInst.some((s: any) => {
+          const idSede = Number(s.id_sede ?? s.id);
+          const nomSede = normalizar(s.nombre_sede ?? s.nombre ?? '');
+          return (sede.id_sede > 0 && idSede === Number(sede.id_sede)) ||
+                 (nomSede && nomSede === normalizar(sede.nombre_sede));
+        });
+
+        const coincideId = sede.id_institucion != null && idInst === Number(sede.id_institucion);
+        const coincideNombre = !!(sede.nombre_institucion &&
+          normalizar(item.nombre_institucion ?? item.nombre ?? '') === normalizar(sede.nombre_institucion));
+
+        if (tieneEstaSede || coincideId || coincideNombre) {
+          const inst = this.mapearAInstitucionSede(item);
+          if (inst) mapa.set(inst.id_institucion || inst.nombre_institucion, inst);
+        }
+      }
+
+      // 3. Si la institución activa coincide y aún no está en el mapa
+      if (this.institucionActiva) {
+        const instAct = this.institucionActiva;
+        const sedesDeAct = Array.isArray(instAct.sedes) ? instAct.sedes : [];
+        const tieneEstaSede = sedesDeAct.some((s: any) => Number(s.id_sede ?? s.id) === Number(sede.id_sede));
+        const coincideId = sede.id_institucion != null && Number(instAct.id_institucion) === Number(sede.id_institucion);
+        const coincideNombre = !!(sede.nombre_institucion &&
+          normalizar(instAct.nombre_institucion) === normalizar(sede.nombre_institucion));
+
+        if (tieneEstaSede || coincideId || coincideNombre) {
+          const inst = this.mapearAInstitucionSede(instAct);
+          if (inst) mapa.set(inst.id_institucion || inst.nombre_institucion, inst);
+        }
+      }
+
+      // 4. Fallback si no se encontró objeto completo pero la sede tiene datos de su institución
+      if (mapa.size === 0 && (sede.nombre_institucion || sede.id_institucion)) {
+        mapa.set(sede.id_institucion ?? sede.nombre_institucion!, {
+          id_institucion: sede.id_institucion ?? 0,
+          nombre_institucion: sede.nombre_institucion || 'Institución educativa',
+          nit: '',
+          representante_legal: '',
+          telefono: sede.telefono || '',
+          correo_contacto: '',
+          estado: sede.estado || 'ACTIVO',
+          total_sedes: 1
+        });
+      }
+
+      this.institucionesSede = Array.from(mapa.values());
+      this.cargandoInstitucionesSede = false;
+    };
+
+    if (this.institucionesSupervisor.length > 0) {
+      resolver(this.institucionesSupervisor);
+    } else {
+      this.http.get<any>(this.urlInstituciones).pipe(
+        timeout(5000),
+        map(d => listaDe(d)),
+        catchError(() => of([]))
+      ).subscribe(lista => {
+        resolver(lista);
+      });
+    }
+  }
+
+  private mapearAInstitucionSede(item: any): InstitucionSede | null {
+    if (!item || typeof item !== 'object') return null;
+    const nombre = item.nombre_institucion || item.nombre || '';
+    if (!nombre) return null;
+
+    const sedesList = Array.isArray(item.sedes) ? item.sedes : [];
+
+    return {
+      id_institucion: Number(item.id_institucion ?? item.id ?? 0),
+      nombre_institucion: String(nombre),
+      nit: item.nit ? String(item.nit) : '',
+      representante_legal: item.representante_legal ? String(item.representante_legal) : '',
+      telefono: item.telefono ? String(item.telefono) : '',
+      correo_contacto: item.correo_contacto ? String(item.correo_contacto) : '',
+      estado: item.estado ? String(item.estado) : 'ACTIVO',
+      administrador_asignado: item.administrador_asignado,
+      total_sedes: sedesList.length,
+    };
+  }
+
+  trackInstitucionSede(_: number, inst: InstitucionSede): number | string {
+    return inst.id_institucion || inst.nombre_institucion;
+  }
+
+  seleccionarInstitucionDirecta(inst: InstitucionSede): void {
+    const encontrada = this.institucionesSupervisor.find(i => i.id_institucion === inst.id_institucion);
+    if (encontrada) {
+      this.seleccionarInstitucion(encontrada);
+    } else {
+      const nuevaInst: InstitucionAsignada = {
+        id_institucion: inst.id_institucion,
+        nombre_institucion: inst.nombre_institucion,
+        nit: inst.nit,
+        representante_legal: inst.representante_legal,
+        telefono: inst.telefono,
+        correo_contacto: inst.correo_contacto,
+        estado: inst.estado,
+        sedes: []
+      };
+      this.seleccionarInstitucion(nuevaInst);
+    }
     this.seleccionada = null;
   }
 
@@ -784,8 +1033,15 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
   // Lleva a Registrar entrega con el producto (y la sede) ya elegidos
   enviarProducto(p: ProductoInventario): void {
     const queryParams: Record<string, string | number> = { producto: p.nombre };
-    if (this.seleccionada && !this.seleccionada.esInstitucion) {
-      queryParams['sede'] = this.seleccionada.id_sede;
+    if (this.seleccionada) {
+      if (this.seleccionada.id_institucion != null) queryParams['institucion'] = this.seleccionada.id_institucion;
+      if (!this.seleccionada.esInstitucion) {
+        queryParams['sede'] = this.seleccionada.id_sede;
+        queryParams['nombreSede'] = this.seleccionada.nombre_sede;
+        queryParams['destino'] = `${this.seleccionada.nombre_institucion} - ${this.seleccionada.nombre_sede}`;
+      } else {
+        queryParams['destino'] = this.seleccionada.nombre_institucion ?? '';
+      }
     }
     this.router.navigate(['/registrar-entrega-alimentos'], { queryParams });
   }
