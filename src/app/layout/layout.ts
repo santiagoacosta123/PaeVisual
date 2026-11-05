@@ -389,4 +389,18 @@ export class LayoutComponent implements OnInit {
   cerrarSesion(): void {
     this.authService.cerrarSesion();
   }
+
+  get tieneSedes(): boolean {
+    if (!this.institucionActiva) return false;
+    if (Array.isArray(this.institucionActiva.sedes)) {
+      return this.institucionActiva.sedes.length > 0;
+    }
+    const encontrada = this.institucionesSupervisor.find(
+      i => i.id_institucion === this.institucionActiva?.id_institucion
+    );
+    if (encontrada && Array.isArray(encontrada.sedes)) {
+      return encontrada.sedes.length > 0;
+    }
+    return false;
+  }
 }
