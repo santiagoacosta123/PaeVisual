@@ -42,7 +42,7 @@ interface RegistroDia {
 interface EntradaFila { idIngrediente: number | null; cantidad: number | null; unidad: string; perecedero: boolean; }
 interface EnvioRegistro {
   id: number; idInstitucion: number | null; ingrediente: string; cantidad: number; unidad: string;
-  destino: string; fechaSalida: string; fechaEntrega: string; enviadoEl: string;
+  destino: string; fechaSalida: string; fechaEntrega: string; enviadoEl: string; responsable?: string;
 }
 interface ItemInventario {
   producto: ProductoCatalogo; cantidad: number; unidad: string;
@@ -54,7 +54,13 @@ interface GrupoEntrada {
   clave: string; destino: string; fechaRegistro: string; fechaRecepcion: string; hora: string;
   responsable: string; items: FilaEntrega[]; productos: ResumenEntradaProducto[];
 }
-interface GrupoEnvio { clave: string; destino: string; fechaSalida: string; fechaEntrega: string; items: EnvioRegistro[]; }
+interface GrupoEnvio { clave: string; destino: string; fechaSalida: string; fechaEntrega: string; responsable: string; items: EnvioRegistro[]; }
+
+interface DetalleProducto {
+  clave: string; ingrediente: string; categoria: string; tipoMercado: string; unidad: string;
+  cantidad: number; veces: number; vencimiento: string; estado: string; frecuencia: string; lotes: string[];
+  disponible: number | null; unidadDisponible: string;
+}
 
 type FiltroMercado = 'Todos' | 'Granos' | 'Perecederos';
 
@@ -149,7 +155,8 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
 
   @HostListener('document:keydown.escape')
   alPresionarEsc(): void {
-    if (this.mostrarModalInventario) this.mostrarModalInventario = false;
+    if (this.detalleEntrada) this.cerrarDetalleEntrada();
+    else if (this.mostrarModalInventario) this.mostrarModalInventario = false;
     else if (this.mostrarModalEntrada && !this.guardandoEntrada) this.mostrarModalEntrada = false;
     else this.modalDiaAbierto = false;
   }
@@ -262,8 +269,10 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     return isNaN(d.getTime()) ? '' : d.toLocaleTimeString('es-CO', { hour: 'numeric', minute: '2-digit', hour12: true });
   }
 
+  // Libras, Kg, Litros y Unidades se mantienen separadas (no se mezclan)
   private normalizarUnidad(v: string): string {
-    const u = (v || '').toLowerCase();
+    const u = (v || '').toLowerCase().trim();
+    if (u.includes('libra') || u === 'lb' || u === 'lbs') return 'Libras';
     if (u.includes('kg') || u.includes('kilo')) return 'Kg';
     if (u.includes('lit') || u === 'l') return 'Litros';
     if (u.includes('unid') || u === 'ud') return 'Unidades';
@@ -402,9 +411,8 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     ).subscribe({
       next: lista => {
         if (idPedido !== this.idInstitucion || sedePedida !== this.idSede) return;   // llegó tarde
-        // Los envíos se separan de las entradas por "fecha_salida"
-        this.historialEnvios = this.registrosEnvioDe(lista.filter(i => !!i?.fecha_salida));
-        this.entregasRaw = lista.filter(i => !i?.fecha_salida);
+        this.historialEnvios = this.registrosEnvioDe(lista.filter(i => this.esEnvio(i)));
+        this.entregasRaw = lista;
         this.reconstruirHistorial();
         this.cargandoHistorial = false;
         this.cdr.markForCheck();
@@ -452,10 +460,12 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     const idTip = idTipo != null ? Number(idTipo) : (this.tiposMercado.find(t => t.nombre === tipoMercado)?.id ?? null);
 
     const fechaRecepcion = this.soloFecha(item.fecha_entrega ?? item.fecha_recepcion ?? item.fechaRecepcion);
-    const extra = this.extraDe(item.id, idIng, fechaRecepcion, Number(item.cantidad) || 0);
+    const destinoItem = this.texto(item.destino) || this.texto(item.destino_nombre) || this.texto(item.institucion);
+    const extra = this.extraDe(item.id ?? item.id_entrega, idIng, fechaRecepcion, Number(item.cantidad) || 0, destinoItem);
+    const responsableObs = String(item.observaciones ?? '').match(/Responsable:\s*(.+)/i)?.[1]?.trim() ?? '';
 
     return {
-      id: item.id, idIngrediente: idIng, idTipoMercado: idTip, ingrediente, tipoMercado,
+      id: item.id ?? item.id_entrega, idIngrediente: idIng, idTipoMercado: idTip, ingrediente, tipoMercado,
       categoria: perecedero ? 'Perecederos' : 'Granos',
       frecuencia: item.frecuencia || '',
       cantidad: Number(item.cantidad) || 0,
@@ -466,7 +476,8 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       lote: item.lote ?? item.numero_lote ?? '',
       destino: this.texto(item.destino) || this.texto(item.destino_nombre) || this.texto(item.institucion) || extra?.destino || '',
       hora: this.horaDe(item.hora_salida ?? item.hora ?? item.hora_registro ?? item.created_at ?? item.fecha_creacion) || extra?.hora || '',
-      responsable: this.texto(item.responsable) || this.texto(item.responsable_nombre) || this.texto(item.usuario) || extra?.responsable || '',
+      // Primero lo que escribió quien hizo la entrada o envío
+      responsable: this.texto(item.responsable) || this.texto(item.responsable_nombre) || responsableObs || this.responsableEnvioGuardado(item) || extra?.responsable || this.texto(item.usuario) || '',
       estadoEntrega: item.estado ?? '',
       fechaRegistro: this.fechaLocalDe(item.created_at ?? item.fecha_creacion) || extra?.fechaRegistro || '',
       loteRegistro: item.lote_registro ?? extra?.loteRegistro ?? '',
@@ -491,6 +502,10 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
           || this.ingredientes.find(i => i.id === Number(item.ingrediente))?.nombre || '',
         cantidad: item.cantidad == null || item.cantidad === '' ? 0 : Number(item.cantidad),
         unidad: item.unidad ?? '',
+        // Primero lo que escribió quien envió; "usuario" (quien inició sesión) solo como último recurso
+        responsable: this.texto(item.responsable) || this.texto(item.responsable_nombre)
+          || (String(item.observaciones ?? '').match(/Responsable:\s*(.+)/i)?.[1]?.trim() ?? '')
+          || this.responsableEnvioGuardado(item) || this.texto(item.usuario),
         destino: item.destino || (sede ? `${nombre} - ${sede}` : nombre),
         fechaSalida: this.soloFecha(item.fecha_salida ?? item.fecha_entrega),
         fechaEntrega: this.soloFecha(item.fecha_entrega),
@@ -500,22 +515,29 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
   }
 
   // ===================== HISTORIAL AGRUPADO =====================
-  // Entradas de la más reciente a la más antigua (las de un mismo registro quedan juntas)
+  // Entradas ordenadas por la fecha de entrada elegida (la más reciente primero)
   get entradasHistorial(): FilaEntrega[] {
     return [...this.historial].sort((a, b) =>
-      (b.fechaRegistro || b.fechaRecepcion).localeCompare(a.fechaRegistro || a.fechaRecepcion) || ((b.id ?? 0) - (a.id ?? 0)));
+      b.fechaRecepcion.localeCompare(a.fechaRecepcion)
+      || (b.fechaRegistro || '').localeCompare(a.fechaRegistro || '')
+      || ((b.id ?? 0) - (a.id ?? 0)));
   }
 
-  // Lo que se registró junto aparece junto, en una sola tarjeta
+  // Cantidad de productos distintos que se han registrado (el mismo producto cuenta una sola vez)
+  get totalProductosRegistrados(): number {
+    return new Set(this.historial.map(e => this.claveProducto(e.idIngrediente, e.ingrediente))).size;
+  }
+
+  // Un solo registro por fecha de entrada y destino; el mismo producto (y unidad) se suma en una sola línea
   get gruposEntradas(): GrupoEntrada[] {
     const mapa = new Map<string, GrupoEntrada>();
     for (const e of this.entradasHistorial) {
-      const fechaRegistro = e.fechaRegistro || e.fechaRecepcion;
-      const clave = e.loteRegistro || `${fechaRegistro}|${e.fechaRecepcion}|${e.hora}|${e.destino}`;
+      const destino = e.destino || this.nombreInstitucion;
+      const clave = `${e.fechaRecepcion}|${this.norm(destino)}`;
       let g = mapa.get(clave);
       if (!g) {
-        g = { clave, destino: e.destino || this.nombreInstitucion, fechaRegistro, fechaRecepcion: e.fechaRecepcion,
-              hora: e.hora || '', responsable: '', items: [], productos: [] };
+        g = { clave, destino, fechaRegistro: e.fechaRegistro || e.fechaRecepcion, fechaRecepcion: e.fechaRecepcion,
+              hora: '', responsable: '', items: [], productos: [] };
         mapa.set(clave, g);
       }
       g.responsable ||= e.responsable || '';
@@ -540,18 +562,136 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     return grupos;
   }
 
-  // Envíos agrupados por destino y fechas
+  // Envíos agrupados por fecha y destino
   get gruposEnvios(): GrupoEnvio[] {
     const mapa = new Map<string, GrupoEnvio>();
     for (const v of this.historialEnvios) {
-      const clave = `${v.fechaSalida}|${v.fechaEntrega}|${v.destino}`;
-      const g = mapa.get(clave) ?? { clave, destino: v.destino, fechaSalida: v.fechaSalida, fechaEntrega: v.fechaEntrega, items: [] };
+      const fecha = v.fechaSalida || v.fechaEntrega;
+      const resp = v.responsable || '';
+      const clave = `${fecha}|${this.norm(v.destino)}|${this.norm(resp)}`;
+      let g = mapa.get(clave);
+      if (!g) {
+        g = { clave, destino: v.destino, fechaSalida: v.fechaSalida, fechaEntrega: v.fechaEntrega, responsable: resp, items: [] };
+        mapa.set(clave, g);
+      }
+      g.responsable ||= resp;
       g.items.push(v);
-      mapa.set(clave, g);
     }
     const grupos = Array.from(mapa.values());
     grupos.forEach(g => g.items.sort((a, b) => a.ingrediente.localeCompare(b.ingrediente, 'es')));
-    return grupos;
+    // El envío más reciente primero
+    return grupos.sort((a, b) => (b.fechaEntrega || b.fechaSalida).localeCompare(a.fechaEntrega || a.fechaSalida));
+  }
+
+  // ----- Entradas compactas: se ven las más recientes; el detalle se abre al tocarlas -----
+  readonly limiteEntradas = 4;
+  verTodasEntradas = false;
+
+  // ----- Buscar por fecha (calendario junto al Historial) -----
+  filtroFecha = '';
+
+  alElegirFecha(iso: string): void {
+    this.filtroFecha = iso || '';
+    if (!iso) return;
+    const [anio, mes] = iso.split('-').map(Number);
+    this.mesCalendario = new Date(anio, mes - 1, 1);   // el calendario salta a ese mes
+    this.diaSeleccionado = iso;
+  }
+
+  get entradasFiltradas(): GrupoEntrada[] {
+    const todos = this.gruposEntradas;
+    return this.filtroFecha ? todos.filter(g => g.fechaRecepcion === this.filtroFecha) : todos;
+  }
+
+  get gruposEntradasVisibles(): GrupoEntrada[] {
+    const todos = this.entradasFiltradas;
+    return this.verTodasEntradas ? todos : todos.slice(0, this.limiteEntradas);
+  }
+
+  // "Arroz 2 Kg · galletas 6 Kg · +1 más"
+  resumenEntrada(g: GrupoEntrada): string {
+    const partes = g.productos.slice(0, 3).map(p => `${this.nombreMostrado(p.ingrediente)} ${p.cantidad} ${p.unidad}`);
+    return partes.join(' · ') + (g.productos.length > 3 ? ` · +${g.productos.length - 3} más` : '');
+  }
+
+  diaDe(iso: string): string { return (iso || '').split('-')[2] ?? ''; }
+
+  mesCortoDe(iso: string): string {
+    return ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'][Number((iso || '').split('-')[1]) - 1] ?? '';
+  }
+
+  // ----- Textos de cantidad: "Tienes 8 kg de arroz" -----
+  unidadTexto(unidad: string, cantidad = 2): string {
+    const u = this.normalizarUnidad(unidad);
+    const uno = Math.abs(cantidad) === 1;
+    if (u === 'Kg') return 'kg';
+    if (u === 'Libras') return uno ? 'libra' : 'libras';
+    if (u === 'Litros') return uno ? 'litro' : 'litros';
+    if (u === 'Unidades') return uno ? 'unidad' : 'unidades';
+    return unidad || '';
+  }
+
+  nombreMinuscula(nombre: string): string { return this.nombreMostrado(nombre).toLowerCase(); }
+
+  // ----- Detalle de una entrada (al tocar su tarjeta en el Historial) -----
+  detalleEntrada: GrupoEntrada | null = null;
+  detalleLista: DetalleProducto[] = [];
+
+  responsableManual = '';
+
+  abrirDetalleEntrada(g: GrupoEntrada): void {
+    this.responsableManual = '';
+    this.detalleEntrada = g;
+    this.detalleLista = this.armarDetalle(g);
+  }
+
+  cerrarDetalleEntrada(): void { this.detalleEntrada = null; this.detalleLista = []; }
+
+  // Para entradas antiguas que se guardaron sin responsable: se escribe aquí y queda guardado en este navegador
+  asignarResponsableEntrada(): void {
+    const g = this.detalleEntrada;
+    const nombre = this.responsableManual.trim();
+    if (!g || !nombre) return;
+    for (const e of g.items) {
+      const extra: ExtraEntrada = { destino: g.destino, responsable: nombre, hora: e.hora || g.hora, fechaRegistro: e.fechaRegistro || g.fechaRegistro };
+      if (e.id != null) this.extras[`id:${e.id}`] = extra;
+      this.extras[this.claveCompuesta(e.idIngrediente, e.fechaRecepcion, e.cantidad)] = extra;
+      this.extras[`${e.idIngrediente}|${e.fechaRecepcion}`] = extra;
+    }
+    this.extras[`dia:${g.fechaRecepcion}|${this.norm(g.destino)}`] = { destino: g.destino, responsable: nombre, hora: g.hora, fechaRegistro: g.fechaRegistro };
+    this.guardarCache(this.claveExtras, this.extras);
+    this.reconstruirHistorial();
+    const actualizado = this.gruposEntradas.find(x => x.clave === g.clave);
+    if (actualizado) this.abrirDetalleEntrada(actualizado);
+    this.cdr.markForCheck();
+  }
+
+  private armarDetalle(g: GrupoEntrada): DetalleProducto[] {
+    const mapa = new Map<string, DetalleProducto>();
+    for (const e of g.items) {
+      const unidad = this.normalizarUnidad(e.unidad) || e.unidad;
+      const k = `${this.claveProducto(e.idIngrediente, e.ingrediente)}|${unidad}`;
+      const d = mapa.get(k) ?? {
+        clave: k, ingrediente: e.ingrediente,
+        categoria: this.categoriasInventario.get(e.idIngrediente ?? -1) ?? this.categoriaDe(e.ingrediente),
+        tipoMercado: this.tipoConservacionVisible(e.tipoMercado), unidad, cantidad: 0, veces: 0,
+        vencimiento: '', estado: '', frecuencia: e.frecuencia, lotes: [],
+        disponible: e.idIngrediente != null && this.saldosInventario.has(e.idIngrediente) ? this.saldosInventario.get(e.idIngrediente)! : null,
+        unidadDisponible: this.unidadesInventario.get(e.idIngrediente ?? -1) ?? unidad,
+      };
+      d.cantidad = Math.round((d.cantidad + e.cantidad) * 100) / 100;
+      d.veces++;
+      if (e.fechaVencimiento && (!d.vencimiento || e.fechaVencimiento < d.vencimiento)) { d.vencimiento = e.fechaVencimiento; d.estado = this.estadoDe(e); }
+      if (e.lote && !d.lotes.includes(e.lote)) d.lotes.push(e.lote);
+      mapa.set(k, d);
+    }
+    return Array.from(mapa.values());
+  }
+
+  // Desde el "Registro del día": abre el formulario con esa fecha
+  registrarEnDia(): void {
+    this.modalDiaAbierto = false;
+    this.abrirModalEntrada(this.diaSeleccionado);
   }
 
   fueEnviado(nombre: string): boolean {
@@ -854,6 +994,8 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
   private cantidadesEnviar: Record<number, number | null> = {};
   errorEnvioPanel = '';
   guardandoEnvio = false;
+  envioFecha = this.fechaHoy();     // fecha del envío (la eliges tú)
+  envioResponsable = '';            // quién hace el envío
 
   disponibleDe(sel: FilaEntrega): number {
     return sel.idIngrediente == null ? 0 : this.saldosInventario.get(sel.idIngrediente) ?? 0;
@@ -892,6 +1034,8 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     this.errorEnvioPanel = '';
 
     if (!items.length) return fallo('Escribe la cantidad a enviar de al menos un producto.');
+    if (!this.envioFecha) return fallo('Elige la fecha de envío.');
+    if (!this.envioResponsable.trim()) return fallo('Escribe el responsable (quién hace el envío).');
     const excedidos = items.filter(s => this.cantidadEnviarDe(s) > this.disponibleDe(s));
     if (excedidos.length) return fallo(`No puedes enviar más de lo disponible: ${excedidos.map(s => s.ingrediente).join(', ')}.`);
     const incompletos = items.flatMap(s => {
@@ -914,7 +1058,8 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     const datos = this.datosInstitucion(destino);
     if (datos.id_institucion === undefined) return fallo('No se encontró el identificador de la institución.');
 
-    const hoy = this.fechaHoy();
+    const hoy = this.envioFecha;                       // fecha elegida para el envío
+    const responsable = this.envioResponsable.trim();
     this.guardandoEnvio = true;
 
     const peticiones = items.map(sel => {
@@ -923,12 +1068,12 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       return this.entregasService.registrar({
         id_ingrediente: sel.idIngrediente!, id_tipo_mercado: sel.idTipoMercado!, ...datos,
         fecha_entrega: hoy, fecha_salida: hoy, fecha_vencimiento: sel.fechaVencimiento,
-        cantidad, observaciones: '', frecuencia: sel.frecuencia, unidad, destino,
+        cantidad, observaciones: `Responsable: ${responsable}`, frecuencia: sel.frecuencia, unidad, destino, responsable,
       } as any).pipe(
-        map(() => ({ ok: true, sel, cantidad, unidad, motivo: '' })),
+        map((resp: any) => ({ ok: true, sel, cantidad, unidad, motivo: '', idResp: (resp?.id ?? resp?.id_entrega) as any })),
         catchError(error => {
           console.error(`Error al enviar ${sel.ingrediente}:`, error?.error ?? error);   // respuesta completa en la consola (F12)
-          return of({ ok: false, sel, cantidad, unidad, motivo: this.describirError(error) });
+          return of({ ok: false, sel, cantidad, unidad, motivo: this.describirError(error), idResp: undefined as any });
         }),
       );
     });
@@ -942,12 +1087,43 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       // Se muestran al instante; al recargar se reemplazan por los del servidor
       const registros: EnvioRegistro[] = exitosos.map((r, i) => ({
         id: Date.now() + i, idInstitucion: datos.id_institucion ?? null, ingrediente: r.sel.ingrediente,
-        cantidad: r.cantidad, unidad: r.unidad, destino, fechaSalida: hoy, fechaEntrega: hoy, enviadoEl: hoy,
+        cantidad: r.cantidad, unidad: r.unidad, destino, fechaSalida: hoy, fechaEntrega: hoy, enviadoEl: hoy, responsable,
       }));
+
+      const ahoraISO = new Date().toISOString();
+      const hora = this.horaDe(ahoraISO), lote = String(Date.now());
+
+      // El nombre del responsable se guarda con varias claves para que no desaparezca al recargar
+      exitosos.forEach(r => {
+        this.recordarIdEnvio(r.idResp);
+        this.guardarResponsableEnvio(r.idResp, r.sel.idIngrediente, r.sel.ingrediente, hoy, r.cantidad, destino, responsable);
+        this.guardarExtra(r.idResp, { idIngrediente: r.sel.idIngrediente, cantidad: r.cantidad, unidad: r.unidad, perecedero: this.esPerecedero(r.sel as any) }, { destino, responsable, hora, fechaRegistro: hoy, loteRegistro: lote });
+      });
+      this.guardarCache(this.claveExtrasEnvio, this.extrasEnvio);
+
       this.historialEnvios = [...registros, ...this.historialEnvios];
+
+      // Aparece de inmediato en Entradas con su responsable
+      this.entregasRaw = [...exitosos.map((r, i) => ({
+        id: r.idResp ?? Date.now() + i,
+        id_ingrediente: r.sel.idIngrediente,
+        id_tipo_mercado: r.sel.idTipoMercado,
+        cantidad: r.cantidad,
+        unidad: r.unidad,
+        fecha_entrega: hoy,
+        fecha_salida: hoy,
+        fecha_vencimiento: r.sel.fechaVencimiento,
+        frecuencia: r.sel.frecuencia,
+        destino,
+        responsable,
+        observaciones: `Responsable: ${responsable}`,
+        created_at: ahoraISO,
+        lote_registro: lote,
+      })), ...this.entregasRaw];
+      this.reconstruirHistorial();
+
       exitosos.forEach(r => this.fijarCantidadEnviar(r.sel, null));
       if (exitosos.length) {
-        this.mostrarHistorialEnvios = true;
         this.cargarHistorial();
         this.cargarCatalogos();
       }
@@ -962,7 +1138,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ===================== CALENDARIO =====================
+  // ===================== CALENDARIO (vista Historial) =====================
   mostrarCalendario = false;
   mesCalendario = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
   diaSeleccionado = this.aISO(new Date());
@@ -1026,7 +1202,8 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     return estado === 'Vencido' ? 'est-bad' : estado === 'Próximo a vencer' ? 'est-warn' : 'est-ok';
   }
 
-  // Entregas del día agrupadas por código (si no hay, usa el folio CI-AAAAMMDD)
+  // Entradas del día agrupadas por código (si no hay, usa el folio CI-AAAAMMDD).
+  // El mismo producto (y unidad) se suma en una sola línea.
   get registrosDelDia(): RegistroDia[] {
     const mapa = new Map<string, RegistroDia>();
     for (const e of this.delDia('fechaRecepcion')) {
@@ -1037,6 +1214,15 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       mapa.set(codigo, reg);
     }
     for (const reg of mapa.values()) {
+      const unidos = new Map<string, FilaEntrega>();
+      for (const i of reg.items) {
+        const k = `${this.claveProducto(i.idIngrediente, i.ingrediente)}|${this.normalizarUnidad(i.unidad) || i.unidad}`;
+        const previo = unidos.get(k);
+        if (previo) previo.cantidad = Math.round((previo.cantidad + i.cantidad) * 100) / 100;
+        else unidos.set(k, { ...i });
+      }
+      reg.items = Array.from(unidos.values());
+
       reg.destino = reg.items.find(i => i.destino)?.destino || this.nombreInstitucion || '—';
       reg.hora = reg.items.find(i => i.hora)?.hora || '—';
       reg.responsable = reg.items.find(i => i.responsable)?.responsable || '—';
@@ -1056,10 +1242,10 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
   guardandoEntrada = false;
   errorEntrada = '';
   busquedaEntrada = '';
-  readonly unidadesEntrada = ['Kg', 'Litros', 'Unidades'];
+  readonly unidadesEntrada = ['Kg', 'Libras', 'Litros', 'Unidades'];
 
-  abrirModalEntrada(): void {
-    this.entradaFecha = this.fechaHoy();
+  abrirModalEntrada(fecha?: string): void {
+    this.entradaFecha = fecha || this.fechaHoy();
     const sedeActual = this.nombreSede ? this.destinosDisponibles.find(d => d.endsWith(` - ${this.nombreSede}`)) : undefined;
     this.entradaDestino = sedeActual ?? this.destinosDisponibles[0] ?? '';
     this.entradaResponsable = this.busquedaEntrada = this.errorEntrada = '';
@@ -1073,12 +1259,19 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
   }
 
   estaEnEntrada(id: number): boolean { return this.entradaFilas.some(f => f.idIngrediente === id); }
+
+  // Un producto no se repite: si ya tiene entrada ese día y destino, no se puede volver a registrar
+  yaRegistrado(id: number | null): boolean {
+    return id != null && this.historial.some(e => e.idIngrediente === id && e.fechaRecepcion === this.entradaFecha
+      && this.norm(e.destino || this.nombreInstitucion) === this.norm(this.entradaDestino));
+  }
   nombreIngrediente(id: number | null): string { return this.ingredientes.find(i => i.id === id)?.nombre ?? ''; }
 
   // Un toque agrega el producto; otro lo quita. Se sugiere su unidad y si es perecedero.
   alternarProductoEntrada(id: number): void {
     const i = this.entradaFilas.findIndex(f => f.idIngrediente === id);
     if (i >= 0) { this.entradaFilas.splice(i, 1); return; }
+    if (this.yaRegistrado(id)) { this.errorEntrada = `${this.nombreIngrediente(id)} ya está registrado ese día y no se puede repetir.`; return; }
     const producto = this.catalogoMenu.find(p => p.id === id);
     this.entradaFilas.push({
       idIngrediente: id, cantidad: null,
@@ -1119,14 +1312,83 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
 
   private claveCompuesta(idIng: number | null, fecha: string, cantidad: number): string { return `${idIng}|${fecha}|${cantidad}`; }
 
+  // ---- Respaldo del responsable de cada ENVÍO (el servidor puede no devolverlo al recargar) ----
+  private readonly claveExtrasEnvio = 'sirae_envios_responsable';
+  private extrasEnvio: Record<string, string> = this.leerExtrasEnvio();
+
+  // ---- Ids de los registros que fueron ENVÍOS (por si el servidor no devuelve "fecha_salida") ----
+  private readonly claveIdsEnvio = 'sirae_envios_ids';
+  private idsEnvio = new Set<string>(this.leerIdsEnvio());
+
+  private leerIdsEnvio(): string[] {
+    try {
+      const v = JSON.parse(localStorage.getItem(this.claveIdsEnvio) || '[]');
+      return Array.isArray(v) ? v.map(String) : [];
+    } catch { return []; }
+  }
+
+  private esEnvio(item: any): boolean {
+    return !!item?.fecha_salida || this.idsEnvio.has(String(item?.id_entrega ?? item?.id));
+  }
+
+  private recordarIdEnvio(idResp: any): void {
+    if (idResp == null) return;
+    this.idsEnvio.add(String(idResp));
+    this.guardarCache(this.claveIdsEnvio, Array.from(this.idsEnvio));
+  }
+
+  private leerExtrasEnvio(): Record<string, string> {
+    try { return JSON.parse(localStorage.getItem(this.claveExtrasEnvio) || '{}'); } catch { return {}; }
+  }
+
+  private claveEnvio(ingrediente: string, fecha: string, cantidad: number): string {
+    return `${this.norm(ingrediente)}|${fecha}|${Number(cantidad)}`;
+  }
+
+  // Guarda el responsable con varias claves, de la más exacta a la más general
+  private guardarResponsableEnvio(idResp: any, idIng: number | null, nombre: string, fecha: string,
+                                  cantidad: number, destino: string, responsable: string): void {
+    const e = this.extrasEnvio;
+    if (idResp != null) e[`id:${idResp}`] = responsable;
+    e[this.claveEnvio(nombre, fecha, cantidad)] = responsable;
+    e[`ing:${idIng}|${fecha}|${Number(cantidad)}`] = responsable;
+    e[`ing:${idIng}|${fecha}`] = responsable;
+    e[`dia:${fecha}|${this.norm(destino)}`] = responsable;
+    e[`dia:${fecha}`] = responsable;          // último recurso
+  }
+
+  // Busca el responsable guardado probando de la clave más exacta a la más general
+  private responsableEnvioGuardado(item: any): string {
+    const ref = item.id_ingrediente ?? item.ingrediente;
+    const idIng = typeof ref === 'object' && ref ? Number(ref.id ?? ref.id_ingrediente) : Number(ref);
+    const nombre = (typeof item.ingrediente === 'string' ? item.ingrediente : '') || item.ingrediente_nombre
+      || (item.ingrediente && typeof item.ingrediente === 'object' ? item.ingrediente.nombre : '')
+      || this.ingredientes.find(i => i.id === idIng)?.nombre || '';
+    const fecha = this.soloFecha(item.fecha_salida ?? item.fecha_entrega);
+    const cant = Number(item.cantidad) || 0;
+    const destino = typeof item.destino === 'string' ? item.destino : '';
+    const e = this.extrasEnvio;
+    return e[`id:${item.id_entrega ?? item.id}`]
+      ?? e[`ing:${idIng}|${fecha}|${cant}`]
+      ?? e[this.claveEnvio(nombre, fecha, cant)]
+      ?? e[`ing:${idIng}|${fecha}`]
+      ?? e[`dia:${fecha}|${this.norm(destino)}`]
+      ?? e[`dia:${fecha}`] ?? '';
+  }
+
   private guardarExtra(id: number | undefined, fila: EntradaFila, datos: ExtraEntrada): void {
     if (id != null) this.extras[`id:${id}`] = datos;
     this.extras[this.claveCompuesta(fila.idIngrediente, this.entradaFecha, fila.cantidad ?? 0)] = datos;
+    this.extras[`${fila.idIngrediente}|${this.entradaFecha}`] = datos;   // respaldo: mismo producto y día
+    this.extras[`dia:${this.entradaFecha}|${this.norm(datos.destino)}`] = datos;   // respaldo: mismo día y destino
     this.guardarCache(this.claveExtras, this.extras);
   }
 
-  private extraDe(id: number | undefined, idIng: number | null, fecha: string, cantidad: number): ExtraEntrada | undefined {
-    return (id != null ? this.extras[`id:${id}`] : undefined) ?? this.extras[this.claveCompuesta(idIng, fecha, cantidad)];
+  private extraDe(id: number | undefined, idIng: number | null, fecha: string, cantidad: number, destino = ''): ExtraEntrada | undefined {
+    return (id != null ? this.extras[`id:${id}`] : undefined)
+      ?? this.extras[this.claveCompuesta(idIng, fecha, cantidad)]
+      ?? this.extras[`${idIng}|${fecha}`]
+      ?? this.extras[`dia:${fecha}|${this.norm(destino || this.destinosDisponibles[0] || this.nombreInstitucion)}`];
   }
 
   guardarEntrada(): void {
@@ -1137,8 +1399,10 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
 
     if (!this.entradaFecha) return error('Selecciona la fecha de entrega.');
     if (!this.entradaDestino.trim()) return error('Elige el destino.');
-    if (!this.entradaResponsable.trim()) return error('Escribe el nombre del responsable.');
+    if (!this.entradaResponsable.trim()) return error('Escribe quién hizo el registro (responsable).');
     if (!filas.length) return error('Toca los productos que entran para agregarlos.');
+    const repetidos = filas.filter(f => this.yaRegistrado(f.idIngrediente));
+    if (repetidos.length) return error(`Ya están registrados ese día y no se pueden repetir: ${repetidos.map(f => this.nombreIngrediente(f.idIngrediente)).join(', ')}.`);
     if (sinCantidad.length) return error(`Escribe la cantidad de: ${sinCantidad.map(f => this.nombreIngrediente(f.idIngrediente)).join(', ')}.`);
     if (filas.some(f => this.idTipoMercadoDe(f.perecedero) == null)) return error('No se encontró el tipo de mercado (Perecedero / No perecedero) en el catálogo del servidor.');
 
@@ -1151,9 +1415,10 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       frecuencia: this.datosAutomaticos(f).frecuencia, cantidad: f.cantidad!, unidad: f.unidad,
       fecha_entrega: this.entradaFecha, fecha_vencimiento: this.datosAutomaticos(f).vencimiento,
       ...this.datosInstitucion(this.entradaDestino),
-      destino: this.entradaDestino.trim(), responsable: this.entradaResponsable.trim(), observaciones: '',
+      destino: this.entradaDestino.trim(), responsable: this.entradaResponsable.trim(),
+      observaciones: `Responsable: ${this.entradaResponsable.trim()}`,   // se guarda en la base de datos
     } as any).pipe(
-      map((resp: any) => ({ ok: true, fila: f, id: resp?.id as number | undefined })),
+      map((resp: any) => ({ ok: true, fila: f, id: (resp?.id ?? resp?.id_entrega) as number | undefined })),
       catchError(err => {
         console.error('Error al registrar entrada', err);
         motivoFallo = this.describirError(err);
@@ -1245,12 +1510,32 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     const filasDetalle = lista.map(e => [this.fechaCorta(e.fechaRecepcion), esc(e.ingrediente), esc(e.tipoMercado), esc(e.frecuencia),
       esc(e.cantidad), esc(e.unidad), this.fechaCorta(e.fechaVencimiento), esc(this.estadoDe(e))]);
 
+    let tablaEnvios = '';
+    if (this.historialEnvios.length) {
+      const thAzul = 'style="background:#0D9488;color:#FFFFFF;font-weight:bold;text-align:center"';
+      const filasEnv = this.historialEnvios.map(v => [
+        this.fechaCorta(v.fechaSalida || v.fechaEntrega),
+        esc(v.destino),
+        esc(v.responsable || '—'),
+        esc(v.ingrediente),
+        esc(v.cantidad),
+        esc(v.unidad),
+      ]);
+      tablaEnvios = `<br><br>
+        <table><tr><td colspan="6" style="font-size:14pt;font-weight:bold;border:none">Facturas y envíos despachados</td></tr></table>
+        <table border="1"><thead><tr>
+          ${['Fecha de envío', 'Destino', 'Responsable (quién despachó)', 'Producto', 'Cantidad', 'Unidad'].map(c => `<th ${thAzul}>${c}</th>`).join('')}
+        </tr></thead>
+        <tbody>${filasEnv.map(f => `<tr>${f.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+    }
+
     const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
       <head><meta charset="UTF-8"></head><body>
       ${tabla(`Resumen por producto (total recibido) - ${esc(this.nombreInstitucion)}`,
         ['Producto', 'Tipo de mercado', 'Unidad', 'Total recibido', 'N.º de entregas', 'Última entrega', 'Próximo vencimiento', 'Estado última entrega'], filasResumen)}
       <br><br>
       ${tabla('Detalle de entregas', ['Fecha', 'Ingrediente', 'Tipo de mercado', 'Frecuencia', 'Cantidad', 'Unidad', 'Vencimiento', 'Estado'], filasDetalle)}
+      ${tablaEnvios}
       </body></html>`;
 
     const url = URL.createObjectURL(new Blob(['\ufeff' + html], { type: 'application/vnd.ms-excel;charset=utf-8;' }));
