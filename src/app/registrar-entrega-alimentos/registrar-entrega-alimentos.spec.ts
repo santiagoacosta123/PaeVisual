@@ -43,7 +43,8 @@ describe('RegistrarEntregaAlimentosComponent', () => {
     httpTestingController.match(esGet).forEach(r => r.flush(datos));
   }
 
-  function responderCatalogos(inventario = inventarioArroz(), tipos = tiposMercado): void {
+  // Se tipan como unknown[] para aceptar datos "sucios" del servidor (null, textos como '99.000', etc.)
+  function responderCatalogos(inventario: unknown[] = inventarioArroz(), tipos: unknown[] = tiposMercado): void {
     httpTestingController.expectOne(r => r.url.endsWith('/inventario-central/')).flush(inventario);
     httpTestingController.expectOne(r => r.url.endsWith('/tipos-mercado/')).flush(tipos);
   }
@@ -368,6 +369,17 @@ describe('RegistrarEntregaAlimentosComponent', () => {
       expect(component.gruposEnvios[0].items.length).toBe(2);
     });
 
+    it('muestra el responsable que devuelve el servidor en el envío', () => {
+      cargarEntradas([
+        entradaArroz(),
+        { id_entrega: 30, id_ingrediente: 3, ingrediente_nombre: 'Arroz', institucion_nombre: 'Liceo de Occidente',
+          cantidad: 2, unidad: 'Kg', fecha_entrega: '2026-10-20', fecha_salida: '2026-10-20', responsable: 'Santiago' },
+      ]);
+
+      expect(component.historialEnvios[0].responsable).toBe('Santiago');
+      expect(component.gruposEnvios[0].responsable).toBe('Santiago');
+    });
+
     it('separa el inventario en disponible y no disponible', () => {
       component.ingredientes = [{ id: 3, nombre: 'Arroz' }, { id: 4, nombre: 'Leche' }];
       cargarEntradas([entradaArroz()]);
@@ -438,6 +450,8 @@ describe('RegistrarEntregaAlimentosComponent', () => {
     });
 
     it('completa el tipo y vencimiento si la última entrada no los tiene', () => {
+      usarInstitucion();
+      component.envioResponsable = 'Santiago';
       cargarEntradas([entradaArroz({ id_tipo_mercado: null, fecha_vencimiento: '' })]);
       deslizar(component.productosMenu[0], 100);
 
@@ -481,6 +495,7 @@ describe('RegistrarEntregaAlimentosComponent', () => {
   describe('envío desde el panel', () => {
     beforeEach(() => {
       usarInstitucion();
+      component.envioResponsable = 'Santiago';
       cargarEntradas([entradaArroz()]);
       deslizar(component.productosMenu[0], 100);
     });
@@ -502,6 +517,26 @@ describe('RegistrarEntregaAlimentosComponent', () => {
       component.enviarSeleccionados();
 
       expect(component.errorEnvioPanel).toContain('Escribe la cantidad a enviar');
+      httpTestingController.expectNone(esPost);
+    });
+
+    it('pide la fecha de envío antes de enviar', () => {
+      component.fijarCantidadEnviar(component.seleccionados[0], 5);
+      component.envioFecha = '';
+
+      component.enviarSeleccionados();
+
+      expect(component.errorEnvioPanel).toContain('fecha de envío');
+      httpTestingController.expectNone(esPost);
+    });
+
+    it('pide el responsable antes de enviar y no manda nada', () => {
+      component.fijarCantidadEnviar(component.seleccionados[0], 5);
+      component.envioResponsable = '   ';
+
+      component.enviarSeleccionados();
+
+      expect(component.errorEnvioPanel).toContain('responsable');
       httpTestingController.expectNone(esPost);
     });
 
@@ -545,6 +580,7 @@ describe('RegistrarEntregaAlimentosComponent', () => {
         frecuencia: 'Cada 20 días',
         unidad: 'Kg',
         destino: 'Liceo de Occidente',
+        responsable: 'Santiago',
       });
       peticion.flush({});
 
@@ -559,12 +595,34 @@ describe('RegistrarEntregaAlimentosComponent', () => {
       ]);
       responderCatalogos(inventarioArroz(10));
 
-      expect(component.historialEnvios[0]).toMatchObject({ id: 55, ingrediente: 'Arroz', destino: 'Liceo de Occidente', cantidad: 5 });
+      // El servidor no devolvió el responsable: se recupera del respaldo guardado en el navegador
+      expect(component.historialEnvios[0]).toMatchObject({
+        id: 55, ingrediente: 'Arroz', destino: 'Liceo de Occidente', cantidad: 5, responsable: 'Santiago',
+      });
       expect(component.totalDisponible(component.productosMenu[0])).toBe(10);
       expect(alertas.success).toHaveBeenCalledWith(
         'Envío registrado',
         expect.stringContaining('1 producto(s) enviados a Liceo de Occidente'),
       );
+    });
+
+    it('reconoce el envío por su id aunque el servidor no devuelva fecha_salida', () => {
+      const hoy = component.fechaHoy();
+      component.fijarCantidadEnviar(component.seleccionados[0], 5);
+
+      component.enviarSeleccionados();
+      httpTestingController.expectOne(esPost).flush({ id: 77 });
+
+      responderHistorial([
+        entradaArroz(),
+        { id: 77, id_ingrediente: 3, id_institucion: 7, ingrediente_nombre: 'Arroz', institucion_nombre: 'Liceo de Occidente',
+          cantidad: 5, unidad: 'Kg', fecha_entrega: hoy },
+      ]);
+      responderCatalogos(inventarioArroz(10));
+
+      expect(component.historial.length).toBe(1);          // solo la entrada original
+      expect(component.historialEnvios.length).toBe(1);    // el envío no se mezcla con las entradas
+      expect(component.historialEnvios[0]).toMatchObject({ id: 77, ingrediente: 'Arroz', cantidad: 5, responsable: 'Santiago' });
     });
 
     it('registra un producto del inventario central sin historial usando su categoría de mercado', () => {
@@ -630,8 +688,9 @@ describe('RegistrarEntregaAlimentosComponent', () => {
 
       component.enviarSeleccionados();
 
+      // El catálogo de la prueba solo tiene el tipo 1 ("Granos"), que corresponde a no perecedero
       const peticion = httpTestingController.expectOne(esPost);
-      expect(peticion.request.body.id_tipo_mercado).toBe(2);
+      expect(peticion.request.body.id_tipo_mercado).toBe(1);
       expect(peticion.request.body.fecha_vencimiento).toBeTruthy();
       peticion.flush({});
       responderHistorial([]);
@@ -642,7 +701,7 @@ describe('RegistrarEntregaAlimentosComponent', () => {
 
     it('reemplaza un vencimiento anterior a hoy antes de enviar', () => {
       const sel = component.seleccionados[0];
-      sel.fechaVencimiento = '2026-10-17';
+      sel.fechaVencimiento = isoEn(-10);   // siempre está en el pasado, sin importar cuándo se corra la prueba
       component.fijarCantidadEnviar(sel, 5);
 
       component.enviarSeleccionados();
@@ -670,6 +729,26 @@ describe('RegistrarEntregaAlimentosComponent', () => {
       expect(component.errorEnvioPanel).toContain('No se pudo enviar');
       expect(component.errorEnvioPanel).toContain('Arroz');
       expect(alertas.error).toHaveBeenCalledWith('Envío incompleto', component.errorEnvioPanel);
+    });
+
+    it('muestra el responsable en las entradas del historial cuando se envía un producto', () => {
+      const hoy = component.fechaHoy();
+      component.envioResponsable = 'Laura Gómez';
+      component.fijarCantidadEnviar(component.seleccionados[0], 5);
+
+      component.enviarSeleccionados();
+      httpTestingController.expectOne(esPost).flush({ id: 88 });
+      responderHistorial([
+        entradaArroz(),
+        { id: 88, id_ingrediente: 3, id_institucion: 7, ingrediente_nombre: 'Arroz', institucion_nombre: 'Liceo de Occidente',
+          cantidad: 5, unidad: 'Kg', fecha_entrega: hoy, fecha_salida: hoy, responsable: 'Laura Gómez' },
+      ]);
+      responderCatalogos(inventarioArroz(10));
+
+      const entradaConResponsable = component.gruposEntradasVisibles.find(g => g.responsable === 'Laura Gómez');
+      expect(entradaConResponsable).toBeTruthy();
+      expect(entradaConResponsable?.responsable).toBe('Laura Gómez');
+      expect(entradaConResponsable?.items.some(i => i.ingrediente === 'Arroz')).toBe(true);
     });
   });
 
@@ -723,7 +802,7 @@ describe('RegistrarEntregaAlimentosComponent', () => {
       usarInstitucion();
       component.abrirModalEntrada();
       component.guardarEntrada();
-      expect(component.errorEntrada).toBe('Escribe el nombre del responsable.');
+      expect(component.errorEntrada).toBe('Escribe quién hizo el registro (responsable).');
 
       component.entradaResponsable = 'Ana Pérez';
       component.guardarEntrada();
