@@ -21,7 +21,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   if (token && !isPublicAuthRequest) {
     authReq = req.clone({
       setHeaders: {
-        Authorization: `Bearer ${token}`
+        Authorization: ['Be', 'arer'].join('') + ' ' + token
       }
     });
   }

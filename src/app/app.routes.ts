@@ -91,7 +91,7 @@ export const routes: Routes = [
         path: 'registrar-entrega-alimentos',
         component: RegistrarEntregaAlimentosComponent,
         canActivate: [roleGuard],
-        data: { roles: ['superadministrador', 'super administrador', 'super admin', 'supervisor'] }
+        data: { roles: ['superadministrador', 'super administrador', 'super admin', 'supervisor', 'coordinador', 'coordinador pae'] }
       },
 
       {
@@ -106,14 +106,6 @@ export const routes: Routes = [
         component: EntregasTipoMercadoComponent,
         canActivate: [roleGuard],
         data: { roles: ['supervisor', 'coordinador', 'coordinador pae'] }
-      },
-
-      // NUEVO: Instituciones
-      {
-        path: 'instituciones',
-        component: InstitucionesComponent,
-        canActivate: [roleGuard],
-        data: { roles: ['supervisor', 'coordinador', 'coordinador pae', 'administrador', 'admin'] }
       },
 
       {

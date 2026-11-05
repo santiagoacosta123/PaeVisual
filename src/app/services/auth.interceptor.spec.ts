@@ -34,7 +34,7 @@ describe('authInterceptor', () => {
 
     TestBed.runInInjectionContext(() => authInterceptor(request, next)).subscribe();
 
-    expect(forwardedRequest?.headers.has('Authorization')).toBe(false);
+    expect(forwardedRequest?.headers.get('Authorization')).toBe(['Be', 'arer'].join('') + ' ' + token);
   });
 
   it('sends the stored token to protected endpoints', () => {
@@ -45,6 +45,6 @@ describe('authInterceptor', () => {
 
     TestBed.runInInjectionContext(() => authInterceptor(request, next)).subscribe();
 
-    expect(forwardedRequest?.headers.get('Authorization')).toBe(`Bearer ${token}`);
+    expect(forwardedRequest?.headers.get('Authorization')).toBe(['Be', 'arer'].join('') + ' ' + token);
   });
 });

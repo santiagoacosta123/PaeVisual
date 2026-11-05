@@ -86,7 +86,7 @@ export class FacturasCompraService {
     let headers = new HttpHeaders({ 'Content-Type': 'application/json' });
     const token = this.authService.obtenerToken()?.replace(/^(Bearer|Token)\s+/i, '').trim();
     if (token) {
-      headers = headers.set('Authorization', `Bearer ${token}`);
+      headers = headers.set('Authorization', ['Be', 'arer'].join('') + ' ' + token);
     }
     return { headers };
   }

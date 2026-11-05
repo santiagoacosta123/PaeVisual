@@ -17,6 +17,7 @@ import { AuthService, InstitucionAsignada } from '../services/auth.service';
 import { SiraeService } from '../features/contratos/services/contratos_pae.service';
 import { FacturasCompraService } from '../services/facturas-compra.service';
 import { environment } from '../../environments/environment';
+import { SweetAlertService } from '../core/services/sweet-alert.service';
 
 @Component({
   selector: 'app-layout',
@@ -94,7 +95,8 @@ export class LayoutComponent implements OnInit {
     private facturasService: FacturasCompraService,
     private http: HttpClient,
     private cdr: ChangeDetectorRef,
-    private router: Router
+    private router: Router,
+    private sweetAlert: SweetAlertService
   ) {
     // Escuchar los cambios de ruta para actualizar el título automáticamente
     this.router.events.pipe(
@@ -276,11 +278,11 @@ export class LayoutComponent implements OnInit {
 
   cargarInstitucionesSupervisor(): void {
     this.http.get<any>(`${environment.apiUrl}/instituciones/`).pipe(
-      timeout(5000),
-      catchError(() => of([]))
+      timeout(20000),
+      catchError(() => of(null))
     ).subscribe({
       next: (resp) => {
-        const lista = Array.isArray(resp) ? resp : (resp?.results ?? []);
+        const lista = resp === null ? [] : (Array.isArray(resp) ? resp : (resp?.results ?? []));
         if (lista.length > 0) {
           this.institucionesSupervisor = lista.map((item: any) => ({
             id_institucion: item.id_institucion ?? item.id,
@@ -295,9 +297,48 @@ export class LayoutComponent implements OnInit {
             this.institucionActiva = this.institucionesSupervisor.find(i => i.id_institucion === guardada.id_institucion) || guardada;
           }
           this.cdr.detectChanges();
+          return;
         }
+
+        this.cargarInstitucionesDesdePerfil();
       },
-      error: () => {}
+      error: () => this.cargarInstitucionesDesdePerfil()
+    });
+  }
+
+  private cargarInstitucionesDesdePerfil(): void {
+    const usuario = this.authService.obtenerUsuario();
+    if (!usuario?.id_usuario) {
+      return;
+    }
+
+    this.http.get<any>(`${environment.apiUrl}/usuarios/${usuario.id_usuario}/`).pipe(
+      timeout(15000),
+      catchError(() => of(null))
+    ).subscribe((perfil) => {
+      const asignadas = perfil?.instituciones_supervisor;
+      if (!Array.isArray(asignadas) || asignadas.length === 0) {
+        return;
+      }
+
+      this.institucionesSupervisor = asignadas.map((item: any) => ({
+        id_institucion: item.id_institucion ?? item.id,
+        nombre_institucion: item.nombre_institucion ?? item.nombre,
+        nit: item.nit ?? '',
+        sedes: Array.isArray(item.sedes) ? item.sedes : [],
+        administrador_asignado: item.administrador_asignado,
+      }));
+
+      const activa = this.authService.obtenerInstitucionActiva();
+      if (!activa || !this.institucionesSupervisor.some(i => i.id_institucion === activa.id_institucion)) {
+        this.cdr.detectChanges();
+        return;
+      }
+
+      this.institucionActiva = this.institucionesSupervisor.find(
+        i => i.id_institucion === activa.id_institucion
+      ) ?? activa;
+      this.cdr.detectChanges();
     });
   }
 
@@ -322,6 +363,7 @@ export class LayoutComponent implements OnInit {
     this.institucionActiva = inst;
     this.mostrarSelectorInstitucion = false;
     this.cdr.detectChanges();
+    void this.router.navigate(['/dashboard-supervisor']);
   }
 
   cerrarPanel(): void {
@@ -341,9 +383,40 @@ export class LayoutComponent implements OnInit {
   }
 
   guardarPerfil(): void {
-    this.perfil = { ...this.editForm };
-    alert('Perfil actualizado correctamente.');
-    this.vistaActual = 'perfil';
+    const nombreCompleto = this.editForm.nombre.trim();
+    if (!nombreCompleto || !this.editForm.correo.trim()) {
+      void this.sweetAlert.warning('Datos incompletos', 'Ingresa tu nombre y correo electrónico.');
+      return;
+    }
+
+    const [nombre, ...resto] = nombreCompleto.split(/\s+/);
+    const apellido = resto.join(' ');
+    this.authService.actualizarPerfil({
+      nombre,
+      apellido,
+      correo: this.editForm.correo.trim(),
+    }).subscribe({
+      next: (usuarioActualizado) => {
+        const usuario = this.authService.obtenerUsuario();
+        if (usuario) {
+          const actualizado = {
+            ...usuario,
+            nombre: usuarioActualizado.nombre ?? nombre,
+            apellido: usuarioActualizado.apellido ?? apellido,
+            correo: usuarioActualizado.correo ?? this.editForm.correo.trim(),
+          };
+          localStorage.setItem('usuario', JSON.stringify(actualizado));
+        }
+        this.perfil = { ...this.editForm };
+        this.vistaActual = 'perfil';
+        void this.sweetAlert.success('Perfil actualizado', 'Tus datos se guardaron correctamente.');
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => {
+        const mensaje = err.error?.correo?.[0] || err.error?.detail || 'No fue posible guardar los datos.';
+        void this.sweetAlert.error('No se pudo actualizar el perfil', mensaje);
+      }
+    });
   }
 
   guardarPassword(): void {
@@ -387,6 +460,14 @@ export class LayoutComponent implements OnInit {
   }
 
   cerrarSesion(): void {
-    this.authService.cerrarSesion();
+    void this.sweetAlert.confirm(
+      '¿Cerrar sesión?',
+      'Tu sesión actual finalizará.',
+      'Sí, cerrar sesión'
+    ).then((resultado) => {
+      if (resultado.isConfirmed) {
+        this.authService.cerrarSesion();
+      }
+    });
   }
 }

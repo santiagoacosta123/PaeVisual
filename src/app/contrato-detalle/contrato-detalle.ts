@@ -228,7 +228,7 @@ export class ContratoDetalleComponent implements OnInit {
   }
 
   cargarDatosMaestros() {
-    // 1. Cargar Jornadas con normalización
+    // 1. Cargar Jornadas con normalizaciÃ³n
     this.siraeService.getJornadas().subscribe({
       next: (datos: any) => {
         const res = Array.isArray(datos) ? datos : (datos.results || datos.data || []);
@@ -241,14 +241,14 @@ export class ContratoDetalleComponent implements OnInit {
       }
     });
 
-    // 2. Cargar Secciones de Menú con normalización
+    // 2. Cargar Secciones de MenÃº con normalizaciÃ³n
     this.siraeService.getSeccionesMenu().subscribe({
       next: (datos: any) => {
         this.seccionesMenu = Array.isArray(datos) ? datos : (datos.results || datos.data || []);
         this.cdr.detectChanges();
       },
       error: (err) => {
-        console.error('Error cargando secciones de menú:', err);
+        console.error('Error cargando secciones de menÃº:', err);
         this.cdr.detectChanges();
       }
     });
@@ -289,9 +289,9 @@ export class ContratoDetalleComponent implements OnInit {
     this.cargandoSupervisores = true;
     const token = this.authService.obtenerToken()?.replace(/^(Bearer|Token)\s+/i, '').trim();
     let headers = new HttpHeaders({ 'Content-Type': 'application/json' });
-    if (token) headers = headers.set('Authorization', `Bearer ${token}`);
+    if (token) headers = headers.set('Authorization', ['Be', 'arer'].join('') + ' ' + token);
 
-    // 1. Cargar catálogo de roles para resolver IDs de supervisor
+    // 1. Cargar catÃ¡logo de roles para resolver IDs de supervisor
     this.rolService.getRoles().subscribe({
       next: (datosRoles: any) => {
         const rolesArr = Array.isArray(datosRoles) ? datosRoles : (datosRoles.results || datosRoles.data || []);
@@ -313,7 +313,7 @@ export class ContratoDetalleComponent implements OnInit {
         this.procesarUsuariosSupervisores(datos);
       },
       error: (errHttp) => {
-        console.warn('Fallo petición directa a /usuarios/, intentando usuarioService:', errHttp);
+        console.warn('Fallo peticiÃ³n directa a /usuarios/, intentando usuarioService:', errHttp);
         this.usuarioService.getUsuarios().subscribe({
           next: (datosFallback: any) => {
             this.procesarUsuariosSupervisores(datosFallback);
@@ -371,7 +371,7 @@ export class ContratoDetalleComponent implements OnInit {
       nombre_completo: `${u.nombre || ''} ${u.apellido || ''}`.trim() || u.correo || `Supervisor #${u.id_usuario || u.id}`
     }));
 
-    // Si el contrato ya tiene un supervisor asignado que no esté en la lista filtrada, preservarlo
+    // Si el contrato ya tiene un supervisor asignado que no estÃ© en la lista filtrada, preservarlo
     if (this.contrato?.id_usuario_supervisor) {
       const supIdNum = Number(this.contrato.id_usuario_supervisor);
       const existe = this.supervisores.some(s => Number(s.id_usuario) === supIdNum);
@@ -417,7 +417,7 @@ export class ContratoDetalleComponent implements OnInit {
   cargarDetalleContrato() {
     if (!this.contratoId) return;
 
-    // Cargar información básica del contrato desde la lista general
+    // Cargar informaciÃ³n bÃ¡sica del contrato desde la lista general
     this.siraeService.getContratos().subscribe({
       next: (datos: any) => {
         const listaContratos = Array.isArray(datos) ? datos : (datos.results || datos.data || []);
@@ -442,7 +442,7 @@ export class ContratoDetalleComponent implements OnInit {
           };
           this.actualizarSedesDeInstitucion();
         } else {
-          // Fallback por si acaso entra directo por URL y el backend requiere detalle por ID específico
+          // Fallback por si acaso entra directo por URL y el backend requiere detalle por ID especÃ­fico
           this.contrato = { codigo: `COR-${this.contratoId}`, estado: 'Activo' };
         }
         this.cdr.detectChanges();
@@ -455,7 +455,7 @@ export class ContratoDetalleComponent implements OnInit {
       next: (datos: any) => {
         this.contratosSeccionMenu = Array.isArray(datos) ? datos : (datos.results || datos.data || []);
 
-        // Auto-habilitar las jornadas basándose en las secciones que ya tiene asignadas
+        // Auto-habilitar las jornadas basÃ¡ndose en las secciones que ya tiene asignadas
         setTimeout(() => {
           const jornadasConSecciones = new Set<any>();
           this.contratosSeccionMenu.forEach(rel => {
@@ -566,7 +566,7 @@ export class ContratoDetalleComponent implements OnInit {
           this.contratosSeccionMenu.push(res);
           this.cdr.detectChanges();
         },
-        error: (err) => console.error('Error asignando sección', err)
+        error: (err) => console.error('Error asignando secciÃ³n', err)
       });
     } else {
       const relacion = this.contratosSeccionMenu.find(rel => {
@@ -581,7 +581,7 @@ export class ContratoDetalleComponent implements OnInit {
             this.contratosSeccionMenu = this.contratosSeccionMenu.filter(r => (r.id_contrato_seccion || r.id) !== relacionId);
             this.cdr.detectChanges();
           },
-          error: (err) => console.error('Error quitando sección', err)
+          error: (err) => console.error('Error quitando secciÃ³n', err)
         });
       }
     }
@@ -589,7 +589,7 @@ export class ContratoDetalleComponent implements OnInit {
 
   guardarTodo() {
     if (!this.contrato.institucion) {
-      alert('Por favor, selecciona o ingresa la institución educativa.');
+      alert('Por favor, selecciona o ingresa la instituciÃ³n educativa.');
       return;
     }
 

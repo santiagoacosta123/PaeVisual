@@ -58,25 +58,25 @@
 
       <!-- Navegación -->
       <nav class="sv-nav">
-        <a *ngIf="institucionActiva" routerLink="dashboard-supervisor" routerLinkActive="sv-active" class="sv-link"
+        <a *ngIf="institucionActiva" routerLink="/dashboard-supervisor" routerLinkActive="sv-active" class="sv-link"
            aria-label="Inicio Supervisor">
           <span class="material-symbols-outlined sv-icon">space_dashboard</span>
           <span class="sv-label">Inicio</span>
         </a>
 
-        <a *ngIf="institucionActiva && rolUsuario === 'supervisor'" routerLink="registrar-entrega-alimentos" routerLinkActive="sv-active" class="sv-link"
+        <a *ngIf="institucionActiva && (rolUsuario === 'supervisor' || rolUsuario === 'coordinador' || rolUsuario === 'coordinador pae')" routerLink="/registrar-entrega-alimentos" routerLinkActive="sv-active" class="sv-link"
            aria-label="Registrar entrega de alimentos">
           <span class="material-symbols-outlined sv-icon">local_shipping</span>
           <span class="sv-label">Registrar entrega</span>
         </a>
 
-        <a *ngIf="institucionActiva" routerLink="instituciones" routerLinkActive="sv-active" class="sv-link"
+        <a *ngIf="institucionActiva" routerLink="/instituciones" routerLinkActive="sv-active" class="sv-link"
            aria-label="Sedes">
           <span class="material-symbols-outlined sv-icon">apartment</span>
           <span class="sv-label">Sedes e inventario</span>
         </a>
 
-        <a *ngIf="institucionActiva" routerLink="reportes-consumo" routerLinkActive="sv-active" class="sv-link"
+        <a *ngIf="institucionActiva" routerLink="/reportes-consumo" routerLinkActive="sv-active" class="sv-link"
            aria-label="Reportes">
           <span class="material-symbols-outlined sv-icon">analytics</span>
           <span class="sv-label">Reportes</span>

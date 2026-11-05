@@ -182,6 +182,18 @@ export class AuthService {
     );
   }
 
+  actualizarPerfil(data: { nombre: string; apellido: string; correo: string }): Observable<AuthenticatedUser> {
+    const usuario = this.obtenerUsuario();
+    if (!usuario?.id_usuario) {
+      throw new Error('No se pudo identificar al usuario autenticado.');
+    }
+
+    return this.http.patch<AuthenticatedUser>(
+      `${this.apiBaseUrl}/usuarios/${usuario.id_usuario}/`,
+      data
+    );
+  }
+
   guardarSesion(respuesta: LoginResponse): void {
     if (!this.estaDisponibleStorage()) {
       return;

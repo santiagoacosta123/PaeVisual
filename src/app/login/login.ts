@@ -107,7 +107,15 @@ export class LoginComponent implements OnInit {
       },
       error: (err) => {
         this.cargando = false;
-        this.errorMensaje = err.error?.detail || err.error?.message || err.error?.non_field_errors?.[0] || 'Credenciales inválidas o error de conexión.';
+        if (err.status === 0) {
+          this.errorMensaje = 'No se pudo conectar con el servidor. Verifica tu conexión o espera unos segundos mientras el backend inicia.';
+        } else {
+          this.errorMensaje = err.error?.detail
+            || err.error?.message
+            || err.error?.non_field_errors?.[0]
+            || (typeof err.error === 'string' ? err.error : '')
+            || 'Credenciales inválidas o error de conexión.';
+        }
         this.cdr.detectChanges();
       }
     });
