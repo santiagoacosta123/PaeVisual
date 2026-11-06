@@ -44,19 +44,6 @@
     </button>
   </header>
 
-  <!-- Qué datos usa este reporte -->
-  <div class="flex items-start gap-3 rounded-2xl border border-sky-100 bg-sky-50/70 p-4 text-xs font-medium leading-5 text-sky-900">
-    <span class="material-symbols-outlined mt-0.5 text-[20px] text-sky-600">info</span>
-    <p class="m-0">Este reporte usa los datos disponibles hoy: sedes, cupos de los contratos y entregas de alimentos. La asistencia y las raciones servidas se sumarán cuando el sistema las ponga a disposición del Supervisor.</p>
-  </div>
-
-  <!-- Aviso de datos incompletos -->
-  <div *ngIf="avisoDatos" role="status"
-    class="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50/70 p-4 text-xs font-medium leading-5 text-amber-900">
-    <span class="material-symbols-outlined mt-0.5 text-[20px] text-amber-600">warning</span>
-    <p class="m-0">{{ avisoDatos }}</p>
-  </div>
-
   <!-- ============ FILTROS ============ -->
   <section class="fx-panel p-5 sm:p-6" aria-label="Filtros del reporte">
     <div class="grid grid-cols-1 items-end gap-4 sm:grid-cols-2 lg:grid-cols-3">
