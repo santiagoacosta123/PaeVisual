@@ -8,6 +8,7 @@ import { catchError, finalize, map, throwIfEmpty, timeout } from 'rxjs/operators
 import { environment } from '../../environments/environment';
 import { AuthService, InstitucionAsignada } from '../core/auth/auth.service';
 import { FacturasCompraService, InventarioCentralItem } from '../services/facturas-compra.service';
+import { IMAGENES_INSTITUCION } from '../dashboard-supervisor/imagenes-instituciones';
 
 type FiltroEstado = 'Todos' | 'ACTIVO' | 'INACTIVO';
 type Pestana = 'inventario' | 'entregas';
@@ -443,6 +444,10 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
     return s.id_sede;
   }
 
+  imagenDe(indice: number): string {
+    return IMAGENES_INSTITUCION[indice % IMAGENES_INSTITUCION.length];
+  }
+
   // =====================================================
   //  ACCIONES
   // =====================================================
@@ -741,7 +746,7 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
   claseEstado(estado?: string): string {
     const est = (estado || '').toUpperCase();
     if (est === 'ACTIVO' || est === 'OK' || est === 'ÓPTIMO' || est === 'RECIBIDA') {
-      return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+      return 'border-amber-200 bg-amber-50 text-amber-800';
     }
     if (est === 'BAJO' || est === 'BAJO STOCK' || est === 'DESPACHADA') {
       return 'border-amber-200 bg-amber-50 text-amber-700';

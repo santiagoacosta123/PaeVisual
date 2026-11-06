@@ -8,7 +8,7 @@
 .fx-input:focus { border-color: #faa911; box-shadow: 0 0 0 3px rgba(250, 169, 17, .18); }
 
 /* Tarjeta de Sede */
-.sede-card { background: #fff; border-radius: 24px; border: 1px solid #F1F5F9; padding: 22px; box-shadow: 0 8px 24px -14px rgba(15, 23, 42, .12); transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease; }
+.sede-card { background: #fff; border-radius: 24px; border: 1px solid #F1F5F9; overflow: hidden; box-shadow: 0 8px 24px -14px rgba(15, 23, 42, .12); transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease; }
 .sede-card:hover { transform: translateY(-4px); box-shadow: 0 18px 34px -14px rgba(250, 169, 17, .28); border-color: #FDE3A7; }
 
 /* Tarjeta de ingrediente */
@@ -144,51 +144,30 @@
 
     <!-- Cuadrícula de Tarjetas de Sedes -->
     <div *ngIf="filtradas.length > 0" class="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-      <article *ngFor="let sede of filtradas; trackBy: trackSede" class="sede-card fx-up flex flex-col justify-between">
-        <div>
-          <!-- Cabecera de la tarjeta -->
-          <div class="flex items-start justify-between">
-            <div class="ico-suave flex h-12 w-12 items-center justify-center rounded-2xl shadow-sm">
-              <span class="material-symbols-outlined text-[24px]">domain</span>
-            </div>
-            <span [ngClass]="claseEstado(sede.estado)" class="rounded-full border px-2.5 py-0.5 text-[11px] font-bold">
-              {{ sede.estado || 'ACTIVO' }}
-            </span>
-          </div>
-
-          <!-- Nombre de la sede -->
-          <h3 class="m-0 mt-4 text-lg font-black leading-tight text-slate-900">{{ sede.nombre_sede }}</h3>
-
-          <!-- Institución a la que pertenece -->
-          <p class="m-0 mt-1 flex items-center gap-1.5 text-xs font-medium text-slate-500">
-            <span class="material-symbols-outlined text-[15px] text-[#faa911]">school</span>
-            <span class="truncate">{{ sede.nombre_institucion || 'Institución educativa' }}</span>
-          </p>
-
-          <!-- Datos de la sede -->
-          <div class="mt-4 space-y-2 rounded-2xl bg-slate-50 p-3.5 text-xs">
-            <div class="flex items-center justify-between">
-              <span class="text-[11px] font-bold text-slate-400">Código DANE:</span>
-              <span class="font-mono font-bold text-slate-800">{{ sede.codigo_dane || '—' }}</span>
-            </div>
-            <div class="flex items-start justify-between gap-2">
-              <span class="text-[11px] font-bold text-slate-400">Dirección:</span>
-              <span class="font-medium text-slate-700 text-right truncate max-w-[170px]" [title]="sede.direccion">
-                {{ sede.direccion || '—' }}
-              </span>
-            </div>
-            <div class="flex items-center justify-between">
-              <span class="text-[11px] font-bold text-slate-400">Teléfono:</span>
-              <span class="font-medium text-slate-700">{{ sede.telefono || '—' }}</span>
-            </div>
-          </div>
+      <article *ngFor="let sede of filtradas; let i = index; trackBy: trackSede"
+        class="sede-card fx-up group flex flex-col">
+        <div class="relative">
+          <img [src]="imagenDe(i)" [alt]="'Sede ' + sede.nombre_sede"
+            class="h-44 w-full object-cover" loading="lazy" />
+          <span [ngClass]="claseEstado(sede.estado)"
+            class="absolute right-4 top-4 rounded-full border px-2.5 py-0.5 text-[11px] font-bold shadow-sm">
+            {{ sede.estado || 'ACTIVO' }}
+          </span>
         </div>
 
-        <!-- Botón de Acción -->
-        <div class="mt-5 flex border-t border-slate-100 pt-4">
+        <div class="flex flex-1 flex-col gap-5 p-6">
+          <div>
+            <h3 class="m-0 text-lg font-black leading-tight text-slate-900 transition-colors group-hover:text-amber-700">
+              {{ sede.nombre_sede }}
+            </h3>
+            <p class="m-0 mt-1 truncate text-xs font-medium text-slate-500">
+              {{ sede.nombre_institucion || 'Institución educativa' }}
+            </p>
+          </div>
+
           <button type="button" (click)="irAEntregas(sede)"
-            class="w-full flex cursor-pointer items-center justify-center gap-1.5 rounded-full border border-[#faa911] bg-amber-50 px-4 py-2.5 text-xs font-bold text-amber-900 transition hover:bg-amber-100 shadow-sm">
-            <span class="material-symbols-outlined text-[16px]">local_shipping</span>
+            class="mt-auto flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-amber-400 px-4 py-3 text-xs font-bold text-slate-950 shadow-sm transition hover:bg-amber-500">
+            <span class="material-symbols-outlined text-[18px]">local_shipping</span>
             Registrar entrega
           </button>
         </div>
