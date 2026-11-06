@@ -22,7 +22,7 @@ import { CustomSelectComponent } from '../shared/custom-select/custom-select';
 type TipoCampo = 'text' | 'textarea' | 'number' | 'time' | 'select';
 
 /** Tablas que alimentan listas desplegables de otras tablas. */
-type FuenteRelacion = 'jornadas' | 'unidades_medida' | 'ingredientes' | 'categorias_inventario' | 'grados' | 'instituciones';
+type FuenteRelacion = 'jornadas' | 'unidades_medida' | 'ingredientes' | 'categorias_inventario' | 'grados' | 'instituciones' | 'tipos_mercado' | 'sedes' | 'turnos';
 
 interface CampoConfig {
   name: string;
@@ -67,6 +67,10 @@ const FUENTES: Record<
     id: 'id_institucion',
     etiqueta: r => r.nombre_institucion ?? r.nombre ?? ''
   },
+  sedes: {
+    id: 'id_sede',
+    etiqueta: r => r.nombre_sede ?? r.nombre ?? ''
+  },
   jornadas: {
     id: 'id_jornada',
     etiqueta: r => r.nombre_jornada ?? r.nombre ?? ''
@@ -86,9 +90,17 @@ const FUENTES: Record<
     id: 'id_categoria_inventario',
     etiqueta: r => r.nombre_categoria ?? r.nombre ?? ''
   },
+  tipos_mercado: {
+    id: 'id_tipo_mercado',
+    etiqueta: r => r.nombre_tipo ?? r.nombre ?? ''
+  },
   grados: {
     id: 'id_grado',
     etiqueta: r => r.nombre_grado ?? r.nombre ?? ''
+  },
+  turnos: {
+    id: 'id_turno',
+    etiqueta: r => r.nombre_turno ? `${r.nombre_turno} (${(r.hora_inicio || '').slice(0, 5)} - ${(r.hora_fin || '').slice(0, 5)})` : ''
   }
 };
 
@@ -174,6 +186,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
         { name: 'id_categoria_inventario', label: 'Categoría', type: 'select', required: true, source: 'categorias_inventario' },
         { name: 'id_unidad_medida', label: 'Unidad de medida', type: 'select', required: true, source: 'unidades_medida' },
         { name: 'marca_ingrediente', label: 'Marca', type: 'text', required: false, placeholder: 'Ej: San Jorge' },
+        { name: 'id_tipo_mercado', label: 'Tipo de mercado', type: 'select', required: false, source: 'tipos_mercado' },
         {
           name: 'tipo_conservacion',
           label: 'Tipo de conservación',
@@ -281,6 +294,19 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       campos: [
         { name: 'nombre_seccion', label: 'Nombre de la sección', type: 'text', required: true, placeholder: 'Ej: Desayuno' },
         { name: 'id_jornada', label: 'Jornada', type: 'select', required: true, source: 'jornadas' }
+      ]
+    },
+    {
+      id: 'sede_jornadas',
+      nombre: 'Jornadas por Sede',
+      singular: 'jornada por sede',
+      icon: 'hub',
+      idField: 'id_sede_jornada',
+      categoria: 'operacion',
+      campos: [
+        { name: 'id_sede', label: 'Sede educativa', type: 'select', required: true, source: 'sedes' },
+        { name: 'id_jornada', label: 'Jornada', type: 'select', required: true, source: 'jornadas' },
+        { name: 'cupos', label: 'Cupos asignados', type: 'number', required: true, placeholder: 'Ej: 150' }
       ]
     },
     {
@@ -503,11 +529,14 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.cargarDatos();
     this.cargarFuente('instituciones');
+    this.cargarFuente('sedes');
     this.cargarFuente('jornadas');
     this.cargarFuente('unidades_medida');
     this.cargarFuente('ingredientes');
     this.cargarFuente('categorias_inventario');
+    this.cargarFuente('tipos_mercado');
     this.cargarFuente('grados');
+    this.cargarFuente('turnos');
   }
 
   ngOnDestroy(): void {
@@ -823,11 +852,14 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
   private refrescarFuenteSiAplica(): void {
     if (
       this.tabActual === 'instituciones' ||
+      this.tabActual === 'sedes' ||
       this.tabActual === 'jornadas' ||
       this.tabActual === 'unidades_medida' ||
       this.tabActual === 'ingredientes' ||
       this.tabActual === 'categorias_inventario' ||
-      this.tabActual === 'grados'
+      this.tabActual === 'tipos_mercado' ||
+      this.tabActual === 'grados' ||
+      this.tabActual === 'turnos'
     ) {
       this.cargarFuente(this.tabActual as FuenteRelacion);
     }
@@ -869,9 +901,21 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
         const opcion = this.opciones[campo.source]?.find(
           o => String(o.id) === String(valor)
         );
-        // Fallback para sedes: si Django serializó institucion_nombre directamente
+        // Fallbacks para nombres serializados por Django
         if (!opcion && campo.name === 'id_institucion' && item?.institucion_nombre) {
           return item.institucion_nombre;
+        }
+        if (!opcion && campo.name === 'id_sede' && (item?.nombre_sede || item?.sede_nombre)) {
+          return item.nombre_sede || item.sede_nombre;
+        }
+        if (!opcion && campo.name === 'id_jornada' && (item?.nombre_jornada || item?.jornada_nombre)) {
+          return item.nombre_jornada || item.jornada_nombre;
+        }
+        if (!opcion && campo.name === 'id_tipo_mercado' && (item?.nombre_tipo || item?.tipo_mercado_nombre)) {
+          return item.nombre_tipo || item.tipo_mercado_nombre;
+        }
+        if (!opcion && campo.name === 'id_turno' && (item?.nombre_turno || item?.turno_nombre)) {
+          return item.nombre_turno || item.turno_nombre;
         }
         return opcion?.label || (valor ? String(valor) : '—');
       }
