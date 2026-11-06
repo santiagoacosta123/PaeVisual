@@ -1,7 +1,11 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Notificacion } from './notificacion.model';
+import {
+  EnviarNotificacionResponse,
+  Notificacion,
+  NotificacionDestinatario
+} from './notificacion.model';
 import { environment } from '@env/environment';
 
 @Injectable({
@@ -17,22 +21,32 @@ export class NotificacionService {
     return this.http.get<Notificacion[]>(`${this.apiUrl}/`);
   }
 
-    // Enviar notificación con imagen opcional
+  obtenerDestinatarios(): Observable<NotificacionDestinatario[]> {
+    return this.http.get<NotificacionDestinatario[]>(
+      `${this.apiUrl}/destinatarios/`
+    );
+  }
+
   enviarNotificacion(
     titulo: string,
     mensaje: string,
-    imagen?: File | null
-  ): Observable<any> {
+    imagen?: File | null,
+    idDestinatario?: number | null
+  ): Observable<EnviarNotificacionResponse> {
     const formulario = new FormData();
 
     formulario.append('titulo', titulo.trim());
     formulario.append('mensaje', mensaje.trim());
 
+    if (idDestinatario !== undefined && idDestinatario !== null) {
+      formulario.append('id_destinatario', String(idDestinatario));
+    }
+
     if (imagen) {
       formulario.append('imagen', imagen, imagen.name);
     }
 
-    return this.http.post<any>(
+    return this.http.post<EnviarNotificacionResponse>(
       `${this.apiUrl}/enviar/`,
       formulario
     );

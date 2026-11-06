@@ -10,6 +10,9 @@ import { SiraeService } from '../services/contratos_pae.service';
 import { AuthService } from '../services/auth.service';
 import { SweetAlertService } from '../sweet-alert.service';
 import { CustomSelectComponent } from '../shared/custom-select/custom-select';
+import { ProductoService } from '../features/inventario/services/producto.service';
+import { RecetaComponente, RecetaComponentesService } from '../services/receta-componentes.service';
+import { SugerenciaReceta, SugerenciasRecetasService } from '../services/sugerencias-recetas.service';
 
 @Component({
   selector: 'app-menus',
@@ -31,6 +34,19 @@ export class MenusComponent implements OnInit {
   platoSeleccionado: any = null;
   mostrarDetallePlato: boolean = false;
   detallesPlato: any[] = [];
+  recetaComponentes: RecetaComponente[] = [];
+  ingredientesCatalogo: any[] = [];
+  recetaForm: any = {
+    id_receta_componente: null,
+    id_ingrediente: '',
+    cantidad: null,
+    base_cantidad: 'POR_NINO',
+    porciones_base: null,
+  };
+  menuSugerenciaId: number | null = null;
+  mostrarSugerenciaReceta = false;
+  cargandoSugerencia = false;
+  sugerenciaReceta: SugerenciaReceta | null = null;
 
   // ---------- Filtros y Búsqueda ----------
   filtroTexto: string = '';
@@ -73,6 +89,13 @@ export class MenusComponent implements OnInit {
     }));
   }
 
+  get menusParaSugerencia(): any[] {
+    const menusConPlato = new Set(
+      this.detallesPlato.map(detalle => Number(detalle.id_menu)),
+    );
+    return this.menus.filter(menu => menusConPlato.has(Number(menu.id_menu)));
+  }
+
   // ---------- Modales y Formularios ----------
   mostrarFormulario: boolean = false;
   esEdicion: boolean = false;
@@ -104,6 +127,9 @@ export class MenusComponent implements OnInit {
     private catalogosService: SiraeService,
     private authService: AuthService,
     private sweetAlert: SweetAlertService,
+    private recetaComponentesService: RecetaComponentesService,
+    private sugerenciasRecetasService: SugerenciasRecetasService,
+    private productoService: ProductoService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -442,17 +468,193 @@ export class MenusComponent implements OnInit {
   abrirDetalle(plato: any): void {
     this.platoSeleccionado = plato;
     this.mostrarDetallePlato = true;
+    this.menuSugerenciaId = null;
     this.detalleForm = {
       id_detalle_plato: null, id_menu: '', id_plato: plato.id_plato,
       porcion_por_nino: null, total_a_preparar: null,
       unidad_total: '', estado_preparacion: 'Pendiente'
     };
     this.cargarDetallesPlato(plato.id_plato);
+    this.cargarRecetaComponentes(plato.id_plato);
+    this.cargarIngredientesCatalogo();
+    this.resetRecetaForm();
   }
 
   cerrarDetalle(): void {
     this.mostrarDetallePlato = false;
     this.platoSeleccionado = null;
+    this.mostrarSugerenciaReceta = false;
+    this.sugerenciaReceta = null;
+    this.resetRecetaForm();
+  }
+
+  cargarRecetaComponentes(idPlato: number): void {
+    this.recetaComponentesService.listar().subscribe({
+      next: (data) => {
+        this.recetaComponentes = data.filter(
+          componente => Number(componente.id_plato) === Number(idPlato),
+        );
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        console.error('Error al cargar los ingredientes de la receta:', error);
+        void this.sweetAlert.error(
+          'No se cargó la receta',
+          'Verifica la conexión y vuelve a intentarlo.',
+        );
+      },
+    });
+  }
+
+  cargarIngredientesCatalogo(): void {
+    if (this.ingredientesCatalogo.length > 0) return;
+    this.productoService.getIngredientes().subscribe({
+      next: (data) => {
+        this.ingredientesCatalogo = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.results)
+            ? data.results
+            : [];
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        console.error('Error al cargar ingredientes para la receta:', error);
+        void this.sweetAlert.error(
+          'No se cargaron los ingredientes',
+          'Verifica la conexión y vuelve a intentarlo.',
+        );
+      },
+    });
+  }
+
+  resetRecetaForm(): void {
+    this.recetaForm = {
+      id_receta_componente: null,
+      id_ingrediente: '',
+      cantidad: null,
+      base_cantidad: 'POR_NINO',
+      porciones_base: null,
+    };
+  }
+
+  nombreIngrediente(id: number): string {
+    const ingrediente = this.ingredientesCatalogo.find(
+      item => Number(item.id_ingrediente) === Number(id),
+    );
+    return ingrediente?.nombre_ingrediente || `Ingrediente #${id}`;
+  }
+
+  editarRecetaComponente(componente: RecetaComponente): void {
+    this.recetaForm = { ...componente };
+  }
+
+  guardarRecetaComponente(): void {
+    const cantidad = Number(this.recetaForm.cantidad);
+    const idIngrediente = Number(this.recetaForm.id_ingrediente);
+    const porcionesBase = Number(this.recetaForm.porciones_base);
+    if (!idIngrediente || !Number.isFinite(cantidad) || cantidad <= 0) {
+      void this.sweetAlert.warning(
+        'Revisa el ingrediente',
+        'Selecciona un ingrediente e indica una cantidad mayor que cero.',
+      );
+      return;
+    }
+    if (
+      this.recetaForm.base_cantidad === 'TOTAL_PREPARACION'
+      && (!Number.isInteger(porcionesBase) || porcionesBase <= 0)
+    ) {
+      void this.sweetAlert.warning(
+        'Indica la base de porciones',
+        'Señala para cuántos niños corresponde la cantidad total.',
+      );
+      return;
+    }
+
+    const payload = {
+      id_plato: Number(this.platoSeleccionado.id_plato),
+      id_ingrediente: idIngrediente,
+      cantidad,
+      base_cantidad: this.recetaForm.base_cantidad as 'POR_NINO' | 'TOTAL_PREPARACION',
+      porciones_base: this.recetaForm.base_cantidad === 'TOTAL_PREPARACION'
+        ? porcionesBase
+        : null,
+    };
+    const id = Number(this.recetaForm.id_receta_componente);
+    const request = id
+      ? this.recetaComponentesService.actualizar(id, payload)
+      : this.recetaComponentesService.crear(payload);
+    request.subscribe({
+      next: () => {
+        this.resetRecetaForm();
+        this.cargarRecetaComponentes(this.platoSeleccionado.id_plato);
+        void this.sweetAlert.success(
+          'Receta guardada',
+          'Se actualizaron los ingredientes base del plato.',
+        );
+      },
+      error: (error) => {
+        console.error('Error al guardar el ingrediente de la receta:', error);
+        void this.sweetAlert.error(
+          'No se guardó la receta',
+          error.error?.base_cantidad || error.error?.porciones_base
+            || 'Verifica los datos e intenta nuevamente.',
+        );
+      },
+    });
+  }
+
+  eliminarRecetaComponente(id: number): void {
+    void this.sweetAlert.confirm(
+      '¿Quitar ingrediente?',
+      'Se eliminará de la receta registrada.',
+      'Sí, eliminar',
+    ).then(result => {
+      if (!result.isConfirmed) return;
+      this.recetaComponentesService.eliminar(id).subscribe({
+        next: () => {
+          this.cargarRecetaComponentes(this.platoSeleccionado.id_plato);
+          void this.sweetAlert.success('Ingrediente eliminado', 'Se actualizó la receta.');
+        },
+        error: (error) => {
+          console.error('Error al eliminar ingrediente de receta:', error);
+          void this.sweetAlert.error(
+            'No se eliminó el ingrediente',
+            'Verifica tus permisos e intenta nuevamente.',
+          );
+        },
+      });
+    });
+  }
+
+  solicitarSugerenciaReceta(): void {
+    if (!this.menuSugerenciaId || !this.platoSeleccionado?.id_plato) {
+      void this.sweetAlert.warning(
+        'Selecciona un menú',
+        'La sugerencia requiere conocer cuántos niños están registrados en el menú.',
+      );
+      return;
+    }
+
+    this.cargandoSugerencia = true;
+    this.sugerenciaReceta = null;
+    this.sugerenciasRecetasService
+      .sugerir(this.menuSugerenciaId, Number(this.platoSeleccionado.id_plato))
+      .subscribe({
+        next: (sugerencia) => {
+          this.sugerenciaReceta = sugerencia;
+          this.mostrarSugerenciaReceta = true;
+          this.cargandoSugerencia = false;
+          this.cdr.detectChanges();
+        },
+        error: (error) => {
+          this.cargandoSugerencia = false;
+          console.error('Error al generar la sugerencia de receta:', error);
+          void this.sweetAlert.error(
+            'No se pudo generar la sugerencia',
+            error.error?.error || 'Verifica la receta, el inventario y vuelve a intentarlo.',
+          );
+        },
+      });
   }
 
   cargarDetallesPlato(idPlato: number): void {
@@ -527,7 +729,7 @@ export class MenusComponent implements OnInit {
   // =====================================================
   exportarExcel(): void {
     if (this.itemsFiltrados.length === 0) {
-      alert('No hay registros para exportar.');
+      void this.sweetAlert.warning('No hay registros para exportar', 'Aplica otros filtros o agrega información antes de exportar.');
       return;
     }
 

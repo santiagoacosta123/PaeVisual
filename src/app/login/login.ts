@@ -1,10 +1,11 @@
-import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 import { Store } from '@ngrx/store';
 import { login as loginAction } from '../store/action';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-login',
@@ -17,7 +18,7 @@ import { login as loginAction } from '../store/action';
   templateUrl: './login.html',
   styleUrl: './login.css',
 })
-export class LoginComponent implements OnInit {
+export class LoginComponent implements OnInit, OnDestroy {
   private fb = inject(FormBuilder);
   private authService = inject(AuthService);
   private route = inject(ActivatedRoute);
@@ -37,8 +38,11 @@ export class LoginComponent implements OnInit {
   mensajeRecuperacion: string = '';
   enlaceRecuperacionDesarrollo: string = '';
   codigoRecuperacionDesarrollo: string = '';
+  private solicitudLogin?: Subscription;
+  private temporizadorLogin?: ReturnType<typeof setTimeout>;
 
   ngOnInit(): void {
+    this.authService.despertarBackend();
     this.loginForm = this.fb.group({
       correo: ['', [Validators.required, Validators.email]],
       clave: ['', [Validators.required, Validators.minLength(6)]]
@@ -47,6 +51,11 @@ export class LoginComponent implements OnInit {
     if (this.route.snapshot.queryParamMap.get('acceso') === 'denegado') {
       this.errorMensaje = 'Esta cuenta no tiene permiso para acceder a esta aplicación.';
     }
+  }
+
+  ngOnDestroy(): void {
+    this.solicitudLogin?.unsubscribe();
+    if (this.temporizadorLogin) clearTimeout(this.temporizadorLogin);
   }
 
   get correo() { return this.loginForm.get('correo'); }
@@ -71,8 +80,14 @@ export class LoginComponent implements OnInit {
       clave: this.loginForm.value.clave
     };
 
-    this.authService.login(credenciales).subscribe({
+    this.solicitudLogin?.unsubscribe();
+    if (this.temporizadorLogin) clearTimeout(this.temporizadorLogin);
+    this.solicitudLogin = this.authService.login(credenciales).subscribe({
       next: (response) => {
+        if (this.temporizadorLogin) {
+          clearTimeout(this.temporizadorLogin);
+          this.temporizadorLogin = undefined;
+        }
         if (!this.authService.rolPermitido(response.usuario?.rol)) {
           this.authService.limpiarSesion();
           this.cargando = false;
@@ -106,16 +121,34 @@ export class LoginComponent implements OnInit {
         }
       },
       error: (err) => {
+        if (this.temporizadorLogin) clearTimeout(this.temporizadorLogin);
         this.cargando = false;
-        this.errorMensaje = err.error?.detail || err.error?.message || err.error?.non_field_errors?.[0] || 'Credenciales inválidas o error de conexión.';
+        if (err.name === 'TimeoutError') {
+          this.errorMensaje = 'El servidor está tardando en responder. Intenta iniciar sesión nuevamente; puede tardar un momento mientras el backend se activa.';
+        } else if (err.status === 0) {
+          this.errorMensaje = 'No se pudo conectar con el servidor. Verifica tu conexión o espera unos segundos mientras el backend inicia.';
+        } else {
+          this.errorMensaje = err.error?.detail
+            || err.error?.message
+            || err.error?.non_field_errors?.[0]
+            || (typeof err.error === 'string' ? err.error : '')
+            || 'Credenciales inválidas o error de conexión.';
+        }
         this.cdr.detectChanges();
       }
     });
+
+    this.temporizadorLogin = setTimeout(() => {
+      this.solicitudLogin?.unsubscribe();
+      this.cargando = false;
+      this.errorMensaje = 'El servidor de inicio de sesión no respondió a tiempo. Presiona nuevamente «Iniciar sesión» para reintentar.';
+      this.cdr.detectChanges();
+    }, 45000);
   }
 
   abrirModalRecuperar(): void {
     this.mostrarModalRecuperar = true;
-    this.correoRecuperacion = '';
+    this.correoRecuperacion = this.correo?.value?.trim() ?? '';
     this.errorRecuperacion = '';
     this.mensajeRecuperacion = '';
     this.enlaceRecuperacionDesarrollo = '';
@@ -146,6 +179,8 @@ export class LoginComponent implements OnInit {
 
     this.errorRecuperacion = '';
     this.mensajeRecuperacion = '';
+    this.enlaceRecuperacionDesarrollo = '';
+    this.codigoRecuperacionDesarrollo = '';
     this.enviandoRecuperacion = true;
     this.authService.recuperarContrasena({ correo }).subscribe({
       next: (response) => {

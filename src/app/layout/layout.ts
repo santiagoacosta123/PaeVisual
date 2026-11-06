@@ -13,10 +13,11 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { NotificacionService } from '../notificaciones/notificacion.service';
 import { Notificacion } from '../notificaciones/notificacion.model';
-import { AuthService, InstitucionAsignada } from '../services/auth.service';
+import { AuthService, InstitucionAsignada, SedeActiva } from '../services/auth.service';
 import { SiraeService } from '../features/contratos/services/contratos_pae.service';
 import { FacturasCompraService } from '../services/facturas-compra.service';
 import { environment } from '../../environments/environment';
+import { SweetAlertService } from '../core/services/sweet-alert.service';
 
 @Component({
   selector: 'app-layout',
@@ -61,6 +62,7 @@ export class LayoutComponent implements OnInit {
 
   // Institución Activa de Trabajo para Supervisor
   institucionActiva: InstitucionAsignada | null = null;
+  sedeActiva: SedeActiva | null = null;
   institucionesSupervisor: InstitucionAsignada[] = [];
   mostrarSelectorInstitucion = false;
 
@@ -94,7 +96,8 @@ export class LayoutComponent implements OnInit {
     private facturasService: FacturasCompraService,
     private http: HttpClient,
     private cdr: ChangeDetectorRef,
-    private router: Router
+    private router: Router,
+    private sweetAlert: SweetAlertService
   ) {
     // Escuchar los cambios de ruta para actualizar el título automáticamente
     this.router.events.pipe(
@@ -152,6 +155,11 @@ export class LayoutComponent implements OnInit {
         this.institucionActiva = inst;
         this.cdr.detectChanges();
       });
+      this.sedeActiva = this.authService.obtenerSedeActiva();
+      this.authService.sedeActiva$.subscribe((sede) => {
+        this.sedeActiva = sede;
+        this.cdr.detectChanges();
+      });
       if (this.institucionesSupervisor.length === 0) {
         this.cargarInstitucionesSupervisor();
       }
@@ -205,7 +213,7 @@ export class LayoutComponent implements OnInit {
       '/menus': 'Menús',
       '/facturas-compra': 'Facturas',
       '/bodega-central': 'Bodega Central',
-      '/reportes-consumo': 'Reportes',
+      '/reportes-consumo': 'Historial de entregas',
       '/notificaciones': 'Notificaciones'
     };
 
@@ -246,7 +254,10 @@ export class LayoutComponent implements OnInit {
         this.listaNotificaciones = data;
         this.notificacionesNoLeidas = data.filter((n: Notificacion) => !n.leida).length;
       },
-      error: (err: any) => console.error('Error al cargar notificaciones en layout', err)
+      error: () => {
+        this.listaNotificaciones = [];
+        this.notificacionesNoLeidas = 0;
+      }
     });
   }
 
@@ -276,11 +287,11 @@ export class LayoutComponent implements OnInit {
 
   cargarInstitucionesSupervisor(): void {
     this.http.get<any>(`${environment.apiUrl}/instituciones/`).pipe(
-      timeout(5000),
-      catchError(() => of([]))
+      timeout(20000),
+      catchError(() => of(null))
     ).subscribe({
       next: (resp) => {
-        const lista = Array.isArray(resp) ? resp : (resp?.results ?? []);
+        const lista = resp === null ? [] : (Array.isArray(resp) ? resp : (resp?.results ?? []));
         if (lista.length > 0) {
           this.institucionesSupervisor = lista.map((item: any) => ({
             id_institucion: item.id_institucion ?? item.id,
@@ -295,16 +306,62 @@ export class LayoutComponent implements OnInit {
             this.institucionActiva = this.institucionesSupervisor.find(i => i.id_institucion === guardada.id_institucion) || guardada;
           }
           this.cdr.detectChanges();
+          return;
         }
+
+        this.cargarInstitucionesDesdePerfil();
       },
-      error: () => {}
+      error: () => this.cargarInstitucionesDesdePerfil()
+    });
+  }
+
+  private cargarInstitucionesDesdePerfil(): void {
+    const usuario = this.authService.obtenerUsuario();
+    if (!usuario?.id_usuario) {
+      return;
+    }
+
+    this.http.get<any>(`${environment.apiUrl}/usuarios/${usuario.id_usuario}/`).pipe(
+      timeout(15000),
+      catchError(() => of(null))
+    ).subscribe((perfil) => {
+      const asignadas = perfil?.instituciones_supervisor;
+      if (!Array.isArray(asignadas) || asignadas.length === 0) {
+        return;
+      }
+
+      this.institucionesSupervisor = asignadas.map((item: any) => ({
+        id_institucion: item.id_institucion ?? item.id,
+        nombre_institucion: item.nombre_institucion ?? item.nombre,
+        nit: item.nit ?? '',
+        sedes: Array.isArray(item.sedes) ? item.sedes : [],
+        administrador_asignado: item.administrador_asignado,
+      }));
+
+      const activa = this.authService.obtenerInstitucionActiva();
+      if (!activa || !this.institucionesSupervisor.some(i => i.id_institucion === activa.id_institucion)) {
+        this.cdr.detectChanges();
+        return;
+      }
+
+      this.institucionActiva = this.institucionesSupervisor.find(
+        i => i.id_institucion === activa.id_institucion
+      ) ?? activa;
+      this.cdr.detectChanges();
     });
   }
 
   cambiarInstitucion(): void {
+    const nombreActual = this.institucionActiva?.nombre_institucion;
     this.authService.limpiarInstitucionActiva();
     this.institucionActiva = null;
     this.mostrarSelectorInstitucion = false;
+    if (nombreActual) {
+      void this.sweetAlert.info(
+        'Selección de institución reiniciada',
+        `Puedes volver a seleccionar una institución. ${nombreActual} quedó disponible en el listado.`
+      );
+    }
     this.router.navigate(['/dashboard-supervisor'], { queryParams: { cambiar: 'true' } });
     this.cdr.detectChanges();
   }
@@ -322,6 +379,11 @@ export class LayoutComponent implements OnInit {
     this.institucionActiva = inst;
     this.mostrarSelectorInstitucion = false;
     this.cdr.detectChanges();
+    void this.sweetAlert.supervisorSuccess(
+      'Institución seleccionada',
+      `${inst.nombre_institucion} quedó activa para supervisar entregas, sedes e historial.`
+    );
+    void this.router.navigate(['/dashboard-supervisor']);
   }
 
   cerrarPanel(): void {
@@ -341,9 +403,40 @@ export class LayoutComponent implements OnInit {
   }
 
   guardarPerfil(): void {
-    this.perfil = { ...this.editForm };
-    alert('Perfil actualizado correctamente.');
-    this.vistaActual = 'perfil';
+    const nombreCompleto = this.editForm.nombre.trim();
+    if (!nombreCompleto || !this.editForm.correo.trim()) {
+      void this.sweetAlert.warning('Datos incompletos', 'Ingresa tu nombre y correo electrónico.');
+      return;
+    }
+
+    const [nombre, ...resto] = nombreCompleto.split(/\s+/);
+    const apellido = resto.join(' ');
+    this.authService.actualizarPerfil({
+      nombre,
+      apellido,
+      correo: this.editForm.correo.trim(),
+    }).subscribe({
+      next: (usuarioActualizado) => {
+        const usuario = this.authService.obtenerUsuario();
+        if (usuario) {
+          const actualizado = {
+            ...usuario,
+            nombre: usuarioActualizado.nombre ?? nombre,
+            apellido: usuarioActualizado.apellido ?? apellido,
+            correo: usuarioActualizado.correo ?? this.editForm.correo.trim(),
+          };
+          localStorage.setItem('usuario', JSON.stringify(actualizado));
+        }
+        this.perfil = { ...this.editForm };
+        this.vistaActual = 'perfil';
+        void this.sweetAlert.success('Perfil actualizado', 'Tus datos se guardaron correctamente.');
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => {
+        const mensaje = err.error?.correo?.[0] || err.error?.detail || 'No fue posible guardar los datos.';
+        void this.sweetAlert.error('No se pudo actualizar el perfil', mensaje);
+      }
+    });
   }
 
   guardarPassword(): void {
@@ -352,10 +445,12 @@ export class LayoutComponent implements OnInit {
 
     if (!this.passwordForm.actual || !this.passwordForm.nueva || !this.passwordForm.confirmar) {
       this.passwordError = 'Por favor completa todos los campos.';
+      void this.sweetAlert.supervisorWarning('Completa todos los campos', 'Debes ingresar la contraseña actual y confirmar la nueva.');
       return;
     }
     if (this.passwordForm.nueva !== this.passwordForm.confirmar) {
       this.passwordError = 'Las nuevas contraseñas no coinciden.';
+      void this.sweetAlert.supervisorWarning('Contraseñas diferentes', 'La nueva contraseña y su confirmación deben coincidir.');
       return;
     }
 
@@ -370,6 +465,7 @@ export class LayoutComponent implements OnInit {
         this.passwordMensaje = response.mensaje || 'Contraseña actualizada correctamente.';
         this.passwordForm = { actual: '', nueva: '', confirmar: '' };
         this.cdr.detectChanges();
+        void this.sweetAlert.supervisorSuccess('Contraseña actualizada', this.passwordMensaje);
         setTimeout(() => this.vistaActual = 'perfil', 1200);
       },
       error: (err: any) => {
@@ -378,6 +474,7 @@ export class LayoutComponent implements OnInit {
           || err.error?.detail
           || 'No fue posible actualizar la contraseña. Inténtalo nuevamente.';
         this.cdr.detectChanges();
+        void this.sweetAlert.supervisorError('No se pudo cambiar la contraseña', this.passwordError);
       }
     });
   }
@@ -387,6 +484,28 @@ export class LayoutComponent implements OnInit {
   }
 
   cerrarSesion(): void {
-    this.authService.cerrarSesion();
+    void this.sweetAlert.confirm(
+      '¿Cerrar sesión?',
+      'Tu sesión actual finalizará.',
+      'Sí, cerrar sesión'
+    ).then((resultado) => {
+      if (resultado.isConfirmed) {
+        this.authService.cerrarSesion();
+      }
+    });
+  }
+
+  get tieneSedes(): boolean {
+    if (!this.institucionActiva) return false;
+    if (Array.isArray(this.institucionActiva.sedes)) {
+      return this.institucionActiva.sedes.length > 0;
+    }
+    const encontrada = this.institucionesSupervisor.find(
+      i => i.id_institucion === this.institucionActiva?.id_institucion
+    );
+    if (encontrada && Array.isArray(encontrada.sedes)) {
+      return encontrada.sedes.length > 0;
+    }
+    return false;
   }
 }

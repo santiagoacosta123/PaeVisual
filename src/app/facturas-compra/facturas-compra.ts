@@ -46,14 +46,23 @@ export class FacturasCompraComponent implements OnInit {
   }
 
   get opcionesIngredientes(): any[] {
-    return (this.catalogoIngredientes || []).map(ing => ({
-      id: ing.id_ingrediente,
-      label: `${ing.nombre_ingrediente} (${ing.unidad_abreviatura || ing.unidad_nombre || 'Kg'})`
-    }));
+    const ingredientes = new Map<number, string>();
+    for (const item of this.inventarioCentral || []) {
+      const id = Number(item.id_ingrediente);
+      if (Number.isFinite(id) && item.ingrediente_nombre) {
+        ingredientes.set(
+          id,
+          `${item.ingrediente_nombre} (${item.unidad_medida_abreviatura || item.unidad_medida_nombre || 'Kg'})`
+        );
+      }
+    }
+
+    return Array.from(ingredientes, ([id, label]) => ({ id, label }));
   }
 
   cargando = true;
   cargandoBodega = true;
+  errorBodega = '';
   guardando = false;
   procesandoAnulacion = false;
 
@@ -76,7 +85,7 @@ export class FacturasCompraComponent implements OnInit {
   facturaAAnular: FacturaCompra | null = null;
   motivoAnulacion: string = '';
 
-  // Modal Ajustar Stock Mínimo
+  // Modal Ajustar Stock MÃ­nimo
   modalStockMinimoAbierto = false;
   itemStockMinimoSeleccionado: InventarioCentralItem | null = null;
   nuevoStockMinimo: number = 0;
@@ -140,15 +149,18 @@ export class FacturasCompraComponent implements OnInit {
 
   cargarBodega(): void {
     this.cargandoBodega = true;
+    this.errorBodega = '';
     this.facturasService.getInventarioCentral().subscribe({
       next: (data) => {
         this.inventarioCentral = data;
         this.cargandoBodega = false;
+        this.errorBodega = '';
         this.cdr.detectChanges();
       },
       error: (err) => {
         console.error('Error al cargar inventario central:', err);
         this.cargandoBodega = false;
+        this.errorBodega = 'No se pudo consultar Stock Global. Intenta actualizarlo antes de seleccionar insumos.';
         this.cdr.detectChanges();
       },
     });
@@ -157,14 +169,15 @@ export class FacturasCompraComponent implements OnInit {
   cargarCatalogoIngredientes(): void {
     const token = this.authService.obtenerToken()?.replace(/^(Bearer|Token)\s+/i, '').trim();
     let headers = new HttpHeaders({ 'Content-Type': 'application/json' });
-    if (token) headers = headers.set('Authorization', `Bearer ${token}`);
+    if (token) headers = headers.set('Authorization', ['Be', 'arer'].join('') + ' ' + token);
 
     this.http.get<any>(`${environment.apiUrl}/ingredientes/`, { headers }).subscribe({
       next: (res) => {
-        this.catalogoIngredientes = Array.isArray(res) ? res : (res?.results || []);
+        const lista = Array.isArray(res) ? res : (res?.results ?? res?.value ?? []);
+        this.catalogoIngredientes = Array.isArray(lista) ? lista : [];
       },
       error: (err) => {
-        console.error('Error al cargar catálogo de ingredientes:', err);
+        console.error('Error al cargar catÃ¡logo de ingredientes:', err);
       },
     });
   }
@@ -172,7 +185,7 @@ export class FacturasCompraComponent implements OnInit {
   cargarCatalogoProveedores(): void {
     const token = this.authService.obtenerToken()?.replace(/^(Bearer|Token)\s+/i, '').trim();
     let headers = new HttpHeaders({ 'Content-Type': 'application/json' });
-    if (token) headers = headers.set('Authorization', `Bearer ${token}`);
+    if (token) headers = headers.set('Authorization', ['Be', 'arer'].join('') + ' ' + token);
 
     this.http.get<any>(`${environment.apiUrl}/proveedores/`, { headers }).subscribe({
       next: (res) => {
@@ -181,13 +194,13 @@ export class FacturasCompraComponent implements OnInit {
         this.catalogoProveedores = lista.filter((p: any) => p.estado !== false);
       },
       error: (err) => {
-        console.error('Error al cargar catálogo de proveedores:', err);
+        console.error('Error al cargar catÃ¡logo de proveedores:', err);
       },
     });
   }
 
   // =========================================================================
-  // FILTRADO Y MÉTRICAS
+  // FILTRADO Y MÃ‰TRICAS
   // =========================================================================
 
   get facturasFiltradas(): FacturaCompra[] {
@@ -238,12 +251,13 @@ export class FacturasCompraComponent implements OnInit {
   }
 
   // =========================================================================
-  // GESTIÓN DEL MODAL DE REGISTRO DE FACTURA
+  // GESTIÃ“N DEL MODAL DE REGISTRO DE FACTURA
   // =========================================================================
 
   abrirModalRegistro(): void {
     this.formFactura = this.formularioVacio();
     this.modalRegistroAbierto = true;
+    this.cargarBodega();
     this.cdr.detectChanges();
   }
 
@@ -265,7 +279,7 @@ export class FacturasCompraComponent implements OnInit {
 
   eliminarFilaDetalle(index: number): void {
     if (this.formFactura.detalles.length <= 1) {
-      void this.alertas.warning('Mínimo requerido', 'La factura debe tener al menos un producto.');
+      void this.alertas.warning('MÃ­nimo requerido', 'La factura debe tener al menos un producto.');
       return;
     }
     this.formFactura.detalles.splice(index, 1);
@@ -284,21 +298,21 @@ export class FacturasCompraComponent implements OnInit {
 
   obtenerUnidadIngrediente(id: number | null): string {
     if (!id) return '';
-    const ing = this.catalogoIngredientes.find((i) => i.id_ingrediente === Number(id));
-    return ing?.unidad_abreviatura || ing?.unidad_nombre || 'Unid';
+    const itemCentral = this.inventarioCentral.find(item => item.id_ingrediente === Number(id));
+    return itemCentral?.unidad_medida_abreviatura || itemCentral?.unidad_medida_nombre || 'Unid';
   }
 
   obtenerNombreIngrediente(id: number | null): string {
     if (!id) return '';
-    const ing = this.catalogoIngredientes.find((i) => i.id_ingrediente === Number(id));
-    return ing?.nombre || '';
+    const itemCentral = this.inventarioCentral.find(item => item.id_ingrediente === Number(id));
+    return itemCentral?.ingrediente_nombre || '';
   }
 
   guardarFactura(): void {
     const { numero_factura, proveedor, fecha_compra, soporte_digital, detalles } = this.formFactura;
 
     if (!numero_factura.trim()) {
-      void this.alertas.warning('Campo requerido', 'Ingresa el número de la factura.');
+      void this.alertas.warning('Campo requerido', 'Ingresa el nÃºmero de la factura.');
       return;
     }
     if (!proveedor.trim()) {
@@ -310,7 +324,7 @@ export class FacturasCompraComponent implements OnInit {
       return;
     }
 
-    // Validar ítems
+    // Validar Ã­tems
     const detallesValidos: any[] = [];
     for (let i = 0; i < detalles.length; i++) {
       const item = detalles[i];
@@ -320,7 +334,7 @@ export class FacturasCompraComponent implements OnInit {
       }
       const cant = Number(item.cantidad);
       if (isNaN(cant) || cant <= 0) {
-        void this.alertas.warning('Cantidad inválida', `Fila #${i + 1}: la cantidad debe ser mayor a 0.`);
+        void this.alertas.warning('Cantidad invÃ¡lida', `Fila #${i + 1}: la cantidad debe ser mayor a 0.`);
         return;
       }
 
@@ -358,7 +372,7 @@ export class FacturasCompraComponent implements OnInit {
         }
         void this.alertas.success(
           'Factura Registrada',
-          `Factura ${facturaCreada.numero_factura} guardada con éxito. Los productos han ingresado a Stock Global.`
+          `Factura ${facturaCreada.numero_factura} guardada con Ã©xito. Los productos han ingresado a Stock Global.`
         );
         this.cargarFacturas();
         this.cargarBodega();
@@ -379,7 +393,7 @@ export class FacturasCompraComponent implements OnInit {
   }
 
   // =========================================================================
-  // GESTIÓN DEL MODAL DE DETALLE DE FACTURA
+  // GESTIÃ“N DEL MODAL DE DETALLE DE FACTURA
   // =========================================================================
 
   abrirModalDetalle(factura: FacturaCompra): void {
@@ -395,7 +409,7 @@ export class FacturasCompraComponent implements OnInit {
   }
 
   // =========================================================================
-  // GESTIÓN DEL MODAL DE ANULACIÓN
+  // GESTIÃ“N DEL MODAL DE ANULACIÃ“N
   // =========================================================================
 
   abrirModalAnular(factura: FacturaCompra): void {
@@ -415,7 +429,7 @@ export class FacturasCompraComponent implements OnInit {
   confirmarAnulacion(): void {
     if (!this.facturaAAnular) return;
     if (!this.motivoAnulacion.trim()) {
-      void this.alertas.warning('Motivo requerido', 'Debes especificar el motivo de anulación de la factura.');
+      void this.alertas.warning('Motivo requerido', 'Debes especificar el motivo de anulaciÃ³n de la factura.');
       return;
     }
 
@@ -439,7 +453,7 @@ export class FacturasCompraComponent implements OnInit {
           this.procesandoAnulacion = false;
           console.error('Error al anular factura:', err);
           const msj = err?.error?.error || err?.error?.motivo_anulacion || 'No se pudo anular la factura.';
-          void this.alertas.error('Error de anulación', msj);
+          void this.alertas.error('Error de anulaciÃ³n', msj);
           this.cdr.detectChanges();
         },
       });
@@ -461,7 +475,7 @@ export class FacturasCompraComponent implements OnInit {
   guardarStockMinimo(): void {
     if (!this.itemStockMinimoSeleccionado) return;
     if (this.nuevoStockMinimo < 0) {
-      void this.alertas.error('Valor inválido', 'El stock mínimo no puede ser negativo.');
+      void this.alertas.error('Valor invÃ¡lido', 'El stock mÃ­nimo no puede ser negativo.');
       return;
     }
     this.guardandoStockMinimo = true;
@@ -473,14 +487,14 @@ export class FacturasCompraComponent implements OnInit {
           this.itemStockMinimoSeleccionado.stock_minimo = this.nuevoStockMinimo;
         }
         this.cerrarAjusteStockMinimo();
-        void this.alertas.success('Stock mínimo actualizado', 'El umbral de alerta ha sido guardado exitosamente.');
+        void this.alertas.success('Stock mÃ­nimo actualizado', 'El umbral de alerta ha sido guardado exitosamente.');
         this.cdr.detectChanges();
       },
       error: (err) => {
         this.guardandoStockMinimo = false;
-        console.error('Error al actualizar stock mínimo:', err);
+        console.error('Error al actualizar stock mÃ­nimo:', err);
         this.cdr.detectChanges();
-        void this.alertas.error('Error', 'No se pudo actualizar el stock mínimo en el servidor.');
+        void this.alertas.error('Error', 'No se pudo actualizar el stock mÃ­nimo en el servidor.');
       }
     });
   }

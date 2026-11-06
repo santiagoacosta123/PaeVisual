@@ -58,28 +58,28 @@
 
       <!-- Navegación -->
       <nav class="sv-nav">
-        <a *ngIf="institucionActiva" routerLink="dashboard-supervisor" routerLinkActive="sv-active" class="sv-link"
+        <a *ngIf="institucionActiva" routerLink="/dashboard-supervisor" routerLinkActive="sv-active" class="sv-link"
            aria-label="Inicio Supervisor">
           <span class="material-symbols-outlined sv-icon">space_dashboard</span>
           <span class="sv-label">Inicio</span>
         </a>
 
-        <a *ngIf="institucionActiva" routerLink="registrar-entrega-alimentos" routerLinkActive="sv-active" class="sv-link"
+        <a *ngIf="institucionActiva && (rolUsuario === 'supervisor' || rolUsuario === 'coordinador' || rolUsuario === 'coordinador pae')" routerLink="/registrar-entrega-alimentos" routerLinkActive="sv-active" class="sv-link"
            aria-label="Registrar entrega de alimentos">
           <span class="material-symbols-outlined sv-icon">local_shipping</span>
           <span class="sv-label">Registrar entrega</span>
         </a>
 
-        <a *ngIf="institucionActiva" routerLink="instituciones" routerLinkActive="sv-active" class="sv-link"
+        <a *ngIf="institucionActiva && tieneSedes" routerLink="instituciones" routerLinkActive="sv-active" class="sv-link"
            aria-label="Sedes">
           <span class="material-symbols-outlined sv-icon">apartment</span>
-          <span class="sv-label">Sedes e inventario</span>
+          <span class="sv-label">Sedes</span>
         </a>
 
-        <a *ngIf="institucionActiva" routerLink="reportes-consumo" routerLinkActive="sv-active" class="sv-link"
-           aria-label="Reportes">
+        <a *ngIf="institucionActiva" routerLink="/reportes-consumo" routerLinkActive="sv-active" class="sv-link"
+           aria-label="Historial">
           <span class="material-symbols-outlined sv-icon">analytics</span>
-          <span class="sv-label">Reportes</span>
+          <span class="sv-label">Historial de entregas</span>
         </a>
       </nav>
 
@@ -113,6 +113,9 @@
             <span style="font-size:10px; font-weight:700; color:#92400e; text-transform:uppercase; display:block; line-height:1;">Institución seleccionada:</span>
             <span style="font-size:13px; font-weight:800; color:#1e293b; display:block; max-width:280px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
               {{ institucionActiva.nombre_institucion }}
+            </span>
+            <span *ngIf="sedeActiva" style="font-size:11px; font-weight:700; color:#c2410c; display:block;">
+              Sede: {{ sedeActiva.nombre_sede }}
             </span>
           </div>
           <button type="button" (click)="cambiarInstitucion()"
@@ -298,6 +301,20 @@
           <div class="superadmin-nav-item-left">
             <span class="material-symbols-outlined superadmin-nav-icon">warehouse</span>
             <span class="superadmin-nav-text">Stock Global</span>
+          </div>
+        </a>
+
+        <a routerLink="registrar-entrega-alimentos" routerLinkActive="active" class="superadmin-nav-item" title="Registrar entrega">
+          <div class="superadmin-nav-item-left">
+            <span class="material-symbols-outlined superadmin-nav-icon">local_shipping</span>
+            <span class="superadmin-nav-text">Registrar entrega</span>
+          </div>
+        </a>
+
+        <a routerLink="instituciones" routerLinkActive="active" class="superadmin-nav-item" title="Instituciones y sedes">
+          <div class="superadmin-nav-item-left">
+            <span class="material-symbols-outlined superadmin-nav-icon">apartment</span>
+            <span class="superadmin-nav-text">Instituciones y sedes</span>
           </div>
         </a>
       </div>
@@ -527,10 +544,10 @@
         <span class="modern-nav-text">Usuarios</span>
       </a>
 
-      <!-- REPORTES -->
-      <a routerLink="reportes-consumo" routerLinkActive="active" class="modern-nav-item" title="Reportes">
+      <!-- HISTORIAL -->
+      <a routerLink="reportes-consumo" routerLinkActive="active" class="modern-nav-item" title="Historial">
         <span class="material-symbols-outlined modern-nav-icon" aria-hidden="true">bar_chart</span>
-        <span class="modern-nav-text">Reportes</span>
+        <span class="modern-nav-text">Historial de entregas</span>
       </a>
 
     </nav>

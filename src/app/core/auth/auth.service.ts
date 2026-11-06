@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
-import { Observable, BehaviorSubject } from 'rxjs';
+import { Observable, BehaviorSubject, EMPTY, catchError, timeout } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 export interface LoginResponse {
@@ -20,6 +20,13 @@ export interface InstitucionAsignada {
   correo_contacto?: string;
   estado?: string;
   administrador_asignado?: any;
+}
+
+export interface SedeActiva {
+  id_sede: number;
+  nombre_sede: string;
+  id_institucion?: number;
+  nombre_institucion?: string;
 }
 
 export interface AuthenticatedUser {
@@ -62,9 +69,12 @@ export class AuthService {
   private readonly REFRESH_TOKEN = 'refresh_token';
   private readonly USUARIO = 'usuario';
   private readonly INSTITUCION_ACTIVA = 'sirae_institucion_activa';
+  private readonly SEDE_ACTIVA = 'sirae_sede_activa';
 
   private institucionActivaSubject = new BehaviorSubject<InstitucionAsignada | null>(null);
   public institucionActiva$ = this.institucionActivaSubject.asObservable();
+  private sedeActivaSubject = new BehaviorSubject<SedeActiva | null>(this.obtenerSedeActiva());
+  public sedeActiva$ = this.sedeActivaSubject.asObservable();
 
   constructor(
     private http: HttpClient,
@@ -92,7 +102,13 @@ export class AuthService {
       correo,
       clave,
       password: clave,
-    });
+    }).pipe(timeout(60000));
+  }
+
+  despertarBackend(): void {
+    this.http.get(`${this.apiBaseUrl}/`, { responseType: 'text' })
+      .pipe(timeout(30000), catchError(() => EMPTY))
+      .subscribe();
   }
 
   esSuperAdministrador(rol: string | null | undefined): boolean {
@@ -178,6 +194,18 @@ export class AuthService {
   }): Observable<PasswordResetResponse> {
     return this.http.post<PasswordResetResponse>(
       `${this.apiBaseUrl}/auth/cambiar-password/`,
+      data
+    );
+  }
+
+  actualizarPerfil(data: { nombre: string; apellido: string; correo: string }): Observable<AuthenticatedUser> {
+    const usuario = this.obtenerUsuario();
+    if (!usuario?.id_usuario) {
+      throw new Error('No se pudo identificar al usuario autenticado.');
+    }
+
+    return this.http.patch<AuthenticatedUser>(
+      `${this.apiBaseUrl}/usuarios/${usuario.id_usuario}/`,
       data
     );
   }
@@ -268,6 +296,29 @@ export class AuthService {
     }
     localStorage.setItem(this.INSTITUCION_ACTIVA, JSON.stringify(institucion));
     this.institucionActivaSubject.next(institucion);
+    this.limpiarSedeActiva();
+  }
+
+  obtenerSedeActiva(): SedeActiva | null {
+    if (!this.estaDisponibleStorage()) return null;
+    try {
+      const guardada = localStorage.getItem(this.SEDE_ACTIVA);
+      return guardada ? JSON.parse(guardada) as SedeActiva : null;
+    } catch {
+      return null;
+    }
+  }
+
+  establecerSedeActiva(sede: SedeActiva): void {
+    if (!this.estaDisponibleStorage()) return;
+    localStorage.setItem(this.SEDE_ACTIVA, JSON.stringify(sede));
+    this.sedeActivaSubject.next(sede);
+  }
+
+  limpiarSedeActiva(): void {
+    if (!this.estaDisponibleStorage()) return;
+    localStorage.removeItem(this.SEDE_ACTIVA);
+    this.sedeActivaSubject.next(null);
   }
 
   limpiarInstitucionActiva(): void {
@@ -276,6 +327,7 @@ export class AuthService {
     }
     localStorage.removeItem(this.INSTITUCION_ACTIVA);
     this.institucionActivaSubject.next(null);
+    this.limpiarSedeActiva();
   }
 
   estaAutenticado(): boolean {
