@@ -26,27 +26,35 @@
       <div class="ico-naranja flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl shadow-md">
         <span class="material-symbols-outlined text-[30px]">summarize</span>
       </div>
-
-
       <div>
-        <span class="text-[11px] font-bold uppercase tracking-wider text-[#faa911]">Historial PAE</span>
-        <h1 class="m-0 text-2xl font-black tracking-tight text-slate-900">Historial de entregas</h1>
-        <p class="m-0 text-xs font-medium text-slate-500">
-          {{ institucionActiva?.nombre_institucion || 'Institución activa' }}
-          <span *ngIf="sedeActiva"> · Sede: {{ sedeActiva.nombre_sede }}</span>
-        </p>
+        <span class="text-[11px] font-bold uppercase tracking-wider text-[#faa911]">Reportes PAE</span>
+        <h1 class="m-0 text-2xl font-black tracking-tight text-slate-900">Reporte global de sedes</h1>
+        <p class="m-0 text-xs font-medium text-slate-500">Cupos y entregas de alimentos de las sedes de tu institución.</p>
       </div>
     </div>
     <button type="button" (click)="exportarCsvSedes()" [disabled]="cargando || resumenSedes.length === 0"
       class="btn-naranja inline-flex cursor-pointer items-center justify-center gap-2 self-start rounded-xl px-4 py-2.5 text-sm font-black disabled:cursor-not-allowed disabled:opacity-50 sm:self-auto">
       <span class="material-symbols-outlined text-[20px]">download</span>
-      Exportar historial (CSV)
+      Exportar reporte (CSV)
     </button>
   </header>
 
+  <!-- Qué datos usa este reporte -->
+  <div class="flex items-start gap-3 rounded-2xl border border-sky-100 bg-sky-50/70 p-4 text-xs font-medium leading-5 text-sky-900">
+    <span class="material-symbols-outlined mt-0.5 text-[20px] text-sky-600">info</span>
+    <p class="m-0">Este reporte usa los datos disponibles hoy: sedes, cupos de los contratos y entregas de alimentos. La asistencia y las raciones servidas se sumarán cuando el sistema las ponga a disposición del Supervisor.</p>
+  </div>
+
+  <!-- Aviso de datos incompletos -->
+  <div *ngIf="avisoDatos" role="status"
+    class="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50/70 p-4 text-xs font-medium leading-5 text-amber-900">
+    <span class="material-symbols-outlined mt-0.5 text-[20px] text-amber-600">warning</span>
+    <p class="m-0">{{ avisoDatos }}</p>
+  </div>
+
   <!-- ============ FILTROS ============ -->
   <section class="fx-panel p-5 sm:p-6" aria-label="Filtros del reporte">
-    <div class="grid grid-cols-1 items-end gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div class="grid grid-cols-1 items-end gap-4 sm:grid-cols-2 lg:grid-cols-4">
 
       <label class="flex flex-col gap-1.5 text-xs font-bold text-slate-600">
         Desde
@@ -77,6 +85,12 @@
           </select>
         </span>
       </label>
+
+      <button type="button" (click)="cargar()" [disabled]="cargando || (!!fechaDesde && !!fechaHasta && fechaDesde > fechaHasta)"
+        class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-orange-50 disabled:cursor-not-allowed disabled:opacity-50">
+        <span class="material-symbols-outlined text-[20px]" [class.animate-spin]="cargando">refresh</span>
+        {{ cargando ? 'Actualizando...' : 'Actualizar datos' }}
+      </button>
     </div>
 
     <!-- Rangos rápidos -->
@@ -95,93 +109,33 @@
     </p>
   </section>
 
-  <!-- ============ HISTORIAL DE ENTREGAS ============ -->
-  <section class="fx-panel overflow-hidden" aria-label="Historial de entregas">
-    <div class="flex flex-col gap-4 border-b border-slate-100 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
-      <div>
-        <h2 class="m-0 text-base font-black text-slate-900">Historial de entregas</h2>
-        <p class="m-0 text-[11px] font-medium text-slate-500">Consulta el estado y la recepción de cada envío registrado.</p>
-      </div>
-      <label class="relative block w-full lg:w-72">
-        <span class="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-slate-400">search</span>
-        <input type="search" [(ngModel)]="textoBusqueda" placeholder="Buscar producto, sede o receptor"
-          class="fx-input w-full rounded-xl border border-slate-200 py-2.5 pl-10 pr-3 text-sm font-semibold text-slate-800">
-      </label>
+  <!-- ============ INDICADORES ============ -->
+  <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+    <div class="fx-panel fx-lift fx-up p-5">
+      <div class="ico-suave mb-3 flex h-10 w-10 items-center justify-center rounded-xl"><span class="material-symbols-outlined text-[22px]">school</span></div>
+      <p class="m-0 text-[11px] font-bold uppercase tracking-wide text-slate-400">Sedes</p>
+      <p class="m-0 text-2xl font-black text-slate-900">{{ totales.sedes }}</p>
+      <p class="m-0 text-[11px] text-slate-400">{{ totales.dias }} días con entregas</p>
     </div>
-
-    <div class="flex flex-wrap gap-2 border-b border-slate-100 px-5 py-3">
-      <button type="button" (click)="estadoFiltro = 'TODAS'"
-        class="cursor-pointer rounded-full px-3 py-1.5 text-xs font-black transition" [ngClass]="estadoFiltro === 'TODAS' ? 'pill-on' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
-        Todas {{ contarEstado('TODAS') }}
-      </button>
-      <button type="button" (click)="estadoFiltro = 'EN_TRANSITO'"
-        class="cursor-pointer rounded-full px-3 py-1.5 text-xs font-black transition" [ngClass]="estadoFiltro === 'EN_TRANSITO' ? 'pill-on' : 'bg-sky-50 text-sky-700 hover:bg-sky-100'">
-        En tránsito {{ contarEstado('EN_TRANSITO') }}
-      </button>
-      <button type="button" (click)="estadoFiltro = 'RECIBIDA'"
-        class="cursor-pointer rounded-full px-3 py-1.5 text-xs font-black transition" [ngClass]="estadoFiltro === 'RECIBIDA' ? 'pill-on' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'">
-        Recibidas {{ contarEstado('RECIBIDA') }}
-      </button>
-      <button type="button" (click)="estadoFiltro = 'CON_NOVEDAD'"
-        class="cursor-pointer rounded-full px-3 py-1.5 text-xs font-black transition" [ngClass]="estadoFiltro === 'CON_NOVEDAD' ? 'pill-on' : 'bg-amber-50 text-amber-700 hover:bg-amber-100'">
-        Con novedad {{ contarEstado('CON_NOVEDAD') }}
-      </button>
-      <button type="button" (click)="estadoFiltro = 'RECHAZADA'"
-        class="cursor-pointer rounded-full px-3 py-1.5 text-xs font-black transition" [ngClass]="estadoFiltro === 'RECHAZADA' ? 'pill-on' : 'bg-red-50 text-red-700 hover:bg-red-100'">
-        Rechazadas {{ contarEstado('RECHAZADA') }}
-      </button>
+    <div class="fx-panel fx-lift fx-up p-5">
+      <div class="ico-suave mb-3 flex h-10 w-10 items-center justify-center rounded-xl"><span class="material-symbols-outlined text-[22px]">groups</span></div>
+      <p class="m-0 text-[11px] font-bold uppercase tracking-wide text-slate-400">Cupos contratados</p>
+      <p class="m-0 text-2xl font-black text-slate-900">{{ totales.cupos }}</p>
+      <p class="m-0 text-[11px] text-slate-400">estudiantes en contratos vigentes</p>
     </div>
-
-    <div class="tabla-scroll">
-      <table class="w-full min-w-[980px] border-collapse text-left text-sm">
-        <thead class="bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500">
-          <tr>
-            <th class="px-5 py-3 font-bold">Fecha</th>
-            <th class="px-5 py-3 font-bold">Sede</th>
-            <th class="px-5 py-3 font-bold">Ingrediente</th>
-            <th class="px-5 py-3 text-right font-bold">Enviado</th>
-            <th class="px-5 py-3 text-right font-bold">Recibido</th>
-            <th class="px-5 py-3 font-bold">Estado</th>
-            <th class="px-5 py-3 font-bold">Recibió</th>
-            <th class="px-5 py-3 text-center font-bold">Detalle</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let e of entregasHistorial; trackBy: trackEntrega"
-            (click)="abrirEntrega(e)" class="cursor-pointer border-t border-slate-100 transition hover:bg-orange-50/40">
-            <td class="whitespace-nowrap px-5 py-3 font-bold text-slate-700">{{ fechaCorta(e.fecha) }}</td>
-            <td class="max-w-[180px] px-5 py-3 font-bold text-slate-900">{{ e.sede }}</td>
-            <td class="px-5 py-3">
-              <span class="font-bold text-slate-800">{{ e.ingrediente }}</span>
-              <span class="block text-[11px] text-slate-400">{{ e.tipoMercado }}</span>
-            </td>
-            <td class="whitespace-nowrap px-5 py-3 text-right font-black text-slate-800">{{ e.cantidad }} {{ e.unidad }}</td>
-            <td class="whitespace-nowrap px-5 py-3 text-right font-bold text-slate-700">
-              {{ e.cantidadRecibida != null ? e.cantidadRecibida + ' ' + e.unidad : '—' }}
-            </td>
-            <td class="px-5 py-3">
-              <span class="whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-black" [ngClass]="claseEstado(e.estado)">
-                {{ etiquetaEstado(e.estado) }}
-              </span>
-            </td>
-            <td class="px-5 py-3 text-xs text-slate-600">{{ e.receptor || '—' }}</td>
-            <td class="px-5 py-3 text-center">
-              <button type="button" (click)="abrirEntrega(e); $event.stopPropagation()" [attr.aria-label]="'Ver entrega de ' + e.ingrediente"
-                class="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-[#faa911] text-[#e69a0c] hover:bg-orange-50">
-                <span class="material-symbols-outlined text-[18px]">visibility</span>
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+    <div class="fx-panel fx-lift fx-up p-5">
+      <div class="ico-suave mb-3 flex h-10 w-10 items-center justify-center rounded-xl"><span class="material-symbols-outlined text-[22px]">local_shipping</span></div>
+      <p class="m-0 text-[11px] font-bold uppercase tracking-wide text-slate-400">Entregas</p>
+      <p class="m-0 text-2xl font-black text-[#e69a0c]">{{ totales.entregas }}</p>
+      <p class="m-0 text-[11px] text-slate-400">{{ totales.kilos }} kg recibidos</p>
     </div>
-
-    <div *ngIf="entregasHistorial.length === 0" class="px-6 py-12 text-center">
-      <span class="material-symbols-outlined text-[38px] text-slate-300">history</span>
-      <p class="m-0 mt-2 text-sm font-black text-slate-800">No hay entregas en este historial</p>
-      <p class="m-0 mt-1 text-xs text-slate-500">Cambia los filtros, el rango de fechas o la sede seleccionada.</p>
+    <div class="fx-panel fx-lift fx-up p-5">
+      <div class="ico-suave mb-3 flex h-10 w-10 items-center justify-center rounded-xl"><span class="material-symbols-outlined text-[22px]">report</span></div>
+      <p class="m-0 text-[11px] font-bold uppercase tracking-wide text-slate-400">Novedades</p>
+      <p class="m-0 text-2xl font-black text-slate-900">{{ totales.novedades }}</p>
+      <p class="m-0 text-[11px] text-slate-400">con novedad o rechazadas</p>
     </div>
-  </section>
+  </div>
 
   <!-- ============ RESUMEN POR SEDE ============ -->
   <section class="fx-panel overflow-hidden">
@@ -359,60 +313,6 @@
         class="btn-naranja inline-flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2 text-sm font-black disabled:cursor-not-allowed disabled:opacity-50">
         <span class="material-symbols-outlined text-[20px]">download</span>
         Exportar esta sede (CSV)
-      </button>
-    </div>
-  </div>
-</div>
-
-<!-- ================= VENTANA EMERGENTE: DETALLE DE UNA ENTREGA ================= -->
-<div *ngIf="entregaDetalle as entrega" class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/40 p-4" (click)="cerrarEntrega()">
-  <div class="fx-roboto fx-up max-h-[90vh] w-full max-w-[620px] overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl"
-    (click)="$event.stopPropagation()" role="dialog" aria-modal="true" [attr.aria-label]="'Detalle de entrega ' + entrega.ingrediente">
-    <div class="flex items-start justify-between gap-3 border-b border-slate-200 pb-4">
-      <div>
-        <p class="m-0 text-[10px] font-black uppercase tracking-wider text-[#faa911]">Detalle de la entrega</p>
-        <h3 class="m-0 mt-1 text-lg font-black text-slate-900">{{ entrega.ingrediente }}</h3>
-        <p class="m-0 mt-1 text-xs text-slate-500">{{ entrega.sede }} · {{ fechaCorta(entrega.fecha) }}</p>
-      </div>
-      <button type="button" (click)="cerrarEntrega()" aria-label="Cerrar detalle"
-        class="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200">
-        <span class="material-symbols-outlined text-[20px]">close</span>
-      </button>
-    </div>
-    <div class="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
-      <div class="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-        <p class="m-0 text-[10px] font-bold uppercase text-slate-400">Cantidad enviada</p>
-        <p class="m-0 mt-1 text-lg font-black text-slate-900">{{ entrega.cantidad }} {{ entrega.unidad }}</p>
-      </div>
-      <div class="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-        <p class="m-0 text-[10px] font-bold uppercase text-slate-400">Cantidad recibida</p>
-        <p class="m-0 mt-1 text-lg font-black text-emerald-700">{{ entrega.cantidadRecibida != null ? entrega.cantidadRecibida + ' ' + entrega.unidad : '—' }}</p>
-      </div>
-      <div class="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-        <p class="m-0 text-[10px] font-bold uppercase text-slate-400">Cantidad rechazada</p>
-        <p class="m-0 mt-1 text-lg font-black text-red-700">{{ entrega.cantidadRechazada != null ? entrega.cantidadRechazada + ' ' + entrega.unidad : '—' }}</p>
-      </div>
-    </div>
-    <div class="mt-5 rounded-2xl border border-slate-200 p-4">
-      <div class="flex items-center justify-between gap-3">
-        <span class="text-xs font-bold uppercase text-slate-400">Estado actual</span>
-        <span class="rounded-full px-3 py-1 text-xs font-black" [ngClass]="claseEstado(entrega.estado)">{{ etiquetaEstado(entrega.estado) }}</span>
-      </div>
-      <div class="mt-4 grid gap-3 text-xs sm:grid-cols-2">
-        <div><span class="font-bold text-slate-400">Tipo de mercado:</span> <span class="font-semibold text-slate-700">{{ entrega.tipoMercado || 'No informado' }}</span></div>
-        <div><span class="font-bold text-slate-400">Recibió:</span> <span class="font-semibold text-slate-700">{{ entrega.receptor || 'Pendiente' }}</span></div>
-      </div>
-    </div>
-    <div *ngIf="entrega.motivo || entrega.observaciones" class="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4">
-      <p *ngIf="entrega.motivo" class="m-0 text-xs font-bold text-amber-900">Motivo: {{ entrega.motivo }}</p>
-      <p *ngIf="entrega.observaciones" class="m-0 mt-2 text-xs text-amber-800">{{ entrega.observaciones }}</p>
-    </div>
-    <div class="mt-5 flex flex-wrap justify-end gap-2">
-      <button type="button" (click)="cerrarEntrega()" class="cursor-pointer rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50">Cerrar</button>
-      <button type="button" *ngIf="entrega.estado === 'CON_NOVEDAD' || entrega.estado === 'RECHAZADA'"
-        (click)="reponerEntrega(entrega)" class="btn-naranja inline-flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-black">
-        <span class="material-symbols-outlined text-[20px]">add_circle</span>
-        Registrar reposición
       </button>
     </div>
   </div>
