@@ -39,6 +39,7 @@ export class LoginComponent implements OnInit {
   codigoRecuperacionDesarrollo: string = '';
 
   ngOnInit(): void {
+    this.authService.despertarBackend();
     this.loginForm = this.fb.group({
       correo: ['', [Validators.required, Validators.email]],
       clave: ['', [Validators.required, Validators.minLength(6)]]
@@ -107,7 +108,9 @@ export class LoginComponent implements OnInit {
       },
       error: (err) => {
         this.cargando = false;
-        if (err.status === 0) {
+        if (err.name === 'TimeoutError') {
+          this.errorMensaje = 'El servidor está tardando en responder. Intenta iniciar sesión nuevamente; puede tardar un momento mientras el backend se activa.';
+        } else if (err.status === 0) {
           this.errorMensaje = 'No se pudo conectar con el servidor. Verifica tu conexión o espera unos segundos mientras el backend inicia.';
         } else {
           this.errorMensaje = err.error?.detail

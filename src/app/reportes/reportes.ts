@@ -111,6 +111,7 @@ export class Reportes implements OnInit, OnDestroy {
   private versionDatos = 0;
   private suscripcion?: Subscription;
   private suscripcionSede?: Subscription;
+  private solicitudReporte?: Subscription;
   private cache: { clave: string; resumen: ResumenSede[]; totales: TotalesReporte } | null = null;
   private actualizacionAutomatica?: ReturnType<typeof setInterval>;
 
@@ -134,12 +135,19 @@ export class Reportes implements OnInit, OnDestroy {
       }
       this.cargar();
     });
+    this.suscripcionSede = this.auth.sedeActiva$.subscribe(sede => {
+      this.sedeActiva = sede;
+      this.sedeFiltro = sede?.id_sede ?? 'Todas';
+      this.cdr.markForCheck();
+      this.cargar();
+    });
     this.actualizacionAutomatica = setInterval(() => this.cargar(), 60000);
   }
 
   ngOnDestroy(): void {
     this.suscripcion?.unsubscribe();
     this.suscripcionSede?.unsubscribe();
+    this.solicitudReporte?.unsubscribe();
     if (this.actualizacionAutomatica) clearInterval(this.actualizacionAutomatica);
   }
 
@@ -156,6 +164,7 @@ export class Reportes implements OnInit, OnDestroy {
   }
 
   cargar(): void {
+    this.solicitudReporte?.unsubscribe();
     this.cargando = true;
     const idInstitucion = this.institucionActiva?.id_institucion;
     const fallos: string[] = [];
@@ -168,20 +177,20 @@ export class Reportes implements OnInit, OnDestroy {
     });
 
     // Sedes de la institución, cupos de los contratos y entregas de alimentos
-    forkJoin({
+    this.solicitudReporte = forkJoin({
       sedes: this.sirae.getSedes(idInstitucion).pipe(take(1), timeout(TIEMPO_MAXIMO_MS), opcional<any[]>('las sedes')),
       contratos: this.sirae.getContratos().pipe(take(1), timeout(TIEMPO_MAXIMO_MS), opcional<any[]>('los contratos')),
       entregas: this.entregasService.cargar().pipe(take(1), timeout(TIEMPO_MAXIMO_MS), opcional<Entrega[]>('las entregas')),
-    }).subscribe(({ sedes, contratos, entregas }) => {
-      this.armarReporteSedes(sedes, contratos, entregas, fallos);
-      this.cargando = false;
-      this.cdr.markForCheck();
-    });
-    this.suscripcionSede = this.auth.sedeActiva$.subscribe(sede => {
-      this.sedeActiva = sede;
-      this.sedeFiltro = sede?.id_sede ?? 'Todas';
-      this.cdr.markForCheck();
-      this.cargar();
+    }).subscribe({
+      next: ({ sedes, contratos, entregas }) => {
+        this.armarReporteSedes(sedes, contratos, entregas, fallos);
+        this.cargando = false;
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.cargando = false;
+        this.cdr.markForCheck();
+      },
     });
   }
 

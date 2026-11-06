@@ -3,13 +3,14 @@ import { provideRouter, Router } from '@angular/router';
 import { provideMockStore } from '@ngrx/store/testing';
 import { AuthService } from '../services/auth.service';
 import { LoginComponent } from './login';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 
 describe('LoginComponent', () => {
   let component: LoginComponent;
   let fixture: ComponentFixture<LoginComponent>;
   const authServiceMock = {
     login: vi.fn(),
+    despertarBackend: vi.fn(),
     rolPermitido: vi.fn((rol: string | null | undefined) =>
       ['administrador', 'supervisor', 'coordinador', 'coordinador pae', 'jefa de manipuladoras', 'jefamanipuladoras'].includes(rol?.toLowerCase() ?? '')
     ),
@@ -160,6 +161,19 @@ describe('LoginComponent', () => {
     expect(navigate).not.toHaveBeenCalledWith(['/inicio']);
     expect(component.errorMensaje).toContain('no tiene permiso');
     expect(component.cargando).toBe(false);
+  });
+
+  it('releases the loading state when the login server times out', () => {
+    authServiceMock.login.mockReturnValue(throwError(() => ({ name: 'TimeoutError' })));
+    component.loginForm.setValue({
+      correo: 'ana@example.com',
+      clave: 'password-seguro',
+    });
+
+    component.onSubmit();
+
+    expect(component.cargando).toBe(false);
+    expect(component.errorMensaje).toContain('servidor está tardando');
   });
 
   it('requests a password recovery email for a valid address', () => {

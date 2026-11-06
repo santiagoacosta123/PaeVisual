@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
-import { Observable, BehaviorSubject } from 'rxjs';
+import { Observable, BehaviorSubject, EMPTY, catchError, timeout } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 export interface LoginResponse {
@@ -102,7 +102,13 @@ export class AuthService {
       correo,
       clave,
       password: clave,
-    });
+    }).pipe(timeout(60000));
+  }
+
+  despertarBackend(): void {
+    this.http.get(`${this.apiBaseUrl}/`, { responseType: 'text' })
+      .pipe(timeout(30000), catchError(() => EMPTY))
+      .subscribe();
   }
 
   esSuperAdministrador(rol: string | null | undefined): boolean {
