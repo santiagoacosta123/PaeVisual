@@ -749,14 +749,25 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     return hallada ? '/' + hallada[1] : null;
   }
 
+  // Imágenes de categorías (archivos dentro de /public).
+  // Las claves van en minúscula y sin tildes: la función las normaliza.
   private readonly imagenesCategoria: Record<string, string> = {
-    Todos: 'plato.png', 'Granos y cereales': 'granos.png', Despensa: 'sal.png', Lácteos: 'lacteos.png',
-    Carnes: 'carne.png', Huevos: 'huevos.png', Verduras: 'verduras.png', Frutas: 'frutas.png', Otros: 'otros.png',
+    'todos': 'plato.png',
+    'granos': 'granoss.png',
+    'granos y cereales': 'granoss.png',
+    'despensa': 'sal.png',
+    'lacteos': 'lacteo.png',
+    'mecato': 'mecato.png',
+    'carnes': 'carne.png',
+    'huevos': 'huevos.png',
+    'verduras': 'verduras.png',
+    'frutas': 'frutas.png',
+    'otros': 'otros.png',
   };
 
   imagenCategoria(nombre: string): string | null {
-    const a = this.imagenesCategoria[nombre];
-    return a ? '/' + a : null;
+    const archivo = this.imagenesCategoria[this.norm(nombre)];
+    return archivo ? '/' + archivo : null;
   }
 
   categoriaDe(nombre: string): string {

@@ -9,7 +9,6 @@ import { RolService } from '../services/rol.service';
 import { AuthService } from '../services/auth.service';
 import { environment } from '../../environments/environment';
 import { CustomSelectComponent } from '../shared/custom-select/custom-select';
-import { SweetAlertService } from '../core/services/sweet-alert.service';
 
 @Component({
   selector: 'app-contrato-detalle',
@@ -210,8 +209,7 @@ export class ContratoDetalleComponent implements OnInit {
     private rolService: RolService,
     private authService: AuthService,
     private http: HttpClient,
-    private cdr: ChangeDetectorRef,
-    private sweetAlert: SweetAlertService
+    private cdr: ChangeDetectorRef
   ) { }
 
   ngOnInit() {
@@ -230,7 +228,7 @@ export class ContratoDetalleComponent implements OnInit {
   }
 
   cargarDatosMaestros() {
-    // 1. Cargar Jornadas con normalizaciÃ³n
+    // 1. Cargar Jornadas con normalización
     this.siraeService.getJornadas().subscribe({
       next: (datos: any) => {
         const res = Array.isArray(datos) ? datos : (datos.results || datos.data || []);
@@ -243,14 +241,14 @@ export class ContratoDetalleComponent implements OnInit {
       }
     });
 
-    // 2. Cargar Secciones de MenÃº con normalizaciÃ³n
+    // 2. Cargar Secciones de Menú con normalización
     this.siraeService.getSeccionesMenu().subscribe({
       next: (datos: any) => {
         this.seccionesMenu = Array.isArray(datos) ? datos : (datos.results || datos.data || []);
         this.cdr.detectChanges();
       },
       error: (err) => {
-        console.error('Error cargando secciones de menÃº:', err);
+        console.error('Error cargando secciones de menú:', err);
         this.cdr.detectChanges();
       }
     });
@@ -291,9 +289,9 @@ export class ContratoDetalleComponent implements OnInit {
     this.cargandoSupervisores = true;
     const token = this.authService.obtenerToken()?.replace(/^(Bearer|Token)\s+/i, '').trim();
     let headers = new HttpHeaders({ 'Content-Type': 'application/json' });
-    if (token) headers = headers.set('Authorization', ['Be', 'arer'].join('') + ' ' + token);
+    if (token) headers = headers.set('Authorization', `Bearer ${token}`);
 
-    // 1. Cargar catÃ¡logo de roles para resolver IDs de supervisor
+    // 1. Cargar catálogo de roles para resolver IDs de supervisor
     this.rolService.getRoles().subscribe({
       next: (datosRoles: any) => {
         const rolesArr = Array.isArray(datosRoles) ? datosRoles : (datosRoles.results || datosRoles.data || []);
@@ -315,7 +313,7 @@ export class ContratoDetalleComponent implements OnInit {
         this.procesarUsuariosSupervisores(datos);
       },
       error: (errHttp) => {
-        console.warn('Fallo peticiÃ³n directa a /usuarios/, intentando usuarioService:', errHttp);
+        console.warn('Fallo petición directa a /usuarios/, intentando usuarioService:', errHttp);
         this.usuarioService.getUsuarios().subscribe({
           next: (datosFallback: any) => {
             this.procesarUsuariosSupervisores(datosFallback);
@@ -373,7 +371,7 @@ export class ContratoDetalleComponent implements OnInit {
       nombre_completo: `${u.nombre || ''} ${u.apellido || ''}`.trim() || u.correo || `Supervisor #${u.id_usuario || u.id}`
     }));
 
-    // Si el contrato ya tiene un supervisor asignado que no estÃ© en la lista filtrada, preservarlo
+    // Si el contrato ya tiene un supervisor asignado que no esté en la lista filtrada, preservarlo
     if (this.contrato?.id_usuario_supervisor) {
       const supIdNum = Number(this.contrato.id_usuario_supervisor);
       const existe = this.supervisores.some(s => Number(s.id_usuario) === supIdNum);
@@ -419,7 +417,7 @@ export class ContratoDetalleComponent implements OnInit {
   cargarDetalleContrato() {
     if (!this.contratoId) return;
 
-    // Cargar informaciÃ³n bÃ¡sica del contrato desde la lista general
+    // Cargar información básica del contrato desde la lista general
     this.siraeService.getContratos().subscribe({
       next: (datos: any) => {
         const listaContratos = Array.isArray(datos) ? datos : (datos.results || datos.data || []);
@@ -444,7 +442,7 @@ export class ContratoDetalleComponent implements OnInit {
           };
           this.actualizarSedesDeInstitucion();
         } else {
-          // Fallback por si acaso entra directo por URL y el backend requiere detalle por ID especÃ­fico
+          // Fallback por si acaso entra directo por URL y el backend requiere detalle por ID específico
           this.contrato = { codigo: `COR-${this.contratoId}`, estado: 'Activo' };
         }
         this.cdr.detectChanges();
@@ -457,7 +455,7 @@ export class ContratoDetalleComponent implements OnInit {
       next: (datos: any) => {
         this.contratosSeccionMenu = Array.isArray(datos) ? datos : (datos.results || datos.data || []);
 
-        // Auto-habilitar las jornadas basÃ¡ndose en las secciones que ya tiene asignadas
+        // Auto-habilitar las jornadas basándose en las secciones que ya tiene asignadas
         setTimeout(() => {
           const jornadasConSecciones = new Set<any>();
           this.contratosSeccionMenu.forEach(rel => {
@@ -568,7 +566,7 @@ export class ContratoDetalleComponent implements OnInit {
           this.contratosSeccionMenu.push(res);
           this.cdr.detectChanges();
         },
-        error: (err) => console.error('Error asignando secciÃ³n', err)
+        error: (err) => console.error('Error asignando sección', err)
       });
     } else {
       const relacion = this.contratosSeccionMenu.find(rel => {
@@ -583,7 +581,7 @@ export class ContratoDetalleComponent implements OnInit {
             this.contratosSeccionMenu = this.contratosSeccionMenu.filter(r => (r.id_contrato_seccion || r.id) !== relacionId);
             this.cdr.detectChanges();
           },
-          error: (err) => console.error('Error quitando secciÃ³n', err)
+          error: (err) => console.error('Error quitando sección', err)
         });
       }
     }
@@ -591,7 +589,7 @@ export class ContratoDetalleComponent implements OnInit {
 
   guardarTodo() {
     if (!this.contrato.institucion) {
-      void this.sweetAlert.warning('Institución requerida', 'Selecciona o ingresa la institución educativa.');
+      alert('Por favor, selecciona o ingresa la institución educativa.');
       return;
     }
 
@@ -645,7 +643,7 @@ export class ContratoDetalleComponent implements OnInit {
         },
         error: (err) => {
           console.error('Error al crear contrato', err);
-          void this.sweetAlert.error('No se pudo crear el contrato', 'Ocurrió un error al guardar el contrato.');
+          alert('Hubo un error al crear el contrato.');
         }
       });
     } else {
@@ -656,7 +654,7 @@ export class ContratoDetalleComponent implements OnInit {
         },
         error: (err) => {
           console.error('Error al actualizar contrato', err);
-          void this.sweetAlert.error('No se pudo actualizar el contrato', 'Ocurrió un error al guardar los cambios.');
+          alert('Hubo un error al actualizar el contrato.');
         }
       });
     }

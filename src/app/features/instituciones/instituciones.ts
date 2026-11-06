@@ -5,7 +5,6 @@ import { HttpClient } from '@angular/common/http';
 import { Subscription } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '@env/environment';
-import { SweetAlertService } from '../../core/services/sweet-alert.service';
 
 type EstadoInventario = 'Ok' | 'Bajo' | 'Crítico';
 type FiltroEstado = 'Todos' | EstadoInventario;
@@ -190,7 +189,6 @@ function normalizar(s: string): string {
 export class InstitucionesComponent implements OnInit, OnDestroy {
 
   private http = inject(HttpClient);
-  private sweetAlert = inject(SweetAlertService);
 
   // Ruta de las instituciones asignadas al supervisor que inició sesión (el backend filtra por el usuario)
   private readonly urlInstituciones = `${environment.apiUrl}/instituciones/`;
@@ -619,10 +617,7 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
   }
 
   descargar(r: ReporteItem): void {
-    void this.sweetAlert.info(
-      `Reporte de ${r.nombre}`,
-      'La descarga del reporte se abrirá desde el módulo correspondiente.'
-    );
+    alert(`Ejemplo: aquí se abriría el reporte "${r.nombre}".`);
   }
 
   // =====================================================

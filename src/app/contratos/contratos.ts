@@ -5,7 +5,6 @@ import { Router, RouterModule } from '@angular/router';
 import { SiraeService } from '../services/contratos_pae.service';
 import { ContratoDetalleComponent } from '../contrato-detalle/contrato-detalle';
 import { CustomSelectComponent } from '../shared/custom-select/custom-select';
-import { SweetAlertService } from '../core/services/sweet-alert.service';
 
 @Component({
   selector: 'app-gestion-contratos',
@@ -19,8 +18,7 @@ export class ContratosComponent implements OnInit {
   constructor(
     private router: Router,
     private siraeService: SiraeService,
-    private cdr: ChangeDetectorRef, // <--- Inyectado para forzar renderizado inmediato
-    private sweetAlert: SweetAlertService
+    private cdr: ChangeDetectorRef // <--- Inyectado para forzar renderizado inmediato
   ) { }
 
   ngOnInit() {
@@ -392,7 +390,7 @@ export class ContratosComponent implements OnInit {
 
   guardarContrato() {
     if (!this.contratoActual.institucion) {
-      void this.sweetAlert.warning('Institución requerida', 'Ingresa el nombre de la institución.');
+      alert('Por favor, ingresa el nombre de la institución.');
       return;
     }
 
@@ -442,20 +440,18 @@ export class ContratosComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error al cambiar estado del contrato', err);
-        void this.sweetAlert.error('Estado no actualizado', 'No se pudo actualizar el estado del contrato.');
+        alert('No se pudo actualizar el estado del contrato.');
       }
     });
   }
 
   eliminarContrato(id: number) {
-    void this.sweetAlert.confirm('¿Eliminar este contrato?', 'El contrato seleccionado será eliminado.', 'Sí, eliminar')
-      .then((resultado) => {
-        if (!resultado.isConfirmed) return;
-        this.siraeService.eliminarContrato(id).subscribe({
-          next: () => this.cargarContratos(),
-          error: (err) => console.error('Error al eliminar contrato', err)
-        });
+    if (confirm('¿Estás seguro de que deseas eliminar este contrato?')) {
+      this.siraeService.eliminarContrato(id).subscribe({
+        next: () => this.cargarContratos(),
+        error: (err) => console.error('Error al eliminar contrato', err)
       });
+    }
   }
 
   // JORNADAS
@@ -483,7 +479,7 @@ export class ContratosComponent implements OnInit {
 
   guardarJornada() {
     if (!this.jornadaActual.nombre) {
-      void this.sweetAlert.warning('Jornada requerida', 'Ingresa el nombre de la jornada.');
+      alert('Por favor, ingresa el nombre de la jornada.');
       return;
     }
 
@@ -509,14 +505,12 @@ export class ContratosComponent implements OnInit {
   }
 
   eliminarJornada(id: number) {
-    void this.sweetAlert.confirm('¿Eliminar esta jornada?', 'La jornada seleccionada será eliminada.', 'Sí, eliminar')
-      .then((resultado) => {
-        if (!resultado.isConfirmed) return;
-        this.siraeService.eliminarJornada(id).subscribe({
-          next: () => this.cargarDatosMaestros(),
-          error: (err) => console.error('Error al eliminar jornada', err)
-        });
+    if (confirm('¿Estás seguro de que deseas eliminar esta jornada?')) {
+      this.siraeService.eliminarJornada(id).subscribe({
+        next: () => this.cargarDatosMaestros(),
+        error: (err) => console.error('Error al eliminar jornada', err)
       });
+    }
   }
 
   // SECCIONES
@@ -545,7 +539,7 @@ export class ContratosComponent implements OnInit {
 
   guardarSeccion() {
     if (!this.seccionActual.nombre || !this.seccionActual.jornada) {
-      void this.sweetAlert.warning('Sección incompleta', 'Ingresa el nombre de la sección y selecciona la jornada.');
+      alert('Por favor, ingresa el nombre de la sección y selecciona la jornada.');
       return;
     }
 
@@ -574,13 +568,11 @@ export class ContratosComponent implements OnInit {
   }
 
   eliminarSeccion(id: number) {
-    void this.sweetAlert.confirm('¿Eliminar esta sección?', 'La sección seleccionada será eliminada.', 'Sí, eliminar')
-      .then((resultado) => {
-        if (!resultado.isConfirmed) return;
-        this.siraeService.eliminarSeccionMenu(id).subscribe({
-          next: () => this.cargarDatosMaestros(),
-          error: (err) => console.error('Error al eliminar sección', err)
-        });
+    if (confirm('¿Estás seguro de que deseas eliminar esta sección?')) {
+      this.siraeService.eliminarSeccionMenu(id).subscribe({
+        next: () => this.cargarDatosMaestros(),
+        error: (err) => console.error('Error al eliminar sección', err)
       });
+    }
   }
 }
