@@ -23,6 +23,10 @@ interface FilaEntrega {
   codigo?: string; lote?: string; destino?: string; hora?: string; responsable?: string; estadoEntrega?: string;
   fechaRegistro?: string;     // día en que se hizo el registro
   loteRegistro?: string;      // igual para los productos guardados juntos
+  cantidadRecibida?: number | null;
+  cantidadRechazada?: number | null;
+  motivoRechazo?: string;
+  usuarioReceptorNombre?: string;
 }
 
 interface ProductoCatalogo {
@@ -48,11 +52,21 @@ interface ItemInventario {
   producto: ProductoCatalogo; cantidad: number; unidad: string;
   estado: string | null; motivo: '' | 'Agotado' | 'Sin entradas';
 }
-interface ExtraEntrada { destino: string; responsable: string; hora: string; fechaRegistro?: string; loteRegistro?: string; }
+interface ExtraEntrada {
+  destino: string;
+  responsable: string;
+  hora: string;
+  fechaRegistro?: string;
+  loteRegistro?: string;
+  estadoAprobacion?: string;
+  motivoRechazo?: string;
+}
 interface ResumenEntradaProducto { clave: string; ingrediente: string; unidad: string; cantidad: number; veces: number; }
 interface GrupoEntrada {
   clave: string; destino: string; fechaRegistro: string; fechaRecepcion: string; hora: string;
   responsable: string; items: FilaEntrega[]; productos: ResumenEntradaProducto[];
+  estadoAprobacion?: 'ACEPTADA' | 'RECHAZADA' | 'CON_NOVEDAD' | 'EN_PROCESO';
+  motivoRechazo?: string;
 }
 interface GrupoEnvio { clave: string; destino: string; fechaSalida: string; fechaEntrega: string; responsable: string; items: EnvioRegistro[]; }
 
@@ -60,6 +74,10 @@ interface DetalleProducto {
   clave: string; ingrediente: string; categoria: string; tipoMercado: string; unidad: string;
   cantidad: number; veces: number; vencimiento: string; estado: string; frecuencia: string; lotes: string[];
   disponible: number | null; unidadDisponible: string;
+  estadoAprobacion?: 'ACEPTADA' | 'RECHAZADA' | 'CON_NOVEDAD' | 'EN_PROCESO';
+  cantidadRecibida?: number | null;
+  cantidadRechazada?: number | null;
+  motivoRechazo?: string;
 }
 
 type FiltroMercado = 'Todos' | 'Granos' | 'Perecederos';
@@ -445,6 +463,26 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     return idFinal != null ? `id:${idFinal}` : `n:${n}`;
   }
 
+  private recepcionAdminDe(item: any): any {
+    try {
+      const recepciones = JSON.parse(localStorage.getItem('sirae_recepciones_admin') || '{}');
+      const id = item.id ?? item.id_entrega;
+      if (id != null && recepciones[`id:${id}`]) {
+        return recepciones[`id:${id}`];
+      }
+      const ing = this.texto(item.ingrediente_nombre) || this.texto(item.ingrediente) || '';
+      const fecha = this.soloFecha(item.fecha_entrega ?? item.fecha_recepcion ?? item.fechaRecepcion);
+      const cant = Number(item.cantidad) || 0;
+      if (ing && fecha) {
+        const k = `${ing.toLowerCase().trim()}|${fecha}|${cant}`;
+        if (recepciones[k]) return recepciones[k];
+      }
+      return undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
   private aFila(item: any): FilaEntrega {
     const idIngrediente = item.id_ingrediente ?? (typeof item.ingrediente === 'number' ? item.ingrediente : item.ingrediente?.id);
     const idTipo = item.id_tipo_mercado ?? (typeof item.tipo_mercado === 'number' ? item.tipo_mercado : item.tipo_mercado?.id);
@@ -464,6 +502,22 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     const extra = this.extraDe(item.id ?? item.id_entrega, idIng, fechaRecepcion, Number(item.cantidad) || 0, destinoItem);
     const responsableObs = String(item.observaciones ?? '').match(/Responsable:\s*(.+)/i)?.[1]?.trim() ?? '';
 
+    const recepcionAdmin = this.recepcionAdminDe(item);
+    const estadoReal = (item.estado && item.estado !== 'EN_TRANSITO' && item.estado !== '')
+      ? item.estado
+      : (recepcionAdmin?.estado || item.estado || extra?.estadoAprobacion || 'EN_TRANSITO');
+
+    const cantRec = item.cantidad_recibida != null
+      ? Number(item.cantidad_recibida)
+      : (recepcionAdmin?.cantidad_recibida != null ? Number(recepcionAdmin.cantidad_recibida) : null);
+
+    const cantRech = item.cantidad_rechazada != null
+      ? Number(item.cantidad_rechazada)
+      : (recepcionAdmin?.cantidad_rechazada != null ? Number(recepcionAdmin.cantidad_rechazada) : null);
+
+    const motRech = item.motivo_rechazo || recepcionAdmin?.motivo_rechazo || extra?.motivoRechazo || '';
+    const receptorNombre = item.usuario_receptor_nombre || recepcionAdmin?.usuario_receptor_nombre || '';
+
     return {
       id: item.id ?? item.id_entrega, idIngrediente: idIng, idTipoMercado: idTip, ingrediente, tipoMercado,
       categoria: perecedero ? 'Perecederos' : 'Granos',
@@ -478,9 +532,13 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       hora: this.horaDe(item.hora_salida ?? item.hora ?? item.hora_registro ?? item.created_at ?? item.fecha_creacion) || extra?.hora || '',
       // Primero lo que escribió quien hizo la entrada o envío
       responsable: this.texto(item.responsable) || this.texto(item.responsable_nombre) || responsableObs || this.responsableEnvioGuardado(item) || extra?.responsable || this.texto(item.usuario) || '',
-      estadoEntrega: item.estado ?? '',
+      estadoEntrega: estadoReal,
       fechaRegistro: this.fechaLocalDe(item.created_at ?? item.fecha_creacion) || extra?.fechaRegistro || '',
       loteRegistro: item.lote_registro ?? extra?.loteRegistro ?? '',
+      cantidadRecibida: cantRec,
+      cantidadRechazada: cantRech,
+      motivoRechazo: motRech,
+      usuarioReceptorNombre: receptorNombre,
     };
   }
 
@@ -558,6 +616,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
         totales.set(k, r);
       }
       g.productos = Array.from(totales.values());
+      g.estadoAprobacion = this.estadoAprobacionGrupo(g);
     }
     return grupos;
   }
@@ -633,6 +692,92 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
 
   nombreMinuscula(nombre: string): string { return this.nombreMostrado(nombre).toLowerCase(); }
 
+  // ===================== ESTADO DE APROBACIÓN (SUPERVISIÓN) =====================
+  estadoAprobacionEntrega(estado?: string): 'ACEPTADA' | 'RECHAZADA' | 'CON_NOVEDAD' | 'EN_PROCESO' {
+    const e = (estado || '').trim().toUpperCase();
+    if (['RECIBIDA', 'APROBADA', 'ACEPTADA', 'RECIBIDO', 'APROBADO', 'ACEPTADO'].includes(e)) {
+      return 'ACEPTADA';
+    }
+    if (['RECHAZADA', 'RECHAZADO', 'NO_APROBADA', 'NO_ACEPTADA'].includes(e)) {
+      return 'RECHAZADA';
+    }
+    if (['CON_NOVEDAD', 'NOVEDAD', 'PARCIAL'].includes(e)) {
+      return 'CON_NOVEDAD';
+    }
+    return 'EN_PROCESO';
+  }
+
+  estadoAprobacionGrupo(g: GrupoEntrada): 'ACEPTADA' | 'RECHAZADA' | 'CON_NOVEDAD' | 'EN_PROCESO' {
+    if (!g?.items || g.items.length === 0) return 'EN_PROCESO';
+    const estados = g.items.map(item => this.estadoAprobacionEntrega(item.estadoEntrega));
+    if (estados.every(est => est === 'ACEPTADA')) return 'ACEPTADA';
+    if (estados.every(est => est === 'RECHAZADA')) return 'RECHAZADA';
+    if (estados.includes('CON_NOVEDAD') || (estados.includes('ACEPTADA') && estados.includes('RECHAZADA'))) {
+      return 'CON_NOVEDAD';
+    }
+    return 'EN_PROCESO';
+  }
+
+  textoBadgeAprobacion(estado: string | undefined): string {
+    switch (estado) {
+      case 'ACEPTADA': return 'Aceptada';
+      case 'RECHAZADA': return 'Rechazada';
+      case 'CON_NOVEDAD': return 'Con novedad';
+      case 'EN_PROCESO':
+      default:
+        return 'En proceso';
+    }
+  }
+
+  claseBadgeAprobacion(estado: string | undefined): string {
+    switch (estado) {
+      case 'ACEPTADA':
+        return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+      case 'RECHAZADA':
+        return 'border-red-200 bg-red-50 text-red-700';
+      case 'CON_NOVEDAD':
+        return 'border-orange-200 bg-orange-50 text-orange-700';
+      case 'EN_PROCESO':
+      default:
+        return 'border-amber-200 bg-amber-50 text-amber-700';
+    }
+  }
+
+  iconoBadgeAprobacion(estado: string | undefined): string {
+    switch (estado) {
+      case 'ACEPTADA': return 'check_circle';
+      case 'RECHAZADA': return 'cancel';
+      case 'CON_NOVEDAD': return 'warning';
+      case 'EN_PROCESO':
+      default:
+        return 'schedule';
+    }
+  }
+
+  claseBordeTarjetaEntrada(g: GrupoEntrada): string {
+    const sel = g.fechaRecepcion === this.diaSeleccionado;
+    const est = g.estadoAprobacion || this.estadoAprobacionGrupo(g);
+    if (sel) {
+      switch (est) {
+        case 'ACEPTADA': return 'border-emerald-400 ring-2 ring-emerald-200';
+        case 'RECHAZADA': return 'border-red-400 ring-2 ring-red-200';
+        case 'CON_NOVEDAD': return 'border-orange-400 ring-2 ring-orange-200';
+        case 'EN_PROCESO':
+        default:
+          return 'border-amber-400 ring-2 ring-amber-200';
+      }
+    }
+    switch (est) {
+      case 'ACEPTADA': return 'border-emerald-200 hover:border-emerald-400';
+      case 'RECHAZADA': return 'border-red-200 hover:border-red-400';
+      case 'CON_NOVEDAD': return 'border-orange-200 hover:border-orange-400';
+      case 'EN_PROCESO':
+      default:
+        return 'border-amber-200 hover:border-amber-400';
+    }
+  }
+
+
   // ----- Detalle de una entrada (al tocar su tarjeta en el Historial) -----
   detalleEntrada: GrupoEntrada | null = null;
   detalleLista: DetalleProducto[] = [];
@@ -678,6 +823,10 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
         vencimiento: '', estado: '', frecuencia: e.frecuencia, lotes: [],
         disponible: e.idIngrediente != null && this.saldosInventario.has(e.idIngrediente) ? this.saldosInventario.get(e.idIngrediente)! : null,
         unidadDisponible: this.unidadesInventario.get(e.idIngrediente ?? -1) ?? unidad,
+        estadoAprobacion: this.estadoAprobacionEntrega(e.estadoEntrega),
+        cantidadRecibida: e.cantidadRecibida,
+        cantidadRechazada: e.cantidadRechazada,
+        motivoRechazo: e.motivoRechazo,
       };
       d.cantidad = Math.round((d.cantidad + e.cantidad) * 100) / 100;
       d.veces++;

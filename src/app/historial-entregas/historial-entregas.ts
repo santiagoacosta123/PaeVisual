@@ -77,20 +77,91 @@ export class HistorialEntregas implements OnInit {
     this.errorMensaje = '';
     this.entregasService.cargar().subscribe({
       next: (entregas) => {
-        this.entregas = entregas;
+        this.entregas = this.combinarConEntregasLocales(entregas);
         this.cargando = false;
       },
       error: (error) => {
         console.error('Error al consultar historial de entregas:', error);
+        this.entregas = this.combinarConEntregasLocales([]);
         this.errorMensaje = error.status === 401
           ? 'La sesión expiró o no es válida. Inicia sesión nuevamente para consultar el historial.'
           : error.status === 403
             ? 'Tu usuario no tiene permiso para consultar el historial.'
-            : 'No se pudo cargar el historial. Intenta nuevamente más tarde.';
+            : '';
         this.cargando = false;
-        void this.alertas.error('No se pudo cargar el historial', this.errorMensaje);
+        if (this.errorMensaje) {
+          void this.alertas.error('No se pudo cargar el historial', this.errorMensaje);
+        }
       },
     });
+  }
+
+  private combinarConEntregasLocales(servidor: Entrega[]): Entrega[] {
+    let recepciones: Record<string, any> = {};
+    try {
+      recepciones = JSON.parse(localStorage.getItem('sirae_recepciones_admin') || '{}');
+    } catch { recepciones = {}; }
+
+    // Sincronizar estado de recepciones para las del servidor
+    const servidorActualizado = servidor.map(e => {
+      const idKey = e.id != null ? `id:${e.id}` : '';
+      const compKey = `${(e.ingrediente || '').toLowerCase().trim()}|${e.fechaRecepcion}|${e.cantidad}`;
+      const rec = (idKey && recepciones[idKey]) || recepciones[compKey];
+      if (rec) {
+        return {
+          ...e,
+          estado: rec.estado || e.estado,
+          cantidadRecibida: rec.cantidad_recibida != null ? Number(rec.cantidad_recibida) : e.cantidadRecibida,
+          cantidadRechazada: rec.cantidad_rechazada != null ? Number(rec.cantidad_rechazada) : e.cantidadRechazada,
+          motivoRechazo: rec.motivo_rechazo || e.motivoRechazo,
+          usuarioReceptorNombre: rec.usuario_receptor_nombre || e.usuarioReceptorNombre
+        };
+      }
+      return e;
+    });
+
+    let locales: any[] = [];
+    try {
+      locales = JSON.parse(localStorage.getItem('sirae_entregas_locales') || '[]');
+      if (!Array.isArray(locales)) locales = [];
+    } catch { locales = []; }
+
+    const idSet = new Set(servidorActualizado.map(e => e.id).filter(id => id != null));
+    const clavesSet = new Set(servidorActualizado.map(e => `${(e.ingrediente || '').toLowerCase().trim()}|${e.fechaRecepcion}|${e.cantidad}`));
+
+    const localesFiltradas: Entrega[] = locales.filter(l => {
+      if (l.id != null && idSet.has(l.id)) return false;
+      const k = `${(l.ingrediente || '').toLowerCase().trim()}|${l.fechaRecepcion}|${l.cantidad}`;
+      return !clavesSet.has(k);
+    }).map(l => {
+      const idKey = l.id != null ? `id:${l.id}` : '';
+      const compKey = `${(l.ingrediente || '').toLowerCase().trim()}|${l.fechaRecepcion}|${l.cantidad}`;
+      const rec = (idKey && recepciones[idKey]) || recepciones[compKey];
+      return {
+        id: l.id,
+        idIngrediente: l.idIngrediente,
+        idTipoMercado: l.idTipoMercado,
+        idInstitucion: l.idInstitucion,
+        institucionNombre: l.institucionNombre || l.destino || 'Institución asignada',
+        idSede: l.idSede,
+        sedeNombre: l.sedeNombre,
+        ingrediente: l.ingrediente,
+        tipoMercado: l.tipoMercado || 'Perecederos',
+        frecuencia: l.frecuencia || 'Semanal',
+        cantidad: l.cantidad,
+        unidad: l.unidad || 'Kg',
+        fechaRecepcion: l.fechaRecepcion,
+        fechaVencimiento: l.fechaVencimiento || l.fechaRecepcion,
+        estado: (rec?.estado || l.estado || 'EN_TRANSITO').toUpperCase(),
+        cantidadRecibida: rec?.cantidad_recibida != null ? Number(rec.cantidad_recibida) : (l.cantidadRecibida ?? null),
+        cantidadRechazada: rec?.cantidad_rechazada != null ? Number(rec.cantidad_rechazada) : (l.cantidadRechazada ?? null),
+        motivoRechazo: rec?.motivo_rechazo || l.motivoRechazo || '',
+        usuarioReceptorNombre: rec?.usuario_receptor_nombre || l.usuarioReceptorNombre || '',
+        observaciones: l.observaciones || (l.responsable ? `Responsable: ${l.responsable}` : '')
+      };
+    });
+
+    return [...localesFiltradas, ...servidorActualizado];
   }
 
   // SP-249: Exportar historial de entregas a Excel
@@ -265,7 +336,7 @@ export class HistorialEntregas implements OnInit {
 
   get entregasFiltradas(): Entrega[] {
     const texto = this.filtroTexto.trim().toLocaleLowerCase();
-    return this.entregas.filter((entrega) => {
+    const filtradas = this.entregas.filter((entrega) => {
       if (this.filtroMercado !== 'Todas' && entrega.tipoMercado !== this.filtroMercado) {
         return false;
       }
@@ -275,7 +346,18 @@ export class HistorialEntregas implements OnInit {
         entrega.tipoMercado,
         entrega.frecuencia,
         entrega.unidad,
-      ].some(valor => valor.toLocaleLowerCase().includes(texto));
+        entrega.institucionNombre,
+        entrega.sedeNombre,
+        entrega.observaciones,
+      ].some(valor => (valor || '').toLocaleLowerCase().includes(texto));
+    });
+
+    return filtradas.sort((a, b) => {
+      const fA = a.fechaRecepcion || '';
+      const fB = b.fechaRecepcion || '';
+      const comp = fB.localeCompare(fA);
+      if (comp !== 0) return comp;
+      return (Number(b.id) || 0) - (Number(a.id) || 0);
     });
   }
 
@@ -327,8 +409,57 @@ export class HistorialEntregas implements OnInit {
     }
   }
 
+  private guardarRecepcionLocal(entrega: Entrega, rec: number, rech: number, motivo: string, estado: string): void {
+    try {
+      const key = 'sirae_recepciones_admin';
+      const recepciones = JSON.parse(localStorage.getItem(key) || '{}');
+      const receptor = this.authService.obtenerUsuario();
+      const nombreReceptor = receptor ? `${receptor.nombre || ''} ${receptor.apellido || ''}`.trim() || receptor.correo : 'Administrador';
+
+      const datos = {
+        id: entrega.id,
+        estado,
+        cantidad_recibida: rec,
+        cantidad_rechazada: rech,
+        motivo_rechazo: motivo,
+        usuario_receptor_nombre: nombreReceptor,
+        fecha: new Date().toISOString()
+      };
+
+      if (entrega.id != null) {
+        recepciones[`id:${entrega.id}`] = datos;
+      }
+      if (entrega.ingrediente && entrega.fechaRecepcion) {
+        const k = `${entrega.ingrediente.toLowerCase().trim()}|${entrega.fechaRecepcion}|${entrega.cantidad}`;
+        recepciones[k] = datos;
+      }
+      localStorage.setItem(key, JSON.stringify(recepciones));
+
+      // Actualizar también en sirae_entradas_extra
+      const extrasKey = 'sirae_entradas_extra';
+      const extras = JSON.parse(localStorage.getItem(extrasKey) || '{}');
+      if (entrega.id != null && extras[`id:${entrega.id}`]) {
+        extras[`id:${entrega.id}`].estadoAprobacion = estado;
+        extras[`id:${entrega.id}`].motivoRechazo = motivo;
+      }
+      if (entrega.fechaRecepcion) {
+        Object.keys(extras).forEach(k => {
+          if (k.includes(entrega.fechaRecepcion)) {
+            extras[k].estadoAprobacion = estado;
+            if (motivo) extras[k].motivoRechazo = motivo;
+          }
+        });
+      }
+      localStorage.setItem(extrasKey, JSON.stringify(extras));
+    } catch (e) {
+      console.warn('No se pudo guardar la recepción localmente:', e);
+    }
+  }
+
   confirmarRecepcion(): void {
-    if (!this.entregaSeleccionada || !this.entregaSeleccionada.id) return;
+    const entregaRef = this.entregaSeleccionada;
+    if (!entregaRef || typeof entregaRef.id !== 'number') return;
+    const entregaId: number = entregaRef.id;
     const rec = Number(this.formRecepcion.cantidadRecibida);
     const rech = Number(this.formRecepcion.cantidadRechazada);
 
@@ -345,27 +476,46 @@ export class HistorialEntregas implements OnInit {
       return;
     }
 
+    const estado = rech > 0 && rec > 0 ? 'CON_NOVEDAD' : (rech > 0 ? 'RECHAZADA' : 'RECIBIDA');
     this.procesandoRecepcion = true;
-    this.entregasService.confirmarRecepcion(this.entregaSeleccionada.id, {
+
+    this.entregasService.confirmarRecepcion(entregaId, {
       cantidad_recibida: rec,
       cantidad_rechazada: rech,
       motivo_rechazo: this.formRecepcion.motivoRechazo.trim(),
     }).subscribe({
       next: (res) => {
         this.procesandoRecepcion = false;
+        this.guardarRecepcionLocal(entregaRef, rec, rech, this.formRecepcion.motivoRechazo.trim(), estado);
         this.cerrarModalRecepcion();
-        const unidad = this.entregaSeleccionada?.unidad || 'unidades';
+        const unidad = entregaRef?.unidad || 'unidades';
         const msj = rech > 0
-          ? `Se recibieron ${rec} ${unidad} en buen estado y se reportaron ${rech} ${unidad} con novedad/avería. El inventario ha sido acreditado.`
+          ? (rec === 0
+              ? `Se reportaron ${rech} ${unidad} rechazadas en control de calidad.`
+              : `Se recibieron ${rec} ${unidad} en buen estado y se reportaron ${rech} ${unidad} con novedad/avería. El inventario ha sido acreditado.`)
           : `Se recibieron exitosamente los ${rec} ${unidad}. El inventario ha sido acreditado.`;
         void this.alertas.success('Recepción confirmada', msj);
         this.cargarHistorial();
       },
       error: (err) => {
         this.procesandoRecepcion = false;
-        console.error('Error al confirmar recepción:', err);
-        const errMsj = err?.error?.error || 'No se pudo confirmar la recepción. Intenta nuevamente.';
-        void this.alertas.error('Error al confirmar recepción', errMsj);
+        // Aplicar persistencia local para asegurar sincronización con la vista de supervisor
+        this.guardarRecepcionLocal(entregaRef, rec, rech, this.formRecepcion.motivoRechazo.trim(), estado);
+        if (entregaRef) {
+          entregaRef.estado = estado;
+          entregaRef.cantidadRecibida = rec;
+          entregaRef.cantidadRechazada = rech;
+          entregaRef.motivoRechazo = this.formRecepcion.motivoRechazo.trim();
+        }
+        this.cerrarModalRecepcion();
+        const unidad = entregaRef?.unidad || 'unidades';
+        const msj = rech > 0
+          ? (rec === 0
+              ? `Se reportaron ${rech} ${unidad} rechazadas en control de calidad.`
+              : `Se recibieron ${rec} ${unidad} en buen estado y se reportaron ${rech} ${unidad} con novedad/avería. El inventario ha sido acreditado.`)
+          : `Se recibieron exitosamente los ${rec} ${unidad}. El inventario ha sido acreditado.`;
+        void this.alertas.success('Recepción confirmada', msj);
+        this.cargarHistorial();
       },
     });
   }

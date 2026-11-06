@@ -3,7 +3,7 @@ import { vi } from 'vitest';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { InstitucionesComponent } from './instituciones';
-import { environment } from '../../environments/environment';
+import { environment } from '../../../environments/environment';
 
 describe('InstitucionesComponent', () => {
   let component: InstitucionesComponent;
