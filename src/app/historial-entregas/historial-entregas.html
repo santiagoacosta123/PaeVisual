@@ -239,7 +239,7 @@
             <td class="px-4 py-3.5 text-center">
               <div class="flex items-center justify-center gap-1.5">
                 <!-- Botón de Recepción para el Administrador de la Institución -->
-                <button *ngIf="esAdministrador && (!entrega.estado || entrega.estado === 'EN_TRANSITO')"
+                <button *ngIf="esAdministrador && (!entrega.estado || entrega.estado === 'EN_TRANSITO' || entrega.estado === 'EN_PROCESO' || entrega.estado === 'PENDIENTE')"
                   type="button" (click)="abrirModalRecepcion(entrega)"
                   class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-black text-slate-900 shadow-sm transition hover:brightness-95"
                   style="background-color: #fac94b;"
