@@ -355,21 +355,31 @@
 
                     <div class="max-h-[560px] overflow-y-auto pr-1">
                         <article *ngFor="let g of gruposEntradasVisibles; trackBy: trackPor" (click)="abrirDetalleEntrada(g)" (keydown.enter)="abrirDetalleEntrada(g)" tabindex="0" role="button"
-                            class="fx-up fx-lift mb-2 cursor-pointer rounded-2xl border bg-white px-3 py-2.5 shadow-sm transition hover:border-emerald-400"
-                            [ngClass]="g.fechaRecepcion === diaSeleccionado ? 'border-emerald-400 ring-2 ring-emerald-200' : 'border-emerald-200'">
+                            class="fx-up fx-lift mb-2 cursor-pointer rounded-2xl border bg-white px-3 py-2.5 shadow-sm transition"
+                            [ngClass]="claseBordeTarjetaEntrada(g)">
                             <div class="flex items-center gap-3">
                                 <div class="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-xl bg-emerald-500 leading-none text-white">
                                     <span class="text-base font-black">{{ diaDe(g.fechaRecepcion) }}</span>
                                     <span class="mt-0.5 text-[9px] font-bold">{{ mesCortoDe(g.fechaRecepcion) }}</span>
                                 </div>
                                 <div class="min-w-0 flex-1">
-                                    <p class="m-0 truncate text-xs font-black text-slate-900">{{ g.productos.length }} {{ g.productos.length === 1 ? 'producto' : 'productos' }} · {{ fechaCorta(g.fechaRecepcion) }}</p>
+                                    <div class="flex items-center justify-between gap-1">
+                                        <p class="m-0 truncate text-xs font-black text-slate-900">{{ g.productos.length }} {{ g.productos.length === 1 ? 'producto' : 'productos' }} · {{ fechaCorta(g.fechaRecepcion) }}</p>
+                                    </div>
                                     <p class="m-0 truncate text-[10px] font-semibold text-slate-500">{{ resumenEntrada(g) }}</p>
-                                    <p class="m-0 mt-0.5 flex items-center gap-1 truncate text-[10px] font-bold text-emerald-700">
-                                        <span class="material-symbols-outlined text-[12px]">person</span>{{ g.responsable || 'Sin responsable' }}
-                                    </p>
+                                    <div class="m-0 mt-1 flex items-center justify-between gap-2">
+                                        <p class="m-0 flex items-center gap-1 truncate text-[10px] font-bold text-emerald-700">
+                                            <span class="material-symbols-outlined text-[12px]">person</span>{{ g.responsable || 'Sin responsable' }}
+                                        </p>
+                                        <!-- Estado de aprobación del administrador -->
+                                        <span class="inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-black tracking-tight"
+                                              [ngClass]="claseBadgeAprobacion(g.estadoAprobacion || estadoAprobacionGrupo(g))">
+                                            <span class="material-symbols-outlined text-[11px] leading-none">{{ iconoBadgeAprobacion(g.estadoAprobacion || estadoAprobacionGrupo(g)) }}</span>
+                                            {{ textoBadgeAprobacion(g.estadoAprobacion || estadoAprobacionGrupo(g)) }}
+                                        </span>
+                                    </div>
                                 </div>
-                                <span class="material-symbols-outlined shrink-0 text-[20px] text-emerald-500">chevron_right</span>
+                                <span class="material-symbols-outlined shrink-0 text-[18px] text-slate-300">chevron_right</span>
                             </div>
                         </article>
                     </div>
@@ -700,11 +710,33 @@
             <button type="button" class="btn-cerrar" aria-label="Cerrar" (click)="cerrarDetalleEntrada()"><span class="material-symbols-outlined text-[20px]">close</span></button>
         </div>
 
-        <div class="mt-4 grid grid-cols-2 gap-4 rounded-2xl border border-slate-100 bg-slate-50 p-4">
+        <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 rounded-2xl border border-slate-100 bg-slate-50 p-4">
             <div><p class="m-0 text-[10px] text-slate-400">Fecha de entrada</p><p class="m-0 text-xs font-black text-slate-800">{{ fechaCorta(d.fechaRecepcion) }}</p></div>
             <div><p class="m-0 text-[10px] text-slate-400">Registrado el</p><p class="m-0 text-xs font-black text-slate-800">{{ d.fechaRegistro ? fechaCorta(d.fechaRegistro) : '—' }}<ng-container *ngIf="d.hora"> · {{ d.hora }}</ng-container></p></div>
             <div><p class="m-0 text-[10px] text-slate-400">Responsable (quién lo hizo)</p><p class="m-0 text-xs font-black text-slate-800">{{ d.responsable || 'Sin responsable' }}</p></div>
             <div><p class="m-0 text-[10px] text-slate-400">Productos</p><p class="m-0 text-xs font-black text-slate-800">{{ detalleLista.length }}</p></div>
+            <div class="sm:col-span-2">
+                <p class="m-0 text-[10px] text-slate-400">Estado de aprobación (administrador)</p>
+                <div class="mt-1 flex flex-wrap items-center gap-2">
+                    <span class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-black"
+                          [ngClass]="claseBadgeAprobacion(d.estadoAprobacion || estadoAprobacionGrupo(d))">
+                        <span class="material-symbols-outlined text-[13px] leading-none">{{ iconoBadgeAprobacion(d.estadoAprobacion || estadoAprobacionGrupo(d)) }}</span>
+                        {{ textoBadgeAprobacion(d.estadoAprobacion || estadoAprobacionGrupo(d)) }}
+                    </span>
+                    <span class="text-[11px] font-semibold text-amber-700" *ngIf="(d.estadoAprobacion || estadoAprobacionGrupo(d)) === 'EN_PROCESO'">
+                        En espera de revisión y aprobación por el colegio
+                    </span>
+                    <span class="text-[11px] font-semibold text-emerald-700" *ngIf="(d.estadoAprobacion || estadoAprobacionGrupo(d)) === 'ACEPTADA'">
+                        Aprobada y recibida a conformidad por el colegio
+                    </span>
+                    <span class="text-[11px] font-semibold text-red-600" *ngIf="(d.estadoAprobacion || estadoAprobacionGrupo(d)) === 'RECHAZADA'">
+                        Rechazada por el colegio en control de calidad
+                    </span>
+                    <span class="text-[11px] font-semibold text-orange-700" *ngIf="(d.estadoAprobacion || estadoAprobacionGrupo(d)) === 'CON_NOVEDAD'">
+                        Recibida con novedad o averías reportadas
+                    </span>
+                </div>
+            </div>
         </div>
 
         <h4 class="m-0 mt-5 text-sm font-black text-slate-900">Productos de esta entrada</h4>
@@ -718,12 +750,23 @@
                             <p class="m-0 truncate text-[10px] font-semibold text-slate-400">{{ p.categoria }}<ng-container *ngIf="p.tipoMercado"> · {{ p.tipoMercado }}</ng-container></p>
                         </div>
                     </div>
-                    <span *ngIf="p.estado" class="cal-chip !w-auto" [ngClass]="claseChipEstado(p.estado)"><span class="cal-dot"></span>{{ p.estado }}</span>
+                    <div class="flex items-center gap-2">
+                        <span class="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-black"
+                              [ngClass]="claseBadgeAprobacion(p.estadoAprobacion || d.estadoAprobacion || 'EN_PROCESO')">
+                            <span class="material-symbols-outlined text-[11px] leading-none">{{ iconoBadgeAprobacion(p.estadoAprobacion || d.estadoAprobacion || 'EN_PROCESO') }}</span>
+                            {{ textoBadgeAprobacion(p.estadoAprobacion || d.estadoAprobacion || 'EN_PROCESO') }}
+                        </span>
+                        <span *ngIf="p.estado" class="cal-chip !w-auto" [ngClass]="claseChipEstado(p.estado)"><span class="cal-dot"></span>{{ p.estado }}</span>
+                    </div>
                 </div>
                 <p class="m-0 mt-2 rounded-xl bg-emerald-50 px-3 py-2 text-xs font-bold text-slate-700">
                     Registraste <span class="text-base font-black text-emerald-600">{{ p.cantidad | number:'1.0-2' }}</span>
                     <span class="font-black text-emerald-600"> {{ unidadTexto(p.unidad, p.cantidad) }}</span> de {{ nombreMinuscula(p.ingrediente) }}
                 </p>
+                <div *ngIf="p.motivoRechazo" class="mt-2 rounded-xl bg-red-50 p-2.5 text-[11px] text-red-700 border border-red-200">
+                    <span class="font-black block">Motivo de rechazo:</span>
+                    <span>{{ p.motivoRechazo }}</span>
+                </div>
                 <div class="mt-2 grid grid-cols-2 gap-2 text-[10px]">
                     <div><span class="block font-bold text-slate-400">Vence</span><span class="block text-[11px] font-black text-slate-800">{{ p.vencimiento ? fechaCorta(p.vencimiento) : '—' }}</span></div>
                     <div><span class="block font-bold text-slate-400">Frecuencia</span><span class="block text-[11px] font-black text-slate-800">{{ p.frecuencia || '—' }}</span></div>

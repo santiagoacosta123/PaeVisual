@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ProductoService } from '../services/producto.service';
 import { CustomSelectComponent } from '../shared/custom-select/custom-select';
-import { SweetAlertService } from '../core/services/sweet-alert.service';
 
 interface Categoria {
   id_categoria_inventario: number;
@@ -78,10 +77,7 @@ export class InventarioComponent implements OnInit {
 
   private ingredientes: IngredienteApi[] = [];
 
-  constructor(
-    private productoService: ProductoService,
-    private sweetAlert: SweetAlertService
-  ) {}
+  constructor(private productoService: ProductoService) {}
 
   ngOnInit(): void {
     this.cargarDatos();
@@ -196,7 +192,7 @@ export class InventarioComponent implements OnInit {
 
   guardarIngrediente(): void {
     if (!this.formIngrediente.nombre.trim()) {
-      void this.sweetAlert.warning('Nombre requerido', 'Ingresa el nombre del ingrediente.');
+      alert('Por favor ingresa el nombre del ingrediente.');
       return;
     }
 
@@ -256,20 +252,19 @@ export class InventarioComponent implements OnInit {
   }
 
   eliminarIngrediente(id: number): void {
-    void this.sweetAlert.confirm(
-      '¿Eliminar este ingrediente?',
-      'Se eliminará el registro seleccionado del inventario.',
-      'Sí, eliminar'
-    ).then((resultado) => {
-      if (!resultado.isConfirmed) return;
+    if (confirm('¿Estás seguro de eliminar este ingrediente del inventario?')) {
       this.productoService.eliminarProducto(id).subscribe({
-        next: () => this.listaInventario = this.listaInventario.filter(item => item.id_inventario !== id),
+        next: () => {
+          this.listaInventario = this.listaInventario.filter(
+            item => item.id_inventario !== id
+          );
+        },
         error: (error) => {
           console.error('Error eliminando inventario:', error);
-          void this.sweetAlert.error('No se pudo eliminar', 'No fue posible eliminar el registro del inventario.');
+          alert('No se pudo eliminar el registro del inventario.');
         }
       });
-    });
+    }
   }
 
   abrirModalMovimiento(item: Ingrediente, tipo: 'entrada' | 'salida'): void {
@@ -283,12 +278,12 @@ export class InventarioComponent implements OnInit {
   guardarMovimiento(): void {
     if (!this.itemSeleccionado) return;
     if (this.cantidadMovimiento <= 0) {
-      void this.sweetAlert.warning('Cantidad inválida', 'La cantidad debe ser mayor a cero.');
+      alert('La cantidad debe ser mayor a cero.');
       return;
     }
 
     if (this.tipoMovimiento === 'salida' && this.cantidadMovimiento > this.itemSeleccionado.stock_actual) {
-      void this.sweetAlert.warning('Stock insuficiente', 'No puedes retirar más de lo que hay disponible.');
+      alert('No puedes retirar más de lo que hay en stock.');
       return;
     }
 

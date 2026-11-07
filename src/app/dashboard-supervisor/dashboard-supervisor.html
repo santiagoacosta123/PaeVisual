@@ -10,7 +10,7 @@
 /* Resplandor de color en la esquina */
 .opt-card::before {
   content: ''; position: absolute; inset: 0; pointer-events: none;
-  background: transparent;
+  background: radial-gradient(120% 85% at 100% 0%, var(--tint) 0%, transparent 62%);
   transition: opacity .4s ease;
 }
 /* Barrido de luz al pasar el mouse */
@@ -55,12 +55,13 @@
 /* ===== Banner de la institución seleccionada ===== */
 .inst-banner {
   position: relative; overflow: hidden; display: flex; flex-direction: column; gap: 14px; padding: 20px 24px; border-radius: 22px;
-  border: 1px solid #EDF0F3; background: #FFFFFF;
-  box-shadow: 0 18px 40px -26px rgba(15, 23, 42, .18);
+  border: 1px solid #F6E3A1; background: linear-gradient(120deg, #FFF8DE 0%, #FFFFFF 58%, #E6F7EC 100%);
+  box-shadow: 0 18px 40px -26px rgba(245, 163, 0, .55);
   animation: optUp .6s cubic-bezier(.2, .8, .2, 1) both;
 }
 .inst-banner::before, .inst-banner::after { content: ''; position: absolute; border-radius: 50%; pointer-events: none; }
-.inst-banner::before, .inst-banner::after { display: none; }
+.inst-banner::before { top: -90px; right: -70px; width: 270px; height: 270px; background: radial-gradient(circle, rgba(255, 208, 58, .38), transparent 70%); }
+.inst-banner::after { bottom: -110px; left: 34%; width: 240px; height: 240px; background: radial-gradient(circle, rgba(42, 178, 109, .16), transparent 70%); }
 .inst-banner > * { position: relative; z-index: 1; }
 .inst-banner__body { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; }
 .inst-banner__icon {
@@ -69,8 +70,8 @@
 }
 .inst-pill { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 999px; font-size: 10px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
 .inst-pill--yellow { background: #FFE9A3; color: #7A5200; }
-.inst-pill--green { background: #FFE9A3; color: #7A5200; }
-.inst-dot { width: 7px; height: 7px; border-radius: 50%; background: #F5A300; box-shadow: 0 0 0 3px rgba(245, 163, 0, .2); }
+.inst-pill--green { background: #DDF6E8; color: #166A3C; }
+.inst-dot { width: 7px; height: 7px; border-radius: 50%; background: #22A35B; box-shadow: 0 0 0 3px rgba(34, 163, 91, .2); }
 .inst-change {
   display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 12px; border: 1px solid #E2E8F0; background: #fff;
   font-size: 11px; font-weight: 800; color: #1f2937; cursor: pointer; box-shadow: 0 6px 14px -10px rgba(15, 23, 42, .35);
@@ -84,8 +85,8 @@
 .inst-chip strong { font-weight: 800; color: #0F172A; }
 .inst-sedes { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding-top: 12px; border-top: 1px dashed #F0DDA0; }
 .inst-sedes__titulo { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #64748B; }
-.inst-sedes__titulo .material-symbols-outlined { font-size: 15px; color: #F5A300; }
-.inst-sede { padding: 3px 10px; border-radius: 10px; background: #FFF4C7; border: 1px solid #F5D875; font-size: 11px; font-weight: 700; color: #7A5200; }
+.inst-sedes__titulo .material-symbols-outlined { font-size: 15px; color: #168A4A; }
+.inst-sede { padding: 3px 10px; border-radius: 10px; background: #E9F8EF; border: 1px solid #CBEBD8; font-size: 11px; font-weight: 700; color: #166A3C; }
 
 @keyframes optUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) {
@@ -280,9 +281,9 @@
           </div>
 
           <div>
-            <h3 class="m-0 text-lg font-black leading-tight text-slate-900">Sedes</h3>
+            <h3 class="m-0 text-lg font-black leading-tight text-slate-900">Sedes e Inventario</h3>
             <p class="m-0 mt-1.5 text-xs leading-5 text-slate-600">
-              Consulta las sedes educativas asignadas a tu institución.
+              Consulta tus sedes y monitorea el stock de ingredientes y los saldos de alimentos.
             </p>
           </div>
 
@@ -294,7 +295,7 @@
           </div>
 
           <button type="button" class="opt-btn" (click)="irA('sedes'); $event.stopPropagation()">
-            Ver Sedes
+            Ver Sedes e Inventario
             <span class="material-symbols-outlined opt-arrow text-[18px]">arrow_forward</span>
           </button>
         </article>
