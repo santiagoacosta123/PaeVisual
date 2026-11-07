@@ -106,6 +106,15 @@
           </h1>
         </div>
 
+        <div *ngIf="sedeActiva && !enInicioSupervisor"
+          style="display:flex; align-items:center; gap:8px; background:#fff9d8; border:1px solid #f5d98a; border-radius:12px; padding:7px 14px;">
+          <span class="material-symbols-outlined" style="font-size:20px; color:#e69a0c;">location_on</span>
+          <div style="line-height:1.15;">
+            <span style="font-size:9px; font-weight:800; color:#92400e; text-transform:uppercase; display:block;">Sede actual</span>
+            <strong style="font-size:14px; color:#1a1a1a;">{{ sedeActiva.nombre_sede }}</strong>
+          </div>
+        </div>
+
         <div *ngIf="!institucionActiva" style="display:flex; align-items:center; gap:6px; background:#f8fafc; border:1px dashed #cbd5e1; border-radius:10px; padding:6px 12px;">
           <span class="material-symbols-outlined" style="font-size:16px; color:#94a3b8;">touch_app</span>
           <span style="font-size:12px; font-weight:600; color:#64748b;">Selecciona una institución para comenzar</span>
