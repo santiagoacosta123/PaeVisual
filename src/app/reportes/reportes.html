@@ -73,7 +73,7 @@
     </button>
   </div>
 
-  <header *ngIf="institucionActiva"
+  <header *ngIf="sedeActiva"
     class="flex flex-col gap-4 border-b border-[#f5d98a] pb-4 sm:flex-row sm:items-center sm:justify-between">
     <div>
       <h1 class="m-0 text-2xl font-black tracking-tight text-slate-900">Historial de entregas</h1>
@@ -83,8 +83,8 @@
     <div class="flex flex-wrap items-center gap-3 rounded-xl border border-[#f5d98a] bg-white px-4 py-3">
       <span class="material-symbols-outlined text-[#faa911]">school</span>
       <div>
-        <span class="block text-[10px] font-bold uppercase tracking-wide text-slate-500">Institución seleccionada:</span>
-        <strong class="block text-sm font-black text-slate-900">{{ institucionActiva.nombre_institucion }}</strong>
+        <span class="block text-[10px] font-bold uppercase tracking-wide text-slate-500">Sede actual:</span>
+        <strong class="block text-sm font-black text-slate-900">{{ sedeActiva.nombre_sede }}</strong>
       </div>
       <button type="button" (click)="irAInicioSupervisor()"
         class="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[#faa911] bg-white px-3 py-2 text-xs font-black text-[#b87500]">
