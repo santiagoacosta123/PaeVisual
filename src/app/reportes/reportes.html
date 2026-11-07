@@ -16,9 +16,43 @@
 .tabla-scroll thead th { position: sticky; top: 0; z-index: 1; }
 @keyframes fxUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 .fx-up { animation: fxUp .45s cubic-bezier(.2, .8, .2, 1) both; }
+.historial-limpio article,
+.historial-limpio header,
+.historial-limpio section {
+  background: #fff !important;
+  border-color: #f5d98a !important;
+  box-shadow: none !important;
+}
+.historial-limpio [class*="bg-sky"],
+.historial-limpio [class*="bg-emerald"],
+.historial-limpio [class*="bg-green"],
+.historial-limpio [class*="border-sky"],
+.historial-limpio [class*="border-emerald"],
+.historial-limpio [class*="border-green"],
+.historial-limpio [class*="text-sky"],
+.historial-limpio [class*="text-emerald"],
+.historial-limpio [class*="text-green"] {
+  background: #fff !important;
+  border-color: #f5d98a !important;
+  color: #111 !important;
+}
+.historial-limpio .bg-emerald-600,
+.historial-limpio .bg-emerald-700,
+.historial-limpio .ico-naranja,
+.historial-limpio .btn-naranja,
+.historial-limpio .pill-on {
+  background: #ffd03a !important;
+  color: #111 !important;
+  box-shadow: none !important;
+}
+.historial-limpio .shadow-md,
+.historial-limpio .shadow-xs,
+.historial-limpio .shadow-sm {
+  box-shadow: none !important;
+}
 </style>
 
-<section class="flex w-full flex-col gap-6" style="font-family: 'Roboto', sans-serif;">
+<section class="historial-limpio flex w-full flex-col gap-6" style="font-family: 'Roboto', sans-serif;">
 
   <!-- ============ AVISO: SIN INSTITUCIÓN SELECCIONADA ============ -->
   <div *ngIf="!institucionActiva"
@@ -39,76 +73,27 @@
     </button>
   </div>
 
-
-  <!-- ============ ENCABEZADO ============ -->
-  <header class="flex flex-col gap-4 rounded-3xl border border-slate-100 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-6">
-    <div class="flex items-center gap-4">
-      <div class="ico-naranja flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl shadow-md">
-        <span class="material-symbols-outlined text-[30px]">summarize</span>
-      </div>
-      <div>
-        <span class="text-[11px] font-bold uppercase tracking-wider text-[#faa911]">Reportes PAE</span>
-        <h1 class="m-0 text-2xl font-black tracking-tight text-slate-900">Reporte global de sedes</h1>
-        <p class="m-0 text-xs font-medium text-slate-500">Cupos y entregas de alimentos de las sedes de tu institución.</p>
-      </div>
+  <header *ngIf="sedeActiva"
+    class="flex flex-col gap-4 border-b border-[#f5d98a] pb-4 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h1 class="m-0 text-2xl font-black tracking-tight text-slate-900">Historial de entregas</h1>
+      <div class="mt-1 h-1 w-14 rounded-full bg-[#faa911]"></div>
     </div>
-    <div class="flex flex-wrap items-center gap-2 self-start sm:self-auto">
-      <button type="button" (click)="exportarExcelOficial()" [disabled]="cargando || exportandoExcel || !institucionActiva || entregasHistorial.length === 0"
-        class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-black text-white shadow-md transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
-        title="Descargar reporte oficial en formato Excel (.xlsx)">
-        <span class="material-symbols-outlined text-[20px]">{{ exportandoExcel ? 'hourglass_top' : 'download' }}</span>
-        {{ exportandoExcel ? 'Generando...' : 'Descargar Excel (.xlsx)' }}
-      </button>
-      <button type="button" (click)="exportarCsvSedes()" [disabled]="cargando || resumenSedes.length === 0"
-        class="btn-naranja inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-black disabled:cursor-not-allowed disabled:opacity-50">
-        <span class="material-symbols-outlined text-[20px]">table_view</span>
-        Exportar CSV
+
+    <div class="flex flex-wrap items-center gap-3 rounded-xl border border-[#f5d98a] bg-white px-4 py-3">
+      <span class="material-symbols-outlined text-[#faa911]">school</span>
+      <div>
+        <span class="block text-[10px] font-bold uppercase tracking-wide text-slate-500">Sede actual:</span>
+        <strong class="block text-sm font-black text-slate-900">{{ sedeActiva.nombre_sede }}</strong>
+      </div>
+      <button type="button" (click)="irAInicioSupervisor()"
+        class="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[#faa911] bg-white px-3 py-2 text-xs font-black text-[#b87500]">
+        <span class="material-symbols-outlined text-[16px]">swap_horiz</span>
+        Cambiar
       </button>
     </div>
   </header>
 
-  <!-- ============ TARJETAS RESUMEN DE ESTADO (KPIs) ============ -->
-    <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-      <article class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
-        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
-          <span class="material-symbols-outlined text-[22px]">inventory_2</span>
-        </span>
-        <div class="min-w-0">
-          <p class="m-0 text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Despachos</p>
-          <p class="mb-0 mt-0.5 text-xl font-black text-slate-900">{{ contarEstado('TODAS') }}</p>
-        </div>
-      </article>
-
-      <article class="flex items-center gap-3 rounded-2xl border border-sky-200 bg-sky-50/50 p-4 shadow-xs">
-        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-100 text-sky-700">
-          <span class="material-symbols-outlined text-[22px]">local_shipping</span>
-        </span>
-        <div class="min-w-0">
-          <p class="m-0 text-[10px] font-bold uppercase tracking-wider text-sky-700">En Tránsito</p>
-          <p class="mb-0 mt-0.5 text-xl font-black text-sky-900">{{ contarEstado('EN_TRANSITO') }}</p>
-        </div>
-      </article>
-
-      <article class="flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50/50 p-4 shadow-xs">
-        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
-          <span class="material-symbols-outlined text-[22px]">check_circle</span>
-        </span>
-        <div class="min-w-0">
-          <p class="m-0 text-[10px] font-bold uppercase tracking-wider text-emerald-700">Recibidas OK</p>
-          <p class="mb-0 mt-0.5 text-xl font-black text-emerald-900">{{ contarEstado('RECIBIDA') }}</p>
-        </div>
-      </article>
-
-      <article class="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50/50 p-4 shadow-xs">
-        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
-          <span class="material-symbols-outlined text-[22px]">warning</span>
-        </span>
-        <div class="min-w-0">
-          <p class="m-0 text-[10px] font-bold uppercase tracking-wider text-amber-800">Con Novedad / Rechazo</p>
-          <p class="mb-0 mt-0.5 text-xl font-black text-amber-950">{{ contarEstado('CON_NOVEDAD') + contarEstado('RECHAZADA') }}</p>
-        </div>
-      </article>
-    </div>
 
   <!-- ============ FILTROS ============ -->
   <section class="fx-panel p-5 sm:p-6" aria-label="Filtros del reporte">
@@ -144,11 +129,12 @@
         </span>
       </label>
 
-      <button type="button" (click)="cargar()" [disabled]="cargando || (!!fechaDesde && !!fechaHasta && fechaDesde > fechaHasta)"
-        class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-orange-50 disabled:cursor-not-allowed disabled:opacity-50">
-        <span class="material-symbols-outlined text-[20px]" [class.animate-spin]="cargando">refresh</span>
-        {{ cargando ? 'Actualizando...' : 'Actualizar datos' }}
+      <button type="button" (click)="exportarCsvSedes()" [disabled]="cargando || resumenSedes.length === 0"
+        class="btn-naranja inline-flex min-h-[43px] cursor-pointer items-center justify-center gap-2 rounded-xl px-4 text-sm font-black disabled:cursor-not-allowed disabled:opacity-50">
+        <span class="material-symbols-outlined text-[20px]">table_view</span>
+        Exportar CSV
       </button>
+
     </div>
 
     <!-- Rangos rápidos -->
