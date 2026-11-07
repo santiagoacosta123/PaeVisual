@@ -89,6 +89,31 @@
 .supervisor-dashboard .border-amber-400 {
   border-color: #F5A300 !important;
 }
+.supervisor-dashboard .inst-banner::before,
+.supervisor-dashboard .inst-banner::after,
+.supervisor-dashboard .opt-card::before,
+.supervisor-dashboard .opt-card::after,
+.supervisor-dashboard .opt-icon,
+.supervisor-dashboard .opt-go,
+.supervisor-dashboard .inst-banner__icon {
+  display: none !important;
+}
+.supervisor-dashboard .inst-banner,
+.supervisor-dashboard .opt-card,
+.supervisor-dashboard .inst-change,
+.supervisor-dashboard .inst-chip,
+.supervisor-dashboard .opt-chip {
+  box-shadow: none !important;
+  filter: none !important;
+  transform: none !important;
+}
+.supervisor-dashboard .opt-card {
+  min-height: 235px;
+  border-radius: 16px;
+}
+.supervisor-dashboard .inst-banner {
+  border-radius: 16px;
+}
 /* ===== Tarjetas de opciones del supervisor ===== */
 .opt-card {
   position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; gap: 16px;
