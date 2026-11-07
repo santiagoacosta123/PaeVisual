@@ -418,6 +418,7 @@ export class UsuariosComponent implements OnInit {
     this.usuarioService.getUsuarios().subscribe({
       next: (datos: any[]) => {
         this.usuarios = Array.isArray(datos) ? datos : (datos as any).results || [];
+        this.actualizarUsuariosFiltrados();
         this.cdr.detectChanges();
       },
       error: (error) => {
@@ -489,19 +490,38 @@ export class UsuariosComponent implements OnInit {
     return this.usuarios.filter(u => this.esUsuarioVisible(u));
   }
 
+  private _usuariosFiltradosCache: any[] = [];
+
   get usuariosFiltrados(): any[] {
-    return this.usuariosBase.filter(u => {
-      const textoMatch = 
-        (u.nombre?.toLowerCase() || '').includes(this.filtroTexto.toLowerCase()) ||
-        (u.apellido?.toLowerCase() || '').includes(this.filtroTexto.toLowerCase()) ||
-        (u.numero_documento || '').includes(this.filtroTexto) ||
-        (u.correo?.toLowerCase() || '').includes(this.filtroTexto.toLowerCase());
-      
-      const uRolId = typeof u.rol === 'object' ? (u.rol?.id_rol || u.rol?.id || u.rol?.pk) : u.rol;
-      const rolMatch = this.filtroRol ? uRolId?.toString() === this.filtroRol.toString() : true;
+    return this._usuariosFiltradosCache;
+  }
+
+  actualizarUsuariosFiltrados(): void {
+    const base = this.usuarios.filter(u => this.esUsuarioVisible(u));
+    const texto = (this.filtroTexto || "").trim().toLowerCase();
+    const rol = this.filtroRol ? this.filtroRol.toString() : "";
+
+    if (!texto && !rol) {
+      this._usuariosFiltradosCache = base;
+      return;
+    }
+
+    this._usuariosFiltradosCache = base.filter(u => {
+      const textoMatch = !texto ||
+        (u.nombre?.toLowerCase() || "").includes(texto) ||
+        (u.apellido?.toLowerCase() || "").includes(texto) ||
+        (u.numero_documento || "").includes(texto) ||
+        (u.correo?.toLowerCase() || "").includes(texto);
+
+      const uRolId = typeof u.rol === "object" ? (u.rol?.id_rol || u.rol?.id || u.rol?.pk) : u.rol;
+      const rolMatch = !rol || (uRolId?.toString() === rol);
 
       return textoMatch && rolMatch;
     });
+  }
+
+  trackPorUsuario(index: number, u: any): any {
+    return u.id_usuario || u.id || index;
   }
 
   abrirFormulario(usuario?: any): void {

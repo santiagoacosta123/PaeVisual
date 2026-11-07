@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, map } from 'rxjs';
+import { Observable, of } from 'rxjs';
+import { map, tap } from 'rxjs/operators';
 import { environment } from '@env/environment';
 
 export interface IngredienteInventario {
@@ -75,26 +76,37 @@ interface ApiRecord {
 export class InventarioOperativoService {
   private readonly baseUrl = environment.apiUrl;
 
+  private cacheIngredientes: IngredienteInventario[] | null = null;
+  private cacheUnidades: UnidadInventario[] | null = null;
+
   constructor(private http: HttpClient) {}
 
-  cargarIngredientes(): Observable<IngredienteInventario[]> {
+  cargarIngredientes(forzarRecarga = false): Observable<IngredienteInventario[]> {
+    if (!forzarRecarga && this.cacheIngredientes) {
+      return of(this.cacheIngredientes);
+    }
     return this.http.get<unknown>(`${this.baseUrl}/ingredientes/`).pipe(
       map(data => this.listaDe(data).map(item => ({
         id: Number(item.id_ingrediente ?? item.id),
         nombre: String(item.nombre_ingrediente ?? item.nombre ?? ''),
         unidadId: this.numeroOpcional(item.id_unidad_medida),
         categoriaId: this.numeroOpcional(item.id_categoria_inventario),
-      })))
+      }))),
+      tap(lista => this.cacheIngredientes = lista)
     );
   }
 
-  cargarUnidades(): Observable<UnidadInventario[]> {
+  cargarUnidades(forzarRecarga = false): Observable<UnidadInventario[]> {
+    if (!forzarRecarga && this.cacheUnidades) {
+      return of(this.cacheUnidades);
+    }
     return this.http.get<unknown>(`${this.baseUrl}/unidades_medida/`).pipe(
       map(data => this.listaDe(data).map(item => ({
         id: Number(item.id_unidad_medida ?? item.id),
         nombre: String(item.nombre ?? item.nombre_unidad ?? ''),
         abreviatura: String(item.abreviatura ?? item.simbolo ?? ''),
-      })))
+      }))),
+      tap(lista => this.cacheUnidades = lista)
     );
   }
 
