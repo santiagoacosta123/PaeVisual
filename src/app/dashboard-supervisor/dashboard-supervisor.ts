@@ -175,6 +175,13 @@ export class DashboardSupervisor implements OnInit {
     return IMAGENES_INSTITUCION[indice % IMAGENES_INSTITUCION.length];
   }
 
+  // Foto de la institución seleccionada (la misma que tenía en la lista del paso 1)
+  get imagenActiva(): string {
+    const id = this.institucionActiva?.id_institucion;
+    const i = this.instituciones.findIndex(x => x.id_institucion === id);
+    return this.imagenDe(i >= 0 ? i : 0);
+  }
+
   seleccionarInstitucion(inst: InstitucionAsignada): void {
     this.institucionActiva = inst;
     this.authService.establecerInstitucionActiva(inst);
