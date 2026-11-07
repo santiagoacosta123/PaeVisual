@@ -448,6 +448,18 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
     return IMAGENES_INSTITUCION[indice % IMAGENES_INSTITUCION.length];
   }
 
+  // NUEVO: imagen de cada institución en la pantalla de selección.
+  // Usa el id para que cada institución conserve siempre la misma imagen.
+  imagenInstitucion(inst: InstitucionAsignada, indice: number): string {
+    const base = Number(inst.id_institucion);
+    const pos = Number.isFinite(base) && base > 0 ? base - 1 : indice;
+    return IMAGENES_INSTITUCION[pos % IMAGENES_INSTITUCION.length];
+  }
+
+  trackInstitucion(_: number, inst: InstitucionAsignada): number {
+    return inst.id_institucion;
+  }
+
   // =====================================================
   //  ACCIONES
   // =====================================================
