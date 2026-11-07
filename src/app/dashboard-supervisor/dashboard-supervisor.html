@@ -42,6 +42,7 @@
   display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 14px;
   background: rgba(255, 255, 255, .8); border: 1px solid rgba(226, 232, 240, .8); backdrop-filter: blur(4px);
 }
+.opt-chip .material-symbols-outlined { color: #F5A300 !important; }
 .opt-btn {
   display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; padding: 10px 14px; border: 0; border-radius: 14px;
   font-size: 12px; font-weight: 800; color: var(--on, #fff); cursor: pointer;
@@ -70,7 +71,7 @@
 }
 .inst-pill { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 999px; font-size: 10px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
 .inst-pill--yellow { background: #FFE9A3; color: #7A5200; }
-.inst-pill--green { background: #FFE9A3; color: #7A5200; }
+.inst-pill--active { background: #FFE9A3; color: #7A5200; }
 .inst-dot { width: 7px; height: 7px; border-radius: 50%; background: #F5A300; box-shadow: 0 0 0 3px rgba(245, 163, 0, .2); }
 .inst-change {
   display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 12px; border: 1px solid #E2E8F0; background: #fff;
@@ -199,7 +200,7 @@
                 <span class="material-symbols-outlined text-[14px]">check_circle</span>
                 Institución seleccionada
               </span>
-              <span class="inst-pill inst-pill--green"><span class="inst-dot"></span>{{ inst.estado || 'ACTIVO' }}</span>
+              <span class="inst-pill inst-pill--active"><span class="inst-dot"></span>{{ inst.estado || 'ACTIVO' }}</span>
             </div>
             <h1 class="m-0 mt-1.5 text-xl font-black leading-tight text-slate-900 sm:text-2xl">{{ inst.nombre_institucion }}</h1>
           </div>
