@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, forkJoin, of } from 'rxjs';
-import { map, tap, catchError } from 'rxjs/operators';
+import { map, tap, catchError, timeout } from 'rxjs/operators';
 import { environment } from '@env/environment';
 import { AuthService } from '@core/auth';
 
@@ -104,21 +104,14 @@ export class EntregasService {
 
   // ---------- Cargar desde el backend ----------
   cargar(): Observable<Entrega[]> {
-    return forkJoin({
-      entregasData: this.http.get<any>(this.apiUrl, this.getHeaders()),
-      ingredientes: this.cargarIngredientes().pipe(catchError(() => of([]))),
-      tipos: this.cargarTiposMercado().pipe(catchError(() => of([])))
-    }).pipe(
-      map(({ entregasData, ingredientes, tipos }) => {
-        const mapaIng = new Map<number, string>();
-        (ingredientes || []).forEach(i => mapaIng.set(i.id, i.nombre));
-
-        const mapaTipos = new Map<number, string>();
-        (tipos || []).forEach(t => mapaTipos.set(t.id, t.nombre));
-
-        return this.listaDe(entregasData).map(item => this.normalizar(item, mapaIng, mapaTipos));
-      }),
-      tap(lista => (this.entregas = lista))
+    return this.http.get<any>(this.apiUrl, this.getHeaders()).pipe(
+      timeout(10000),
+      map(data => this.listaDe(data).map(item => this.normalizar(item))),
+      tap(lista => (this.entregas = lista)),
+      catchError(err => {
+        console.warn('Error o timeout al cargar entregas desde servidor:', err);
+        return of(this.entregas || []);
+      })
     );
   }
 

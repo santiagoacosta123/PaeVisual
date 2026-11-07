@@ -297,20 +297,6 @@
             <span class="superadmin-nav-text">Stock Global</span>
           </div>
         </a>
-
-        <a routerLink="registrar-entrega-alimentos" routerLinkActive="active" class="superadmin-nav-item" title="Registrar entrega">
-          <div class="superadmin-nav-item-left">
-            <span class="material-symbols-outlined superadmin-nav-icon">local_shipping</span>
-            <span class="superadmin-nav-text">Registrar entrega</span>
-          </div>
-        </a>
-
-        <a routerLink="instituciones" routerLinkActive="active" class="superadmin-nav-item" title="Instituciones y sedes">
-          <div class="superadmin-nav-item-left">
-            <span class="material-symbols-outlined superadmin-nav-icon">apartment</span>
-            <span class="superadmin-nav-text">Instituciones y sedes</span>
-          </div>
-        </a>
       </div>
 
       <!-- SECCIÓN 3: CONFIGURACIÓN Y MAESTROS -->
@@ -538,11 +524,8 @@
         <span class="modern-nav-text">Usuarios</span>
       </a>
 
-      <!-- HISTORIAL -->
-      <a routerLink="reportes-consumo" routerLinkActive="active" class="modern-nav-item" title="Historial">
-        <span class="material-symbols-outlined modern-nav-icon" aria-hidden="true">bar_chart</span>
-        <span class="modern-nav-text">Historial de entregas</span>
-      </a>
+      <!-- El "Historial de entregas" (reportes-consumo) es exclusivo del Supervisor / Super Admin.
+           El Administrador consulta el historial de SU institución desde "Recepción Entregas". -->
 
     </nav>
 
