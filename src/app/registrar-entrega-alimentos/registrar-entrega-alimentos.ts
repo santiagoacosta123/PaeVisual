@@ -118,6 +118,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
   idSede: number | null = null;             // viene de ?sede=ID
   ahoraTexto = '';
   private subInstitucion?: Subscription;
+  private subSede?: Subscription;
   private subRuta?: Subscription;
   private reloj?: ReturnType<typeof setInterval>;
 
@@ -152,6 +153,15 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       this.cdr.markForCheck();
     });
 
+    this.subSede = this.authService.sedeActiva$.subscribe(sede => {
+      const nuevaSede = sede?.id_sede ?? null;
+      if (nuevaSede !== this.idSede) {
+        this.idSede = nuevaSede;
+        this.cargarHistorial();
+        this.cdr.markForCheck();
+      }
+    });
+
     this.subRuta = this.route.queryParamMap.subscribe(params => {
       const sede = Number(params.get('sede'));
       const idSede = Number.isInteger(sede) && sede > 0 ? sede : null;
@@ -169,6 +179,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.subInstitucion?.unsubscribe();
+    this.subSede?.unsubscribe();
     this.subRuta?.unsubscribe();
     if (this.reloj !== undefined) clearInterval(this.reloj);
   }
