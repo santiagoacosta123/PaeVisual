@@ -1,4 +1,61 @@
 <style>
+ .supervisor-dashboard * {
+   --c1: #FFD03A !important;
+   --c2: #F5A300 !important;
+   --tint: #FFF6D6 !important;
+   --glow: rgba(245, 163, 0, .35) !important;
+   --on: #111111 !important;
+ }
+.supervisor-dashboard .inst-banner,
+.supervisor-dashboard .inst-pill,
+.supervisor-dashboard .inst-sede,
+.supervisor-dashboard .opt-chip,
+.supervisor-dashboard .rounded-2xl,
+.supervisor-dashboard .rounded-3xl {
+  border-color: #F5D98A !important;
+}
+.supervisor-dashboard .opt-card,
+.supervisor-dashboard .inst-banner,
+.supervisor-dashboard .inst-chip,
+.supervisor-dashboard .inst-change,
+.supervisor-dashboard .opt-chip {
+  background: #FFFFFF !important;
+}
+.supervisor-dashboard .inst-pill,
+.supervisor-dashboard .inst-sede,
+.supervisor-dashboard .inst-banner__icon,
+.supervisor-dashboard .opt-icon,
+.supervisor-dashboard .opt-go,
+.supervisor-dashboard .opt-btn {
+  color: #111111 !important;
+  background: #FFD03A !important;
+}
+.supervisor-dashboard [class*="text-slate"],
+.supervisor-dashboard [class*="text-red"],
+.supervisor-dashboard [class*="text-green"],
+.supervisor-dashboard [class*="text-amber"] {
+  color: #111111 !important;
+}
+.supervisor-dashboard [class*="bg-slate"],
+.supervisor-dashboard [class*="bg-red"],
+.supervisor-dashboard [class*="bg-green"] {
+  background-color: #FFFFFF !important;
+}
+.supervisor-dashboard [class*="border-slate"],
+.supervisor-dashboard [class*="border-red"],
+.supervisor-dashboard [class*="border-green"] {
+  border-color: #F5D98A !important;
+}
+.supervisor-dashboard .bg-amber-50,
+.supervisor-dashboard .bg-amber-100,
+.supervisor-dashboard .bg-amber-400,
+.supervisor-dashboard .bg-amber-500 {
+  background-color: #FFD03A !important;
+}
+.supervisor-dashboard .border-amber-300,
+.supervisor-dashboard .border-amber-400 {
+  border-color: #F5A300 !important;
+}
 /* ===== Tarjetas de opciones del supervisor ===== */
 .opt-card {
   position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; gap: 16px;
@@ -95,7 +152,7 @@
 }
 </style>
 
-<section class="flex w-full flex-col gap-6" style="font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+<section class="supervisor-dashboard flex w-full flex-col gap-6" style="font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
 
   <!-- ========================================================================= -->
   <!-- PASO 1: BIENVENIDA + INSTITUCIONES ASIGNADAS (SIN INSTITUCIÓN SELECCIONADA) -->
