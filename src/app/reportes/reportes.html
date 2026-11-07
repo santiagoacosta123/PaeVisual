@@ -16,9 +16,43 @@
 .tabla-scroll thead th { position: sticky; top: 0; z-index: 1; }
 @keyframes fxUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 .fx-up { animation: fxUp .45s cubic-bezier(.2, .8, .2, 1) both; }
+.historial-limpio article,
+.historial-limpio header,
+.historial-limpio section {
+  background: #fff !important;
+  border-color: #f5d98a !important;
+  box-shadow: none !important;
+}
+.historial-limpio [class*="bg-sky"],
+.historial-limpio [class*="bg-emerald"],
+.historial-limpio [class*="bg-green"],
+.historial-limpio [class*="border-sky"],
+.historial-limpio [class*="border-emerald"],
+.historial-limpio [class*="border-green"],
+.historial-limpio [class*="text-sky"],
+.historial-limpio [class*="text-emerald"],
+.historial-limpio [class*="text-green"] {
+  background: #fff !important;
+  border-color: #f5d98a !important;
+  color: #111 !important;
+}
+.historial-limpio .bg-emerald-600,
+.historial-limpio .bg-emerald-700,
+.historial-limpio .ico-naranja,
+.historial-limpio .btn-naranja,
+.historial-limpio .pill-on {
+  background: #ffd03a !important;
+  color: #111 !important;
+  box-shadow: none !important;
+}
+.historial-limpio .shadow-md,
+.historial-limpio .shadow-xs,
+.historial-limpio .shadow-sm {
+  box-shadow: none !important;
+}
 </style>
 
-<section class="flex w-full flex-col gap-6" style="font-family: 'Roboto', sans-serif;">
+<section class="historial-limpio flex w-full flex-col gap-6" style="font-family: 'Roboto', sans-serif;">
 
   <!-- ============ AVISO: SIN INSTITUCIÓN SELECCIONADA ============ -->
   <div *ngIf="!institucionActiva"
@@ -48,17 +82,11 @@
       </div>
       <div>
         <span class="text-[11px] font-bold uppercase tracking-wider text-[#faa911]">Historial de entregas</span>
-        <h1 class="m-0 text-2xl font-black tracking-tight text-slate-900">Historial de entregas por sede</h1>
+        <h1 class="m-0 text-2xl font-black tracking-tight text-slate-900">Historial de entregas</h1>
         <p class="m-0 text-xs font-medium text-slate-500">Consulta el estado de cada entrega registrada para las sedes de tu institución.</p>
       </div>
     </div>
     <div class="flex flex-wrap items-center gap-2 self-start sm:self-auto">
-      <button type="button" (click)="exportarExcelOficial()" [disabled]="cargando || exportandoExcel || !institucionActiva || entregasHistorial.length === 0"
-        class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-black text-white shadow-md transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
-        title="Descargar reporte oficial en formato Excel (.xlsx)">
-        <span class="material-symbols-outlined text-[20px]">{{ exportandoExcel ? 'hourglass_top' : 'download' }}</span>
-        {{ exportandoExcel ? 'Generando...' : 'Descargar Excel (.xlsx)' }}
-      </button>
       <button type="button" (click)="exportarCsvSedes()" [disabled]="cargando || resumenSedes.length === 0"
         class="btn-naranja inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-black disabled:cursor-not-allowed disabled:opacity-50">
         <span class="material-symbols-outlined text-[20px]">table_view</span>
