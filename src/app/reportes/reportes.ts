@@ -31,6 +31,9 @@ interface EntregaSede {
   unidad: string;
   estado: string;           // EN_TRANSITO | RECIBIDA | CON_NOVEDAD | RECHAZADA
   kilos: number;            // kg efectivamente recibidos (0 si no es peso, está en tránsito o fue rechazada)
+  cantidadRecibida?: number | null;
+  cantidadRechazada?: number | null;
+  receptor?: string;
 }
 
 interface ResumenSede {
@@ -91,6 +94,7 @@ export class Reportes implements OnInit, OnDestroy {
 
   // ===================== REPORTE DE SEDES (sedes + cupos + entregas) =====================
   institucionActiva: InstitucionAsignada | null = null;
+  sedeActiva: SedeActiva | null = null;
   sedesBase: SedeBase[] = [];
   entregas: EntregaSede[] = [];
   avisoDatos = '';
@@ -98,6 +102,9 @@ export class Reportes implements OnInit, OnDestroy {
   ordenColumna: ColumnaSede = 'kilos';
   ordenDireccion: 'asc' | 'desc' = 'desc';
   sedeDetalle: ResumenSede | null = null;
+  entregaDetalle: EntregaSede | null = null;
+  estadoFiltro = 'TODAS';
+  textoBusqueda = '';
 
   // ===================== PAGINACIÓN =====================
   paginaActual = 1;
@@ -109,7 +116,9 @@ export class Reportes implements OnInit, OnDestroy {
 
   private versionDatos = 0;
   private suscripcion?: Subscription;
+  private solicitudReporte?: Subscription;
   private cache: { clave: string; resumen: ResumenSede[]; totales: TotalesReporte } | null = null;
+  private actualizacionAutomatica?: ReturnType<typeof setInterval>;
 
   constructor(
     private readonly entregasService: EntregasService,
@@ -117,6 +126,7 @@ export class Reportes implements OnInit, OnDestroy {
     private readonly auth: AuthService,
     private readonly alertas: SweetAlertService,
     private readonly cdr: ChangeDetectorRef,
+    private readonly router: Router,
   ) {}
 
   ngOnInit(): void {
@@ -150,6 +160,8 @@ export class Reportes implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.suscripcion?.unsubscribe();
+    this.solicitudReporte?.unsubscribe();
+    if (this.actualizacionAutomatica) clearInterval(this.actualizacionAutomatica);
   }
 
   // Esc cierra el detalle de la sede
@@ -212,6 +224,8 @@ export class Reportes implements OnInit, OnDestroy {
       if (!id) continue;
       mapaSedes.set(id, { id, nombre: texto(item.nombre_sede ?? item.nombre) || `Sede ${id}`, cupos: 0 });
     }
+    const institucionSinSedes = mapaSedes.size === 0 &&
+      listaDe(this.institucionActiva?.sedes).length === 0;
 
     // 2) Cupos: suma de los contratos vigentes de cada sede
     for (const contrato of listaDe(contratos)) {
@@ -407,6 +421,16 @@ export class Reportes implements OnInit, OnDestroy {
   }
 
   // ---------- Paginación ----------
+  get entregasHistorial(): EntregaSede[] {
+    const busqueda = this.textoBusqueda.trim().toLowerCase();
+    return this.entregasEnFechas.filter(entrega =>
+      (this.sedeFiltro === 'Todas' || entrega.sedeId === this.sedeFiltro) &&
+      (this.estadoFiltro === 'TODAS' || entrega.estado === this.estadoFiltro) &&
+      (!busqueda || `${entrega.ingrediente} ${entrega.sede} ${entrega.receptor ?? ''} ${entrega.tipoMercado}`
+        .toLowerCase().includes(busqueda))
+    );
+  }
+
   get totalPaginas(): number {
     return Math.max(1, Math.ceil(this.entregasHistorial.length / this.filasPorPagina));
   }
@@ -429,6 +453,13 @@ export class Reportes implements OnInit, OnDestroy {
 
   alCambiarBusqueda(): void {
     this.paginaActual = 1;
+  }
+
+  contarEstado(estado: string): number {
+    const entregas = estado === 'TODAS'
+      ? this.entregasHistorial
+      : this.entregasHistorial.filter(entrega => entrega.estado === estado);
+    return entregas.length;
   }
 
   min(a: number, b: number): number {
