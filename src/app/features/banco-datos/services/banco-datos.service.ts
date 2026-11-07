@@ -72,6 +72,7 @@ export class BancoDatosService {
       'instituciones': 'instituciones/',
       'sedes': 'sedes/',
       'sede_jornadas': 'sede-jornadas/',
+      'usuario_turno': 'usuario-turno/',
       'proveedores': 'proveedores/'
     };
     return endpoints[tabla] || '';

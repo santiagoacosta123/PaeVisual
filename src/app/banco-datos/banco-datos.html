@@ -81,7 +81,6 @@
               (click)="seleccionarTab(t.id)"
             >
               <div class="bd-popover-item-left">
-                <span class="material-symbols-outlined bd-popover-item-icon">{{ t.icon }}</span>
                 <span class="bd-popover-item-name">{{ t.nombre }}</span>
               </div>
               <span *ngIf="tabActual === t.id" class="bd-popover-active-badge">Activa</span>
@@ -122,9 +121,6 @@
       <!-- Cabecera de la tabla activa -->
       <div class="bd-table-heading-row">
         <div class="bd-table-heading-left">
-          <div class="bd-table-heading-icon-badge">
-            <span class="material-symbols-outlined">{{ tab.icon }}</span>
-          </div>
           <div>
             <h2 class="bd-table-heading-title">{{ tab.nombre }}</h2>
             <span class="bd-table-heading-sub">
@@ -186,7 +182,6 @@
       <!-- Filtro específico para Sedes por Institución (Si aplica) -->
       <div *ngIf="tabActual === 'sedes'" class="bd-sedes-filter-row">
         <label class="bd-sedes-filter-label">
-          <span class="material-symbols-outlined" aria-hidden="true">apartment</span>
           Institución educativa:
         </label>
         
@@ -270,9 +265,8 @@
               <!-- Celdas de Datos -->
               <td *ngFor="let campo of tab.campos; let primer = first" [class.col-primary]="primer">
                 
-                <!-- Celda Primaria: Ícono temático + Nombre -->
+                <!-- Celda Primaria: Nombre -->
                 <div *ngIf="primer" class="bd-primary-cell">
-                  <span class="material-symbols-outlined bd-cell-icon" aria-hidden="true">{{ tab.icon }}</span>
                   <span class="bd-primary-name" [title]="valorCelda(item, campo)">{{ valorCelda(item, campo) }}</span>
                 </div>
 
