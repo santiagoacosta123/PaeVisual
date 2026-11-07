@@ -113,7 +113,8 @@ export class LoginComponent implements OnInit, OnDestroy {
         this.cdr.detectChanges();
 
         if (this.authService.esSupervisor(response.usuario?.rol)) {
-          this.router.navigate(['/dashboard-supervisor']);
+          this.authService.limpiarInstitucionActiva();
+          this.router.navigate(['/dashboard-supervisor'], { queryParams: { cambiar: 'true' } });
         } else if (this.authService.esJefa(response.usuario?.rol)) {
           this.router.navigate(['/asistencia-diaria']);
         } else {

@@ -1,4 +1,119 @@
 <style>
+ .supervisor-dashboard * {
+   --c1: #FFD03A !important;
+   --c2: #F5A300 !important;
+   --tint: #FFF6D6 !important;
+   --glow: rgba(245, 163, 0, .35) !important;
+   --on: #111111 !important;
+ }
+.supervisor-dashboard .inst-banner,
+.supervisor-dashboard .inst-pill,
+.supervisor-dashboard .inst-sede,
+.supervisor-dashboard .opt-chip,
+.supervisor-dashboard .rounded-2xl,
+.supervisor-dashboard .rounded-3xl {
+  border-color: #F5D98A !important;
+}
+.supervisor-dashboard .opt-card,
+.supervisor-dashboard .inst-banner,
+.supervisor-dashboard .inst-chip,
+.supervisor-dashboard .inst-change,
+.supervisor-dashboard .opt-chip {
+  background: #FFFFFF !important;
+}
+.supervisor-dashboard .inst-pill,
+.supervisor-dashboard .inst-sede,
+.supervisor-dashboard .inst-banner__icon,
+.supervisor-dashboard .opt-icon,
+.supervisor-dashboard .opt-go,
+.supervisor-dashboard .opt-btn {
+  color: #111111 !important;
+  background: #FFD03A !important;
+}
+.supervisor-dashboard [class*="text-slate"],
+.supervisor-dashboard [class*="text-red"],
+.supervisor-dashboard [class*="text-green"],
+.supervisor-dashboard [class*="text-amber"] {
+  color: #111111 !important;
+}
+.supervisor-dashboard [class*="bg-slate"],
+.supervisor-dashboard [class*="bg-red"],
+.supervisor-dashboard [class*="bg-green"] {
+  background-color: #FFFFFF !important;
+}
+.supervisor-dashboard [class*="border-slate"],
+.supervisor-dashboard [class*="border-red"],
+.supervisor-dashboard [class*="border-green"] {
+  border-color: #F5D98A !important;
+}
+.supervisor-dashboard .inst-banner,
+.supervisor-dashboard .inst-chip,
+.supervisor-dashboard .inst-change,
+.supervisor-dashboard .opt-card,
+.supervisor-dashboard .opt-chip {
+  background: #FFFFFF !important;
+  border-color: #F5D98A !important;
+}
+.supervisor-dashboard .inst-banner::before,
+.supervisor-dashboard .inst-banner::after {
+  background: #FFF4B8 !important;
+}
+.supervisor-dashboard .inst-pill,
+.supervisor-dashboard .inst-sede,
+.supervisor-dashboard .inst-banner__icon,
+.supervisor-dashboard .opt-icon {
+  background: #FFD03A !important;
+  border-color: #F5A300 !important;
+  color: #111111 !important;
+}
+.supervisor-dashboard .opt-go {
+  background: #FFF4B8 !important;
+  border-color: #F5A300 !important;
+  color: #111111 !important;
+}
+.supervisor-dashboard .opt-btn {
+  background: #FFD03A !important;
+  color: #111111 !important;
+  border: 1px solid #F5A300 !important;
+}
+.supervisor-dashboard .material-symbols-outlined {
+  color: #111111 !important;
+}
+.supervisor-dashboard .bg-amber-50,
+.supervisor-dashboard .bg-amber-100,
+.supervisor-dashboard .bg-amber-400,
+.supervisor-dashboard .bg-amber-500 {
+  background-color: #FFD03A !important;
+}
+.supervisor-dashboard .border-amber-300,
+.supervisor-dashboard .border-amber-400 {
+  border-color: #F5A300 !important;
+}
+.supervisor-dashboard .inst-banner::before,
+.supervisor-dashboard .inst-banner::after,
+.supervisor-dashboard .opt-card::before,
+.supervisor-dashboard .opt-card::after,
+.supervisor-dashboard .opt-icon,
+.supervisor-dashboard .opt-go,
+.supervisor-dashboard .inst-banner__icon {
+  display: none !important;
+}
+.supervisor-dashboard .inst-banner,
+.supervisor-dashboard .opt-card,
+.supervisor-dashboard .inst-change,
+.supervisor-dashboard .inst-chip,
+.supervisor-dashboard .opt-chip {
+  box-shadow: none !important;
+  filter: none !important;
+  transform: none !important;
+}
+.supervisor-dashboard .opt-card {
+  min-height: 235px;
+  border-radius: 16px;
+}
+.supervisor-dashboard .inst-banner {
+  border-radius: 16px;
+}
 /* ===== Tarjetas de opciones del supervisor ===== */
 .opt-card {
   position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; gap: 16px;
@@ -42,6 +157,7 @@
   display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 14px;
   background: rgba(255, 255, 255, .8); border: 1px solid rgba(226, 232, 240, .8); backdrop-filter: blur(4px);
 }
+.opt-chip .material-symbols-outlined { color: #F5A300 !important; }
 .opt-btn {
   display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; padding: 10px 14px; border: 0; border-radius: 14px;
   font-size: 12px; font-weight: 800; color: var(--on, #fff); cursor: pointer;
@@ -55,13 +171,13 @@
 /* ===== Banner de la institución seleccionada ===== */
 .inst-banner {
   position: relative; overflow: hidden; display: flex; flex-direction: column; gap: 14px; padding: 20px 24px; border-radius: 22px;
-  border: 1px solid #F6E3A1; background: linear-gradient(120deg, #FFF8DE 0%, #FFFFFF 58%, #E6F7EC 100%);
+  border: 1px solid #F6E3A1; background: linear-gradient(120deg, #FFF8DE 0%, #FFFFFF 100%);
   box-shadow: 0 18px 40px -26px rgba(245, 163, 0, .55);
   animation: optUp .6s cubic-bezier(.2, .8, .2, 1) both;
 }
 .inst-banner::before, .inst-banner::after { content: ''; position: absolute; border-radius: 50%; pointer-events: none; }
 .inst-banner::before { top: -90px; right: -70px; width: 270px; height: 270px; background: radial-gradient(circle, rgba(255, 208, 58, .38), transparent 70%); }
-.inst-banner::after { bottom: -110px; left: 34%; width: 240px; height: 240px; background: radial-gradient(circle, rgba(42, 178, 109, .16), transparent 70%); }
+.inst-banner::after { bottom: -110px; left: 34%; width: 240px; height: 240px; background: radial-gradient(circle, rgba(255, 208, 58, .16), transparent 70%); }
 .inst-banner > * { position: relative; z-index: 1; }
 .inst-banner__body { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; }
 .inst-banner__icon {
@@ -70,8 +186,8 @@
 }
 .inst-pill { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 999px; font-size: 10px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
 .inst-pill--yellow { background: #FFE9A3; color: #7A5200; }
-.inst-pill--green { background: #DDF6E8; color: #166A3C; }
-.inst-dot { width: 7px; height: 7px; border-radius: 50%; background: #22A35B; box-shadow: 0 0 0 3px rgba(34, 163, 91, .2); }
+.inst-pill--active { background: #FFE9A3; color: #7A5200; }
+.inst-dot { width: 7px; height: 7px; border-radius: 50%; background: #F5A300; box-shadow: 0 0 0 3px rgba(245, 163, 0, .2); }
 .inst-change {
   display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 12px; border: 1px solid #E2E8F0; background: #fff;
   font-size: 11px; font-weight: 800; color: #1f2937; cursor: pointer; box-shadow: 0 6px 14px -10px rgba(15, 23, 42, .35);
@@ -85,8 +201,8 @@
 .inst-chip strong { font-weight: 800; color: #0F172A; }
 .inst-sedes { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding-top: 12px; border-top: 1px dashed #F0DDA0; }
 .inst-sedes__titulo { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #64748B; }
-.inst-sedes__titulo .material-symbols-outlined { font-size: 15px; color: #168A4A; }
-.inst-sede { padding: 3px 10px; border-radius: 10px; background: #E9F8EF; border: 1px solid #CBEBD8; font-size: 11px; font-weight: 700; color: #166A3C; }
+.inst-sedes__titulo .material-symbols-outlined { font-size: 15px; color: #E39A00; }
+.inst-sede { padding: 3px 10px; border-radius: 10px; background: #FFF7D6; border: 1px solid #F3D98A; font-size: 11px; font-weight: 700; color: #7A5200; }
 
 @keyframes optUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) {
@@ -94,12 +210,25 @@
 }
 </style>
 
-<section class="flex w-full flex-col gap-6" style="font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+<section class="supervisor-dashboard flex w-full flex-col gap-6" style="font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
 
   <!-- ========================================================================= -->
   <!-- PASO 1: BIENVENIDA + INSTITUCIONES ASIGNADAS (SIN INSTITUCIÓN SELECCIONADA) -->
   <!-- ========================================================================= -->
   <div *ngIf="!institucionActiva" class="flex flex-col gap-6">
+
+    <!-- Encabezado de Selección -->
+    <div class="flex flex-col gap-2 rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
+      <div class="flex items-center gap-3">
+        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
+          <span class="material-symbols-outlined text-[28px]">school</span>
+        </div>
+        <div>
+          <h2 class="m-0 text-xl font-black text-slate-900">Instituciones Asignadas</h2>
+          <p class="m-0 text-xs font-medium text-slate-500">Selecciona la institución educativa con la que vas a trabajar para acceder a todas sus funciones de gestión.</p>
+        </div>
+      </div>
+    </div>
 
     <!-- Estado de carga -->
     <div *ngIf="cargando && instituciones.length === 0" class="py-16 text-center text-slate-500 text-sm font-semibold">
@@ -186,7 +315,7 @@
                 <span class="material-symbols-outlined text-[14px]">check_circle</span>
                 Institución seleccionada
               </span>
-              <span class="inst-pill inst-pill--green"><span class="inst-dot"></span>{{ inst.estado || 'ACTIVO' }}</span>
+              <span class="inst-pill inst-pill--active"><span class="inst-dot"></span>{{ inst.estado || 'ACTIVO' }}</span>
             </div>
             <h1 class="m-0 mt-1.5 text-xl font-black leading-tight text-slate-900 sm:text-2xl">{{ inst.nombre_institucion }}</h1>
           </div>
@@ -259,8 +388,8 @@
           </button>
         </article>
 
-        <!-- OPCIÓN 2: SEDES E INVENTARIO -->
-        <article class="opt-card" style="--c1:#2AB26D; --c2:#168A4A; --tint:#DDF6E8; --glow:rgba(22,138,74,.5); --on:#ffffff; animation-delay:110ms;"
+        <!-- OPCIÓN 2: SEDES -->
+        <article class="opt-card" style="--c1:#FFD03A; --c2:#F5A300; --tint:#FFF6D6; --glow:rgba(245,163,0,.5); --on:#1f2937; animation-delay:110ms;"
           (click)="irA('sedes')">
           <div class="flex items-start justify-between">
             <div class="opt-icon"><span class="material-symbols-outlined text-[26px]">apartment</span></div>
