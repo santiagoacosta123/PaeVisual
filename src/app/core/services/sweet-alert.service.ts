@@ -246,7 +246,7 @@ const DEFAULT: Theme = {
   background: '#FFFFFF',
   color: '#1F2937',
   confirm: '#FAB41F',
-  cancel: '#334155'
+  cancel: '#E53935'
 };
 
 const DEFAULT_DANGER: Theme = { ...DEFAULT, variant: 'danger', confirm: '#EF4444' };
