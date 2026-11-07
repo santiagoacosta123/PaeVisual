@@ -138,6 +138,8 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       const sede = Number(params.get('sede'));
       const idSede = Number.isInteger(sede) && sede > 0 ? sede : null;
       if (idSede !== this.idSede) { this.idSede = idSede; this.cargarHistorial(); }
+      const reponer = params.get('reponer');
+      if (reponer) { this.textoFiltro = reponer; }
       this.cdr.markForCheck();
     });
 

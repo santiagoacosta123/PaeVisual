@@ -229,6 +229,9 @@ export class AuthService {
         JSON.stringify(respuesta.usuario)
       );
     }
+
+    // Cada nuevo inicio de sesión debe empezar sin institución activa previa
+    this.limpiarInstitucionActiva();
   }
 
   obtenerToken(): string | null {

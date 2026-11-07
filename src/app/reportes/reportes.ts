@@ -1,8 +1,8 @@
 import { ChangeDetectorRef, Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Observable, Subscription, forkJoin, of } from 'rxjs';
-import { catchError, take, timeout } from 'rxjs/operators';
+import { Observable, Subscription, combineLatest, forkJoin, of } from 'rxjs';
+import { catchError, debounceTime, take, timeout } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { AuthService, InstitucionAsignada, SedeActiva } from '@core/auth';
 import { SweetAlertService } from '../sweet-alert.service';
@@ -108,6 +108,14 @@ export class Reportes implements OnInit, OnDestroy {
   estadoFiltro = 'TODAS';
   textoBusqueda = '';
 
+  // ===================== PAGINACIÓN =====================
+  paginaActual = 1;
+  filasPorPagina = 10;
+  readonly opcionesFilasPorPagina = [10, 20, 50];
+
+  // ===================== EXPORTACIÓN EXCEL =====================
+  exportandoExcel = false;
+
   private versionDatos = 0;
   private suscripcion?: Subscription;
   private suscripcionSede?: Subscription;
@@ -125,23 +133,32 @@ export class Reportes implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    // Emite al abrir la pantalla y cada vez que el supervisor cambia de institución
-    this.suscripcion = this.auth.institucionActiva$.subscribe(institucion => {
-      const cambio = institucion?.id_institucion !== this.institucionActiva?.id_institucion;
+    // Coordinar institución activa y sede activa evitando dobles consultas simultáneas
+    this.suscripcion = combineLatest([
+      this.auth.institucionActiva$,
+      this.auth.sedeActiva$
+    ]).pipe(
+      debounceTime(25)
+    ).subscribe(([institucion, sede]) => {
+      const cambioInstitucion = institucion?.id_institucion !== this.institucionActiva?.id_institucion;
       this.institucionActiva = institucion;
-      if (cambio) {
-        this.sedeFiltro = 'Todas';
+      this.sedeActiva = sede;
+      if (cambioInstitucion) {
+        this.sedeFiltro = sede?.id_sede ?? 'Todas';
         this.sedeDetalle = null;
+        this.paginaActual = 1;
+      } else if (sede && this.sedeFiltro === 'Todas') {
+        this.sedeFiltro = sede.id_sede;
+        this.paginaActual = 1;
       }
       this.cargar();
     });
-    this.suscripcionSede = this.auth.sedeActiva$.subscribe(sede => {
-      this.sedeActiva = sede;
-      this.sedeFiltro = sede?.id_sede ?? 'Todas';
-      this.cdr.markForCheck();
-      this.cargar();
-    });
-    this.actualizacionAutomatica = setInterval(() => this.cargar(), 60000);
+
+    this.actualizacionAutomatica = setInterval(() => {
+      if (this.institucionActiva) {
+        this.cargar();
+      }
+    }, 60000);
   }
 
   ngOnDestroy(): void {
@@ -168,6 +185,16 @@ export class Reportes implements OnInit, OnDestroy {
     this.cargando = true;
     const idInstitucion = this.institucionActiva?.id_institucion;
     const fallos: string[] = [];
+
+    // Si el supervisor no tiene institución activa, no consultar datos globales
+    if (!idInstitucion) {
+      this.cargando = false;
+      this.sedesBase = [];
+      this.entregas = [];
+      this.versionDatos++;
+      this.cdr.markForCheck();
+      return;
+    }
 
     // Si una consulta falla, el reporte sigue con lo demás y avisa qué faltó
     const opcional = <T>(nombre: string) => catchError<T, Observable<null>>((error: unknown) => {
@@ -236,7 +263,7 @@ export class Reportes implements OnInit, OnDestroy {
 
     // 3) Entregas de la institución que sí tienen sede
     const delaInstitucion = (entregas ?? []).filter(e =>
-      !idInstitucion || e.idInstitucion === idInstitucion || (e.idSede !== undefined && mapaSedes.has(e.idSede)));
+      idInstitucion ? (e.idInstitucion === idInstitucion || (e.idSede !== undefined && mapaSedes.has(e.idSede))) : false);
     const sinSede = delaInstitucion.filter(e => !e.idSede && !institucionSinSedes).length;
     const conSede = delaInstitucion.filter(e => !!e.idSede || institucionSinSedes);
 
@@ -293,6 +320,7 @@ export class Reportes implements OnInit, OnDestroy {
 
   // Botones rápidos: últimos N días, o null para ver todo
   rango(dias: number | null): void {
+    this.paginaActual = 1;
     if (dias === null) {
       this.fechaDesde = '';
       this.fechaHasta = '';
@@ -447,9 +475,72 @@ export class Reportes implements OnInit, OnDestroy {
     this.entregaDetalle = null;
   }
 
+  // ---------- Paginación ----------
+  get totalPaginas(): number {
+    return Math.max(1, Math.ceil(this.entregasHistorial.length / this.filasPorPagina));
+  }
+
+  get entregasPaginadas(): EntregaSede[] {
+    const inicio = (this.paginaActual - 1) * this.filasPorPagina;
+    return this.entregasHistorial.slice(inicio, inicio + this.filasPorPagina);
+  }
+
+  cambiarPagina(nuevaPagina: number): void {
+    if (nuevaPagina >= 1 && nuevaPagina <= this.totalPaginas) {
+      this.paginaActual = nuevaPagina;
+    }
+  }
+
+  cambiarEstadoFiltro(estado: string): void {
+    this.estadoFiltro = estado;
+    this.paginaActual = 1;
+  }
+
+  alCambiarBusqueda(): void {
+    this.paginaActual = 1;
+  }
+
+  min(a: number, b: number): number {
+    return Math.min(a, b);
+  }
+
+  irAInicioSupervisor(): void {
+    void this.router.navigate(['/dashboard-supervisor']);
+  }
+
   reponerEntrega(entrega: EntregaSede): void {
+    this.cerrarEntrega();
     void this.router.navigate(['/registrar-entrega-alimentos'], {
-      queryParams: { sede: entrega.sedeId }
+      queryParams: {
+        sede: entrega.sedeId,
+        reponer: entrega.ingrediente,
+        cantidad: entrega.cantidadRechazada || entrega.cantidad
+      }
+    });
+  }
+
+  // Descarga del reporte oficial en Excel (.xlsx) desde el backend
+  exportarExcelOficial(): void {
+    if (!this.institucionActiva) return;
+    this.exportandoExcel = true;
+    this.entregasService.exportarExcel().subscribe({
+      next: (blob) => {
+        this.exportandoExcel = false;
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        const nombreInst = (this.institucionActiva?.nombre_institucion || 'Institucion')
+          .replace(/[^a-zA-Z0-9_-]/g, '_');
+        link.download = `Historial_Entregas_${nombreInst}_${this.hoyISO()}.xlsx`;
+        link.click();
+        window.URL.revokeObjectURL(url);
+        void this.alertas.success('Reporte descargado', 'El historial oficial en formato Excel (.xlsx) se generó exitosamente.');
+      },
+      error: (err) => {
+        this.exportandoExcel = false;
+        console.error('Error al exportar Excel:', err);
+        void this.alertas.error('Error al exportar', 'No se pudo generar el archivo Excel oficial. Puedes usar el botón de exportar CSV.');
+      }
     });
   }
 
