@@ -51,6 +51,7 @@ export class SaldosAlmacenComponent implements OnInit {
     }).subscribe({
       next: ({ saldos, ingredientes, unidades }) => {
         this.saldos = saldos.map(saldo => this.presentarSaldo(saldo, ingredientes, unidades));
+        this._categoriasCache = [];
         this.cargando = false;
         if (this.saldos.length === 0) {
           void this.alertas.info('Inventario vacío', 'Todavía no hay saldos de inventario registrados.');
@@ -69,24 +70,39 @@ export class SaldosAlmacenComponent implements OnInit {
     });
   }
 
+  private _lastSaldosKey = "";
+  private _saldosFiltradosCache: SaldoPresentacion[] = [];
+  private _categoriasCache: string[] = [];
+
   get categorias(): string[] {
-    return [...new Set(this.saldos.map(saldo => saldo.categoria))].sort();
+    if (this._categoriasCache.length === 0 && this.saldos.length > 0) {
+      this._categoriasCache = [...new Set(this.saldos.map(saldo => saldo.categoria))].sort();
+    }
+    return this._categoriasCache;
   }
 
   get saldosFiltrados(): SaldoPresentacion[] {
+    const key = `${this.saldos.length}_${this.filtroTexto}_${this.filtroCategoria}_${this.soloAlertasStock}`;
+    if (key === this._lastSaldosKey) {
+      return this._saldosFiltradosCache;
+    }
+    this._lastSaldosKey = key;
     const texto = this.filtroTexto.trim().toLocaleLowerCase();
-    return this.saldos.filter(saldo => {
-      const coincideCategoria = this.filtroCategoria === 'todas'
-        || saldo.categoria === this.filtroCategoria;
-      const coincideAlerta = !this.soloAlertasStock || saldo.nivelStock !== 'Adecuado';
-      const coincideTexto = !texto
-        || `${saldo.ingrediente} ${saldo.categoria} ${saldo.unidad}`.toLocaleLowerCase().includes(texto);
+    this._saldosFiltradosCache = this.saldos.filter(saldo => {
+      const coincideCategoria = this.filtroCategoria === "todas" || saldo.categoria === this.filtroCategoria;
+      const coincideAlerta = !this.soloAlertasStock || saldo.nivelStock !== "Adecuado";
+      const coincideTexto = !texto || `${saldo.ingrediente} ${saldo.categoria} ${saldo.unidad}`.toLocaleLowerCase().includes(texto);
       return coincideCategoria && coincideAlerta && coincideTexto;
     });
+    return this._saldosFiltradosCache;
   }
 
   get productosEnAlerta(): number {
-    return this.saldos.filter(saldo => saldo.nivelStock !== 'Adecuado').length;
+    return this.saldos.filter(saldo => saldo.nivelStock !== "Adecuado").length;
+  }
+
+  trackPorSaldo(index: number, saldo: SaldoPresentacion): any {
+    return saldo.id || saldo.ingredienteId || index;
   }
 
   cambiarFiltroAlerta(): void {

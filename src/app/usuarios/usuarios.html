@@ -21,7 +21,7 @@
           <circle cx="11" cy="11" r="8"></circle>
           <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
         </svg>
-        <input type="text" [(ngModel)]="filtroTexto" placeholder="Buscar por nombre, doc o correo..." class="border-none bg-transparent outline-none text-[13px] text-slate-900 w-full placeholder-slate-400 font-sans">
+        <input type="text" [(ngModel)]="filtroTexto" (ngModelChange)="actualizarUsuariosFiltrados()" placeholder="Buscar por nombre, doc o correo..." class="border-none bg-transparent outline-none text-[13px] text-slate-900 w-full placeholder-slate-400 font-sans">
       </div>
 
 
@@ -50,7 +50,7 @@
           </tr>
         </thead>
         <tbody class="text-slate-900">
-          <tr *ngFor="let u of usuariosFiltrados" class="border-b border-slate-100 hover:bg-slate-50/50 transition">
+          <tr *ngFor="let u of usuariosFiltrados; trackBy:trackPorUsuario" class="border-b border-slate-100 hover:bg-slate-50/50 transition">
             <!-- Usuario con Inicial y Nombre -->
             <td class="py-3 px-3">
               <div class="flex items-center gap-2.5">
@@ -318,9 +318,9 @@
             <label style="position: relative; display: inline-flex; cursor: pointer; align-items: center; margin: 0;">
               <input type="checkbox" [(ngModel)]="usuarioForm.is_active" name="is_active" style="opacity: 0; width: 0; height: 0; position: absolute;">
               <div style="width: 36px; height: 20px; border-radius: 9999px; position: relative; transition: background-color 0.2s;"
-                   [style.background-color]="usuarioForm.is_active ? '#0f172a' : '#e2e8f0'">
+                  [style.background-color]="usuarioForm.is_active ? '#0f172a' : '#e2e8f0'">
                 <div style="width: 16px; height: 16px; background-color: #ffffff; border-radius: 50%; position: absolute; top: 2px; transition: left 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.1);"
-                     [style.left]="usuarioForm.is_active ? '18px' : '2px'"></div>
+                    [style.left]="usuarioForm.is_active ? '18px' : '2px'"></div>
               </div>
             </label>
             <span style="font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 0;">Usuario Activo</span>
@@ -409,7 +409,7 @@
         <!-- Lista de Instituciones -->
         <div *ngIf="institucionesDetalleModal.length > 0; else sinAsignacionesModal" style="display: flex; flex-direction: column; gap: 12px;">
           <div *ngFor="let inst of institucionesDetalleModal; let idx = index" 
-               style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 14px 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+              style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 14px 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
             
             <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;">
               <div style="display: flex; align-items: center; gap: 10px;">
@@ -438,7 +438,7 @@
               </div>
 
               <div *ngIf="inst.sedes && inst.sedes.length > 0; else sinSedesEspecificas" 
-                   style="display: flex; flex-wrap: wrap; gap: 6px;">
+                  style="display: flex; flex-wrap: wrap; gap: 6px;">
                 <span *ngFor="let s of inst.sedes" 
                       style="display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; color: #1e293b; background: #f8fafc; border: 1px solid #cbd5e1; padding: 4px 9px; border-radius: 7px;">
                   <span class="material-symbols-outlined" style="font-size: 13px; color: #d97706;">pin_drop</span>
