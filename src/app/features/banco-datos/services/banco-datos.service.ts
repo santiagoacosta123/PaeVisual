@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of, throwError } from 'rxjs';
-import { environment } from '@env/environment'; // Asumimos que existe
+import { tap } from 'rxjs/operators';
+import { environment } from '@env/environment';
 
 @Injectable({
   providedIn: 'root'
@@ -9,30 +10,50 @@ import { environment } from '@env/environment'; // Asumimos que existe
 export class BancoDatosService {
   private apiUrl = environment.apiUrl;
 
+  // Caché en memoria por nombre de tabla
+  private cacheTablas: { [tabla: string]: any } = {};
+
   constructor(private http: HttpClient) {}
 
-  obtenerDatos(tabla: string): Observable<any> {
-    // Aquí puedes mapear 'tabla' a los endpoints reales de Django
-    // Ej: roles -> /api/roles/
-    // unidades_medida -> /api/unidades-medida/
+  obtenerDatos(tabla: string, forzarRecarga = false): Observable<any> {
+    if (!forzarRecarga && this.cacheTablas[tabla]) {
+      return of(this.cacheTablas[tabla]);
+    }
+
     const endpoint = this.getEndpoint(tabla);
     if (!endpoint) return throwError(() => new Error('Endpoint no configurado'));
-    return this.http.get(`${this.apiUrl}/${endpoint}`);
+
+    return this.http.get(`${this.apiUrl}/${endpoint}`).pipe(
+      tap(res => {
+        this.cacheTablas[tabla] = res;
+      })
+    );
   }
 
   crearDato(tabla: string, data: any): Observable<any> {
+    delete this.cacheTablas[tabla];
     const endpoint = this.getEndpoint(tabla);
     return this.http.post(`${this.apiUrl}/${endpoint}`, data);
   }
 
   actualizarDato(tabla: string, id: number, data: any): Observable<any> {
+    delete this.cacheTablas[tabla];
     const endpoint = this.getEndpoint(tabla);
     return this.http.put(`${this.apiUrl}/${endpoint}${id}/`, data);
   }
 
   eliminarDato(tabla: string, id: number): Observable<any> {
+    delete this.cacheTablas[tabla];
     const endpoint = this.getEndpoint(tabla);
     return this.http.delete(`${this.apiUrl}/${endpoint}${id}/`);
+  }
+
+  limpiarCache(tabla?: string): void {
+    if (tabla) {
+      delete this.cacheTablas[tabla];
+    } else {
+      this.cacheTablas = {};
+    }
   }
 
   private getEndpoint(tabla: string): string {
@@ -56,8 +77,8 @@ export class BancoDatosService {
     return endpoints[tabla] || '';
   }
 
-  obtenerInstituciones(): Observable<any> {
-    return this.http.get(`${this.apiUrl}/instituciones/`);
+  obtenerInstituciones(forzarRecarga = false): Observable<any> {
+    return this.obtenerDatos('instituciones', forzarRecarga);
   }
 
   obtenerSedes(idInstitucion?: number): Observable<any> {

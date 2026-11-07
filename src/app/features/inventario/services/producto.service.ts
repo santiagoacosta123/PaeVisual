@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
+import { tap } from 'rxjs/operators';
 import { environment } from '@env/environment';
 
 @Injectable({
@@ -8,14 +9,19 @@ import { environment } from '@env/environment';
 })
 export class ProductoService {
 
-  
   private apiInventario = `${environment.apiUrl}/inventario/`;
   private apiIngredientes = `${environment.apiUrl}/ingredientes/`;
   private apiUnidades = `${environment.apiUrl}/unidades_medida/`;
   private apiCategorias = `${environment.apiUrl}/categorias_inventario/`;
-  
+
+  // Caché en memoria para catálogos que cambian poco
+  private cacheCategorias: any = null;
+  private cacheUnidades: any = null;
+  private cacheIngredientes: any = null;
+
   constructor(private http: HttpClient) {}
-  // INVENTARIO
+
+  // INVENTARIO (Siempre fresco)
   getProductos(): Observable<any> {
     console.log('➡️ GET:', this.apiInventario);
     return this.http.get<any>(this.apiInventario);
@@ -36,27 +42,54 @@ export class ProductoService {
     return this.http.delete<any>(`${this.apiInventario}${id}/`);
   }
 
-  // INGREDIENTES
-  getIngredientes(): Observable<any> {
+  // INGREDIENTES (Con caché en memoria)
+  getIngredientes(forzarRecarga = false): Observable<any> {
+    if (!forzarRecarga && this.cacheIngredientes) {
+      return of(this.cacheIngredientes);
+    }
     console.log('➡️ GET:', this.apiIngredientes);
-    return this.http.get<any>(this.apiIngredientes);
+    return this.http.get<any>(this.apiIngredientes).pipe(
+      tap(data => this.cacheIngredientes = data)
+    );
   }
 
-  // UNIDADES
-  getUnidades(): Observable<any> {
+  limpiarCacheIngredientes(): void {
+    this.cacheIngredientes = null;
+  }
+
+  // UNIDADES (Con caché en memoria)
+  getUnidades(forzarRecarga = false): Observable<any> {
+    if (!forzarRecarga && this.cacheUnidades) {
+      return of(this.cacheUnidades);
+    }
     console.log('➡️ GET:', this.apiUnidades);
-    return this.http.get<any>(this.apiUnidades);
+    return this.http.get<any>(this.apiUnidades).pipe(
+      tap(data => this.cacheUnidades = data)
+    );
   }
 
-  // CATEGORÍAS
-  getCategorias(): Observable<any> {
+  limpiarCacheUnidades(): void {
+    this.cacheUnidades = null;
+  }
+
+  // CATEGORÍAS (Con caché en memoria)
+  getCategorias(forzarRecarga = false): Observable<any> {
+    if (!forzarRecarga && this.cacheCategorias) {
+      return of(this.cacheCategorias);
+    }
     console.log('➡️ GET:', this.apiCategorias);
-    return this.http.get<any>(this.apiCategorias);
+    return this.http.get<any>(this.apiCategorias).pipe(
+      tap(data => this.cacheCategorias = data)
+    );
+  }
+
+  limpiarCacheCategorias(): void {
+    this.cacheCategorias = null;
   }
 
   // ENTRADAS
   private apiEntradas = `${environment.apiUrl}/entradas-inventario/`;
-  
+
   getEntradas(): Observable<any> {
     return this.http.get<any>(this.apiEntradas);
   }

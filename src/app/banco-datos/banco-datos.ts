@@ -358,6 +358,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
   }
 
   datos: any[] = [];
+  private _datosFiltradosCache: any[] = [];
   cargando = false;
   /** Mensaje cuando la carga FALLA (distinto de "no hay registros"). */
   errorCarga: string | null = null;
@@ -415,11 +416,13 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
   confirmarSeleccionInstitucionSede(): void {
     this.filtroInstitucionSede = this.institucionTemporalId;
     this.modalSeleccionarInstitucionAbierto = false;
+    this.actualizarFiltros();
   }
 
   limpiarFiltroInstitucionSede(event?: Event): void {
     if (event) event.stopPropagation();
     this.filtroInstitucionSede = 'TODAS';
+    this.actualizarFiltros();
   }
 
   esInstitucionMarcada(item: any): boolean {
@@ -501,13 +504,25 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
   // ============================================================
 
   ngOnInit(): void {
+    // 1. Cargar primero la tabla visible con máxima prioridad
     this.cargarDatos();
-    this.cargarFuente('instituciones');
-    this.cargarFuente('jornadas');
-    this.cargarFuente('unidades_medida');
-    this.cargarFuente('ingredientes');
-    this.cargarFuente('categorias_inventario');
-    this.cargarFuente('grados');
+
+    // 2. Cargar las tablas maestras de apoyo tras pintar la tabla
+    setTimeout(() => {
+      this.cargarTodasLasFuentes();
+    }, 150);
+  }
+
+  private cargarTodasLasFuentes(): void {
+    const fuentes: FuenteRelacion[] = [
+      'instituciones',
+      'jornadas',
+      'unidades_medida',
+      'ingredientes',
+      'categorias_inventario',
+      'grados'
+    ];
+    fuentes.forEach(f => this.cargarFuente(f));
   }
 
   ngOnDestroy(): void {
@@ -577,6 +592,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
   onFiltroCambio(): void {
     this.paginaActual = 1;
     this.menuAccionAbiertoId = null;
+    this.actualizarFiltros();
   }
 
   cambiarElementosPorPagina(nuevoLimite: any): void {
@@ -617,6 +633,10 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
   }
 
   get datosFiltrados(): any[] {
+    return this._datosFiltradosCache;
+  }
+
+  actualizarFiltros(): void {
     let resultado = [...this.datos];
 
     // Filtro de sedes por institución
@@ -669,7 +689,6 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
         return valB.localeCompare(valA, 'es');
       });
     } else {
-      // Más recientes: ordenar por ID descendente si existe
       resultado.sort((a, b) => {
         const idA = this.obtenerIdItem(a) || 0;
         const idB = this.obtenerIdItem(b) || 0;
@@ -677,7 +696,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       });
     }
 
-    return resultado;
+    this._datosFiltradosCache = resultado;
   }
 
   get totalRegistros(): number {
@@ -779,6 +798,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (res: any) => {
           this.datos = this.normalizarRespuesta(res);
+          this.actualizarFiltros();
           if (this.tabActual === 'instituciones') {
             this.institucionesCompletas = this.datos;
           }

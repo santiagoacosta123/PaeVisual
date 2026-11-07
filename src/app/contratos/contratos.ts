@@ -303,34 +303,78 @@ export class ContratosComponent implements OnInit {
     });
   }
 
+  private _lastContratosFiltro = "";
+  private _lastContratosLen = -1;
+  private _contratosCache: any[] = [];
+
   get contratosFiltrados() {
-    const filtro = this.filtroBusquedaContratos.toLowerCase();
-    return this.contratos.filter(c =>
+    const filtro = (this.filtroBusquedaContratos || "").toLowerCase();
+    if (filtro === this._lastContratosFiltro && this.contratos.length === this._lastContratosLen) {
+      return this._contratosCache;
+    }
+    this._lastContratosFiltro = filtro;
+    this._lastContratosLen = this.contratos.length;
+    this._contratosCache = !filtro ? this.contratos : this.contratos.filter(c =>
       (c.codigo && c.codigo.toLowerCase().includes(filtro)) ||
       (c.institucion && c.institucion.toLowerCase().includes(filtro))
     );
+    return this._contratosCache;
   }
+
+  private _lastJornadasFiltro = "";
+  private _lastJornadasLen = -1;
+  private _jornadasCache: any[] = [];
 
   get jornadasFiltradas() {
-    const filtro = this.filtroBusquedaJornadas.toLowerCase();
-    return this.jornadas.filter(j => j.nombre && j.nombre.toLowerCase().includes(filtro));
+    const filtro = (this.filtroBusquedaJornadas || "").toLowerCase();
+    if (filtro === this._lastJornadasFiltro && this.jornadas.length === this._lastJornadasLen) {
+      return this._jornadasCache;
+    }
+    this._lastJornadasFiltro = filtro;
+    this._lastJornadasLen = this.jornadas.length;
+    this._jornadasCache = !filtro ? this.jornadas : this.jornadas.filter(j => j.nombre && j.nombre.toLowerCase().includes(filtro));
+    return this._jornadasCache;
   }
 
+  private _lastSeccionesFiltro = "";
+  private _lastSeccionesLen = -1;
+  private _seccionesCache: any[] = [];
+
   get seccionesFiltradas() {
-    const filtro = this.filtroBusquedaSecciones.toLowerCase();
-    return this.secciones.filter(s =>
+    const filtro = (this.filtroBusquedaSecciones || "").toLowerCase();
+    if (filtro === this._lastSeccionesFiltro && this.secciones.length === this._lastSeccionesLen) {
+      return this._seccionesCache;
+    }
+    this._lastSeccionesFiltro = filtro;
+    this._lastSeccionesLen = this.secciones.length;
+    this._seccionesCache = !filtro ? this.secciones : this.secciones.filter(s =>
       (s.nombre && s.nombre.toLowerCase().includes(filtro)) ||
       (s.jornada && String(s.jornada).toLowerCase().includes(filtro))
     );
+    return this._seccionesCache;
   }
 
+  private _lastTurnosFiltro = "";
+  private _lastTurnosLen = -1;
+  private _turnosCache: any[] = [];
+
   get turnosFiltrados() {
-    const filtro = this.filtroBusquedaTurnos.toLowerCase();
-    return this.turnos.filter(t =>
+    const filtro = (this.filtroBusquedaTurnos || "").toLowerCase();
+    if (filtro === this._lastTurnosFiltro && this.turnos.length === this._lastTurnosLen) {
+      return this._turnosCache;
+    }
+    this._lastTurnosFiltro = filtro;
+    this._lastTurnosLen = this.turnos.length;
+    this._turnosCache = !filtro ? this.turnos : this.turnos.filter(t =>
       (t.nombre && t.nombre.toLowerCase().includes(filtro)) ||
       (t.horaInicio && t.horaInicio.includes(filtro)) ||
       (t.horaFin && t.horaFin.includes(filtro))
     );
+    return this._turnosCache;
+  }
+
+  trackPorId(index: number, item: any): any {
+    return item?.id || item?.codigo || index;
   }
 
   seleccionarPestana(pestana: string) {
