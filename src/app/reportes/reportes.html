@@ -84,8 +84,9 @@
         <span class="text-[11px] font-bold uppercase tracking-wider text-[#faa911]">Historial de entregas</span>
         <h1 class="m-0 text-2xl font-black tracking-tight text-slate-900">Historial de entregas</h1>
         <p class="m-0 text-xs font-medium text-slate-500">Consulta el estado de cada entrega registrada para las sedes de tu institución.</p>
-        <p *ngIf="sedeActiva" class="m-0 mt-1 text-xs font-bold text-slate-700">
-          Sede: {{ sedeActiva.nombre_sede }}
+        <p *ngIf="sedeActiva" class="m-0 mt-3 inline-flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-black text-slate-900">
+          <span class="material-symbols-outlined text-[20px] text-amber-600">location_on</span>
+          <span>Sede actual: <strong class="text-base">{{ sedeActiva.nombre_sede }}</strong></span>
         </p>
       </div>
     </div>
