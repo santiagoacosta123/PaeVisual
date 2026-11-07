@@ -1,450 +1,302 @@
 <style>
- .supervisor-dashboard * {
-   --c1: #FFD03A !important;
-   --c2: #F5A300 !important;
-   --tint: #FFF6D6 !important;
-   --glow: rgba(245, 163, 0, .35) !important;
-   --on: #111111 !important;
- }
-.supervisor-dashboard .inst-banner,
-.supervisor-dashboard .inst-pill,
-.supervisor-dashboard .inst-sede,
-.supervisor-dashboard .opt-chip,
-.supervisor-dashboard .rounded-2xl,
-.supervisor-dashboard .rounded-3xl {
-  border-color: #F5D98A !important;
-}
-.supervisor-dashboard .opt-card,
-.supervisor-dashboard .inst-banner,
-.supervisor-dashboard .inst-chip,
-.supervisor-dashboard .inst-change,
-.supervisor-dashboard .opt-chip {
-  background: #FFFFFF !important;
-}
-.supervisor-dashboard .inst-pill,
-.supervisor-dashboard .inst-sede,
-.supervisor-dashboard .inst-banner__icon,
-.supervisor-dashboard .opt-icon,
-.supervisor-dashboard .opt-go,
-.supervisor-dashboard .opt-btn {
-  color: #111111 !important;
-  background: #FFD03A !important;
-}
-.supervisor-dashboard [class*="text-slate"],
-.supervisor-dashboard [class*="text-red"],
-.supervisor-dashboard [class*="text-green"],
-.supervisor-dashboard [class*="text-amber"] {
-  color: #111111 !important;
-}
-.supervisor-dashboard [class*="bg-slate"],
-.supervisor-dashboard [class*="bg-red"],
-.supervisor-dashboard [class*="bg-green"] {
-  background-color: #FFFFFF !important;
-}
-.supervisor-dashboard [class*="border-slate"],
-.supervisor-dashboard [class*="border-red"],
-.supervisor-dashboard [class*="border-green"] {
-  border-color: #F5D98A !important;
-}
-.supervisor-dashboard .inst-banner,
-.supervisor-dashboard .inst-chip,
-.supervisor-dashboard .inst-change,
-.supervisor-dashboard .opt-card,
-.supervisor-dashboard .opt-chip {
-  background: #FFFFFF !important;
-  border-color: #F5D98A !important;
-}
-.supervisor-dashboard .inst-banner::before,
-.supervisor-dashboard .inst-banner::after {
-  background: #FFF4B8 !important;
-}
-.supervisor-dashboard .inst-pill,
-.supervisor-dashboard .inst-sede,
-.supervisor-dashboard .inst-banner__icon,
-.supervisor-dashboard .opt-icon {
-  background: #FFD03A !important;
-  border-color: #F5A300 !important;
-  color: #111111 !important;
-}
-.supervisor-dashboard .opt-go {
-  background: #FFF4B8 !important;
-  border-color: #F5A300 !important;
-  color: #111111 !important;
-}
-.supervisor-dashboard .opt-btn {
-  background: #FFD03A !important;
-  color: #111111 !important;
-  border: 1px solid #F5A300 !important;
-}
-.supervisor-dashboard .material-symbols-outlined {
-  color: #111111 !important;
-}
-.supervisor-dashboard .bg-amber-50,
-.supervisor-dashboard .bg-amber-100,
-.supervisor-dashboard .bg-amber-400,
-.supervisor-dashboard .bg-amber-500 {
-  background-color: #FFD03A !important;
-}
-.supervisor-dashboard .border-amber-300,
-.supervisor-dashboard .border-amber-400 {
-  border-color: #F5A300 !important;
-}
-.supervisor-dashboard .inst-banner::before,
-.supervisor-dashboard .inst-banner::after,
-.supervisor-dashboard .opt-card::before,
-.supervisor-dashboard .opt-card::after,
-.supervisor-dashboard .opt-icon,
-.supervisor-dashboard .opt-go,
-.supervisor-dashboard .inst-banner__icon {
-  display: none !important;
-}
-.supervisor-dashboard .inst-banner,
-.supervisor-dashboard .opt-card,
-.supervisor-dashboard .inst-change,
-.supervisor-dashboard .inst-chip,
-.supervisor-dashboard .opt-chip {
-  box-shadow: none !important;
-  filter: none !important;
-  transform: none !important;
-}
-.supervisor-dashboard .opt-card {
-  min-height: 235px;
-  border-radius: 16px;
-}
-.supervisor-dashboard .inst-banner {
-  border-radius: 16px;
-}
-/* ===== Tarjetas de opciones del supervisor ===== */
-.opt-card {
-  position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; gap: 16px;
-  min-height: 270px; padding: 22px; border-radius: 24px; background: #fff; border: 1px solid #f1f5f9; cursor: pointer;
-  box-shadow: 0 12px 32px -20px rgba(15, 23, 42, .28);
-  transition: transform .4s cubic-bezier(.2, .8, .2, 1), box-shadow .4s ease, border-color .4s ease;
-  animation: optUp .65s cubic-bezier(.2, .8, .2, 1) both;
-}
-/* Resplandor de color en la esquina */
-.opt-card::before {
-  content: ''; position: absolute; inset: 0; pointer-events: none;
-  background: radial-gradient(120% 85% at 100% 0%, var(--tint) 0%, transparent 62%);
-  transition: opacity .4s ease;
-}
-/* Barrido de luz al pasar el mouse */
-.opt-card::after {
-  content: ''; position: absolute; top: 0; left: -70%; width: 40%; height: 100%; pointer-events: none;
-  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, .65), transparent);
-  transform: skewX(-20deg); transition: left .8s ease;
-}
-.opt-card:hover { transform: translateY(-8px); border-color: var(--c1); box-shadow: 0 30px 54px -24px var(--glow); }
-.opt-card:hover::after { left: 140%; }
-.opt-card:active { transform: translateY(-3px) scale(.99); }
-.opt-card > * { position: relative; z-index: 1; }
+  .sx {
+    --sx-yellow: #FFD03A;
+    --sx-amber: #F5A300;
+    --sx-deep: #7A5200;
+    --sx-cream: #FFF6D6;
+    --sx-sand: #FFFBEF;
+    --sx-line: #F5D98A;
+    --sx-navy: #1E2B45;
+    --sx-ink: #1F2937;
+    --sx-mute: #64748B;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 330px;
+    gap: 18px;
+    align-items: stretch;
+    width: 100%;
+    color: var(--sx-ink);
+  }
+  .sx * { box-sizing: border-box; }
+  .sx h1, .sx h2, .sx h3, .sx p { margin: 0; }
+  .sx-main { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
 
-.opt-icon {
-  display: flex; align-items: center; justify-content: center; width: 54px; height: 54px; border-radius: 18px; color: var(--on, #fff);
-  background: linear-gradient(135deg, var(--c1), var(--c2)); box-shadow: 0 12px 20px -10px var(--glow);
-  transition: transform .45s cubic-bezier(.2, .8, .2, 1);
-}
-.opt-card:hover .opt-icon { transform: rotate(-7deg) scale(1.1); }
+  /* ---------- HERO COMPACTO ---------- */
+  .sx-hero {
+    position: relative; overflow: hidden; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 16px;
+    padding: 32px 40px; border-radius: 26px;
+    background: linear-gradient(120deg, #FFE98F 0%, #FFD03A 55%, #F5A300 100%);
+  }
+  .sx-hero::before { content: ''; position: absolute; width: 220px; height: 220px; right: -70px; top: -100px; border-radius: 50%; background: rgba(255,255,255,.22); pointer-events: none; }
+  .sx-hero__text { position: relative; z-index: 2; display: flex; flex-direction: column; gap: 8px; }
+  .sx-hero__badge {
+    align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; padding: 5px 14px; border-radius: 999px;
+    background: rgba(255,255,255,.75); font-size: 13px; font-weight: 700; color: var(--sx-deep);
+  }
+  .sx-hero__title { font-size: clamp(24px, 2.9vw, 36px); font-weight: 900; line-height: 1.1; letter-spacing: -.02em; color: var(--sx-navy); }
+  .sx-hero__lead { max-width: 540px; font-size: 14.5px; line-height: 1.5; color: #3b2a00; }
 
-.opt-go {
-  display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 999px;
-  background: #fff; color: var(--c2); border: 1px solid #f1f5f9; box-shadow: 0 6px 14px -8px rgba(15, 23, 42, .3);
-  transition: transform .35s ease, background .35s ease, color .35s ease;
-}
-.opt-card:hover .opt-go { transform: translate(3px, -3px); background: var(--c1); color: var(--on, #fff); }
+  /* Logo en círculo */
+  .sx-logo { position: relative; z-index: 2; width: 124px; height: 124px; flex-shrink: 0; margin-right: 8px; }
+  .sx-logo::before { content: ''; position: absolute; inset: -7px; border-radius: 50%; border: 2px solid rgba(255,255,255,.75); }
+  .sx-logo__circle { position: absolute; inset: 0; display: grid; place-items: center; border-radius: 50%; background: #fff; box-shadow: 0 14px 24px -14px rgba(90,55,0,.8); }
+  .sx-logo__circle img { display: block; width: 76%; height: auto; }
 
-.opt-chip {
-  display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 14px;
-  background: rgba(255, 255, 255, .8); border: 1px solid rgba(226, 232, 240, .8); backdrop-filter: blur(4px);
-}
-.opt-chip .material-symbols-outlined { color: #F5A300 !important; }
-.opt-btn {
-  display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; padding: 10px 14px; border: 0; border-radius: 14px;
-  font-size: 12px; font-weight: 800; color: var(--on, #fff); cursor: pointer;
-  background: linear-gradient(135deg, var(--c1), var(--c2)); box-shadow: 0 14px 24px -14px var(--glow);
-  transition: filter .25s ease, box-shadow .25s ease;
-}
-.opt-btn:hover { filter: brightness(1.07); box-shadow: 0 18px 28px -14px var(--glow); }
-.opt-btn .opt-arrow { transition: transform .3s ease; }
-.opt-card:hover .opt-arrow { transform: translateX(6px); }
+  /* ---------- FUNCIONES RÁPIDAS (3 en una fila) ---------- */
+  .sx-fn { display: flex; flex: 1; flex-direction: column; min-height: 0; }
+  .sx-section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+  .sx-section-head h2 { font-size: 22px; font-weight: 900; }
+  .sx-section-head p { font-size: 13px; color: var(--sx-mute); font-weight: 500; }
+  .sx-quick { display: grid; flex: 1; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: 1fr; gap: 14px; }
+  .sx-q {
+    position: relative; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 16px; padding: 24px; text-align: left; cursor: pointer;
+    border-radius: 22px; background: #fff; border: 1px solid var(--sx-line); font: inherit; color: inherit;
+    transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+  }
+  .sx-q:hover { transform: translateY(-3px); border-color: var(--sx-amber); box-shadow: 0 16px 26px -20px rgba(245,163,0,.9); }
+  .sx-q:focus-visible { outline: 3px solid var(--sx-amber); outline-offset: 2px; }
+  .sx-q__icon { display: grid; place-items: center; width: 62px; height: 62px; border-radius: 18px; background: var(--sx-yellow); color: var(--sx-ink); flex-shrink: 0; }
+  .sx-q__icon .material-symbols-outlined { font-size: 34px; }
+  .sx-q__body { flex: 1; min-width: 0; }
+  .sx-q h3 { font-size: 19px; font-weight: 800; line-height: 1.2; }
+  .sx-q p { font-size: 13.5px; line-height: 1.5; color: var(--sx-mute); margin-top: 6px; }
+  .sx-q__go { position: absolute; top: 18px; right: 18px; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; background: var(--sx-cream); color: var(--sx-deep); transition: transform .2s ease, background .2s ease; }
+  .sx-q:hover .sx-q__go { transform: translateX(3px); background: var(--sx-yellow); }
 
-/* ===== Banner de la institución seleccionada ===== */
-.inst-banner {
-  position: relative; overflow: hidden; display: flex; flex-direction: column; gap: 14px; padding: 20px 24px; border-radius: 22px;
-  border: 1px solid #F6E3A1; background: linear-gradient(120deg, #FFF8DE 0%, #FFFFFF 100%);
-  box-shadow: 0 18px 40px -26px rgba(245, 163, 0, .55);
-  animation: optUp .6s cubic-bezier(.2, .8, .2, 1) both;
-}
-.inst-banner::before, .inst-banner::after { content: ''; position: absolute; border-radius: 50%; pointer-events: none; }
-.inst-banner::before { top: -90px; right: -70px; width: 270px; height: 270px; background: radial-gradient(circle, rgba(255, 208, 58, .38), transparent 70%); }
-.inst-banner::after { bottom: -110px; left: 34%; width: 240px; height: 240px; background: radial-gradient(circle, rgba(255, 208, 58, .16), transparent 70%); }
-.inst-banner > * { position: relative; z-index: 1; }
-.inst-banner__body { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; }
-.inst-banner__icon {
-  display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 54px; height: 54px; border-radius: 18px; color: #1f2937;
-  background: linear-gradient(135deg, #FFD03A, #F5A300); box-shadow: 0 12px 22px -12px rgba(245, 163, 0, .7);
-}
-.inst-pill { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 999px; font-size: 10px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
-.inst-pill--yellow { background: #FFE9A3; color: #7A5200; }
-.inst-pill--active { background: #FFE9A3; color: #7A5200; }
-.inst-dot { width: 7px; height: 7px; border-radius: 50%; background: #F5A300; box-shadow: 0 0 0 3px rgba(245, 163, 0, .2); }
-.inst-change {
-  display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 12px; border: 1px solid #E2E8F0; background: #fff;
-  font-size: 11px; font-weight: 800; color: #1f2937; cursor: pointer; box-shadow: 0 6px 14px -10px rgba(15, 23, 42, .35);
-  transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
-}
-.inst-change:hover { transform: translateY(-2px); border-color: #F5A300; box-shadow: 0 12px 20px -12px rgba(245, 163, 0, .6); }
-.inst-info { display: flex; flex-wrap: wrap; gap: 8px; }
-.inst-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 11px; background: rgba(255, 255, 255, .85); border: 1px solid #EEF2F6; font-size: 11px; color: #334155; }
-.inst-chip .material-symbols-outlined { font-size: 15px; color: #E39A00; }
-.inst-chip__label { font-size: 9px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #94A3B8; }
-.inst-chip strong { font-weight: 800; color: #0F172A; }
-.inst-sedes { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding-top: 12px; border-top: 1px dashed #F0DDA0; }
-.inst-sedes__titulo { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #64748B; }
-.inst-sedes__titulo .material-symbols-outlined { font-size: 15px; color: #E39A00; }
-.inst-sede { padding: 3px 10px; border-radius: 10px; background: #FFF7D6; border: 1px solid #F3D98A; font-size: 11px; font-weight: 700; color: #7A5200; }
+  /* ---------- TARJETA LATERAL ---------- */
+  .sx-panel { display: flex; flex-direction: column; overflow: hidden; border-radius: 22px; background: #fff; border: 1px solid var(--sx-line); box-shadow: 0 22px 38px -32px rgba(245,163,0,.8); }
+  .sx-panel__art { position: relative; flex-shrink: 0; height: 175px; background: #FFF3C2; }
+  .sx-panel__art img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .sx-panel__body { flex: 1; padding: 18px 22px 22px; }
+  .sx-pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 11px; border-radius: 999px; background: #FFE9A3; color: var(--sx-deep); font-size: 11.5px; font-weight: 800; }
+  .sx-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--sx-amber); box-shadow: 0 0 0 3px rgba(245,163,0,.2); }
+  .sx-panel h2 { margin-top: 10px; font-size: 18px; font-weight: 900; line-height: 1.2; }
+  .sx-rows { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 10px; margin-top: 18px; }
+  .sx-row { display: flex; align-items: center; gap: 10px; min-width: 0; font-size: 12.5px; }
+  .sx-row > div { min-width: 0; }
+  .sx-row__icon { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 11px; background: var(--sx-cream); flex-shrink: 0; }
+  .sx-row__icon .material-symbols-outlined { font-size: 19px; color: var(--sx-amber); }
+  .sx-row small { display: block; font-size: 10.5px; font-weight: 700; color: var(--sx-mute); }
+  .sx-row strong { display: block; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sx-sedes-head { display: flex; align-items: center; justify-content: space-between; margin: 18px 0 12px; padding-top: 16px; border-top: 1px dashed var(--sx-line); font-size: 13.5px; font-weight: 800; }
+  .sx-sedes-head span { font-size: 11.5px; color: var(--sx-deep); background: #FFF7D6; padding: 1px 8px; border-radius: 999px; }
+  .sx-sedes { display: flex; flex-wrap: wrap; gap: 6px; }
+  .sx-sede { padding: 4px 11px; border-radius: 10px; background: #FFF7D6; border: 1px solid #F3D98A; font-size: 11.5px; font-weight: 700; color: var(--sx-deep); }
+  .sx-empty { font-size: 11px; color: var(--sx-mute); }
 
-@keyframes optUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
-@media (prefers-reduced-motion: reduce) {
-  .opt-card, .opt-card::after, .opt-icon, .opt-go, .opt-arrow, .inst-banner, .inst-change { animation: none; transition: none; }
-}
+  /* ---------- RESPONSIVE ---------- */
+  @media (max-width: 1100px) { .sx { grid-template-columns: 1fr; } }
+  @media (max-width: 760px) { .sx-quick { grid-template-columns: 1fr; } }
+  @media (max-width: 620px) {
+    .sx-hero { grid-template-columns: 1fr; padding: 18px; }
+    .sx-logo { width: 80px; height: 80px; order: -1; }
+  }
+  @media (prefers-reduced-motion: reduce) { .sx-q, .sx-q__go { transition: none; } }
+
+  /* ---------- PASO 1: ELEGIR INSTITUCIÓN ---------- */
+  .sx1 { display: flex; flex-direction: column; gap: 22px; width: 100%; color: #1F2937; }
+  .sx1 * { box-sizing: border-box; }
+  .sx1 h1, .sx1 h2, .sx1 h3, .sx1 p { margin: 0; }
+  .sx1-hero {
+    position: relative; overflow: hidden; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 24px;
+    padding: 16px 32px; border-radius: 22px; background: linear-gradient(120deg, #FFE98F 0%, #FFD03A 55%, #F5A300 100%);
+  }
+  .sx1-hero::before { content: ''; position: absolute; width: 200px; height: 200px; right: -60px; top: -90px; border-radius: 50%; background: rgba(255,255,255,.22); pointer-events: none; }
+  .sx1-hero__text { position: relative; z-index: 2; display: flex; flex-direction: column; gap: 4px; }
+  .sx1-hero h1 { font-size: clamp(20px, 2.4vw, 26px); font-weight: 900; line-height: 1.08; letter-spacing: -.02em; color: #1E2B45; }
+  .sx1-hero p { max-width: 460px; font-size: 13px; line-height: 1.45; color: #3b2a00; }
+  .sx1-logo { position: relative; z-index: 2; width: 84px; height: 84px; margin-right: 8px; }
+  .sx1-logo::before { content: ''; position: absolute; inset: -6px; border-radius: 50%; border: 2px solid rgba(255,255,255,.75); }
+  .sx1-logo div { position: absolute; inset: 0; display: grid; place-items: center; border-radius: 50%; background: #fff; box-shadow: 0 12px 20px -12px rgba(90,55,0,.8); }
+  .sx1-logo img { display: block; width: 76%; height: auto; }
+
+  .sx1-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .sx1-head h2 { font-size: 22px; font-weight: 900; }
+  .sx1-head p { font-size: 12px; color: #64748B; font-weight: 500; }
+  .sx1-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px; }
+  .sx1-card {
+    display: flex; flex-direction: column; overflow: hidden; cursor: pointer; border-radius: 24px; background: #fff; border: 1px solid #F5D98A;
+    transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+  }
+  .sx1-card:hover { transform: translateY(-4px); border-color: #F5A300; box-shadow: 0 22px 34px -26px rgba(245,163,0,.9); }
+  .sx1-card:focus-visible { outline: 3px solid #F5A300; outline-offset: 2px; }
+  .sx1-card img { display: block; width: 100%; height: 160px; object-fit: cover; }
+  .sx1-card__body { display: flex; flex: 1; flex-direction: column; gap: 16px; padding: 20px; }
+  .sx1-card h3 { font-size: 17px; font-weight: 800; line-height: 1.25; }
+  .sx1-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; margin-top: auto; padding: 12px 16px;
+    border: 1px solid #F5A300; border-radius: 14px; background: #FFD03A; color: #1F2937; font: inherit; font-size: 13px; font-weight: 800; cursor: pointer;
+  }
+  .sx1-btn:hover { background: #F5A300; }
+  .sx1-state { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 56px 24px; text-align: center; border-radius: 24px; border: 1px dashed #F5A300; background: #FFFBEF; }
+  .sx1-state h3 { font-size: 16px; font-weight: 800; }
+  .sx1-state p { max-width: 420px; font-size: 12px; line-height: 1.5; color: #64748B; }
+  .sx1-error { padding: 14px 18px; border-radius: 16px; background: #FEF2F2; border: 1px solid #FECACA; color: #991B1B; font-size: 12px; font-weight: 600; }
+  .sx1-error button { margin-left: 8px; background: none; border: 0; text-decoration: underline; font: inherit; font-weight: 800; color: inherit; cursor: pointer; }
+  .sx1-spin { animation: sx1spin 1s linear infinite; }
+  @keyframes sx1spin { to { transform: rotate(360deg); } }
+  @media (max-width: 620px) { .sx1-hero { padding: 16px 20px; gap: 14px; } .sx1-logo { width: 68px; height: 68px; } }
+  @media (prefers-reduced-motion: reduce) { .sx1-card, .sx1-spin { transition: none; animation: none; } }
 </style>
 
-<section class="supervisor-dashboard flex w-full flex-col gap-6" style="font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
 
-  <!-- ========================================================================= -->
-  <!-- PASO 1: BIENVENIDA + INSTITUCIONES ASIGNADAS (SIN INSTITUCIÓN SELECCIONADA) -->
-  <!-- ========================================================================= -->
-  <div *ngIf="!institucionActiva" class="flex flex-col gap-6">
+<!-- ======================================================================= -->
+<!-- PASO 1: ELEGIR INSTITUCIÓN (cuando todavía no hay una seleccionada)      -->
+<!-- ======================================================================= -->
+<section *ngIf="!institucionActiva" class="sx1" style="font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;">
 
-    <!-- Encabezado de Selección -->
-    <div class="flex flex-col gap-2 rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
-      <div class="flex items-center gap-3">
-        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
-          <span class="material-symbols-outlined text-[28px]">school</span>
-        </div>
-        <div>
-          <h2 class="m-0 text-xl font-black text-slate-900">Instituciones Asignadas</h2>
-          <p class="m-0 text-xs font-medium text-slate-500">Selecciona la institución educativa con la que vas a trabajar para acceder a todas sus funciones de gestión.</p>
-        </div>
-      </div>
+  <header class="sx1-hero">
+    <div class="sx1-hero__text">
+      <h1>Elige tu institución</h1>
+      <p>Selecciona la institución educativa con la que vas a trabajar para ver todas sus funciones.</p>
     </div>
+    <div class="sx1-logo"><div><img src="/sirae-logo-dark.png" alt="Logo SIRAE" /></div></div>
+  </header>
 
-    <!-- Estado de carga -->
-    <div *ngIf="cargando && instituciones.length === 0" class="py-16 text-center text-slate-500 text-sm font-semibold">
-      <span class="material-symbols-outlined animate-spin text-3xl text-amber-500 mb-2 block">progress_activity</span>
-      Cargando tus instituciones...
-    </div>
-
-    <!-- Error al cargar -->
-    <div *ngIf="errorMensaje" role="alert" class="rounded-2xl border border-red-200 bg-red-50 p-4 text-xs font-semibold text-red-800">
-      {{ errorMensaje }}
-      <button type="button" (click)="cargarInstitucionesServidor()" class="ml-2 underline font-bold cursor-pointer">Reintentar</button>
-    </div>
-
-    <!-- Instituciones asignadas al supervisor (tarjetas) -->
-    <div *ngIf="instituciones.length > 0" class="flex flex-col gap-4">
-      <div class="flex items-center justify-between">
-        <h3 class="m-0 text-lg font-black text-slate-900">
-          Instituciones disponibles para ti ({{ instituciones.length }})
-        </h3>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-        <article *ngFor="let inst of instituciones; let i = index; trackBy: trackInstitucion"
-          (click)="seleccionarInstitucion(inst)"
-          class="group flex cursor-pointer flex-col overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-amber-400 hover:shadow-md">
-
-          <!-- Imagen de la institución -->
-          <img [src]="imagenDe(i)" [alt]="'Fachada de ' + inst.nombre_institucion"
-            class="h-44 w-full object-cover" loading="lazy" />
-
-          <div class="flex flex-1 flex-col gap-5 p-6">
-            <!-- Nombre -->
-            <h4 class="m-0 text-lg font-black leading-tight text-slate-900 transition-colors group-hover:text-amber-700">
-              {{ inst.nombre_institucion }}
-            </h4>
-
-            <!-- Botón de selección -->
-            <button type="button" (click)="seleccionarInstitucion(inst); $event.stopPropagation()"
-              class="mt-auto flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-amber-400 px-4 py-3 text-xs font-bold text-slate-950 shadow-sm transition hover:bg-amber-500">
-              <span class="material-symbols-outlined text-[18px]">check_circle</span>
-              Seleccionar Institución
-            </button>
-          </div>
-
-        </article>
-      </div>
-    </div>
-
-    <!-- Si no tiene ninguna asignada -->
-    <div *ngIf="!cargando && instituciones.length === 0 && !errorMensaje"
-      class="flex flex-col items-center justify-center gap-3 rounded-3xl border border-dashed border-amber-300 bg-amber-50/40 py-16 px-6 text-center">
-      <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
-        <span class="material-symbols-outlined text-[36px]">domain_disabled</span>
-      </div>
-      <h3 class="m-0 text-base font-bold text-slate-800">
-        No tienes instituciones educativas asignadas
-      </h3>
-      <p class="m-0 max-w-md text-xs leading-5 text-slate-600">
-        Comunícate con el Super Administrador para que asigne las instituciones correspondientes a tu cuenta de supervisor.
-      </p>
-      <button type="button" (click)="cargarInstitucionesServidor()"
-        class="mt-2 inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-amber-300 bg-white px-4 py-2 text-xs font-bold text-amber-800 shadow-sm hover:bg-amber-50">
-        <span class="material-symbols-outlined text-[16px]">refresh</span>
-        Verificar de nuevo
-      </button>
-    </div>
-
+  <!-- Cargando -->
+  <div *ngIf="cargando && instituciones.length === 0" class="sx1-state" style="border-style:solid">
+    <span class="material-symbols-outlined sx1-spin" style="font-size:34px;color:#F5A300">progress_activity</span>
+    <p>Cargando tus instituciones...</p>
   </div>
 
+  <!-- Error -->
+  <div *ngIf="errorMensaje" role="alert" class="sx1-error">
+    {{ errorMensaje }}
+    <button type="button" (click)="cargarInstitucionesServidor()">Reintentar</button>
+  </div>
 
-  <!-- ========================================================================= -->
-  <!-- PASO 2: INSTITUCIÓN SELECCIONADA + OPCIONES DEL MENÚ IZQUIERDO            -->
-  <!-- ========================================================================= -->
-  <div *ngIf="institucionActiva as inst" class="flex flex-col gap-6">
+  <!-- Tarjetas -->
+  <div *ngIf="instituciones.length > 0" class="flex flex-col" style="display:flex;flex-direction:column;gap:14px">
+    <div class="sx1-head">
+      <h2>Tus instituciones ({{ instituciones.length }})</h2>
+      <p>Toca una para continuar</p>
+    </div>
 
-    <!-- ARRIBA: Nombre e información destacada de la institución seleccionada -->
-    <header class="inst-banner">
-      <div class="inst-banner__body">
-        <div class="flex min-w-0 items-center gap-4">
-          <div class="inst-banner__icon"><span class="material-symbols-outlined text-[28px]">school</span></div>
-          <div class="min-w-0">
-            <div class="flex flex-wrap items-center gap-2">
-              <span class="inst-pill inst-pill--yellow">
-                <span class="material-symbols-outlined text-[14px]">check_circle</span>
-                Institución seleccionada
-              </span>
-              <span class="inst-pill inst-pill--active"><span class="inst-dot"></span>{{ inst.estado || 'ACTIVO' }}</span>
-            </div>
-            <h1 class="m-0 mt-1.5 text-xl font-black leading-tight text-slate-900 sm:text-2xl">{{ inst.nombre_institucion }}</h1>
-          </div>
+    <div class="sx1-grid">
+      <article *ngFor="let inst of instituciones; let i = index; trackBy: trackInstitucion"
+        class="sx1-card" tabindex="0" (click)="seleccionarInstitucion(inst)" (keydown.enter)="seleccionarInstitucion(inst)">
+        <img [src]="imagenDe(i)" [alt]="'Fachada de ' + inst.nombre_institucion" loading="lazy" />
+        <div class="sx1-card__body">
+          <h3>{{ inst.nombre_institucion }}</h3>
+          <button type="button" class="sx1-btn" (click)="seleccionarInstitucion(inst); $event.stopPropagation()">
+            <span class="material-symbols-outlined" style="font-size:18px">check_circle</span>
+            Seleccionar institución
+          </button>
         </div>
+      </article>
+    </div>
+  </div>
 
-        <button type="button" class="inst-change" (click)="deseleccionarInstitucion()">
-          <span class="material-symbols-outlined text-[18px]">sync_alt</span>
-          Cambiar institución
-        </button>
+  <!-- Sin instituciones -->
+  <div *ngIf="!cargando && instituciones.length === 0 && !errorMensaje" class="sx1-state">
+    <span class="material-symbols-outlined" style="font-size:40px;color:#7A5200">domain_disabled</span>
+    <h3>No tienes instituciones educativas asignadas</h3>
+    <p>Comunícate con el Super Administrador para que asigne las instituciones correspondientes a tu cuenta de supervisor.</p>
+    <button type="button" class="sx1-btn" style="width:auto" (click)="cargarInstitucionesServidor()">
+      <span class="material-symbols-outlined" style="font-size:18px">refresh</span>
+      Verificar de nuevo
+    </button>
+  </div>
+
+</section>
+
+<!-- ======================================================================= -->
+<!-- SIRAE · INICIO DEL SUPERVISOR (institución ya seleccionada)              -->
+<!-- ======================================================================= -->
+<section *ngIf="institucionActiva as inst" class="sx" style="font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;">
+
+  <div class="sx-main">
+
+    <!-- HERO COMPACTO CON LOGO EN CÍRCULO -->
+    <header class="sx-hero">
+      <div class="sx-hero__text">
+        <span class="sx-hero__badge">
+          <span class="material-symbols-outlined" style="font-size:16px">waving_hand</span>
+          Hola, {{ nombreSupervisor }}
+        </span>
+        <h1 class="sx-hero__title">Alimentación escolar bajo control</h1>
+        <p class="sx-hero__lead">Todo lo que necesitas para acompañar la alimentación de tus estudiantes, en un solo lugar.</p>
       </div>
 
-      <!-- Datos de la institución -->
-      <div class="inst-info">
-        <span *ngIf="inst.nit" class="inst-chip">
-          <span class="material-symbols-outlined">badge</span><span class="inst-chip__label">NIT</span><strong>{{ inst.nit }}</strong>
-        </span>
-        <span *ngIf="inst.representante_legal" class="inst-chip">
-          <span class="material-symbols-outlined">person</span><span class="inst-chip__label">Representante</span><strong>{{ inst.representante_legal }}</strong>
-        </span>
-        <span *ngIf="inst.telefono" class="inst-chip">
-          <span class="material-symbols-outlined">call</span><span class="inst-chip__label">Tel</span><strong>{{ inst.telefono }}</strong>
-        </span>
-        <span class="inst-chip">
-          <span class="material-symbols-outlined">admin_panel_settings</span><span class="inst-chip__label">Administrador</span><strong>{{ inst.administrador_asignado?.nombre_completo || 'Sin asignar' }}</strong>
-        </span>
-      </div>
-
-      <!-- Sedes registradas -->
-      <div *ngIf="inst.sedes && inst.sedes.length > 0" class="inst-sedes">
-        <span class="inst-sedes__titulo"><span class="material-symbols-outlined">apartment</span>Sedes registradas</span>
-        <span *ngFor="let s of inst.sedes" class="inst-sede">{{ s.nombre_sede }}</span>
+      <div class="sx-logo">
+        <div class="sx-logo__circle">
+          <img src="/sirae-logo-dark.png" alt="Logo SIRAE" />
+        </div>
       </div>
     </header>
 
-
-    <!-- ========================================================================= -->
-    <!-- OPCIONES DE GESTIÓN DE LA INSTITUCIÓN SELECCIONADA                          -->
-    <!-- ========================================================================= -->
-    <div class="flex flex-col gap-5">
-      <div>
-        <h2 class="m-0 text-xl font-black text-slate-900">Opciones de Gestión</h2>
-        <p class="m-0 mt-0.5 text-xs font-medium text-slate-500">Elige con qué parte de <strong class="text-slate-700">{{ inst.nombre_institucion }}</strong> quieres trabajar.</p>
+    <!-- FUNCIONES RÁPIDAS -->
+    <div class="sx-fn">
+      <div class="sx-section-head">
+        <h2>Funciones rápidas</h2>
+        <p>Toca una opción para empezar</p>
       </div>
 
-      <div class="grid grid-cols-1 gap-5 md:grid-cols-3">
-
-        <!-- OPCIÓN 1: REGISTRAR ENTREGA DE ALIMENTOS -->
-        <article class="opt-card" style="--c1:#FFD03A; --c2:#F5A300; --tint:#FFF6D6; --glow:rgba(245,163,0,.5); --on:#1f2937; animation-delay:0ms;"
-          (click)="irA('entregas')">
-          <div class="flex items-start justify-between">
-            <div class="opt-icon"><span class="material-symbols-outlined text-[26px]">local_shipping</span></div>
-            <span class="opt-go"><span class="material-symbols-outlined text-[20px]">arrow_outward</span></span>
+      <div class="sx-quick">
+        <button type="button" class="sx-q" (click)="irA('entregas')">
+          <span class="sx-q__icon"><span class="material-symbols-outlined">local_shipping</span></span>
+          <div class="sx-q__body">
+            <h3>Registrar una entrega</h3>
+            <p>Anota los víveres que llegaron: lotes, cantidades y vencimientos.</p>
           </div>
+          <span class="sx-q__go"><span class="material-symbols-outlined" style="font-size:20px">arrow_forward</span></span>
+        </button>
 
-          <div>
-            <h3 class="m-0 text-lg font-black leading-tight text-slate-900">Registrar Entrega de Alimentos</h3>
-            <p class="m-0 mt-1.5 text-xs leading-5 text-slate-600">
-              Gestiona el despacho y la recepción de víveres: lotes, cantidades y fechas de vencimiento.
-            </p>
+        <button type="button" class="sx-q" (click)="irA('sedes')">
+          <span class="sx-q__icon"><span class="material-symbols-outlined">inventory_2</span></span>
+          <div class="sx-q__body">
+            <h3>Revisar el inventario</h3>
+            <p>Mira cuánto stock y saldo de alimentos hay en cada sede.</p>
           </div>
+          <span class="sx-q__go"><span class="material-symbols-outlined" style="font-size:20px">arrow_forward</span></span>
+        </button>
 
-          <div class="opt-chip">
-            <span class="material-symbols-outlined text-[18px]" style="color:var(--c2)">inventory</span>
-            <span class="text-xs font-semibold text-slate-700">Recepción y control listo para esta institución</span>
+        <button type="button" class="sx-q" (click)="irA('reportes')">
+          <span class="sx-q__icon"><span class="material-symbols-outlined">analytics</span></span>
+          <div class="sx-q__body">
+            <h3>Consultar reportes</h3>
+            <p>Cupos, entregas y novedades de tu institución.</p>
           </div>
-
-          <button type="button" class="opt-btn" (click)="irA('entregas'); $event.stopPropagation()">
-            Ir a Registrar Entregas
-            <span class="material-symbols-outlined opt-arrow text-[18px]">arrow_forward</span>
-          </button>
-        </article>
-
-        <!-- OPCIÓN 2: SEDES -->
-        <article class="opt-card" style="--c1:#FFD03A; --c2:#F5A300; --tint:#FFF6D6; --glow:rgba(245,163,0,.5); --on:#1f2937; animation-delay:110ms;"
-          (click)="irA('sedes')">
-          <div class="flex items-start justify-between">
-            <div class="opt-icon"><span class="material-symbols-outlined text-[26px]">apartment</span></div>
-            <span class="opt-go"><span class="material-symbols-outlined text-[20px]">arrow_outward</span></span>
-          </div>
-
-          <div>
-            <h3 class="m-0 text-lg font-black leading-tight text-slate-900">Sedes e Inventario</h3>
-            <p class="m-0 mt-1.5 text-xs leading-5 text-slate-600">
-              Consulta tus sedes y monitorea el stock de ingredientes y los saldos de alimentos.
-            </p>
-          </div>
-
-          <div class="opt-chip">
-            <span class="material-symbols-outlined text-[18px]" style="color:var(--c2)">location_city</span>
-            <span class="min-w-0 truncate text-xs font-semibold text-slate-700">
-              {{ inst.sedes?.length || 0 }} {{ (inst.sedes?.length || 0) === 1 ? 'sede' : 'sedes' }} · {{ resumenSedes }}
-            </span>
-          </div>
-
-          <button type="button" class="opt-btn" (click)="irA('sedes'); $event.stopPropagation()">
-            Ver Sedes e Inventario
-            <span class="material-symbols-outlined opt-arrow text-[18px]">arrow_forward</span>
-          </button>
-        </article>
-
-        <!-- OPCIÓN 3: REPORTES DE CONSUMO -->
-        <article class="opt-card" style="--c1:#FFD03A; --c2:#F5A300; --tint:#FFF6D6; --glow:rgba(245,163,0,.5); --on:#1f2937; animation-delay:220ms;"
-          (click)="irA('reportes')">
-          <div class="flex items-start justify-between">
-            <div class="opt-icon"><span class="material-symbols-outlined text-[26px]">analytics</span></div>
-            <span class="opt-go"><span class="material-symbols-outlined text-[20px]">arrow_outward</span></span>
-          </div>
-
-          <div>
-            <h3 class="m-0 text-lg font-black leading-tight text-slate-900">Reportes de Consumo</h3>
-            <p class="m-0 mt-1.5 text-xs leading-5 text-slate-600">
-              Revisa los cupos, las entregas de alimentos y las novedades de las sedes de tu institución.
-            </p>
-          </div>
-
-          <div class="opt-chip">
-            <span class="material-symbols-outlined text-[18px]" style="color:var(--c2)">bar_chart</span>
-            <span class="text-xs font-semibold text-slate-700">Cupos, entregas y novedades por sede</span>
-          </div>
-
-          <button type="button" class="opt-btn" (click)="irA('reportes'); $event.stopPropagation()">
-            Consultar Reportes
-            <span class="material-symbols-outlined opt-arrow text-[18px]">arrow_forward</span>
-          </button>
-        </article>
-
+          <span class="sx-q__go"><span class="material-symbols-outlined" style="font-size:20px">arrow_forward</span></span>
+        </button>
       </div>
     </div>
-
   </div>
+
+  <!-- TARJETA VERTICAL DE LA INSTITUCIÓN (como la del ejemplo) -->
+  <aside class="sx-panel">
+    <div class="sx-panel__art">
+      <img [src]="imagenActiva" [alt]="'Fachada de ' + inst.nombre_institucion" />
+    </div>
+
+    <div class="sx-panel__body">
+      <span class="sx-pill"><span class="sx-dot"></span>{{ inst.estado || 'ACTIVO' }}</span>
+      <h2>{{ inst.nombre_institucion }}</h2>
+
+      <div class="sx-rows">
+        <div *ngIf="inst.nit" class="sx-row">
+          <span class="sx-row__icon"><span class="material-symbols-outlined">badge</span></span>
+          <div><small>NIT</small><strong>{{ inst.nit }}</strong></div>
+        </div>
+        <div *ngIf="inst.representante_legal" class="sx-row">
+          <span class="sx-row__icon"><span class="material-symbols-outlined">person</span></span>
+          <div><small>Representante</small><strong>{{ inst.representante_legal }}</strong></div>
+        </div>
+        <div *ngIf="inst.telefono" class="sx-row">
+          <span class="sx-row__icon"><span class="material-symbols-outlined">call</span></span>
+          <div><small>Teléfono</small><strong>{{ inst.telefono }}</strong></div>
+        </div>
+        <div class="sx-row">
+          <span class="sx-row__icon"><span class="material-symbols-outlined">admin_panel_settings</span></span>
+          <div><small>Administrador</small><strong>{{ inst.administrador_asignado?.nombre_completo || 'Sin asignar' }}</strong></div>
+        </div>
+      </div>
+
+      <div class="sx-sedes-head">Sedes <span>{{ inst.sedes?.length || 0 }}</span></div>
+      <p *ngIf="!inst.sedes || inst.sedes.length === 0" class="sx-empty">Sin sedes registradas</p>
+      <div *ngIf="inst.sedes && inst.sedes.length > 0" class="sx-sedes">
+        <span *ngFor="let s of inst.sedes" class="sx-sede">{{ s.nombre_sede }}</span>
+      </div>
+    </div>
+  </aside>
 
 </section>
