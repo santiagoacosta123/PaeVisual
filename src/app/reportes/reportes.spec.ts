@@ -33,7 +33,7 @@ describe('Reportes', () => {
   let fixture: ComponentFixture<Reportes>;
   const entregasMock = { cargar: vi.fn() };
   const siraeMock = { getSedes: vi.fn(), getContratos: vi.fn() };
-  const authMock = { institucionActiva$: of(null) };
+  const authMock = { institucionActiva$: of({ id_institucion: 5, nombre_institucion: 'Colegio' }), sedeActiva$: of(null) };
   const alertasMock = { error: vi.fn(), warning: vi.fn(), success: vi.fn() };
 
   beforeEach(async () => {

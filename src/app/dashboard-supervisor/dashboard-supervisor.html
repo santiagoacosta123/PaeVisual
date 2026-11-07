@@ -101,6 +101,19 @@
   <!-- ========================================================================= -->
   <div *ngIf="!institucionActiva" class="flex flex-col gap-6">
 
+    <!-- Encabezado de Selección -->
+    <div class="flex flex-col gap-2 rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
+      <div class="flex items-center gap-3">
+        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
+          <span class="material-symbols-outlined text-[28px]">school</span>
+        </div>
+        <div>
+          <h2 class="m-0 text-xl font-black text-slate-900">Instituciones Asignadas</h2>
+          <p class="m-0 text-xs font-medium text-slate-500">Selecciona la institución educativa con la que vas a trabajar para acceder a todas sus funciones de gestión.</p>
+        </div>
+      </div>
+    </div>
+
     <!-- Estado de carga -->
     <div *ngIf="cargando && instituciones.length === 0" class="py-16 text-center text-slate-500 text-sm font-semibold">
       <span class="material-symbols-outlined animate-spin text-3xl text-amber-500 mb-2 block">progress_activity</span>
@@ -259,8 +272,8 @@
           </button>
         </article>
 
-        <!-- OPCIÓN 2: SEDES E INVENTARIO -->
-        <article class="opt-card" style="--c1:#2AB26D; --c2:#168A4A; --tint:#DDF6E8; --glow:rgba(22,138,74,.5); --on:#ffffff; animation-delay:110ms;"
+        <!-- OPCIÓN 2: SEDES -->
+        <article class="opt-card" style="--c1:#FFD03A; --c2:#F5A300; --tint:#FFF6D6; --glow:rgba(245,163,0,.5); --on:#1f2937; animation-delay:110ms;"
           (click)="irA('sedes')">
           <div class="flex items-start justify-between">
             <div class="opt-icon"><span class="material-symbols-outlined text-[26px]">apartment</span></div>

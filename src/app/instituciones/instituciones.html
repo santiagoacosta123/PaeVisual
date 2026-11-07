@@ -145,7 +145,8 @@
     <!-- Cuadrícula de Tarjetas de Sedes -->
     <div *ngIf="filtradas.length > 0" class="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
       <article *ngFor="let sede of filtradas; let i = index; trackBy: trackSede"
-        class="sede-card fx-up group flex flex-col">
+        (click)="seleccionarSede(sede)"
+        class="sede-card fx-up group flex cursor-pointer flex-col">
         <div class="relative">
           <img [src]="imagenDe(i)" [alt]="'Sede ' + sede.nombre_sede"
             class="h-44 w-full object-cover" loading="lazy" />
@@ -165,7 +166,7 @@
             </p>
           </div>
 
-          <button type="button" (click)="irAEntregas(sede)"
+          <button type="button" (click)="irAEntregas(sede); $event.stopPropagation()"
             class="mt-auto flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-amber-400 px-4 py-3 text-xs font-bold text-slate-950 shadow-sm transition hover:bg-amber-500">
             <span class="material-symbols-outlined text-[18px]">local_shipping</span>
             Registrar entrega

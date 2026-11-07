@@ -481,6 +481,7 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
   seleccionarSede(sede: SedeCard): void {
     if (sede.esInstitucion) {
       this.authService.limpiarSedeActiva();
+      this.router.navigate(['/dashboard-supervisor']);
       return;
     }
     this.authService.establecerSedeActiva({
@@ -489,10 +490,22 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
       id_institucion: sede.id_institucion ?? this.institucionActiva?.id_institucion,
       nombre_institucion: sede.nombre_institucion ?? this.institucionSeleccionada?.nombre_institucion,
     });
+    this.router.navigate(['/dashboard-supervisor']);
   }
 
   // Lleva a "Registrar entrega" con la institución y la sede de la tarjeta ya enviadas
   irAEntregas(sede: SedeCard): void {
+    if (!sede.esInstitucion) {
+      this.authService.establecerSedeActiva({
+        id_sede: sede.id_sede,
+        nombre_sede: sede.nombre_sede,
+        id_institucion: sede.id_institucion ?? this.institucionActiva?.id_institucion,
+        nombre_institucion: sede.nombre_institucion ?? this.institucionSeleccionada?.nombre_institucion,
+      });
+    } else {
+      this.authService.limpiarSedeActiva();
+    }
+
     const queryParams: Record<string, string | number> = {};
 
     if (sede.id_institucion != null) queryParams['institucion'] = sede.id_institucion;

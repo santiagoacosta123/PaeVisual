@@ -32,7 +32,7 @@ export class DashboardSupervisor implements OnInit {
   ngOnInit(): void {
     const usuario = this.authService.obtenerUsuario();
     this.nombreSupervisor = usuario?.nombre ? `${usuario.nombre} ${usuario.apellido ?? ''}`.trim() : 'Supervisor PAE';
-    this.cargando = false;
+    this.cargando = true;
 
     // Escuchar si viene con parámetro para cambiar de institución
     this.route.queryParams.subscribe(params => {
@@ -133,9 +133,9 @@ export class DashboardSupervisor implements OnInit {
         this.cargarInstitucionesDesdePerfil(usuario?.id_usuario);
       }
 
-      // Si la institución que había quedado seleccionada ya no está asignada, se quita
+      // Solo sincronizar la institución si el usuario ya la tiene seleccionada activamente en esta sesión
       const activaGuardada = this.authService.obtenerInstitucionActiva();
-      if (activaGuardada) {
+      if (activaGuardada && this.institucionActiva) {
         const encontrada = this.instituciones.find(i => i.id_institucion === activaGuardada.id_institucion);
         if (encontrada) {
           this.institucionActiva = encontrada;
@@ -178,6 +178,8 @@ export class DashboardSupervisor implements OnInit {
   seleccionarInstitucion(inst: InstitucionAsignada): void {
     this.institucionActiva = inst;
     this.authService.establecerInstitucionActiva(inst);
+    // Limpiar queryParam 'cambiar' de la URL para que no deseleccione si se refresca la página
+    void this.router.navigate([], { relativeTo: this.route, queryParams: {} });
     void this.alertas.supervisorSuccess(
       'Institución activa',
       `${inst.nombre_institucion} quedó seleccionada para continuar con el seguimiento asignado.`

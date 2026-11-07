@@ -20,6 +20,26 @@
 
 <section class="flex w-full flex-col gap-6" style="font-family: 'Roboto', sans-serif;">
 
+  <!-- ============ AVISO: SIN INSTITUCIÓN SELECCIONADA ============ -->
+  <div *ngIf="!institucionActiva"
+    class="flex flex-col items-center justify-center gap-4 rounded-3xl border border-dashed border-amber-300 bg-amber-50/50 p-12 text-center">
+    <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
+      <span class="material-symbols-outlined text-[36px]">school</span>
+    </div>
+    <div>
+      <h2 class="m-0 text-lg font-black text-slate-800">No has seleccionado una institución educativa</h2>
+      <p class="m-0 mt-1 max-w-md text-xs text-slate-600">
+        Para consultar el historial de entregas, sedes y estados de recepción, primero debes seleccionar una institución activa en tu panel de supervisor.
+      </p>
+    </div>
+    <button type="button" (click)="irAInicioSupervisor()"
+      class="btn-naranja inline-flex cursor-pointer items-center gap-2 rounded-xl px-5 py-2.5 text-xs font-black shadow-md">
+      <span class="material-symbols-outlined text-[18px]">space_dashboard</span>
+      Ir al Panel del Supervisor
+    </button>
+  </div>
+
+
   <!-- ============ ENCABEZADO ============ -->
   <header class="flex flex-col gap-4 rounded-3xl border border-slate-100 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-6">
     <div class="flex items-center gap-4">
@@ -32,25 +52,63 @@
         <p class="m-0 text-xs font-medium text-slate-500">Cupos y entregas de alimentos de las sedes de tu institución.</p>
       </div>
     </div>
-    <button type="button" (click)="exportarCsvSedes()" [disabled]="cargando || resumenSedes.length === 0"
-      class="btn-naranja inline-flex cursor-pointer items-center justify-center gap-2 self-start rounded-xl px-4 py-2.5 text-sm font-black disabled:cursor-not-allowed disabled:opacity-50 sm:self-auto">
-      <span class="material-symbols-outlined text-[20px]">download</span>
-      Exportar reporte (CSV)
-    </button>
+    <div class="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+      <button type="button" (click)="exportarExcelOficial()" [disabled]="cargando || exportandoExcel || !institucionActiva || entregasHistorial.length === 0"
+        class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-black text-white shadow-md transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+        title="Descargar reporte oficial en formato Excel (.xlsx)">
+        <span class="material-symbols-outlined text-[20px]">{{ exportandoExcel ? 'hourglass_top' : 'download' }}</span>
+        {{ exportandoExcel ? 'Generando...' : 'Descargar Excel (.xlsx)' }}
+      </button>
+      <button type="button" (click)="exportarCsvSedes()" [disabled]="cargando || resumenSedes.length === 0"
+        class="btn-naranja inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-black disabled:cursor-not-allowed disabled:opacity-50">
+        <span class="material-symbols-outlined text-[20px]">table_view</span>
+        Exportar CSV
+      </button>
+    </div>
   </header>
 
-  <!-- Qué datos usa este reporte -->
-  <div class="flex items-start gap-3 rounded-2xl border border-sky-100 bg-sky-50/70 p-4 text-xs font-medium leading-5 text-sky-900">
-    <span class="material-symbols-outlined mt-0.5 text-[20px] text-sky-600">info</span>
-    <p class="m-0">Este reporte usa los datos disponibles hoy: sedes, cupos de los contratos y entregas de alimentos. La asistencia y las raciones servidas se sumarán cuando el sistema las ponga a disposición del Supervisor.</p>
-  </div>
+  <!-- ============ TARJETAS RESUMEN DE ESTADO (KPIs) ============ -->
+    <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <article class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
+          <span class="material-symbols-outlined text-[22px]">inventory_2</span>
+        </span>
+        <div class="min-w-0">
+          <p class="m-0 text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Despachos</p>
+          <p class="mb-0 mt-0.5 text-xl font-black text-slate-900">{{ contarEstado('TODAS') }}</p>
+        </div>
+      </article>
 
-  <!-- Aviso de datos incompletos -->
-  <div *ngIf="avisoDatos" role="status"
-    class="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50/70 p-4 text-xs font-medium leading-5 text-amber-900">
-    <span class="material-symbols-outlined mt-0.5 text-[20px] text-amber-600">warning</span>
-    <p class="m-0">{{ avisoDatos }}</p>
-  </div>
+      <article class="flex items-center gap-3 rounded-2xl border border-sky-200 bg-sky-50/50 p-4 shadow-xs">
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-100 text-sky-700">
+          <span class="material-symbols-outlined text-[22px]">local_shipping</span>
+        </span>
+        <div class="min-w-0">
+          <p class="m-0 text-[10px] font-bold uppercase tracking-wider text-sky-700">En Tránsito</p>
+          <p class="mb-0 mt-0.5 text-xl font-black text-sky-900">{{ contarEstado('EN_TRANSITO') }}</p>
+        </div>
+      </article>
+
+      <article class="flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50/50 p-4 shadow-xs">
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
+          <span class="material-symbols-outlined text-[22px]">check_circle</span>
+        </span>
+        <div class="min-w-0">
+          <p class="m-0 text-[10px] font-bold uppercase tracking-wider text-emerald-700">Recibidas OK</p>
+          <p class="mb-0 mt-0.5 text-xl font-black text-emerald-900">{{ contarEstado('RECIBIDA') }}</p>
+        </div>
+      </article>
+
+      <article class="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50/50 p-4 shadow-xs">
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+          <span class="material-symbols-outlined text-[22px]">warning</span>
+        </span>
+        <div class="min-w-0">
+          <p class="m-0 text-[10px] font-bold uppercase tracking-wider text-amber-800">Con Novedad / Rechazo</p>
+          <p class="mb-0 mt-0.5 text-xl font-black text-amber-950">{{ contarEstado('CON_NOVEDAD') + contarEstado('RECHAZADA') }}</p>
+        </div>
+      </article>
+    </div>
 
   <!-- ============ FILTROS ============ -->
   <section class="fx-panel p-5 sm:p-6" aria-label="Filtros del reporte">
@@ -109,34 +167,120 @@
     </p>
   </section>
 
-  <!-- ============ INDICADORES ============ -->
-  <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
-    <div class="fx-panel fx-lift fx-up p-5">
-      <div class="ico-suave mb-3 flex h-10 w-10 items-center justify-center rounded-xl"><span class="material-symbols-outlined text-[22px]">school</span></div>
-      <p class="m-0 text-[11px] font-bold uppercase tracking-wide text-slate-400">Sedes</p>
-      <p class="m-0 text-2xl font-black text-slate-900">{{ totales.sedes }}</p>
-      <p class="m-0 text-[11px] text-slate-400">{{ totales.dias }} días con entregas</p>
+  <!-- ============ HISTORIAL DE ENTREGAS ============ -->
+  <section class="fx-panel overflow-hidden" aria-label="Historial de entregas">
+    <div class="flex flex-col gap-4 border-b border-slate-100 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
+      <div>
+        <h2 class="m-0 text-base font-black text-slate-900">Historial de entregas</h2>
+        <p class="m-0 text-[11px] font-medium text-slate-500">Consulta el estado y la recepción de cada envío registrado.</p>
+      </div>
+      <label class="relative block w-full lg:w-72">
+        <span class="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-slate-400">search</span>
+        <input type="search" [(ngModel)]="textoBusqueda" (ngModelChange)="alCambiarBusqueda()" placeholder="Buscar producto, sede o receptor"
+          class="fx-input w-full rounded-xl border border-slate-200 py-2.5 pl-10 pr-3 text-sm font-semibold text-slate-800">
+      </label>
     </div>
-    <div class="fx-panel fx-lift fx-up p-5">
-      <div class="ico-suave mb-3 flex h-10 w-10 items-center justify-center rounded-xl"><span class="material-symbols-outlined text-[22px]">groups</span></div>
-      <p class="m-0 text-[11px] font-bold uppercase tracking-wide text-slate-400">Cupos contratados</p>
-      <p class="m-0 text-2xl font-black text-slate-900">{{ totales.cupos }}</p>
-      <p class="m-0 text-[11px] text-slate-400">estudiantes en contratos vigentes</p>
-    </div>
-    <div class="fx-panel fx-lift fx-up p-5">
-      <div class="ico-suave mb-3 flex h-10 w-10 items-center justify-center rounded-xl"><span class="material-symbols-outlined text-[22px]">local_shipping</span></div>
-      <p class="m-0 text-[11px] font-bold uppercase tracking-wide text-slate-400">Entregas</p>
-      <p class="m-0 text-2xl font-black text-[#e69a0c]">{{ totales.entregas }}</p>
-      <p class="m-0 text-[11px] text-slate-400">{{ totales.kilos }} kg recibidos</p>
-    </div>
-    <div class="fx-panel fx-lift fx-up p-5">
-      <div class="ico-suave mb-3 flex h-10 w-10 items-center justify-center rounded-xl"><span class="material-symbols-outlined text-[22px]">report</span></div>
-      <p class="m-0 text-[11px] font-bold uppercase tracking-wide text-slate-400">Novedades</p>
-      <p class="m-0 text-2xl font-black text-slate-900">{{ totales.novedades }}</p>
-      <p class="m-0 text-[11px] text-slate-400">con novedad o rechazadas</p>
-    </div>
-  </div>
 
+    <div class="flex flex-wrap gap-2 border-b border-slate-100 px-5 py-3">
+      <button type="button" (click)="cambiarEstadoFiltro('TODAS')"
+        class="cursor-pointer rounded-full px-3 py-1.5 text-xs font-black transition" [ngClass]="estadoFiltro === 'TODAS' ? 'pill-on' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
+        Todas {{ contarEstado('TODAS') }}
+      </button>
+      <button type="button" (click)="cambiarEstadoFiltro('EN_TRANSITO')"
+        class="cursor-pointer rounded-full px-3 py-1.5 text-xs font-black transition" [ngClass]="estadoFiltro === 'EN_TRANSITO' ? 'pill-on' : 'bg-sky-50 text-sky-700 hover:bg-sky-100'">
+        En tránsito {{ contarEstado('EN_TRANSITO') }}
+      </button>
+      <button type="button" (click)="cambiarEstadoFiltro('RECIBIDA')"
+        class="cursor-pointer rounded-full px-3 py-1.5 text-xs font-black transition" [ngClass]="estadoFiltro === 'RECIBIDA' ? 'pill-on' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'">
+        Recibidas {{ contarEstado('RECIBIDA') }}
+      </button>
+      <button type="button" (click)="cambiarEstadoFiltro('CON_NOVEDAD')"
+        class="cursor-pointer rounded-full px-3 py-1.5 text-xs font-black transition" [ngClass]="estadoFiltro === 'CON_NOVEDAD' ? 'pill-on' : 'bg-amber-50 text-amber-700 hover:bg-amber-100'">
+        Con novedad {{ contarEstado('CON_NOVEDAD') }}
+      </button>
+      <button type="button" (click)="cambiarEstadoFiltro('RECHAZADA')"
+        class="cursor-pointer rounded-full px-3 py-1.5 text-xs font-black transition" [ngClass]="estadoFiltro === 'RECHAZADA' ? 'pill-on' : 'bg-red-50 text-red-700 hover:bg-red-100'">
+        Rechazadas {{ contarEstado('RECHAZADA') }}
+      </button>
+    </div>
+
+    <div class="tabla-scroll">
+      <table class="w-full min-w-[980px] border-collapse text-left text-sm">
+        <thead class="bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500">
+          <tr>
+            <th class="px-5 py-3 font-bold">Fecha</th>
+            <th class="px-5 py-3 font-bold">Sede</th>
+            <th class="px-5 py-3 font-bold">Ingrediente</th>
+            <th class="px-5 py-3 text-right font-bold">Enviado</th>
+            <th class="px-5 py-3 text-right font-bold">Recibido</th>
+            <th class="px-5 py-3 font-bold">Estado</th>
+            <th class="px-5 py-3 font-bold">Recibió</th>
+            <th class="px-5 py-3 text-center font-bold">Detalle</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let e of entregasPaginadas; trackBy: trackEntrega"
+            (click)="abrirEntrega(e)" class="cursor-pointer border-t border-slate-100 transition hover:bg-orange-50/40">
+            <td class="whitespace-nowrap px-5 py-3 font-bold text-slate-700">{{ fechaCorta(e.fecha) }}</td>
+            <td class="max-w-[180px] px-5 py-3 font-bold text-slate-900">{{ e.sede }}</td>
+            <td class="px-5 py-3">
+              <span class="font-bold text-slate-800">{{ e.ingrediente }}</span>
+              <span class="block text-[11px] text-slate-400">{{ e.tipoMercado }}</span>
+            </td>
+            <td class="whitespace-nowrap px-5 py-3 text-right font-black text-slate-800">{{ e.cantidad }} {{ e.unidad }}</td>
+            <td class="whitespace-nowrap px-5 py-3 text-right font-bold text-slate-700">
+              {{ e.cantidadRecibida != null ? e.cantidadRecibida + ' ' + e.unidad : '—' }}
+            </td>
+            <td class="px-5 py-3">
+              <span class="whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-black" [ngClass]="claseEstado(e.estado)">
+                {{ etiquetaEstado(e.estado) }}
+              </span>
+            </td>
+            <td class="px-5 py-3 text-xs text-slate-600">{{ e.receptor || '—' }}</td>
+            <td class="px-5 py-3 text-center">
+              <button type="button" (click)="abrirEntrega(e); $event.stopPropagation()" [attr.aria-label]="'Ver entrega de ' + e.ingrediente"
+                class="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-[#faa911] text-[#e69a0c] hover:bg-orange-50">
+                <span class="material-symbols-outlined text-[18px]">visibility</span>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Paginación de Entregas -->
+    <div *ngIf="entregasHistorial.length > 0"
+      class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 bg-slate-50/60 px-5 py-3 text-xs font-semibold text-slate-600">
+      <div class="flex items-center gap-2">
+        <span>Mostrar</span>
+        <select [(ngModel)]="filasPorPagina" (ngModelChange)="paginaActual = 1"
+          class="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-bold text-slate-700 outline-none focus:border-[#faa911]">
+          <option *ngFor="let opt of opcionesFilasPorPagina" [ngValue]="opt">{{ opt }}</option>
+        </select>
+        <span>por página</span>
+        <span class="text-slate-400">· Mostrando {{ (paginaActual - 1) * filasPorPagina + 1 }} a {{ min(paginaActual * filasPorPagina, entregasHistorial.length) }} de {{ entregasHistorial.length }} entregas</span>
+      </div>
+
+      <div class="flex items-center gap-1.5">
+        <button type="button" (click)="cambiarPagina(paginaActual - 1)" [disabled]="paginaActual === 1"
+          class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+          aria-label="Página anterior">
+          <span class="material-symbols-outlined text-[18px]">chevron_left</span>
+        </button>
+        <span class="px-2 font-black text-slate-800">Página {{ paginaActual }} de {{ totalPaginas }}</span>
+        <button type="button" (click)="cambiarPagina(paginaActual + 1)" [disabled]="paginaActual === totalPaginas"
+          class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+          aria-label="Página siguiente">
+          <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+        </button>
+      </div>
+    </div>
+
+    <div *ngIf="entregasHistorial.length === 0" class="px-6 py-12 text-center">
+      <span class="material-symbols-outlined text-[38px] text-slate-300">history</span>
+      <p class="m-0 mt-2 text-sm font-black text-slate-800">No hay entregas en este historial</p>
+      <p class="m-0 mt-1 text-xs text-slate-500">Cambia los filtros, el rango de fechas o la sede seleccionada.</p>
+    </div>
   <!-- ============ RESUMEN POR SEDE ============ -->
   <section class="fx-panel overflow-hidden">
     <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
