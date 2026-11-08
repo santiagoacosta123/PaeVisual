@@ -868,6 +868,28 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     return this.saldosInventario.get(p.id) ?? 0;
   }
 
+  // ===================== BARRA VERDE DE EXISTENCIAS Y FACTURA (tarjetas) =====================
+  /** Producto con más existencias: la barra verde se calcula contra él. */
+  private get stockMaximo(): number {
+    return Math.max(1, ...Array.from(this.saldosInventario.values()));
+  }
+
+  /** Porcentaje (0–100) de la barra verde de existencias. */
+  porcentajeStock(cantidad: number): number {
+    return Math.min(100, Math.round(((Number(cantidad) || 0) / this.stockMaximo) * 100));
+  }
+
+  /** Color de la barra: poco = rojo (bajo), intermedio = amarillo (medio), bien = verde (alto). */
+  nivelStock(cantidad: number): 'bajo' | 'medio' | 'alto' {
+    const pct = this.porcentajeStock(cantidad);
+    return pct <= 25 ? 'bajo' : pct <= 60 ? 'medio' : 'alto';
+  }
+
+  /** Fila de la factura que corresponde a este producto (undefined si no está). */
+  seleccionDe(p: ProductoCatalogo): FilaEntrega | undefined {
+    return this.seleccionados.find(s => s.idIngrediente === p.id);
+  }
+
   // ===================== INVENTARIO (ventana emergente) =====================
   mostrarModalInventario = false;
 
@@ -1167,8 +1189,9 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
   private cantidadesEnviar: Record<number, number | null> = {};
   errorEnvioPanel = '';
   guardandoEnvio = false;
-  envioFecha = this.fechaHoy();     // fecha del envío (la eliges tú)
-  envioResponsable = '';            // quién hace el envío
+
+  // La fecha del envío es siempre la de hoy y se pone sola; el responsable es el usuario con sesión iniciada
+  get envioFecha(): string { return this.fechaHoy(); }
 
   disponibleDe(sel: FilaEntrega): number {
     return sel.idIngrediente == null ? 0 : this.saldosInventario.get(sel.idIngrediente) ?? 0;
@@ -1207,8 +1230,6 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     this.errorEnvioPanel = '';
 
     if (!items.length) return fallo('Escribe la cantidad a enviar de al menos un producto.');
-    if (!this.envioFecha) return fallo('Elige la fecha de envío.');
-    if (!this.envioResponsable.trim()) return fallo('Escribe el responsable (quién hace el envío).');
     const excedidos = items.filter(s => this.cantidadEnviarDe(s) > this.disponibleDe(s));
     if (excedidos.length) return fallo(`No puedes enviar más de lo disponible: ${excedidos.map(s => s.ingrediente).join(', ')}.`);
     const incompletos = items.flatMap(s => {
@@ -1231,8 +1252,10 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     const datos = this.datosInstitucion(destino);
     if (datos.id_institucion === undefined) return fallo('No se encontró el identificador de la institución.');
 
-    const hoy = this.envioFecha;                       // fecha elegida para el envío
-    const responsable = this.envioResponsable.trim();
+    const hoy = this.envioFecha;                       // siempre la fecha de hoy
+    // El responsable es el usuario que inició sesión (ya no se escribe a mano)
+    const usuario: any = this.authService.obtenerUsuario();
+    const responsable: string = usuario?.nombre ?? usuario?.username ?? usuario?.first_name ?? 'Sistema';
     this.guardandoEnvio = true;
 
     const peticiones = items.map(sel => {
@@ -1241,7 +1264,8 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       return this.entregasService.registrar({
         id_ingrediente: sel.idIngrediente!, id_tipo_mercado: sel.idTipoMercado!, ...datos,
         fecha_entrega: hoy, fecha_salida: hoy, fecha_vencimiento: sel.fechaVencimiento,
-        cantidad, observaciones: `Responsable: ${responsable}`, frecuencia: sel.frecuencia, unidad, destino, responsable,
+        cantidad, frecuencia: sel.frecuencia, unidad, destino, responsable,
+        observaciones: `Responsable: ${responsable}`,
       } as any).pipe(
         map((resp: any) => ({ ok: true, sel, cantidad, unidad, motivo: '', idResp: (resp?.id ?? resp?.id_entrega) as any })),
         catchError(error => {
@@ -1266,17 +1290,14 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       const ahoraISO = new Date().toISOString();
       const hora = this.horaDe(ahoraISO), lote = String(Date.now());
 
-      // El nombre del responsable se guarda con varias claves para que no desaparezca al recargar
       exitosos.forEach(r => {
         this.recordarIdEnvio(r.idResp);
-        this.guardarResponsableEnvio(r.idResp, r.sel.idIngrediente, r.sel.ingrediente, hoy, r.cantidad, destino, responsable);
         this.guardarExtra(r.idResp, { idIngrediente: r.sel.idIngrediente, cantidad: r.cantidad, unidad: r.unidad, perecedero: this.esPerecedero(r.sel as any) }, { destino, responsable, hora, fechaRegistro: hoy, loteRegistro: lote });
       });
-      this.guardarCache(this.claveExtrasEnvio, this.extrasEnvio);
 
       this.historialEnvios = [...registros, ...this.historialEnvios];
 
-      // Aparece de inmediato en Entradas con su responsable
+      // Aparece de inmediato en Entradas
       this.entregasRaw = [...exitosos.map((r, i) => ({
         id: r.idResp ?? Date.now() + i,
         id_ingrediente: r.sel.idIngrediente,
@@ -1485,7 +1506,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
 
   private claveCompuesta(idIng: number | null, fecha: string, cantidad: number): string { return `${idIng}|${fecha}|${cantidad}`; }
 
-  // ---- Respaldo del responsable de cada ENVÍO (el servidor puede no devolverlo al recargar) ----
+  // ---- Respaldo del responsable de cada ENVÍO (solo para envíos antiguos que sí lo guardaron) ----
   private readonly claveExtrasEnvio = 'sirae_envios_responsable';
   private extrasEnvio: Record<string, string> = this.leerExtrasEnvio();
 
@@ -1518,19 +1539,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     return `${this.norm(ingrediente)}|${fecha}|${Number(cantidad)}`;
   }
 
-  // Guarda el responsable con varias claves, de la más exacta a la más general
-  private guardarResponsableEnvio(idResp: any, idIng: number | null, nombre: string, fecha: string,
-                                  cantidad: number, destino: string, responsable: string): void {
-    const e = this.extrasEnvio;
-    if (idResp != null) e[`id:${idResp}`] = responsable;
-    e[this.claveEnvio(nombre, fecha, cantidad)] = responsable;
-    e[`ing:${idIng}|${fecha}|${Number(cantidad)}`] = responsable;
-    e[`ing:${idIng}|${fecha}`] = responsable;
-    e[`dia:${fecha}|${this.norm(destino)}`] = responsable;
-    e[`dia:${fecha}`] = responsable;          // último recurso
-  }
-
-  // Busca el responsable guardado probando de la clave más exacta a la más general
+  // Busca el responsable guardado (de envíos antiguos) probando de la clave más exacta a la más general
   private responsableEnvioGuardado(item: any): string {
     const ref = item.id_ingrediente ?? item.ingrediente;
     const idIng = typeof ref === 'object' && ref ? Number(ref.id ?? ref.id_ingrediente) : Number(ref);
