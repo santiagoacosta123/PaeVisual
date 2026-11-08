@@ -1,57 +1,30 @@
-    <style>
-        .sirae-root { font-family: 'Roboto', sans-serif; background-color: #FBF9F5; color: #0F172A; min-height: 100vh; }
-        .fx-panel { position: relative; background: #fff; border-radius: 28px; border: 1px solid #F1F5F9; box-shadow: 0 10px 30px -18px rgba(15, 23, 42, .18); }
-        .toolbar-grupos { display: flex; flex-wrap: nowrap; align-items: center; gap: 8px; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
-        .toolbar-grupos::-webkit-scrollbar { display: none; }
-        .toolbar-grupos > div { flex: 0 0 auto; }
-        .toolbar-grupos button { white-space: nowrap; }
+<style>
+        /* =====================================================================
+           SIRAE · Registrar entrega  (colores originales: crema + naranja)
+           ===================================================================== */
+        .sirae-root {
+            --bg: #FBF9F5; --panel: #FFFFFF; --soft: #F8F5EF; --line: #EADFD0;
+            --ink: #0F172A; --mute: #64748B;
+            --o1: #F97316; --o2: #F2622E;
+            --grad: linear-gradient(135deg, #FFA928, #FF8A00);
+            font-family: 'Roboto', sans-serif; background: var(--bg); color: var(--ink); min-height: 100vh;
+        }
+        .sirae-root h1, .sirae-root h2, .sirae-root h3, .sirae-root h4, .sirae-root h5 { color: var(--ink); }
+        .sirae-root .text-slate-900 { color: #000; }
 
-        /* Categorías */
-        .menu-scroll { display: flex; gap: 12px; overflow-x: auto; padding: 6px 4px 14px; scroll-snap-type: x proximity; }
-        .menu-scroll::-webkit-scrollbar { height: 6px; }
-        .menu-scroll::-webkit-scrollbar-thumb { background: #FFD9A8; border-radius: 9999px; }
-        .menu-chip { flex: 0 0 auto; width: 105px; scroll-snap-align: start; }
-        .cat-card { position: relative; background: #fff; border: 1px solid #F1F5F9; box-shadow: 0 6px 18px -10px rgba(15, 23, 42, .18); transition: all .25s ease; }
-        .cat-card.active { border-color: #FDBA74; background: #FFF7ED; box-shadow: 0 0 0 2px #FED7AA, 0 10px 20px -10px rgba(255, 138, 0, .35); }
-        .cat-card.active .cat-label { color: #C2410C; }
-        .cat-count { background: linear-gradient(135deg, #FFA928, #FF8A00); color: #fff; }
+        .fx-panel { position: relative; background: #fff; border-radius: 28px; border: 1.5px solid #EADFD0; box-shadow: 0 12px 30px -18px rgba(15, 23, 42, .22); }
+        .custom-scroll { scrollbar-width: thin; scrollbar-color: #FED7AA transparent; }
+        .custom-scroll::-webkit-scrollbar { width: 5px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #FED7AA; border-radius: 9999px; }
+
+        /* ============ Piezas reutilizables ============ */
         .swipe-hint { animation: fxSwipe 1.6s ease-in-out infinite; }
         @keyframes fxSwipe { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(6px); } }
-
-        /* Tarjetas de producto */
-        .prod-card { touch-action: pan-y; user-select: none; -webkit-user-select: none; position: relative; background: #fff; border-radius: 20px; padding: 16px 10px 12px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; min-height: 190px; box-shadow: 0 4px 12px -8px rgba(15, 23, 42, .12); border: 1px solid #F1F5F9; transition: transform .2s ease, translate .2s ease, box-shadow .2s ease, border-color .2s ease, background .2s ease; cursor: grab; }
-        .prod-card img { -webkit-user-drag: none; pointer-events: none; }
-        .prod-card.arrastrando { transition: none; cursor: grabbing; z-index: 2; }
-        .prod-card.swipe-agregar { border-color: #34D399; background: #ECFDF5; }
-        .prod-card.swipe-quitar { border-color: #F87171; background: #FEF2F2; }
-        .prod-card:hover { transform: translateY(-2px); box-shadow: 0 10px 20px -8px rgba(255, 138, 0, .25); }
-        .prod-card.activa { border-color: #FDBA74; box-shadow: 0 0 0 2px #FED7AA, 0 10px 20px -8px rgba(255, 138, 0, .25); }
-        .prod-img { width: 72px; height: 72px; border-radius: 9999px; display: flex; align-items: center; justify-content: center; font-size: 32px; line-height: 1; overflow: hidden; border: 3px solid #fff; background: radial-gradient(circle at 30% 25%, #fff, #FFEFD6 72%); box-shadow: 0 4px 10px -4px rgba(255, 138, 0, .35); flex-shrink: 0; }
-        .prod-img.warn { background: radial-gradient(circle at 30% 25%, #fff, #FDE9B8 72%); }
-        .prod-img img, .mini-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
-        .prod-nombre { margin: 0; font-size: 13px; font-weight: 900; color: #0F172A; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 32px; }
-        .prod-tipo { display: inline-flex; align-items: center; border-radius: 9999px; padding: 2px 10px; font-size: 10px; font-weight: 800; }
-        .prod-tipo.peco { background: #FFFBEB; color: #B45309; }
-        .prod-tipo.nope { background: #ECFDF5; color: #047857; }
-        .prod-unidad { font-size: 10px; font-weight: 600; color: #94A3B8; }
-        .prod-estados { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; margin-top: auto; }
-        .prod-estado { border-radius: 9999px; padding: 1px 8px; font-size: 9px; font-weight: 800; }
-        .prod-disponible { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: 2px; padding: 6px 10px; border-radius: 12px; background: #FFF7ED; border: 1px solid #FED7AA; }
-        .prod-disponible-label { font-size: 10px; font-weight: 700; color: #9A3412; }
-        .prod-disponible-valor { font-size: 14px; font-weight: 900; color: #EA580C; line-height: 1; }
-        .prod-disponible-valor small { font-size: 10px; font-weight: 700; color: #F97316; margin-left: 2px; }
-        .prod-disponible-vacio { font-size: 11px; font-weight: 800; color: #94A3B8; }
-        .prod-disponible.sin-stock { background: #FEF2F2; border-color: #FECACA; }
-        .prod-disponible.sin-stock .prod-disponible-label { color: #991B1B; }
-        .prod-disponible.sin-stock .prod-disponible-valor, .prod-disponible.sin-stock small { color: #DC2626; }
-        .prod-disponible.sin-entradas { background: #F8FAFC; border-color: #E2E8F0; }
-        .prod-disponible.sin-entradas .prod-disponible-label { color: #64748B; }
-
-        /* Piezas reutilizables */
         .mini-img { display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; border-radius: 9999px; font-size: 16px; line-height: 1; }
+        .mini-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
         .arrow-btn { flex: 0 0 auto; width: 32px; height: 32px; border-radius: 9999px; border: 1px solid #FFD9A8; background: #fff; color: #FF8A00; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 10px -6px rgba(255, 138, 0, .5); transition: background .2s ease; }
         .arrow-btn:hover { background: #FFF1DB; }
-        .pag-btn { min-width: 34px; height: 34px; padding: 0 10px; border-radius: 9999px; border: 1px solid #E2E8F0; background: #fff; color: #475569; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+        .pag-btn { min-width: 34px; height: 34px; padding: 0 10px; border-radius: 10px; border: 1px solid #E2E8F0; background: #fff; color: #475569; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
         .pag-btn:hover:not(:disabled):not(.pill-on) { background: #FFF1DB; border-color: #FFD9A8; }
         .pag-btn:disabled { opacity: .4; cursor: not-allowed; }
         .pill-on { background: linear-gradient(135deg, #FFA928, #FF8A00); color: #fff; box-shadow: 0 6px 14px -6px rgba(255, 138, 0, .7); }
@@ -70,7 +43,7 @@
         .campo { width: 100%; border-radius: 12px; border: 1px solid #E2E8F0; background: #fff; padding: 8px 12px; font-size: 12px; font-weight: 600; color: #1E293B; outline: none; }
         .campo.invalido { border-color: #FCA5A5; background: #FEF2F2; }
 
-        /* Calendario */
+        /* ============ Calendario ============ */
         .cal-cell { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-height: 92px; padding: 8px; border: 0; border-right: 1px solid #F1F5F9; border-bottom: 1px solid #F1F5F9; background: #fff; text-align: left; cursor: pointer; font-family: inherit; }
         .cal-cell:hover { background: #FFFAF1; }
         .cal-cell.fuera { background: #F8FAFC; }
@@ -85,131 +58,207 @@
         .est-bad { background: #FEF2F2; color: #B91C1C; }
         .cal-venc { background: #FFF1DB; color: #C2410C; }
 
-        /* Tarjeta de inventario (panel Factura) */
-        .inv-card { background: #fff; border: 1px solid #F1F5F9; border-radius: 18px; overflow: hidden; box-shadow: 0 6px 16px -10px rgba(15, 23, 42, .2); }
-        .inv-card-cantidad { padding: 10px 12px; background: #FFF7ED; border-top: 1px solid #FFEDD5; border-bottom: 1px solid #FFEDD5; }
-        .inv-item { background: #fff; border: 1px solid #F1F5F9; border-radius: 16px; padding: 10px 12px; box-shadow: 0 4px 12px -8px rgba(15, 23, 42, .08); transition: all .2s ease; }
-        .inv-item:hover { border-color: #FED7AA; box-shadow: 0 6px 16px -8px rgba(255, 138, 0, .18); }
-        .custom-scroll { scrollbar-width: thin; scrollbar-color: #FED7AA transparent; }
-        .custom-scroll::-webkit-scrollbar { width: 5px; }
-        .custom-scroll::-webkit-scrollbar-thumb { background: #FED7AA; border-radius: 9999px; }
+        /* ============ Encabezado ============ */
+        .hd { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 20px; margin-bottom: 18px; padding: 12px 18px; border-radius: 20px; background: #fff; border: 1.5px solid var(--line); box-shadow: 0 10px 24px -20px rgba(15, 23, 42, .3); }
+        .hd-brand { display: flex; align-items: center; gap: 12px; }
+        .hd-logo { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 14px; background: var(--grad); color: #fff; box-shadow: 0 10px 18px -10px rgba(255, 138, 0, .8); }
+        .hd-title { margin: 0; display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 900; letter-spacing: .02em; color: #000; }
+        .hd-live { padding: 2px 9px; border-radius: 9999px; border: 1px solid #A7F3D0; background: #ECFDF5; color: #047857; font-size: 10px; font-weight: 800; letter-spacing: 0; }
+        .hd-sub { margin: 2px 0 0; font-size: 11px; font-weight: 500; color: var(--mute); }
+        .hd-right { margin-left: auto; text-align: right; font-size: 11px; font-weight: 600; color: var(--mute); }
+        .hd-right b { color: #334155; }
+        .search-box { position: relative; flex: 1 1 260px; max-width: 440px; min-width: 200px; margin: 0 auto; }
+        .search-box input { width: 100%; height: 42px; border-radius: 9999px; border: 1.5px solid #E3E7F0; background: #F8FAFC; padding: 0 16px 0 44px; font-size: 13px; font-weight: 500; color: var(--ink); outline: none; transition: border-color .2s, box-shadow .2s, background .2s; }
+        .search-box input::placeholder { color: #94A3B8; }
+        .search-box input:focus { background: #fff; border-color: #FF8A00; box-shadow: 0 0 0 3px rgba(255, 138, 0, .15); }
+        .search-box .material-symbols-outlined { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 20px; color: #94A3B8; }
 
-        /* Panel lateral sticky: acompaña al usuario al hacer scroll */
+        /* ============ Distribución ============ */
+        .layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 22px; align-items: start; }
+        @media (min-width: 1024px) { .layout { grid-template-columns: minmax(0, 1fr) 370px; } }
+
+        /* ============ Barra de vista ============ */
+        .top-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 18px; }
+        .seg { display: inline-flex; padding: 4px; gap: 2px; border-radius: 12px; background: #fff; border: 1.5px solid #E3E7F0; }
+        .seg button { height: 34px; padding: 0 16px; display: inline-flex; align-items: center; gap: 6px; border: 0; border-radius: 9px; background: transparent; color: #64748B; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; transition: background .2s, color .2s; }
+        .seg button.on { background: linear-gradient(135deg, #FFA928, #FF8A00); color: #fff; box-shadow: 0 6px 14px -8px rgba(255, 138, 0, .8); }
+        .btn-excel { height: 40px; padding: 0 16px; display: inline-flex; align-items: center; gap: 6px; border: 0; border-radius: 12px; background: #059669; color: #fff; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; transition: background .2s; }
+        .btn-excel:hover { background: #047857; }
+
+        /* ============ Banner principal (compacto) ============ */
+        .hero { position: relative; overflow: hidden; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; margin-bottom: 18px; padding: 16px 24px; border-radius: 20px; border: 1.5px solid #F6DDB8; background: linear-gradient(120deg, #FFF6E6 0%, #FFE7C2 55%, #FFD08A 100%); box-shadow: 0 14px 28px -24px rgba(255, 138, 0, .55); }
+        .hero-text { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+        .hero-kicker { font-size: 9.5px; font-weight: 900; letter-spacing: .14em; text-transform: uppercase; color: #C2410C; }
+        .hero h2 { margin: 0; font-size: clamp(20px, 2.2vw, 26px); font-weight: 900; line-height: 1.1; letter-spacing: -.02em; color: #000; }
+        .hero p { margin: 0; max-width: 380px; font-size: 12px; line-height: 1.45; color: #7C5A35; font-weight: 500; }
+        .hero-art { position: relative; z-index: 1; display: flex; align-items: center; justify-content: flex-end; gap: 10px; padding-right: 54px; }
+        .hero-bubble { width: 76px; height: 76px; flex: 0 0 76px; display: flex; align-items: center; justify-content: center; overflow: hidden; border-radius: 9999px; background: #fff; border: 2px solid #fff; box-shadow: 0 12px 22px -14px rgba(194, 65, 12, .5); }
+        .hero-bubble img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        /* Ajuste fino: mismo tamaño de círculo, el contenido se escala para que se vea parejo */
+        .hero-bubble.b2 img { transform: scale(1.4); mix-blend-mode: multiply; }
+        .hero-bubble.b3 img { object-fit: contain; transform: scale(1.3); mix-blend-mode: multiply; }
+        .hero-tag { position: absolute; top: 12px; right: 14px; z-index: 3; padding: 3px 10px; border-radius: 9999px; background: #fff; border: 1px solid #FDBA74; color: #C2410C; font-size: 9.5px; font-weight: 800; }
+
+        /* ============ Títulos de sección ============ */
+        .sec-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+        .sec-title { margin: 0; font-size: 15px; font-weight: 900; color: #0F172A; }
+        .sec-sub { margin: 2px 0 0; font-size: 11px; font-weight: 600; color: #94A3B8; }
+        .link-all { border: 0; background: none; cursor: pointer; font-family: inherit; font-size: 12px; font-weight: 800; color: #F97316; }
+        .link-all:hover { color: #C2410C; }
+
+        /* ============ Categorías (una sola fila) ============ */
+        .cat-rail { display: flex; align-items: center; gap: 8px; margin-bottom: 20px; }
+        .cat-grid {
+            flex: 1; min-width: 0; display: flex; gap: 8px;
+            overflow-x: auto; padding: 4px 2px 6px;
+            scroll-snap-type: x proximity; scrollbar-width: none;
+        }
+        .cat-grid::-webkit-scrollbar { display: none; }
+        .cat2 {
+            scroll-snap-align: start; flex: 0 0 auto;
+            display: flex; align-items: center; gap: 8px;
+            height: 44px; padding: 0 10px 0 6px;
+            border-radius: 12px; border: 1.5px solid #F1ECE3; background: #fff;
+            cursor: pointer; font-family: inherit; text-align: left;
+            transition: border-color .2s, background .2s, transform .2s;
+        }
+        .cat2:hover { border-color: #FDBA74; transform: translateY(-1px); }
+        .cat2:focus-visible { outline: none; box-shadow: 0 0 0 3px #FED7AA; }
+        .cat2-foto {
+            width: 32px; height: 32px; flex: 0 0 32px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 9px; background: #FFF4E5; overflow: hidden; font-size: 16px; line-height: 1;
+        }
+        .cat2-foto img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .cat2-nombre { margin: 0; font-size: 11.5px; font-weight: 800; color: #111827; white-space: nowrap; }
+        .cat2-total {
+            min-width: 18px; height: 18px; padding: 0 6px;
+            display: inline-flex; align-items: center; justify-content: center;
+            border-radius: 9999px; background: #F1F3F8; color: #64748B; font-size: 9.5px; font-weight: 900;
+        }
+        .cat2.on { border-color: #F97316; background: #FFF4EC; }
+        .cat2.on .cat2-nombre { color: #C2410C; }
+        .cat2.on .cat2-total { background: linear-gradient(135deg, #FFA928, #FF8A00); color: #fff; }
+
+        /* ============ Pestañas ============ */
+        .tabs-line { display: flex; gap: 22px; margin-bottom: 6px; overflow-x: auto; scrollbar-width: none; border-bottom: 1.5px solid #EDE6DA; }
+        .tabs-line::-webkit-scrollbar { display: none; }
+        .tabs-line button { position: relative; padding: 0 0 10px; border: 0; background: none; cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 700; color: #64748B; white-space: nowrap; transition: color .2s; }
+        .tabs-line button:hover { color: #334155; }
+        .tabs-line button.on { color: #0F172A; font-weight: 900; }
+        .tabs-line button.on::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1.5px; height: 2px; border-radius: 2px; background: #F97316; }
+
+        .swipe-note { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; padding: 10px 14px; border-radius: 12px; border: 1.5px dashed #FDBA74; background: #FFF9F0; font-size: 11.5px; font-weight: 600; color: #9A3412; }
+        .swipe-note .material-symbols-outlined { color: #F97316; }
+
+        /* ============ Tarjeta de producto (compacta) ============ */
+        .pc { position: relative; display: flex; flex-direction: column; gap: 6px; padding: 8px; border-radius: 14px; background: #fff; border: 1.5px solid #F1ECE3; cursor: grab; user-select: none; -webkit-user-select: none; touch-action: pan-y; box-shadow: 0 4px 14px -10px rgba(15, 23, 42, .3); transition: transform .2s, translate .2s, border-color .2s, background .2s, box-shadow .2s; }
+        .pc:hover { border-color: #FDBA74; box-shadow: 0 14px 26px -16px rgba(255, 138, 0, .45); transform: translateY(-2px); }
+        .pc:focus-visible { outline: none; box-shadow: 0 0 0 3px #FED7AA; }
+        .pc.arrastrando { transition: none; cursor: grabbing; z-index: 2; transform: none; }
+        .pc.activa { border-color: #F97316; background: #FFFAF5; }
+        .pc.swipe-agregar { border-color: #10B981; background: #ECFDF5; }
+        .pc.swipe-quitar { border-color: #F87171; background: #FEF2F2; }
+        .pc-foto { position: relative; aspect-ratio: 1 / 0.58; display: flex; align-items: center; justify-content: center; border-radius: 10px; background: #EEF1F7; overflow: hidden; font-size: 34px; line-height: 1; }
+        .pc-foto.peco { background: #FFF3DC; }
+        .pc-foto img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; -webkit-user-drag: none; }
+        .pc-check { position: absolute; top: 6px; left: 6px; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; border-radius: 5px; background: #fff; border: 1.5px solid #94A3B8; color: transparent; transition: all .2s; }
+        .pc-check .material-symbols-outlined { font-size: 13px; font-weight: 700; }
+        .pc.activa .pc-check { background: #F97316; border-color: #F97316; color: #fff; }
+        .pc-tipo { position: absolute; top: 6px; right: 6px; padding: 2px 7px; border-radius: 9999px; font-size: 8.5px; font-weight: 800; white-space: nowrap; }
+        .pc-tipo.peco { background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A; }
+        .pc-tipo.nope { background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; }
+        .pc-enviado { position: absolute; bottom: 6px; left: 6px; padding: 2px 8px; border-radius: 9999px; font-size: 9px; font-weight: 800; background: #D1FAE5; color: #047857; }
+        .pc-nombre { margin: 2px 2px 0; font-size: 12.5px; font-weight: 900; line-height: 1.2; color: #000; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 30px; }
+        .pc-btn { width: 100%; height: 28px; border: 0; border-radius: 8px; font-family: inherit; font-size: 11px; font-weight: 800; cursor: pointer; transition: background .2s, opacity .2s, transform .1s; }
+        .pc-btn:active:not(:disabled) { transform: scale(.97); }
+        .pc-btn-pri { background: #F2622E; color: #fff; }
+        .pc-btn-pri:hover:not(:disabled) { background: #DC5222; }
+        .pc-btn-sec { background: #ECFDF5; color: #047857; }
+        .pc-btn-sec:hover:not(:disabled) { background: #FEE2E2; color: #B91C1C; }
+        .pc-btn:disabled { cursor: default; opacity: .45; }
+
+        /* ---- Existencia (barra verde) ---- */
+        .pc-stock { margin: 0 2px; }
+        .pc-stock-txt { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; font-size: 10px; font-weight: 700; color: #94A3B8; }
+        .pc-stock-txt b { color: #EA580C; font-weight: 900; }
+        .pc-stock-cant { font-weight: 800; color: #475569; }
+        .barra-stock { height: 5px; margin-top: 4px; border-radius: 9999px; background: #E2E8F0; overflow: hidden; }
+        .barra-stock > span { display: block; height: 100%; min-width: 0; border-radius: 9999px; background: linear-gradient(90deg, #10B981, #34D399); transition: width .4s ease, background .3s ease; }
+        .barra-stock > span.bajo { background: linear-gradient(90deg, #EF4444, #F87171); }
+        .barra-stock > span.medio { background: linear-gradient(90deg, #F59E0B, #FBBF24); }
+        .barra-stock > span.alto { background: linear-gradient(90deg, #10B981, #34D399); }
+        /* ---- Acciones compactas ---- */
+        .pc-acciones { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: 2px; min-height: 28px; }
+        .pc-chip { flex: 0 0 auto; height: 28px; padding: 0 8px; border: 0; border-radius: 8px; background: #ECFDF5; color: #047857; font-family: inherit; font-size: 9.5px; font-weight: 800; line-height: 1.1; cursor: pointer; }
+        .pc-chip:hover { background: #FEE2E2; color: #B91C1C; }
+        .pc-step { display: flex; align-items: center; gap: 4px; margin-left: auto; padding: 2px; border-radius: 9999px; background: #F1F5F9; }
+        .pc-step button { width: 22px; height: 22px; border: 0; border-radius: 9999px; background: #fff; color: #475569; font-size: 14px; font-weight: 900; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .pc-step button:hover { background: #FFF1DB; color: #EA580C; }
+        .pc-step span { min-width: 18px; text-align: center; font-size: 11.5px; font-weight: 900; color: #0F172A; }
+
+        .pag-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-top: 22px; padding-top: 16px; border-top: 1.5px solid #EDE6DA; }
+
+        /* ============ Panel Factura (derecha) ============ */
+        .inv-panel { background: #fff; border-radius: 22px; border: 1.5px solid var(--line); padding: 18px; box-shadow: 0 12px 30px -20px rgba(15, 23, 42, .25); }
+        .inv-kicker { display: block; font-size: 10px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: #94A3B8; }
+        .inv-titulo { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 14px; }
+        .inv-titulo h3 { margin: 2px 0 0; font-size: 16px; font-weight: 900; color: #000; }
+        .inv-count { padding: 3px 10px; border-radius: 9999px; background: #FFEDD5; color: #C2410C; font-size: 11px; font-weight: 900; white-space: nowrap; }
+        .inv-lista { display: flex; flex-direction: column; gap: 10px; }
+        .inv-row { padding: 10px; border-radius: 14px; border: 1.5px solid #EEF1F7; background: #FAFBFD; transition: border-color .2s, background .2s; }
+        .inv-row:hover { border-color: #FED7AA; background: #fff; }
+        .inv-row-main { display: flex; align-items: center; gap: 10px; }
+        .mini-img.inv-thumb { width: 48px; height: 48px; border-radius: 12px; background: #EEF1F7; font-size: 24px; }
+        .inv-info { flex: 1; min-width: 0; }
+        .inv-info h5 { margin: 0; font-size: 13px; font-weight: 900; color: #000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .inv-meta { display: inline-block; margin-top: 4px; padding: 2px 8px; border-radius: 9999px; background: #FFF1DB; color: #C2410C; font-size: 10px; font-weight: 800; }
+        .inv-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+        .inv-tags .inv-meta { margin-top: 0; }
+        .inv-tipo { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 800; }
+        .inv-tipo.peco { background: #FFFBEB; color: #B45309; }
+        .inv-tipo.nope { background: #ECFDF5; color: #047857; }
+        .inv-quitar { width: 26px; height: 26px; flex: 0 0 26px; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 9999px; background: transparent; color: #94A3B8; cursor: pointer; transition: all .2s; }
+        .inv-quitar:hover { background: #FEE2E2; color: #B91C1C; }
+        .inv-qty { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1.5px dashed #E8EBF2; }
+        .inv-qty > span { font-size: 11px; font-weight: 800; color: #475569; }
+        .inv-stepper { display: flex; align-items: center; gap: 6px; }
+        .inv-input { height: 32px; width: 64px; padding: 0 4px; border-radius: 8px; border: 1px solid #E2E8F0; background: #fff; color: #1E293B; text-align: center; font-size: 12px; font-weight: 900; outline: none; }
+        .inv-input:focus { border-color: #FF9500; box-shadow: 0 0 0 3px rgba(255, 149, 0, .18); }
+        .inv-vacio { padding: 22px 14px; border-radius: 14px; border: 1.5px dashed #D9DEEA; text-align: center; font-size: 12px; font-weight: 600; color: #94A3B8; margin: 0; }
+        .inv-vacio b { color: #475569; }
+        .inv-error { margin: 8px 0 0; padding: 6px 10px; border-radius: 8px; background: #FEF2F2; color: #DC2626; font-size: 10px; font-weight: 700; }
+
+        .resumen { margin-top: 14px; padding: 14px; border-radius: 14px; border: 1.5px dashed #D3D8E4; }
+        .resumen-tit { margin: 0 0 10px; font-size: 11px; font-weight: 800; color: #475569; }
+        .resumen-fila { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; font-size: 11.5px; font-weight: 600; color: #64748B; }
+        .resumen-fila b { color: #0F172A; font-weight: 800; }
+        .resumen-sub { margin: 0 0 8px; font-size: 10px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: #94A3B8; }
+        .resumen-linea { margin-top: 10px; padding-top: 10px; border-top: 1.5px solid #E8EBF2; }
+        .resumen-total { margin: 10px 0 0; padding-top: 10px; border-top: 1.5px solid #E8EBF2; display: flex; align-items: center; justify-content: space-between; font-size: 12.5px; font-weight: 900; color: #000; }
+        .resumen-total b { color: #EA580C; font-size: 14px; }
+
+        .btn-enviar { margin-top: 14px; width: 100%; height: 46px; display: flex; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: 12px; background: #F2622E; color: #fff; font-family: inherit; font-size: 13px; font-weight: 800; cursor: pointer; box-shadow: 0 14px 24px -14px rgba(242, 98, 46, .8); transition: background .2s, opacity .2s; }
+        .btn-enviar:hover:not(:disabled) { background: #DC5222; }
+        .btn-enviar:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
+
+        .btn-inventario { margin-top: 12px; width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 14px; border-radius: 12px; border: 1.5px solid #FED7AA; background: #FFF7ED; color: #9A3412; font-family: inherit; font-size: 12px; font-weight: 800; cursor: pointer; transition: background .2s; }
+        .btn-inventario:hover { background: #FFEDD5; }
+        .btn-inventario .inv-pill { padding: 2px 8px; border-radius: 9999px; background: #fff; color: #C2410C; font-size: 10px; font-weight: 900; white-space: nowrap; }
+
         @media (min-width: 1024px) {
-            .panel-sticky {
-                position: -webkit-sticky;
-                position: sticky;
-                top: 24px;
-                align-self: start;
-                max-height: calc(100vh - 36px);
-                overflow-y: auto;
-                scrollbar-width: thin;
-                scrollbar-color: #FED7AA transparent;
-            }
+            .panel-sticky { position: -webkit-sticky; position: sticky; top: 24px; align-self: start; max-height: calc(100vh - 36px); overflow-y: auto; scrollbar-width: thin; scrollbar-color: #FED7AA transparent; }
             .panel-sticky::-webkit-scrollbar { width: 6px; }
             .panel-sticky::-webkit-scrollbar-thumb { background: #FED7AA; border-radius: 9999px; }
         }
-
-        /* ============================================================
-        MEJORAS VISUALES: bordes bonitos, orden y texto negro
-        ============================================================ */
-
-        /* 1. Texto negro para que resalte */
-        .text-slate-900 { color: #000 !important; }
-        .sirae-root h1 { color: #000; }
-        .prod-nombre { color: #000; font-weight: 800; font-size: 13.5px; }
-        .cat-card .cat-label { color: #111; font-weight: 800; }
-        .cat-card.active .cat-label { color: #C2410C; }
-        .inv-item h5, .inv-card h5 { color: #000; }
-        .prod-unidad { color: #475569; font-weight: 700; }
-
-        /* 2. Paneles grandes con borde definido */
-        .fx-panel { border: 1.5px solid #EADFD0; box-shadow: 0 1px 0 #fff inset, 0 12px 30px -18px rgba(15, 23, 42, .22); }
-
-        /* 3. Tarjetas de producto */
-        .prod-card { border: 1.5px solid #E8DECF; border-radius: 22px; padding: 18px 12px 14px; gap: 9px; background: linear-gradient(180deg, #FFFFFF 0%, #FFFCF8 100%); box-shadow: 0 6px 16px -12px rgba(15, 23, 42, .25); }
-        .prod-card:hover { border-color: #FB923C; box-shadow: 0 14px 26px -12px rgba(255, 138, 0, .35); }
-        .prod-card.activa { border-color: #F97316; box-shadow: 0 0 0 3px #FFE4C7, 0 14px 26px -12px rgba(255, 138, 0, .35); }
-        .prod-card.swipe-agregar { border-color: #34D399; background: #ECFDF5; }
-        .prod-card.swipe-quitar { border-color: #F87171; background: #FEF2F2; }
-        .prod-img { border: 3px solid #fff; box-shadow: 0 0 0 2px #FED7AA, 0 6px 12px -6px rgba(255, 138, 0, .45); }
-        .prod-nombre { width: 100%; padding-bottom: 8px; border-bottom: 1px solid #F1E9DC; text-align: center; }
-        .prod-tipo { border: 1px solid transparent; padding: 3px 12px; }
-        .prod-tipo.peco { border-color: #FDE68A; }
-        .prod-tipo.nope { border-color: #A7F3D0; }
-        .prod-estado { border: 1px solid transparent; }
-        .prod-disponible { border: 1.5px solid #FED7AA; border-radius: 14px; }
-        .prod-disponible-label { color: #7C2D12; }
-        .prod-disponible-valor { color: #C2410C; font-weight: 900; }
-        .prod-disponible.sin-stock { border-color: #FCA5A5; }
-        .prod-disponible.sin-entradas { border-color: #E2E8F0; }
-
-        /* 4. Tarjetas de categoría */
-        .cat-card { border: 1.5px solid #E8DECF; border-radius: 18px; }
-        .cat-card:hover { border-color: #FB923C; }
-        .cat-card.active { border-color: #F97316; }
-
-        /* 5. Separación entre grupos (sin encabezado de categoría) */
-        section.mb-6 + section.mb-6 { padding-top: 20px; border-top: 1.5px dashed #EADFD0; }
-
-        /* 6. Tarjetas del panel derecho */
-        .inv-item { border: 1.5px solid #EDE4D6; border-radius: 16px; }
-        .inv-item:hover { border-color: #FB923C; }
-
-        /* ============================================================
-        AJUSTES 2: categorías y tarjetas más bonitas y ordenadas
-        ============================================================ */
-
-        /* Quita el borde negro del navegador y usa un aro naranja suave */
-        .cat-card:focus, .cat-card:focus-visible,
-        .prod-card:focus, .prod-card:focus-visible { outline: none; }
-        .cat-card:focus-visible { box-shadow: 0 0 0 3px #FED7AA; }
-        .prod-card:focus-visible { box-shadow: 0 0 0 3px #FED7AA; }
-
-        /* Tarjetas de categoría: mismo tamaño, centradas y con borde fino */
-        .menu-chip { width: 112px; }
-        .cat-card {
-            display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
-            gap: 5px; padding: 12px 8px 10px !important;
-            background: linear-gradient(180deg, #FFFFFF 0%, #FFFCF8 100%);
-            border: 1.5px solid #EADFD0; border-radius: 20px;
+        @media (max-width: 760px) {
+            .hero { grid-template-columns: 1fr; padding: 14px 18px; }
+            .hero-art { display: none; }
         }
-        .cat-card:hover { border-color: #FB923C; }
-        .cat-card.active {
-            background: #FFF4E5; border-color: #F97316;
-            box-shadow: 0 0 0 3px #FFE0BD, 0 12px 20px -12px rgba(255, 138, 0, .5);
+        @media (prefers-reduced-motion: reduce) {
+            .pc, .cat2 { transition: none; }
+            .swipe-hint { animation: none; }
         }
-        .cat-card .cat-label { width: 100%; text-align: center; font-size: 12px; }
-
-        /* Foto redonda de la categoría con doble aro */
-        .cat-card > div:first-child {
-            width: 46px; height: 46px; margin: 0 !important;
-            border: 2px solid #fff;
-            box-shadow: 0 0 0 2px #FFE0BD, 0 4px 8px -4px rgba(255, 138, 0, .4);
-        }
-
-        /* El contador deja de estirarse: queda como una pastilla pequeña */
-        .cat-card .cat-count {
-            display: inline-flex; width: auto; min-width: 28px; height: 20px;
-            padding: 0 9px; margin: 2px 0 0 !important; font-size: 11px;
-        }
-
-        /* Tarjetas de producto: misma altura y franja de color arriba */
-        .prod-card { height: 100%; border-top: 3px solid #FDBA74; }
-        .prod-card:hover, .prod-card.activa { border-top-color: #F97316; }
-
-        /* Barra de búsqueda y filtros con bordes a juego */
-        .toolbar-grupos > div { border: 1.5px solid #EADFD0; background: #FFFBF5; }
-        .sirae-root input.fx-input { border-color: #E8DECF; }
-        .sirae-root input.fx-input:focus { border-color: #FF9500; }
-
-        /* Aviso de deslizar con borde más marcado */
-        .sirae-root [role="note"] { border-width: 1.5px; border-radius: 16px; }
-
-        /* Tarjeta de producto limpia: nombre, tipo y unidad bien centrados */
-        .prod-card { min-height: 0; padding-bottom: 16px; }
-        .prod-unidad { padding: 2px 10px; border-radius: 9999px; background: #F8FAFC; border: 1px solid #E2E8F0; }
-        .prod-estados:empty { display: none; }
     </style>
 
     <!-- Foto redonda del producto (o su emoji). Uso: <ng-container *ngTemplateOutlet="foto; context: { n: nombre, c: 'h-9 w-9 bg-orange-50' }"> -->
@@ -224,22 +273,26 @@
         <div class="relative mx-auto max-w-[1520px]">
 
             <!-- ENCABEZADO -->
-            <header class="mb-5 flex flex-col items-start justify-between gap-4 rounded-3xl border border-slate-100 bg-white p-5 shadow-sm md:flex-row md:items-center">
-                <div class="flex items-center gap-3">
-                    <div class="ico-naranja flex h-12 w-12 items-center justify-center rounded-2xl shadow-md"><span class="material-symbols-outlined text-[26px]">local_mall</span></div>
+            <header class="hd">
+                <div class="hd-brand">
+                    <div class="hd-logo"><span class="material-symbols-outlined" style="font-size:26px;font-variation-settings:'FILL' 0,'wght' 500">local_mall</span></div>
                     <div>
-                        <div class="flex items-center gap-2">
-                            <h1 class="m-0 text-xl font-black tracking-tight text-slate-900">Menú Institucional</h1>
-                            <span class="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-600">En línea</span>
-                        </div>
-                        <p class="m-0 text-xs font-medium text-slate-500">SIRAE · Sistema de Control y Abastecimiento de Alimentos</p>
+                        <h1 class="hd-title">SIRAE <span class="hd-live">En línea</span></h1>
+                        <p class="hd-sub">Menú institucional · Control y abastecimiento de alimentos</p>
                     </div>
                 </div>
-                <div class="self-end text-right text-xs font-medium text-slate-500 md:self-auto">
-                    <div class="flex items-center justify-end gap-1 font-bold text-slate-700"><span class="h-2 w-2 rounded-full bg-emerald-500"></span> {{ ahoraTexto }}</div>
-                    <span class="inline-flex items-center gap-1 font-bold text-amber-700">
-                        <span class="material-symbols-outlined text-[14px]">school</span>{{ nombreInstitucion }}<span *ngIf="nombreSede"> · {{ nombreSede }}</span>
-                    </span>
+
+                <div class="search-box">
+                    <span class="material-symbols-outlined">search</span>
+                    <input type="text" [(ngModel)]="textoFiltro" (ngModelChange)="paginaActual = 1"
+                        placeholder="Buscar productos de abastecimiento..." aria-label="Buscar producto">
+                </div>
+
+                <div class="hd-right">
+                    <div><b>{{ ahoraTexto }}</b></div>
+                    <div class="inline-flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[14px]" style="color:var(--o1)">school</span>{{ nombreInstitucion }}<span *ngIf="nombreSede"> · {{ nombreSede }}</span>
+                    </div>
                 </div>
             </header>
 
@@ -248,35 +301,25 @@
             </div>
             <p *ngIf="cargandoHistorial" class="mb-4 text-center text-xs font-semibold text-slate-500" role="status">Cargando entregas...</p>
 
-            <div class="grid grid-cols-1 gap-6 lg:grid-cols-12">
+            <div class="layout">
 
                 <!-- ================= COLUMNA IZQUIERDA: CATÁLOGO Y CALENDARIO ================= -->
-                <section class="fx-panel p-4 sm:p-6 lg:col-span-8">
+                <section class="min-w-0">
 
-                    <!-- Búsqueda, filtros y acciones -->
-                    <div class="mb-5 flex flex-wrap items-center gap-3">
-                        <div class="relative min-w-[200px] flex-1">
-                            <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[19px] text-slate-400">search</span>
-                            <input type="text" [(ngModel)]="textoFiltro" (ngModelChange)="paginaActual = 1" placeholder="Buscar: arroz, frijol, pollo, leche..."
-                                class="fx-input w-full rounded-full border border-slate-200 bg-slate-50/70 py-2 pl-11 pr-4 text-xs font-medium text-slate-800 outline-none">
+                    <!-- Vista y acciones -->
+                    <div class="top-bar">
+                        <div class="seg" role="group" aria-label="Vista">
+                            <button type="button" [class.on]="!mostrarCalendario" (click)="mostrarCalendario = false">
+                                <span class="material-symbols-outlined text-[16px]">storefront</span> Menú
+                            </button>
+                            <button type="button" [class.on]="mostrarCalendario" (click)="irACalendario()">
+                                <span class="material-symbols-outlined text-[16px]">history</span> Historial
+                            </button>
                         </div>
-                        <div class="toolbar-grupos">
-                            <div class="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 p-1" role="group" aria-label="Tipo de producto">
-                                <button *ngFor="let f of [['Todos', 'Todos'], ['Perecederos', 'Perecederos'], ['Granos', 'No perecederos']]" type="button"
-                                    (click)="mostrarCalendario = false; setMercado($any(f[0]))"
-                                    [class.pill-on]="!mostrarCalendario && filtroMercado === f[0]" [class.text-slate-500]="mostrarCalendario || filtroMercado !== f[0]"
-                                    class="cursor-pointer rounded-full px-3 py-1 text-xs font-bold transition">{{ f[1] }}</button>
-                            </div>
-                            <div class="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 p-1" role="group" aria-label="Acciones">
-                                <button type="button" (click)="irACalendario()" [class.pill-on]="mostrarCalendario" [class.text-slate-500]="!mostrarCalendario"
-                                    class="inline-flex cursor-pointer items-center gap-1 rounded-full px-3 py-1 text-xs font-bold transition">
-                                    <span class="material-symbols-outlined text-[14px]">history</span> Historial
-                                </button>
-                                <button type="button" (click)="exportarExcelHistorial()" class="inline-flex cursor-pointer items-center gap-1 rounded-full bg-emerald-600 px-3 py-1 text-xs font-bold text-white transition hover:bg-emerald-700">
-                                    <span class="material-symbols-outlined text-[14px]">table_view</span> Excel
-                                </button>
-                            </div>
-                        </div>
+
+                        <button type="button" class="btn-excel" (click)="exportarExcelHistorial()">
+                            <span class="material-symbols-outlined text-[16px]">table_view</span> Excel
+                        </button>
                     </div>
 
                     <!-- ===== VISTA: CALENDARIO ===== -->
@@ -284,11 +327,11 @@
                         <div class="mb-3 flex items-center justify-between gap-2">
                             <div class="flex items-center gap-2">
                                 <button type="button" class="arrow-btn" aria-label="Mes anterior" (click)="mesAnterior()"><span class="material-symbols-outlined text-[18px]">chevron_left</span></button>
-                                <h3 class="m-0 min-w-[150px] text-center text-base font-black text-slate-900">{{ tituloMes }}</h3>
+                                <h3 class="m-0 min-w-[150px] text-center text-base font-black">{{ tituloMes }}</h3>
                                 <button type="button" class="arrow-btn" aria-label="Mes siguiente" (click)="mesSiguiente()"><span class="material-symbols-outlined text-[18px]">chevron_right</span></button>
                             </div>
                             <div class="flex items-center gap-2">
-                                <button type="button" (click)="irAHoy()" class="cursor-pointer rounded-full border border-orange-300 bg-white px-3.5 py-1.5 text-xs font-bold text-orange-600 hover:bg-orange-50">Hoy</button>
+                                <button type="button" (click)="irAHoy()" class="cursor-pointer rounded-full border border-orange-300 bg-white px-3.5 py-1.5 text-xs font-bold text-orange-600">Hoy</button>
                             </div>
                         </div>
 
@@ -300,7 +343,7 @@
                             <span class="inline-flex items-center gap-1 text-slate-400">· Toca un día para ver su detalle</span>
                         </div>
 
-                        <div class="overflow-hidden rounded-2xl border border-slate-100">
+                        <div class="overflow-hidden rounded-2xl border border-slate-100 bg-white">
                             <div class="grid grid-cols-7 bg-slate-50 text-center text-[10px] font-black uppercase tracking-wide text-slate-500">
                                 <div *ngFor="let nombre of nombresDias" class="py-2.5">{{ nombre }}</div>
                             </div>
@@ -319,76 +362,137 @@
                     <!-- ===== VISTA: MENÚ ===== -->
                     <div *ngIf="!mostrarCalendario">
 
-                        <!-- Categorías -->
-                        <div class="mb-2 flex items-center justify-between">
-                            <h3 class="m-0 text-sm font-black text-slate-900">Categorías de Abastecimiento SIRAE</h3>
-                            <button type="button" (click)="categoriaMenu = 'Todos'; paginaActual = 1" class="cursor-pointer text-xs font-bold text-orange-500 hover:text-orange-600">Ver todo &gt;</button>
+                        <!-- Banner principal -->
+                        <div class="hero">
+                            <span class="hero-tag">Fresco</span>
+                            <div class="hero-text">
+                                <span class="hero-kicker">Abastecimiento</span>
+                                <h2>Perecederos al día</h2>
+                                <p>Pasa por perecederos y no perecederos para planear mejor cada entrega de tu institución.</p>
+                            </div>
+                            <div class="hero-art" aria-hidden="true">
+                                <ng-container *ngFor="let n of ['Arroz', 'Huevos', 'Leche entera']; let i = index">
+                                    <span class="hero-bubble" [ngClass]="'b' + (i + 1)">
+                                        <img *ngIf="imagenDe(n) as src" [src]="src" [alt]="n" loading="lazy">
+                                    </span>
+                                </ng-container>
+                            </div>
                         </div>
-                        <div class="mb-5 flex items-center gap-2">
-                            <button type="button" class="arrow-btn" aria-label="Categorías anteriores" (click)="menuChips.scrollBy({ left: -260, behavior: 'smooth' })"><span class="material-symbols-outlined text-[18px]">chevron_left</span></button>
-                            <div #menuChips class="menu-scroll min-w-0 flex-1">
+
+                        <!-- Categorías -->
+                        <div class="sec-head">
+                            <h3 class="sec-title">Categorías de abastecimiento</h3>
+                            <button type="button" class="link-all" (click)="categoriaMenu = 'Todos'; paginaActual = 1">Ver todo</button>
+                        </div>
+
+                        <div class="cat-rail">
+                            <button type="button" class="arrow-btn" aria-label="Categorías anteriores" (click)="menuChips.scrollBy({ left: -340, behavior: 'smooth' })">
+                                <span class="material-symbols-outlined text-[18px]">chevron_left</span>
+                            </button>
+
+                            <div #menuChips class="cat-grid">
                                 <button type="button" *ngFor="let categoria of categoriasMenu; trackBy: trackPor"
-                                    (click)="categoriaMenu = categoria.nombre; paginaActual = 1"
-                                    [class.active]="categoriaMenu === categoria.nombre" [attr.aria-pressed]="categoriaMenu === categoria.nombre"
-                                    class="cat-card fx-lift menu-chip cursor-pointer rounded-2xl p-2.5 text-center">
-                                    <div class="mx-auto mb-1 flex h-9 w-9 items-center justify-center overflow-hidden rounded-full text-xl">
-                                        <img *ngIf="imagenCategoria(categoria.nombre) as src; else sinFotoCat" [src]="src" [alt]="categoria.nombre" class="h-full w-full object-cover" loading="lazy">
+                                    class="cat2" [class.on]="categoriaMenu === categoria.nombre"
+                                    [attr.aria-pressed]="categoriaMenu === categoria.nombre"
+                                    (click)="categoriaMenu = categoria.nombre; paginaActual = 1">
+                                    <span class="cat2-foto">
+                                        <img *ngIf="imagenCategoria(categoria.nombre) as src; else sinFotoCat" [src]="src" [alt]="categoria.nombre" loading="lazy">
                                         <ng-template #sinFotoCat>{{ categoria.emoji }}</ng-template>
-                                    </div>
-                                    <p class="cat-label m-0 truncate text-[11px] font-bold text-slate-700">{{ categoria.nombre }}</p>
-                                    <span class="cat-count mx-auto mt-1 flex h-4 min-w-[18px] items-center justify-center rounded-full px-1 text-[9px] font-black">{{ categoria.total }}</span>
+                                    </span>
+                                    <span class="cat2-nombre" [title]="categoria.nombre">{{ categoria.nombre }}</span>
+                                    <span class="cat2-total">{{ categoria.total }}</span>
                                 </button>
                             </div>
-                            <button type="button" class="arrow-btn" aria-label="Más categorías" (click)="menuChips.scrollBy({ left: 260, behavior: 'smooth' })"><span class="material-symbols-outlined text-[18px]">chevron_right</span></button>
+
+                            <button type="button" class="arrow-btn" aria-label="Más categorías" (click)="menuChips.scrollBy({ left: 340, behavior: 'smooth' })">
+                                <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+                            </button>
                         </div>
 
-                        <div id="catalogo-top" class="mb-3 scroll-mt-4">
-                            <h3 class="m-0 text-sm font-black text-slate-900">Productos de Abastecimiento</h3>
-                            <p class="m-0 text-[11px] font-semibold text-slate-400">
-                                {{ totalProductosMenu > 0 ? 'Mostrando ' + desdeMostrado + '–' + hastaMostrado + ' de ' + totalProductosMenu + ' productos' : '0 productos' }}
-                            </p>
+                        <!-- Productos de abastecimiento -->
+                        <div class="sec-head">
+                            <div>
+                                <h3 class="sec-title">Productos de abastecimiento</h3>
+                                <p class="sec-sub">
+                                    {{ totalProductosMenu > 0 ? 'Mostrando ' + desdeMostrado + '–' + hastaMostrado + ' de ' + totalProductosMenu + ' productos' : '0 productos' }}
+                                </p>
+                            </div>
                         </div>
 
-                        <div class="mb-4 flex items-center gap-2 rounded-2xl border border-orange-200 bg-orange-50 px-3 py-2 text-[11px] font-semibold text-orange-700" role="note">
-                            <span class="material-symbols-outlined swipe-hint text-[18px]">swipe_right</span>
-                            <span>Desliza un producto hacia la derecha para ver en el panel cuánta cantidad hay y todos sus detalles. Hacia la izquierda lo quita.</span>
+                        <!-- Pestañas por tipo -->
+                        <div id="catalogo-top" class="tabs-line scroll-mt-4" role="tablist" aria-label="Tipo de producto">
+                            <button *ngFor="let f of [['Todos', 'Todos'], ['Perecederos', 'Perecederos'], ['Granos', 'No perecederos']]"
+                                type="button" role="tab" [class.on]="filtroMercado === f[0]" [attr.aria-selected]="filtroMercado === f[0]"
+                                (click)="setMercado($any(f[0]))">{{ f[1] }}</button>
                         </div>
+
+                        <div class="swipe-note mt-4" role="note">
+                            <span class="material-symbols-outlined swipe-hint text-[20px]">swipe_right</span>
+                            <span>Toca <b>Agregar</b> o desliza el producto a la <b>derecha</b> para verlo en la factura. A la <b>izquierda</b> lo quita.</span>
+                        </div>
+
                         <p *ngIf="cargandoCatalogos" class="mb-3 text-center text-xs font-semibold text-slate-500" role="status">Cargando productos...</p>
 
-                        <!-- Productos de la página, agrupados por categoría (sin encabezado de categoría) -->
-                        <section *ngFor="let grupo of gruposPagina; trackBy: trackPor" class="mb-6">
+                        <!-- Productos de la página -->
+                        <section *ngFor="let grupo of gruposPagina; trackBy: trackPor" class="mb-4">
+                            <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
 
-                            <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                                <!-- Deslizar a la derecha = muestra el producto en el panel -->
-                                <article *ngFor="let producto of grupo.productos; trackBy: trackPor" class="prod-card fx-up"
+                                <article *ngFor="let producto of grupo.productos; trackBy: trackPor" class="pc fx-up"
                                     [class.activa]="tarjetaActiva(producto)" [class.arrastrando]="swipeId === producto.id"
                                     [class.swipe-agregar]="swipeId === producto.id && swipeDx >= umbralSwipe"
                                     [class.swipe-quitar]="swipeId === producto.id && swipeDx <= -umbralSwipe"
-                                    [style.translate]="swipeId === producto.id ? swipeDx + 'px' : null" [attr.aria-label]="nombreMostrado(producto.nombre)"
+                                    [style.translate]="swipeId === producto.id ? swipeDx + 'px' : null"
+                                    [attr.aria-label]="nombreMostrado(producto.nombre)"
                                     (pointerdown)="alIniciarDeslizar($event, producto)" (pointermove)="alMoverDeslizar($event)"
                                     (pointerup)="alTerminarDeslizar(producto)" (pointercancel)="cancelarDeslizar()">
 
-                                    <div class="prod-img" [class.warn]="esPerecedero(producto)">
+                                    <!-- Foto con casilla y tipo -->
+                                    <div class="pc-foto" [class.peco]="esPerecedero(producto)">
                                         <img *ngIf="imagenDe(producto.nombre) as src; else sinFotoProd" [src]="src" [alt]="nombreMostrado(producto.nombre)" loading="lazy" draggable="false">
                                         <ng-template #sinFotoProd><span>{{ emojiDe(producto.nombre) }}</span></ng-template>
+                                        <span class="pc-check" aria-hidden="true"><span class="material-symbols-outlined">check</span></span>
+                                        <span class="pc-tipo" [ngClass]="esPerecedero(producto) ? 'peco' : 'nope'">{{ nombreTipo(producto) }}</span>
+                                        <span *ngIf="fueEnviado(producto.nombre)" class="pc-enviado">✓ Enviado</span>
                                     </div>
 
-                                    <h4 class="prod-nombre" [title]="nombreMostrado(producto.nombre)">{{ nombreMostrado(producto.nombre) }}</h4>
-                                    <span class="prod-tipo" [ngClass]="esPerecedero(producto) ? 'peco' : 'nope'">{{ nombreTipo(producto) }}</span>
-                                    <span class="prod-unidad">Unidad: {{ producto.unidad }}</span>
+                                    <h4 class="pc-nombre" [title]="nombreMostrado(producto.nombre)">{{ nombreMostrado(producto.nombre) }}</h4>
 
-                                    <div class="prod-estados">
-                                        <span *ngIf="tarjetaActiva(producto)" class="prod-estado bg-orange-100 text-orange-700">✓ En el panel</span>
-                                        <span *ngIf="fueEnviado(producto.nombre)" class="prod-estado bg-emerald-100 text-emerald-700">✓ Enviado</span>
+                                    <!-- Existencia con barra verde -->
+                                    <div class="pc-stock">
+                                        <div class="pc-stock-txt">
+                                            <span>Unidad: <b>{{ producto.unidad }}</b></span>
+                                            <span class="pc-stock-cant">{{ totalDisponible(producto) | number:'1.0-2' }} {{ producto.unidad }}</span>
+                                        </div>
+                                        <div class="barra-stock"><span [style.width.%]="porcentajeStock(totalDisponible(producto))" [ngClass]="nivelStock(totalDisponible(producto))"></span></div>
+                                    </div>
+
+                                    <!-- Acciones: hacen lo mismo que deslizar -->
+                                    <div class="pc-acciones">
+                                        <ng-container *ngIf="seleccionDe(producto) as sel; else btnAgregar">
+                                            <button type="button" class="pc-chip" title="Toca para quitar de la factura"
+                                                (pointerdown)="$event.stopPropagation()" (pointerup)="$event.stopPropagation()"
+                                                (click)="quitarSeleccionado(sel)">✓ En factura</button>
+                                            <div class="pc-step" (pointerdown)="$event.stopPropagation()" (pointerup)="$event.stopPropagation()">
+                                                <button type="button" aria-label="Restar" (click)="ajustarCantidadEnviar(sel, -1)">−</button>
+                                                <span>{{ cantidadEnviarDe(sel) || 0 }}</span>
+                                                <button type="button" aria-label="Sumar" (click)="ajustarCantidadEnviar(sel, 1)">+</button>
+                                            </div>
+                                        </ng-container>
+                                        <ng-template #btnAgregar>
+                                            <button type="button" class="pc-btn pc-btn-pri"
+                                                (pointerdown)="$event.stopPropagation()" (pointerup)="$event.stopPropagation()"
+                                                (click)="swipeId = producto.id; swipeDx = umbralSwipe; alTerminarDeslizar(producto); cancelarDeslizar()">+ Agregar</button>
+                                        </ng-template>
                                     </div>
                                 </article>
+
                             </div>
                         </section>
 
                         <p *ngIf="!cargandoCatalogos && totalProductosMenu === 0" class="rounded-2xl border border-slate-100 bg-white p-4 text-center text-xs text-slate-500">No hay productos para los filtros seleccionados.</p>
 
                         <!-- Paginación -->
-                        <nav *ngIf="totalPaginas > 1" class="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4" aria-label="Paginación de productos">
+                        <nav *ngIf="totalPaginas > 1" class="pag-bar" aria-label="Paginación de productos">
                             <span class="text-[11px] font-semibold text-slate-500">Página {{ paginaEfectiva }} de {{ totalPaginas }}</span>
                             <div class="flex flex-wrap items-center gap-1.5">
                                 <button type="button" class="pag-btn" (click)="irAPagina(paginaEfectiva - 1)" [disabled]="paginaEfectiva === 1" aria-label="Página anterior"><span class="material-symbols-outlined text-[18px]">chevron_left</span></button>
@@ -403,7 +507,7 @@
                 </section>
 
                 <!-- ================= COLUMNA DERECHA (FIJA AL HACER SCROLL) ================= -->
-                <aside class="panel-sticky flex flex-col gap-4 lg:col-span-4">
+                <aside class="panel-sticky flex flex-col gap-4">
 
                     <!-- ===== SOLO HISTORIAL: entradas registradas, una tarjeta por fecha y destino ===== -->
                     <div *ngIf="mostrarCalendario" class="fx-panel rounded-3xl p-4 sm:p-5">
@@ -415,7 +519,7 @@
                             <div class="flex shrink-0 items-center gap-1">
                                 <input type="date" [ngModel]="filtroFecha" (ngModelChange)="alElegirFecha($event)" aria-label="Buscar por fecha" class="fx-input campo !w-[140px] !px-2 !py-1.5">
                                 <button *ngIf="filtroFecha" type="button" (click)="alElegirFecha('')" aria-label="Quitar filtro de fecha" title="Ver todas las fechas"
-                                    class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-slate-100 text-slate-500 hover:bg-slate-200"><span class="material-symbols-outlined text-[16px]">close</span></button>
+                                    class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-slate-100 text-slate-500"><span class="material-symbols-outlined text-[16px]">close</span></button>
                             </div>
                         </div>
 
@@ -440,7 +544,7 @@
                         </div>
                         <p *ngIf="entradasFiltradas.length === 0" class="rounded-xl border border-dashed border-slate-200 p-4 text-center text-xs text-slate-500">{{ filtroFecha ? 'No hay entradas en esa fecha.' : 'Aún no has registrado entradas.' }}</p>
 
-                        <div class="max-h-[560px] overflow-y-auto pr-1">
+                        <div class="custom-scroll max-h-[560px] overflow-y-auto pr-1">
                             <article *ngFor="let g of gruposEntradasVisibles; trackBy: trackPor" (click)="abrirDetalleEntrada(g)" (keydown.enter)="abrirDetalleEntrada(g)" tabindex="0" role="button"
                                 class="fx-up fx-lift mb-2 cursor-pointer rounded-2xl border bg-white px-3 py-2.5 shadow-sm transition"
                                 [ngClass]="claseBordeTarjetaEntrada(g)">
@@ -472,102 +576,107 @@
                         </div>
 
                         <button *ngIf="entradasFiltradas.length > limiteEntradas" type="button" (click)="verTodasEntradas = !verTodasEntradas"
-                            class="mt-1 w-full cursor-pointer rounded-full border border-emerald-200 bg-white px-3 py-1.5 text-[11px] font-bold text-emerald-700 hover:bg-emerald-50">
+                            class="mt-1 w-full cursor-pointer rounded-full border border-emerald-200 bg-white px-3 py-1.5 text-[11px] font-bold text-emerald-700">
                             {{ verTodasEntradas ? 'Ver menos' : 'Ver todas las entradas (' + entradasFiltradas.length + ')' }}
                         </button>
                     </div>
 
-                    <!-- ===== SOLO MENÚ: factura (productos para enviar) ===== -->
-                    <div *ngIf="!mostrarCalendario" class="fx-panel rounded-3xl p-4 sm:p-5">
-                        <div class="mb-3 border-b border-slate-100 pb-3">
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <span class="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Factura</span>
-                                    <h3 class="m-0 text-sm font-black text-slate-900">Productos para enviar</h3>
-                                </div>
-                                <span class="rounded-full bg-orange-100 px-2.5 py-0.5 text-[11px] font-black text-orange-600">
-                                    {{ seleccionados.length }} {{ seleccionados.length === 1 ? 'producto' : 'productos' }}
-                                </span>
+                    <!-- ===== SOLO MENÚ: FACTURA ===== -->
+                    <div *ngIf="!mostrarCalendario" class="inv-panel">
+
+                        <div class="inv-titulo">
+                            <div>
+                                <span class="inv-kicker">Factura</span>
+                                <h3>Productos para enviar</h3>
                             </div>
+                            <span class="inv-count">{{ seleccionados.length }} {{ seleccionados.length === 1 ? 'producto' : 'productos' }}</span>
                         </div>
 
-                        <p *ngIf="seleccionados.length === 0" class="rounded-xl border border-dashed border-slate-200 p-4 text-center text-xs text-slate-500">
-                            Desliza un producto del catálogo hacia la derecha para verlo aquí.
+                        <p *ngIf="seleccionados.length === 0" class="inv-vacio">
+                            Toca <b>Agregar</b> o desliza un producto hacia la derecha para verlo aquí.
                         </p>
 
-                        <!-- Lista compacta y organizada de productos seleccionados -->
-                        <div *ngIf="seleccionados.length > 0" class="max-h-[320px] overflow-y-auto space-y-2 pr-1 custom-scroll">
-                            <article *ngFor="let sel of seleccionados; trackBy: trackPor" class="inv-item fx-up" [attr.aria-label]="sel.ingrediente">
-                                <div class="flex items-start justify-between gap-2">
-                                    <div class="flex min-w-0 items-center gap-2">
-                                        <ng-container *ngTemplateOutlet="foto; context: { n: sel.ingrediente, c: 'h-9 w-9 shrink-0 rounded-xl bg-orange-50 text-lg shadow-xs' }"></ng-container>
-                                        <div class="min-w-0">
-                                            <h5 class="m-0 truncate text-xs font-black text-slate-900" [title]="sel.ingrediente">{{ sel.ingrediente }}</h5>
-                                            <p class="m-0 truncate text-[10px] font-bold text-orange-600">
-                                                Disp: {{ disponibleDe(sel) | number:'1.0-2' }} {{ sel.unidad }}
-                                            </p>
+                        <!-- Lista de productos seleccionados -->
+                        <div *ngIf="seleccionados.length > 0" class="inv-lista custom-scroll max-h-[360px] overflow-y-auto pr-1">
+                            <article *ngFor="let sel of seleccionados; trackBy: trackPor" class="inv-row fx-up" [attr.aria-label]="sel.ingrediente">
+                                <div class="inv-row-main">
+                                    <ng-container *ngTemplateOutlet="foto; context: { n: sel.ingrediente, c: 'inv-thumb' }"></ng-container>
+                                    <div class="inv-info">
+                                        <h5 [title]="sel.ingrediente">{{ sel.ingrediente }}</h5>
+                                        <div class="inv-tags">
+                                            <span class="inv-meta">Unidad: {{ sel.unidad }}</span>
+                                            <span class="inv-tipo" [ngClass]="esPerecedero($any(sel)) ? 'peco' : 'nope'">
+                                                <span class="cal-dot"></span>{{ nombreTipo($any(sel)) }}
+                                            </span>
                                         </div>
                                     </div>
-                                    <button type="button" (click)="quitarSeleccionado(sel)" [attr.aria-label]="'Quitar ' + sel.ingrediente"
-                                        class="flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition">
-                                        <span class="material-symbols-outlined text-[15px]">close</span>
+                                    <button type="button" class="inv-quitar" (click)="quitarSeleccionado(sel)" [attr.aria-label]="'Quitar ' + sel.ingrediente">
+                                        <span class="material-symbols-outlined text-[16px]">close</span>
                                     </button>
                                 </div>
 
-                                <!-- Fila compacta de cantidad a enviar -->
-                                <div class="mt-2 flex items-center justify-between gap-2 rounded-xl bg-orange-50/70 px-2.5 py-1.5 border border-orange-100/70">
-                                    <span class="text-[10px] font-bold text-slate-600">A enviar:</span>
-                                    <div class="flex items-center gap-1.5">
-                                        <button type="button" class="cant-btn !h-6 !w-6" aria-label="Restar" (click)="ajustarCantidadEnviar(sel, -1)">
+                                <div class="inv-qty">
+                                    <span>A enviar</span>
+                                    <div class="inv-stepper">
+                                        <button type="button" class="cant-btn !h-7 !w-7" aria-label="Restar" (click)="ajustarCantidadEnviar(sel, -1)">
                                             <span class="material-symbols-outlined text-[14px]">remove</span>
                                         </button>
                                         <input type="number" min="0" [max]="disponibleDe(sel)" step="any" placeholder="0"
                                             [ngModel]="cantidadEnviarDe(sel) || null" (ngModelChange)="fijarCantidadEnviar(sel, $event)"
                                             [attr.aria-label]="'Cantidad de ' + sel.ingrediente + ' a enviar'"
-                                            class="fx-input !h-7 w-16 rounded-lg border border-slate-200 bg-white px-1 text-center text-xs font-black text-slate-800 outline-none">
-                                        <button type="button" class="cant-btn !h-6 !w-6" aria-label="Sumar" (click)="ajustarCantidadEnviar(sel, 1)">
+                                            class="inv-input">
+                                        <button type="button" class="cant-btn !h-7 !w-7" aria-label="Sumar" (click)="ajustarCantidadEnviar(sel, 1)">
                                             <span class="material-symbols-outlined text-[14px]">add</span>
                                         </button>
-                                        <span class="min-w-[18px] text-[10px] font-bold text-slate-600">{{ sel.unidad }}</span>
+                                        <span class="min-w-[20px]" style="font-size:11px;font-weight:800;color:var(--mute)">{{ sel.unidad }}</span>
                                     </div>
                                 </div>
 
-                                <p *ngIf="cantidadEnviarDe(sel) > disponibleDe(sel)" class="m-0 mt-1 text-[10px] font-bold text-red-600">
+                                <p *ngIf="cantidadEnviarDe(sel) > disponibleDe(sel)" class="inv-error">
                                     No puedes enviar más de {{ disponibleDe(sel) }} {{ sel.unidad }}
                                 </p>
                             </article>
                         </div>
 
-                        <!-- Datos del envío y botón único de enviar -->
-                        <div *ngIf="seleccionados.length > 0" class="mt-3 border-t border-slate-100 pt-3">
-                            <div class="mb-3 grid grid-cols-1 gap-2 rounded-2xl border border-slate-100 bg-slate-50 p-2.5">
-                                <label class="block">
-                                    <span class="mb-1 block text-[10px] font-bold text-slate-500">Fecha de envío <span class="text-red-500">*</span></span>
-                                    <input type="date" [(ngModel)]="envioFecha" (ngModelChange)="errorEnvioPanel = ''" aria-label="Fecha de envío" class="fx-input campo !py-1.5" [class.invalido]="!envioFecha">
-                                </label>
-                                <label class="block">
-                                    <span class="mb-1 block text-[10px] font-bold text-slate-500">Responsable (quién envía) <span class="text-red-500">*</span></span>
-                                    <input type="text" [(ngModel)]="envioResponsable" (ngModelChange)="errorEnvioPanel = ''" placeholder="Escribe tu nombre" autocomplete="off" aria-label="Responsable del envío" class="fx-input campo !py-1.5" [class.invalido]="!envioResponsable.trim()">
-                                </label>
-                            </div>
-                            <p *ngIf="errorEnvioPanel" class="m-0 mb-2 rounded-xl border border-red-200 bg-red-50 p-2 text-[11px] font-semibold text-red-700" role="alert">{{ errorEnvioPanel }}</p>
-                            <button type="button" (click)="enviarSeleccionados()" [disabled]="guardandoEnvio || productosParaEnviar.length === 0"
-                                class="pill-on flex w-full cursor-pointer items-center justify-center gap-2 rounded-full px-4 py-2.5 text-xs font-bold transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">
-                                <span class="material-symbols-outlined text-[18px]">{{ guardandoEnvio ? 'hourglass_top' : 'send' }}</span>
-                                {{ guardandoEnvio ? 'Enviando...' : (seleccionados.length === 1 ? 'Enviar producto' : 'Enviar todos (' + productosParaEnviar.length + ')') }}
-                            </button>
-                        </div>
+                        <ng-container *ngIf="seleccionados.length > 0">
+                            <!-- Resumen del envío -->
+                            <div class="resumen">
+                                <p class="resumen-tit">Resumen del envío</p>
+                                <p class="resumen-sub">Disponible en inventario</p>
 
-                        <div class="mt-3 border-t border-slate-100 pt-3">
-                            <button type="button" (click)="mostrarModalInventario = true" class="flex w-full cursor-pointer items-center justify-between rounded-full border border-orange-200 bg-orange-50/70 px-4 py-2 text-xs font-bold text-orange-800 transition hover:bg-orange-100 shadow-xs">
-                                <span class="flex items-center gap-1.5">
-                                    <span class="material-symbols-outlined text-[18px] text-orange-600">inventory_2</span> Ver inventario
-                                </span>
-                                <span class="rounded-full bg-white px-2 py-0.5 text-[10px] font-black text-orange-700 shadow-xs">
-                                    {{ inventarioDisponible.length }} disp. · {{ inventarioNoDisponible.length }} agotados
-                                </span>
+                                <div *ngFor="let sel of seleccionados; trackBy: trackPor" class="resumen-fila">
+                                    <span class="truncate pr-2">{{ sel.ingrediente }}</span>
+                                    <b class="shrink-0" style="color:var(--o1)">{{ disponibleDe(sel) | number:'1.0-2' }} {{ sel.unidad }}</b>
+                                </div>
+
+                                <!-- Fecha automática (hoy) -->
+                                <div class="resumen-fila resumen-linea">
+                                    <span>Fecha de envío</span>
+                                    <b class="inline-flex items-center gap-1">
+                                        <span class="material-symbols-outlined text-[14px]" style="color:var(--o1)">event</span>
+                                        {{ fechaCorta(envioFecha) }}
+                                    </b>
+                                </div>
+
+                                <div class="resumen-total"><span>Total a enviar</span><b>{{ productosParaEnviar.length }} {{ productosParaEnviar.length === 1 ? 'producto' : 'productos' }}</b></div>
+                            </div>
+
+                            <p *ngIf="errorEnvioPanel" class="m-0 mt-3 rounded-xl border border-red-200 bg-red-50 p-2 text-[11px] font-semibold text-red-700" role="alert">{{ errorEnvioPanel }}</p>
+
+                            <button type="button" class="btn-enviar" (click)="enviarSeleccionados()" [disabled]="guardandoEnvio || productosParaEnviar.length === 0">
+                                <span class="material-symbols-outlined text-[18px]">{{ guardandoEnvio ? 'hourglass_top' : 'send' }}</span>
+                                {{ guardandoEnvio ? 'Enviando...' : (seleccionados.length === 1 ? 'Confirmar envío · 1 producto' : 'Confirmar envío · ' + productosParaEnviar.length + ' productos') }}
                             </button>
-                        </div>
+                        </ng-container>
+
+                        <button type="button" class="btn-inventario" (click)="mostrarModalInventario = true">
+                            <span class="flex items-center gap-1.5">
+                                <span class="material-symbols-outlined text-[18px]" style="color:var(--o1)">inventory_2</span> Ver inventario
+                            </span>
+                            <span class="inv-pill">
+                                {{ inventarioDisponible.length }} disp. · {{ inventarioNoDisponible.length }} agotados
+                            </span>
+                        </button>
                     </div>
                 </aside>
             </div>
@@ -744,7 +853,7 @@
                     </div>
                     <p *ngIf="inventarioDisponible.length === 0" class="rounded-xl border border-dashed border-slate-200 p-4 text-center text-xs text-slate-500">No hay productos disponibles. Registra una entrada desde el historial.</p>
                     <div class="flex max-h-[52vh] flex-col gap-2 overflow-y-auto pr-1">
-                        <div *ngFor="let item of inventarioDisponible; trackBy: trackPor" class="flex items-center justify-between gap-2 rounded-xl border border-slate-100 bg-white p-2.5">
+                        <div *ngFor="let item of inventarioDisponible; trackBy: trackPor" class="rounded-xl border border-slate-100 bg-white p-2.5"><div class="flex items-center justify-between gap-2">
                             <div class="flex min-w-0 items-center gap-2">
                                 <ng-container *ngTemplateOutlet="foto; context: { n: item.producto.nombre, c: 'h-10 w-10 bg-orange-50' }"></ng-container>
                                 <div class="min-w-0"><h5 class="m-0 truncate text-xs font-bold text-slate-800">{{ nombreMostrado(item.producto.nombre) }}</h5><p class="m-0 truncate text-[10px] text-slate-400">{{ item.producto.categoria }}</p></div>
@@ -753,6 +862,8 @@
                                 <span class="block text-sm font-black text-orange-600">{{ item.cantidad | number:'1.0-2' }} {{ item.unidad }}</span>
                                 <span *ngIf="item.estado" class="cal-chip !w-auto justify-end" [ngClass]="claseChipEstado(item.estado)"><span class="cal-dot"></span>{{ item.estado }}</span>
                             </div>
+                            </div>
+                            <div class="barra-stock"><span [style.width.%]="porcentajeStock(item.cantidad)" [ngClass]="nivelStock(item.cantidad)"></span></div>
                         </div>
                     </div>
                 </section>
@@ -765,7 +876,7 @@
                     </div>
                     <p *ngIf="inventarioNoDisponible.length === 0" class="rounded-xl border border-dashed border-slate-200 p-4 text-center text-xs text-slate-500">Todos los productos tienen existencias.</p>
                     <div class="flex max-h-[52vh] flex-col gap-2 overflow-y-auto pr-1">
-                        <div *ngFor="let item of inventarioNoDisponible; trackBy: trackPor" class="flex items-center justify-between gap-2 rounded-xl border border-slate-100 bg-slate-50 p-2.5">
+                        <div *ngFor="let item of inventarioNoDisponible; trackBy: trackPor" class="rounded-xl border border-slate-100 bg-slate-50 p-2.5"><div class="flex items-center justify-between gap-2">
                             <div class="flex min-w-0 items-center gap-2">
                                 <ng-container *ngTemplateOutlet="foto; context: { n: item.producto.nombre, c: 'h-10 w-10 bg-white opacity-70' }"></ng-container>
                                 <div class="min-w-0"><h5 class="m-0 truncate text-xs font-bold text-slate-600">{{ nombreMostrado(item.producto.nombre) }}</h5><p class="m-0 truncate text-[10px] text-slate-400">{{ item.producto.categoria }}</p></div>
@@ -774,6 +885,8 @@
                                 <span class="block text-sm font-black text-slate-500">{{ item.cantidad | number:'1.0-2' }} {{ item.unidad }}</span>
                                 <span class="inline-block rounded-full px-2.5 py-0.5 text-[10px] font-black" [ngClass]="item.motivo === 'Agotado' ? 'bg-red-100 text-red-700' : 'bg-slate-200 text-slate-600'">{{ item.motivo }}</span>
                             </div>
+                            </div>
+                            <div class="barra-stock"><span [style.width.%]="porcentajeStock(item.cantidad)" [ngClass]="nivelStock(item.cantidad)"></span></div>
                         </div>
                     </div>
                 </section>
