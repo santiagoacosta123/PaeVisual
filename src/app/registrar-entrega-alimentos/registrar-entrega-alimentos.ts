@@ -122,6 +122,14 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
   private subRuta?: Subscription;
   private reloj?: ReturnType<typeof setInterval>;
 
+  // ===== NUEVO: actualización automática del estado (En proceso -> Aceptada) =====
+  private pollingHistorial?: ReturnType<typeof setInterval>;
+  private readonly alVolver = () => { if (!document.hidden) this.cargarHistorial(); };
+  private readonly alCambiarStorage = (ev: StorageEvent) => {
+    if (ev.key === null || ev.key === 'sirae_recepciones_admin') this.cargarHistorial();
+  };
+  // ===== FIN NUEVO =====
+
   // ===================== FILTROS Y PAGINACIÓN =====================
   textoFiltro = '';
   filtroMercado: FiltroMercado = 'Todos';
@@ -173,6 +181,17 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
 
     this.actualizarReloj();
     this.reloj = setInterval(() => { this.actualizarReloj(); this.cdr.markForCheck(); }, 60_000);
+
+    // ===== NUEVO: revisa el servidor cada 8 s (solo si la pestaña está visible) =====
+    this.pollingHistorial = setInterval(() => {
+      if (document.hidden || this.guardandoEntrada || this.guardandoEnvio) return;
+      this.cargarHistorial();
+    }, 8_000);
+    document.addEventListener('visibilitychange', this.alVolver);
+    window.addEventListener('focus', this.alVolver);
+    window.addEventListener('storage', this.alCambiarStorage);
+    // ===== FIN NUEVO =====
+
     this.cargarHistorial();
     this.cargarCatalogos();
   }
@@ -182,6 +201,13 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     this.subSede?.unsubscribe();
     this.subRuta?.unsubscribe();
     if (this.reloj !== undefined) clearInterval(this.reloj);
+
+    // ===== NUEVO =====
+    if (this.pollingHistorial !== undefined) clearInterval(this.pollingHistorial);
+    document.removeEventListener('visibilitychange', this.alVolver);
+    window.removeEventListener('focus', this.alVolver);
+    window.removeEventListener('storage', this.alCambiarStorage);
+    // ===== FIN NUEVO =====
   }
 
   @HostListener('document:keydown.escape')
@@ -457,12 +483,22 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     });
   }
 
+  // ===== NUEVO: también refresca el modal de detalle si está abierto =====
   private reconstruirHistorial(): void {
     this.historial = this.entregasRaw.map(i => this.aFila(i));
     this.seleccionados = this.seleccionados
       .map(s => this.ultimaEntradaDe(s.idIngrediente))
       .filter((e): e is FilaEntrega => !!e);
+
+    if (this.detalleEntrada) {
+      const actual = this.gruposEntradas.find(g => g.clave === this.detalleEntrada!.clave);
+      if (actual) {
+        this.detalleEntrada = actual;
+        this.detalleLista = this.armarDetalle(actual);
+      }
+    }
   }
+  // ===== FIN NUEVO =====
 
   private ultimaEntradaDe(idIngrediente: number | null): FilaEntrega | undefined {
     return this.historial
@@ -706,19 +742,17 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
   nombreMinuscula(nombre: string): string { return this.nombreMostrado(nombre).toLowerCase(); }
 
   // ===================== ESTADO DE APROBACIÓN (SUPERVISIÓN) =====================
+  // ===== NUEVO: reconoce más variantes de estado que puede devolver el servidor =====
   estadoAprobacionEntrega(estado?: string): 'ACEPTADA' | 'RECHAZADA' | 'CON_NOVEDAD' | 'EN_PROCESO' {
-    const e = (estado || '').trim().toUpperCase();
-    if (['RECIBIDA', 'APROBADA', 'ACEPTADA', 'RECIBIDO', 'APROBADO', 'ACEPTADO'].includes(e)) {
-      return 'ACEPTADA';
-    }
-    if (['RECHAZADA', 'RECHAZADO', 'NO_APROBADA', 'NO_ACEPTADA'].includes(e)) {
-      return 'RECHAZADA';
-    }
-    if (['CON_NOVEDAD', 'NOVEDAD', 'PARCIAL'].includes(e)) {
-      return 'CON_NOVEDAD';
-    }
+    const e = this.norm(estado || '').toUpperCase().replace(/[\s-]+/g, '_');
+    if (!e) return 'EN_PROCESO';
+    if (/^(EN_|PENDIENTE|TRANSITO)/.test(e)) return 'EN_PROCESO';
+    if (/^(NO_APROB|NO_ACEPT|RECHAZ)/.test(e)) return 'RECHAZADA';
+    if (/NOVEDAD|PARCIAL|OBSERV/.test(e)) return 'CON_NOVEDAD';
+    if (/^(RECIB|APROB|ACEPT|ENTREGAD|CONFIRM|COMPLET)/.test(e)) return 'ACEPTADA';
     return 'EN_PROCESO';
   }
+  // ===== FIN NUEVO =====
 
   estadoAprobacionGrupo(g: GrupoEntrada): 'ACEPTADA' | 'RECHAZADA' | 'CON_NOVEDAD' | 'EN_PROCESO' {
     if (!g?.items || g.items.length === 0) return 'EN_PROCESO';
@@ -847,6 +881,15 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       if (e.lote && !d.lotes.includes(e.lote)) d.lotes.push(e.lote);
       mapa.set(k, d);
     }
+
+    // ===== NUEVO: el estado de cada producto considera TODAS sus filas, no solo la primera =====
+    for (const d of mapa.values()) {
+      const filas = g.items.filter(e =>
+        `${this.claveProducto(e.idIngrediente, e.ingrediente)}|${this.normalizarUnidad(e.unidad) || e.unidad}` === d.clave);
+      d.estadoAprobacion = this.estadoAprobacionGrupo({ ...g, items: filas });
+    }
+    // ===== FIN NUEVO =====
+
     return Array.from(mapa.values());
   }
 
