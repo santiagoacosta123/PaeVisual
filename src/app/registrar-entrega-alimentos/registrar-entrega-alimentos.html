@@ -1,264 +1,278 @@
 <style>
         /* =====================================================================
-           SIRAE · Registrar entrega  (colores originales: crema + naranja)
+           SIRAE · Registrar entrega  (estilo verde con fotos)
            ===================================================================== */
         .sirae-root {
-            --bg: #FBF9F5; --panel: #FFFFFF; --soft: #F8F5EF; --line: #EADFD0;
-            --ink: #0F172A; --mute: #64748B;
-            --o1: #F97316; --o2: #F2622E;
-            --grad: linear-gradient(135deg, #FFA928, #FF8A00);
-            font-family: 'Roboto', sans-serif; background: var(--bg); color: var(--ink); min-height: 100vh;
+            --bg: #FFF8E7; --panel: #FFFFFF; --line: #F0E2B8;
+            --g-dark: #D99A0B; --g: #F4B41F; --g-mid: #F4B41F; --g-soft: #FFF4D6; --g-soft2: #FDE7A6;
+            --yellow: #FFC72C; --ink: #0F172A; --mute: #64748B;
+            font-family: 'Roboto', sans-serif; color: var(--ink); min-height: 100vh;
+            /* Sin fondo propio: usa el mismo fondo de la página (igual que la barra de arriba) */
+            background: transparent; border: 0; border-radius: 0; box-shadow: none;
         }
         .sirae-root h1, .sirae-root h2, .sirae-root h3, .sirae-root h4, .sirae-root h5 { color: var(--ink); }
         .sirae-root .text-slate-900 { color: #000; }
 
-        .fx-panel { position: relative; background: #fff; border-radius: 28px; border: 1.5px solid #EADFD0; box-shadow: 0 12px 30px -18px rgba(15, 23, 42, .22); }
-        .custom-scroll { scrollbar-width: thin; scrollbar-color: #FED7AA transparent; }
+        .fx-panel { position: relative; background: #fff; border-radius: 24px; border: 1.5px solid var(--line); box-shadow: 0 12px 30px -20px rgba(180, 120, 0, .35); }
+        .custom-scroll { scrollbar-width: thin; scrollbar-color: #F2D28A transparent; }
         .custom-scroll::-webkit-scrollbar { width: 5px; }
-        .custom-scroll::-webkit-scrollbar-thumb { background: #FED7AA; border-radius: 9999px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #F2D28A; border-radius: 9999px; }
 
-        /* ============ Piezas reutilizables ============ */
+        /* ============ Piezas reutilizables (también las usan los modales) ============ */
         .swipe-hint { animation: fxSwipe 1.6s ease-in-out infinite; }
         @keyframes fxSwipe { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(6px); } }
         .mini-img { display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; border-radius: 9999px; font-size: 16px; line-height: 1; }
         .mini-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
-        .arrow-btn { flex: 0 0 auto; width: 32px; height: 32px; border-radius: 9999px; border: 1px solid #FFD9A8; background: #fff; color: #FF8A00; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 10px -6px rgba(255, 138, 0, .5); transition: background .2s ease; }
-        .arrow-btn:hover { background: #FFF1DB; }
+        .arrow-btn { flex: 0 0 auto; width: 32px; height: 32px; border-radius: 9999px; border: 1px solid #F7D98A; background: #fff; color: #A86B00; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 10px -6px rgba(244, 180, 31, .5); transition: background .2s ease; }
+        .arrow-btn:hover { background: #FFF4D6; }
         .pag-btn { min-width: 34px; height: 34px; padding: 0 10px; border-radius: 10px; border: 1px solid #E2E8F0; background: #fff; color: #475569; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
-        .pag-btn:hover:not(:disabled):not(.pill-on) { background: #FFF1DB; border-color: #FFD9A8; }
+        .pag-btn:hover:not(:disabled):not(.pill-on) { background: #FFF4D6; border-color: #F7D98A; }
         .pag-btn:disabled { opacity: .4; cursor: not-allowed; }
-        .pill-on { background: linear-gradient(135deg, #FFA928, #FF8A00); color: #fff; box-shadow: 0 6px 14px -6px rgba(255, 138, 0, .7); }
-        .ico-naranja { background: linear-gradient(135deg, #FFA928, #FF8A00); color: #fff; }
-        .fx-input:focus { border-color: #FF9500; box-shadow: 0 0 0 3px rgba(255, 149, 0, .18); }
+        .pill-on { background: linear-gradient(135deg, #FFCB4D, #F4B41F); color: #fff; box-shadow: 0 6px 14px -6px rgba(244, 180, 31, .7); }
+        .ico-naranja { background: linear-gradient(135deg, #FFCB4D, #F4B41F); color: #fff; }
+        .fx-input:focus { border-color: #F4B41F; box-shadow: 0 0 0 3px rgba(244, 180, 31, .18); }
         .fx-up { animation: fxUp .3s ease both; }
         @keyframes fxUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
         .fx-lift { transition: transform .25s ease; }
         .fx-lift:hover { transform: translateY(-3px); }
-        .modal-fondo { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; background: rgba(15, 23, 42, .4); padding: 16px; }
+        .modal-fondo { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; background: rgba(15, 23, 42, .45); padding: 16px; }
         .modal-caja { width: 100%; max-height: 92vh; overflow-y: auto; background: #fff; border-radius: 24px; padding: 24px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, .25); }
+        .modal-caja .text-orange-500, .modal-caja .text-orange-600, .modal-caja .text-orange-700 { color: #A86B00; }
+        .modal-caja .bg-orange-50 { background: #FFF4D6; }
+        .modal-caja .bg-orange-100 { background: #FDE7A6; }
+        .modal-caja .border-orange-400 { border-color: #F4B41F; }
         .btn-cerrar { display: flex; height: 40px; width: 40px; flex-shrink: 0; align-items: center; justify-content: center; border: 0; border-radius: 12px; background: #F1F5F9; color: #64748B; cursor: pointer; }
         .btn-cerrar:hover { background: #E2E8F0; }
-        .cant-btn { display: flex; height: 32px; width: 32px; flex-shrink: 0; align-items: center; justify-content: center; border-radius: 9999px; border: 1px solid #E2E8F0; background: #fff; color: #475569; cursor: pointer; }
-        .cant-btn:hover { background: #FFF7ED; }
+        .cant-btn { display: flex; height: 32px; width: 32px; flex-shrink: 0; align-items: center; justify-content: center; border-radius: 9999px; border: 1px solid #EFDFAF; background: #fff; color: #334155; cursor: pointer; }
+        .cant-btn:hover { background: #FFF4D6; }
         .campo { width: 100%; border-radius: 12px; border: 1px solid #E2E8F0; background: #fff; padding: 8px 12px; font-size: 12px; font-weight: 600; color: #1E293B; outline: none; }
         .campo.invalido { border-color: #FCA5A5; background: #FEF2F2; }
 
         /* ============ Calendario ============ */
-        .cal-cell { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-height: 92px; padding: 8px; border: 0; border-right: 1px solid #F1F5F9; border-bottom: 1px solid #F1F5F9; background: #fff; text-align: left; cursor: pointer; font-family: inherit; }
-        .cal-cell:hover { background: #FFFAF1; }
+        .cal-cell { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-height: 92px; padding: 8px; border: 0; border-right: 1px solid #F5EBD0; border-bottom: 1px solid #F5EBD0; background: #fff; text-align: left; cursor: pointer; font-family: inherit; }
+        .cal-cell:hover { background: #FFFAEC; }
         .cal-cell.fuera { background: #F8FAFC; }
         .cal-cell.fuera .cal-num { color: #CBD5E1; }
-        .cal-cell.sel { background: #FFF7ED; outline: 2px solid #FDBA74; outline-offset: -2px; }
+        .cal-cell.sel { background: #FFF4D6; outline: 2px solid #F4B41F; outline-offset: -2px; }
         .cal-num { width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; border-radius: 9999px; font-size: 12px; font-weight: 700; color: #334155; }
-        .cal-num.hoy { background: linear-gradient(135deg, #FFA928, #FF8A00); color: #fff; box-shadow: 0 6px 12px -6px rgba(255, 138, 0, .8); }
+        .cal-num.hoy { background: linear-gradient(135deg, #FFCB4D, #F4B41F); color: #fff; box-shadow: 0 6px 12px -6px rgba(244, 180, 31, .8); }
         .cal-chip { display: flex; align-items: center; gap: 4px; width: 100%; border-radius: 6px; padding: 2px 6px; font-size: 10px; font-weight: 600; line-height: 1.3; }
         .cal-dot { width: 6px; height: 6px; border-radius: 9999px; background: currentColor; flex-shrink: 0; }
         .est-ok { background: #ECFDF5; color: #047857; }
         .est-warn { background: #FFFBEB; color: #B45309; }
         .est-bad { background: #FEF2F2; color: #B91C1C; }
         .cal-venc { background: #FFF1DB; color: #C2410C; }
+        .btn-hoy { cursor: pointer; border-radius: 9999px; border: 1px solid #F2C75A; background: #fff; padding: 6px 14px; font-size: 12px; font-weight: 700; color: #A86B00; font-family: inherit; }
+        .btn-hoy:hover { background: #FFF4D6; }
 
-        /* ============ Encabezado ============ */
-        .hd { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 20px; margin-bottom: 18px; padding: 12px 18px; border-radius: 20px; background: #fff; border: 1.5px solid var(--line); box-shadow: 0 10px 24px -20px rgba(15, 23, 42, .3); }
+        /* ============ Banner de bienvenida con foto (ahora va arriba de todo) ============ */
+        .hero { position: relative; overflow: hidden; display: grid; grid-template-columns: 1.2fr .8fr; align-items: center; gap: 20px; min-height: 176px; margin-bottom: 18px; padding: 22px 44px; border-radius: 24px; background: linear-gradient(110deg, #D99A0B 0%, #D99A0B 45%, #FFCB4D 100%); box-shadow: 0 22px 40px -26px rgba(180, 120, 0, .8); }
+        .hero::before { content: ''; position: absolute; width: 460px; height: 460px; right: -80px; top: -150px; border-radius: 50%; background: rgba(255, 255, 255, .07); pointer-events: none; }
+        .hero::after { content: ''; position: absolute; width: 280px; height: 280px; right: 22%; bottom: -190px; border-radius: 50%; background: rgba(255, 199, 44, .22); pointer-events: none; }
+        .hero-text { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
+        .hero h2 { margin: 0; font-size: clamp(24px, 2.8vw, 36px); font-weight: 900; line-height: 1.08; letter-spacing: -.02em; color: #fff; }
+        .hero h2 span { color: var(--yellow); }
+        .hero p { margin: 0; max-width: 440px; font-size: 13.5px; line-height: 1.45; color: #D6EEDD; font-weight: 500; }
+        .hero-btn { margin-top: 4px; height: 38px; padding: 0 22px; display: inline-flex; align-items: center; gap: 8px; border: 0; border-radius: 9999px; background: var(--yellow); color: #1A3B26; font-family: inherit; font-size: 13px; font-weight: 800; cursor: pointer; box-shadow: 0 14px 24px -14px rgba(255, 199, 44, .9); transition: transform .2s; }
+        .hero-btn:hover { transform: translateY(-2px); }
+        .hero-dots { display: flex; gap: 6px; margin-top: 6px; }
+        .hero-dots i { width: 8px; height: 8px; border-radius: 50%; background: rgba(255, 255, 255, .4); }
+        .hero-dots i:first-child { background: var(--yellow); }
+        .hero-art { position: relative; z-index: 1; height: 140px; }
+        .hero-plato, .hero-foto { position: absolute; right: 30px; top: 0; width: 140px; height: 140px; border-radius: 50%; }
+        .hero-plato { display: flex; align-items: center; justify-content: center; background: #fff; color: #A86B00; box-shadow: 0 24px 40px -20px rgba(0, 0, 0, .55); }
+        .hero-plato .material-symbols-outlined { font-size: 52px; }
+        .hero-foto { object-fit: cover; border: 5px solid rgba(255, 255, 255, .92); box-shadow: 0 24px 40px -18px rgba(0, 0, 0, .6); }
+        .hero-hoja { position: absolute; right: 14px; top: -10px; z-index: 3; font-size: 28px; color: var(--yellow); transform: rotate(20deg); }
+
+        /* ============ Encabezado SIRAE con buscador (ahora debajo del banner) ============ */
+        .hd { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 20px; margin-bottom: 18px; padding: 12px 18px; border-radius: 20px; background: #fff; border: 1.5px solid var(--line); box-shadow: 0 10px 24px -20px rgba(180, 120, 0, .4); }
         .hd-brand { display: flex; align-items: center; gap: 12px; }
-        .hd-logo { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 14px; background: var(--grad); color: #fff; box-shadow: 0 10px 18px -10px rgba(255, 138, 0, .8); }
+        .hd-logo { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 14px; background: linear-gradient(135deg, #FFCB4D, #F4B41F); color: #fff; box-shadow: 0 10px 18px -10px rgba(180, 120, 0, .8); }
         .hd-title { margin: 0; display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 900; letter-spacing: .02em; color: #000; }
-        .hd-live { padding: 2px 9px; border-radius: 9999px; border: 1px solid #A7F3D0; background: #ECFDF5; color: #047857; font-size: 10px; font-weight: 800; letter-spacing: 0; }
+        .hd-live { padding: 2px 9px; border-radius: 9999px; border: 1px solid #F5D27A; background: var(--g-soft); color: #A86B00; font-size: 10px; font-weight: 800; letter-spacing: 0; }
         .hd-sub { margin: 2px 0 0; font-size: 11px; font-weight: 500; color: var(--mute); }
         .hd-right { margin-left: auto; text-align: right; font-size: 11px; font-weight: 600; color: var(--mute); }
         .hd-right b { color: #334155; }
+        .hd-right .hd-inst { color: #000; font-weight: 800; font-size: 12px; }
         .search-box { position: relative; flex: 1 1 260px; max-width: 440px; min-width: 200px; margin: 0 auto; }
-        .search-box input { width: 100%; height: 42px; border-radius: 9999px; border: 1.5px solid #E3E7F0; background: #F8FAFC; padding: 0 16px 0 44px; font-size: 13px; font-weight: 500; color: var(--ink); outline: none; transition: border-color .2s, box-shadow .2s, background .2s; }
+        .search-box input { width: 100%; height: 42px; border-radius: 9999px; border: 1.5px solid var(--line); background: #FFFBF0; padding: 0 16px 0 44px; font-size: 13px; font-weight: 500; color: var(--ink); outline: none; transition: border-color .2s, box-shadow .2s, background .2s; }
         .search-box input::placeholder { color: #94A3B8; }
-        .search-box input:focus { background: #fff; border-color: #FF8A00; box-shadow: 0 0 0 3px rgba(255, 138, 0, .15); }
+        .search-box input:focus { background: #fff; border-color: #F4B41F; box-shadow: 0 0 0 3px rgba(244, 180, 31, .15); }
         .search-box .material-symbols-outlined { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 20px; color: #94A3B8; }
 
         /* ============ Distribución ============ */
         .layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 22px; align-items: start; }
-        @media (min-width: 1024px) { .layout { grid-template-columns: minmax(0, 1fr) 370px; } }
+        @media (min-width: 1024px) { .layout { grid-template-columns: minmax(0, 1fr) 320px; } }
 
         /* ============ Barra de vista ============ */
         .top-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 18px; }
-        .seg { display: inline-flex; padding: 4px; gap: 2px; border-radius: 12px; background: #fff; border: 1.5px solid #E3E7F0; }
+        .seg { display: inline-flex; padding: 4px; gap: 2px; border-radius: 12px; background: #fff; border: 1.5px solid var(--line); }
         .seg button { height: 34px; padding: 0 16px; display: inline-flex; align-items: center; gap: 6px; border: 0; border-radius: 9px; background: transparent; color: #64748B; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; transition: background .2s, color .2s; }
-        .seg button.on { background: linear-gradient(135deg, #FFA928, #FF8A00); color: #fff; box-shadow: 0 6px 14px -8px rgba(255, 138, 0, .8); }
-        .btn-excel { height: 40px; padding: 0 16px; display: inline-flex; align-items: center; gap: 6px; border: 0; border-radius: 12px; background: #059669; color: #fff; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; transition: background .2s; }
-        .btn-excel:hover { background: #047857; }
-
-        /* ============ Banner principal (compacto) ============ */
-        .hero { position: relative; overflow: hidden; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; margin-bottom: 18px; padding: 16px 24px; border-radius: 20px; border: 1.5px solid #F6DDB8; background: linear-gradient(120deg, #FFF6E6 0%, #FFE7C2 55%, #FFD08A 100%); box-shadow: 0 14px 28px -24px rgba(255, 138, 0, .55); }
-        .hero-text { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
-        .hero-kicker { font-size: 9.5px; font-weight: 900; letter-spacing: .14em; text-transform: uppercase; color: #C2410C; }
-        .hero h2 { margin: 0; font-size: clamp(20px, 2.2vw, 26px); font-weight: 900; line-height: 1.1; letter-spacing: -.02em; color: #000; }
-        .hero p { margin: 0; max-width: 380px; font-size: 12px; line-height: 1.45; color: #7C5A35; font-weight: 500; }
-        .hero-art { position: relative; z-index: 1; display: flex; align-items: center; justify-content: flex-end; gap: 10px; padding-right: 54px; }
-        .hero-bubble { width: 76px; height: 76px; flex: 0 0 76px; display: flex; align-items: center; justify-content: center; overflow: hidden; border-radius: 9999px; background: #fff; border: 2px solid #fff; box-shadow: 0 12px 22px -14px rgba(194, 65, 12, .5); }
-        .hero-bubble img { width: 100%; height: 100%; object-fit: cover; display: block; }
-        /* Ajuste fino: mismo tamaño de círculo, el contenido se escala para que se vea parejo */
-        .hero-bubble.b2 img { transform: scale(1.4); mix-blend-mode: multiply; }
-        .hero-bubble.b3 img { object-fit: contain; transform: scale(1.3); mix-blend-mode: multiply; }
-        .hero-tag { position: absolute; top: 12px; right: 14px; z-index: 3; padding: 3px 10px; border-radius: 9999px; background: #fff; border: 1px solid #FDBA74; color: #C2410C; font-size: 9.5px; font-weight: 800; }
+        .seg button.on { background: linear-gradient(135deg, #FFCB4D, #F4B41F); color: #fff; box-shadow: 0 6px 14px -8px rgba(244, 180, 31, .8); }
+        .btn-excel { height: 40px; padding: 0 16px; display: inline-flex; align-items: center; gap: 6px; border: 0; border-radius: 12px; background: linear-gradient(135deg, #FFCB4D, #F4B41F); color: #fff; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; transition: background .2s; }
+        .btn-excel:hover { filter: brightness(1.06); }
 
         /* ============ Títulos de sección ============ */
-        .sec-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
-        .sec-title { margin: 0; font-size: 15px; font-weight: 900; color: #0F172A; }
+        .sec-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+        .sec-title { margin: 0; display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 900; color: #0F172A; }
+        .sec-title .material-symbols-outlined { font-size: 20px; color: #A86B00; }
         .sec-sub { margin: 2px 0 0; font-size: 11px; font-weight: 600; color: #94A3B8; }
-        .link-all { border: 0; background: none; cursor: pointer; font-family: inherit; font-size: 12px; font-weight: 800; color: #F97316; }
-        .link-all:hover { color: #C2410C; }
+        .link-all { border: 0; background: none; cursor: pointer; font-family: inherit; font-size: 12px; font-weight: 800; color: #A86B00; }
+        .link-all:hover { color: #8A5A00; }
 
-        /* ============ Categorías (una sola fila) ============ */
-        .cat-rail { display: flex; align-items: center; gap: 8px; margin-bottom: 20px; }
-        .cat-grid {
-            flex: 1; min-width: 0; display: flex; gap: 8px;
-            overflow-x: auto; padding: 4px 2px 6px;
-            scroll-snap-type: x proximity; scrollbar-width: none;
-        }
+        /* ============ Categorías con foto ============ */
+        .cat-rail { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+        .cat-grid { flex: 1; min-width: 0; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(92px, 1fr); gap: 10px; overflow-x: auto; padding: 4px 2px 10px; scroll-snap-type: x proximity; scrollbar-width: none; }
         .cat-grid::-webkit-scrollbar { display: none; }
-        .cat2 {
-            scroll-snap-align: start; flex: 0 0 auto;
-            display: flex; align-items: center; gap: 8px;
-            height: 44px; padding: 0 10px 0 6px;
-            border-radius: 12px; border: 1.5px solid #F1ECE3; background: #fff;
-            cursor: pointer; font-family: inherit; text-align: left;
-            transition: border-color .2s, background .2s, transform .2s;
-        }
-        .cat2:hover { border-color: #FDBA74; transform: translateY(-1px); }
-        .cat2:focus-visible { outline: none; box-shadow: 0 0 0 3px #FED7AA; }
-        .cat2-foto {
-            width: 32px; height: 32px; flex: 0 0 32px;
-            display: flex; align-items: center; justify-content: center;
-            border-radius: 9px; background: #FFF4E5; overflow: hidden; font-size: 16px; line-height: 1;
-        }
+        .cat2 { position: relative; scroll-snap-align: start; display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 6px 6px 8px; border-radius: 16px; border: 2px solid transparent; background: #fff; cursor: pointer; font-family: inherit; box-shadow: 0 6px 16px -12px rgba(180, 120, 0, .5); transition: border-color .2s, background .2s, transform .2s, box-shadow .2s; }
+        .cat2:hover { border-color: #F2C75A; transform: translateY(-2px); }
+        .cat2:focus-visible { outline: none; box-shadow: 0 0 0 3px #F5D27A; }
+        .cat2-foto { width: 100%; aspect-ratio: 1 / .62; display: flex; align-items: center; justify-content: center; border-radius: 12px; background: #FFF6DF; overflow: hidden; font-size: 34px; line-height: 1; }
         .cat2-foto img { width: 100%; height: 100%; object-fit: cover; display: block; }
-        .cat2-nombre { margin: 0; font-size: 11.5px; font-weight: 800; color: #111827; white-space: nowrap; }
-        .cat2-total {
-            min-width: 18px; height: 18px; padding: 0 6px;
-            display: inline-flex; align-items: center; justify-content: center;
-            border-radius: 9999px; background: #F1F3F8; color: #64748B; font-size: 9.5px; font-weight: 900;
-        }
-        .cat2.on { border-color: #F97316; background: #FFF4EC; }
-        .cat2.on .cat2-nombre { color: #C2410C; }
-        .cat2.on .cat2-total { background: linear-gradient(135deg, #FFA928, #FF8A00); color: #fff; }
+        .cat2-nombre { margin: 0; max-width: 100%; font-size: 12px; font-weight: 800; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .cat2-total { min-width: 26px; height: 20px; padding: 0 8px; display: inline-flex; align-items: center; justify-content: center; border-radius: 9999px; background: #FBF0D2; color: #475569; font-size: 10px; font-weight: 900; }
+        .cat2.on { border-color: #F4B41F; background: #FFF8E6; }
+        .cat2.on .cat2-nombre { color: #8A5A00; }
+        .cat2.on .cat2-total { background: #F4B41F; color: #fff; }
 
         /* ============ Pestañas ============ */
-        .tabs-line { display: flex; gap: 22px; margin-bottom: 6px; overflow-x: auto; scrollbar-width: none; border-bottom: 1.5px solid #EDE6DA; }
+        .tabs-line { display: flex; gap: 22px; margin-bottom: 6px; overflow-x: auto; scrollbar-width: none; border-bottom: 1.5px solid #F0E2B8; }
         .tabs-line::-webkit-scrollbar { display: none; }
         .tabs-line button { position: relative; padding: 0 0 10px; border: 0; background: none; cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 700; color: #64748B; white-space: nowrap; transition: color .2s; }
         .tabs-line button:hover { color: #334155; }
         .tabs-line button.on { color: #0F172A; font-weight: 900; }
-        .tabs-line button.on::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1.5px; height: 2px; border-radius: 2px; background: #F97316; }
+        .tabs-line button.on::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1.5px; height: 2px; border-radius: 2px; background: #F4B41F; }
 
-        .swipe-note { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; padding: 10px 14px; border-radius: 12px; border: 1.5px dashed #FDBA74; background: #FFF9F0; font-size: 11.5px; font-weight: 600; color: #9A3412; }
-        .swipe-note .material-symbols-outlined { color: #F97316; }
+        .swipe-note { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; padding: 10px 14px; border-radius: 12px; border: 1.5px dashed #F2C75A; background: #FFF8E6; font-size: 11.5px; font-weight: 600; color: #7A4F00; }
+        .swipe-note .material-symbols-outlined { color: #A86B00; }
 
-        /* ============ Tarjeta de producto (compacta) ============ */
-        .pc { position: relative; display: flex; flex-direction: column; gap: 6px; padding: 8px; border-radius: 14px; background: #fff; border: 1.5px solid #F1ECE3; cursor: grab; user-select: none; -webkit-user-select: none; touch-action: pan-y; box-shadow: 0 4px 14px -10px rgba(15, 23, 42, .3); transition: transform .2s, translate .2s, border-color .2s, background .2s, box-shadow .2s; }
-        .pc:hover { border-color: #FDBA74; box-shadow: 0 14px 26px -16px rgba(255, 138, 0, .45); transform: translateY(-2px); }
-        .pc:focus-visible { outline: none; box-shadow: 0 0 0 3px #FED7AA; }
+        /* ============ Tarjeta de producto (un poco más compacta) ============ */
+        .pc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(136px, 1fr)); gap: 10px; }
+        .pc { position: relative; display: flex; flex-direction: column; gap: 6px; padding: 7px; border-radius: 16px; background: #fff; border: 1.5px solid #F3E8C8; cursor: grab; user-select: none; -webkit-user-select: none; touch-action: pan-y; box-shadow: 0 6px 16px -12px rgba(180, 120, 0, .45); transition: transform .2s, translate .2s, border-color .2s, background .2s, box-shadow .2s; }
+        .pc:hover { border-color: #F2C75A; box-shadow: 0 16px 28px -18px rgba(244, 180, 31, .5); transform: translateY(-2px); }
+        .pc:focus-visible { outline: none; box-shadow: 0 0 0 3px #F5D27A; }
         .pc.arrastrando { transition: none; cursor: grabbing; z-index: 2; transform: none; }
-        .pc.activa { border-color: #F97316; background: #FFFAF5; }
+        .pc.activa { border-color: #F4B41F; background: #FFFAEC; }
         .pc.swipe-agregar { border-color: #10B981; background: #ECFDF5; }
         .pc.swipe-quitar { border-color: #F87171; background: #FEF2F2; }
-        .pc-foto { position: relative; aspect-ratio: 1 / 0.58; display: flex; align-items: center; justify-content: center; border-radius: 10px; background: #EEF1F7; overflow: hidden; font-size: 34px; line-height: 1; }
-        .pc-foto.peco { background: #FFF3DC; }
+        .pc-foto { position: relative; aspect-ratio: 1 / 0.66; display: flex; align-items: center; justify-content: center; border-radius: 12px; background: #F4F7F5; overflow: hidden; font-size: 40px; line-height: 1; }
+        .pc-foto.peco { background: #FBF7EC; }
         .pc-foto img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; -webkit-user-drag: none; }
-        .pc-check { position: absolute; top: 6px; left: 6px; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; border-radius: 5px; background: #fff; border: 1.5px solid #94A3B8; color: transparent; transition: all .2s; }
-        .pc-check .material-symbols-outlined { font-size: 13px; font-weight: 700; }
-        .pc.activa .pc-check { background: #F97316; border-color: #F97316; color: #fff; }
-        .pc-tipo { position: absolute; top: 6px; right: 6px; padding: 2px 7px; border-radius: 9999px; font-size: 8.5px; font-weight: 800; white-space: nowrap; }
-        .pc-tipo.peco { background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A; }
-        .pc-tipo.nope { background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; }
-        .pc-enviado { position: absolute; bottom: 6px; left: 6px; padding: 2px 8px; border-radius: 9999px; font-size: 9px; font-weight: 800; background: #D1FAE5; color: #047857; }
-        .pc-nombre { margin: 2px 2px 0; font-size: 12.5px; font-weight: 900; line-height: 1.2; color: #000; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 30px; }
-        .pc-btn { width: 100%; height: 28px; border: 0; border-radius: 8px; font-family: inherit; font-size: 11px; font-weight: 800; cursor: pointer; transition: background .2s, opacity .2s, transform .1s; }
-        .pc-btn:active:not(:disabled) { transform: scale(.97); }
-        .pc-btn-pri { background: #F2622E; color: #fff; }
-        .pc-btn-pri:hover:not(:disabled) { background: #DC5222; }
-        .pc-btn-sec { background: #ECFDF5; color: #047857; }
-        .pc-btn-sec:hover:not(:disabled) { background: #FEE2E2; color: #B91C1C; }
-        .pc-btn:disabled { cursor: default; opacity: .45; }
+        .pc-check { position: absolute; top: 7px; right: 7px; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; border-radius: 6px; background: #fff; border: 1.5px solid #94A3B8; color: transparent; transition: all .2s; }
+        .pc-check .material-symbols-outlined { font-size: 14px; font-weight: 700; }
+        .pc.activa .pc-check { background: #F4B41F; border-color: #F4B41F; color: #fff; }
+        .pc-enviado { position: absolute; bottom: 7px; left: 7px; padding: 2px 8px; border-radius: 9999px; font-size: 9px; font-weight: 800; background: #F4B41F; color: #fff; }
+        .pc-nombre { margin: 2px 2px 0; font-size: 12.5px; font-weight: 900; line-height: 1.25; color: #000; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 30px; }
 
-        /* ---- Existencia (barra verde) ---- */
+        /* ---- Etiqueta de tipo (abajo de la tarjeta): Perecedero / No perecedero ---- */
+        .pc-tipo { display: flex; align-items: center; justify-content: center; gap: 5px; margin-top: 2px; padding: 5px 10px; border-radius: 10px; font-size: 10.5px; font-weight: 800; letter-spacing: .01em; white-space: nowrap; }
+        .pc-tipo .material-symbols-outlined { font-size: 14px; }
+        .pc-tipo.peco { background: #FFF6DD; color: #A15C07; border: 1px solid #F5D78A; }
+        .pc-tipo.nope { background: #FFF4D6; color: #A86B00; border: 1px solid #F5D27A; }
+
+        /* ---- Existencias: barra roja (poco) / amarilla (medio) / verde (bien) ---- */
         .pc-stock { margin: 0 2px; }
-        .pc-stock-txt { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; font-size: 10px; font-weight: 700; color: #94A3B8; }
-        .pc-stock-txt b { color: #EA580C; font-weight: 900; }
+        .pc-stock-txt { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; font-size: 11px; font-weight: 700; color: #64748B; }
+        .pc-stock-txt b { font-weight: 900; color: #A86B00; }
         .pc-stock-cant { font-weight: 800; color: #475569; }
         .barra-stock { height: 5px; margin-top: 4px; border-radius: 9999px; background: #E2E8F0; overflow: hidden; }
         .barra-stock > span { display: block; height: 100%; min-width: 0; border-radius: 9999px; background: linear-gradient(90deg, #10B981, #34D399); transition: width .4s ease, background .3s ease; }
         .barra-stock > span.bajo { background: linear-gradient(90deg, #EF4444, #F87171); }
         .barra-stock > span.medio { background: linear-gradient(90deg, #F59E0B, #FBBF24); }
         .barra-stock > span.alto { background: linear-gradient(90deg, #10B981, #34D399); }
-        /* ---- Acciones compactas ---- */
-        .pc-acciones { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: 2px; min-height: 28px; }
-        .pc-chip { flex: 0 0 auto; height: 28px; padding: 0 8px; border: 0; border-radius: 8px; background: #ECFDF5; color: #047857; font-family: inherit; font-size: 9.5px; font-weight: 800; line-height: 1.1; cursor: pointer; }
-        .pc-chip:hover { background: #FEE2E2; color: #B91C1C; }
-        .pc-step { display: flex; align-items: center; gap: 4px; margin-left: auto; padding: 2px; border-radius: 9999px; background: #F1F5F9; }
-        .pc-step button { width: 22px; height: 22px; border: 0; border-radius: 9999px; background: #fff; color: #475569; font-size: 14px; font-weight: 900; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-        .pc-step button:hover { background: #FFF1DB; color: #EA580C; }
-        .pc-step span { min-width: 18px; text-align: center; font-size: 11.5px; font-weight: 900; color: #0F172A; }
 
-        .pag-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-top: 22px; padding-top: 16px; border-top: 1.5px solid #EDE6DA; }
+        .pag-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-top: 22px; padding-top: 16px; border-top: 1.5px solid #F0E2B8; }
 
-        /* ============ Panel Factura (derecha) ============ */
-        .inv-panel { background: #fff; border-radius: 22px; border: 1.5px solid var(--line); padding: 18px; box-shadow: 0 12px 30px -20px rgba(15, 23, 42, .25); }
-        .inv-kicker { display: block; font-size: 10px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: #94A3B8; }
-        .inv-titulo { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 14px; }
-        .inv-titulo h3 { margin: 2px 0 0; font-size: 16px; font-weight: 900; color: #000; }
-        .inv-count { padding: 3px 10px; border-radius: 9999px; background: #FFEDD5; color: #C2410C; font-size: 11px; font-weight: 900; white-space: nowrap; }
-        .inv-lista { display: flex; flex-direction: column; gap: 10px; }
-        .inv-row { padding: 10px; border-radius: 14px; border: 1.5px solid #EEF1F7; background: #FAFBFD; transition: border-color .2s, background .2s; }
-        .inv-row:hover { border-color: #FED7AA; background: #fff; }
+        /* ============ Panel "Tu pedido" (derecha) ============ */
+        .inv-panel { display: flex; flex-direction: column; overflow: hidden; background: #fff; border-radius: 20px; border: 1.5px solid var(--line); box-shadow: 0 18px 36px -26px rgba(180, 120, 0, .6); }
+        .inv-head { flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 16px; background: linear-gradient(120deg, #D99A0B, #F4B41F); }
+        .inv-head-l { display: flex; align-items: center; gap: 10px; }
+        .inv-head-ico { width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; border-radius: 11px; background: rgba(255, 255, 255, .18); color: #fff; font-size: 20px; }
+        .inv-head h3 { margin: 0; font-size: 17px; font-weight: 900; letter-spacing: -.01em; color: #fff; }
+        .inv-count { padding: 4px 11px; border-radius: 9999px; background: #fff; color: #A86B00; font-size: 11px; font-weight: 900; white-space: nowrap; }
+        .inv-body { min-height: 0; padding: 12px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #F2D28A transparent; }
+        .inv-lista { display: flex; flex-direction: column; gap: 8px; }
+        .inv-row { padding: 8px; border-radius: 12px; border: 1.5px solid #F3E8C8; background: #FFFCF4; transition: border-color .2s, background .2s; }
+        .inv-row:hover { border-color: #F5D27A; background: #fff; }
         .inv-row-main { display: flex; align-items: center; gap: 10px; }
-        .mini-img.inv-thumb { width: 48px; height: 48px; border-radius: 12px; background: #EEF1F7; font-size: 24px; }
+        .mini-img.inv-thumb { width: 40px; height: 40px; border-radius: 10px; background: #FFF6DF; font-size: 20px; }
         .inv-info { flex: 1; min-width: 0; }
-        .inv-info h5 { margin: 0; font-size: 13px; font-weight: 900; color: #000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .inv-meta { display: inline-block; margin-top: 4px; padding: 2px 8px; border-radius: 9999px; background: #FFF1DB; color: #C2410C; font-size: 10px; font-weight: 800; }
+        .inv-info h5 { margin: 0; font-size: 12px; font-weight: 900; color: #000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .inv-meta { display: inline-block; margin-top: 4px; padding: 2px 8px; border-radius: 9999px; background: #FFF4D6; color: #A86B00; font-size: 10px; font-weight: 800; }
         .inv-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
         .inv-tags .inv-meta { margin-top: 0; }
         .inv-tipo { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 800; }
-        .inv-tipo.peco { background: #FFFBEB; color: #B45309; }
-        .inv-tipo.nope { background: #ECFDF5; color: #047857; }
+        .inv-tipo.peco { background: #FFF4D6; color: #A15C07; }
+        .inv-tipo.nope { background: #FFF4D6; color: #A86B00; }
         .inv-quitar { width: 26px; height: 26px; flex: 0 0 26px; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 9999px; background: transparent; color: #94A3B8; cursor: pointer; transition: all .2s; }
         .inv-quitar:hover { background: #FEE2E2; color: #B91C1C; }
-        .inv-qty { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1.5px dashed #E8EBF2; }
+        .inv-qty { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; padding-top: 8px; border-top: 1.5px dashed #F0E2B8; }
         .inv-qty > span { font-size: 11px; font-weight: 800; color: #475569; }
         .inv-stepper { display: flex; align-items: center; gap: 6px; }
-        .inv-input { height: 32px; width: 64px; padding: 0 4px; border-radius: 8px; border: 1px solid #E2E8F0; background: #fff; color: #1E293B; text-align: center; font-size: 12px; font-weight: 900; outline: none; }
-        .inv-input:focus { border-color: #FF9500; box-shadow: 0 0 0 3px rgba(255, 149, 0, .18); }
-        .inv-vacio { padding: 22px 14px; border-radius: 14px; border: 1.5px dashed #D9DEEA; text-align: center; font-size: 12px; font-weight: 600; color: #94A3B8; margin: 0; }
-        .inv-vacio b { color: #475569; }
+        .inv-input { height: 28px; width: 56px; padding: 0 4px; border-radius: 8px; border: 1px solid #EFDFAF; background: #fff; color: #1E293B; text-align: center; font-size: 12px; font-weight: 900; outline: none; }
+        .inv-input:focus { border-color: #F4B41F; box-shadow: 0 0 0 3px rgba(244, 180, 31, .18); }
+        .inv-vacio { padding: 16px 12px; border-radius: 14px; border: 1.5px dashed #F0D58A; background: #FFFBEF; text-align: center; font-size: 12px; font-weight: 600; color: #64748B; margin: 0; }
+        .inv-vacio b { color: #A86B00; }
         .inv-error { margin: 8px 0 0; padding: 6px 10px; border-radius: 8px; background: #FEF2F2; color: #DC2626; font-size: 10px; font-weight: 700; }
 
-        .resumen { margin-top: 14px; padding: 14px; border-radius: 14px; border: 1.5px dashed #D3D8E4; }
-        .resumen-tit { margin: 0 0 10px; font-size: 11px; font-weight: 800; color: #475569; }
-        .resumen-fila { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; font-size: 11.5px; font-weight: 600; color: #64748B; }
+        .resumen { margin-top: 10px; padding: 10px 12px; border-radius: 12px; border: 1.5px dashed #F0D58A; }
+        .resumen-tit { margin: 0 0 6px; font-size: 11px; font-weight: 800; color: #475569; }
+        .resumen-fila { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; font-size: 11px; font-weight: 600; color: #64748B; }
         .resumen-fila b { color: #0F172A; font-weight: 800; }
         .resumen-sub { margin: 0 0 8px; font-size: 10px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: #94A3B8; }
-        .resumen-linea { margin-top: 10px; padding-top: 10px; border-top: 1.5px solid #E8EBF2; }
-        .resumen-total { margin: 10px 0 0; padding-top: 10px; border-top: 1.5px solid #E8EBF2; display: flex; align-items: center; justify-content: space-between; font-size: 12.5px; font-weight: 900; color: #000; }
-        .resumen-total b { color: #EA580C; font-size: 14px; }
+        .resumen-linea { margin-top: 10px; padding-top: 10px; border-top: 1.5px solid #F0E2B8; }
+        .resumen-total { margin: 8px 0 0; padding: 8px 12px; border-radius: 10px; background: #FFF4D6; display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 900; color: #0F172A; }
+        .resumen-total b { color: #A86B00; font-size: 13px; }
 
-        .btn-enviar { margin-top: 14px; width: 100%; height: 46px; display: flex; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: 12px; background: #F2622E; color: #fff; font-family: inherit; font-size: 13px; font-weight: 800; cursor: pointer; box-shadow: 0 14px 24px -14px rgba(242, 98, 46, .8); transition: background .2s, opacity .2s; }
-        .btn-enviar:hover:not(:disabled) { background: #DC5222; }
+        .btn-enviar { margin-top: 10px; width: 100%; height: 40px; display: flex; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: 12px; background: linear-gradient(135deg, #FFCB4D, #F4B41F); color: #fff; font-family: inherit; font-size: 12px; font-weight: 800; cursor: pointer; box-shadow: 0 16px 26px -16px rgba(180, 120, 0, .9); transition: filter .2s, opacity .2s; }
+        .btn-enviar:hover:not(:disabled) { filter: brightness(1.1); }
         .btn-enviar:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
 
-        .btn-inventario { margin-top: 12px; width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 14px; border-radius: 12px; border: 1.5px solid #FED7AA; background: #FFF7ED; color: #9A3412; font-family: inherit; font-size: 12px; font-weight: 800; cursor: pointer; transition: background .2s; }
-        .btn-inventario:hover { background: #FFEDD5; }
-        .btn-inventario .inv-pill { padding: 2px 8px; border-radius: 9999px; background: #fff; color: #C2410C; font-size: 10px; font-weight: 900; white-space: nowrap; }
+
+        .btn-inventario { margin-top: 10px; width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px; border-radius: 10px; border: 1.5px solid #F7D98A; background: #fff; color: #7A4F00; font-family: inherit; font-size: 12px; font-weight: 800; cursor: pointer; transition: background .2s; }
+        .btn-inventario:hover { background: #FFF8E6; }
+        .btn-inventario .inv-pill { padding: 2px 8px; border-radius: 9999px; background: #FFF4D6; color: #A86B00; font-size: 10px; font-weight: 900; white-space: nowrap; }
 
         @media (min-width: 1024px) {
-            .panel-sticky { position: -webkit-sticky; position: sticky; top: 24px; align-self: start; max-height: calc(100vh - 36px); overflow-y: auto; scrollbar-width: thin; scrollbar-color: #FED7AA transparent; }
-            .panel-sticky::-webkit-scrollbar { width: 6px; }
-            .panel-sticky::-webkit-scrollbar-thumb { background: #FED7AA; border-radius: 9999px; }
+            .panel-sticky { position: -webkit-sticky; position: sticky; top: 16px; z-index: 10; align-self: start; }
+            .panel-sticky .inv-panel { max-height: calc(100vh - 32px); }
+            .panel-sticky .fx-panel { max-height: calc(100vh - 32px); overflow-y: auto; scrollbar-width: thin; scrollbar-color: #F2D28A transparent; }
         }
         @media (max-width: 760px) {
-            .hero { grid-template-columns: 1fr; padding: 14px 18px; }
+            .hero { grid-template-columns: 1fr; padding: 24px; }
             .hero-art { display: none; }
         }
         @media (prefers-reduced-motion: reduce) {
-            .pc, .cat2 { transition: none; }
+            .pc, .cat2, .hero-btn { transition: none; }
             .swipe-hint { animation: none; }
         }
+
+        /* ===== Tema amarillo #F4B41F: texto oscuro sobre amarillo y ajustes ===== */
+        .pill-on, .ico-naranja, .cal-num.hoy, .seg button.on, .btn-excel, .btn-enviar, .hd-logo,
+        .pc.activa .pc-check, .pc-enviado, .cat2.on .cat2-total { color: #2B1D00; }
+        .btn-excel:hover { filter: brightness(1.06); }
+        .hero { background: linear-gradient(110deg, #F4B41F 0%, #FFC13A 50%, #FFD468 100%); box-shadow: 0 22px 40px -26px rgba(180, 120, 0, .7); }
+        .hero::before { background: rgba(255, 255, 255, .22); }
+        .hero::after { background: rgba(255, 255, 255, .28); }
+        .hero h2 { color: #2B1D00; }
+        .hero h2 span { color: #fff; text-shadow: 0 2px 0 rgba(139, 90, 0, .25); }
+        .hero p { color: #4A3300; }
+        .hero-btn { background: #2B1D00; color: #FFE08A; box-shadow: 0 14px 24px -14px rgba(43, 29, 0, .7); }
+        .hero-dots i { background: rgba(43, 29, 0, .25); }
+        .hero-dots i:first-child { background: #2B1D00; }
+        .hero-hoja { color: #fff; }
+        .inv-head { background: linear-gradient(120deg, #FFCB4D, #F4B41F); }
+        .inv-head h3 { color: #2B1D00; }
+        .inv-head-ico { background: rgba(255, 255, 255, .4); color: #2B1D00; }
+        .inv-count { background: #fff; color: #8A5A00; }
+        .pc-tipo.peco, .inv-tipo.peco { background: #FFE8D6; color: #B4470C; border-color: #F8C9A4; }
+        .pc-tipo.nope, .inv-tipo.nope { background: #FFF4D6; color: #8A5A00; border-color: #F5D27A; }
+
+        /* ===== Mismo amarillo en todos los botones principales ===== */
+        .seg button.on, .btn-excel, .btn-enviar, .pill-on { box-shadow: 0 8px 16px -10px rgba(244, 180, 31, .9); }
+        .btn-excel, .seg button.on { font-weight: 800; }
+        .btn-excel { border: 1px solid rgba(180, 120, 0, .18); }
     </style>
 
     <!-- Foto redonda del producto (o su emoji). Uso: <ng-container *ngTemplateOutlet="foto; context: { n: nombre, c: 'h-9 w-9 bg-orange-50' }"> -->
@@ -269,13 +283,33 @@
         </div>
     </ng-template>
 
-    <div class="sirae-root p-4 md:p-8">
+    <div class="sirae-root">
         <div class="relative mx-auto max-w-[1520px]">
 
-            <!-- ENCABEZADO -->
+            <!-- 1) BANNER DE BIENVENIDA: ahora va arriba de todo (solo en la vista Menú) -->
+            <div class="hero" *ngIf="!mostrarCalendario">
+                <div class="hero-text">
+                    <h2>Bienvenido a <span>SIRAE</span></h2>
+                    <p>Gestiona, controla y organiza el PAE de manera fácil y eficiente.</p>
+                    <button type="button" class="hero-btn" (click)="catalogoRef.scrollIntoView({ behavior: 'smooth', block: 'start' })">
+                        Explorar menú <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+                    </button>
+                    <div class="hero-dots" aria-hidden="true"><i></i><i></i><i></i></div>
+                </div>
+                <div class="hero-art" aria-hidden="true">
+                    <span class="hero-hoja material-symbols-outlined">eco</span>
+                    <!-- Respaldo si la foto no carga -->
+                    <div class="hero-plato"><span class="material-symbols-outlined">restaurant</span></div>
+                    <!-- Foto del círculo: public/image.png -->
+                    <img class="hero-foto" src="/image.png" alt="Plato saludable"
+                        (error)="$any($event.target).style.display = 'none'">
+                </div>
+            </div>
+
+            <!-- 2) ENCABEZADO SIRAE con buscador, institución y hora (ahora debajo del banner) -->
             <header class="hd">
                 <div class="hd-brand">
-                    <div class="hd-logo"><span class="material-symbols-outlined" style="font-size:26px;font-variation-settings:'FILL' 0,'wght' 500">local_mall</span></div>
+                    <div class="hd-logo"><span class="material-symbols-outlined text-[24px]">local_mall</span></div>
                     <div>
                         <h1 class="hd-title">SIRAE <span class="hd-live">En línea</span></h1>
                         <p class="hd-sub">Menú institucional · Control y abastecimiento de alimentos</p>
@@ -290,8 +324,8 @@
 
                 <div class="hd-right">
                     <div><b>{{ ahoraTexto }}</b></div>
-                    <div class="inline-flex items-center gap-1">
-                        <span class="material-symbols-outlined text-[14px]" style="color:var(--o1)">school</span>{{ nombreInstitucion }}<span *ngIf="nombreSede"> · {{ nombreSede }}</span>
+                    <div class="hd-inst inline-flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[14px]" style="color:#A86B00">school</span>{{ nombreInstitucion }}<span *ngIf="nombreSede"> · {{ nombreSede }}</span>
                     </div>
                 </div>
             </header>
@@ -301,26 +335,26 @@
             </div>
             <p *ngIf="cargandoHistorial" class="mb-4 text-center text-xs font-semibold text-slate-500" role="status">Cargando entregas...</p>
 
-            <div class="layout">
+            <!-- 3) Vista y acciones -->
+            <div class="top-bar">
+                <div class="seg" role="group" aria-label="Vista">
+                    <button type="button" [class.on]="!mostrarCalendario" (click)="mostrarCalendario = false">
+                        <span class="material-symbols-outlined text-[16px]">storefront</span> Menú
+                    </button>
+                    <button type="button" [class.on]="mostrarCalendario" (click)="irACalendario()">
+                        <span class="material-symbols-outlined text-[16px]">history</span> Historial
+                    </button>
+                </div>
+
+                <button type="button" class="btn-excel" (click)="exportarExcelHistorial()">
+                    <span class="material-symbols-outlined text-[16px]">table_view</span> Excel
+                </button>
+            </div>
+
+            <div #catalogoRef class="layout scroll-mt-4">
 
                 <!-- ================= COLUMNA IZQUIERDA: CATÁLOGO Y CALENDARIO ================= -->
                 <section class="min-w-0">
-
-                    <!-- Vista y acciones -->
-                    <div class="top-bar">
-                        <div class="seg" role="group" aria-label="Vista">
-                            <button type="button" [class.on]="!mostrarCalendario" (click)="mostrarCalendario = false">
-                                <span class="material-symbols-outlined text-[16px]">storefront</span> Menú
-                            </button>
-                            <button type="button" [class.on]="mostrarCalendario" (click)="irACalendario()">
-                                <span class="material-symbols-outlined text-[16px]">history</span> Historial
-                            </button>
-                        </div>
-
-                        <button type="button" class="btn-excel" (click)="exportarExcelHistorial()">
-                            <span class="material-symbols-outlined text-[16px]">table_view</span> Excel
-                        </button>
-                    </div>
 
                     <!-- ===== VISTA: CALENDARIO ===== -->
                     <div *ngIf="mostrarCalendario">
@@ -331,7 +365,7 @@
                                 <button type="button" class="arrow-btn" aria-label="Mes siguiente" (click)="mesSiguiente()"><span class="material-symbols-outlined text-[18px]">chevron_right</span></button>
                             </div>
                             <div class="flex items-center gap-2">
-                                <button type="button" (click)="irAHoy()" class="cursor-pointer rounded-full border border-orange-300 bg-white px-3.5 py-1.5 text-xs font-bold text-orange-600">Hoy</button>
+                                <button type="button" (click)="irAHoy()" class="btn-hoy">Hoy</button>
                             </div>
                         </div>
 
@@ -362,27 +396,10 @@
                     <!-- ===== VISTA: MENÚ ===== -->
                     <div *ngIf="!mostrarCalendario">
 
-                        <!-- Banner principal -->
-                        <div class="hero">
-                            <span class="hero-tag">Fresco</span>
-                            <div class="hero-text">
-                                <span class="hero-kicker">Abastecimiento</span>
-                                <h2>Perecederos al día</h2>
-                                <p>Pasa por perecederos y no perecederos para planear mejor cada entrega de tu institución.</p>
-                            </div>
-                            <div class="hero-art" aria-hidden="true">
-                                <ng-container *ngFor="let n of ['Arroz', 'Huevos', 'Leche entera']; let i = index">
-                                    <span class="hero-bubble" [ngClass]="'b' + (i + 1)">
-                                        <img *ngIf="imagenDe(n) as src" [src]="src" [alt]="n" loading="lazy">
-                                    </span>
-                                </ng-container>
-                            </div>
-                        </div>
-
                         <!-- Categorías -->
                         <div class="sec-head">
-                            <h3 class="sec-title">Categorías de abastecimiento</h3>
-                            <button type="button" class="link-all" (click)="categoriaMenu = 'Todos'; paginaActual = 1">Ver todo</button>
+                            <h3 class="sec-title"><span class="material-symbols-outlined">grid_view</span> Categorías de abastecimiento</h3>
+                            <button type="button" class="link-all" (click)="categoriaMenu = 'Todos'; paginaActual = 1">Ver todas →</button>
                         </div>
 
                         <div class="cat-rail">
@@ -409,10 +426,10 @@
                             </button>
                         </div>
 
-                        <!-- Productos de abastecimiento -->
+                        <!-- Productos disponibles -->
                         <div class="sec-head">
                             <div>
-                                <h3 class="sec-title">Productos de abastecimiento</h3>
+                                <h3 class="sec-title"><span class="material-symbols-outlined">inventory_2</span> Productos disponibles</h3>
                                 <p class="sec-sub">
                                     {{ totalProductosMenu > 0 ? 'Mostrando ' + desdeMostrado + '–' + hastaMostrado + ' de ' + totalProductosMenu + ' productos' : '0 productos' }}
                                 </p>
@@ -428,14 +445,14 @@
 
                         <div class="swipe-note mt-4" role="note">
                             <span class="material-symbols-outlined swipe-hint text-[20px]">swipe_right</span>
-                            <span>Toca <b>Agregar</b> o desliza el producto a la <b>derecha</b> para verlo en la factura. A la <b>izquierda</b> lo quita.</span>
+                            <span>Desliza el producto a la <b>derecha</b> para agregarlo a tu pedido. A la <b>izquierda</b> lo quita.</span>
                         </div>
 
                         <p *ngIf="cargandoCatalogos" class="mb-3 text-center text-xs font-semibold text-slate-500" role="status">Cargando productos...</p>
 
                         <!-- Productos de la página -->
-                        <section *ngFor="let grupo of gruposPagina; trackBy: trackPor" class="mb-4">
-                            <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
+                        <div class="pc-grid">
+                            <ng-container *ngFor="let grupo of gruposPagina; trackBy: trackPor">
 
                                 <article *ngFor="let producto of grupo.productos; trackBy: trackPor" class="pc fx-up"
                                     [class.activa]="tarjetaActiva(producto)" [class.arrastrando]="swipeId === producto.id"
@@ -446,18 +463,17 @@
                                     (pointerdown)="alIniciarDeslizar($event, producto)" (pointermove)="alMoverDeslizar($event)"
                                     (pointerup)="alTerminarDeslizar(producto)" (pointercancel)="cancelarDeslizar()">
 
-                                    <!-- Foto con casilla y tipo -->
+                                    <!-- Foto con casilla -->
                                     <div class="pc-foto" [class.peco]="esPerecedero(producto)">
                                         <img *ngIf="imagenDe(producto.nombre) as src; else sinFotoProd" [src]="src" [alt]="nombreMostrado(producto.nombre)" loading="lazy" draggable="false">
                                         <ng-template #sinFotoProd><span>{{ emojiDe(producto.nombre) }}</span></ng-template>
                                         <span class="pc-check" aria-hidden="true"><span class="material-symbols-outlined">check</span></span>
-                                        <span class="pc-tipo" [ngClass]="esPerecedero(producto) ? 'peco' : 'nope'">{{ nombreTipo(producto) }}</span>
                                         <span *ngIf="fueEnviado(producto.nombre)" class="pc-enviado">✓ Enviado</span>
                                     </div>
 
                                     <h4 class="pc-nombre" [title]="nombreMostrado(producto.nombre)">{{ nombreMostrado(producto.nombre) }}</h4>
 
-                                    <!-- Existencia con barra verde -->
+                                    <!-- Unidad y existencia con barra de color -->
                                     <div class="pc-stock">
                                         <div class="pc-stock-txt">
                                             <span>Unidad: <b>{{ producto.unidad }}</b></span>
@@ -466,28 +482,14 @@
                                         <div class="barra-stock"><span [style.width.%]="porcentajeStock(totalDisponible(producto))" [ngClass]="nivelStock(totalDisponible(producto))"></span></div>
                                     </div>
 
-                                    <!-- Acciones: hacen lo mismo que deslizar -->
-                                    <div class="pc-acciones">
-                                        <ng-container *ngIf="seleccionDe(producto) as sel; else btnAgregar">
-                                            <button type="button" class="pc-chip" title="Toca para quitar de la factura"
-                                                (pointerdown)="$event.stopPropagation()" (pointerup)="$event.stopPropagation()"
-                                                (click)="quitarSeleccionado(sel)">✓ En factura</button>
-                                            <div class="pc-step" (pointerdown)="$event.stopPropagation()" (pointerup)="$event.stopPropagation()">
-                                                <button type="button" aria-label="Restar" (click)="ajustarCantidadEnviar(sel, -1)">−</button>
-                                                <span>{{ cantidadEnviarDe(sel) || 0 }}</span>
-                                                <button type="button" aria-label="Sumar" (click)="ajustarCantidadEnviar(sel, 1)">+</button>
-                                            </div>
-                                        </ng-container>
-                                        <ng-template #btnAgregar>
-                                            <button type="button" class="pc-btn pc-btn-pri"
-                                                (pointerdown)="$event.stopPropagation()" (pointerup)="$event.stopPropagation()"
-                                                (click)="swipeId = producto.id; swipeDx = umbralSwipe; alTerminarDeslizar(producto); cancelarDeslizar()">+ Agregar</button>
-                                        </ng-template>
+                                    <!-- Tipo (abajo): Perecedero / No perecedero -->
+                                    <div class="pc-tipo" [ngClass]="esPerecedero(producto) ? 'peco' : 'nope'">
+                                        <span class="material-symbols-outlined">{{ esPerecedero(producto) ? 'schedule' : 'verified' }}</span>
+                                        {{ nombreTipo(producto) }}
                                     </div>
                                 </article>
-
-                            </div>
-                        </section>
+                            </ng-container>
+                        </div>
 
                         <p *ngIf="!cargandoCatalogos && totalProductosMenu === 0" class="rounded-2xl border border-slate-100 bg-white p-4 text-center text-xs text-slate-500">No hay productos para los filtros seleccionados.</p>
 
@@ -532,15 +534,15 @@
                             </div>
                         </div>
 
-                        <div class="mb-4 rounded-2xl bg-emerald-50 p-3 text-center">
-                            <span class="block text-xl font-black leading-none text-emerald-600">{{ totalProductosRegistrados }}</span>
+                        <div class="mb-4 rounded-2xl bg-[#FFF4D6] p-3 text-center">
+                            <span class="block text-xl font-black leading-none text-[#A86B00]">{{ totalProductosRegistrados }}</span>
                             <span class="text-[10px] font-bold text-slate-500">productos registrados</span>
                         </div>
 
                         <!-- Entradas registradas -->
                         <div class="mb-2 flex items-center justify-between">
                             <h4 class="m-0 text-[10px] font-black uppercase tracking-wider text-slate-400">Entradas registradas</h4>
-                            <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-black text-emerald-700">{{ entradasFiltradas.length }} {{ entradasFiltradas.length === 1 ? 'registro' : 'registros' }}</span>
+                            <span class="rounded-full bg-[#FDE7A6] px-2 py-0.5 text-[10px] font-black text-[#8A5A00]">{{ entradasFiltradas.length }} {{ entradasFiltradas.length === 1 ? 'registro' : 'registros' }}</span>
                         </div>
                         <p *ngIf="entradasFiltradas.length === 0" class="rounded-xl border border-dashed border-slate-200 p-4 text-center text-xs text-slate-500">{{ filtroFecha ? 'No hay entradas en esa fecha.' : 'Aún no has registrado entradas.' }}</p>
 
@@ -549,7 +551,7 @@
                                 class="fx-up fx-lift mb-2 cursor-pointer rounded-2xl border bg-white px-3 py-2.5 shadow-sm transition"
                                 [ngClass]="claseBordeTarjetaEntrada(g)">
                                 <div class="flex items-center gap-3">
-                                    <div class="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-xl bg-emerald-500 leading-none text-white">
+                                    <div class="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-xl bg-[#F4B41F] leading-none text-[#2B1D00]">
                                         <span class="text-base font-black">{{ diaDe(g.fechaRecepcion) }}</span>
                                         <span class="mt-0.5 text-[9px] font-bold">{{ mesCortoDe(g.fechaRecepcion) }}</span>
                                     </div>
@@ -559,7 +561,7 @@
                                         </div>
                                         <p class="m-0 truncate text-[10px] font-semibold text-slate-500">{{ resumenEntrada(g) }}</p>
                                         <div class="m-0 mt-1 flex items-center justify-between gap-2">
-                                            <p class="m-0 flex items-center gap-1 truncate text-[10px] font-bold text-emerald-700">
+                                            <p class="m-0 flex items-center gap-1 truncate text-[10px] font-bold text-[#8A5A00]">
                                                 <span class="material-symbols-outlined text-[12px]">person</span>{{ g.responsable || 'Sin responsable' }}
                                             </p>
                                             <!-- Estado de aprobación del administrador -->
@@ -576,107 +578,111 @@
                         </div>
 
                         <button *ngIf="entradasFiltradas.length > limiteEntradas" type="button" (click)="verTodasEntradas = !verTodasEntradas"
-                            class="mt-1 w-full cursor-pointer rounded-full border border-emerald-200 bg-white px-3 py-1.5 text-[11px] font-bold text-emerald-700">
+                            class="mt-1 w-full cursor-pointer rounded-full border border-[#F5D27A] bg-white px-3 py-1.5 text-[11px] font-bold text-[#8A5A00]">
                             {{ verTodasEntradas ? 'Ver menos' : 'Ver todas las entradas (' + entradasFiltradas.length + ')' }}
                         </button>
                     </div>
 
-                    <!-- ===== SOLO MENÚ: FACTURA ===== -->
+                    <!-- ===== SOLO MENÚ: TU PEDIDO ===== -->
                     <div *ngIf="!mostrarCalendario" class="inv-panel">
 
-                        <div class="inv-titulo">
-                            <div>
-                                <span class="inv-kicker">Factura</span>
-                                <h3>Productos para enviar</h3>
+                        <div class="inv-head">
+                            <div class="inv-head-l">
+                                <span class="inv-head-ico material-symbols-outlined">shopping_cart</span>
+                                <h3>Tu pedido</h3>
                             </div>
                             <span class="inv-count">{{ seleccionados.length }} {{ seleccionados.length === 1 ? 'producto' : 'productos' }}</span>
                         </div>
 
-                        <p *ngIf="seleccionados.length === 0" class="inv-vacio">
-                            Toca <b>Agregar</b> o desliza un producto hacia la derecha para verlo aquí.
-                        </p>
+                        <div class="inv-body">
 
-                        <!-- Lista de productos seleccionados -->
-                        <div *ngIf="seleccionados.length > 0" class="inv-lista custom-scroll max-h-[360px] overflow-y-auto pr-1">
-                            <article *ngFor="let sel of seleccionados; trackBy: trackPor" class="inv-row fx-up" [attr.aria-label]="sel.ingrediente">
-                                <div class="inv-row-main">
-                                    <ng-container *ngTemplateOutlet="foto; context: { n: sel.ingrediente, c: 'inv-thumb' }"></ng-container>
-                                    <div class="inv-info">
-                                        <h5 [title]="sel.ingrediente">{{ sel.ingrediente }}</h5>
-                                        <div class="inv-tags">
-                                            <span class="inv-meta">Unidad: {{ sel.unidad }}</span>
-                                            <span class="inv-tipo" [ngClass]="esPerecedero($any(sel)) ? 'peco' : 'nope'">
-                                                <span class="cal-dot"></span>{{ nombreTipo($any(sel)) }}
-                                            </span>
+                            <p *ngIf="seleccionados.length === 0" class="inv-vacio">
+                                Desliza un producto hacia la <b>derecha</b> para verlo aquí.
+                            </p>
+
+                            <!-- Lista de productos seleccionados -->
+                            <div *ngIf="seleccionados.length > 0" class="inv-lista custom-scroll max-h-[260px] overflow-y-auto pr-1">
+                                <article *ngFor="let sel of seleccionados; trackBy: trackPor" class="inv-row fx-up" [attr.aria-label]="sel.ingrediente">
+                                    <div class="inv-row-main">
+                                        <ng-container *ngTemplateOutlet="foto; context: { n: sel.ingrediente, c: 'inv-thumb' }"></ng-container>
+                                        <div class="inv-info">
+                                            <h5 [title]="sel.ingrediente">{{ sel.ingrediente }}</h5>
+                                            <div class="inv-tags">
+                                                <span class="inv-meta">Unidad: {{ sel.unidad }}</span>
+                                                <span class="inv-tipo" [ngClass]="esPerecedero($any(sel)) ? 'peco' : 'nope'">
+                                                    <span class="cal-dot"></span>{{ nombreTipo($any(sel)) }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <button type="button" class="inv-quitar" (click)="quitarSeleccionado(sel)" [attr.aria-label]="'Quitar ' + sel.ingrediente">
+                                            <span class="material-symbols-outlined text-[16px]">close</span>
+                                        </button>
+                                    </div>
+
+                                    <div class="inv-qty">
+                                        <span>A enviar</span>
+                                        <div class="inv-stepper">
+                                            <button type="button" class="cant-btn !h-7 !w-7" aria-label="Restar" (click)="ajustarCantidadEnviar(sel, -1)">
+                                                <span class="material-symbols-outlined text-[14px]">remove</span>
+                                            </button>
+                                            <input type="number" min="0" [max]="disponibleDe(sel)" step="any" placeholder="0"
+                                                [ngModel]="cantidadEnviarDe(sel) || null" (ngModelChange)="fijarCantidadEnviar(sel, $event)"
+                                                [attr.aria-label]="'Cantidad de ' + sel.ingrediente + ' a enviar'"
+                                                class="inv-input">
+                                            <button type="button" class="cant-btn !h-7 !w-7" aria-label="Sumar" (click)="ajustarCantidadEnviar(sel, 1)">
+                                                <span class="material-symbols-outlined text-[14px]">add</span>
+                                            </button>
+                                            <span class="min-w-[20px]" style="font-size:11px;font-weight:800;color:#64748B">{{ sel.unidad }}</span>
                                         </div>
                                     </div>
-                                    <button type="button" class="inv-quitar" (click)="quitarSeleccionado(sel)" [attr.aria-label]="'Quitar ' + sel.ingrediente">
-                                        <span class="material-symbols-outlined text-[16px]">close</span>
-                                    </button>
-                                </div>
 
-                                <div class="inv-qty">
-                                    <span>A enviar</span>
-                                    <div class="inv-stepper">
-                                        <button type="button" class="cant-btn !h-7 !w-7" aria-label="Restar" (click)="ajustarCantidadEnviar(sel, -1)">
-                                            <span class="material-symbols-outlined text-[14px]">remove</span>
-                                        </button>
-                                        <input type="number" min="0" [max]="disponibleDe(sel)" step="any" placeholder="0"
-                                            [ngModel]="cantidadEnviarDe(sel) || null" (ngModelChange)="fijarCantidadEnviar(sel, $event)"
-                                            [attr.aria-label]="'Cantidad de ' + sel.ingrediente + ' a enviar'"
-                                            class="inv-input">
-                                        <button type="button" class="cant-btn !h-7 !w-7" aria-label="Sumar" (click)="ajustarCantidadEnviar(sel, 1)">
-                                            <span class="material-symbols-outlined text-[14px]">add</span>
-                                        </button>
-                                        <span class="min-w-[20px]" style="font-size:11px;font-weight:800;color:var(--mute)">{{ sel.unidad }}</span>
-                                    </div>
-                                </div>
-
-                                <p *ngIf="cantidadEnviarDe(sel) > disponibleDe(sel)" class="inv-error">
-                                    No puedes enviar más de {{ disponibleDe(sel) }} {{ sel.unidad }}
-                                </p>
-                            </article>
-                        </div>
-
-                        <ng-container *ngIf="seleccionados.length > 0">
-                            <!-- Resumen del envío -->
-                            <div class="resumen">
-                                <p class="resumen-tit">Resumen del envío</p>
-                                <p class="resumen-sub">Disponible en inventario</p>
-
-                                <div *ngFor="let sel of seleccionados; trackBy: trackPor" class="resumen-fila">
-                                    <span class="truncate pr-2">{{ sel.ingrediente }}</span>
-                                    <b class="shrink-0" style="color:var(--o1)">{{ disponibleDe(sel) | number:'1.0-2' }} {{ sel.unidad }}</b>
-                                </div>
-
-                                <!-- Fecha automática (hoy) -->
-                                <div class="resumen-fila resumen-linea">
-                                    <span>Fecha de envío</span>
-                                    <b class="inline-flex items-center gap-1">
-                                        <span class="material-symbols-outlined text-[14px]" style="color:var(--o1)">event</span>
-                                        {{ fechaCorta(envioFecha) }}
-                                    </b>
-                                </div>
-
-                                <div class="resumen-total"><span>Total a enviar</span><b>{{ productosParaEnviar.length }} {{ productosParaEnviar.length === 1 ? 'producto' : 'productos' }}</b></div>
+                                    <p *ngIf="cantidadEnviarDe(sel) > disponibleDe(sel)" class="inv-error">
+                                        No puedes enviar más de {{ disponibleDe(sel) }} {{ sel.unidad }}
+                                    </p>
+                                </article>
                             </div>
 
-                            <p *ngIf="errorEnvioPanel" class="m-0 mt-3 rounded-xl border border-red-200 bg-red-50 p-2 text-[11px] font-semibold text-red-700" role="alert">{{ errorEnvioPanel }}</p>
+                            <ng-container *ngIf="seleccionados.length > 0">
+                                <!-- Resumen del envío -->
+                                <div class="resumen">
+                                    <p class="resumen-tit">Resumen del envío</p>
+                                    <p class="resumen-sub">Disponible en inventario</p>
 
-                            <button type="button" class="btn-enviar" (click)="enviarSeleccionados()" [disabled]="guardandoEnvio || productosParaEnviar.length === 0">
-                                <span class="material-symbols-outlined text-[18px]">{{ guardandoEnvio ? 'hourglass_top' : 'send' }}</span>
-                                {{ guardandoEnvio ? 'Enviando...' : (seleccionados.length === 1 ? 'Confirmar envío · 1 producto' : 'Confirmar envío · ' + productosParaEnviar.length + ' productos') }}
+                                    <div *ngFor="let sel of seleccionados; trackBy: trackPor" class="resumen-fila">
+                                        <span class="truncate pr-2">{{ sel.ingrediente }}</span>
+                                        <b class="shrink-0" style="color:#A86B00">{{ disponibleDe(sel) | number:'1.0-2' }} {{ sel.unidad }}</b>
+                                    </div>
+
+                                    <!-- Fecha automática (hoy) -->
+                                    <div class="resumen-fila resumen-linea">
+                                        <span>Fecha de envío</span>
+                                        <b class="inline-flex items-center gap-1">
+                                            <span class="material-symbols-outlined text-[14px]" style="color:#A86B00">event</span>
+                                            {{ fechaCorta(envioFecha) }}
+                                        </b>
+                                    </div>
+
+                                    <div class="resumen-total"><span>Total a enviar</span><b>{{ productosParaEnviar.length }} {{ productosParaEnviar.length === 1 ? 'producto' : 'productos' }}</b></div>
+                                </div>
+
+                                <p *ngIf="errorEnvioPanel" class="m-0 mt-3 rounded-xl border border-red-200 bg-red-50 p-2 text-[11px] font-semibold text-red-700" role="alert">{{ errorEnvioPanel }}</p>
+
+                                <button type="button" class="btn-enviar" (click)="enviarSeleccionados()" [disabled]="guardandoEnvio || productosParaEnviar.length === 0">
+                                    <span class="material-symbols-outlined text-[18px]">{{ guardandoEnvio ? 'hourglass_top' : 'send' }}</span>
+                                    {{ guardandoEnvio ? 'Enviando...' : (seleccionados.length === 1 ? 'Confirmar envío · 1 producto' : 'Confirmar envío · ' + productosParaEnviar.length + ' productos') }}
+                                </button>
+
+                            </ng-container>
+
+                            <button type="button" class="btn-inventario" (click)="mostrarModalInventario = true">
+                                <span class="flex items-center gap-1.5">
+                                    <span class="material-symbols-outlined text-[18px]" style="color:#A86B00">inventory_2</span> Ver inventario
+                                </span>
+                                <span class="inv-pill">
+                                    {{ inventarioDisponible.length }} disp. · {{ inventarioNoDisponible.length }} agotados
+                                </span>
                             </button>
-                        </ng-container>
-
-                        <button type="button" class="btn-inventario" (click)="mostrarModalInventario = true">
-                            <span class="flex items-center gap-1.5">
-                                <span class="material-symbols-outlined text-[18px]" style="color:var(--o1)">inventory_2</span> Ver inventario
-                            </span>
-                            <span class="inv-pill">
-                                {{ inventarioDisponible.length }} disp. · {{ inventarioNoDisponible.length }} agotados
-                            </span>
-                        </button>
+                        </div>
                     </div>
                 </aside>
             </div>
@@ -903,7 +909,7 @@
         <div class="modal-caja fx-up max-w-[640px]" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Detalle de la entrada">
             <div class="flex items-start justify-between border-b border-slate-200 pb-4">
                 <div>
-                    <p class="m-0 text-[10px] font-black uppercase tracking-wider text-emerald-600">Detalle de la entrada</p>
+                    <p class="m-0 text-[10px] font-black uppercase tracking-wider text-[#A86B00]">Detalle de la entrada</p>
                     <h3 class="m-0 mt-1 text-lg font-black text-slate-900">{{ fechaDiaModal(d.fechaRecepcion) }}</h3>
                     <p class="m-0 mt-1 text-[11px] font-semibold text-slate-500">{{ d.destino }}</p>
                 </div>
@@ -959,9 +965,9 @@
                             <span *ngIf="p.estado" class="cal-chip !w-auto" [ngClass]="claseChipEstado(p.estado)"><span class="cal-dot"></span>{{ p.estado }}</span>
                         </div>
                     </div>
-                    <p class="m-0 mt-2 rounded-xl bg-emerald-50 px-3 py-2 text-xs font-bold text-slate-700">
-                        Registraste <span class="text-base font-black text-emerald-600">{{ p.cantidad | number:'1.0-2' }}</span>
-                        <span class="font-black text-emerald-600"> {{ unidadTexto(p.unidad, p.cantidad) }}</span> de {{ nombreMinuscula(p.ingrediente) }}
+                    <p class="m-0 mt-2 rounded-xl bg-[#FFF4D6] px-3 py-2 text-xs font-bold text-slate-700">
+                        Registraste <span class="text-base font-black text-[#A86B00]">{{ p.cantidad | number:'1.0-2' }}</span>
+                        <span class="font-black text-[#A86B00]"> {{ unidadTexto(p.unidad, p.cantidad) }}</span> de {{ nombreMinuscula(p.ingrediente) }}
                     </p>
                     <div *ngIf="p.motivoRechazo" class="mt-2 rounded-xl bg-red-50 p-2.5 text-[11px] text-red-700 border border-red-200">
                         <span class="font-black block">Motivo de rechazo:</span>
