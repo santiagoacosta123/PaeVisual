@@ -124,9 +124,20 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
 
   // ===== NUEVO: actualización automática del estado (En proceso -> Aceptada) =====
   private pollingHistorial?: ReturnType<typeof setInterval>;
-  private readonly alVolver = () => { if (!document.hidden) this.cargarHistorial(); };
+  private timerRecepciones?: ReturnType<typeof setInterval>;
+  private ultimaFirmaRecepciones = '';
+
+  private readonly alVolver = () => {
+    if (!document.hidden) {
+      this.verificarRecepcionesLocales();
+      this.cargarHistorial();
+    }
+  };
   private readonly alCambiarStorage = (ev: StorageEvent) => {
-    if (ev.key === null || ev.key === 'sirae_recepciones_admin') this.cargarHistorial();
+    if (ev.key === null || ev.key === 'sirae_recepciones_admin' || ev.key === 'sirae_entregas_locales' || ev.key === 'sirae_entradas_extra') {
+      this.verificarRecepcionesLocales();
+      this.cargarHistorial();
+    }
   };
   // ===== FIN NUEVO =====
 
@@ -182,11 +193,18 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     this.actualizarReloj();
     this.reloj = setInterval(() => { this.actualizarReloj(); this.cdr.markForCheck(); }, 60_000);
 
-    // ===== NUEVO: revisa el servidor cada 8 s (solo si la pestaña está visible) =====
+    // ===== NUEVO: revisa el estado local y del servidor automáticamente =====
+    this.verificarRecepcionesLocales();
+    this.timerRecepciones = setInterval(() => {
+      this.verificarRecepcionesLocales();
+    }, 1_200);
+
     this.pollingHistorial = setInterval(() => {
       if (document.hidden || this.guardandoEntrada || this.guardandoEnvio) return;
+      this.verificarRecepcionesLocales();
       this.cargarHistorial();
-    }, 8_000);
+    }, 4_000);
+
     document.addEventListener('visibilitychange', this.alVolver);
     window.addEventListener('focus', this.alVolver);
     window.addEventListener('storage', this.alCambiarStorage);
@@ -203,6 +221,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     if (this.reloj !== undefined) clearInterval(this.reloj);
 
     // ===== NUEVO =====
+    if (this.timerRecepciones !== undefined) clearInterval(this.timerRecepciones);
     if (this.pollingHistorial !== undefined) clearInterval(this.pollingHistorial);
     document.removeEventListener('visibilitychange', this.alVolver);
     window.removeEventListener('focus', this.alVolver);
@@ -512,20 +531,79 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     return idFinal != null ? `id:${idFinal}` : `n:${n}`;
   }
 
-  private recepcionAdminDe(item: any): any {
+  private verificarRecepcionesLocales(): void {
     try {
-      const recepciones = JSON.parse(localStorage.getItem('sirae_recepciones_admin') || '{}');
+      const r = localStorage.getItem('sirae_recepciones_admin') || '';
+      const l = localStorage.getItem('sirae_entregas_locales') || '';
+      const x = localStorage.getItem(this.claveExtras) || '';
+      const firma = `${r.length}:${r.slice(-60)}|${l.length}:${l.slice(-60)}|${x.length}:${x.slice(-60)}`;
+      if (firma !== this.ultimaFirmaRecepciones) {
+        this.ultimaFirmaRecepciones = firma;
+        this.reconstruirHistorial();
+        this.cdr.markForCheck();
+      }
+    } catch {}
+  }
+
+  private recepcionAdminDe(item: any, nombreResuelto = ''): any {
+    try {
       const id = item.id ?? item.id_entrega;
+      const fecha = this.soloFecha(item.fecha_entrega ?? item.fecha_recepcion ?? item.fechaRecepcion);
+      const cant = Number(item.cantidad) || 0;
+      const ing = this.norm(nombreResuelto || this.texto(item.ingrediente_nombre) || this.texto(item.ingrediente)
+        || this.ingredientes.find(i => i.id === (item.id_ingrediente ?? item.ingrediente))?.nombre || '');
+
+      // 1. Revisar en sirae_recepciones_admin (guardado cuando el admin acepta o rechaza)
+      const recepciones = JSON.parse(localStorage.getItem('sirae_recepciones_admin') || '{}');
       if (id != null && recepciones[`id:${id}`]) {
         return recepciones[`id:${id}`];
       }
-      const ing = this.texto(item.ingrediente_nombre) || this.texto(item.ingrediente) || '';
-      const fecha = this.soloFecha(item.fecha_entrega ?? item.fecha_recepcion ?? item.fechaRecepcion);
-      const cant = Number(item.cantidad) || 0;
       if (ing && fecha) {
-        const k = `${ing.toLowerCase().trim()}|${fecha}|${cant}`;
-        if (recepciones[k]) return recepciones[k];
+        if (recepciones[`${ing}|${fecha}|${cant}`]) return recepciones[`${ing}|${fecha}|${cant}`];
+        if (recepciones[`${ing}|${fecha}`]) return recepciones[`${ing}|${fecha}`];
+        for (const [k, v] of Object.entries(recepciones)) {
+          const kNorm = this.norm(k);
+          if (kNorm.includes(fecha) && (kNorm.includes(ing) || (id != null && kNorm.includes(String(id))))) {
+            return v;
+          }
+        }
       }
+
+      // 2. Revisar en sirae_entregas_locales (si el admin actualizó el registro local)
+      const locales: any[] = JSON.parse(localStorage.getItem('sirae_entregas_locales') || '[]');
+      if (Array.isArray(locales) && locales.length > 0) {
+        const coincidencia = locales.find(l => {
+          if (id != null && l.id === id) return true;
+          const lIng = this.norm(l.ingrediente || '');
+          const lFecha = this.soloFecha(l.fechaRecepcion || l.fecha_entrega);
+          return ing && lIng === ing && lFecha === fecha;
+        });
+        if (coincidencia && coincidencia.estado && coincidencia.estado !== 'EN_TRANSITO') {
+          return {
+            estado: coincidencia.estado,
+            cantidad_recibida: coincidencia.cantidadRecibida,
+            cantidad_rechazada: coincidencia.cantidadRechazada,
+            motivo_rechazo: coincidencia.motivoRechazo,
+            usuario_receptor_nombre: coincidencia.usuarioReceptorNombre,
+          };
+        }
+      }
+
+      // 3. Revisar en sirae_entradas_extra
+      const extras = JSON.parse(localStorage.getItem(this.claveExtras) || '{}');
+      if (id != null && extras[`id:${id}`]?.estadoAprobacion) {
+        const ex = extras[`id:${id}`];
+        return { estado: ex.estadoAprobacion, motivo_rechazo: ex.motivoRechazo };
+      }
+      if (ing && fecha) {
+        for (const [k, v] of Object.entries(extras)) {
+          const kNorm = this.norm(k);
+          if (kNorm.includes(fecha) && (v as any)?.estadoAprobacion) {
+            return { estado: (v as any).estadoAprobacion, motivo_rechazo: (v as any).motivoRechazo };
+          }
+        }
+      }
+
       return undefined;
     } catch {
       return undefined;
@@ -551,7 +629,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     const extra = this.extraDe(item.id ?? item.id_entrega, idIng, fechaRecepcion, Number(item.cantidad) || 0, destinoItem);
     const responsableObs = String(item.observaciones ?? '').match(/Responsable:\s*(.+)/i)?.[1]?.trim() ?? '';
 
-    const recepcionAdmin = this.recepcionAdminDe(item);
+    const recepcionAdmin = this.recepcionAdminDe(item, ingrediente);
     const estadoReal = (item.estado && item.estado !== 'EN_TRANSITO' && item.estado !== '')
       ? item.estado
       : (recepcionAdmin?.estado || item.estado || extra?.estadoAprobacion || 'EN_TRANSITO');
@@ -757,11 +835,11 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
   estadoAprobacionGrupo(g: GrupoEntrada): 'ACEPTADA' | 'RECHAZADA' | 'CON_NOVEDAD' | 'EN_PROCESO' {
     if (!g?.items || g.items.length === 0) return 'EN_PROCESO';
     const estados = g.items.map(item => this.estadoAprobacionEntrega(item.estadoEntrega));
-    if (estados.every(est => est === 'ACEPTADA')) return 'ACEPTADA';
     if (estados.every(est => est === 'RECHAZADA')) return 'RECHAZADA';
     if (estados.includes('CON_NOVEDAD') || (estados.includes('ACEPTADA') && estados.includes('RECHAZADA'))) {
       return 'CON_NOVEDAD';
     }
+    if (estados.some(est => est === 'ACEPTADA')) return 'ACEPTADA';
     return 'EN_PROCESO';
   }
 
@@ -1338,6 +1416,30 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
         this.guardarExtra(r.idResp, { idIngrediente: r.sel.idIngrediente, cantidad: r.cantidad, unidad: r.unidad, perecedero: this.esPerecedero(r.sel as any) }, { destino, responsable, hora, fechaRegistro: hoy, loteRegistro: lote });
       });
 
+      try {
+        const locales: any[] = JSON.parse(localStorage.getItem('sirae_entregas_locales') || '[]');
+        exitosos.forEach(r => {
+          locales.unshift({
+            id: r.idResp,
+            idIngrediente: r.sel.idIngrediente,
+            idTipoMercado: r.sel.idTipoMercado,
+            ingrediente: r.sel.ingrediente,
+            tipoMercado: this.esPerecedero(r.sel as any) ? 'Perecederos' : 'Granos',
+            frecuencia: r.sel.frecuencia || 'Semanal',
+            cantidad: r.cantidad,
+            unidad: r.unidad,
+            fechaRecepcion: hoy,
+            fechaVencimiento: r.sel.fechaVencimiento || '',
+            destino,
+            institucionNombre: this.nombreInstitucion,
+            responsable,
+            observaciones: `Responsable: ${responsable}`,
+            estado: 'EN_TRANSITO',
+          });
+        });
+        localStorage.setItem('sirae_entregas_locales', JSON.stringify(locales));
+      } catch {}
+
       this.historialEnvios = [...registros, ...this.historialEnvios];
 
       // Aparece de inmediato en Entradas
@@ -1660,6 +1762,30 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       const hora = this.horaDe(ahoraISO), lote = String(Date.now());   // el lote identifica lo guardado junto
       const destino = this.entradaDestino.trim(), responsable = this.entradaResponsable.trim();
       exitosas.forEach(r => this.guardarExtra(r.id, r.fila, { destino, responsable, hora, fechaRegistro: this.fechaHoy(), loteRegistro: lote }));
+
+      try {
+        const locales: any[] = JSON.parse(localStorage.getItem('sirae_entregas_locales') || '[]');
+        exitosas.forEach(r => {
+          locales.unshift({
+            id: r.id,
+            idIngrediente: r.fila.idIngrediente,
+            idTipoMercado: this.idTipoMercadoDe(r.fila.perecedero),
+            ingrediente: this.nombreIngrediente(r.fila.idIngrediente),
+            tipoMercado: r.fila.perecedero ? 'Perecederos' : 'Granos',
+            frecuencia: this.datosAutomaticos(r.fila).frecuencia,
+            cantidad: r.fila.cantidad ?? 0,
+            unidad: r.fila.unidad,
+            fechaRecepcion: this.entradaFecha,
+            fechaVencimiento: this.datosAutomaticos(r.fila).vencimiento,
+            destino,
+            institucionNombre: this.nombreInstitucion,
+            responsable,
+            observaciones: `Responsable: ${responsable}`,
+            estado: 'EN_TRANSITO',
+          });
+        });
+        localStorage.setItem('sirae_entregas_locales', JSON.stringify(locales));
+      } catch {}
 
       if (exitosas.length) {
         this.mostrarHistorialEnvios = true;
