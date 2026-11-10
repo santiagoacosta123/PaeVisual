@@ -19,9 +19,10 @@
         </div>
 
         <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-          <div style="display:flex; align-items:center; gap:8px; background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:8px 14px; min-width:240px; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+          <div style="display:flex; align-items:center; gap:8px; background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:8px 14px; min-width:260px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); position: relative;">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
             <input type="text" [(ngModel)]="filtroBusquedaContratos" placeholder="Buscar por contrato o colegio..." style="border:none; background:transparent; outline:none; font-size:13px; width:100%; color:#0f172a; font-family: inherit;">
+            <button *ngIf="filtroBusquedaContratos" type="button" (click)="limpiarBusquedaContratos()" style="background:none; border:none; color:#94a3b8; font-size:14px; cursor:pointer; padding:0 2px;" title="Borrar búsqueda">✕</button>
           </div>
 
           <button type="button" (click)="abrirModalGrandeContrato('nuevo')" style="height: 40px; padding: 0 22px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: none; border-radius: 9999px; background: #fac94b; color: #0f172a; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; box-shadow: 0 2px 8px rgba(251, 191, 36, 0.28); transition: all 0.2s ease;">
@@ -31,135 +32,248 @@
         </div>
       </header>
 
+      <!-- Banner de Error al Cargar Contratos -->
+      <div *ngIf="errorCargaContratos" style="background:#fef2f2; border:1px solid #fecaca; border-left:5px solid #ef4444; border-radius:12px; padding:14px 18px; display:flex; align-items:center; justify-content:space-between; gap:14px; box-shadow:0 2px 8px rgba(239,68,68,0.06);">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <span class="material-symbols-outlined" style="color:#dc2626; font-size:24px; flex-shrink:0;">error</span>
+          <div>
+            <strong style="color:#991b1b; font-size:13px; font-weight:700; display:block;">Error al cargar los contratos</strong>
+            <span style="color:#b91c1c; font-size:12px;">{{ errorCargaContratos }}</span>
+          </div>
+        </div>
+        <button type="button" (click)="cargarContratos()" style="background:#dc2626; color:#ffffff; border:none; padding:7px 16px; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap; box-shadow:0 2px 6px rgba(220,38,38,0.2);">
+          Reintentar
+        </button>
+      </div>
+
+      <!-- ===================== PANEL DE CONTROL DE VIGENCIA Y ALERTAS ===================== -->
+      <!-- Tarjetas KPI de Estado y Vigencia Contractual -->
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:12px;">
+        <!-- 1. Todos los Contratos -->
+        <div (click)="cambiarFiltroVigencia('TODOS')"
+             style="cursor:pointer; padding:12px 14px; border-radius:10px; border:1.5px solid; transition:all 0.15s; background:#ffffff;"
+             [style.borderColor]="filtroEstadoVigencia === 'TODOS' ? '#0f172a' : '#e2e8f0'"
+             [style.background]="filtroEstadoVigencia === 'TODOS' ? '#f8fafc' : '#ffffff'">
+          <span style="font-size:10px; font-weight:700; color:#64748b; letter-spacing:0.5px; display:block;">TODOS</span>
+          <div style="font-size:20px; font-weight:800; color:#0f172a; margin-top:2px;">{{ contratos.length }}</div>
+          <span style="font-size:10px; color:#94a3b8;">Contratos registrados</span>
+        </div>
+
+        <!-- 2. Activos Vigentes -->
+        <div (click)="cambiarFiltroVigencia('ACTIVO')"
+             style="cursor:pointer; padding:12px 14px; border-radius:10px; border:1.5px solid; transition:all 0.15s;"
+             [style.borderColor]="filtroEstadoVigencia === 'ACTIVO' ? '#10b981' : '#bbf7d0'"
+             [style.background]="filtroEstadoVigencia === 'ACTIVO' ? '#f0fdf4' : '#ffffff'">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size:10px; font-weight:700; color:#166534; letter-spacing:0.5px;">ACTIVOS (VIGENTES)</span>
+            <span style="width:7px; height:7px; border-radius:50%; background:#10b981;"></span>
+          </div>
+          <div style="font-size:20px; font-weight:800; color:#14532d; margin-top:2px;">{{ totalContratosActivos }}</div>
+          <span style="font-size:10px; color:#166534;">Vigencia &gt; 30 días</span>
+        </div>
+
+        <!-- 3. Próximos a Vencer (Alerta) -->
+        <div (click)="cambiarFiltroVigencia('PROXIMO_VENCER')"
+             style="cursor:pointer; padding:12px 14px; border-radius:10px; border:1.5px solid; transition:all 0.15s;"
+             [style.borderColor]="filtroEstadoVigencia === 'PROXIMO_VENCER' ? '#f59e0b' : '#fde68a'"
+             [style.background]="filtroEstadoVigencia === 'PROXIMO_VENCER' ? '#fffbeb' : '#ffffff'">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size:10px; font-weight:700; color:#92400e; letter-spacing:0.5px; display:inline-flex; align-items:center; gap:3px;">
+              <span class="material-symbols-outlined" style="font-size:14px; color:#d97706;">warning</span>
+              PRÓXIMOS A VENCER
+            </span>
+            <span *ngIf="totalContratosProximosVencer > 0" style="background:#fef3c7; color:#b45309; font-size:9px; font-weight:800; padding:1px 5px; border-radius:10px; border:1px solid #fde68a;">
+              Alerta
+            </span>
+          </div>
+          <div style="font-size:20px; font-weight:800; color:#78350f; margin-top:2px;">{{ totalContratosProximosVencer }}</div>
+          <span style="font-size:10px; color:#b45309;">Vence en ≤ 30 días</span>
+        </div>
+
+        <!-- 4. Finalizados (Vencidos / Históricos) -->
+        <div (click)="cambiarFiltroVigencia('FINALIZADO')"
+             style="cursor:pointer; padding:12px 14px; border-radius:10px; border:1.5px solid; transition:all 0.15s;"
+             [style.borderColor]="filtroEstadoVigencia === 'FINALIZADO' ? '#64748b' : '#e2e8f0'"
+             [style.background]="filtroEstadoVigencia === 'FINALIZADO' ? '#f1f5f9' : '#ffffff'">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size:10px; font-weight:700; color:#475569; letter-spacing:0.5px;">FINALIZADOS</span>
+            <span style="width:7px; height:7px; border-radius:50%; background:#94a3b8;"></span>
+          </div>
+          <div style="font-size:20px; font-weight:800; color:#334155; margin-top:2px;">{{ totalContratosFinalizados }}</div>
+          <span style="font-size:10px; color:#64748b;">No vigentes / Históricos</span>
+        </div>
+
+        <!-- 5. Inactivos -->
+        <div (click)="cambiarFiltroVigencia('INACTIVO')"
+             style="cursor:pointer; padding:12px 14px; border-radius:10px; border:1.5px solid; transition:all 0.15s;"
+             [style.borderColor]="filtroEstadoVigencia === 'INACTIVO' ? '#ef4444' : '#fecaca'"
+             [style.background]="filtroEstadoVigencia === 'INACTIVO' ? '#fef2f2' : '#ffffff'">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size:10px; font-weight:700; color:#991b1b; letter-spacing:0.5px;">INACTIVOS</span>
+            <span style="width:7px; height:7px; border-radius:50%; background:#ef4444;"></span>
+          </div>
+          <div style="font-size:20px; font-weight:800; color:#7f1d1d; margin-top:2px;">{{ totalContratosInactivos }}</div>
+          <span style="font-size:10px; color:#991b1b;">Desactivados</span>
+        </div>
+      </div>
+
+      <!-- Banner de Alerta de Contratos Próximos a Vencer (Criterio 2) -->
+      <div *ngIf="totalContratosProximosVencer > 0" style="background:#fffbeb; border:1px solid #fde68a; border-left:5px solid #f59e0b; border-radius:12px; padding:12px 18px; display:flex; align-items:center; justify-content:space-between; gap:14px; box-shadow:0 2px 8px rgba(245,158,11,0.08);">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <span class="material-symbols-outlined" style="color:#d97706; font-size:26px; flex-shrink:0;">notification_important</span>
+          <div>
+            <strong style="color:#92400e; font-size:13px; font-weight:700; display:block;">
+              Alerta de Vigencia: Existen {{ totalContratosProximosVencer }} contratos próximos a su fecha de finalización
+            </strong>
+            <span style="color:#78350f; font-size:12px;">
+              Estos contratos vencerán dentro de los próximos 30 días. Revisa la vigencia contractual para evitar suspensiones operativas o uso de contratos no vigentes.
+            </span>
+          </div>
+        </div>
+        <button type="button" (click)="cambiarFiltroVigencia('PROXIMO_VENCER')" style="background:#f59e0b; color:#ffffff; border:none; padding:7px 16px; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap; box-shadow:0 2px 6px rgba(245,158,11,0.25);">
+          Ver próximos a vencer
+        </button>
+      </div>
+
       <!-- ===================== CONTENIDO / TABLA ===================== -->
       <section style="width: 100%; margin: 0; background: #ffffff; border-radius: 12px; padding: 24px; border: 1px solid #f1f5f9; box-shadow: 0 2px 10px rgba(0,0,0,0.02);">
 
         <!-- Tabla de contratos con cabecera fija y scroll interno -->
         <div style="overflow-x:auto; overflow-y:auto; max-height:calc(100vh - 270px); border-radius:12px; border:1px solid #f1f5f9;">
-          <table style="width:100%; border-collapse:collapse; text-align:left; font-size:13px; min-width:650px;">
+          <table style="width:100%; border-collapse:collapse; text-align:left; font-size:13px; min-width:750px;">
           <thead style="position:sticky; top:0; z-index:10; background:#f8fafc;">
             <tr style="border-bottom:1px solid #e2e8f0; color:#64748b; font-weight:600; background:#f8fafc;">
               <th style="padding:12px; font-size:11px; letter-spacing:0.5px; background:#f8fafc; position:sticky; top:0; z-index:10;">N° CONTRATO</th>
-              <th style="padding:12px; font-size:11px; letter-spacing:0.5px; background:#f8fafc; position:sticky; top:0; z-index:10;">INSTITUCIÓN</th>
-              <th style="padding:12px; font-size:11px; letter-spacing:0.5px; background:#f8fafc; position:sticky; top:0; z-index:10;">CUPOS</th>
-              <th style="padding:12px; font-size:11px; letter-spacing:0.5px; background:#f8fafc; position:sticky; top:0; z-index:10;">SUPERVISOR</th>
+              <th style="padding:12px; font-size:11px; letter-spacing:0.5px; background:#f8fafc; position:sticky; top:0; z-index:10;">INSTITUCIÓN EDUCATIVA</th>
+              <th style="padding:12px; font-size:11px; letter-spacing:0.5px; background:#f8fafc; position:sticky; top:0; z-index:10;">CUPOS AUTORIZADOS</th>
+              <th style="padding:12px; font-size:11px; letter-spacing:0.5px; background:#f8fafc; position:sticky; top:0; z-index:10;">SUPERVISOR ENCARGADO</th>
               <th style="padding:12px; font-size:11px; letter-spacing:0.5px; background:#f8fafc; position:sticky; top:0; z-index:10;">FECHA INICIO</th>
-              <th style="padding:12px; font-size:11px; letter-spacing:0.5px; background:#f8fafc; position:sticky; top:0; z-index:10;">FECHA FIN</th>
+              <th style="padding:12px; font-size:11px; letter-spacing:0.5px; background:#f8fafc; position:sticky; top:0; z-index:10;">FECHA DE FINALIZACIÓN</th>
               <th style="padding:12px; font-size:11px; letter-spacing:0.5px; background:#f8fafc; position:sticky; top:0; z-index:10;">ESTADO</th>
               <th style="padding:12px; font-size:11px; letter-spacing:0.5px; text-align:right; background:#f8fafc; position:sticky; top:0; z-index:10;">ACCIONES</th>
             </tr>
           </thead>
           <tbody style="color:#0f172a;">
-            <ng-container *ngFor="let c of contratosFiltrados">
-              <tr style="border-bottom:1px solid #f1f5f9;">
-                <td style="padding:12px;">
-                  <span style="display:inline-flex; align-items:center; gap:8px; font-weight:700;">
-                    <span style="width:8px; height:8px; border-radius:50%; display:inline-block;"
-                      [style.background]="c.estado === 'Activo' ? '#10b981' : (c.estado === 'Finalizado' ? '#94a3b8' : '#ef4444')"></span>
-                    {{ c.codigo }}
-                  </span>
-                </td>
-                <td style="padding:12px; color:#0f172a; font-weight:600;">{{ c.institucion }}</td>
-                <td style="padding:12px;">
-                  <span style="background:#fef3c7; color:#92400e; font-size:11px; font-weight:700; padding:3px 8px; border-radius:6px; border:1px solid #fde68a; display:inline-block; white-space:nowrap;">
-                    {{ c.cupos || 0 }} cupos
-                  </span>
-                </td>
-                <td style="padding:12px; color:#475569; font-size:12px;">
-                  <span *ngIf="c.supervisor && c.supervisor !== 'Sin asignar'" style="font-weight:600; color:#0f172a;">
-                    {{ c.supervisor }}
-                  </span>
-                  <span *ngIf="!c.supervisor || c.supervisor === 'Sin asignar'" style="color:#94a3b8; font-style:italic;">
-                    Sin asignar
-                  </span>
-                </td>
-                <td style="padding:12px; color:#64748b;">{{ c.fechaInicio }}</td>
-                <td style="padding:12px; color:#64748b;">{{ c.fechaFin }}</td>
-                <td style="padding:12px;">
-                  <span style="padding:3px 10px; border-radius:12px; font-size:11px; font-weight:600;"
-                    [style.background]="c.estado === 'Activo' ? '#dcfce7' : (c.estado === 'Finalizado' ? '#f1f5f9' : '#fee2e2')"
-                    [style.color]="c.estado === 'Activo' ? '#166534' : (c.estado === 'Finalizado' ? '#475569' : '#991b1b')">
-                    {{ c.estado }}
-                  </span>
-                </td>
-                <td style="padding:12px; text-align:right;">
-                  <div style="display:flex; gap:6px; justify-content:flex-end; align-items:center;">
-                    <button type="button" (click)="abrirModalGrandeContrato(c.id)" style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; color:#475569;" title="Editar">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                    </button>
-                    <button type="button" (click)="toggleExpandir(c)" style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; color:#475569; transition:transform 0.2s;" [style.transform]="c.expandido ? 'rotate(180deg)' : 'rotate(0deg)'">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                    </button>
+
+            <!-- Estado de Carga (Spinner) -->
+            <tr *ngIf="cargandoContratos">
+              <td colspan="8" style="padding:48px 20px; text-align:center; background:#ffffff;">
+                <div style="display:inline-flex; flex-direction:column; align-items:center; gap:12px;">
+                  <div style="width:32px; height:32px; border:3px solid #fde68a; border-top-color:#d97706; border-radius:50%; animation:spin 0.8s linear infinite;"></div>
+                  <div>
+                    <strong style="color:#0f172a; font-size:14px; display:block;">Cargando contratos registrados...</strong>
+                    <span style="color:#64748b; font-size:12px;">Consultando la información en SIRAE</span>
+                  </div>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Filas de Contratos -->
+            <ng-container *ngIf="!cargandoContratos">
+              <ng-container *ngFor="let c of contratosFiltrados; trackBy: trackPorId">
+                <tr style="border-bottom:1px solid #f1f5f9; transition:background-color 0.15s;" onmouseover="this.style.background='#fafaf9'" onmouseout="this.style.background='transparent'">
+                  <td style="padding:12px;">
+                    <span style="display:inline-flex; align-items:center; gap:8px; font-weight:700;">
+                      <span style="width:8px; height:8px; border-radius:50%; display:inline-block;"
+                        [style.background]="c.estado === 'Activo' ? '#10b981' : (c.estado === 'Finalizado' ? '#94a3b8' : '#ef4444')"></span>
+                      {{ c.codigo }}
+                    </span>
+                  </td>
+                  <td style="padding:12px; color:#0f172a; font-weight:600;">{{ c.institucion }}</td>
+                  <td style="padding:12px;">
+                    <!-- Cupos autorizados destacados -->
+                    <span style="background:#fef3c7; color:#92400e; font-size:11px; font-weight:800; padding:4px 10px; border-radius:6px; border:1px solid #fde68a; display:inline-block; white-space:nowrap; box-shadow:0 1px 2px rgba(245,158,11,0.08);">
+                      {{ c.cupos || 0 }} cupos
+                    </span>
+                  </td>
+                  <td style="padding:12px; color:#475569; font-size:12px;">
+                    <span *ngIf="c.supervisor && c.supervisor !== 'Sin asignar'" style="font-weight:600; color:#0f172a;">
+                      {{ c.supervisor }}
+                    </span>
+                    <span *ngIf="!c.supervisor || c.supervisor === 'Sin asignar'" style="color:#94a3b8; font-style:italic;">
+                      Sin asignar
+                    </span>
+                  </td>
+                  <td style="padding:12px; color:#64748b;">{{ c.fechaInicio || 'No registrada' }}</td>
+                  <td style="padding:12px;">
+                    <div style="display:flex; flex-direction:column; gap:3px;">
+                      <span style="color:#0f172a; font-weight:600;">{{ c.fechaFin || 'No registrada' }}</span>
+                      
+                      <!-- Tag de Alerta: Próximo a vencer -->
+                      <span *ngIf="c.esProximoAVencer" style="display:inline-flex; align-items:center; gap:3px; background:#fef3c7; color:#92400e; border:1px solid #fde68a; font-size:10px; font-weight:700; padding:2px 6px; border-radius:4px; width:fit-content;">
+                        <span class="material-symbols-outlined" style="font-size:12px; color:#d97706;">warning</span>
+                        <span>{{ c.mensajeVigencia }}</span>
+                      </span>
+
+                      <!-- Tag: Finalizado -->
+                      <span *ngIf="c.estado === 'Finalizado'" style="display:inline-flex; align-items:center; gap:3px; background:#f1f5f9; color:#475569; border:1px solid #e2e8f0; font-size:10px; font-weight:600; padding:2px 6px; border-radius:4px; width:fit-content;">
+                        <span class="material-symbols-outlined" style="font-size:12px; color:#94a3b8;">event_busy</span>
+                        <span>{{ c.mensajeVigencia }}</span>
+                      </span>
+                    </div>
+                  </td>
+                  <td style="padding:12px;">
+                    <!-- Indicador visual del estado: Verde (Activo), Rojo (Inactivo), Gris (Finalizado) -->
+                    <span style="padding:4px 10px; border-radius:12px; font-size:11px; font-weight:700; display:inline-flex; align-items:center; gap:5px;"
+                      [style.background]="c.estado === 'Activo' ? '#dcfce7' : (c.estado === 'Finalizado' ? '#f1f5f9' : '#fee2e2')"
+                      [style.color]="c.estado === 'Activo' ? '#166534' : (c.estado === 'Finalizado' ? '#475569' : '#991b1b')"
+                      [style.border]="c.estado === 'Activo' ? '1px solid #bbf7d0' : (c.estado === 'Finalizado' ? '1px solid #e2e8f0' : '1px solid #fecaca')">
+                      <span style="width:6px; height:6px; border-radius:50%;"
+                        [style.background]="c.estado === 'Activo' ? '#10b981' : (c.estado === 'Finalizado' ? '#94a3b8' : '#ef4444')"></span>
+                      {{ c.estado }}
+                    </span>
+                  </td>
+                  <td style="padding:12px; text-align:right;">
+                    <div style="display:flex; justify-content:flex-end; align-items:center;">
+                      <!-- Acción para abrir y consultar información detallada -->
+                      <button type="button" (click)="abrirModalGrandeContrato(c.id, 'consulta')"
+                              style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:6px 12px; display:inline-flex; align-items:center; gap:5px; cursor:pointer; color:#0f172a; font-size:12px; font-weight:600; transition:all 0.15s;"
+                              onmouseover="this.style.background='#f1f5f9'; this.style.borderColor='#94a3b8'"
+                              onmouseout="this.style.background='#f8fafc'; this.style.borderColor='#cbd5e1'"
+                              title="Consultar detalle del contrato">
+                        <span class="material-symbols-outlined" style="font-size:16px; color:#475569;">visibility</span>
+                        <span>Ver detalle</span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </ng-container>
+
+              <!-- Mensaje: Catálogo vacío (No existen contratos en SIRAE) -->
+              <tr *ngIf="contratos.length === 0 && !errorCargaContratos">
+                <td colspan="8" style="padding:48px 20px; text-align:center;">
+                  <div style="display:inline-flex; flex-direction:column; align-items:center; gap:10px;">
+                    <span class="material-symbols-outlined" style="font-size:40px; color:#cbd5e1;">description</span>
+                    <strong style="color:#1e293b; font-size:15px;">No hay contratos registrados</strong>
+                    <p style="color:#64748b; font-size:12px; margin:0; max-width:360px;">Actualmente no existen contratos PAE registrados en el sistema SIRAE.</p>
                   </div>
                 </td>
               </tr>
 
-              <tr *ngIf="c.expandido">
-                <td colspan="8" style="padding:0 12px 16px 12px;">
-                  <div style="display:flex; flex-direction:column; gap:16px;">
-                    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:14px 16px;">
-                      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap:12px; font-size:12px;">
-                        <div>
-                          <span style="display:block; color:#64748b; font-weight:600; font-size:10px; letter-spacing:0.5px; margin-bottom:2px;">N° CONTRATO</span>
-                          <span style="color:#0f172a; font-weight:700;">{{ c.codigo }}</span>
-                        </div>
-                        <div>
-                          <span style="display:block; color:#64748b; font-weight:600; font-size:10px; letter-spacing:0.5px; margin-bottom:2px;">INSTITUCIÓN</span>
-                          <span style="color:#0f172a; font-weight:700;">{{ c.institucion }}</span>
-                        </div>
-                        <div>
-                          <span style="display:block; color:#64748b; font-weight:600; font-size:10px; letter-spacing:0.5px; margin-bottom:2px;">CUPOS ASIGNADOS</span>
-                          <span style="color:#b45309; font-weight:800;">{{ c.cupos || 0 }} raciones/día</span>
-                        </div>
-                        <div>
-                          <span style="display:block; color:#64748b; font-weight:600; font-size:10px; letter-spacing:0.5px; margin-bottom:2px;">SUPERVISOR ENCARGADO</span>
-                          <span style="color:#0f172a; font-weight:700;">{{ c.supervisor || 'Sin asignar' }}</span>
-                        </div>
-                        <div>
-                          <span style="display:block; color:#64748b; font-weight:600; font-size:10px; letter-spacing:0.5px; margin-bottom:2px;">FECHA INICIO</span>
-                          <span style="color:#0f172a; font-weight:700;">{{ c.fechaInicio }}</span>
-                        </div>
-                        <div>
-                          <span style="display:block; color:#64748b; font-weight:600; font-size:10px; letter-spacing:0.5px; margin-bottom:2px;">FECHA FIN</span>
-                          <span style="color:#0f172a; font-weight:700;">{{ c.fechaFin }}</span>
-                        </div>
-                        <div>
-                          <span style="display:block; color:#64748b; font-weight:600; font-size:10px; letter-spacing:0.5px; margin-bottom:2px;">ZONA</span>
-                          <span style="color:#0f172a; font-weight:700;">{{ c.zona }}</span>
-                        </div>
-                        <div>
-                          <span style="display:block; color:#64748b; font-weight:600; font-size:10px; letter-spacing:0.5px; margin-bottom:2px;">ESTADO</span>
-                          <span style="color:#166534; font-weight:700;">{{ c.estado }}</span>
-                        </div>
-                        <div style="grid-column: 1 / -1; margin-top: 6px; padding-top: 10px; border-top: 1px dashed #cbd5e1;">
-                          <span style="display:block; color:#64748b; font-weight:600; font-size:10px; letter-spacing:0.5px; margin-bottom:6px;">SEDES ASOCIADAS A ESTE CONTRATO ({{ obtenerSedesDeInstitucion(c.institucion).length }})</span>
-                          <div *ngIf="obtenerSedesDeInstitucion(c.institucion).length > 0" style="display:flex; flex-wrap:wrap; gap:6px;">
-                            <span *ngFor="let s of obtenerSedesDeInstitucion(c.institucion)" style="background:#fef3c7; color:#92400e; font-size:11px; font-weight:600; padding:3px 10px; border-radius:6px; border:1px solid #fde68a; display:inline-flex; align-items:center; gap:4px;">
-                              <span>{{ s.nombre_sede }}</span>
-                              <span *ngIf="s.codigo_dane" style="font-size:10px; opacity:0.8;">(DANE: {{ s.codigo_dane }})</span>
-                            </span>
-                          </div>
-                          <span *ngIf="obtenerSedesDeInstitucion(c.institucion).length === 0" style="color:#94a3b8; font-size:11px; font-style:italic;">
-                            No hay sedes registradas.
-                          </span>
-                        </div>
-                      </div>
-                    </div>
+              <!-- Mensaje: Búsqueda sin coincidencias -->
+              <tr *ngIf="contratos.length > 0 && contratosFiltrados.length === 0">
+                <td colspan="8" style="padding:40px 20px; text-align:center;">
+                  <div style="display:inline-flex; flex-direction:column; align-items:center; gap:8px;">
+                    <span class="material-symbols-outlined" style="font-size:36px; color:#94a3b8;">search_off</span>
+                    <strong style="color:#1e293b; font-size:14px;">No se encontraron resultados</strong>
+                    <p style="color:#64748b; font-size:12px; margin:0;">No se encontraron contratos que coincidan con «<strong>{{ filtroBusquedaContratos }}</strong>».</p>
+                    <button type="button" (click)="limpiarBusquedaContratos()" style="margin-top:6px; background:#f1f5f9; border:1px solid #cbd5e1; border-radius:6px; padding:6px 14px; font-size:12px; color:#334155; font-weight:600; cursor:pointer;">
+                      Limpiar búsqueda
+                    </button>
                   </div>
                 </td>
               </tr>
             </ng-container>
 
-            <tr *ngIf="contratosFiltrados.length === 0">
-              <td colspan="7" style="padding:20px; text-align:center; color:#94a3b8; font-style:italic;">No se encontraron contratos registrados.</td>
-            </tr>
           </tbody>
         </table>
         </div>
 
-        <!-- Pie: paginación -->
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:14px; padding-top:14px; border-top:1px solid #f1f5f9;">
-          <span style="font-size:12px; color:#64748b;">Mostrando {{ contratosFiltrados.length }} de {{ contratos.length }} registros</span>
+        <!-- Pie: Conteo y paginación -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:14px; padding-top:14px; border-top:1px solid #f1f5f9; flex-wrap:wrap; gap:10px;">
+          <span style="font-size:12px; color:#64748b; font-weight:500;">
+            Mostrando <strong>{{ contratosFiltrados.length }}</strong> de <strong>{{ contratos.length }}</strong> contratos registrados
+          </span>
           <div style="display:flex; align-items:center; gap:6px;">
             <button type="button" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; color:#64748b;">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
@@ -354,6 +468,6 @@
 
 
   <!-- Modal grande de detalle de contrato -->
-  <app-contrato-detalle *ngIf="modalGrandeAbierto" [contratoId]="contratoIdSeleccionado" (cerrar)="cerrarModalGrandeContrato()"></app-contrato-detalle>
+  <app-contrato-detalle *ngIf="modalGrandeAbierto" [contratoId]="contratoIdSeleccionado" [modo]="modoModalDetalle" (cerrar)="cerrarModalGrandeContrato($event)"></app-contrato-detalle>
 
 </div>
