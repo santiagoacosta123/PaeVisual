@@ -6,6 +6,11 @@ import Swal, { SweetAlertIcon, SweetAlertOptions, SweetAlertResult } from 'sweet
    ESTILOS Y ANIMACIONES (se inyectan solos en el <head>)
    ========================================================== */
 const ALERT_STYLES = `
+/* Asegurar que las alertas siempre se posicionen sobre cualquier modal o pantalla */
+.swal2-container {
+  z-index: 99999 !important;
+}
+
 /* Variables de acento */
 .bd-alert, .bd-toast { --bd-accent: #fab41f; --bd-shadow: 120, 53, 15; }
 .bd-alert--supervisor { --bd-accent: #d97706; }
