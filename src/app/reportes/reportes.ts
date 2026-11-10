@@ -8,6 +8,16 @@ import { AuthService, InstitucionAsignada, SedeActiva } from '@core/auth';
 import { SweetAlertService } from '../sweet-alert.service';
 import { Entrega, EntregasService } from '../features/entregas/services/entregas.service';
 import { SiraeService } from '../features/contratos/services/contratos_pae.service';
+import {
+  PlanillasPaeService,
+  PlanillaRemisionData,
+  PlanillaKardexData,
+  ItemMinutaPatron,
+  FilaNoPerecedero,
+  FilaPerecedero,
+  FilaAseo,
+  FilaKardex
+} from '../services/planillas-pae.service';
 
 /** Una sede de la institución con los cupos de sus contratos vigentes */
 interface SedeBase {
@@ -17,8 +27,7 @@ interface SedeBase {
 }
 
 /**
- * Una entrega de alimentos ya asignada a una sede. Es la única forma de dato del reporte de sedes:
- * totales, tabla por sede, detalle y CSV se calculan a partir de estas filas.
+ * Una entrega de alimentos ya asignada a una sede.
  */
 interface EntregaSede {
   id: number;
@@ -30,7 +39,7 @@ interface EntregaSede {
   cantidad: number;
   unidad: string;
   estado: string;           // EN_TRANSITO | RECIBIDA | CON_NOVEDAD | RECHAZADA
-  kilos: number;            // kg efectivamente recibidos (0 si no es peso, está en tránsito o fue rechazada)
+  kilos: number;            // kg efectivamente recibidos
   cantidadRecibida?: number | null;
   cantidadRechazada?: number | null;
   receptor?: string;
@@ -63,7 +72,7 @@ type ColumnaSede = 'nombre' | 'cupos' | 'entregas' | 'kilos' | 'novedades' | 'di
 /** Si el servidor no responde en este tiempo, se muestra un error en vez de quedarse cargando */
 const TIEMPO_MAXIMO_MS = 20000;
 
-/** Convierte cualquier valor (incluso null o undefined) en texto, sin fallar */
+/** Convierte cualquier valor en texto */
 const texto = (valor: unknown): string => (valor === null || valor === undefined ? '' : String(valor));
 
 /** El backend puede responder con una lista o con { results: [...] } */
@@ -85,14 +94,35 @@ const ETIQUETAS_ESTADO: Record<string, string> = {
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './reportes.html',
+  styleUrls: ['./reportes.css']
 })
 export class Reportes implements OnInit, OnDestroy {
-  // ===================== FILTROS Y ESTADO =====================
+  // ===================== PESTAÑAS Y MODOS =====================
+  pestanaActiva: 'remision' | 'kardex' | 'minuta' | 'historial' = 'remision';
+  subFiltroRemision: 'todas' | 'no-perecederos' | 'perecederos' | 'aseo' = 'todas';
+  modoEdicion = false;
+  imprimiendoPdf = false;
+  formatoImpresion: 'remision' | 'kardex' | 'minuta' = 'remision';
+
+  // ===================== FILTROS Y ESTADO DE FECHAS =====================
   cargando = true;
+  cargandoPlanillas = false;
   fechaDesde = '';
   fechaHasta = '';
 
-  // ===================== REPORTE DE SEDES (sedes + cupos + entregas) =====================
+  // Selector de Periodos y Fechas de las Planillas
+  periodoSeleccionado = 'PRIMERA';
+  periodosDisponibles: string[] = ['PRIMERA', 'SEGUNDA', 'TERCERA', 'CUARTA', 'QUINTA', 'SEXTA'];
+  fechaInicioPlanilla = '2025-01-27';
+  fechaFinPlanilla = '2025-02-21';
+  diasAtenderPlanilla = 20;
+
+  // ===================== PLANILLAS OFICIALES PAE =====================
+  planillaRemision: PlanillaRemisionData | null = null;
+  planillaKardex: PlanillaKardexData | null = null;
+  minutaPatron: ItemMinutaPatron[] = [];
+
+  // ===================== REPORTE DE SEDES Y ENTREGAS =====================
   institucionActiva: InstitucionAsignada | null = null;
   sedeActiva: SedeActiva | null = null;
   sedesBase: SedeBase[] = [];
@@ -127,10 +157,11 @@ export class Reportes implements OnInit, OnDestroy {
     private readonly alertas: SweetAlertService,
     private readonly cdr: ChangeDetectorRef,
     private readonly router: Router,
+    private readonly planillasPaeService: PlanillasPaeService
   ) {}
 
   ngOnInit(): void {
-    // Coordinar institución activa y sede activa evitando dobles consultas simultáneas
+    // Coordinar institución activa y sede activa
     this.suscripcion = combineLatest([
       this.auth.institucionActiva$,
       this.auth.sedeActiva$
@@ -149,11 +180,13 @@ export class Reportes implements OnInit, OnDestroy {
         this.paginaActual = 1;
       }
       this.cargar();
+      this.cargarPlanillas();
     });
 
     this.actualizacionAutomatica = setInterval(() => {
       if (this.institucionActiva) {
         this.cargar();
+        this.cargarPlanillas(false);
       }
     }, 60000);
   }
@@ -168,6 +201,7 @@ export class Reportes implements OnInit, OnDestroy {
   @HostListener('document:keydown.escape')
   alPresionarEsc(): void {
     if (this.sedeDetalle) this.cerrarSede();
+    if (this.entregaDetalle) this.cerrarEntrega();
   }
 
   cargar(): void {
@@ -175,7 +209,6 @@ export class Reportes implements OnInit, OnDestroy {
     const idInstitucion = this.institucionActiva?.id_institucion;
     const fallos: string[] = [];
 
-    // Si el supervisor no tiene institución activa, no consultar datos globales
     if (!idInstitucion) {
       this.cargando = false;
       this.sedesBase = [];
@@ -185,14 +218,12 @@ export class Reportes implements OnInit, OnDestroy {
       return;
     }
 
-    // Si una consulta falla, el reporte sigue con lo demás y avisa qué faltó
     const opcional = <T>(nombre: string) => catchError<T, Observable<null>>((error: unknown) => {
       console.warn(`No se pudo cargar ${nombre} para el reporte:`, error);
       fallos.push(nombre);
       return of(null);
     });
 
-    // Sedes de la institución, cupos de los contratos y entregas de alimentos
     forkJoin({
       sedes: this.sirae.getSedes(idInstitucion).pipe(take(1), timeout(TIEMPO_MAXIMO_MS), opcional<any[]>('las sedes')),
       contratos: this.sirae.getContratos().pipe(take(1), timeout(TIEMPO_MAXIMO_MS), opcional<any[]>('los contratos')),
@@ -205,17 +236,130 @@ export class Reportes implements OnInit, OnDestroy {
   }
 
   // =====================================================
-  //  REPORTE DE SEDES
+  //  CARGA Y GESTIÓN DE PLANILLAS OFICIALES PAE
   // =====================================================
 
-  /**
-   * Une las tres fuentes (sedes, contratos y entregas) en las dos listas que usa el reporte.
-   * Cualquiera puede venir en null si su consulta falló: en ese caso se avisa y se usa lo que haya.
-   */
+  cargarPlanillas(mostrarCargando = true): void {
+    if (!this.institucionActiva) {
+      this.planillaRemision = null;
+      this.planillaKardex = null;
+      this.minutaPatron = [];
+      return;
+    }
+
+    if (mostrarCargando) this.cargandoPlanillas = true;
+
+    const idInstitucion = this.institucionActiva.id_institucion;
+    const nombreInstitucion = this.institucionActiva.nombre_institucion;
+    const idSede = this.sedeActiva?.id_sede ?? (typeof this.sedeFiltro === 'number' ? this.sedeFiltro : 0);
+    const nombreSede = this.sedeActiva?.nombre_sede ?? (this.sedesBase.find(s => s.id === idSede)?.nombre || 'Sede Principal');
+    const cuposSede = this.sedesBase.find(s => s.id === idSede)?.cupos || 227;
+
+    forkJoin({
+      remision: this.planillasPaeService.obtenerPlanillaRemision({
+        institucionId: idInstitucion,
+        institucionNombre: nombreInstitucion,
+        sedeId: idSede,
+        sedeNombre: nombreSede,
+        periodo: this.periodoSeleccionado,
+        fechaInicio: this.fechaInicioPlanilla,
+        fechaFin: this.fechaFinPlanilla,
+        cuposBase: cuposSede
+      }),
+      kardex: this.planillasPaeService.obtenerPlanillaKardex({
+        institucionId: idInstitucion,
+        institucionNombre: nombreInstitucion,
+        sedeId: idSede,
+        sedeNombre: nombreSede,
+        periodo: this.periodoSeleccionado,
+        fechaInicio: this.fechaInicioPlanilla,
+        fechaFin: this.fechaFinPlanilla
+      })
+    }).subscribe({
+      next: ({ remision, kardex }) => {
+        this.planillaRemision = remision;
+        this.planillaKardex = kardex;
+        this.minutaPatron = this.planillasPaeService.obtenerMinutaPatron(remision.cupos, remision.diasAtender);
+        this.cargandoPlanillas = false;
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        console.error('Error al cargar planillas PAE:', err);
+        this.cargandoPlanillas = false;
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  alCambiarPeriodoOFecha(): void {
+    this.cargarPlanillas(true);
+  }
+
+  sincronizarConManipuladoras(): void {
+    // Limpiar claves temporales para regenerar con los datos más recientes del backend
+    if (!this.institucionActiva) return;
+    const idInst = this.institucionActiva.id_institucion;
+    const idSede = this.sedeActiva?.id_sede ?? 0;
+    localStorage.removeItem(`pae_remision_${idInst}_${idSede}_${this.periodoSeleccionado}_${this.fechaInicioPlanilla}`);
+    localStorage.removeItem(`pae_kardex_${idInst}_${idSede}_${this.periodoSeleccionado}_${this.fechaInicioPlanilla}`);
+
+    this.cargarPlanillas(true);
+    void this.alertas.success(
+      'Datos Sincronizados',
+      'Las planillas se han autocompletado con las entregas y las asistencias registradas por las jefas de manipuladoras.'
+    );
+  }
+
+  guardarPlanillas(): void {
+    if (!this.institucionActiva || !this.planillaRemision || !this.planillaKardex) return;
+    const idInst = this.institucionActiva.id_institucion;
+    const idSede = this.sedeActiva?.id_sede ?? 0;
+    const claveRemision = `pae_remision_${idInst}_${idSede}_${this.periodoSeleccionado}_${this.fechaInicioPlanilla}`;
+    const claveKardex = `pae_kardex_${idInst}_${idSede}_${this.periodoSeleccionado}_${this.fechaInicioPlanilla}`;
+
+    this.planillasPaeService.guardarPlanillaRemision(claveRemision, this.planillaRemision);
+    this.planillasPaeService.guardarPlanillaKardex(claveKardex, this.planillaKardex);
+    this.modoEdicion = false;
+
+    void this.alertas.success('Planillas Guardadas', 'Los cambios en las planillas se han guardado satisfactoriamente.');
+  }
+
+  recalcularPerecedero(p: FilaPerecedero): void {
+    const e = p.entregas;
+    p.totalEntregado = Math.round((Number(e[0].aEntregar || 0) + Number(e[1].aEntregar || 0) + Number(e[2].aEntregar || 0) + Number(e[3].aEntregar || 0)) * 100) / 100;
+    p.totalRecibido = Math.round((Number(e[0].recibida || 0) + Number(e[1].recibida || 0) + Number(e[2].recibida || 0) + Number(e[3].recibida || 0)) * 100) / 100;
+  }
+
+  recalcularKardexFila(fila: FilaKardex): void {
+    let suma = 0;
+    for (const sem of fila.semanas) {
+      for (const d of sem.dias) {
+        suma += Number(d.cantidad) || 0;
+      }
+    }
+    fila.totalSalidas = Math.round(suma * 10) / 10;
+    fila.saldoMes = Math.max(0, Math.round(((Number(fila.cantidadEntrada) || 0) - fila.totalSalidas) * 10) / 10);
+  }
+
+  exportarPdf(formato: 'remision' | 'kardex' | 'minuta'): void {
+    this.formatoImpresion = formato;
+    this.imprimiendoPdf = true;
+
+    // Disparar ventana de impresión del navegador formateada con @media print optimizado
+    setTimeout(() => {
+      window.print();
+      this.imprimiendoPdf = false;
+      this.cdr.markForCheck();
+    }, 200);
+  }
+
+  // =====================================================
+  //  REPORTE DE SEDES (Lógica histórica conservada)
+  // =====================================================
+
   private armarReporteSedes(sedes: any[] | null, contratos: any[] | null, entregas: Entrega[] | null, fallos: string[]): void {
     const idInstitucion = this.institucionActiva?.id_institucion;
 
-    // 1) Sedes de la institución (si la consulta falló, las que ya trae la institución activa)
     let origen = listaDe(sedes);
     if (origen.length === 0) origen = listaDe(this.institucionActiva?.sedes);
     const mapaSedes = new Map<number, SedeBase>();
@@ -227,7 +371,6 @@ export class Reportes implements OnInit, OnDestroy {
     const institucionSinSedes = mapaSedes.size === 0 &&
       listaDe(this.institucionActiva?.sedes).length === 0;
 
-    // 2) Cupos: suma de los contratos vigentes de cada sede
     for (const contrato of listaDe(contratos)) {
       const idSede = Number(contrato.id_sede);
       if (!idSede || !this.contratoVigente(contrato)) continue;
@@ -236,13 +379,11 @@ export class Reportes implements OnInit, OnDestroy {
       if (sede) sede.cupos += Number(contrato.cupos) || 0;
     }
 
-    // 3) Entregas de la institución que sí tienen sede
     const delaInstitucion = (entregas ?? []).filter(e =>
       idInstitucion ? (e.idInstitucion === idInstitucion || (e.idSede !== undefined && mapaSedes.has(e.idSede))) : false);
     const sinSede = delaInstitucion.filter(e => !e.idSede && !institucionSinSedes).length;
     const conSede = delaInstitucion.filter(e => !!e.idSede || institucionSinSedes);
 
-    // Si una entrega es de una sede que no llegó en la lista, la sede se agrega para no perder datos
     for (const e of conSede) {
       if (!mapaSedes.has(e.idSede!)) {
         mapaSedes.set(e.idSede!, { id: e.idSede!, nombre: e.sedeNombre || `Sede ${e.idSede}`, cupos: 0 });
@@ -266,7 +407,6 @@ export class Reportes implements OnInit, OnDestroy {
 
   private aEntregaSede(e: Entrega, nombreSede: string): EntregaSede {
     const estado = texto(e.estado).toUpperCase() || 'EN_TRANSITO';
-    // Solo cuenta lo que ya se recibió, y solo si se mide en kilos
     const recibida = estado === 'RECIBIDA' || estado === 'CON_NOVEDAD';
     const cantidad = e.cantidadRecibida ?? e.cantidad ?? 0;
     return {
@@ -283,9 +423,7 @@ export class Reportes implements OnInit, OnDestroy {
     };
   }
 
-  // ---------- Filtros ----------
-
-  // Botones rápidos: últimos N días, o null para ver todo
+  // ---------- Filtros Historial ----------
   rango(dias: number | null): void {
     this.paginaActual = 1;
     if (dias === null) {
@@ -304,14 +442,11 @@ export class Reportes implements OnInit, OnDestroy {
     return [...this.sedesBase].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
   }
 
-  /** Entregas dentro de las fechas del filtro (todas las sedes) */
   private get entregasEnFechas(): EntregaSede[] {
     return this.entregas.filter(e =>
       (!this.fechaDesde || e.fecha >= this.fechaDesde) &&
       (!this.fechaHasta || e.fecha <= this.fechaHasta));
   }
-
-  // ---------- Orden de la tabla ----------
 
   ordenarPor(columna: ColumnaSede): void {
     if (this.ordenColumna === columna) {
@@ -326,8 +461,6 @@ export class Reportes implements OnInit, OnDestroy {
     if (this.ordenColumna !== columna) return 'unfold_more';
     return this.ordenDireccion === 'asc' ? 'arrow_upward' : 'arrow_downward';
   }
-
-  // ---------- Cálculos (se guardan hasta que cambie un filtro, el orden o los datos) ----------
 
   private get calculo() {
     const clave = [this.fechaDesde, this.fechaHasta, this.sedeFiltro, this.ordenColumna, this.ordenDireccion, this.versionDatos].join('|');
@@ -387,8 +520,6 @@ export class Reportes implements OnInit, OnDestroy {
   trackSede = (_: number, s: ResumenSede) => s.id;
   trackEntrega = (_: number, e: EntregaSede) => e.id;
 
-  // ---------- Estado de una entrega ----------
-
   etiquetaEstado(estado: string): string {
     return ETIQUETAS_ESTADO[estado] ?? estado;
   }
@@ -401,8 +532,6 @@ export class Reportes implements OnInit, OnDestroy {
       default: return 'bg-sky-50 text-sky-700';
     }
   }
-
-  // ---------- Detalle de una sede (ventana emergente) ----------
 
   abrirSede(sede: ResumenSede): void {
     this.sedeDetalle = sede;
@@ -420,7 +549,6 @@ export class Reportes implements OnInit, OnDestroy {
     this.entregaDetalle = null;
   }
 
-  // ---------- Paginación ----------
   get entregasHistorial(): EntregaSede[] {
     const busqueda = this.textoBusqueda.trim().toLowerCase();
     return this.entregasEnFechas.filter(entrega =>
@@ -481,7 +609,6 @@ export class Reportes implements OnInit, OnDestroy {
     });
   }
 
-  // Descarga del reporte oficial en Excel (.xlsx) desde el backend
   exportarExcelOficial(): void {
     if (!this.institucionActiva) return;
     this.exportandoExcel = true;
@@ -506,7 +633,6 @@ export class Reportes implements OnInit, OnDestroy {
     });
   }
 
-  // Entregas de la sede elegida dentro de las fechas del filtro (lo más reciente primero)
   get entregasSede(): EntregaSede[] {
     if (!this.sedeDetalle) return [];
     const id = this.sedeDetalle.id;
@@ -515,7 +641,6 @@ export class Reportes implements OnInit, OnDestroy {
       .sort((a, b) => b.fecha.localeCompare(a.fecha) || b.id - a.id);
   }
 
-  // Ingredientes de la sede elegida, del más entregado al menos entregado
   get ingredientesSede(): { ingrediente: string; veces: number }[] {
     const mapa = new Map<string, number>();
     for (const e of this.entregasSede) mapa.set(e.ingrediente, (mapa.get(e.ingrediente) ?? 0) + 1);
@@ -524,9 +649,6 @@ export class Reportes implements OnInit, OnDestroy {
       .sort((a, b) => b.veces - a.veces);
   }
 
-  // ---------- Exportar ----------
-
-  // Resumen por sede (respeta fechas y filtro de sede)
   exportarCsvSedes(): void {
     const sedes = this.resumenSedes;
     if (sedes.length === 0) {
@@ -542,7 +664,6 @@ export class Reportes implements OnInit, OnDestroy {
     void this.alertas.success('Reporte exportado', 'Se descargó el resumen por sede.');
   }
 
-  // Entregas de la sede abierta
   exportarCsvSede(): void {
     const sede = this.sedeDetalle;
     const filas = this.entregasSede;
@@ -555,8 +676,6 @@ export class Reportes implements OnInit, OnDestroy {
       ...filas.map(e => [e.fecha, e.sede, e.ingrediente, e.tipoMercado, e.cantidad, e.unidad, this.etiquetaEstado(e.estado), e.kilos].map(texto)),
     ]);
   }
-
-  // ---------- Utilidades ----------
 
   fechaCorta(iso: string): string {
     if (!iso) return '';
@@ -580,12 +699,10 @@ export class Reportes implements OnInit, OnDestroy {
     return `${d.getFullYear()}-${mes}-${dia}`;
   }
 
-  private hoyISO(): string {
+  hoyISO(): string {
     return this.isoDe(new Date());
   }
 
-  // Con ";" Excel en español separa bien las columnas.
-  // Si un texto empieza con = + @ (o - seguido de letra) Excel lo tomaría como fórmula: se le antepone un apóstrofo.
   private descargarCsv(nombreArchivo: string, filas: string[][]): void {
     const seguro = (valor: string) => (/^[=+@\t\r]|^-(?![\d.,])/.test(valor) ? `'${valor}` : valor);
     const contenido = filas
