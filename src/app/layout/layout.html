@@ -43,6 +43,11 @@
           <span class="material-symbols-outlined sv-icon">scale</span>
           <span class="sv-label">Gramajes</span>
         </a>
+
+        <a routerLink="/mensajeria" routerLinkActive="sv-active" class="sv-link" aria-label="Mensajería">
+          <span class="material-symbols-outlined sv-icon">chat</span>
+          <span class="sv-label">Mensajería</span>
+        </a>
       </nav>
 
       <!-- Cerrar sesión inferior -->
@@ -316,6 +321,14 @@
             <span class="superadmin-nav-text">Usuarios</span>
           </div>
         </a>
+
+        <!-- MENSAJERÍA -->
+        <a routerLink="mensajeria" routerLinkActive="active" class="superadmin-nav-item" title="Mensajería y Chat">
+          <div class="superadmin-nav-item-left">
+            <span class="material-symbols-outlined superadmin-nav-icon">chat</span>
+            <span class="superadmin-nav-text">Mensajería</span>
+          </div>
+        </a>
       </div>
 
     </nav>
@@ -547,6 +560,13 @@
          class="modern-nav-item" title="Planillas y Reportes PAE">
         <span class="material-symbols-outlined modern-nav-icon" aria-hidden="true">description</span>
         <span class="modern-nav-text">Planillas y Reportes</span>
+      </a>
+
+      <!-- MENSAJERÍA -->
+      <a routerLink="mensajeria" routerLinkActive="active" class="modern-nav-item" title="Mensajería">
+        <span class="material-symbols-outlined modern-nav-icon" aria-hidden="true">chat</span>
+        <span class="modern-nav-text">Mensajería</span>
+      </a>
       </a>
 
       <!-- El "Historial de entregas" (reportes-consumo) es exclusivo del Supervisor / Super Admin.
