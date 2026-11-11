@@ -243,6 +243,65 @@ export class ContratosComponent implements OnInit {
 
   modalGrandeAbierto = false;
   contratoIdSeleccionado: string | null = null;
+  pestanaModalInicial: string = 'resumen';
+
+  get primerContratoProximo(): any {
+    return this.contratos.find(c => c.esProximoAVencer) || null;
+  }
+
+  formatearFecha(fechaStr?: string): string {
+    if (!fechaStr) return 'No registrada';
+    try {
+      const partes = fechaStr.split('-');
+      if (partes.length === 3) {
+        const anio = partes[0];
+        const mesNum = parseInt(partes[1], 10);
+        const dia = parseInt(partes[2], 10);
+        const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+        const mesNombre = meses[mesNum - 1] || partes[1];
+        const diaStr = dia < 10 ? `0${dia}` : `${dia}`;
+        return `${diaStr} de ${mesNombre} de ${anio}`;
+      }
+      const d = new Date(fechaStr);
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' });
+      }
+      return fechaStr;
+    } catch {
+      return fechaStr;
+    }
+  }
+
+  formatearFechaDiaMes(fechaStr?: string): string {
+    if (!fechaStr) return 'No reg.';
+    try {
+      const partes = fechaStr.split('-');
+      if (partes.length === 3) {
+        const mesNum = parseInt(partes[1], 10);
+        const dia = parseInt(partes[2], 10);
+        const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+        const mesNombre = meses[mesNum - 1] || partes[1];
+        const diaStr = dia < 10 ? `0${dia}` : `${dia}`;
+        return `${diaStr} de ${mesNombre}`;
+      }
+      return fechaStr;
+    } catch {
+      return fechaStr;
+    }
+  }
+
+  formatearFechaAnio(fechaStr?: string): string {
+    if (!fechaStr) return '';
+    try {
+      const partes = fechaStr.split('-');
+      if (partes.length === 3) {
+        return `de ${partes[0]}`;
+      }
+      return '';
+    } catch {
+      return '';
+    }
+  }
 
   contratoActual: any = {
     id: null,
@@ -304,6 +363,68 @@ export class ContratosComponent implements OnInit {
   turnos: any[] = [];
   instituciones: any[] = [];
   sedes: any[] = [];
+
+  // ===== PAGINACIÓN =====
+  paginaActual = 1;
+  itemsPorPagina = 10;
+
+  get totalPaginas(): number {
+    return Math.max(1, Math.ceil(this.contratosFiltrados.length / this.itemsPorPagina));
+  }
+
+  get contratosPaginados(): any[] {
+    const inicio = (this.paginaActual - 1) * this.itemsPorPagina;
+    return this.contratosFiltrados.slice(inicio, inicio + this.itemsPorPagina);
+  }
+
+  get inicioRango(): number {
+    if (this.contratosFiltrados.length === 0) return 0;
+    return (this.paginaActual - 1) * this.itemsPorPagina + 1;
+  }
+
+  get finRango(): number {
+    const fin = this.paginaActual * this.itemsPorPagina;
+    return Math.min(fin, this.contratosFiltrados.length);
+  }
+
+  paginaAnterior() {
+    if (this.paginaActual > 1) {
+      this.paginaActual--;
+      this.cdr.detectChanges();
+    }
+  }
+
+  paginaSiguiente() {
+    if (this.paginaActual < this.totalPaginas) {
+      this.paginaActual++;
+      this.cdr.detectChanges();
+    }
+  }
+
+  irAPagina(pagina: number) {
+    if (pagina >= 1 && pagina <= this.totalPaginas) {
+      this.paginaActual = pagina;
+      this.cdr.detectChanges();
+    }
+  }
+
+  get paginasVisibles(): number[] {
+    const total = this.totalPaginas;
+    const actual = this.paginaActual;
+    const paginas: number[] = [];
+    const rango = 2; // mostrar 2 páginas a cada lado de la actual
+    let inicio = Math.max(1, actual - rango);
+    let fin = Math.min(total, actual + rango);
+    // Asegurar al menos 5 páginas si hay suficientes
+    if (fin - inicio < 4 && total >= 5) {
+      if (inicio === 1) fin = Math.min(total, 5);
+      else if (fin === total) inicio = Math.max(1, total - 4);
+    }
+    for (let i = inicio; i <= fin; i++) {
+      paginas.push(i);
+    }
+    return paginas;
+  }
   sedesDeInstitucionSeleccionada: any[] = [];
 
   onInstitucionContratoChange() {
@@ -441,6 +562,7 @@ export class ContratosComponent implements OnInit {
 
   cambiarFiltroVigencia(filtro: 'TODOS' | 'ACTIVO' | 'PROXIMO_VENCER' | 'FINALIZADO' | 'INACTIVO') {
     this.filtroEstadoVigencia = filtro;
+    this.paginaActual = 1; // Resetear paginación al cambiar filtro
     this.cdr.detectChanges();
   }
 
@@ -473,6 +595,7 @@ export class ContratosComponent implements OnInit {
   limpiarBusquedaContratos() {
     this.filtroBusquedaContratos = '';
     this.filtroEstadoVigencia = 'TODOS';
+    this.paginaActual = 1; // Resetear paginación al limpiar búsqueda
     this.cdr.detectChanges();
   }
 
@@ -543,9 +666,10 @@ export class ContratosComponent implements OnInit {
 
   // CONTRATOS
 
-  abrirModalGrandeContrato(id: string | number, modo: 'nuevo' | 'consulta' | 'edicion' = 'consulta') {
+  abrirModalGrandeContrato(id: string | number, modo: 'nuevo' | 'consulta' | 'edicion' = 'consulta', pestanaInicial: string = 'resumen') {
     this.contratoIdSeleccionado = String(id);
     this.modoModalDetalle = id === 'nuevo' ? 'nuevo' : modo;
+    this.pestanaModalInicial = pestanaInicial;
     this.modalGrandeAbierto = true;
     this.cdr.detectChanges();
   }
