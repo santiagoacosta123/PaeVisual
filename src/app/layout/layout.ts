@@ -266,7 +266,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
       '/menus': 'Menús',
       '/facturas-compra': 'Facturas',
       '/bodega-central': 'Bodega Central',
-      '/reportes-consumo': 'Historial de entregas',
+      '/reportes-consumo': 'Planillas y Reportes PAE',
       '/notificaciones': 'Notificaciones'
     };
 
@@ -347,24 +347,26 @@ export class LayoutComponent implements OnInit, OnDestroy {
       next: (resp) => {
         const lista = resp === null ? [] : (Array.isArray(resp) ? resp : (resp?.results ?? []));
         if (lista.length > 0) {
-          this.institucionesSupervisor = lista.map((item: any) => {
-            const id = item.id_institucion ?? item.id;
-            const respaldo = this.institucionesSupervisor.find(
-              institucion => Number(institucion.id_institucion) === Number(id)
-            ) ?? (Number(this.institucionActiva?.id_institucion) === Number(id)
-              ? this.institucionActiva ?? undefined
-              : undefined);
-            return normalizarInstitucionSupervisor(
-              item,
-              respaldo,
-              this.sedesSupervisorCargadas,
-              this.sedesSupervisor,
-            );
-          });
+          this.institucionesSupervisor = lista
+            .map((item: any) => {
+              const id = item.id_institucion ?? item.id;
+              const respaldo = this.institucionesSupervisor.find(
+                institucion => Number(institucion.id_institucion) === Number(id)
+              ) ?? (Number(this.institucionActiva?.id_institucion) === Number(id)
+                ? this.institucionActiva ?? undefined
+                : undefined);
+              return normalizarInstitucionSupervisor(
+                item,
+                respaldo,
+                this.sedesSupervisorCargadas,
+                this.sedesSupervisor,
+              );
+            })
+            .filter((item: InstitucionAsignada) => !item.estado || item.estado.toUpperCase() === 'ACTIVO');
           try {
             localStorage.setItem('sirae_instituciones_supervisor', JSON.stringify(this.institucionesSupervisor));
           } catch {}
-          this.sincronizarInstitucionActiva();
+          this.sincronizarInstitucionActiva(true);
           this.cdr.detectChanges();
           return;
         }
@@ -408,14 +410,20 @@ export class LayoutComponent implements OnInit, OnDestroy {
     });
   }
 
-  private sincronizarInstitucionActiva(): void {
+  private sincronizarInstitucionActiva(limpiarSiNoExiste = false): void {
     const activa = this.authService.obtenerInstitucionActiva() ?? this.institucionActiva;
     if (!activa) return;
 
     const actualizada = this.institucionesSupervisor.find(
       institucion => Number(institucion.id_institucion) === Number(activa.id_institucion)
     );
-    if (!actualizada) return;
+    if (!actualizada) {
+      if (limpiarSiNoExiste) {
+        this.institucionActiva = null;
+        this.authService.limpiarInstitucionActiva();
+      }
+      return;
+    }
 
     this.institucionActiva = actualizada;
     this.authService.actualizarInstitucionActiva(actualizada);
@@ -432,26 +440,28 @@ export class LayoutComponent implements OnInit, OnDestroy {
       catchError(() => of(null))
     ).subscribe((perfil) => {
       const asignadas = perfil?.instituciones_supervisor;
-      if (!Array.isArray(asignadas) || asignadas.length === 0) {
+      if (!Array.isArray(asignadas)) {
         return;
       }
 
-      this.institucionesSupervisor = asignadas.map((item: any) => {
-        const id = item.id_institucion ?? item.id;
-        const respaldo = this.institucionesSupervisor.find(
-          institucion => Number(institucion.id_institucion) === Number(id)
-        );
-        return normalizarInstitucionSupervisor(
-          item,
-          respaldo,
-          this.sedesSupervisorCargadas,
-          this.sedesSupervisor,
-        );
-      });
+      this.institucionesSupervisor = asignadas
+        .map((item: any) => {
+          const id = item.id_institucion ?? item.id;
+          const respaldo = this.institucionesSupervisor.find(
+            institucion => Number(institucion.id_institucion) === Number(id)
+          );
+          return normalizarInstitucionSupervisor(
+            item,
+            respaldo,
+            this.sedesSupervisorCargadas,
+            this.sedesSupervisor,
+          );
+        })
+        .filter((item: InstitucionAsignada) => !item.estado || item.estado.toUpperCase() === 'ACTIVO');
       try {
         localStorage.setItem('sirae_instituciones_supervisor', JSON.stringify(this.institucionesSupervisor));
       } catch {}
-      this.sincronizarInstitucionActiva();
+      this.sincronizarInstitucionActiva(true);
       this.cdr.detectChanges();
     });
   }

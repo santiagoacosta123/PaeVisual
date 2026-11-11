@@ -12,6 +12,7 @@ import { EntregasService, Entrega } from '../features/entregas/services/entregas
 import { environment } from '../../environments/environment';
 import { IMAGENES_INSTITUCION } from './imagenes-instituciones';
 import { SweetAlertService } from '../core/services/sweet-alert.service';
+import { normalizarInstitucionSupervisor } from '../layout/institucion-supervisor.utils';
 
 // Paleta: verde (conforme), amarillo (novedad), azul (en camino), rojo (rechazo)
 const COLORES_ESTADO = ['#16A34A', '#F59E0B', '#3B82F6', '#EF4444'];
@@ -723,12 +724,22 @@ export class DashboardSupervisor implements OnInit, AfterViewInit, OnDestroy {
       }
 
       const lista = Array.isArray(resp) ? resp : (resp?.results ?? []);
-      const institucionesServidor = lista.map((item: any) => this.normalizarInstitucion(item));
-      
+      const asignadasUsuario = usuario?.instituciones_supervisor ?? [];
+      const respaldoPorId = new Map<number, InstitucionAsignada>(
+        asignadasUsuario
+          .map((item: any) => this.normalizarInstitucion(item))
+          .filter((item: InstitucionAsignada) => Number.isFinite(Number(item.id_institucion)))
+          .map((item: InstitucionAsignada) => [Number(item.id_institucion), item])
+      );
+      const institucionesServidor = lista
+        .map((item: any) => {
+          const id = Number(item.id_institucion ?? item.id);
+          return this.normalizarInstitucion(item, respaldoPorId.get(id));
+        })
+        .filter((item: InstitucionAsignada) => !item.estado || item.estado.toUpperCase() === 'ACTIVO');
 
-      const asignadasUsuario = usuario?.instituciones_supervisor;
       const asignadasIds = new Set(
-        (asignadasUsuario ?? [])
+        asignadasUsuario
           .map((item: InstitucionAsignada) => item.id_institucion ?? (item as any).id)
           .filter((id): id is number => id !== undefined && id !== null)
           .map((id) => Number(id))
@@ -765,8 +776,9 @@ export class DashboardSupervisor implements OnInit, AfterViewInit, OnDestroy {
       this.cdr.detectChanges();
     });
   }
-  normalizarInstitucion(item: any) {
-    throw new Error('Method not implemented.');
+
+  normalizarInstitucion(item: any, respaldo?: InstitucionAsignada): InstitucionAsignada {
+    return normalizarInstitucionSupervisor(item, respaldo, false, []);
   }
 
   private cargarInstitucionesDesdePerfil(idUsuario?: number): void {
@@ -796,12 +808,24 @@ export class DashboardSupervisor implements OnInit, AfterViewInit, OnDestroy {
         ?? usuario?.usuario?.instituciones_supervisor
         ?? usuario?.results?.instituciones_supervisor;
 
-      this.instituciones = asignadas.map((item: any) => ({
-        id_institucion: item.id_institucion ?? item.id,
-        nombre_institucion: item.nombre_institucion ?? item.nombre,
-        nit: item.nit ?? '',
-        sedes: Array.isArray(item.sedes) ? item.sedes : [],
-      }));
+      if (!Array.isArray(asignadas)) {
+        if (this.instituciones.length === 0) {
+          const enCache = this.obtenerInstitucionesEnCache();
+          if (enCache.length > 0) {
+            this.instituciones = enCache;
+          } else {
+            this.errorMensaje = 'No se pudieron cargar tus instituciones. Revisa tu conexión e inténtalo de nuevo.';
+          }
+        }
+        return;
+      }
+
+      this.instituciones = asignadas
+        .map((item: any) => this.normalizarInstitucion(item))
+        .filter((item: InstitucionAsignada) => !item.estado || item.estado.toUpperCase() === 'ACTIVO');
+      if (this.instituciones.length > 0) {
+        this.guardarEnCache(this.instituciones);
+      }
       this.errorMensaje = '';
     });
   }

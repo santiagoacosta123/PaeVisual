@@ -163,10 +163,10 @@
           <span class="sv-label">Sedes</span>
         </a>
 
-        <a *ngIf="institucionActiva" routerLink="/reportes-consumo" routerLinkActive="sv-active" class="sv-link"
-           aria-label="Historial">
+        <a routerLink="/reportes-consumo" routerLinkActive="sv-active" class="sv-link"
+           aria-label="Reportes y Planillas">
           <span class="material-symbols-outlined sv-icon">analytics</span>
-          <span class="sv-label">Historial de entregas</span>
+          <span class="sv-label">Planillas y Reportes</span>
         </a>
 
         <a routerLink="/consulta-gramajes" routerLinkActive="sv-active" class="sv-link"
@@ -431,6 +431,14 @@
             <span class="superadmin-nav-text">Stock Global</span>
           </div>
         </a>
+
+        <!-- PLANTILLAS, PLANILLAS Y REPORTES -->
+        <a routerLink="/reportes-consumo" routerLinkActive="active" class="superadmin-nav-item" title="Plantillas, Planillas y Reportes PAE">
+          <div class="superadmin-nav-item-left">
+            <span class="material-symbols-outlined superadmin-nav-icon">description</span>
+            <span class="superadmin-nav-text">Reportes y Plantillas</span>
+          </div>
+        </a>
       </div>
 
       <!-- SECCIÓN 3: CONFIGURACIÓN Y MAESTROS -->
@@ -684,6 +692,13 @@
       <a routerLink="usuarios" routerLinkActive="active" class="modern-nav-item" title="Usuarios">
         <span class="material-symbols-outlined modern-nav-icon" aria-hidden="true">group</span>
         <span class="modern-nav-text">Usuarios</span>
+      </a>
+
+      <!-- PLANILLAS Y REPORTES PAE (SIR-171..173) -->
+      <a *ngIf="esAdministrador || esJefa" routerLink="/reportes-consumo" routerLinkActive="active"
+         class="modern-nav-item" title="Planillas y Reportes PAE">
+        <span class="material-symbols-outlined modern-nav-icon" aria-hidden="true">description</span>
+        <span class="modern-nav-text">Planillas y Reportes</span>
       </a>
 
       <!-- El "Historial de entregas" (reportes-consumo) es exclusivo del Supervisor / Super Admin.

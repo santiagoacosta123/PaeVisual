@@ -60,6 +60,7 @@ interface JornadaCatalogo {
 interface GradoCatalogo {
   id_grado: number;
   nombre_grado: string;
+  estado?: string | null;
 }
 
 function listaDe<T>(response: unknown): T[] {
@@ -188,7 +189,9 @@ export class SedesAdministradorComponent implements OnInit, OnDestroy {
   private cargarGradosDisponibles(): void {
     this.http.get<unknown>(`${environment.apiUrl}/grados/`).subscribe({
       next: (response) => {
-        this.gradosDisponibles = listaDe<GradoCatalogo>(response);
+        this.gradosDisponibles = listaDe<GradoCatalogo>(response).filter(
+          grado => !grado.estado || String(grado.estado).toUpperCase() === 'ACTIVO'
+        );
         this.sincronizarJornadasConfiguradas();
       },
       error: () => {
@@ -212,36 +215,50 @@ export class SedesAdministradorComponent implements OnInit, OnDestroy {
         cupos: 0,
         habilitada: false,
         secciones: [],
-        grados: this.gradosDisponibles.map(grado => ({
-          id_grado: grado.id_grado,
-          nombre_grado: grado.nombre_grado,
-          cupos: 0,
-        })),
+        grados: [],
       };
 
-      if (!jornadaActual.grados || jornadaActual.grados.length === 0 && this.gradosDisponibles.length > 0) {
-        jornadaActual.grados = this.gradosDisponibles.map(grado => ({
-          id_grado: grado.id_grado,
-          nombre_grado: grado.nombre_grado,
-          cupos: 0,
-        }));
+      const gradosGuardados = jornadaActual.grados ?? [];
+      const cuposPorGrado = new Map(gradosGuardados.map(g => [g.id_grado, Number(g.cupos || 0)]));
+      const gradosCombinados: GradoCupo[] = this.gradosDisponibles.length > 0
+        ? this.gradosDisponibles.map(gradoCatalogo => ({
+            id_grado: gradoCatalogo.id_grado,
+            nombre_grado: gradoCatalogo.nombre_grado,
+            cupos: cuposPorGrado.get(gradoCatalogo.id_grado) ?? 0,
+          }))
+        : gradosGuardados;
+
+      const idsEnCatalogo = new Set(gradosCombinados.map(g => g.id_grado));
+      for (const guardado of gradosGuardados) {
+        if (!idsEnCatalogo.has(guardado.id_grado) && Number(guardado.cupos || 0) > 0) {
+          gradosCombinados.push({
+            id_grado: guardado.id_grado,
+            nombre_grado: guardado.nombre_grado,
+            cupos: Number(guardado.cupos || 0),
+          });
+        }
       }
 
       return {
         ...jornadaActual,
         nombre_jornada: jornadaCatalogo.nombre_jornada,
+        grados: gradosCombinados,
         habilitada: Boolean(jornadaActual.habilitada || jornadaActual.cupos > 0 || jornadaActual.secciones?.length),
       };
     });
   }
 
-  private cargarDetalle(sede: SedeResumen): void {
+  private cargarDetalle(sede: SedeResumen, conservarMensaje = false): void {
     this.detalleSubscription?.unsubscribe();
-    this.cargandoDetalle = true;
-    this.configuracion = null;
+    this.cargandoDetalle = !conservarMensaje;
+    if (!conservarMensaje) {
+      this.configuracion = null;
+    }
     this.errorDetalle = '';
-    this.errorValidacion = '';
-    this.mensajeGuardado = '';
+    if (!conservarMensaje) {
+      this.errorValidacion = '';
+      this.mensajeGuardado = '';
+    }
 
     this.detalleSubscription = this.http.get<ConfiguracionSede>(
       `${this.apiUrl}${sede.id_sede}/configuracion/`,
@@ -384,47 +401,61 @@ export class SedesAdministradorComponent implements OnInit, OnDestroy {
     const payload = {
       id_sede: this.sedeSeleccionada.id_sede,
       cupos_totales: Number(this.configuracion.cupos_totales || 0),
-      jornadas: this.configuracion.jornadas.map(jornada => ({
-        id_jornada: jornada.id_jornada,
-        nombre_jornada: jornada.nombre_jornada,
-        cupos: Number(jornada.cupos || 0),
-        habilitada: Boolean(jornada.habilitada),
-        secciones: jornada.secciones,
-        grados: jornada.grados.map(grado => ({
-          id_grado: grado.id_grado,
-          nombre_grado: grado.nombre_grado,
-          cupos: Number(grado.cupos || 0),
+      jornadas: this.configuracion.jornadas
+        .filter(jornada => jornada.habilitada)
+        .map(jornada => ({
+          id_jornada: jornada.id_jornada,
+          nombre_jornada: jornada.nombre_jornada,
+          cupos: Number(jornada.cupos || 0),
+          habilitada: true,
+          secciones: jornada.secciones,
+          grados: jornada.grados
+            .filter(grado => Number(grado.cupos || 0) > 0)
+            .map(grado => ({
+              id_grado: grado.id_grado,
+              nombre_grado: grado.nombre_grado,
+              cupos: Number(grado.cupos || 0),
+            })),
         })),
-      })),
     };
 
-    const url = `${environment.apiUrl}/sede-jornadas/`;
-    const fallbackUrl = `${this.apiUrl}${this.sedeSeleccionada.id_sede}/configuracion/`;
+    const url = `${this.apiUrl}${this.sedeSeleccionada.id_sede}/configuracion/`;
+    const sedeActual = this.sedeSeleccionada;
 
-    this.http.post<unknown>(url, payload).pipe(
-      catchError(() => this.http.put<unknown>(fallbackUrl, payload)),
-    ).subscribe({
+    this.http.post<unknown>(url, payload).subscribe({
       next: () => {
         this.errorValidacion = '';
         this.mensajeGuardado = 'Configuración guardada correctamente. Los cupos y jornadas quedaron actualizados.';
-        const fecha = new Date().toISOString();
-        const descripcion = `Se actualizó la configuración para ${this.sedeSeleccionada?.nombre_sede}.`;
-        const historial = {
-          id: Date.now(),
-          fecha_hora: fecha,
-          usuario: this.authService.obtenerUsuario()?.nombre || 'Administrador institucional',
-          descripcion,
-        };
-
-        this.configuracion = {
-          ...this.configuracion,
-          historial: [historial, ...(this.configuracion?.historial ?? [])],
-        } as ConfiguracionSede;
+        this.cargarDetalle(sedeActual, true);
+        this.cdr.markForCheck();
       },
-      error: () => {
-        this.errorValidacion = 'No se pudo guardar la configuración. Intenta nuevamente.';
+      error: (err) => {
+        this.errorValidacion = this.extraerMensajeError(err);
+        this.mensajeGuardado = '';
+        this.cdr.markForCheck();
       },
     });
+  }
+
+  private extraerMensajeError(err: any): string {
+    const body = err?.error;
+    if (typeof body === 'string' && body.trim()) return body.trim();
+    if (body && typeof body === 'object') {
+      for (const clave of ['jornadas', 'grados', 'cupos', 'detail', 'error', 'mensaje']) {
+        const valor = body[clave];
+        if (typeof valor === 'string' && valor.trim()) return valor.trim();
+        if (Array.isArray(valor) && typeof valor[0] === 'string' && valor[0].trim()) {
+          return valor[0].trim();
+        }
+      }
+      for (const valor of Object.values(body)) {
+        if (typeof valor === 'string' && valor.trim()) return valor.trim();
+        if (Array.isArray(valor) && typeof valor[0] === 'string' && valor[0].trim()) {
+          return valor[0].trim();
+        }
+      }
+    }
+    return 'No se pudo guardar la configuración. Intenta nuevamente.';
   }
 
   sedeEstaActiva(estado: string): boolean {
