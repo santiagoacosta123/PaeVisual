@@ -1,4 +1,112 @@
 /* =========================================================
+   LAYOUT SUPERVISOR (SV & SVH)
+   ========================================================= */
+.sv-slot {
+  position: relative; flex-shrink: 0; width: 84px; display: flex; flex-direction: column; z-index: 20;
+  transition: width .25s cubic-bezier(.2, .8, .2, 1);
+}
+.sv-slot:hover, .sv-slot:has(:focus-visible) { width: 200px; transition-delay: .12s; }
+
+.sv-side {
+  flex: 1; min-height: 0; background: #fff; border-right: 1px solid #e0e0e0;
+  display: flex; flex-direction: column; align-items: stretch;
+  padding: 16px 8px; box-sizing: border-box; overflow: hidden;
+}
+
+.sv-logo { display: flex; align-items: center; justify-content: center; margin-bottom: 20px; padding: 4px; }
+.sv-logo img { width: 68px; max-width: 68px; height: auto; object-fit: contain; aspect-ratio: 1 / 1; }
+
+.sv-nav { display: flex; flex-direction: column; gap: 8px; flex: 1; overflow-y: auto; overflow-x: hidden; }
+.sv-nav::-webkit-scrollbar { display: none; }
+
+.sv-link {
+  display: flex; align-items: center; gap: 12px;
+  width: 100%; height: 48px; padding: 0 22px; box-sizing: border-box;
+  border-radius: 14px; border: none; background: none; cursor: pointer;
+  text-decoration: none; color: #64748b; white-space: nowrap; overflow: hidden;
+  font-family: 'Roboto', sans-serif; font-size: 13px; font-weight: 600;
+  transition: background .2s ease, color .2s ease;
+}
+.sv-link:focus:not(:focus-visible) { outline: none; }
+.sv-link:hover { background: #fff7e6; color: #e69a0c; }
+.sv-link.sv-active { background: #fff1d0; color: #e69a0c; }
+.sv-link .sv-icon { font-size: 24px; flex: none; }
+.sv-label { opacity: 0; transition: opacity .2s ease; }
+.sv-slot:hover .sv-label, .sv-slot:has(:focus-visible) .sv-label { opacity: 1; transition-delay: .15s; }
+
+.sv-bottom { border-top: 1px solid #eeeeee; padding-top: 14px; margin-top: 10px; }
+.sv-link.sv-logout { color: #e53935; }
+.sv-link.sv-logout:hover { background: #fdecea; color: #c62828; }
+
+/* ===== Encabezado del Supervisor ===== */
+.svh-bar {
+  background: #fff; border: 1px solid #f1f5f9; border-radius: 20px; padding: 10px 18px;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  box-shadow: 0 10px 30px -18px rgba(180, 120, 0, .35); flex-shrink: 0;
+}
+.svh-left { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1 1 0; flex-wrap: wrap; }
+.svh-left > div:nth-child(2) { flex: none; }
+.svh-center { display: flex; align-items: center; justify-content: center; min-width: 0; flex: 0 1 auto; }
+.svh-right { display: flex; align-items: center; justify-content: flex-end; gap: 12px; position: relative; flex: 1 1 0; }
+.svh-ico {
+  width: 40px; height: 40px; flex: none; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, #ffcb4d, #f4b41f); color: #2b1d00; box-shadow: 0 8px 16px -10px rgba(244, 180, 31, .9);
+}
+.svh-ico .material-symbols-outlined { font-size: 22px; }
+.svh-title { margin: 0; font-size: 17px; font-weight: 800; color: #1a1a1a; line-height: 1.15; white-space: nowrap; }
+.svh-sub { display: block; margin-top: 1px; font-size: 10.5px; font-weight: 500; color: #64748b; white-space: nowrap; }
+.svh-line { display: flex; gap: 3px; margin-top: 4px; }
+.svh-line i { display: block; height: 4px; border-radius: 3px; }
+.svh-line i:first-child { width: 30px; background: #fac94b; }
+.svh-line i:last-child { width: 14px; background: #e69a0c; }
+
+/* Institución activa */
+.svh-inst-simple {
+  display: inline-flex; align-items: center; gap: 8px; min-width: 0; max-width: 360px;
+  padding: 6px 14px 6px 8px; border: 1px solid #f5d98a; border-radius: 9999px;
+  background: linear-gradient(135deg, #fffbe8, #fff3c9); color: #1a1a1a;
+}
+.svh-inst-simple .material-symbols-outlined {
+  font-size: 18px; flex: none; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center;
+  border-radius: 50%; background: linear-gradient(135deg, #ffcb4d, #f4b41f); color: #2b1d00;
+}
+.svh-inst-simple-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12.5px; font-weight: 800; }
+
+.svh-badge {
+  position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; padding: 0 5px; box-sizing: border-box;
+  display: flex; align-items: center; justify-content: center; border-radius: 9999px;
+  background: #ef4444; color: #fff; font-size: 10px; font-weight: 800; border: 2px solid #fff;
+}
+.svh-avatar { position: relative; flex: none; }
+.svh-avatar img { display: block; border-radius: 50%; object-fit: cover; border: 1px solid #e0e0e0; }
+.svh-dot { position: absolute; right: 0; bottom: 0; width: 11px; height: 11px; border-radius: 50%; background: #22c55e; border: 2px solid #fff; box-sizing: border-box; }
+
+/* Menú de perfil */
+.svh-pop {
+  position: absolute; right: 0; top: 56px; z-index: 100; width: 320px; background: #fff; border: 1px solid #f1f5f9;
+  border-radius: 22px; padding: 18px; box-shadow: 0 24px 50px -20px rgba(15, 23, 42, .35);
+}
+.svh-pop-head { display: flex; align-items: center; gap: 14px; padding-bottom: 14px; border-bottom: 1px solid #f1f5f9; margin-bottom: 8px; }
+.svh-pop-name { display: block; font-size: 16px; font-weight: 800; color: #0f172a; }
+.svh-pop-mail { display: block; font-size: 12px; color: #64748b; margin-top: 1px; }
+.svh-role {
+  display: inline-flex; align-items: center; gap: 5px; margin-top: 6px; padding: 3px 10px; border-radius: 9999px;
+  background: #fff4d6; color: #8a5a00; font-size: 11px; font-weight: 700;
+}
+.svh-role .material-symbols-outlined { font-size: 15px; color: #e69a0c; }
+.svh-act {
+  display: flex; align-items: center; gap: 14px; width: 100%; border: none; background: none; cursor: pointer;
+  padding: 12px 10px; border-radius: 14px; color: #1a1a1a; font-family: inherit; font-size: 14px; font-weight: 600; text-align: left;
+  transition: background .2s ease;
+}
+.svh-act:hover { background: #fff7e6; }
+.svh-act .svh-act-ico { font-size: 24px; color: #b87500; }
+.svh-act .svh-act-go { margin-left: auto; font-size: 20px; color: #94a3b8; }
+.svh-act.svh-out { background: #fde8e8; color: #c62828; font-weight: 800; margin-top: 8px; }
+.svh-act.svh-out:hover { background: #fbd5d5; }
+.svh-act.svh-out .svh-act-ico { color: #dc2626; }
+
+/* =========================================================
    LAYOUT ADMINISTRADOR Y SUPER ADMINISTRADOR
    Estilo idéntico a la referencia visual
    ========================================================= */
@@ -915,4 +1023,32 @@
   font-weight: 500;
   color: #64748b;
 }
+
+/* =========================================================
+   ESTABILIZACIÓN DE IMÁGENES Y PREVENCIÓN DE FOUC / SALTOS
+   Previene que imágenes como las de Registrar Entrega se muestren
+   gigantes antes de que carguen los estilos del componente hijo
+   ========================================================= */
+::ng-deep img {
+  max-width: 100%;
+}
+
+::ng-deep .hero-art img,
+::ng-deep img.hero-foto,
+::ng-deep .hero-foto {
+  width: 140px !important;
+  height: 140px !important;
+  max-width: 140px !important;
+  max-height: 140px !important;
+  border-radius: 50% !important;
+  object-fit: cover !important;
+  aspect-ratio: 1 / 1 !important;
+  display: block !important;
+}
+
+::ng-deep .hero-plato {
+  width: 140px !important;
+  height: 140px !important;
+}
+
 
