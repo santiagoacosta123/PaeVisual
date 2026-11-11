@@ -300,6 +300,9 @@ export class LayoutComponent implements OnInit {
             sedes: item.sedes ?? [],
             administrador_asignado: item.administrador_asignado,
           }));
+          try {
+            localStorage.setItem('sirae_instituciones_supervisor', JSON.stringify(this.institucionesSupervisor));
+          } catch {}
 
           const guardada = this.authService.obtenerInstitucionActiva();
           if (guardada && this.institucionesSupervisor.some(i => i.id_institucion === guardada.id_institucion)) {
@@ -337,6 +340,9 @@ export class LayoutComponent implements OnInit {
         sedes: Array.isArray(item.sedes) ? item.sedes : [],
         administrador_asignado: item.administrador_asignado,
       }));
+      try {
+        localStorage.setItem('sirae_instituciones_supervisor', JSON.stringify(this.institucionesSupervisor));
+      } catch {}
 
       const activa = this.authService.obtenerInstitucionActiva();
       if (!activa || !this.institucionesSupervisor.some(i => i.id_institucion === activa.id_institucion)) {
