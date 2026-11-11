@@ -866,27 +866,8 @@ export class DashboardSupervisor implements OnInit, AfterViewInit, OnDestroy {
       this.cdr.detectChanges();
     });
   }
-<<<<<<< Updated upstream
-
   normalizarInstitucion(item: any, respaldo?: InstitucionAsignada): InstitucionAsignada {
     return normalizarInstitucionSupervisor(item, respaldo, false, []);
-=======
-  normalizarInstitucion(item: any): InstitucionAsignada {
-    const id = Number(item?.id_institucion ?? item?.id ?? item?.pk ?? 0);
-    const nombre = String(item?.nombre_institucion ?? item?.nombre ?? '').trim();
-    const sedes = Array.isArray(item?.sedes) ? item.sedes : [];
-    return {
-      id_institucion: id,
-      nombre_institucion: nombre,
-      nit: item?.nit ? String(item.nit).trim() : '',
-      sedes: sedes,
-      representante_legal: item?.representante_legal ? String(item.representante_legal).trim() : '',
-      telefono: item?.telefono ? String(item.telefono).trim() : '',
-      correo_contacto: item?.correo_contacto ? String(item.correo_contacto).trim() : '',
-      estado: item?.estado ? String(item.estado).trim() : 'ACTIVA',
-      administrador_asignado: item?.administrador_asignado,
-    };
->>>>>>> Stashed changes
   }
 
   private cargarInstitucionesDesdePerfil(idUsuario?: number): void {
