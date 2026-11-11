@@ -15,18 +15,50 @@
 
     <!-- Filtros y Botón -->
     <div class="flex flex-wrap items-center gap-2.5">
-      <!-- Buscador -->
+      <!-- Criterio 2: Buscador dinámico por nombre, documento o correo -->
       <div class="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3.5 py-2 min-w-[220px] shadow-xs">
         <svg class="w-4 h-4 text-slate-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="11" cy="11" r="8"></circle>
           <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
         </svg>
-        <input type="text" [(ngModel)]="filtroTexto" (ngModelChange)="actualizarUsuariosFiltrados()" placeholder="Buscar por nombre, doc o correo..." class="border-none bg-transparent outline-none text-[13px] text-slate-900 w-full placeholder-slate-400 font-sans">
+        <input type="text" [(ngModel)]="filtroTexto" (ngModelChange)="actualizarUsuariosFiltrados()" placeholder="Buscar por nombre, doc o correo..." aria-label="Buscar por nombre, documento o correo electrónico" class="border-none bg-transparent outline-none text-[13px] text-slate-900 w-full placeholder-slate-400 font-sans">
       </div>
 
+      <!-- Criterio 3: Filtro por Rol -->
+      <div class="bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 shadow-xs">
+        <select [(ngModel)]="filtroRol" (ngModelChange)="actualizarUsuariosFiltrados()" aria-label="Filtrar por rol" class="border-none bg-transparent outline-none text-[12.5px] text-slate-700 font-semibold cursor-pointer">
+          <option *ngFor="let r of opcionesFiltroRol" [value]="r.id_rol">{{ r.nombre_rol }}</option>
+        </select>
+      </div>
+
+      <!-- Criterio 3: Filtro por Estado de la cuenta -->
+      <div class="bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 shadow-xs">
+        <select [(ngModel)]="filtroEstado" (ngModelChange)="actualizarUsuariosFiltrados()" aria-label="Filtrar por estado de la cuenta" class="border-none bg-transparent outline-none text-[12.5px] text-slate-700 font-semibold cursor-pointer">
+          <option value="">Todos los Estados</option>
+          <option value="activo">Activos</option>
+          <option value="inactivo">Inactivos</option>
+          <option value="bloqueado">Bloqueados</option>
+        </select>
+      </div>
+
+      <!-- Criterio 4: Filtro por Institución según ámbito del usuario autenticado -->
+      <div *ngIf="puedeFiltrarPorInstitucion" class="bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 shadow-xs">
+        <select [(ngModel)]="filtroInstitucion" (ngModelChange)="actualizarUsuariosFiltrados()" aria-label="Filtrar por institución" class="border-none bg-transparent outline-none text-[12.5px] text-slate-700 font-semibold cursor-pointer max-w-[200px]">
+          <option value="">Todas las Instituciones</option>
+          <option *ngFor="let inst of institucionesFiltroDisponibles" [value]="inst.id_institucion || inst.id">
+            {{ inst.nombre_institucion || inst.nombre }}
+          </option>
+        </select>
+      </div>
+
+      <!-- Limpiar filtros activos -->
+      <button *ngIf="tieneFiltrosActivos" type="button" (click)="limpiarFiltros()" class="h-9 px-3 inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 text-slate-600 text-[12px] font-semibold hover:bg-slate-100 cursor-pointer transition">
+        <span class="material-symbols-outlined text-[15px]">filter_alt_off</span>
+        <span>Limpiar</span>
+      </button>
 
       <!-- Botón Nuevo Usuario -->
-      <button type="button" (click)="abrirFormulario()" class="h-10 px-5 inline-flex items-center justify-center gap-2 border-none rounded-full bg-[#fac94b] text-slate-900 text-[13px] font-bold cursor-pointer whitespace-nowrap shadow-[0_2px_8px_rgba(251,191,36,0.28)] transition-all hover:bg-[#f59e0b]">
+      <button *ngIf="puedeGestionarUsuarios" type="button" (click)="abrirFormulario()" class="h-10 px-5 inline-flex items-center justify-center gap-2 border-none rounded-full bg-[#fac94b] text-slate-900 text-[13px] font-bold cursor-pointer whitespace-nowrap shadow-[0_2px_8px_rgba(251,191,36,0.28)] transition-all hover:bg-[#f59e0b]">
         <span class="material-symbols-outlined text-[18px]">add</span>
         <span>Nuevo Usuario</span>
       </button> 
@@ -35,8 +67,25 @@
 
   <!-- ===================== CONTENIDO / TABLA ===================== -->
   <section class="w-full bg-white rounded-xl p-5 sm:p-6 border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+    <!-- Criterio 8: Estado de Carga (Loader) -->
+    <div *ngIf="cargandoUsuarios" class="py-10 px-4 text-center flex flex-col items-center justify-center gap-3 text-slate-500" role="status" aria-live="polite">
+      <div class="w-8 h-8 rounded-full border-3 border-amber-400 border-t-transparent animate-spin"></div>
+      <span class="text-xs font-semibold text-slate-600">Cargando listado de usuarios del sistema...</span>
+    </div>
+
+    <!-- Criterio 8: Mensaje de Error Comprensible ante fallos en la consulta -->
+    <div *ngIf="!cargandoUsuarios && errorConsulta" class="mb-4 p-4 rounded-xl bg-rose-50 border border-rose-200 flex items-center justify-between gap-4 text-rose-800 text-xs" role="alert">
+      <div class="flex items-center gap-2.5">
+        <span class="material-symbols-outlined text-rose-600 text-[20px]">error</span>
+        <span class="font-semibold">{{ errorConsulta }}</span>
+      </div>
+      <button type="button" (click)="cargarUsuarios()" class="px-3.5 py-1.5 rounded-lg bg-rose-600 text-white font-bold hover:bg-rose-700 cursor-pointer transition shrink-0">
+        Reintentar
+      </button>
+    </div>
+
     <!-- Tabla de Usuarios con Cabecera Fija y Scroll en Filas -->
-    <div class="overflow-x-auto overflow-y-auto max-h-[calc(100vh-270px)] rounded-xl border border-slate-200/80">
+    <div *ngIf="!cargandoUsuarios" class="overflow-x-auto overflow-y-auto max-h-[calc(100vh-270px)] rounded-xl border border-slate-200/80">
       <table class="w-full border-collapse text-left text-xs">
         <thead class="sticky top-0 z-10 bg-slate-50">
           <tr class="border-b border-slate-200 text-slate-600 font-bold bg-slate-50">
@@ -50,7 +99,7 @@
           </tr>
         </thead>
         <tbody class="text-slate-900">
-          <tr *ngFor="let u of usuariosFiltrados; trackBy:trackPorUsuario" class="border-b border-slate-100 hover:bg-slate-50/50 transition">
+          <tr *ngFor="let u of usuariosPaginados; trackBy:trackPorUsuario" class="border-b border-slate-100 hover:bg-slate-50/50 transition">
             <!-- Usuario con Inicial y Nombre -->
             <td class="py-3 px-3">
               <div class="flex items-center gap-2.5">
@@ -97,6 +146,7 @@
                 </div>
                 <ng-template #sinInstitucionesSupervisor>
                   <button
+                    *ngIf="puedeEditarUsuario(u); else textoSinInstituciones"
                     type="button"
                     (click)="abrirFormulario(u)"
                     class="inline-flex items-center gap-1 text-[11px] font-medium text-amber-800 bg-amber-50/70 hover:bg-amber-100/90 border border-amber-200/80 px-2 py-0.5 rounded-md cursor-pointer transition"
@@ -105,6 +155,9 @@
                     <span class="material-symbols-outlined text-[13px] text-amber-600">add_circle</span>
                     Sin instituciones (Asignar)
                   </button>
+                  <ng-template #textoSinInstituciones>
+                    <span class="text-[11px] text-slate-400 italic">Sin instituciones asignadas</span>
+                  </ng-template>
                 </ng-template>
               </ng-container>
 
@@ -130,18 +183,59 @@
               </ng-template>
             </td>
 
-            <!-- Estado -->
+            <!-- Estado (Criterio 1: Activo / Inactivo / Bloqueado) -->
             <td class="py-3 px-3">
-              <span [class]="u.is_active ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'" class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold inline-flex items-center gap-1.5">
-                <span [class]="u.is_active ? 'bg-emerald-500' : 'bg-rose-500'" class="w-1.5 h-1.5 rounded-full inline-block"></span>
-                {{ u.is_active ? 'Activo' : 'Inactivo' }}
+              <span
+                *ngIf="obtenerEstadoCuenta(u) === 'Activo'"
+                class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold inline-flex items-center gap-1.5 bg-emerald-100 text-emerald-800"
+                title="Cuenta activa y autorizada para acceder al sistema"
+              >
+                <span class="w-1.5 h-1.5 rounded-full inline-block bg-emerald-500"></span>
+                Activa
+              </span>
+
+              <span
+                *ngIf="obtenerEstadoCuenta(u) === 'Inactivo'"
+                class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold inline-flex items-center gap-1.5 bg-rose-100 text-rose-800"
+                title="Cuenta inactiva (acceso revocado)"
+              >
+                <span class="w-1.5 h-1.5 rounded-full inline-block bg-rose-500"></span>
+                Inactiva
+              </span>
+
+              <span
+                *ngIf="obtenerEstadoCuenta(u) === 'Bloqueado'"
+                class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold inline-flex items-center gap-1.5 bg-amber-100 text-amber-900 border border-amber-300"
+                title="Cuenta bloqueada temporalmente por intentos fallidos de login"
+              >
+                <span class="w-1.5 h-1.5 rounded-full inline-block bg-amber-600"></span>
+                Bloqueada
               </span>
             </td>
 
             <!-- Acciones -->
             <td class="py-3 px-3 text-right">
               <div class="flex items-center justify-end gap-1.5">
-                <button type="button" (click)="editarUsuario(u)" class="w-8 h-8 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-300 text-slate-600 hover:text-slate-900 inline-flex items-center justify-center transition cursor-pointer" title="Editar">
+                <!-- Criterio 9: Consultar detalle completo del usuario sin exponer información sensible -->
+                <button type="button" (click)="verDetalleUsuario(u)" class="w-8 h-8 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 inline-flex items-center justify-center transition cursor-pointer" title="Ver detalle del usuario">
+                  <span class="material-symbols-outlined text-[16px]">visibility</span>
+                </button>
+
+                <!-- Criterios 2, 3 y 10: Botón de Activación / Desactivación de cuenta con confirmación obligatoria -->
+                <button
+                  *ngIf="puedeCambiarEstadoUsuario(u)"
+                  type="button"
+                  (click)="toggleEstadoUsuario(u)"
+                  [class]="u.is_active ? 'bg-rose-50 hover:bg-rose-100 border-rose-200 text-rose-700' : 'bg-emerald-50 hover:bg-emerald-100 border-emerald-200 text-emerald-700'"
+                  class="w-8 h-8 rounded-lg border inline-flex items-center justify-center transition cursor-pointer"
+                  [title]="u.is_active ? 'Desactivar cuenta de usuario' : 'Activar cuenta de usuario'"
+                >
+                  <span class="material-symbols-outlined text-[16px]">
+                    {{ u.is_active ? 'power_settings_new' : 'check_circle' }}
+                  </span>
+                </button>
+
+                <button *ngIf="puedeEditarUsuario(u)" type="button" (click)="editarUsuario(u)" class="w-8 h-8 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-300 text-slate-600 hover:text-slate-900 inline-flex items-center justify-center transition cursor-pointer" title="Editar">
                   <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                     <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
@@ -151,25 +245,32 @@
             </td>
           </tr>
 
-          <!-- Estado vacío -->
+          <!-- Criterio 8: Estado de resultados vacíos -->
           <tr *ngIf="usuariosFiltrados.length === 0">
-            <td colspan="6" class="py-6 px-3 text-center text-slate-400 italic">
-              No se encontraron usuarios registrados.
+            <td colspan="7" class="py-8 px-3 text-center text-slate-400">
+              <div class="flex flex-col items-center gap-2">
+                <span class="italic">No se encontraron usuarios registrados con los criterios seleccionados.</span>
+                <button *ngIf="tieneFiltrosActivos" type="button" (click)="limpiarFiltros()" class="px-3 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-semibold cursor-pointer">
+                  Restablecer filtros de búsqueda
+                </button>
+              </div>
             </td>
           </tr>
         </tbody>
       </table>
     </div>
 
-    <!-- Pie de tabla: Paginación -->
-    <div class="flex items-center justify-between pt-3.5 mt-3.5 border-t border-slate-100 text-xs text-slate-500">
-      <span>Mostrando {{ usuariosFiltrados.length }} de {{ usuariosBase.length }} registros</span>
+    <!-- Criterio 10: Pie de tabla con Paginación reactiva -->
+    <div class="flex flex-wrap items-center justify-between gap-3 pt-3.5 mt-3.5 border-t border-slate-100 text-xs text-slate-500">
+      <span>Mostrando {{ usuariosPaginados.length }} de {{ usuariosFiltrados.length }} registros (Total en ámbito: {{ usuariosBase.length }})</span>
       <div class="flex items-center gap-1.5">
-        <button type="button" class="w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 inline-flex items-center justify-center cursor-pointer">
+        <button type="button" (click)="paginaAnterior()" [disabled]="paginaActual <= 1" class="w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-40 inline-flex items-center justify-center cursor-pointer" title="Página anterior">
           <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
         </button>
-        <span class="w-7 h-7 rounded-lg bg-slate-900 text-white font-semibold inline-flex items-center justify-center text-xs">1</span>
-        <button type="button" class="w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 inline-flex items-center justify-center cursor-pointer">
+        <button *ngFor="let p of paginasVisibles" type="button" (click)="irAPagina(p)" [class]="p === paginaActual ? 'bg-slate-900 text-white font-semibold' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'" class="w-7 h-7 rounded-lg inline-flex items-center justify-center text-xs cursor-pointer">
+          {{ p }}
+        </button>
+        <button type="button" (click)="paginaSiguiente()" [disabled]="paginaActual >= totalPaginas" class="w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-40 inline-flex items-center justify-center cursor-pointer" title="Página siguiente">
           <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
         </button>
       </div>
@@ -178,7 +279,7 @@
 
   <!-- MODAL DE CREACIÓN / EDICIÓN ESTILO BANCO DATOS -->
   <div class="bd-modal-overlay" *ngIf="mostrarModal" (click)="cerrarFormulario()">
-    <form class="bd-modal" role="dialog" aria-modal="true" (click)="$event.stopPropagation()" autocomplete="off">
+    <form class="bd-modal" [formGroup]="registroForm" role="dialog" aria-modal="true" (click)="$event.stopPropagation()" autocomplete="off">
       <div class="bd-modal-header">
         <div>
           <span class="bd-modal-eyebrow">USUARIO</span>
@@ -195,49 +296,60 @@
         <div class="bd-form-grid">
           <div class="bd-form-group">
             <label>Nombre <span style="color: #ef4444">*</span></label>
-            <input type="text" class="bd-input" [(ngModel)]="usuarioForm.nombre" name="nombre" placeholder="Ingresa tu nombre" required>
+            <input type="text" class="bd-input" formControlName="nombre" name="nombre" placeholder="Ingresa tu nombre" required>
+            <span *ngIf="campoInvalido('nombre')" style="font-size: 11px; color: #dc2626; margin-top: 2px;">El nombre es obligatorio.</span>
           </div>
           <div class="bd-form-group">
             <label>Apellido <span style="color: #ef4444">*</span></label>
-            <input type="text" class="bd-input" [(ngModel)]="usuarioForm.apellido" name="apellido" placeholder="Ingresa tu apellido" required>
+            <input type="text" class="bd-input" formControlName="apellido" name="apellido" placeholder="Ingresa tu apellido" required>
+            <span *ngIf="campoInvalido('apellido')" style="font-size: 11px; color: #dc2626; margin-top: 2px;">El apellido es obligatorio.</span>
           </div>
 
           <div class="bd-form-group">
             <label>Correo Electrónico <span style="color: #ef4444">*</span></label>
-            <input type="email" class="bd-input" [(ngModel)]="usuarioForm.correo" name="correo" placeholder="admin@sirae.com" autocomplete="new-password" required>
+            <input type="email" class="bd-input" formControlName="correo" name="correo" placeholder="admin@sirae.com" autocomplete="new-password" required>
+            <span *ngIf="campoInvalido('correo')" style="font-size: 11px; color: #dc2626; margin-top: 2px;">Ingresa un correo electrónico válido.</span>
           </div>
           <div class="bd-form-group">
-            <label>Contraseña <span *ngIf="!modoEdicion" style="color: #ef4444">*</span></label>
-            <input type="password" class="bd-input" [(ngModel)]="usuarioForm.password" name="password" [placeholder]="modoEdicion ? 'Opcional para no cambiarla' : '••••••••'" autocomplete="new-password">
+            <label>Contraseña Inicial / Temporal</label>
+            <input type="password" class="bd-input" formControlName="password" name="password" [placeholder]="modoEdicion ? 'Opcional para no cambiarla' : 'Opcional (se genera clave temporal segura)'" autocomplete="new-password">
+            <span *ngIf="!modoEdicion" style="font-size: 10.5px; color: #64748b; margin-top: 2px;">
+              Si se deja vacía, se generará una clave temporal cifrada y se enviará enlace de activación.
+            </span>
           </div>
 
           <div class="bd-form-group">
-            <label>Tipo de Documento</label>
+            <label>Tipo de Documento <span style="color: #ef4444">*</span></label>
             <app-custom-select
               [options]="tiposDocumento"
               valueField="value"
               labelField="label"
               placeholder="Seleccione..."
               name="tipo_documento"
-              [(ngModel)]="usuarioForm.tipo_documento"
+              [required]="true"
+              formControlName="tipo_documento"
             ></app-custom-select>
           </div>
           <div class="bd-form-group">
             <label>Número de Documento <span style="color: #ef4444">*</span></label>
-            <input type="text" class="bd-input" [(ngModel)]="usuarioForm.numero_documento" name="numero_documento" placeholder="Ingresa número">
+            <input type="text" class="bd-input" formControlName="numero_documento" name="numero_documento" placeholder="Ingresa número" required>
+            <span *ngIf="campoInvalido('numero_documento')" style="font-size: 11px; color: #dc2626; margin-top: 2px;">El número de documento es obligatorio.</span>
           </div>
 
           <div class="bd-form-group" style="grid-column: 1 / -1">
             <label>Rol del Sistema <span style="color: #ef4444">*</span></label>
             <app-custom-select
-              [options]="roles"
+              [options]="rolesFormularioDisponibles"
               valueField="id_rol"
               labelField="nombre_rol"
               placeholder="Selecciona un rol..."
               name="rol"
               [required]="true"
-              [(ngModel)]="usuarioForm.rol"
+              [disabled]="editandoPropioPerfilAdmin"
+              formControlName="rol"
+              (valueChange)="onRolChange()"
             ></app-custom-select>
+            <span *ngIf="campoInvalido('rol')" style="font-size: 11px; color: #dc2626; margin-top: 2px;">Debes seleccionar un rol autorizado.</span>
           </div>
 
           <!-- CASO 1: Administrador Institucional o personal vinculado a 1 colegio -->
@@ -252,11 +364,12 @@
               labelField="nombre_display"
               placeholder="Selecciona la institución educativa..."
               name="id_institucion"
-              [(ngModel)]="usuarioForm.id_institucion"
-              (ngModelChange)="onInstitucionChange()"
+              [disabled]="esAdminInstitucional"
+              formControlName="id_institucion"
+              (valueChange)="onInstitucionChange()"
             ></app-custom-select>
             <span *ngIf="esRolAdmin()" style="font-size: 11px; color: #64748b; margin-top: 3px; display: block;">
-              Este usuario será el Administrador oficial a cargo de esta institución educativa y sus sedes (Máximo 1 Administrador por colegio).
+              Este usuario será el Administrador oficial a cargo de esta institución educativa y sus sedes (Máximo 1 Administrador activo por institución).
             </span>
           </div>
 
@@ -267,15 +380,15 @@
               Instituciones Asignadas a este Supervisor (Selección Múltiple)
             </label>
             <p style="margin: 0 0 10px 0; font-size: 11px; color: #64748b;">
-              Selecciona los colegios que estarán bajo la supervisión de este coordinador (cada colegio solo puede tener 1 supervisor responsable):
+              Selecciona los colegios activos que estarán bajo la supervisión de este coordinador (cada colegio solo puede tener 1 supervisor responsable):
             </p>
             <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; max-height: 200px; overflow-y: auto; padding-right: 4px;">
               <div *ngFor="let inst of instituciones"
                 (click)="toggleInstitucionSupervisor(inst)"
                 style="display: flex; flex-direction: column; gap: 4px; padding: 8px 10px; border-radius: 8px; border: 1px solid #cbd5e1; transition: all 0.15s; user-select: none; font-size: 12px;"
-                [style.opacity]="institucionAsignadaAotroSupervisor(inst) ? '0.6' : '1'"
-                [style.cursor]="institucionAsignadaAotroSupervisor(inst) ? 'not-allowed' : 'pointer'"
-                [style.background]="institucionSupervisorSeleccionada(inst.id_institucion || inst.id) ? '#fefce8' : (institucionAsignadaAotroSupervisor(inst) ? '#f1f5f9' : '#ffffff')"
+                [style.opacity]="(institucionAsignadaAotroSupervisor(inst) || institucionInactiva(inst)) ? '0.6' : '1'"
+                [style.cursor]="(institucionAsignadaAotroSupervisor(inst) || institucionInactiva(inst)) ? 'not-allowed' : 'pointer'"
+                [style.background]="institucionSupervisorSeleccionada(inst.id_institucion || inst.id) ? '#fefce8' : ((institucionAsignadaAotroSupervisor(inst) || institucionInactiva(inst)) ? '#f1f5f9' : '#ffffff')"
                 [style.border-color]="institucionSupervisorSeleccionada(inst.id_institucion || inst.id) ? '#f59e0b' : '#cbd5e1'">
                 
                 <div style="display: flex; align-items: center; gap: 8px;">
@@ -287,9 +400,15 @@
                     {{ inst.nombre_institucion || inst.nombre }}
                   </span>
                 </div>
+
+                <!-- Badge indicador si la institución está inactiva -->
+                <span *ngIf="institucionInactiva(inst)" style="font-size: 10.5px; color: #dc2626; font-weight: 700; padding-left: 26px; display: inline-flex; align-items: center; gap: 4px;">
+                  <span class="material-symbols-outlined" style="font-size: 13px;">block</span>
+                  Institución inactiva (No asignable)
+                </span>
                 
                 <!-- Badge indicador si ya pertenece a otro supervisor -->
-                <span *ngIf="institucionAsignadaAotroSupervisor(inst)" style="font-size: 10.5px; color: #dc2626; font-weight: 700; padding-left: 26px; display: inline-flex; align-items: center; gap: 4px;">
+                <span *ngIf="!institucionInactiva(inst) && institucionAsignadaAotroSupervisor(inst)" style="font-size: 10.5px; color: #dc2626; font-weight: 700; padding-left: 26px; display: inline-flex; align-items: center; gap: 4px;">
                   <span class="material-symbols-outlined" style="font-size: 13px;">block</span>
                   Supervisada por: {{ nombreSupervisorAsignado(inst) }}
                 </span>
@@ -310,20 +429,31 @@
               labelField="nombre_sede"
               placeholder="Selecciona una sede específica..."
               name="id_sede"
-              [(ngModel)]="usuarioForm.id_sede"
+              formControlName="id_sede"
             ></app-custom-select>
           </div>
 
           <div class="bd-form-group" style="grid-column: 1 / -1; flex-direction: row; align-items: center; gap: 8px; margin-top: 5px;">
             <label style="position: relative; display: inline-flex; cursor: pointer; align-items: center; margin: 0;">
-              <input type="checkbox" [(ngModel)]="usuarioForm.is_active" name="is_active" style="opacity: 0; width: 0; height: 0; position: absolute;">
+              <input
+                type="checkbox"
+                formControlName="is_active"
+                name="is_active"
+                [attr.disabled]="editandoPropioUsuario ? true : null"
+                style="opacity: 0; width: 0; height: 0; position: absolute;"
+              >
               <div style="width: 36px; height: 20px; border-radius: 9999px; position: relative; transition: background-color 0.2s;"
                   [style.background-color]="usuarioForm.is_active ? '#0f172a' : '#e2e8f0'">
                 <div style="width: 16px; height: 16px; background-color: #ffffff; border-radius: 50%; position: absolute; top: 2px; transition: left 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.1);"
                     [style.left]="usuarioForm.is_active ? '18px' : '2px'"></div>
               </div>
             </label>
-            <span style="font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 0;">Usuario Activo</span>
+            <span style="font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 0;">
+              Estado de la Cuenta: {{ usuarioForm.is_active ? 'Activa' : 'Inactiva' }}
+              <span *ngIf="editandoPropioUsuario" class="text-xs text-amber-700 font-normal ml-1">
+                (No puedes alterar el estado de tu propia cuenta)
+              </span>
+            </span>
           </div>
         </div>
       </div>
@@ -357,6 +487,37 @@
             <span style="display: inline-flex; align-items: center; gap: 4px;">
               <span class="material-symbols-outlined" style="font-size: 15px; color: #94a3b8;">badge</span>
               {{ (usuarioDetalleModal || supervisorDetalle)?.tipo_documento || 'CC' }} {{ (usuarioDetalleModal || supervisorDetalle)?.numero_documento }}
+            </span>
+            <span style="color: #cbd5e1;">•</span>
+            <span
+              *ngIf="obtenerEstadoCuenta(usuarioDetalleModal || supervisorDetalle) === 'Activo'"
+              class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800 inline-flex items-center gap-1"
+            >
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+              Cuenta Activa
+            </span>
+            <span
+              *ngIf="obtenerEstadoCuenta(usuarioDetalleModal || supervisorDetalle) === 'Inactivo'"
+              class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-rose-100 text-rose-800 inline-flex items-center gap-1"
+            >
+              <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+              Cuenta Inactiva
+            </span>
+            <span
+              *ngIf="obtenerEstadoCuenta(usuarioDetalleModal || supervisorDetalle) === 'Bloqueado'"
+              class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-900 border border-amber-300 inline-flex items-center gap-1"
+            >
+              <span class="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
+              Cuenta Bloqueada
+            </span>
+          </div>
+          <div *ngIf="(usuarioDetalleModal || supervisorDetalle)?.creado_por_nombre || (usuarioDetalleModal || supervisorDetalle)?.fecha_creacion"
+               style="font-size: 11px; color: #94a3b8; margin-top: 4px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <span *ngIf="(usuarioDetalleModal || supervisorDetalle)?.creado_por_nombre">
+              Creado por: <strong>{{ (usuarioDetalleModal || supervisorDetalle)?.creado_por_nombre }}</strong>
+            </span>
+            <span *ngIf="(usuarioDetalleModal || supervisorDetalle)?.fecha_creacion">
+              Fecha registro: {{ (usuarioDetalleModal || supervisorDetalle)?.fecha_creacion | date:'short' }}
             </span>
           </div>
         </div>
@@ -463,14 +624,31 @@
         </ng-template>
       </div>
 
-      <div class="bd-modal-footer" style="background: #f8fafc; border-top: 1px solid #e2e8f0;">
+      <div class="bd-modal-footer" style="background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
         <button type="button" class="bd-cancel" (click)="cerrarModalDetalleSupervisor()">
           Cerrar
         </button>
-        <button type="button" class="bd-save" (click)="editarDesdeDetalle()">
-          <span class="material-symbols-outlined" style="font-size: 16px;">edit</span>
-          Editar Asignaciones
-        </button>
+
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <!-- Alternar Estado Directamente desde el Detalle -->
+          <button
+            *ngIf="puedeCambiarEstadoUsuario(usuarioDetalleModal || supervisorDetalle)"
+            type="button"
+            (click)="toggleEstadoUsuario(usuarioDetalleModal || supervisorDetalle)"
+            [class]="(usuarioDetalleModal || supervisorDetalle)?.is_active ? 'border-rose-300 text-rose-700 bg-rose-50 hover:bg-rose-100' : 'border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100'"
+            class="px-3.5 py-2 rounded-xl text-xs font-bold border transition cursor-pointer inline-flex items-center gap-1.5"
+          >
+            <span class="material-symbols-outlined text-[16px]">
+              {{ (usuarioDetalleModal || supervisorDetalle)?.is_active ? 'block' : 'check_circle' }}
+            </span>
+            <span>{{ (usuarioDetalleModal || supervisorDetalle)?.is_active ? 'Desactivar Cuenta' : 'Activar Cuenta' }}</span>
+          </button>
+
+          <button *ngIf="puedeEditarUsuario(usuarioDetalleModal || supervisorDetalle)" type="button" class="bd-save" (click)="editarDesdeDetalle()">
+            <span class="material-symbols-outlined" style="font-size: 16px;">edit</span>
+            Editar Datos
+          </button>
+        </div>
       </div>
     </div>
   </div>

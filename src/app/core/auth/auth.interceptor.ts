@@ -18,7 +18,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   ].some((path) => requestPath.endsWith(path));
 
   let authReq = req;
-  if (token && !isPublicAuthRequest) {
+  if (token && !isPublicAuthRequest && !req.headers.has('Authorization')) {
     authReq = req.clone({
       setHeaders: {
         Authorization: `Bearer ${token}`
@@ -30,7 +30,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     catchError((error: HttpErrorResponse) => {
       if (error.status === 401 && !isPublicAuthRequest) {
         authService.limpiarSesion();
-        router.navigate(['/login']);
+        router.navigate(['/login'], { replaceUrl: true });
       }
       return throwError(() => error);
     })

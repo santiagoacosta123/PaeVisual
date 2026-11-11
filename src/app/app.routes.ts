@@ -17,7 +17,7 @@ import { EntradasInventario } from './entradas-inventario/entradas-inventario';
 import { ContratoDetalleComponent } from './contrato-detalle/contrato-detalle';
 import { NotificacionesComponent } from './notificaciones/notificaciones.component';
 import { DashboardSupervisor } from './dashboard-supervisor/dashboard-supervisor';
-import { authGuard, roleGuard } from '@core/auth';
+import { authGuard, guestGuard, roleGuard } from '@core/auth';
 import { BancoDatosComponent } from './banco-datos/banco-datos';
 
 import { RegistrarEntregaAlimentosComponent } from './registrar-entrega-alimentos/registrar-entrega-alimentos';
@@ -36,7 +36,8 @@ import { FacturasCompraComponent } from './facturas-compra/facturas-compra';
 export const routes: Routes = [
   {
     path: 'login',
-    component: LoginComponent
+    component: LoginComponent,
+    canActivate: [guestGuard]
   },
   {
     path: 'recuperar-password',
@@ -53,6 +54,7 @@ export const routes: Routes = [
     path: '',
     component: LayoutComponent,
     canActivate: [authGuard],
+    canActivateChild: [authGuard],
     children: [
       {
         path: 'inicio',

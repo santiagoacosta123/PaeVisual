@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef, HostListener } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, HostListener, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   RouterOutlet,
@@ -89,15 +89,24 @@ export class LayoutComponent implements OnInit {
   passwordError = '';
   passwordMensaje = '';
 
+  private notificacionService = inject(NotificacionService);
+  private authService = inject(AuthService);
+  private contratosService = inject(SiraeService);
+  private facturasService = inject(FacturasCompraService);
+  private http = inject(HttpClient);
+  private cdr = inject(ChangeDetectorRef);
+  private router = inject(Router);
+  private sweetAlert = inject(SweetAlertService);
+
   constructor(
-    private notificacionService: NotificacionService,
-    private authService: AuthService,
-    private contratosService: SiraeService,
-    private facturasService: FacturasCompraService,
-    private http: HttpClient,
-    private cdr: ChangeDetectorRef,
-    private router: Router,
-    private sweetAlert: SweetAlertService
+
+
+
+
+
+
+
+
   ) {
     // Escuchar los cambios de ruta para actualizar el título automáticamente
     this.router.events.pipe(
@@ -496,6 +505,14 @@ export class LayoutComponent implements OnInit {
       'Sí, cerrar sesión'
     ).then((resultado) => {
       if (resultado.isConfirmed) {
+        this.cerrarPanel();
+        this.perfil = { nombre: '', correo: '', rol: '' };
+        this.editForm = { ...this.perfil };
+        this.institucionActiva = null;
+        this.sedeActiva = null;
+        this.institucionesSupervisor = [];
+        this.listaNotificaciones = [];
+        this.notificacionesNoLeidas = 0;
         this.authService.cerrarSesion();
       }
     });

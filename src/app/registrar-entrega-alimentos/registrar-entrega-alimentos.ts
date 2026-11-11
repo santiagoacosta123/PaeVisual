@@ -1312,7 +1312,24 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
   guardandoEnvio = false;
 
   // La fecha del envío es siempre la de hoy y se pone sola; el responsable es el usuario con sesión iniciada
-  get envioFecha(): string { return this.fechaHoy(); }
+  private _envioFechaOverride: string | null = null;
+  private _envioResponsableOverride: string | null = null;
+  get envioFecha(): string {
+    return this._envioFechaOverride !== null ? this._envioFechaOverride : this.fechaHoy();
+  }
+  set envioFecha(valor: string) {
+    this._envioFechaOverride = valor;
+  }
+  get envioResponsable(): string {
+    if (this._envioResponsableOverride !== null) {
+      return this._envioResponsableOverride;
+    }
+    const usuario: any = this.authService.obtenerUsuario();
+    return usuario?.nombre ?? usuario?.username ?? usuario?.first_name ?? 'Sistema';
+  }
+  set envioResponsable(valor: string) {
+    this._envioResponsableOverride = valor;
+  }
 
   disponibleDe(sel: FilaEntrega): number {
     return sel.idIngrediente == null ? 0 : this.saldosInventario.get(sel.idIngrediente) ?? 0;
@@ -1376,7 +1393,9 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     const hoy = this.envioFecha;                       // siempre la fecha de hoy
     // El responsable es el usuario que inició sesión (ya no se escribe a mano)
     const usuario: any = this.authService.obtenerUsuario();
-    const responsable: string = usuario?.nombre ?? usuario?.username ?? usuario?.first_name ?? 'Sistema';
+    const responsable: string = (this.envioResponsable || '').trim();
+    if (!hoy.trim()) return fallo('Indica la fecha de envío.');
+    if (!responsable) return fallo('Indica el responsable del envío.');
     this.guardandoEnvio = true;
 
     const peticiones = items.map(sel => {

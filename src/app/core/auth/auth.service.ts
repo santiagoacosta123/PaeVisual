@@ -1,8 +1,10 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
-import { Observable, BehaviorSubject, EMPTY, catchError, timeout } from 'rxjs';
+import { Observable, BehaviorSubject, EMPTY, catchError, finalize, timeout } from 'rxjs';
+import { Store } from '@ngrx/store';
 import { environment } from '../../../environments/environment';
+import { logout } from '../../store/action';
 
 export interface LoginResponse {
   access: string;
@@ -36,6 +38,8 @@ export interface AuthenticatedUser {
   correo: string;
   numero_documento: string;
   rol: string | null;
+  estado?: string;
+  is_active?: boolean;
   institucion?: string;
   id_institucion?: number;
   institucion_nombre?: string;
@@ -70,16 +74,24 @@ export class AuthService {
   private readonly USUARIO = 'usuario';
   private readonly INSTITUCION_ACTIVA = 'sirae_institucion_activa';
   private readonly SEDE_ACTIVA = 'sirae_sede_activa';
+  private readonly CLAVES_SESION = [
+    this.ACCESS_TOKEN,
+    this.REFRESH_TOKEN,
+    this.USUARIO,
+    this.INSTITUCION_ACTIVA,
+    this.SEDE_ACTIVA,
+    'token',
+  ];
 
+  private http = inject(HttpClient);
+  private router = inject(Router);
+  private store = inject(Store, { optional: true });
   private institucionActivaSubject = new BehaviorSubject<InstitucionAsignada | null>(null);
   public institucionActiva$ = this.institucionActivaSubject.asObservable();
   private sedeActivaSubject = new BehaviorSubject<SedeActiva | null>(this.obtenerSedeActiva());
   public sedeActiva$ = this.sedeActivaSubject.asObservable();
 
-  constructor(
-    private http: HttpClient,
-    private router: Router
-  ) {
+  constructor() {
     this.institucionActivaSubject.next(this.obtenerInstitucionActiva());
   }
 
@@ -91,6 +103,19 @@ export class AuthService {
       return true;
     } catch {
       return false;
+    }
+  }
+
+  private limpiarSessionStorage(): void {
+    try {
+      if (typeof sessionStorage !== 'undefined') {
+        for (const clave of this.CLAVES_SESION) {
+          sessionStorage.removeItem(clave);
+        }
+        sessionStorage.clear();
+      }
+    } catch {
+      // Ignorar si sessionStorage no está disponible en el entorno actual
     }
   }
 
@@ -319,39 +344,109 @@ export class AuthService {
   }
 
   limpiarSedeActiva(): void {
-    if (!this.estaDisponibleStorage()) return;
-    localStorage.removeItem(this.SEDE_ACTIVA);
+    if (this.estaDisponibleStorage()) {
+      localStorage.removeItem(this.SEDE_ACTIVA);
+    }
     this.sedeActivaSubject.next(null);
   }
 
   limpiarInstitucionActiva(): void {
-    if (!this.estaDisponibleStorage()) {
-      return;
+    if (this.estaDisponibleStorage()) {
+      localStorage.removeItem(this.INSTITUCION_ACTIVA);
     }
-    localStorage.removeItem(this.INSTITUCION_ACTIVA);
     this.institucionActivaSubject.next(null);
     this.limpiarSedeActiva();
   }
 
+  tokenExpirado(token: string | null | undefined): boolean {
+    if (!token) {
+      return true;
+    }
+    const partes = token.split('.');
+    if (partes.length !== 3) {
+      return false;
+    }
+    try {
+      const base64 = partes[1].replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(
+        atob(base64)
+          .split('')
+          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+          .join('')
+      );
+      const payload = JSON.parse(jsonPayload);
+      if (typeof payload.exp === 'number') {
+        const ahoraSegundos = Math.floor(Date.now() / 1000);
+        return payload.exp <= ahoraSegundos;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  }
+
+  obtenerRutaInicialPorRol(rol: string | null | undefined): string {
+    if (this.esSupervisor(rol)) {
+      return '/dashboard-supervisor';
+    }
+    if (this.esJefa(rol)) {
+      return '/asistencia-diaria';
+    }
+    return '/inicio';
+  }
+
   estaAutenticado(): boolean {
-    return !!this.obtenerToken();
+    const token = this.obtenerToken();
+    if (!token) {
+      return false;
+    }
+    if (this.tokenExpirado(token)) {
+      this.limpiarSesion();
+      return false;
+    }
+    return true;
   }
 
   limpiarSesion(): void {
+    this.institucionActivaSubject.next(null);
+    this.sedeActivaSubject.next(null);
+    this.store?.dispatch(logout());
+    this.limpiarSessionStorage();
+
     if (!this.estaDisponibleStorage()) {
       return;
     }
 
-    localStorage.removeItem(this.ACCESS_TOKEN);
-    localStorage.removeItem(this.REFRESH_TOKEN);
-    localStorage.removeItem(this.USUARIO);
-    localStorage.removeItem(this.INSTITUCION_ACTIVA);
-    localStorage.removeItem('token');
-    this.institucionActivaSubject.next(null);
+    for (const clave of this.CLAVES_SESION) {
+      localStorage.removeItem(clave);
+    }
+  }
+
+  revocarSesionServidor(refresh?: string | null, access?: string | null): Observable<unknown> {
+    const headers: Record<string, string> = {};
+    if (access) {
+      headers['Authorization'] = `Bearer ${access}`;
+    }
+    const payload = refresh ? { refresh } : {};
+    return this.http.post(`${this.apiBaseUrl}/auth/logout/`, payload, { headers });
   }
 
   cerrarSesion(): void {
+    const refresh = this.obtenerRefreshToken();
+    const access = this.obtenerToken();
+
     this.limpiarSesion();
-    this.router.navigate(['/login']);
+    void this.router.navigate(['/login'], { replaceUrl: true });
+
+    if (refresh || access) {
+      this.revocarSesionServidor(refresh, access).pipe(
+        timeout(10000),
+        catchError(() => EMPTY),
+        finalize(() => {
+          this.limpiarSesion();
+          void this.router.navigate(['/login'], { replaceUrl: true });
+        })
+      ).subscribe();
+    }
   }
 }
