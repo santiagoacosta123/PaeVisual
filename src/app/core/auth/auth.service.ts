@@ -45,6 +45,8 @@ export interface AuthenticatedUser {
   institucion_nombre?: string;
   id_sede?: number;
   sede_nombre?: string;
+  id_jornada?: number;
+  jornada_nombre?: string;
   instituciones_supervisor?: InstitucionAsignada[];
   is_superuser?: boolean;
   debe_cambiar_password?: boolean;

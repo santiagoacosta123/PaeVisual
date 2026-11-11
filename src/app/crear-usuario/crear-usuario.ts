@@ -37,6 +37,7 @@ export class CrearUsuarioComponent implements OnInit {
   rolesDisponibles: RolModel[] = [];
   institucionesDisponibles: any[] = [];
   sedesDisponibles: any[] = [];
+  jornadasDisponibles: any[] = [];
   cargando = false;
   guardando = false;
 
@@ -49,6 +50,7 @@ export class CrearUsuarioComponent implements OnInit {
     rol: null as number | null,
     id_institucion: null as number | null,
     id_sede: null as number | null,
+    id_jornada: null as number | null,
     password: '',
     is_active: true,
     institucionesSupervisor: [] as number[]
@@ -109,6 +111,13 @@ export class CrearUsuarioComponent implements OnInit {
       },
       error: (err) => console.error('Error al cargar sedes:', err)
     });
+
+    this.bancoDatosService.obtenerDatos('jornadas').subscribe({
+      next: (res) => {
+        this.jornadasDisponibles = Array.isArray(res) ? res : res?.results || [];
+      },
+      error: (err) => console.error('Error al cargar jornadas:', err)
+    });
   }
 
   onRolChange(): void {
@@ -118,6 +127,9 @@ export class CrearUsuarioComponent implements OnInit {
     if (this.esSuperAdmin && !this.esRolAdmin()) {
       this.form.id_institucion = null;
     }
+    if (!this.esRolJefa()) {
+      this.form.id_jornada = null;
+    }
   }
 
   esRolAdmin(): boolean {
@@ -126,6 +138,10 @@ export class CrearUsuarioComponent implements OnInit {
 
   esRolSupervisor(): boolean {
     return this.rolSeleccionadoNombre.includes('supervisor') || this.rolSeleccionadoNombre.includes('coordinador');
+  }
+
+  esRolJefa(): boolean {
+    return this.rolSeleccionadoNombre.includes('jefa');
   }
 
   toggleInstitucionSupervisor(id: number): void {
@@ -157,6 +173,11 @@ export class CrearUsuarioComponent implements OnInit {
       return;
     }
 
+    if (this.esAdmin && this.esRolJefa() && !this.form.id_jornada) {
+      this.sweetAlert.warning('Jornada requerida', 'Debes asignar la jornada escolar correspondiente a la Jefa de manipuladoras.');
+      return;
+    }
+
     this.guardando = true;
 
     let nombre = this.form.nombre.trim();
@@ -180,6 +201,7 @@ export class CrearUsuarioComponent implements OnInit {
       is_active: this.form.is_active,
       id_institucion: this.form.id_institucion || null,
       id_sede: this.form.id_sede || null,
+      id_jornada: this.form.id_jornada || null,
     };
 
     this.usuarioService.crearUsuario(payload).subscribe({

@@ -308,6 +308,14 @@ export class ContratoDetalleComponent implements OnInit {
   modalEdicionAbierto = false;
   guardandoEdicion = false;
 
+  readonly periodicidadOpciones = [
+    { value: 'DIARIA', label: 'Diaria (1 día)', diasDefault: 1 },
+    { value: 'SEMANAL', label: 'Semanal (5 días)', diasDefault: 5 },
+    { value: 'QUINCENAL', label: 'Quincenal (10 días)', diasDefault: 10 },
+    { value: 'MENSUAL', label: 'Mensual (20 días)', diasDefault: 20 },
+    { value: 'PERSONALIZADA', label: 'Personalizada', diasDefault: null },
+  ];
+
   datosEdicion: {
     estado: 'Activo' | 'Inactivo' | 'Finalizado';
     id_usuario_supervisor: number | null;
@@ -315,6 +323,10 @@ export class ContratoDetalleComponent implements OnInit {
     zona: string;
     fecha_inicio: string;
     fecha_fin: string;
+    periodicidad_perecederos: string;
+    dias_cobertura_perecederos: number;
+    periodicidad_no_perecederos: string;
+    dias_cobertura_no_perecederos: number;
     errorValidacion: string;
   } = {
     estado: 'Activo',
@@ -323,6 +335,10 @@ export class ContratoDetalleComponent implements OnInit {
     zona: 'Norte',
     fecha_inicio: '',
     fecha_fin: '',
+    periodicidad_perecederos: 'SEMANAL',
+    dias_cobertura_perecederos: 5,
+    periodicidad_no_perecederos: 'MENSUAL',
+    dias_cobertura_no_perecederos: 20,
     errorValidacion: ''
   };
 
@@ -334,10 +350,28 @@ export class ContratoDetalleComponent implements OnInit {
       zona: this.contrato?.zona || 'Norte',
       fecha_inicio: this.contrato?.fecha_inicio || '',
       fecha_fin: this.contrato?.fecha_fin || '',
+      periodicidad_perecederos: this.contrato?.periodicidad_perecederos || 'SEMANAL',
+      dias_cobertura_perecederos: Number(this.contrato?.dias_cobertura_perecederos) || 5,
+      periodicidad_no_perecederos: this.contrato?.periodicidad_no_perecederos || 'MENSUAL',
+      dias_cobertura_no_perecederos: Number(this.contrato?.dias_cobertura_no_perecederos) || 20,
       errorValidacion: ''
     };
     this.modalEdicionAbierto = true;
     this.cdr.detectChanges();
+  }
+
+  alCambiarPeriodicidad(tipo: 'perecederos' | 'no_perecederos') {
+    const clave = tipo === 'perecederos'
+      ? this.datosEdicion.periodicidad_perecederos
+      : this.datosEdicion.periodicidad_no_perecederos;
+    const opcion = this.periodicidadOpciones.find(o => o.value === clave);
+    if (opcion?.diasDefault != null) {
+      if (tipo === 'perecederos') {
+        this.datosEdicion.dias_cobertura_perecederos = opcion.diasDefault;
+      } else {
+        this.datosEdicion.dias_cobertura_no_perecederos = opcion.diasDefault;
+      }
+    }
   }
 
   cerrarModalEdicion() {
@@ -373,6 +407,13 @@ export class ContratoDetalleComponent implements OnInit {
         this.datosEdicion.errorValidacion = 'La fecha de finalización no puede ser anterior a la fecha de inicio del contrato.';
         return false;
       }
+    }
+
+    const diasPer = Number(this.datosEdicion.dias_cobertura_perecederos);
+    const diasNoPer = Number(this.datosEdicion.dias_cobertura_no_perecederos);
+    if (!Number.isFinite(diasPer) || diasPer < 1 || !Number.isFinite(diasNoPer) || diasNoPer < 1) {
+      this.datosEdicion.errorValidacion = 'Los días de cobertura para perecederos y no perecederos deben ser mayores o iguales a 1.';
+      return false;
     }
 
     return true;
@@ -468,6 +509,28 @@ export class ContratoDetalleComponent implements OnInit {
       });
     }
 
+    // 6. Periodicidad de abastecimiento (HU 5)
+    const perPerAnt = this.contrato?.periodicidad_perecederos || 'SEMANAL';
+    const diasPerAnt = Number(this.contrato?.dias_cobertura_perecederos) || 5;
+    const perNoPerAnt = this.contrato?.periodicidad_no_perecederos || 'MENSUAL';
+    const diasNoPerAnt = Number(this.contrato?.dias_cobertura_no_perecederos) || 20;
+    const diasPerNuevo = Number(this.datosEdicion.dias_cobertura_perecederos);
+    const diasNoPerNuevo = Number(this.datosEdicion.dias_cobertura_no_perecederos);
+    if (perPerAnt !== this.datosEdicion.periodicidad_perecederos || diasPerAnt !== diasPerNuevo) {
+      cambiosDetectados.push({
+        campo: 'Periodicidad perecederos',
+        anterior: `${perPerAnt} (${diasPerAnt} días)`,
+        nuevo: `${this.datosEdicion.periodicidad_perecederos} (${diasPerNuevo} días)`
+      });
+    }
+    if (perNoPerAnt !== this.datosEdicion.periodicidad_no_perecederos || diasNoPerAnt !== diasNoPerNuevo) {
+      cambiosDetectados.push({
+        campo: 'Periodicidad no perecederos',
+        anterior: `${perNoPerAnt} (${diasNoPerAnt} días)`,
+        nuevo: `${this.datosEdicion.periodicidad_no_perecederos} (${diasNoPerNuevo} días)`
+      });
+    }
+
     // Registrar en auditoría solo si hubo cambios reales
     const ahora = new Date();
     const fechaRegistroFormateada = ahora.toLocaleString('es-CO', {
@@ -498,6 +561,10 @@ export class ContratoDetalleComponent implements OnInit {
     this.contrato.zona = this.datosEdicion.zona;
     this.contrato.fecha_inicio = this.datosEdicion.fecha_inicio;
     this.contrato.fecha_fin = this.datosEdicion.fecha_fin;
+    this.contrato.periodicidad_perecederos = this.datosEdicion.periodicidad_perecederos;
+    this.contrato.dias_cobertura_perecederos = diasPerNuevo;
+    this.contrato.periodicidad_no_perecederos = this.datosEdicion.periodicidad_no_perecederos;
+    this.contrato.dias_cobertura_no_perecederos = diasNoPerNuevo;
 
     // Actualizar supervisor nombre si existe
     if (supNuevoId) {
@@ -531,7 +598,11 @@ export class ContratoDetalleComponent implements OnInit {
       estado: this.contrato.estado,
       zona: this.contrato.zona,
       fecha_inicio: this.contrato.fecha_inicio,
-      fecha_fin: this.contrato.fecha_fin
+      fecha_fin: this.contrato.fecha_fin,
+      periodicidad_perecederos: this.contrato.periodicidad_perecederos,
+      dias_cobertura_perecederos: this.contrato.dias_cobertura_perecederos,
+      periodicidad_no_perecederos: this.contrato.periodicidad_no_perecederos,
+      dias_cobertura_no_perecederos: this.contrato.dias_cobertura_no_perecederos
     };
 
     if (this.contratoId && this.contratoId !== 'nuevo' && this.contratoId !== '0') {

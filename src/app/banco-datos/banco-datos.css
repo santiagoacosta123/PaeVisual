@@ -1553,3 +1553,202 @@
   display: flex;
   gap: 8px;
 }
+
+/* =========================================================
+   ESTILOS HU 1-3: GRAMAJES, GRUPOS, UNIDADES E HISTORIAL
+   ========================================================= */
+
+.bd-heading-tools {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.bd-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.bd-btn-secondary:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+.bd-extra-filters-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 14px;
+  padding: 12px 16px;
+  margin-bottom: 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+.bd-extra-filter-item {
+  min-width: 220px;
+  flex: 1 1 220px;
+  max-width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bd-primary-stack,
+.bd-qty-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+}
+
+.bd-sub-pill {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #475569;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
+.bd-prev-value-tag {
+  font-size: 11px;
+  color: #64748b;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 6px;
+  padding: 1px 6px;
+}
+
+.bd-badge-warn {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.bd-badge-neutral {
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+}
+
+.bd-modal-wide {
+  max-width: 720px;
+}
+
+.bd-modal-info-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  border-radius: 10px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1e3a8a;
+  font-size: 12.5px;
+}
+
+.bd-modal-alert-danger {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  border-radius: 10px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+  font-size: 12.5px;
+}
+
+.bd-modal-success-box {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.bd-history-list,
+.bd-sim-results {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.bd-history-item {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px 14px;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.bd-history-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.bd-history-date,
+.bd-history-user {
+  font-size: 11.5px;
+  color: #64748b;
+}
+
+.bd-history-diff {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 13px;
+  color: #0f172a;
+}
+
+.bd-arrow-icon {
+  font-size: 16px;
+  color: #64748b;
+}
+
+.bd-history-meta {
+  font-size: 12.5px;
+  color: #475569;
+}
+
+.bd-history-note {
+  margin: 0;
+  font-size: 12px;
+  color: #475569;
+  font-style: italic;
+}
+
+.bd-text-danger {
+  color: #b91c1c;
+}

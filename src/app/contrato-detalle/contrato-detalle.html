@@ -1386,6 +1386,53 @@
           </div>
         </div>
 
+        <!-- 4. PERIODICIDAD DE ABASTECIMIENTO POR TIPO DE ALIMENTO (HU 5) -->
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px;">
+          <div style="font-size: 12px; font-weight: 700; color: #1e293b; margin-bottom: 8px;">
+            Periodicidad de abastecimiento y días de cobertura (cálculo de entregas)
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 110px 1fr 110px; gap: 10px; align-items: end;">
+            <div>
+              <label style="display: block; font-size: 11px; font-weight: 600; color: #334155; margin-bottom: 4px;">
+                Periodicidad perecederos
+              </label>
+              <select [(ngModel)]="datosEdicion.periodicidad_perecederos"
+                      (ngModelChange)="alCambiarPeriodicidad('perecederos')"
+                      style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 12px; color: #0f172a; background: #ffffff; box-sizing: border-box;">
+                <option *ngFor="let op of periodicidadOpciones" [value]="op.value">{{ op.label }}</option>
+              </select>
+            </div>
+            <div>
+              <label style="display: block; font-size: 11px; font-weight: 600; color: #334155; margin-bottom: 4px;">
+                Días per. *
+              </label>
+              <input type="number"
+                     min="1"
+                     [(ngModel)]="datosEdicion.dias_cobertura_perecederos"
+                     style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 12px; color: #0f172a; box-sizing: border-box;" />
+            </div>
+            <div>
+              <label style="display: block; font-size: 11px; font-weight: 600; color: #334155; margin-bottom: 4px;">
+                Periodicidad no perecederos
+              </label>
+              <select [(ngModel)]="datosEdicion.periodicidad_no_perecederos"
+                      (ngModelChange)="alCambiarPeriodicidad('no_perecederos')"
+                      style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 12px; color: #0f172a; background: #ffffff; box-sizing: border-box;">
+                <option *ngFor="let op of periodicidadOpciones" [value]="op.value">{{ op.label }}</option>
+              </select>
+            </div>
+            <div>
+              <label style="display: block; font-size: 11px; font-weight: 600; color: #334155; margin-bottom: 4px;">
+                Días no per. *
+              </label>
+              <input type="number"
+                     min="1"
+                     [(ngModel)]="datosEdicion.dias_cobertura_no_perecederos"
+                     style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 12px; color: #0f172a; box-sizing: border-box;" />
+            </div>
+          </div>
+        </div>
+
         <!-- Alertas informativas según el estado seleccionado -->
         <div *ngIf="datosEdicion.estado === 'Inactivo'"
              style="background: #fef2f2; border: 1px solid #fecaca; border-left: 4px solid #ef4444; border-radius: 8px; padding: 10px 14px; font-size: 11px; color: #991b1b; display: flex; align-items: flex-start; gap: 8px;">

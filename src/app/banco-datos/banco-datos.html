@@ -128,6 +128,28 @@
             </span>
           </div>
         </div>
+
+        <div class="bd-heading-tools">
+          <button
+            *ngIf="tabActual === 'unidades_medida' || tabActual === 'equivalencias_unidad'"
+            type="button"
+            class="bd-btn-secondary"
+            (click)="abrirConvertidorModal()"
+          >
+            <span class="material-symbols-outlined" aria-hidden="true">calculate</span>
+            <span>Probar conversión</span>
+          </button>
+
+          <button
+            *ngIf="tabActual === 'gramajes' || tabActual === 'grupos_gramaje'"
+            type="button"
+            class="bd-btn-secondary"
+            (click)="abrirSimuladorModal()"
+          >
+            <span class="material-symbols-outlined" aria-hidden="true">functions</span>
+            <span>Calcular porciones</span>
+          </button>
+        </div>
       </div>
 
       <!-- Barra de Filtros Superiores -->
@@ -216,6 +238,88 @@
         </button>
       </div>
 
+      <!-- Filtros específicos para Gramajes (Grado y Categoría) -->
+      <div *ngIf="tabActual === 'gramajes'" class="bd-extra-filters-row">
+        <div class="bd-extra-filter-item">
+          <label class="bd-filter-label">Grado escolar</label>
+          <app-custom-select
+            [options]="opciones['grados']"
+            valueField="id"
+            labelField="label"
+            placeholder="Todos los grados"
+            [allowClear]="true"
+            size="md"
+            [(ngModel)]="filtroGradoGramaje"
+            (ngModelChange)="onFiltroCambio()"
+          ></app-custom-select>
+        </div>
+
+        <div class="bd-extra-filter-item">
+          <label class="bd-filter-label">Categoría de producto</label>
+          <app-custom-select
+            [options]="opciones['categorias_inventario']"
+            valueField="id"
+            labelField="label"
+            placeholder="Todas las categorías"
+            [allowClear]="true"
+            size="md"
+            [(ngModel)]="filtroCategoriaGramaje"
+            (ngModelChange)="onFiltroCambio()"
+          ></app-custom-select>
+        </div>
+
+        <button
+          *ngIf="filtroGradoGramaje || filtroCategoriaGramaje"
+          type="button"
+          class="bd-btn-all-sedes"
+          (click)="limpiarFiltrosEspecificos()"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">close</span>
+          Limpiar filtros
+        </button>
+      </div>
+
+      <!-- Filtros específicos para Grados (Grupo y Nivel educativo) -->
+      <div *ngIf="tabActual === 'grados'" class="bd-extra-filters-row">
+        <div class="bd-extra-filter-item">
+          <label class="bd-filter-label">Grupo de gramaje</label>
+          <app-custom-select
+            [options]="opciones['grupos_gramaje']"
+            valueField="id"
+            labelField="label"
+            placeholder="Todos los grupos"
+            [allowClear]="true"
+            size="md"
+            [(ngModel)]="filtroGrupoGrado"
+            (ngModelChange)="onFiltroCambio()"
+          ></app-custom-select>
+        </div>
+
+        <div class="bd-extra-filter-item">
+          <label class="bd-filter-label">Nivel educativo</label>
+          <app-custom-select
+            [options]="opcionesNivelEducativo"
+            valueField="id"
+            labelField="label"
+            placeholder="Todos los niveles"
+            [allowClear]="true"
+            size="md"
+            [(ngModel)]="filtroNivelGrado"
+            (ngModelChange)="onFiltroCambio()"
+          ></app-custom-select>
+        </div>
+
+        <button
+          *ngIf="filtroGrupoGrado || filtroNivelGrado"
+          type="button"
+          class="bd-btn-all-sedes"
+          (click)="limpiarFiltrosEspecificos()"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">close</span>
+          Limpiar filtros
+        </button>
+      </div>
+
       <!-- Estado: Cargando -->
       <div *ngIf="cargando" class="bd-loading-box" aria-busy="true">
         <div class="bd-skeleton-row" *ngFor="let i of [1,2,3,4,5,6]">
@@ -253,7 +357,7 @@
         <table class="bd-data-table">
           <thead>
             <tr>
-              <th *ngFor="let campo of tab.campos; let primer = first" scope="col" [class.col-primary]="primer">
+              <th *ngFor="let campo of camposTabla; let primer = first" scope="col" [class.col-primary]="primer">
                 {{ campo.label }}
               </th>
               <th scope="col" class="col-actions">Acciones</th>
@@ -263,12 +367,37 @@
             <tr *ngFor="let item of datosPaginados; trackBy: trackPorId">
               
               <!-- Celdas de Datos -->
-              <td *ngFor="let campo of tab.campos; let primer = first" [class.col-primary]="primer">
+              <td *ngFor="let campo of camposTabla; let primer = first" [class.col-primary]="primer">
                 
-                <!-- Celda Primaria: Nombre -->
-                <div *ngIf="primer" class="bd-primary-cell">
+                <!-- Celda Primaria: Nombre (+ Contexto en Gramajes) -->
+                <div *ngIf="primer" class="bd-primary-cell bd-primary-stack">
                   <span class="bd-primary-name" [title]="valorCelda(item, campo)">{{ valorCelda(item, campo) }}</span>
+                  <span
+                    *ngIf="tabActual === 'gramajes' && item?.contexto_aplicacion_display"
+                    class="bd-sub-pill"
+                    [title]="item?.descripcion || ''"
+                  >
+                    {{ item.contexto_aplicacion_display }}
+                  </span>
                 </div>
+
+                <!-- Celda especial Cantidad de gramaje (+ Valor anterior si fue editado) -->
+                <div *ngIf="!primer && campo.name === 'cantidad_gramaje'" class="bd-qty-stack">
+                  <span class="bd-cell-text bd-qty-main">{{ valorCelda(item, campo) }}</span>
+                  <span *ngIf="item?.valor_anterior" class="bd-prev-value-tag" title="Valor antes de la última edición">
+                    Anterior: {{ item.valor_anterior }}
+                  </span>
+                </div>
+
+                <!-- Celda Tipo de alimento (Perecedero / No perecedero) -->
+                <ng-container *ngIf="!primer && campo.name === 'tipo_alimento_display'">
+                  <span
+                    class="bd-badge"
+                    [ngClass]="item?.tipo_conservacion === 'perecedero' ? 'bd-badge-warn' : 'bd-badge-neutral'"
+                  >
+                    {{ valorCelda(item, campo) }}
+                  </span>
+                </ng-container>
 
                 <!-- Celda de Estado (Badge verde o rojo) -->
                 <ng-container *ngIf="!primer && esCampoEstado(campo)">
@@ -286,7 +415,11 @@
                 </ng-container>
 
                 <!-- Resto de celdas estándar -->
-                <span *ngIf="!primer && !esCampoEstado(campo)" class="bd-cell-text" [title]="valorCelda(item, campo)">
+                <span
+                  *ngIf="!primer && !esCampoEstado(campo) && campo.name !== 'cantidad_gramaje' && campo.name !== 'tipo_alimento_display'"
+                  class="bd-cell-text"
+                  [title]="valorCelda(item, campo)"
+                >
                   {{ valorCelda(item, campo) }}
                 </span>
               </td>
@@ -326,6 +459,29 @@
                     </button>
 
                     <button
+                      *ngIf="tabActual === 'gramajes' || tabActual === 'grados' || tabActual === 'grupos_gramaje' || tabActual === 'unidades_medida'"
+                      type="button"
+                      class="bd-menu-item"
+                      (click)="cambiarEstadoRegistro(item); cerrarMenuAccion()"
+                    >
+                      <span class="material-symbols-outlined item-icon-toggle" aria-hidden="true">
+                        {{ isEstadoActivo(item) ? 'toggle_off' : 'toggle_on' }}
+                      </span>
+                      <span>{{ isEstadoActivo(item) ? 'Inactivar' : 'Activar' }}</span>
+                    </button>
+
+                    <button
+                      *ngIf="tabActual === 'gramajes' || tabActual === 'grados'"
+                      type="button"
+                      class="bd-menu-item"
+                      (click)="abrirModalHistorial(item); cerrarMenuAccion()"
+                    >
+                      <span class="material-symbols-outlined item-icon-history" aria-hidden="true">history</span>
+                      <span>Ver historial</span>
+                    </button>
+
+                    <button
+                      *ngIf="tabActual !== 'gramajes'"
                       type="button"
                       class="bd-menu-item item-delete"
                       (click)="eliminar(item); cerrarMenuAccion()"
@@ -432,16 +588,65 @@
       <!-- Cuerpo del Modal -->
       <div class="bd-modal-content">
         <p class="bd-modal-desc">Ingresa los datos correspondientes para registrar o actualizar el elemento.</p>
+
+        <div
+          *ngIf="modoEdicion && tabActual === 'gramajes' && itemOriginal?.cantidad_gramaje"
+          class="bd-modal-info-banner"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">history</span>
+          <span>
+            Valor actual: <strong>{{ itemOriginal.cantidad_gramaje }} {{ itemOriginal.abreviatura_unidad_medida || '' }}</strong>.
+            Si lo modificas, el sistema conservará este registro como valor anterior en el historial.
+          </span>
+        </div>
+
+        <div
+          *ngIf="tabActual === 'gramajes' && unidadBaseProductoInfo"
+          class="bd-modal-info-banner"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">scale</span>
+          <span>
+            Unidad base en inventario del producto:
+            <strong>{{ unidadBaseProductoInfo.nombre }} ({{ unidadBaseProductoInfo.abreviatura }} — {{ unidadBaseProductoInfo.tipo_magnitud }})</strong>.
+          </span>
+        </div>
+
+        <div *ngIf="alertaCompatibilidadModal || alertaNivelGradoModal" class="bd-modal-alert-danger">
+          <span class="material-symbols-outlined" aria-hidden="true">warning</span>
+          <span>{{ alertaCompatibilidadModal || alertaNivelGradoModal }}</span>
+        </div>
         
         <div class="bd-form-fields-grid">
           <div
             class="bd-field-box"
-            *ngFor="let campo of tab.campos"
-            [style.grid-column]="campo.type === 'textarea' ? '1 / -1' : 'auto'"
+            *ngFor="let campo of camposModal"
+            [style.grid-column]="(campo.type === 'textarea' || campo.type === 'multiselect') ? '1 / -1' : 'auto'"
           >
             <label [for]="'campo-' + campo.name" class="bd-field-label">
               {{ campo.label }} <span *ngIf="campo.required" class="bd-required-asterisk">*</span>
             </label>
+
+            <!-- Multiselect con casillas -->
+            <div *ngIf="campo.type === 'multiselect'" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; padding: 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; max-height: 210px; overflow-y: auto;">
+              <button
+                type="button"
+                *ngFor="let op of opcionesDe(campo)"
+                (click)="toggleMultiselect(campo.name, op.id)"
+                style="display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 8px; border: 1px solid; text-align: left; cursor: pointer; font-size: 12px; transition: all 0.15s;"
+                [style.background]="estaSeleccionadoMultiselect(campo.name, op.id) ? '#fef3c7' : '#ffffff'"
+                [style.border-color]="estaSeleccionadoMultiselect(campo.name, op.id) ? '#f59e0b' : '#cbd5e1'"
+                [style.font-weight]="estaSeleccionadoMultiselect(campo.name, op.id) ? '600' : '400'"
+                [style.color]="'#0f172a'"
+              >
+                <span class="material-symbols-outlined" style="font-size: 18px;" [style.color]="estaSeleccionadoMultiselect(campo.name, op.id) ? '#d97706' : '#94a3b8'">
+                  {{ estaSeleccionadoMultiselect(campo.name, op.id) ? 'check_box' : 'check_box_outline_blank' }}
+                </span>
+                <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ op.label }}</span>
+              </button>
+              <div *ngIf="opcionesDe(campo).length === 0" style="grid-column: 1 / -1; color: #64748b; font-size: 12px;">
+                No hay elementos disponibles para seleccionar.
+              </div>
+            </div>
 
             <!-- Selector Personalizado -->
             <ng-container *ngIf="campo.type === 'select'">
@@ -453,6 +658,7 @@
                 labelField="label"
                 placeholder="Seleccionar…"
                 [(ngModel)]="itemForm[campo.name]"
+                (ngModelChange)="onModalCampoCambio(campo.name, $event)"
                 [required]="campo.required || false"
                 [disabled]="campoBloqueado(campo)"
               ></app-custom-select>
@@ -604,6 +810,247 @@
         </div>
       </div>
 
+    </div>
+  </div>
+
+  <!-- ===================== MODAL HISTORIAL (GRAMAJES Y CLASIFICACIÓN DE GRADOS) ===================== -->
+  <div class="bd-modal-overlay" *ngIf="mostrarHistorialModal" (click)="cerrarHistorialModal()">
+    <div class="bd-modal-window bd-modal-wide" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+      <div class="bd-modal-head">
+        <div>
+          <span class="bd-modal-eyebrow">TRAZABILIDAD HISTÓRICA</span>
+          <h2 class="bd-modal-heading">{{ historialTitulo }}</h2>
+        </div>
+        <button type="button" class="bd-modal-close-btn" (click)="cerrarHistorialModal()" title="Cerrar">
+          <span class="material-symbols-outlined" aria-hidden="true">close</span>
+        </button>
+      </div>
+
+      <div class="bd-modal-content">
+        <div *ngIf="cargandoHistorial" class="bd-inst-empty">Cargando historial de cambios…</div>
+        <div *ngIf="!cargandoHistorial && historialRegistros.length === 0" class="bd-inst-empty">
+          No hay registros de cambios históricos todavía.
+        </div>
+
+        <div *ngIf="!cargandoHistorial && historialRegistros.length > 0" class="bd-history-list">
+          <div *ngFor="let h of historialRegistros" class="bd-history-item">
+            <div class="bd-history-top">
+              <span class="bd-badge bd-badge-neutral">
+                {{ historialTipo === 'gramajes' ? h.tipo_evento : 'RECLASIFICACIÓN' }}
+              </span>
+              <span class="bd-history-date">{{ h.fecha_cambio | date:'yyyy-MM-dd HH:mm' }}</span>
+            </div>
+
+            <div *ngIf="historialTipo === 'gramajes'" class="bd-history-body">
+              <div class="bd-history-diff">
+                <strong>Cantidad:</strong>
+                <span>{{ h.cantidad_anterior ?? '—' }} {{ h.unidad_anterior }}</span>
+                <span class="material-symbols-outlined bd-arrow-icon" aria-hidden="true">arrow_forward</span>
+                <span><strong>{{ h.cantidad_nueva ?? '—' }} {{ h.unidad_nueva }}</strong></span>
+              </div>
+              <div *ngIf="h.estado_anterior || h.estado_nuevo" class="bd-history-meta">
+                Estado: {{ h.estado_anterior || '—' }} → <strong>{{ h.estado_nuevo || '—' }}</strong>
+                <span *ngIf="h.contexto_nuevo"> · Contexto: {{ h.contexto_nuevo }}</span>
+              </div>
+              <p *ngIf="h.observaciones" class="bd-history-note">{{ h.observaciones }}</p>
+            </div>
+
+            <div *ngIf="historialTipo === 'grados'" class="bd-history-body">
+              <div class="bd-history-diff">
+                <strong>Grupo:</strong>
+                <span>{{ h.nombre_grupo_anterior || 'Sin grupo' }} ({{ h.nivel_anterior || '—' }})</span>
+                <span class="material-symbols-outlined bd-arrow-icon" aria-hidden="true">arrow_forward</span>
+                <span><strong>{{ h.nombre_grupo_nuevo || 'Sin grupo' }} ({{ h.nivel_nuevo || '—' }})</strong></span>
+              </div>
+              <p *ngIf="h.motivo" class="bd-history-note">Motivo: {{ h.motivo }}</p>
+            </div>
+
+            <div *ngIf="h.usuario_modificacion_nombre" class="bd-history-user">
+              Registrado por: {{ h.usuario_modificacion_nombre }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bd-modal-foot">
+        <button type="button" class="bd-modal-btn-cancel" (click)="cerrarHistorialModal()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== MODAL CONVERTIDOR DE UNIDADES (HU 3) ===================== -->
+  <div class="bd-modal-overlay" *ngIf="mostrarConvertidorModal" (click)="cerrarConvertidorModal()">
+    <div class="bd-modal-window" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+      <div class="bd-modal-head">
+        <div>
+          <span class="bd-modal-eyebrow">VALIDACIÓN DE CONVERSIONES</span>
+          <h2 class="bd-modal-heading">Convertidor técnico de unidades</h2>
+        </div>
+        <button type="button" class="bd-modal-close-btn" (click)="cerrarConvertidorModal()" title="Cerrar">
+          <span class="material-symbols-outlined" aria-hidden="true">close</span>
+        </button>
+      </div>
+
+      <div class="bd-modal-content">
+        <p class="bd-modal-desc">
+          Verifica si dos unidades tienen conversión automática o equivalencia técnica configurada.
+        </p>
+
+        <div class="bd-form-fields-grid">
+          <div class="bd-field-box">
+            <label class="bd-field-label">Cantidad *</label>
+            <input type="number" min="0" step="any" class="bd-field-input" [(ngModel)]="convForm.cantidad" />
+          </div>
+
+          <div class="bd-field-box">
+            <label class="bd-field-label">Producto (para equivalencia técnica)</label>
+            <app-custom-select
+              [options]="opciones['ingredientes']"
+              valueField="id"
+              labelField="label"
+              placeholder="Opcional (solo misma magnitud)"
+              [allowClear]="true"
+              [(ngModel)]="convForm.id_ingrediente"
+            ></app-custom-select>
+          </div>
+
+          <div class="bd-field-box">
+            <label class="bd-field-label">Unidad origen *</label>
+            <app-custom-select
+              [options]="opciones['unidades_medida']"
+              valueField="id"
+              labelField="label"
+              placeholder="Seleccionar…"
+              [(ngModel)]="convForm.id_unidad_origen"
+            ></app-custom-select>
+          </div>
+
+          <div class="bd-field-box">
+            <label class="bd-field-label">Unidad destino *</label>
+            <app-custom-select
+              [options]="opciones['unidades_medida']"
+              valueField="id"
+              labelField="label"
+              placeholder="Seleccionar…"
+              [(ngModel)]="convForm.id_unidad_destino"
+            ></app-custom-select>
+          </div>
+        </div>
+
+        <div *ngIf="convError" class="bd-modal-alert-danger" style="margin-top: 14px;">
+          <span class="material-symbols-outlined" aria-hidden="true">error</span>
+          <span>{{ convError }}</span>
+        </div>
+
+        <div *ngIf="convResultado" class="bd-modal-success-box">
+          <strong>Resultado:</strong>
+          <span>
+            {{ convResultado.cantidad_original }} {{ convResultado.unidad_origen }}
+            = <strong>{{ convResultado.cantidad_convertida }} {{ convResultado.unidad_destino }}</strong>
+          </span>
+          <span class="bd-sub-pill" *ngIf="convResultado.presentacion_apropiada?.texto">
+            Presentación sugerida: {{ convResultado.presentacion_apropiada.texto }}
+          </span>
+        </div>
+      </div>
+
+      <div class="bd-modal-foot">
+        <button type="button" class="bd-modal-btn-cancel" (click)="cerrarConvertidorModal()">Cerrar</button>
+        <button type="button" class="bd-btn-add" (click)="ejecutarConversionPrueba()" [disabled]="convirtiendo">
+          <span class="material-symbols-outlined" aria-hidden="true">sync_alt</span>
+          <span>{{ convirtiendo ? 'Calculando…' : 'Convertir' }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== MODAL SIMULADOR POR GRUPO / GRADO (HU 2 & HU 3) ===================== -->
+  <div class="bd-modal-overlay" *ngIf="mostrarSimuladorModal" (click)="cerrarSimuladorModal()">
+    <div class="bd-modal-window bd-modal-wide" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+      <div class="bd-modal-head">
+        <div>
+          <span class="bd-modal-eyebrow">ABASTECIMIENTO Y PREPARACIÓN</span>
+          <h2 class="bd-modal-heading">Cálculo de gramajes por grupo y grado</h2>
+        </div>
+        <button type="button" class="bd-modal-close-btn" (click)="cerrarSimuladorModal()" title="Cerrar">
+          <span class="material-symbols-outlined" aria-hidden="true">close</span>
+        </button>
+      </div>
+
+      <div class="bd-modal-content">
+        <div class="bd-form-fields-grid">
+          <div class="bd-field-box">
+            <label class="bd-field-label">Grupo de gramaje</label>
+            <app-custom-select
+              [options]="opciones['grupos_gramaje']"
+              valueField="id"
+              labelField="label"
+              placeholder="Todos los grupos"
+              [allowClear]="true"
+              [(ngModel)]="simForm.id_grupo_gramaje"
+            ></app-custom-select>
+          </div>
+
+          <div class="bd-field-box">
+            <label class="bd-field-label">Grado específico (opcional)</label>
+            <app-custom-select
+              [options]="opciones['grados']"
+              valueField="id"
+              labelField="label"
+              placeholder="Todos los grados"
+              [allowClear]="true"
+              [(ngModel)]="simForm.id_grado"
+            ></app-custom-select>
+          </div>
+
+          <div class="bd-field-box">
+            <label class="bd-field-label">Número de estudiantes *</label>
+            <input type="number" min="1" class="bd-field-input" [(ngModel)]="simForm.estudiantes" />
+          </div>
+
+          <div class="bd-field-box">
+            <label class="bd-field-label">Días de atención *</label>
+            <input type="number" min="1" class="bd-field-input" [(ngModel)]="simForm.dias" />
+          </div>
+        </div>
+
+        <div *ngIf="simResultado?.alertas_conversion?.length > 0" class="bd-modal-alert-danger" style="margin-top: 14px;">
+          <span class="material-symbols-outlined" aria-hidden="true">warning</span>
+          <div>
+            <strong>Alertas de conversión:</strong>
+            <div *ngFor="let al of simResultado.alertas_conversion">
+              {{ al.nombre_ingrediente }}: {{ al.mensaje }}
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="simResultado?.resultados" class="bd-sim-results">
+          <div *ngIf="simResultado.resultados.length === 0" class="bd-inst-empty">
+            No hay gramajes activos configurados para el grupo o grado seleccionado.
+          </div>
+          <div *ngFor="let r of simResultado.resultados" class="bd-history-item">
+            <div class="bd-history-top">
+              <strong>{{ r.nombre_ingrediente }} — {{ r.nombre_grado || 'General' }}</strong>
+              <span class="bd-badge bd-badge-neutral">{{ r.nombre_grupo_gramaje || 'Sin grupo' }}</span>
+            </div>
+            <div class="bd-history-meta" *ngIf="!r.error_conversion">
+              Porción: {{ r.cantidad_por_estudiante }} {{ r.unidad_gramaje }} / estudiante →
+              Total: <strong>{{ r.presentacion_apropiada?.texto || (r.cantidad_total_calculada + ' ' + r.unidad_resultado) }}</strong>
+            </div>
+            <div class="bd-history-meta bd-text-danger" *ngIf="r.error_conversion">
+              {{ r.alerta_conversion }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bd-modal-foot">
+        <button type="button" class="bd-modal-btn-cancel" (click)="cerrarSimuladorModal()">Cerrar</button>
+        <button type="button" class="bd-btn-add" (click)="ejecutarSimulacionPorciones()" [disabled]="simCargando">
+          <span class="material-symbols-outlined" aria-hidden="true">calculate</span>
+          <span>{{ simCargando ? 'Calculando…' : 'Calcular' }}</span>
+        </button>
+      </div>
     </div>
   </div>
 

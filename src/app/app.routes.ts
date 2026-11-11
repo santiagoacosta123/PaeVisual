@@ -30,6 +30,7 @@ import { Reportes } from './reportes/reportes';
 import { InstitucionesComponent } from './instituciones/instituciones';
 import { FacturasCompraComponent } from './facturas-compra/facturas-compra';
 import { PerfilComponent } from './perfil/perfil';
+import { ConsultaGramajesComponent } from './consulta-gramajes/consulta-gramajes';
 
 // NUEVO: página de Instituciones
 
@@ -210,6 +211,26 @@ export const routes: Routes = [
         component: BancoDatosComponent,
         canActivate: [roleGuard],
         data: { roles: ['superadministrador', 'super administrador', 'super admin'] }
+      },
+      {
+        path: 'consulta-gramajes',
+        component: ConsultaGramajesComponent,
+        canActivate: [roleGuard],
+        data: {
+          roles: [
+            'superadministrador',
+            'super administrador',
+            'super admin',
+            'supervisor',
+            'coordinador',
+            'coordinador pae',
+            'administrador',
+            'admin',
+            'jefa de manipuladoras',
+            'jefa manipuladoras',
+            'jefamanipuladoras',
+          ]
+        }
       },
       {
         path: 'entradas-inventario',

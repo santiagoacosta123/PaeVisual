@@ -161,6 +161,12 @@
           <span class="material-symbols-outlined sv-icon">analytics</span>
           <span class="sv-label">Historial de entregas</span>
         </a>
+
+        <a routerLink="/consulta-gramajes" routerLinkActive="sv-active" class="sv-link"
+           aria-label="Gramajes por sede y jornada">
+          <span class="material-symbols-outlined sv-icon">scale</span>
+          <span class="sv-label">Gramajes</span>
+        </a>
       </nav>
 
       <!-- Cerrar sesión inferior -->
@@ -417,6 +423,14 @@
           </div>
         </a>
 
+        <!-- CONSULTA DE GRAMAJES -->
+        <a routerLink="consulta-gramajes" routerLinkActive="active" class="superadmin-nav-item" title="Consulta de Gramajes por Sede y Jornada">
+          <div class="superadmin-nav-item-left">
+            <span class="material-symbols-outlined superadmin-nav-icon">scale</span>
+            <span class="superadmin-nav-text">Consulta Gramajes</span>
+          </div>
+        </a>
+
         <!-- USUARIOS -->
         <a routerLink="usuarios" routerLinkActive="active" class="superadmin-nav-item" title="Usuarios y Roles">
           <div class="superadmin-nav-item-left">
@@ -632,6 +646,12 @@
       <a *ngIf="esAdministrador" routerLink="ingredientes" routerLinkActive="active" class="modern-nav-item" title="Inventario">
         <span class="material-symbols-outlined modern-nav-icon" aria-hidden="true">inventory</span>
         <span class="modern-nav-text">Inventario</span>
+      </a>
+
+      <!-- CONSULTA GRAMAJES (Administrador institucional y Jefa de manipuladoras) -->
+      <a *ngIf="esAdministrador || esJefa" routerLink="consulta-gramajes" routerLinkActive="active" class="modern-nav-item" title="Gramajes por Sede y Jornada">
+        <span class="material-symbols-outlined modern-nav-icon" aria-hidden="true">scale</span>
+        <span class="modern-nav-text">Gramajes</span>
       </a>
 
       <!-- USUARIOS -->
