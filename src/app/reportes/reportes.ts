@@ -1,12 +1,28 @@
-import { ChangeDetectorRef, Component, HostListener, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, HostListener, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Observable, Subscription, forkJoin, of } from 'rxjs';
-import { catchError, take, timeout } from 'rxjs/operators';
-import { AuthService, InstitucionAsignada } from '@core/auth';
+import { Observable, Subscription, combineLatest, forkJoin, of } from 'rxjs';
+import { catchError, debounceTime, take, timeout } from 'rxjs/operators';
+import { ActivatedRoute, Router } from '@angular/router';
+import { AuthService, InstitucionAsignada, SedeActiva } from '@core/auth';
 import { SweetAlertService } from '../sweet-alert.service';
 import { Entrega, EntregasService } from '../features/entregas/services/entregas.service';
 import { SiraeService } from '../features/contratos/services/contratos_pae.service';
+import {
+  AlcanceReportes,
+  MetadatosPlantillas,
+  PlanillaGeneradaItem,
+  PlanillasPaeService,
+  PlantillaOficial,
+  ReporteConsolidadoResponse,
+} from '../services/planillas-pae.service';
+import {
+  PlantillaFormulario,
+  clonarEsquemaParaEdicion,
+  crearPlantillaFormularioVacio,
+  etiquetaColumnaLegible,
+  guardarBlobArchivo,
+} from './reportes-helpers';
 
 /** Una sede de la institución con los cupos de sus contratos vigentes */
 interface SedeBase {
@@ -16,8 +32,7 @@ interface SedeBase {
 }
 
 /**
- * Una entrega de alimentos ya asignada a una sede. Es la única forma de dato del reporte de sedes:
- * totales, tabla por sede, detalle y CSV se calculan a partir de estas filas.
+ * Una entrega de alimentos ya asignada a una sede.
  */
 interface EntregaSede {
   id: number;
@@ -29,7 +44,10 @@ interface EntregaSede {
   cantidad: number;
   unidad: string;
   estado: string;           // EN_TRANSITO | RECIBIDA | CON_NOVEDAD | RECHAZADA
-  kilos: number;            // kg efectivamente recibidos (0 si no es peso, está en tránsito o fue rechazada)
+  kilos: number;            // kg efectivamente recibidos
+  cantidadRecibida?: number | null;
+  cantidadRechazada?: number | null;
+  receptor?: string;
 }
 
 interface ResumenSede {
@@ -59,7 +77,7 @@ type ColumnaSede = 'nombre' | 'cupos' | 'entregas' | 'kilos' | 'novedades' | 'di
 /** Si el servidor no responde en este tiempo, se muestra un error en vez de quedarse cargando */
 const TIEMPO_MAXIMO_MS = 20000;
 
-/** Convierte cualquier valor (incluso null o undefined) en texto, sin fallar */
+/** Convierte cualquier valor en texto */
 const texto = (valor: unknown): string => (valor === null || valor === undefined ? '' : String(valor));
 
 /** El backend puede responder con una lista o con { results: [...] } */
@@ -81,15 +99,72 @@ const ETIQUETAS_ESTADO: Record<string, string> = {
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './reportes.html',
+  styleUrls: ['./reportes.css']
 })
 export class Reportes implements OnInit, OnDestroy {
-  // ===================== FILTROS Y ESTADO =====================
-  cargando = true;
+  private readonly route = inject(ActivatedRoute, { optional: true });
+
+  // ===================== PESTAÑAS Y ROL =====================
+  pestanaActiva: 'consolidados' | 'planillas' | 'plantillas' | 'historial' = 'consolidados';
+  esSuperAdmin = false;
+  esSupervisor = false;
+  esAdministrador = false;
+  esJefa = false;
+  rolActual = '';
+
+  // ===================== ALCANCE Y CONSOLIDADO REAL (SIR-173) =====================
+  alcance: AlcanceReportes | null = null;
+  consolidado: ReporteConsolidadoResponse | null = null;
+  cargandoConsolidado = false;
+  errorConsolidado = '';
+  tipoReporteFiltro = 'RESUMEN_GENERAL';
+  filtroInstId: number | null = null;
+  filtroSedeId: number | null = null;
+  filtroJornadaId: number | null = null;
+  filtroContratoId: number | null = null;
   fechaDesde = '';
   fechaHasta = '';
 
-  // ===================== REPORTE DE SEDES (sedes + cupos + entregas) =====================
+  // ===================== PLANILLAS GENERADAS Y VISOR (SIR-171 & SIR-172) =====================
+  cargando = true;
+  cargandoPlanillas = false;
+  generandoPlanilla = false;
+  guardandoPlanilla = false;
+  imprimiendoPdf = false;
+  planillas: PlanillaGeneradaItem[] = [];
+  planillaActiva: PlanillaGeneradaItem | null = null;
+  busquedaPlanilla = '';
+  filtroProcesoPlanilla = '';
+  filtroEstadoPlanilla = '';
+  filtroPeriodoPlanilla = '';
+
+  genPlantillaId: number | null = null;
+  genProceso = 'REMISION';
+  genInstId: number | null = null;
+  genSedeId: number | null = null;
+  genContratoId: number | null = null;
+  genJornadaId: number | null = null;
+  genPeriodo = '';
+  genFechaInicio = '';
+  genFechaFin = '';
+  genObservaciones = '';
+
+  manualesEdit: Record<string, any> = {};
+  observacionEdit = '';
+
+  // ===================== PLANTILLAS OFICIALES Y VERSIONADO (SIR-170) =====================
+  metadatosPlantillas: MetadatosPlantillas | null = null;
+  plantillas: PlantillaOficial[] = [];
+  cargandoPlantillas = false;
+  guardandoPlantilla = false;
+  previsualizando = false;
+  plantillaForm: PlantillaFormulario = crearPlantillaFormularioVacio();
+  previewPlantilla: any = null;
+  previewSedeId: number | null = null;
+
+  // ===================== REPORTE DE SEDES Y ENTREGAS =====================
   institucionActiva: InstitucionAsignada | null = null;
+  sedeActiva: SedeActiva | null = null;
   sedesBase: SedeBase[] = [];
   entregas: EntregaSede[] = [];
   avisoDatos = '';
@@ -97,10 +172,23 @@ export class Reportes implements OnInit, OnDestroy {
   ordenColumna: ColumnaSede = 'kilos';
   ordenDireccion: 'asc' | 'desc' = 'desc';
   sedeDetalle: ResumenSede | null = null;
+  entregaDetalle: EntregaSede | null = null;
+  estadoFiltro = 'TODAS';
+  textoBusqueda = '';
+
+  // ===================== PAGINACIÓN =====================
+  paginaActual = 1;
+  filasPorPagina = 10;
+  readonly opcionesFilasPorPagina = [10, 20, 50];
+
+  // ===================== EXPORTACIÓN EXCEL =====================
+  exportandoExcel = false;
 
   private versionDatos = 0;
   private suscripcion?: Subscription;
+  private solicitudReporte?: Subscription;
   private cache: { clave: string; resumen: ResumenSede[]; totales: TotalesReporte } | null = null;
+  private actualizacionAutomatica?: ReturnType<typeof setInterval>;
 
   constructor(
     private readonly entregasService: EntregasService,
@@ -108,29 +196,99 @@ export class Reportes implements OnInit, OnDestroy {
     private readonly auth: AuthService,
     private readonly alertas: SweetAlertService,
     private readonly cdr: ChangeDetectorRef,
+    private readonly router: Router,
+    private readonly planillasPaeService: PlanillasPaeService
   ) {}
 
   ngOnInit(): void {
-    // Emite al abrir la pantalla y cada vez que el supervisor cambia de institución
-    this.suscripcion = this.auth.institucionActiva$.subscribe(institucion => {
-      const cambio = institucion?.id_institucion !== this.institucionActiva?.id_institucion;
+    this.detectarRolUsuario();
+    this.leerParametrosIniciales();
+
+    // Coordinar institución activa y sede activa (flujo Supervisor / reportes.spec)
+    this.suscripcion = combineLatest([
+      this.auth.institucionActiva$,
+      this.auth.sedeActiva$
+    ]).pipe(
+      debounceTime(25)
+    ).subscribe(([institucion, sede]) => {
+      const cambioInstitucion = institucion?.id_institucion !== this.institucionActiva?.id_institucion;
       this.institucionActiva = institucion;
-      if (cambio) {
-        this.sedeFiltro = 'Todas';
+      this.sedeActiva = sede;
+      if (cambioInstitucion) {
+        this.sedeFiltro = sede?.id_sede ?? 'Todas';
         this.sedeDetalle = null;
+        this.paginaActual = 1;
+        if (institucion?.id_institucion && !this.filtroInstId) {
+          this.filtroInstId = institucion.id_institucion;
+          this.genInstId = institucion.id_institucion;
+        }
+      } else if (sede && this.sedeFiltro === 'Todas') {
+        this.sedeFiltro = sede.id_sede;
+        this.paginaActual = 1;
+      }
+      if (sede?.id_sede && !this.filtroSedeId) {
+        this.filtroSedeId = sede.id_sede;
+        this.genSedeId = sede.id_sede;
       }
       this.cargar();
     });
+
+    this.cargarModuloReportesInicial();
+  }
+
+  private detectarRolUsuario(): void {
+    const authAny: any = this.auth;
+    const usuario = typeof authAny?.obtenerUsuario === 'function' ? authAny.obtenerUsuario() : null;
+    const rol = usuario?.rol ?? null;
+    this.rolActual = String(rol || '');
+    this.esSuperAdmin = typeof authAny?.esSuperAdministrador === 'function' ? authAny.esSuperAdministrador(rol) : false;
+    this.esSupervisor = typeof authAny?.esSupervisor === 'function' ? authAny.esSupervisor(rol) : false;
+    this.esAdministrador = typeof authAny?.esAdministrador === 'function' ? authAny.esAdministrador(rol) : false;
+    this.esJefa = typeof authAny?.esJefa === 'function' ? authAny.esJefa(rol) : false;
+    if (this.esJefa) {
+      this.pestanaActiva = 'planillas';
+    }
+  }
+
+  private leerParametrosIniciales(): void {
+    const qp = this.route?.snapshot?.queryParams;
+    if (!qp) return;
+    if (qp['tipo']) this.tipoReporteFiltro = String(qp['tipo']);
+    if (qp['institucion']) {
+      const id = Number(qp['institucion']);
+      if (Number.isFinite(id) && id > 0) {
+        this.filtroInstId = id;
+        this.genInstId = id;
+      }
+    }
+    if (qp['tab'] && ['consolidados', 'planillas', 'plantillas', 'historial'].includes(String(qp['tab']))) {
+      this.pestanaActiva = qp['tab'];
+    }
+  }
+
+  private cargarModuloReportesInicial(): void {
+    const authAny: any = this.auth;
+    if (typeof authAny?.obtenerUsuario !== 'function') {
+      return;
+    }
+    this.cargarAlcance();
+    this.cargarMetadatosYPlantillas();
+    this.cargarConsolidado();
+    this.cargarPlanillasGeneradas();
   }
 
   ngOnDestroy(): void {
     this.suscripcion?.unsubscribe();
+    this.solicitudReporte?.unsubscribe();
+    if (this.actualizacionAutomatica) clearInterval(this.actualizacionAutomatica);
   }
 
   // Esc cierra el detalle de la sede
   @HostListener('document:keydown.escape')
   alPresionarEsc(): void {
     if (this.sedeDetalle) this.cerrarSede();
+    if (this.entregaDetalle) this.cerrarEntrega();
+    if (this.planillaActiva) this.cerrarPlanillaDetalle();
   }
 
   cargar(): void {
@@ -138,14 +296,21 @@ export class Reportes implements OnInit, OnDestroy {
     const idInstitucion = this.institucionActiva?.id_institucion;
     const fallos: string[] = [];
 
-    // Si una consulta falla, el reporte sigue con lo demás y avisa qué faltó
+    if (!idInstitucion) {
+      this.cargando = false;
+      this.sedesBase = [];
+      this.entregas = [];
+      this.versionDatos++;
+      this.cdr.markForCheck();
+      return;
+    }
+
     const opcional = <T>(nombre: string) => catchError<T, Observable<null>>((error: unknown) => {
       console.warn(`No se pudo cargar ${nombre} para el reporte:`, error);
       fallos.push(nombre);
       return of(null);
     });
 
-    // Sedes de la institución, cupos de los contratos y entregas de alimentos
     forkJoin({
       sedes: this.sirae.getSedes(idInstitucion).pipe(take(1), timeout(TIEMPO_MAXIMO_MS), opcional<any[]>('las sedes')),
       contratos: this.sirae.getContratos().pipe(take(1), timeout(TIEMPO_MAXIMO_MS), opcional<any[]>('los contratos')),
@@ -157,18 +322,590 @@ export class Reportes implements OnInit, OnDestroy {
     });
   }
 
+  cambiarPestanaPrincipal(tab: 'consolidados' | 'planillas' | 'plantillas' | 'historial'): void {
+    this.pestanaActiva = tab;
+    if (tab === 'consolidados' && !this.consolidado) this.cargarConsolidado();
+    if (tab === 'planillas' && this.planillas.length === 0) this.cargarPlanillasGeneradas();
+    if (tab === 'plantillas' && this.plantillas.length === 0) this.cargarMetadatosYPlantillas();
+  }
+
   // =====================================================
-  //  REPORTE DE SEDES
+  //  SIR-173: REPORTES OPERATIVOS CONSOLIDADOS REALES
   // =====================================================
 
-  /**
-   * Une las tres fuentes (sedes, contratos y entregas) en las dos listas que usa el reporte.
-   * Cualquiera puede venir en null si su consulta falló: en ese caso se avisa y se usa lo que haya.
-   */
+  cargarAlcance(): void {
+    this.planillasPaeService.obtenerAlcance().subscribe({
+      next: (alc) => {
+        this.alcance = alc;
+        if (alc.instituciones.length === 1 && !this.filtroInstId) {
+          this.filtroInstId = alc.instituciones[0].id_institucion;
+          this.genInstId = alc.instituciones[0].id_institucion;
+        }
+        if (alc.sedes.length === 1 && !this.filtroSedeId) {
+          this.filtroSedeId = alc.sedes[0].id_sede;
+          this.genSedeId = alc.sedes[0].id_sede;
+        }
+        this.cdr.markForCheck();
+      },
+      error: () => {}
+    });
+  }
+
+  sedesPorInstitucion(idInst: number | null) {
+    const todas = this.alcance?.sedes || [];
+    if (!idInst) return todas;
+    return todas.filter(s => Number(s.id_institucion) === Number(idInst));
+  }
+
+  contratosPorAlcance(idInst: number | null, idSede: number | null) {
+    const todos = this.alcance?.contratos || [];
+    return todos.filter(c => {
+      if (idSede && c.id_sede && Number(c.id_sede) !== Number(idSede)) return false;
+      if (idInst && c.id_institucion && Number(c.id_institucion) !== Number(idInst)) return false;
+      return true;
+    });
+  }
+
+  cargarConsolidado(): void {
+    this.cargandoConsolidado = true;
+    this.errorConsolidado = '';
+    this.planillasPaeService.consultarReporteConsolidado({
+      tipo_reporte: this.tipoReporteFiltro,
+      id_institucion: this.filtroInstId,
+      id_sede: this.filtroSedeId,
+      id_jornada: this.filtroJornadaId,
+      id_contrato: this.filtroContratoId,
+      fecha_desde: this.fechaDesde,
+      fecha_hasta: this.fechaHasta,
+    }).subscribe({
+      next: (resp) => {
+        this.consolidado = resp;
+        this.cargandoConsolidado = false;
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.cargandoConsolidado = false;
+        this.errorConsolidado = err?.error?.detail || 'No se pudo consultar el reporte consolidado desde el servidor.';
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  descargarConsolidadoCsv(): void {
+    this.planillasPaeService.descargarReporteConsolidadoCsv({
+      tipo_reporte: this.tipoReporteFiltro,
+      id_institucion: this.filtroInstId,
+      id_sede: this.filtroSedeId,
+      id_jornada: this.filtroJornadaId,
+      id_contrato: this.filtroContratoId,
+      fecha_desde: this.fechaDesde,
+      fecha_hasta: this.fechaHasta,
+    }).subscribe({
+      next: (blob) => {
+        guardarBlobArchivo(blob, `reporte_pae_${this.tipoReporteFiltro.toLowerCase()}_${this.hoyISO()}.csv`);
+        void this.alertas.success('Reporte descargado', 'El archivo CSV consolidado se generó con los datos reales vigentes.');
+      },
+      error: (err) => {
+        void this.alertas.error('Error al exportar', err?.error?.detail || 'No se pudo generar el CSV consolidado.');
+      }
+    });
+  }
+
+  get columnasDetalleConsolidado(): string[] {
+    const rows = this.consolidado?.detalle || [];
+    if (rows.length === 0) return [];
+    const ocultar = new Set(['id_sede', 'id_ingrediente', 'id_entrega', 'id_contrato', 'id_inventario', 'id_movimiento', 'id_gramaje', 'id_grado', 'id_asistencia', 'id_preparacion_asignada']);
+    return Object.keys(rows[0]).filter(k => !ocultar.has(k));
+  }
+
+  etiquetaCol(clave: string): string {
+    return etiquetaColumnaLegible(clave);
+  }
+
+  // =====================================================
+  //  SIR-171 & SIR-172: PLANILLAS AUTO-DILIGENCIADAS
+  // =====================================================
+
+  cargarPlanillasGeneradas(): void {
+    this.cargandoPlanillas = true;
+    this.planillasPaeService.listarPlanillas({
+      id_institucion: this.filtroInstId,
+      id_sede: this.filtroSedeId,
+      id_jornada: this.filtroJornadaId,
+      id_contrato: this.filtroContratoId,
+      categoria_proceso: this.filtroProcesoPlanilla,
+      estado: this.filtroEstadoPlanilla,
+      periodo: this.filtroPeriodoPlanilla,
+      fecha_desde: this.fechaDesde,
+      fecha_hasta: this.fechaHasta,
+      search: this.busquedaPlanilla,
+    }).subscribe({
+      next: (lista) => {
+        this.planillas = lista;
+        this.cargandoPlanillas = false;
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.cargandoPlanillas = false;
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  generarNuevaPlanilla(regenerar = false): void {
+    this.generandoPlanilla = true;
+    this.planillasPaeService.generarPlanilla({
+      ...(this.genPlantillaId ? { id_plantilla: this.genPlantillaId } : { categoria_proceso: this.genProceso }),
+      id_institucion: this.genInstId || this.filtroInstId,
+      id_sede: this.genSedeId || this.filtroSedeId,
+      id_contrato: this.genContratoId || this.filtroContratoId,
+      id_jornada: this.genJornadaId || this.filtroJornadaId,
+      periodo: this.genPeriodo.trim(),
+      fecha_inicio: this.genFechaInicio,
+      fecha_fin: this.genFechaFin,
+      observaciones: this.genObservaciones.trim(),
+      regenerar,
+    }).subscribe({
+      next: (resp) => {
+        this.generandoPlanilla = false;
+        this.cargarPlanillasGeneradas();
+        this.abrirPlanillaDesdeObjeto(resp.planilla);
+        void this.alertas.success('Planilla generada', resp.mensaje);
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.generandoPlanilla = false;
+        void this.alertas.warning('No se pudo generar', err?.error?.detail || 'Verifica que la plantilla esté publicada y los filtros sean válidos.');
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  abrirPlanillaDetalle(idPlanilla: number): void {
+    this.cargandoPlanillas = true;
+    this.planillasPaeService.obtenerPlanilla(idPlanilla).subscribe({
+      next: (det) => {
+        this.cargandoPlanillas = false;
+        this.abrirPlanillaDesdeObjeto(det);
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.cargandoPlanillas = false;
+        void this.alertas.error('Error al abrir planilla', err?.error?.detail || 'No tienes autorización o la planilla no existe.');
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  private abrirPlanillaDesdeObjeto(det: PlanillaGeneradaItem): void {
+    this.planillaActiva = det;
+    this.manualesEdit = JSON.parse(JSON.stringify(det.valores_manuales || {}));
+    this.observacionEdit = det.observaciones || '';
+  }
+
+  valorManualTabla(codTabla: string, rowIdx: number, codCol: string, valorActual: unknown): string {
+    const valGuardado = this.manualesEdit?.['__tablas__']?.[codTabla]?.[String(rowIdx)]?.[codCol];
+    if (valGuardado !== undefined && valGuardado !== null && valGuardado !== '') {
+      return String(valGuardado);
+    }
+    return valorActual === 'PENDIENTE' || valorActual === null || valorActual === undefined ? '' : String(valorActual);
+  }
+
+  actualizarManualTabla(codTabla: string, rowIdx: number, codCol: string, valor: unknown): void {
+    const tablas = { ...(this.manualesEdit['__tablas__'] || {}) };
+    const tablaActual = { ...(tablas[codTabla] || {}) };
+    const filaActual = { ...(tablaActual[String(rowIdx)] || {}) };
+    filaActual[codCol] = valor;
+    tablaActual[String(rowIdx)] = filaActual;
+    tablas[codTabla] = tablaActual;
+    this.manualesEdit['__tablas__'] = tablas;
+  }
+
+  clavesDe(obj: Record<string, unknown> | null | undefined): string[] {
+    return obj && typeof obj === 'object' ? Object.keys(obj) : [];
+  }
+
+  cerrarPlanillaDetalle(): void {
+    this.planillaActiva = null;
+  }
+
+  guardarManualesPlanilla(estadoNuevo?: string): void {
+    if (!this.planillaActiva) return;
+    this.guardandoPlanilla = true;
+    this.planillasPaeService.actualizarPlanilla(this.planillaActiva.id_planilla, {
+      valores_manuales: this.manualesEdit,
+      observaciones: this.observacionEdit,
+      ...(estadoNuevo ? { estado: estadoNuevo } : {}),
+    }).subscribe({
+      next: (actualizada) => {
+        this.guardandoPlanilla = false;
+        this.abrirPlanillaDesdeObjeto(actualizada);
+        this.cargarPlanillasGeneradas();
+        void this.alertas.success('Planilla actualizada', 'Los cambios y cálculos de la planilla se guardaron correctamente.');
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.guardandoPlanilla = false;
+        void this.alertas.error('No se pudo actualizar', err?.error?.detail || 'Verifica el estado del documento.');
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  regenerarPlanillaActiva(): void {
+    if (!this.planillaActiva) return;
+    this.generandoPlanilla = true;
+    this.planillasPaeService.generarPlanilla({
+      id_plantilla: this.planillaActiva.plantilla_id,
+      id_institucion: this.planillaActiva.id_institucion,
+      id_sede: this.planillaActiva.id_sede ?? null,
+      id_contrato: this.planillaActiva.id_contrato ?? null,
+      id_jornada: this.planillaActiva.id_jornada ?? null,
+      periodo: this.planillaActiva.periodo,
+      fecha_inicio: this.planillaActiva.fecha_inicio || '',
+      fecha_fin: this.planillaActiva.fecha_fin || '',
+      observaciones: this.observacionEdit,
+      valores_manuales: this.manualesEdit,
+      regenerar: true,
+    }).subscribe({
+      next: (resp) => {
+        this.generandoPlanilla = false;
+        this.abrirPlanillaDesdeObjeto(resp.planilla);
+        this.cargarPlanillasGeneradas();
+        void this.alertas.success('Planilla sincronizada', 'La planilla fue recalculada con los datos más recientes de SIRAE.');
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.generandoPlanilla = false;
+        void this.alertas.warning('No se pudo regenerar', err?.error?.detail || 'No se pudo regenerar el documento.');
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  descargarPlanillaCsv(idPlanilla: number, codigoDoc = 'planilla'): void {
+    this.planillasPaeService.descargarPlanillaCsv(idPlanilla).subscribe({
+      next: (blob) => {
+        guardarBlobArchivo(blob, `${codigoDoc}.csv`);
+        void this.alertas.success('Documento descargado', `Se descargó ${codigoDoc}.csv`);
+      },
+      error: () => {
+        void this.alertas.error('Error al descargar', 'No se pudo descargar la planilla.');
+      }
+    });
+  }
+
+  imprimirDocumentoOficial(): void {
+    this.imprimiendoPdf = true;
+    setTimeout(() => {
+      window.print();
+      this.imprimiendoPdf = false;
+      this.cdr.markForCheck();
+    }, 150);
+  }
+
+  etiquetaEstadoPlanilla(estado: string): string {
+    const m: Record<string, string> = {
+      BORRADOR: 'Borrador',
+      PENDIENTE: 'Pendiente',
+      OBSERVADO: 'Observado',
+      VALIDADO: 'Validado',
+      CERRADO: 'Cerrado',
+    };
+    return m[estado] || estado;
+  }
+
+  claseEstadoPlanilla(estado: string): string {
+    switch (estado) {
+      case 'VALIDADO': return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+      case 'CERRADO': return 'bg-slate-200 text-slate-800 border-slate-300';
+      case 'OBSERVADO': return 'bg-rose-100 text-rose-800 border-rose-200';
+      case 'PENDIENTE': return 'bg-amber-100 text-amber-800 border-amber-200';
+      default: return 'bg-sky-100 text-sky-800 border-sky-200';
+    }
+  }
+
+  get clavesCuposNivel(): string[] {
+    const obj = this.planillaActiva?.contenido_snapshot?.cupos?.por_nivel;
+    return obj && typeof obj === 'object' ? Object.keys(obj) : [];
+  }
+
+  // =====================================================
+  //  SIR-170: PLANTILLAS OFICIALES Y VERSIONADO
+  // =====================================================
+
+  cargarMetadatosYPlantillas(): void {
+    this.cargandoPlantillas = true;
+    forkJoin({
+      meta: this.planillasPaeService.obtenerMetadatosPlantillas().pipe(catchError(() => of(null))),
+      lista: this.planillasPaeService.listarPlantillas().pipe(catchError(() => of([]))),
+    }).subscribe(({ meta, lista }) => {
+      if (meta) this.metadatosPlantillas = meta;
+      this.plantillas = lista;
+      if (!this.plantillaForm.id_plantilla && lista.length > 0 && this.esSuperAdmin) {
+        this.seleccionarPlantilla(lista[0]);
+      }
+      this.cargandoPlantillas = false;
+      this.cdr.markForCheck();
+    });
+  }
+
+  iniciarNuevaPlantilla(): void {
+    this.previewPlantilla = null;
+    this.plantillaForm = crearPlantillaFormularioVacio();
+  }
+
+  seleccionarPlantilla(tpl: PlantillaOficial): void {
+    this.previewPlantilla = null;
+    const versionEditable = tpl.version_borrador || tpl.version_publicada || tpl.versiones?.[0];
+    this.plantillaForm = {
+      id_plantilla: tpl.id_plantilla,
+      id_version: versionEditable?.id_version ?? null,
+      codigo: tpl.codigo,
+      nombre: tpl.nombre,
+      descripcion: tpl.descripcion || '',
+      categoria_proceso: tpl.categoria_proceso,
+      finalidad: tpl.finalidad || '',
+      roles_autorizados: [...(tpl.roles_autorizados || [])],
+      activa: tpl.activa,
+      notas_version: versionEditable?.notas_version || '',
+      es_inmutable: Boolean(versionEditable?.es_inmutable),
+      estado_version: versionEditable?.estado || 'BORRADOR',
+      numero_version: versionEditable?.numero_version || 1,
+      esquema: clonarEsquemaParaEdicion(versionEditable?.esquema),
+    };
+  }
+
+  tieneRolAutorizado(codRol: string): boolean {
+    return this.plantillaForm.roles_autorizados.includes(codRol);
+  }
+
+  toggleRolAutorizado(codRol: string): void {
+    if (this.tieneRolAutorizado(codRol)) {
+      this.plantillaForm.roles_autorizados = this.plantillaForm.roles_autorizados.filter(r => r !== codRol);
+    } else {
+      this.plantillaForm.roles_autorizados = [...this.plantillaForm.roles_autorizados, codRol];
+    }
+  }
+
+  camposDeFuente(fuenteCod: string): string[] {
+    const f = (this.metadatosPlantillas?.fuentes_sirae || []).find(item => item.codigo === fuenteCod);
+    return f?.campos || [];
+  }
+
+  agregarSeccion(): void {
+    const idx = this.plantillaForm.esquema.secciones.length + 1;
+    this.plantillaForm.esquema.secciones.push({
+      codigo: `SEC_${idx}`,
+      titulo: `Nueva Sección ${idx}`,
+      orden: idx,
+      origen: 'AUTOMATICO',
+      fuente_sirae: 'CONTRATO',
+      visible_en_impresion: true,
+    });
+  }
+
+  eliminarSeccion(idx: number): void {
+    this.plantillaForm.esquema.secciones.splice(idx, 1);
+  }
+
+  agregarCampo(): void {
+    const secCod = this.plantillaForm.esquema.secciones[0]?.codigo || 'SEC_1';
+    const idx = this.plantillaForm.esquema.campos.length + 1;
+    this.plantillaForm.esquema.campos.push({
+      codigo: `campo_${idx}`,
+      etiqueta: `Nuevo Campo ${idx}`,
+      seccion: secCod,
+      tipo: 'TEXTO',
+      origen: 'MANUAL',
+      fuente_sirae: '',
+      campo_fuente: '',
+      requerido: false,
+    });
+  }
+
+  eliminarCampo(idx: number): void {
+    this.plantillaForm.esquema.campos.splice(idx, 1);
+  }
+
+  agregarTabla(): void {
+    const secCod = this.plantillaForm.esquema.secciones[0]?.codigo || 'SEC_1';
+    const idx = this.plantillaForm.esquema.tablas.length + 1;
+    this.plantillaForm.esquema.tablas.push({
+      codigo: `TABLA_${idx}`,
+      titulo: `Tabla Operativa ${idx}`,
+      seccion: secCod,
+      fuente_sirae: 'CONSUMO',
+      columnas: [
+        { codigo: 'nombre_ingrediente', etiqueta: 'Producto', tipo: 'TEXTO', origen: 'AUTOMATICO' },
+        { codigo: 'unidad', etiqueta: 'Unidad', tipo: 'TEXTO', origen: 'AUTOMATICO' },
+        { codigo: 'cantidad_programada', etiqueta: 'Programado', tipo: 'NUMERO', origen: 'AUTOMATICO', calcular_total: true },
+      ],
+      formulas: [],
+      conversiones_unidad: [],
+    });
+  }
+
+  eliminarTabla(idx: number): void {
+    this.plantillaForm.esquema.tablas.splice(idx, 1);
+  }
+
+  agregarColumna(tblIdx: number): void {
+    const tbl = this.plantillaForm.esquema.tablas[tblIdx];
+    if (!tbl) return;
+    const idx = tbl.columnas.length + 1;
+    tbl.columnas.push({
+      codigo: `col_${idx}`,
+      etiqueta: `Columna ${idx}`,
+      tipo: 'NUMERO',
+      origen: 'AUTOMATICO',
+      formula: '',
+      unidad_destino: '',
+      calcular_total: false,
+    });
+  }
+
+  eliminarColumna(tblIdx: number, colIdx: number): void {
+    this.plantillaForm.esquema.tablas[tblIdx]?.columnas.splice(colIdx, 1);
+  }
+
+  agregarConversion(tblIdx: number): void {
+    const tbl = this.plantillaForm.esquema.tablas[tblIdx];
+    if (!tbl) return;
+    if (!tbl.conversiones_unidad) tbl.conversiones_unidad = [];
+    tbl.conversiones_unidad.push({
+      codigo: `CONV_${tbl.conversiones_unidad.length + 1}`,
+      nombre: 'Conversión de unidad',
+      columna_origen: tbl.columnas[0]?.codigo || 'cantidad_programada',
+      columna_destino: tbl.columnas[0]?.codigo || 'cantidad_programada',
+      unidad_origen_abrev: 'g',
+      unidad_destino_abrev: 'kg',
+      aplicar_automaticamente: true,
+    });
+  }
+
+  eliminarConversion(tblIdx: number, convIdx: number): void {
+    this.plantillaForm.esquema.tablas[tblIdx]?.conversiones_unidad?.splice(convIdx, 1);
+  }
+
+  guardarPlantilla(): void {
+    if (!this.esSuperAdmin) return;
+    this.guardandoPlantilla = true;
+    const f = this.plantillaForm;
+    f.esquema.encabezado.titulo = f.esquema.encabezado.titulo || f.nombre.toUpperCase();
+    f.esquema.encabezado.codigo_formato = f.codigo.trim().toUpperCase();
+
+    const obs$ = f.id_plantilla
+      ? this.planillasPaeService.actualizarPlantilla(f.id_plantilla, {
+          id_version: f.id_version,
+          nombre: f.nombre,
+          descripcion: f.descripcion,
+          categoria_proceso: f.categoria_proceso,
+          finalidad: f.finalidad,
+          roles_autorizados: f.roles_autorizados,
+          activa: f.activa,
+          notas_version: f.notas_version,
+          esquema: f.esquema,
+        })
+      : this.planillasPaeService.crearPlantilla({
+          codigo: f.codigo,
+          nombre: f.nombre,
+          descripcion: f.descripcion,
+          categoria_proceso: f.categoria_proceso,
+          finalidad: f.finalidad,
+          roles_autorizados: f.roles_autorizados,
+          activa: f.activa,
+          notas_version: f.notas_version,
+          esquema: f.esquema,
+        });
+
+    obs$.subscribe({
+      next: (guardada) => {
+        this.guardandoPlantilla = false;
+        this.cargarMetadatosYPlantillas();
+        this.seleccionarPlantilla(guardada);
+        void this.alertas.success('Plantilla guardada', `La plantilla ${guardada.codigo} se guardó correctamente.`);
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.guardandoPlantilla = false;
+        void this.alertas.warning('No se pudo guardar', err?.error?.detail || 'Revisa los campos o crea una nueva versión en borrador.');
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  previsualizarPlantilla(): void {
+    const idP = this.plantillaForm.id_plantilla;
+    if (!idP) {
+      void this.alertas.warning('Guarda primero', 'Guarda el borrador de la plantilla para previsualizarla.');
+      return;
+    }
+    this.previsualizando = true;
+    this.planillasPaeService.previsualizarPlantilla(idP, {
+      ...(this.plantillaForm.id_version ? { id_version: this.plantillaForm.id_version } : {}),
+      ...(this.previewSedeId ? { id_sede: this.previewSedeId } : {}),
+    }).subscribe({
+      next: (prev) => {
+        this.previewPlantilla = prev;
+        this.previsualizando = false;
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.previsualizando = false;
+        void this.alertas.error('Error al previsualizar', err?.error?.detail || 'No se pudo generar la previsualización.');
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  publicarPlantilla(): void {
+    const idP = this.plantillaForm.id_plantilla;
+    if (!idP) return;
+    this.guardandoPlantilla = true;
+    this.planillasPaeService.publicarPlantilla(idP, this.plantillaForm.id_version || undefined, this.plantillaForm.notas_version).subscribe({
+      next: (resp) => {
+        this.guardandoPlantilla = false;
+        this.cargarMetadatosYPlantillas();
+        if (resp?.plantilla) this.seleccionarPlantilla(resp.plantilla);
+        void this.alertas.success('Plantilla publicada', resp?.mensaje || 'La versión quedó publicada para uso oficial.');
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.guardandoPlantilla = false;
+        void this.alertas.warning('No se pudo publicar', err?.error?.detail || 'Verifica el esquema de la versión.');
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  crearNuevaVersion(): void {
+    const idP = this.plantillaForm.id_plantilla;
+    if (!idP) return;
+    this.guardandoPlantilla = true;
+    this.planillasPaeService.crearNuevaVersionPlantilla(idP, this.plantillaForm.id_version || undefined).subscribe({
+      next: (resp) => {
+        this.guardandoPlantilla = false;
+        this.cargarMetadatosYPlantillas();
+        if (resp?.plantilla) this.seleccionarPlantilla(resp.plantilla);
+        void this.alertas.success('Nueva versión en borrador', resp?.mensaje || 'Ya puedes editar la nueva versión sin alterar las anteriores.');
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.guardandoPlantilla = false;
+        void this.alertas.error('Error al versionar', err?.error?.detail || 'No se pudo crear una nueva versión.');
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  // =====================================================
+  //  REPORTE DE SEDES (Lógica histórica conservada)
+  // =====================================================
+
   private armarReporteSedes(sedes: any[] | null, contratos: any[] | null, entregas: Entrega[] | null, fallos: string[]): void {
     const idInstitucion = this.institucionActiva?.id_institucion;
 
-    // 1) Sedes de la institución (si la consulta falló, las que ya trae la institución activa)
     let origen = listaDe(sedes);
     if (origen.length === 0) origen = listaDe(this.institucionActiva?.sedes);
     const mapaSedes = new Map<number, SedeBase>();
@@ -177,8 +914,9 @@ export class Reportes implements OnInit, OnDestroy {
       if (!id) continue;
       mapaSedes.set(id, { id, nombre: texto(item.nombre_sede ?? item.nombre) || `Sede ${id}`, cupos: 0 });
     }
+    const institucionSinSedes = mapaSedes.size === 0 &&
+      listaDe(this.institucionActiva?.sedes).length === 0;
 
-    // 2) Cupos: suma de los contratos vigentes de cada sede
     for (const contrato of listaDe(contratos)) {
       const idSede = Number(contrato.id_sede);
       if (!idSede || !this.contratoVigente(contrato)) continue;
@@ -187,13 +925,11 @@ export class Reportes implements OnInit, OnDestroy {
       if (sede) sede.cupos += Number(contrato.cupos) || 0;
     }
 
-    // 3) Entregas de la institución que sí tienen sede
     const delaInstitucion = (entregas ?? []).filter(e =>
-      !idInstitucion || e.idInstitucion === idInstitucion || (e.idSede !== undefined && mapaSedes.has(e.idSede)));
-    const sinSede = delaInstitucion.filter(e => !e.idSede).length;
-    const conSede = delaInstitucion.filter(e => !!e.idSede);
+      idInstitucion ? (e.idInstitucion === idInstitucion || (e.idSede !== undefined && mapaSedes.has(e.idSede))) : false);
+    const sinSede = delaInstitucion.filter(e => !e.idSede && !institucionSinSedes).length;
+    const conSede = delaInstitucion.filter(e => !!e.idSede || institucionSinSedes);
 
-    // Si una entrega es de una sede que no llegó en la lista, la sede se agrega para no perder datos
     for (const e of conSede) {
       if (!mapaSedes.has(e.idSede!)) {
         mapaSedes.set(e.idSede!, { id: e.idSede!, nombre: e.sedeNombre || `Sede ${e.idSede}`, cupos: 0 });
@@ -217,7 +953,6 @@ export class Reportes implements OnInit, OnDestroy {
 
   private aEntregaSede(e: Entrega, nombreSede: string): EntregaSede {
     const estado = texto(e.estado).toUpperCase() || 'EN_TRANSITO';
-    // Solo cuenta lo que ya se recibió, y solo si se mide en kilos
     const recibida = estado === 'RECIBIDA' || estado === 'CON_NOVEDAD';
     const cantidad = e.cantidadRecibida ?? e.cantidad ?? 0;
     return {
@@ -234,10 +969,9 @@ export class Reportes implements OnInit, OnDestroy {
     };
   }
 
-  // ---------- Filtros ----------
-
-  // Botones rápidos: últimos N días, o null para ver todo
+  // ---------- Filtros Historial ----------
   rango(dias: number | null): void {
+    this.paginaActual = 1;
     if (dias === null) {
       this.fechaDesde = '';
       this.fechaHasta = '';
@@ -254,14 +988,15 @@ export class Reportes implements OnInit, OnDestroy {
     return [...this.sedesBase].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
   }
 
-  /** Entregas dentro de las fechas del filtro (todas las sedes) */
+  private get idSedeSeleccionada(): number {
+    return typeof this.sedeFiltro === 'number' ? this.sedeFiltro : 0;
+  }
+
   private get entregasEnFechas(): EntregaSede[] {
     return this.entregas.filter(e =>
       (!this.fechaDesde || e.fecha >= this.fechaDesde) &&
       (!this.fechaHasta || e.fecha <= this.fechaHasta));
   }
-
-  // ---------- Orden de la tabla ----------
 
   ordenarPor(columna: ColumnaSede): void {
     if (this.ordenColumna === columna) {
@@ -276,8 +1011,6 @@ export class Reportes implements OnInit, OnDestroy {
     if (this.ordenColumna !== columna) return 'unfold_more';
     return this.ordenDireccion === 'asc' ? 'arrow_upward' : 'arrow_downward';
   }
-
-  // ---------- Cálculos (se guardan hasta que cambie un filtro, el orden o los datos) ----------
 
   private get calculo() {
     const clave = [this.fechaDesde, this.fechaHasta, this.sedeFiltro, this.ordenColumna, this.ordenDireccion, this.versionDatos].join('|');
@@ -337,8 +1070,6 @@ export class Reportes implements OnInit, OnDestroy {
   trackSede = (_: number, s: ResumenSede) => s.id;
   trackEntrega = (_: number, e: EntregaSede) => e.id;
 
-  // ---------- Estado de una entrega ----------
-
   etiquetaEstado(estado: string): string {
     return ETIQUETAS_ESTADO[estado] ?? estado;
   }
@@ -352,8 +1083,6 @@ export class Reportes implements OnInit, OnDestroy {
     }
   }
 
-  // ---------- Detalle de una sede (ventana emergente) ----------
-
   abrirSede(sede: ResumenSede): void {
     this.sedeDetalle = sede;
   }
@@ -362,7 +1091,98 @@ export class Reportes implements OnInit, OnDestroy {
     this.sedeDetalle = null;
   }
 
-  // Entregas de la sede elegida dentro de las fechas del filtro (lo más reciente primero)
+  abrirEntrega(entrega: EntregaSede): void {
+    this.entregaDetalle = entrega;
+  }
+
+  cerrarEntrega(): void {
+    this.entregaDetalle = null;
+  }
+
+  get entregasHistorial(): EntregaSede[] {
+    const busqueda = this.textoBusqueda.trim().toLowerCase();
+    return this.entregasEnFechas.filter(entrega =>
+      (this.sedeFiltro === 'Todas' || entrega.sedeId === this.sedeFiltro) &&
+      (this.estadoFiltro === 'TODAS' || entrega.estado === this.estadoFiltro) &&
+      (!busqueda || `${entrega.ingrediente} ${entrega.sede} ${entrega.receptor ?? ''} ${entrega.tipoMercado}`
+        .toLowerCase().includes(busqueda))
+    );
+  }
+
+  get totalPaginas(): number {
+    return Math.max(1, Math.ceil(this.entregasHistorial.length / this.filasPorPagina));
+  }
+
+  get entregasPaginadas(): EntregaSede[] {
+    const inicio = (this.paginaActual - 1) * this.filasPorPagina;
+    return this.entregasHistorial.slice(inicio, inicio + this.filasPorPagina);
+  }
+
+  cambiarPagina(nuevaPagina: number): void {
+    if (nuevaPagina >= 1 && nuevaPagina <= this.totalPaginas) {
+      this.paginaActual = nuevaPagina;
+    }
+  }
+
+  cambiarEstadoFiltro(estado: string): void {
+    this.estadoFiltro = estado;
+    this.paginaActual = 1;
+  }
+
+  alCambiarBusqueda(): void {
+    this.paginaActual = 1;
+  }
+
+  contarEstado(estado: string): number {
+    const entregas = estado === 'TODAS'
+      ? this.entregasHistorial
+      : this.entregasHistorial.filter(entrega => entrega.estado === estado);
+    return entregas.length;
+  }
+
+  min(a: number, b: number): number {
+    return Math.min(a, b);
+  }
+
+  irAInicioSupervisor(): void {
+    void this.router.navigate(['/dashboard-supervisor']);
+  }
+
+  reponerEntrega(entrega: EntregaSede): void {
+    this.cerrarEntrega();
+    void this.router.navigate(['/registrar-entrega-alimentos'], {
+      queryParams: {
+        sede: entrega.sedeId,
+        reponer: entrega.ingrediente,
+        cantidad: entrega.cantidadRechazada || entrega.cantidad
+      }
+    });
+  }
+
+  exportarExcelOficial(): void {
+    if (!this.institucionActiva) return;
+    this.exportandoExcel = true;
+    this.entregasService.exportarExcel().subscribe({
+      next: (blob) => {
+        this.exportandoExcel = false;
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        const nombreInst = (this.institucionActiva?.nombre_institucion || 'Institucion')
+          .replace(/[^a-zA-Z0-9_-]/g, '_');
+        link.download = `Historial_Entregas_${nombreInst}_${this.hoyISO()}.xlsx`;
+        link.click();
+        window.URL.revokeObjectURL(url);
+        void this.alertas.success('Reporte descargado', 'El historial oficial en formato Excel (.xlsx) se generó exitosamente.');
+      },
+      error: (err) => {
+        this.exportandoExcel = false;
+        console.error('Error al exportar Excel:', err);
+        void this.alertas.error('Error al exportar', 'No se pudo generar el archivo Excel oficial. Puedes usar el botón de exportar CSV.');
+      }
+    });
+  }
+
   get entregasSede(): EntregaSede[] {
     if (!this.sedeDetalle) return [];
     const id = this.sedeDetalle.id;
@@ -371,7 +1191,6 @@ export class Reportes implements OnInit, OnDestroy {
       .sort((a, b) => b.fecha.localeCompare(a.fecha) || b.id - a.id);
   }
 
-  // Ingredientes de la sede elegida, del más entregado al menos entregado
   get ingredientesSede(): { ingrediente: string; veces: number }[] {
     const mapa = new Map<string, number>();
     for (const e of this.entregasSede) mapa.set(e.ingrediente, (mapa.get(e.ingrediente) ?? 0) + 1);
@@ -380,9 +1199,6 @@ export class Reportes implements OnInit, OnDestroy {
       .sort((a, b) => b.veces - a.veces);
   }
 
-  // ---------- Exportar ----------
-
-  // Resumen por sede (respeta fechas y filtro de sede)
   exportarCsvSedes(): void {
     const sedes = this.resumenSedes;
     if (sedes.length === 0) {
@@ -398,7 +1214,6 @@ export class Reportes implements OnInit, OnDestroy {
     void this.alertas.success('Reporte exportado', 'Se descargó el resumen por sede.');
   }
 
-  // Entregas de la sede abierta
   exportarCsvSede(): void {
     const sede = this.sedeDetalle;
     const filas = this.entregasSede;
@@ -411,8 +1226,6 @@ export class Reportes implements OnInit, OnDestroy {
       ...filas.map(e => [e.fecha, e.sede, e.ingrediente, e.tipoMercado, e.cantidad, e.unidad, this.etiquetaEstado(e.estado), e.kilos].map(texto)),
     ]);
   }
-
-  // ---------- Utilidades ----------
 
   fechaCorta(iso: string): string {
     if (!iso) return '';
@@ -436,12 +1249,10 @@ export class Reportes implements OnInit, OnDestroy {
     return `${d.getFullYear()}-${mes}-${dia}`;
   }
 
-  private hoyISO(): string {
+  hoyISO(): string {
     return this.isoDe(new Date());
   }
 
-  // Con ";" Excel en español separa bien las columnas.
-  // Si un texto empieza con = + @ (o - seguido de letra) Excel lo tomaría como fórmula: se le antepone un apóstrofo.
   private descargarCsv(nombreArchivo: string, filas: string[][]): void {
     const seguro = (valor: string) => (/^[=+@\t\r]|^-(?![\d.,])/.test(valor) ? `'${valor}` : valor);
     const contenido = filas

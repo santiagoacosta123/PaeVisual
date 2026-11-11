@@ -1,14 +1,16 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
+import { provideMockStore } from '@ngrx/store/testing';
 import { AuthService } from '../services/auth.service';
 import { LoginComponent } from './login';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 
 describe('LoginComponent', () => {
   let component: LoginComponent;
   let fixture: ComponentFixture<LoginComponent>;
   const authServiceMock = {
     login: vi.fn(),
+    despertarBackend: vi.fn(),
     rolPermitido: vi.fn((rol: string | null | undefined) =>
       ['administrador', 'supervisor', 'coordinador', 'coordinador pae', 'jefa de manipuladoras', 'jefamanipuladoras'].includes(rol?.toLowerCase() ?? '')
     ),
@@ -29,6 +31,7 @@ describe('LoginComponent', () => {
       imports: [LoginComponent],
       providers: [
         provideRouter([]),
+        provideMockStore(),
         {
           provide: AuthService,
           useValue: authServiceMock,
@@ -160,6 +163,19 @@ describe('LoginComponent', () => {
     expect(component.cargando).toBe(false);
   });
 
+  it('releases the loading state when the login server times out', () => {
+    authServiceMock.login.mockReturnValue(throwError(() => ({ name: 'TimeoutError' })));
+    component.loginForm.setValue({
+      correo: 'ana@example.com',
+      clave: 'password-seguro',
+    });
+
+    component.onSubmit();
+
+    expect(component.cargando).toBe(false);
+    expect(component.errorMensaje).toContain('servidor está tardando');
+  });
+
   it('requests a password recovery email for a valid address', () => {
     authServiceMock.recuperarContrasena.mockReturnValue(of({
       mensaje: 'Si el correo está registrado, recibirás un código de verificación.',
@@ -175,6 +191,37 @@ describe('LoginComponent', () => {
     expect(component.mensajeRecuperacion).toContain('código');
     expect(component.enlaceRecuperacionDesarrollo).toBe('');
     expect(component.enviandoRecuperacion).toBe(false);
+  });
+
+  it('opens the recovery dialog from the forgot-password link', () => {
+    const buttons = Array.from(
+      fixture.nativeElement.querySelectorAll('button')
+    ) as HTMLButtonElement[];
+    const forgotPasswordButton = buttons.find((button) =>
+      button.textContent?.includes('¿Olvidaste tu contraseña?')
+    );
+
+    expect(forgotPasswordButton).toBeTruthy();
+    forgotPasswordButton?.click();
+    fixture.detectChanges();
+
+    expect(component.mostrarModalRecuperar).toBe(true);
+    expect(fixture.nativeElement.textContent).toContain('Enviar código');
+  });
+
+  it('shows the continue action only after the recovery code is requested', () => {
+    authServiceMock.recuperarContrasena.mockReturnValue(of({
+      mensaje: 'Si el correo está registrado, recibirás un código de verificación.',
+    }));
+    component.loginForm.controls['correo'].setValue('ana@example.com');
+
+    component.abrirModalRecuperar();
+    component.enviarCorreoRecuperacion();
+    fixture.detectChanges();
+
+    expect(component.correoRecuperacion).toBe('ana@example.com');
+    expect(fixture.nativeElement.textContent)
+      .toContain('Ingresar código y cambiar contraseña');
   });
 
   it('continues to the code verification form with the requested email', () => {
@@ -211,5 +258,42 @@ describe('LoginComponent', () => {
 
     expect(authServiceMock.recuperarContrasena).not.toHaveBeenCalled();
     expect(component.errorRecuperacion).toContain('válido');
+  });
+
+  it('toggles password visibility between password and text', () => {
+    const passwordInput = fixture.nativeElement.querySelector('#clave') as HTMLInputElement;
+    const toggleBtn = fixture.nativeElement.querySelector('button[aria-label="Mostrar u ocultar contraseña"]') as HTMLButtonElement;
+    expect(passwordInput.type).toBe('password');
+
+    toggleBtn.click();
+    fixture.detectChanges();
+    expect(component.mostrarClave).toBe(true);
+    expect(passwordInput.type).toBe('text');
+
+    toggleBtn.click();
+    fixture.detectChanges();
+    expect(component.mostrarClave).toBe(false);
+    expect(passwordInput.type).toBe('password');
+  });
+
+  it('displays account temporary lockout message without revealing sensitive data', () => {
+    const lockMessage = 'La cuenta ha sido bloqueada temporalmente por múltiples intentos fallidos de inicio de sesión. Por favor intenta nuevamente más tarde.';
+    authServiceMock.login.mockReturnValue(
+      throwError(() => ({
+        status: 401,
+        error: { detail: lockMessage },
+      }))
+    );
+    component.loginForm.setValue({
+      correo: 'ana@example.com',
+      clave: 'password-incorrecto',
+    });
+
+    component.onSubmit();
+    fixture.detectChanges();
+
+    expect(component.cargando).toBe(false);
+    expect(component.errorMensaje).toBe(lockMessage);
+    expect(fixture.nativeElement.textContent).toContain('bloqueada temporalmente');
   });
 });

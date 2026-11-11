@@ -17,7 +17,7 @@ import { EntradasInventario } from './entradas-inventario/entradas-inventario';
 import { ContratoDetalleComponent } from './contrato-detalle/contrato-detalle';
 import { NotificacionesComponent } from './notificaciones/notificaciones.component';
 import { DashboardSupervisor } from './dashboard-supervisor/dashboard-supervisor';
-import { authGuard, roleGuard } from '@core/auth';
+import { authGuard, guestGuard, roleGuard } from '@core/auth';
 import { BancoDatosComponent } from './banco-datos/banco-datos';
 
 import { RegistrarEntregaAlimentosComponent } from './registrar-entrega-alimentos/registrar-entrega-alimentos';
@@ -29,6 +29,9 @@ import { AsistenciaDiariaComponent } from './asistencia-diaria/asistencia-diaria
 import { Reportes } from './reportes/reportes';
 import { InstitucionesComponent } from './instituciones/instituciones';
 import { FacturasCompraComponent } from './facturas-compra/facturas-compra';
+import { PerfilComponent } from './perfil/perfil';
+import { ConsultaGramajesComponent } from './consulta-gramajes/consulta-gramajes';
+import { SedesAdministradorComponent } from './sedes-administrador/sedes-administrador';
 
 // NUEVO: página de Instituciones
 
@@ -36,7 +39,8 @@ import { FacturasCompraComponent } from './facturas-compra/facturas-compra';
 export const routes: Routes = [
   {
     path: 'login',
-    component: LoginComponent
+    component: LoginComponent,
+    canActivate: [guestGuard]
   },
   {
     path: 'recuperar-password',
@@ -53,7 +57,13 @@ export const routes: Routes = [
     path: '',
     component: LayoutComponent,
     canActivate: [authGuard],
+    canActivateChild: [authGuard],
     children: [
+      {
+        path: 'perfil',
+        component: PerfilComponent
+      },
+
       {
         path: 'inicio',
         component: InicioComponent
@@ -77,7 +87,22 @@ export const routes: Routes = [
         path: 'reportes-consumo',
         component: Reportes,
         canActivate: [roleGuard],
-        data: { roles: ['superadministrador', 'super administrador', 'supervisor', 'coordinador', 'coordinador pae', 'administrador', 'admin'] }
+        data: {
+          roles: [
+            'superadministrador',
+            'super administrador',
+            'super admin',
+            'supervisor',
+            'coordinador',
+            'coordinador pae',
+            'administrador',
+            'admin',
+            'administrador institucional',
+            'jefa de manipuladoras',
+            'jefa manipuladoras',
+            'jefamanipuladoras',
+          ]
+        }
       },
 
       /* RUTAS MÓDULOS DE SUPERVISIÓN */
@@ -88,10 +113,16 @@ export const routes: Routes = [
         data: { roles: ['supervisor', 'coordinador', 'coordinador pae', 'superadministrador', 'super administrador', 'administrador', 'admin'] }
       },
       {
+        path: 'sedes-institucion',
+        component: SedesAdministradorComponent,
+        canActivate: [roleGuard],
+        data: { roles: ['administrador', 'admin', 'superadministrador', 'super administrador', 'super admin'] }
+      },
+      {
         path: 'registrar-entrega-alimentos',
         component: RegistrarEntregaAlimentosComponent,
         canActivate: [roleGuard],
-        data: { roles: ['supervisor', 'coordinador', 'coordinador pae'] }
+        data: { roles: ['superadministrador', 'super administrador', 'super admin', 'supervisor', 'coordinador', 'coordinador pae'] }
       },
 
       {
@@ -106,14 +137,6 @@ export const routes: Routes = [
         component: EntregasTipoMercadoComponent,
         canActivate: [roleGuard],
         data: { roles: ['supervisor', 'coordinador', 'coordinador pae'] }
-      },
-
-      // NUEVO: Instituciones
-      {
-        path: 'instituciones',
-        component: InstitucionesComponent,
-        canActivate: [roleGuard],
-        data: { roles: ['supervisor', 'coordinador', 'coordinador pae', 'administrador', 'admin'] }
       },
 
       {
@@ -210,6 +233,26 @@ export const routes: Routes = [
         component: BancoDatosComponent,
         canActivate: [roleGuard],
         data: { roles: ['superadministrador', 'super administrador', 'super admin'] }
+      },
+      {
+        path: 'consulta-gramajes',
+        component: ConsultaGramajesComponent,
+        canActivate: [roleGuard],
+        data: {
+          roles: [
+            'superadministrador',
+            'super administrador',
+            'super admin',
+            'supervisor',
+            'coordinador',
+            'coordinador pae',
+            'administrador',
+            'admin',
+            'jefa de manipuladoras',
+            'jefa manipuladoras',
+            'jefamanipuladoras',
+          ]
+        }
       },
       {
         path: 'entradas-inventario',

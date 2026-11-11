@@ -20,3 +20,22 @@ export const authGuard: CanActivateFn = () => {
     queryParams: estaAutenticado ? { acceso: 'denegado' } : undefined,
   });
 };
+
+export const guestGuard: CanActivateFn = () => {
+  const authService = inject(AuthService);
+  const router = inject(Router);
+
+  const estaAutenticado = authService.estaAutenticado();
+  const usuario = authService.obtenerUsuario();
+
+  if (estaAutenticado && authService.rolPermitido(usuario?.rol)) {
+    const rutaDestino = authService.esSupervisor(usuario?.rol)
+      ? '/dashboard-supervisor'
+      : authService.esJefa(usuario?.rol)
+        ? '/asistencia-diaria'
+        : '/inicio';
+    return router.createUrlTree([rutaDestino]);
+  }
+
+  return true;
+};

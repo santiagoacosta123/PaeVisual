@@ -9,6 +9,9 @@ import { MenusService } from '../services/menus.service';
 import { SiraeService } from '../services/contratos_pae.service';
 import { AuthService } from '../services/auth.service';
 import { SweetAlertService } from '../sweet-alert.service';
+import { RecetaComponentesService } from '../services/receta-componentes.service';
+import { SugerenciasRecetasService } from '../services/sugerencias-recetas.service';
+import { ProductoService } from '../features/inventario/services/producto.service';
 
 describe('MenusComponent', () => {
   let component: MenusComponent;
@@ -37,6 +40,22 @@ describe('MenusComponent', () => {
     esJefa: vi.fn((rol: string | null | undefined) => rol === 'JefaManipuladoras'),
     normalizarRol: vi.fn((rol: string | null | undefined) => rol?.toLowerCase() ?? ''),
   };
+  const recetaApi = {
+    listar: vi.fn(() => of([])),
+    crear: vi.fn(() => of({})),
+    actualizar: vi.fn(() => of({})),
+    eliminar: vi.fn(() => of(undefined)),
+  };
+  const sugerenciasApi = {
+    sugerir: vi.fn(() => of({
+      id_menu: 7,
+      id_plato: 8,
+      nombre_plato: 'Sopa',
+      ninos_presentes: 25,
+      ingredientes: [],
+      es_sugerencia: true as const,
+    })),
+  };
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -59,6 +78,9 @@ describe('MenusComponent', () => {
         { provide: SiraeService, useValue: { getJornadas: vi.fn(() => of([{ id_jornada: 2, nombre_jornada: 'Jornada tarde' }])), getContratos: vi.fn(() => of([{ id_contrato: 4, institucion: 'Escuela Central' }])) } },
         { provide: AuthService, useValue: auth },
         { provide: SweetAlertService, useValue: { success: vi.fn(), error: vi.fn(), warning: vi.fn(), confirm: vi.fn(() => Promise.resolve({ isConfirmed: true })) } },
+        { provide: RecetaComponentesService, useValue: recetaApi },
+        { provide: SugerenciasRecetasService, useValue: sugerenciasApi },
+        { provide: ProductoService, useValue: { getIngredientes: vi.fn(() => of([])) } },
       ],
     }).compileComponents();
 
@@ -99,5 +121,18 @@ describe('MenusComponent', () => {
       informacion_nutricional: 'Equilibrado',
       id_contrato: 4,
     });
+  });
+
+  it('shows an optional recipe suggestion without saving changes to the recipe', () => {
+    component.abrirDetalle({ id_plato: 8, nombre_plato: 'Sopa', componente: 'Entrada' });
+    component.menuSugerenciaId = 7;
+
+    component.solicitarSugerenciaReceta();
+
+    expect(sugerenciasApi.sugerir).toHaveBeenCalledWith(7, 8);
+    expect(component.mostrarSugerenciaReceta).toBe(true);
+    expect(component.sugerenciaReceta?.ninos_presentes).toBe(25);
+    expect(recetaApi.crear).not.toHaveBeenCalled();
+    expect(recetaApi.actualizar).not.toHaveBeenCalled();
   });
 });

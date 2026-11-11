@@ -3,12 +3,21 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { ActivatedRoute } from '@angular/router';
-import { Observable, Subscription, concat, forkJoin, of } from 'rxjs';
+import { Subscription, concat, forkJoin, of } from 'rxjs';
 import { catchError, map, toArray } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { SweetAlertService } from '../sweet-alert.service';
 import { EntregasService } from '../services/entregas.service';
 import { AuthService, InstitucionAsignada } from '../core/auth/auth.service';
+import { FacturasCompraService, InventarioCentralItem } from '../services/facturas-compra.service';
+import type {
+  TipoMercadoOpcion,
+  CalculoAbastecimientoResponse,
+  ProductoCalculado,
+  DetallePorGradoItem,
+  CalculoEntregaSoporte,
+  DespachoLotePayload,
+} from '../features/entregas/services/entregas.service';
 
 // ===================== TIPOS =====================
 interface Opcion { id: number; nombre: string; }
@@ -21,9 +30,20 @@ interface FilaEntrega {
   codigo?: string; lote?: string; destino?: string; hora?: string; responsable?: string; estadoEntrega?: string;
   fechaRegistro?: string;     // día en que se hizo el registro
   loteRegistro?: string;      // igual para los productos guardados juntos
+  cantidadRecibida?: number | null;
+  cantidadRechazada?: number | null;
+  motivoRechazo?: string;
+  usuarioReceptorNombre?: string;
+  idCalculoEntrega?: number;
+  documentoEntrega?: string;
+  cantidadRequeridaCalculo?: number | null;
+  superaCalculo?: boolean;
 }
 
-interface ProductoCatalogo { id: number; nombre: string; categoria: string; unidad: string; idTipoMercado: number | null; }
+interface ProductoCatalogo {
+  id: number; nombre: string; categoria: string; unidad: string;
+  idTipoMercado: number | null; tipoMercado?: string;
+}
 interface GrupoPagina { nombre: string; emoji: string; total: number; productos: ProductoCatalogo[]; }
 interface CategoriaOpcion { nombre: string; emoji: string; total: number; }
 interface DiaCalendario {
@@ -37,19 +57,42 @@ interface RegistroDia {
 interface EntradaFila { idIngrediente: number | null; cantidad: number | null; unidad: string; perecedero: boolean; }
 interface EnvioRegistro {
   id: number; idInstitucion: number | null; ingrediente: string; cantidad: number; unidad: string;
-  destino: string; fechaSalida: string; fechaEntrega: string; enviadoEl: string;
+  destino: string; fechaSalida: string; fechaEntrega: string; enviadoEl: string; responsable?: string;
 }
 interface ItemInventario {
   producto: ProductoCatalogo; cantidad: number; unidad: string;
   estado: string | null; motivo: '' | 'Agotado' | 'Sin entradas';
 }
-interface ExtraEntrada { destino: string; responsable: string; hora: string; fechaRegistro?: string; loteRegistro?: string; }
+interface ExtraEntrada {
+  destino: string;
+  responsable: string;
+  hora: string;
+  fechaRegistro?: string;
+  loteRegistro?: string;
+  estadoAprobacion?: string;
+  motivoRechazo?: string;
+}
 interface ResumenEntradaProducto { clave: string; ingrediente: string; unidad: string; cantidad: number; veces: number; }
 interface GrupoEntrada {
   clave: string; destino: string; fechaRegistro: string; fechaRecepcion: string; hora: string;
   responsable: string; items: FilaEntrega[]; productos: ResumenEntradaProducto[];
+  estadoAprobacion?: 'ACEPTADA' | 'RECHAZADA' | 'CON_NOVEDAD' | 'EN_PROCESO';
+  motivoRechazo?: string;
+  documentoEntrega?: string;
+  idCalculoEntrega?: number;
+  primerIdEntrega?: number;
 }
-interface GrupoEnvio { clave: string; destino: string; fechaSalida: string; fechaEntrega: string; items: EnvioRegistro[]; }
+interface GrupoEnvio { clave: string; destino: string; fechaSalida: string; fechaEntrega: string; responsable: string; items: EnvioRegistro[]; }
+
+interface DetalleProducto {
+  clave: string; ingrediente: string; categoria: string; tipoMercado: string; unidad: string;
+  cantidad: number; veces: number; vencimiento: string; estado: string; frecuencia: string; lotes: string[];
+  disponible: number | null; unidadDisponible: string;
+  estadoAprobacion?: 'ACEPTADA' | 'RECHAZADA' | 'CON_NOVEDAD' | 'EN_PROCESO';
+  cantidadRecibida?: number | null;
+  cantidadRechazada?: number | null;
+  motivoRechazo?: string;
+}
 
 type FiltroMercado = 'Todos' | 'Granos' | 'Perecederos';
 
@@ -66,15 +109,13 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
   ingredientes: Opcion[] = [];
   tiposMercado: Opcion[] = [];
   cargandoCatalogos = true;
+  private saldosInventario = new Map<number, number>();
+  private unidadesInventario = new Map<number, string>();
+  private categoriasInventario = new Map<number, string>();
+  private tiposInventario = new Map<number, string>();
 
-  // Se usan si el servidor no devuelve datos. Para GUARDAR, estos ids deben existir en el backend.
-  private readonly productosBase: Opcion[] = [
-    'Arroz', 'Frijol', 'Lentejas', 'Pasta', 'Harina de maíz', 'Azúcar', 'Sal', 'Aceite', 'Panela', 'Avena',
-    'Leche', 'Huevos', 'Pollo', 'Carne de res', 'Papa', 'Yuca', 'Plátano', 'Zanahoria', 'Tomate', 'Cebolla',
-  ].map((nombre, i) => ({ id: i + 1, nombre }));
   private readonly tiposBase: Opcion[] = [{ id: 1, nombre: 'Perecedero' }, { id: 2, nombre: 'No perecedero' }];
   private readonly unidadPorDefecto: Record<string, string> = { Aceite: 'Litros', Leche: 'Litros', Huevos: 'Unidades' };
-  private readonly claveCacheIngredientes = 'sirae_cache_ingredientes';
   private readonly claveCacheTipos = 'sirae_cache_tipos_mercado';
 
   // ===================== HISTORIAL =====================
@@ -84,8 +125,6 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
   private entregasRaw: any[] = [];          // solo ENTRADAS (sin fecha_salida)
   historial: FilaEntrega[] = [];
   historialEnvios: EnvioRegistro[] = [];
-  private totalesDisponibles = new Map<string, number>();   // entradas − envíos por producto
-  private productosConEntradas = new Set<string>();
 
   // ===================== INSTITUCIÓN ACTIVA =====================
   institucionActiva: InstitucionAsignada | null = null;
@@ -93,8 +132,28 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
   idSede: number | null = null;             // viene de ?sede=ID
   ahoraTexto = '';
   private subInstitucion?: Subscription;
+  private subSede?: Subscription;
   private subRuta?: Subscription;
   private reloj?: ReturnType<typeof setInterval>;
+
+  // ===== NUEVO: actualización automática del estado (En proceso -> Aceptada) =====
+  private pollingHistorial?: ReturnType<typeof setInterval>;
+  private timerRecepciones?: ReturnType<typeof setInterval>;
+  private ultimaFirmaRecepciones = '';
+
+  private readonly alVolver = () => {
+    if (!document.hidden) {
+      this.verificarRecepcionesLocales();
+      this.cargarHistorial();
+    }
+  };
+  private readonly alCambiarStorage = (ev: StorageEvent) => {
+    if (ev.key === null || ev.key === 'sirae_recepciones_admin' || ev.key === 'sirae_entregas_locales' || ev.key === 'sirae_entradas_extra') {
+      this.verificarRecepcionesLocales();
+      this.cargarHistorial();
+    }
+  };
+  // ===== FIN NUEVO =====
 
   // ===================== FILTROS Y PAGINACIÓN =====================
   textoFiltro = '';
@@ -107,13 +166,13 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     private entregasService: EntregasService,
     private alertas: SweetAlertService,
     private http: HttpClient,
+    private facturasCompraService: FacturasCompraService,
     private authService: AuthService,
     private cdr: ChangeDetectorRef,
     private route: ActivatedRoute,
   ) {}
 
   ngOnInit(): void {
-    this.ingredientes = this.leerCache<Opcion[]>(this.claveCacheIngredientes) ?? this.productosBase;
     this.tiposMercado = this.leerCache<Opcion[]>(this.claveCacheTipos) ?? this.tiposBase;
 
     this.institucionActiva = this.authService.obtenerInstitucionActiva();
@@ -123,32 +182,92 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       const anterior = this.idInstitucion;
       this.institucionActiva = institucion;
       this.idInstitucion = institucion?.id_institucion ?? this.authService.obtenerUsuario()?.id_institucion ?? null;
-      if (anterior !== this.idInstitucion) this.cargarHistorial();
+      if (anterior !== this.idInstitucion) {
+        const sedesInstitucion = Array.isArray(institucion?.sedes) ? institucion.sedes : [];
+        const sigueEnInstitucion = this.idSede != null && sedesInstitucion.some(
+          (s: any) => Number(s?.id_sede ?? s?.id) === Number(this.idSede)
+        );
+        if (this.idSede != null && !sigueEnInstitucion) {
+          this.idSede = null;
+          this.calculoAbastecimiento = null;
+        }
+        this.cargarHistorial();
+        if (this.idSede != null) this.calcularAbastecimiento(true);
+      }
       this.cdr.markForCheck();
     });
 
+    this.subSede = this.authService.sedeActiva$.subscribe(sede => {
+      const nuevaSede = sede?.id_sede ?? null;
+      if (nuevaSede !== this.idSede) {
+        this.idSede = nuevaSede;
+        this.cargarHistorial();
+        if (this.idSede != null) this.calcularAbastecimiento(true);
+        else this.calculoAbastecimiento = null;
+        this.cdr.markForCheck();
+      }
+    });
+
     this.subRuta = this.route.queryParamMap.subscribe(params => {
-      const sede = Number(params.get('sede'));
-      const idSede = Number.isInteger(sede) && sede > 0 ? sede : null;
-      if (idSede !== this.idSede) { this.idSede = idSede; this.cargarHistorial(); }
+      if (params.has('sede')) {
+        const sede = Number(params.get('sede'));
+        const idSede = Number.isInteger(sede) && sede > 0 ? sede : null;
+        if (idSede !== this.idSede) {
+          this.idSede = idSede;
+          this.cargarHistorial();
+          if (this.idSede != null) this.calcularAbastecimiento(true);
+          else this.calculoAbastecimiento = null;
+        }
+      }
+      const reponer = params.get('reponer');
+      if (reponer) { this.textoFiltro = reponer; }
       this.cdr.markForCheck();
     });
 
     this.actualizarReloj();
     this.reloj = setInterval(() => { this.actualizarReloj(); this.cdr.markForCheck(); }, 60_000);
+
+    // ===== NUEVO: revisa el estado local y del servidor automáticamente =====
+    this.verificarRecepcionesLocales();
+    this.timerRecepciones = setInterval(() => {
+      this.verificarRecepcionesLocales();
+    }, 1_200);
+
+    this.pollingHistorial = setInterval(() => {
+      if (document.hidden || this.guardandoEntrada || this.guardandoEnvio) return;
+      this.verificarRecepcionesLocales();
+      this.cargarHistorial();
+    }, 4_000);
+
+    document.addEventListener('visibilitychange', this.alVolver);
+    window.addEventListener('focus', this.alVolver);
+    window.addEventListener('storage', this.alCambiarStorage);
+    // ===== FIN NUEVO =====
+
     this.cargarHistorial();
     this.cargarCatalogos();
   }
 
   ngOnDestroy(): void {
     this.subInstitucion?.unsubscribe();
+    this.subSede?.unsubscribe();
     this.subRuta?.unsubscribe();
     if (this.reloj !== undefined) clearInterval(this.reloj);
+
+    // ===== NUEVO =====
+    if (this.timerRecepciones !== undefined) clearInterval(this.timerRecepciones);
+    if (this.pollingHistorial !== undefined) clearInterval(this.pollingHistorial);
+    document.removeEventListener('visibilitychange', this.alVolver);
+    window.removeEventListener('focus', this.alVolver);
+    window.removeEventListener('storage', this.alCambiarStorage);
+    // ===== FIN NUEVO =====
   }
 
   @HostListener('document:keydown.escape')
   alPresionarEsc(): void {
-    if (this.mostrarModalInventario) this.mostrarModalInventario = false;
+    if (this.mostrarModalSoporte) this.mostrarModalSoporte = false;
+    else if (this.detalleEntrada) this.cerrarDetalleEntrada();
+    else if (this.mostrarModalInventario) this.mostrarModalInventario = false;
     else if (this.mostrarModalEntrada && !this.guardandoEntrada) this.mostrarModalEntrada = false;
     else this.modalDiaAbierto = false;
   }
@@ -223,6 +342,20 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     return (v || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
   }
 
+  private claveTipoMercado(valor: string | null | undefined): 'perecedero' | 'no perecedero' | null {
+    const normalizado = this.norm(valor ?? '').replace(/[_-]+/g, ' ').replace(/\s+/g, ' ');
+    if (normalizado.startsWith('no perecedero') || normalizado.startsWith('grano')) return 'no perecedero';
+    if (normalizado.startsWith('perecedero')) return 'perecedero';
+    return null;
+  }
+
+  private tipoConservacionVisible(valor: string | null | undefined): string {
+    const clave = this.claveTipoMercado(valor);
+    if (clave === 'no perecedero') return 'No perecedero';
+    if (clave === 'perecedero') return 'Perecedero';
+    return valor?.trim() ?? '';
+  }
+
   // Acepta texto o un objeto { nombre }. Un número (id) no es un nombre.
   private texto(v: any): string {
     if (v == null || typeof v === 'number') return '';
@@ -247,8 +380,10 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     return isNaN(d.getTime()) ? '' : d.toLocaleTimeString('es-CO', { hour: 'numeric', minute: '2-digit', hour12: true });
   }
 
+  // Libras, Kg, Litros y Unidades se mantienen separadas (no se mezclan)
   private normalizarUnidad(v: string): string {
-    const u = (v || '').toLowerCase();
+    const u = (v || '').toLowerCase().trim();
+    if (u.includes('libra') || u === 'lb' || u === 'lbs') return 'Libras';
     if (u.includes('kg') || u.includes('kilo')) return 'Kg';
     if (u.includes('lit') || u === 'l') return 'Litros';
     if (u.includes('unid') || u === 'ud') return 'Unidades';
@@ -263,6 +398,13 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     const d = new Date(iso + 'T00:00:00');
     d.setDate(d.getDate() + dias);
     return this.aISO(d);
+  }
+
+  private fechaVencimientoParaEnvio(producto: ProductoCatalogo, fechaVencimiento?: string): string {
+    const hoy = this.fechaHoy();
+    const fechaNormalizada = this.soloFecha(fechaVencimiento);
+    if (fechaNormalizada && fechaNormalizada >= hoy) return fechaNormalizada;
+    return this.sumarDiasISO(hoy, this.esPerecedero(producto) ? 7 : 90);
   }
 
   private diasEntre(desde: string, hasta: string): number {
@@ -315,22 +457,45 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
 
   // ===================== CARGA DE CATÁLOGOS =====================
   cargarCatalogos(): void {
-    forkJoin({
-      ingredientes: this.entregasService.cargarIngredientes() as unknown as Observable<Opcion[]>,
-      tiposMercado: this.entregasService.cargarTiposMercado() as unknown as Observable<Opcion[]>,
-    }).subscribe({
-      next: ({ ingredientes, tiposMercado }) => {
-        this.ingredientes = ingredientes.length ? ingredientes : this.productosBase;
+    this.cargandoCatalogos = true;
+    this.ingredientes = [];
+    this.saldosInventario.clear();
+    this.unidadesInventario.clear();
+    this.categoriasInventario.clear();
+    this.tiposInventario.clear();
+    forkJoin([
+      this.facturasCompraService.getInventarioCentral(),
+      this.entregasService.cargarTiposMercado(),
+    ]).subscribe({
+      next: ([inventarioCentral, tiposMercado]: readonly [InventarioCentralItem[], TipoMercadoOpcion[]]) => {
+        this.saldosInventario = new Map(inventarioCentral.map(item => [
+          item.id_ingrediente,
+          Number(item.cantidad_disponible) || 0,
+        ] as const));
+        this.unidadesInventario = new Map(inventarioCentral.map(item => [
+          item.id_ingrediente,
+          item.unidad_medida_abreviatura || item.unidad_medida_nombre || 'Kg',
+        ] as const));
+        this.categoriasInventario = new Map(inventarioCentral.map(item => [
+          item.id_ingrediente,
+          item.categoria_nombre || 'General',
+        ] as const));
+        this.tiposInventario = new Map(inventarioCentral.map(item => [
+          item.id_ingrediente,
+          this.tipoConservacionVisible(item.tipo_conservacion),
+        ] as const));
+        this.ingredientes = inventarioCentral.map(item => ({
+          id: item.id_ingrediente,
+          nombre: item.ingrediente_nombre || `Ingrediente ${item.id_ingrediente}`,
+        }));
         this.tiposMercado = tiposMercado.length ? tiposMercado : this.tiposBase;
-        // Solo se guarda en caché lo que sí llegó del servidor
-        if (ingredientes.length) this.guardarCache(this.claveCacheIngredientes, ingredientes);
         if (tiposMercado.length) this.guardarCache(this.claveCacheTipos, tiposMercado);
         this.terminarCatalogos();
       },
       error: error => {
-        console.error('Error al cargar catálogos de entregas:', error);
+        console.error('Error al cargar el inventario central para registrar entregas:', error);
         void this.alertas.error('No se pudo cargar el catálogo',
-          `No se pudieron cargar los catálogos del servidor: ${this.describirError(error)}. Se muestran productos de ejemplo; para guardar debe funcionar la conexión.`);
+          `No se pudo cargar el inventario central: ${this.describirError(error)}. No se mostrarán productos desactualizados.`);
         this.terminarCatalogos();
       },
     });
@@ -357,9 +522,8 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     ).subscribe({
       next: lista => {
         if (idPedido !== this.idInstitucion || sedePedida !== this.idSede) return;   // llegó tarde
-        // Los envíos se separan de las entradas por "fecha_salida"
-        this.historialEnvios = this.registrosEnvioDe(lista.filter(i => !!i?.fecha_salida));
-        this.entregasRaw = lista.filter(i => !i?.fecha_salida);
+        this.historialEnvios = this.registrosEnvioDe(lista.filter(i => this.esEnvio(i)));
+        this.entregasRaw = lista;
         this.reconstruirHistorial();
         this.cargandoHistorial = false;
         this.cdr.markForCheck();
@@ -373,18 +537,115 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     });
   }
 
+  // ===== NUEVO: también refresca el modal de detalle si está abierto =====
   private reconstruirHistorial(): void {
     this.historial = this.entregasRaw.map(i => this.aFila(i));
     this.seleccionados = this.seleccionados
-      .map(s => this.ultimaEntradaDe(s.idIngrediente))
+      .map(s => {
+        const latest = this.ultimaEntradaDe(s.idIngrediente);
+        return latest ? { ...s, ...latest, idTipoMercado: s.idTipoMercado ?? latest.idTipoMercado, unidad: s.unidad || latest.unidad } : s;
+      })
       .filter((e): e is FilaEntrega => !!e);
-    this.recalcularTotales();
+
+    if (this.detalleEntrada) {
+      const actual = this.gruposEntradas.find(g => g.clave === this.detalleEntrada!.clave);
+      if (actual) {
+        this.detalleEntrada = actual;
+        this.detalleLista = this.armarDetalle(actual);
+      }
+    }
   }
+  // ===== FIN NUEVO =====
 
   private ultimaEntradaDe(idIngrediente: number | null): FilaEntrega | undefined {
     return this.historial
       .filter(e => e.idIngrediente === idIngrediente)
       .sort((a, b) => b.fechaRecepcion.localeCompare(a.fechaRecepcion) || ((b.id ?? 0) - (a.id ?? 0)))[0];
+  }
+
+  private claveProducto(id: number | null | undefined, nombre: string): string {
+    const n = this.norm(nombre);
+    const idFinal = id ?? this.ingredientes.find(i => this.norm(i.nombre) === n)?.id ?? null;
+    return idFinal != null ? `id:${idFinal}` : `n:${n}`;
+  }
+
+  private verificarRecepcionesLocales(): void {
+    try {
+      const r = localStorage.getItem('sirae_recepciones_admin') || '';
+      const l = localStorage.getItem('sirae_entregas_locales') || '';
+      const x = localStorage.getItem(this.claveExtras) || '';
+      const firma = `${r.length}:${r.slice(-60)}|${l.length}:${l.slice(-60)}|${x.length}:${x.slice(-60)}`;
+      if (firma !== this.ultimaFirmaRecepciones) {
+        this.ultimaFirmaRecepciones = firma;
+        this.reconstruirHistorial();
+        this.cdr.markForCheck();
+      }
+    } catch {}
+  }
+
+  private recepcionAdminDe(item: any, nombreResuelto = ''): any {
+    try {
+      const id = item.id ?? item.id_entrega;
+      const fecha = this.soloFecha(item.fecha_entrega ?? item.fecha_recepcion ?? item.fechaRecepcion);
+      const cant = Number(item.cantidad) || 0;
+      const ing = this.norm(nombreResuelto || this.texto(item.ingrediente_nombre) || this.texto(item.ingrediente)
+        || this.ingredientes.find(i => i.id === (item.id_ingrediente ?? item.ingrediente))?.nombre || '');
+
+      // 1. Revisar en sirae_recepciones_admin (guardado cuando el admin acepta o rechaza)
+      const recepciones = JSON.parse(localStorage.getItem('sirae_recepciones_admin') || '{}');
+      if (id != null && recepciones[`id:${id}`]) {
+        return recepciones[`id:${id}`];
+      }
+      if (ing && fecha) {
+        if (recepciones[`${ing}|${fecha}|${cant}`]) return recepciones[`${ing}|${fecha}|${cant}`];
+        if (recepciones[`${ing}|${fecha}`]) return recepciones[`${ing}|${fecha}`];
+        for (const [k, v] of Object.entries(recepciones)) {
+          const kNorm = this.norm(k);
+          if (kNorm.includes(fecha) && (kNorm.includes(ing) || (id != null && kNorm.includes(String(id))))) {
+            return v;
+          }
+        }
+      }
+
+      // 2. Revisar en sirae_entregas_locales (si el admin actualizó el registro local)
+      const locales: any[] = JSON.parse(localStorage.getItem('sirae_entregas_locales') || '[]');
+      if (Array.isArray(locales) && locales.length > 0) {
+        const coincidencia = locales.find(l => {
+          if (id != null && l.id === id) return true;
+          const lIng = this.norm(l.ingrediente || '');
+          const lFecha = this.soloFecha(l.fechaRecepcion || l.fecha_entrega);
+          return ing && lIng === ing && lFecha === fecha;
+        });
+        if (coincidencia && coincidencia.estado && coincidencia.estado !== 'EN_TRANSITO') {
+          return {
+            estado: coincidencia.estado,
+            cantidad_recibida: coincidencia.cantidadRecibida,
+            cantidad_rechazada: coincidencia.cantidadRechazada,
+            motivo_rechazo: coincidencia.motivoRechazo,
+            usuario_receptor_nombre: coincidencia.usuarioReceptorNombre,
+          };
+        }
+      }
+
+      // 3. Revisar en sirae_entradas_extra
+      const extras = JSON.parse(localStorage.getItem(this.claveExtras) || '{}');
+      if (id != null && extras[`id:${id}`]?.estadoAprobacion) {
+        const ex = extras[`id:${id}`];
+        return { estado: ex.estadoAprobacion, motivo_rechazo: ex.motivoRechazo };
+      }
+      if (ing && fecha) {
+        for (const [k, v] of Object.entries(extras)) {
+          const kNorm = this.norm(k);
+          if (kNorm.includes(fecha) && (v as any)?.estadoAprobacion) {
+            return { estado: (v as any).estadoAprobacion, motivo_rechazo: (v as any).motivoRechazo };
+          }
+        }
+      }
+
+      return undefined;
+    } catch {
+      return undefined;
+    }
   }
 
   private aFila(item: any): FilaEntrega {
@@ -402,10 +663,28 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     const idTip = idTipo != null ? Number(idTipo) : (this.tiposMercado.find(t => t.nombre === tipoMercado)?.id ?? null);
 
     const fechaRecepcion = this.soloFecha(item.fecha_entrega ?? item.fecha_recepcion ?? item.fechaRecepcion);
-    const extra = this.extraDe(item.id, idIng, fechaRecepcion, Number(item.cantidad) || 0);
+    const destinoItem = this.texto(item.destino) || this.texto(item.destino_nombre) || this.texto(item.institucion);
+    const extra = this.extraDe(item.id ?? item.id_entrega, idIng, fechaRecepcion, Number(item.cantidad) || 0, destinoItem);
+    const responsableObs = String(item.observaciones ?? '').match(/Responsable:\s*(.+)/i)?.[1]?.trim() ?? '';
+
+    const recepcionAdmin = this.recepcionAdminDe(item, ingrediente);
+    const estadoReal = (item.estado && item.estado !== 'EN_TRANSITO' && item.estado !== '')
+      ? item.estado
+      : (recepcionAdmin?.estado || item.estado || extra?.estadoAprobacion || 'EN_TRANSITO');
+
+    const cantRec = item.cantidad_recibida != null
+      ? Number(item.cantidad_recibida)
+      : (recepcionAdmin?.cantidad_recibida != null ? Number(recepcionAdmin.cantidad_recibida) : null);
+
+    const cantRech = item.cantidad_rechazada != null
+      ? Number(item.cantidad_rechazada)
+      : (recepcionAdmin?.cantidad_rechazada != null ? Number(recepcionAdmin.cantidad_rechazada) : null);
+
+    const motRech = item.motivo_rechazo || recepcionAdmin?.motivo_rechazo || extra?.motivoRechazo || '';
+    const receptorNombre = item.usuario_receptor_nombre || recepcionAdmin?.usuario_receptor_nombre || '';
 
     return {
-      id: item.id, idIngrediente: idIng, idTipoMercado: idTip, ingrediente, tipoMercado,
+      id: item.id ?? item.id_entrega, idIngrediente: idIng, idTipoMercado: idTip, ingrediente, tipoMercado,
       categoria: perecedero ? 'Perecederos' : 'Granos',
       frecuencia: item.frecuencia || '',
       cantidad: Number(item.cantidad) || 0,
@@ -416,10 +695,20 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       lote: item.lote ?? item.numero_lote ?? '',
       destino: this.texto(item.destino) || this.texto(item.destino_nombre) || this.texto(item.institucion) || extra?.destino || '',
       hora: this.horaDe(item.hora_salida ?? item.hora ?? item.hora_registro ?? item.created_at ?? item.fecha_creacion) || extra?.hora || '',
-      responsable: this.texto(item.responsable) || this.texto(item.responsable_nombre) || this.texto(item.usuario) || extra?.responsable || '',
-      estadoEntrega: item.estado ?? '',
+      // Primero lo que escribió quien hizo la entrada o envío
+      responsable: this.texto(item.responsable) || this.texto(item.responsable_nombre) || responsableObs || this.responsableEnvioGuardado(item) || extra?.responsable || this.texto(item.usuario) || '',
+      estadoEntrega: estadoReal,
       fechaRegistro: this.fechaLocalDe(item.created_at ?? item.fecha_creacion) || extra?.fechaRegistro || '',
       loteRegistro: item.lote_registro ?? extra?.loteRegistro ?? '',
+      cantidadRecibida: cantRec,
+      cantidadRechazada: cantRech,
+      motivoRechazo: motRech,
+      usuarioReceptorNombre: receptorNombre,
+      idCalculoEntrega: item.id_calculo_entrega ? Number(item.id_calculo_entrega) : undefined,
+      documentoEntrega: item.documento_entrega || '',
+      cantidadRequeridaCalculo:
+        item.cantidad_requerida_calculo != null ? Number(item.cantidad_requerida_calculo) : null,
+      superaCalculo: Boolean(item.supera_calculo),
     };
   }
 
@@ -441,6 +730,10 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
           || this.ingredientes.find(i => i.id === Number(item.ingrediente))?.nombre || '',
         cantidad: item.cantidad == null || item.cantidad === '' ? 0 : Number(item.cantidad),
         unidad: item.unidad ?? '',
+        // Primero lo que escribió quien envió; "usuario" (quien inició sesión) solo como último recurso
+        responsable: this.texto(item.responsable) || this.texto(item.responsable_nombre)
+          || (String(item.observaciones ?? '').match(/Responsable:\s*(.+)/i)?.[1]?.trim() ?? '')
+          || this.responsableEnvioGuardado(item) || this.texto(item.usuario),
         destino: item.destino || (sede ? `${nombre} - ${sede}` : nombre),
         fechaSalida: this.soloFecha(item.fecha_salida ?? item.fecha_entrega),
         fechaEntrega: this.soloFecha(item.fecha_entrega),
@@ -450,26 +743,36 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
   }
 
   // ===================== HISTORIAL AGRUPADO =====================
-  // Entradas de la más reciente a la más antigua (las de un mismo registro quedan juntas)
+  // Entradas ordenadas por la fecha de entrada elegida (la más reciente primero)
   get entradasHistorial(): FilaEntrega[] {
     return [...this.historial].sort((a, b) =>
-      (b.fechaRegistro || b.fechaRecepcion).localeCompare(a.fechaRegistro || a.fechaRecepcion) || ((b.id ?? 0) - (a.id ?? 0)));
+      b.fechaRecepcion.localeCompare(a.fechaRecepcion)
+      || (b.fechaRegistro || '').localeCompare(a.fechaRegistro || '')
+      || ((b.id ?? 0) - (a.id ?? 0)));
   }
 
-  // Lo que se registró junto aparece junto, en una sola tarjeta
+  // Cantidad de productos distintos que se han registrado (el mismo producto cuenta una sola vez)
+  get totalProductosRegistrados(): number {
+    return new Set(this.historial.map(e => this.claveProducto(e.idIngrediente, e.ingrediente))).size;
+  }
+
+  // Un solo registro por fecha de entrada y destino; el mismo producto (y unidad) se suma en una sola línea
   get gruposEntradas(): GrupoEntrada[] {
     const mapa = new Map<string, GrupoEntrada>();
     for (const e of this.entradasHistorial) {
-      const fechaRegistro = e.fechaRegistro || e.fechaRecepcion;
-      const clave = e.loteRegistro || `${fechaRegistro}|${e.fechaRecepcion}|${e.hora}|${e.destino}`;
+      const destino = e.destino || this.nombreInstitucion;
+      const clave = `${e.fechaRecepcion}|${this.norm(destino)}`;
       let g = mapa.get(clave);
       if (!g) {
-        g = { clave, destino: e.destino || this.nombreInstitucion, fechaRegistro, fechaRecepcion: e.fechaRecepcion,
-              hora: e.hora || '', responsable: '', items: [], productos: [] };
+        g = { clave, destino, fechaRegistro: e.fechaRegistro || e.fechaRecepcion, fechaRecepcion: e.fechaRecepcion,
+              hora: '', responsable: '', items: [], productos: [] };
         mapa.set(clave, g);
       }
       g.responsable ||= e.responsable || '';
       g.hora ||= e.hora || '';
+      g.documentoEntrega ||= e.documentoEntrega || '';
+      g.idCalculoEntrega ||= e.idCalculoEntrega;
+      if (!g.primerIdEntrega && e.id) g.primerIdEntrega = e.id;
       g.items.push(e);
     }
 
@@ -486,59 +789,272 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
         totales.set(k, r);
       }
       g.productos = Array.from(totales.values());
+      g.estadoAprobacion = this.estadoAprobacionGrupo(g);
     }
     return grupos;
   }
 
-  // Envíos agrupados por destino y fechas
+  // Envíos agrupados por fecha y destino
   get gruposEnvios(): GrupoEnvio[] {
     const mapa = new Map<string, GrupoEnvio>();
     for (const v of this.historialEnvios) {
-      const clave = `${v.fechaSalida}|${v.fechaEntrega}|${v.destino}`;
-      const g = mapa.get(clave) ?? { clave, destino: v.destino, fechaSalida: v.fechaSalida, fechaEntrega: v.fechaEntrega, items: [] };
+      const fecha = v.fechaSalida || v.fechaEntrega;
+      const resp = v.responsable || '';
+      const clave = `${fecha}|${this.norm(v.destino)}|${this.norm(resp)}`;
+      let g = mapa.get(clave);
+      if (!g) {
+        g = { clave, destino: v.destino, fechaSalida: v.fechaSalida, fechaEntrega: v.fechaEntrega, responsable: resp, items: [] };
+        mapa.set(clave, g);
+      }
+      g.responsable ||= resp;
       g.items.push(v);
-      mapa.set(clave, g);
     }
     const grupos = Array.from(mapa.values());
     grupos.forEach(g => g.items.sort((a, b) => a.ingrediente.localeCompare(b.ingrediente, 'es')));
-    return grupos;
+    // El envío más reciente primero
+    return grupos.sort((a, b) => (b.fechaEntrega || b.fechaSalida).localeCompare(a.fechaEntrega || a.fechaSalida));
+  }
+
+  // ----- Entradas compactas: se ven las más recientes; el detalle se abre al tocarlas -----
+  readonly limiteEntradas = 4;
+  verTodasEntradas = false;
+
+  // ----- Buscar por fecha (calendario junto al Historial) -----
+  filtroFecha = '';
+
+  alElegirFecha(iso: string): void {
+    this.filtroFecha = iso || '';
+    if (!iso) return;
+    const [anio, mes] = iso.split('-').map(Number);
+    this.mesCalendario = new Date(anio, mes - 1, 1);   // el calendario salta a ese mes
+    this.diaSeleccionado = iso;
+  }
+
+  get entradasFiltradas(): GrupoEntrada[] {
+    const todos = this.gruposEntradas;
+    return this.filtroFecha ? todos.filter(g => g.fechaRecepcion === this.filtroFecha) : todos;
+  }
+
+  get gruposEntradasVisibles(): GrupoEntrada[] {
+    const todos = this.entradasFiltradas;
+    return this.verTodasEntradas ? todos : todos.slice(0, this.limiteEntradas);
+  }
+
+  // "Arroz 2 Kg · galletas 6 Kg · +1 más"
+  resumenEntrada(g: GrupoEntrada): string {
+    const partes = g.productos.slice(0, 3).map(p => `${this.nombreMostrado(p.ingrediente)} ${p.cantidad} ${p.unidad}`);
+    return partes.join(' · ') + (g.productos.length > 3 ? ` · +${g.productos.length - 3} más` : '');
+  }
+
+  diaDe(iso: string): string { return (iso || '').split('-')[2] ?? ''; }
+
+  mesCortoDe(iso: string): string {
+    return ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'][Number((iso || '').split('-')[1]) - 1] ?? '';
+  }
+
+  // ----- Textos de cantidad: "Tienes 8 kg de arroz" -----
+  unidadTexto(unidad: string, cantidad = 2): string {
+    const u = this.normalizarUnidad(unidad);
+    const uno = Math.abs(cantidad) === 1;
+    if (u === 'Kg') return 'kg';
+    if (u === 'Libras') return uno ? 'libra' : 'libras';
+    if (u === 'Litros') return uno ? 'litro' : 'litros';
+    if (u === 'Unidades') return uno ? 'unidad' : 'unidades';
+    return unidad || '';
+  }
+
+  nombreMinuscula(nombre: string): string { return this.nombreMostrado(nombre).toLowerCase(); }
+
+  // ===================== ESTADO DE APROBACIÓN (SUPERVISIÓN) =====================
+  // ===== NUEVO: reconoce más variantes de estado que puede devolver el servidor =====
+  estadoAprobacionEntrega(estado?: string): 'ACEPTADA' | 'RECHAZADA' | 'CON_NOVEDAD' | 'EN_PROCESO' {
+    const e = this.norm(estado || '').toUpperCase().replace(/[\s-]+/g, '_');
+    if (!e) return 'EN_PROCESO';
+    if (/^(EN_|PENDIENTE|TRANSITO)/.test(e)) return 'EN_PROCESO';
+    if (/^(NO_APROB|NO_ACEPT|RECHAZ)/.test(e)) return 'RECHAZADA';
+    if (/NOVEDAD|PARCIAL|OBSERV/.test(e)) return 'CON_NOVEDAD';
+    if (/^(RECIB|APROB|ACEPT|ENTREGAD|CONFIRM|COMPLET)/.test(e)) return 'ACEPTADA';
+    return 'EN_PROCESO';
+  }
+  // ===== FIN NUEVO =====
+
+  estadoAprobacionGrupo(g: GrupoEntrada): 'ACEPTADA' | 'RECHAZADA' | 'CON_NOVEDAD' | 'EN_PROCESO' {
+    if (!g?.items || g.items.length === 0) return 'EN_PROCESO';
+    const estados = g.items.map(item => this.estadoAprobacionEntrega(item.estadoEntrega));
+    if (estados.every(est => est === 'RECHAZADA')) return 'RECHAZADA';
+    if (estados.includes('CON_NOVEDAD') || (estados.includes('ACEPTADA') && estados.includes('RECHAZADA'))) {
+      return 'CON_NOVEDAD';
+    }
+    if (estados.some(est => est === 'ACEPTADA')) return 'ACEPTADA';
+    return 'EN_PROCESO';
+  }
+
+  textoBadgeAprobacion(estado: string | undefined): string {
+    switch (estado) {
+      case 'ACEPTADA': return 'Aceptada';
+      case 'RECHAZADA': return 'Rechazada';
+      case 'CON_NOVEDAD': return 'Con novedad';
+      case 'EN_PROCESO':
+      default:
+        return 'En proceso';
+    }
+  }
+
+  claseBadgeAprobacion(estado: string | undefined): string {
+    switch (estado) {
+      case 'ACEPTADA':
+        return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+      case 'RECHAZADA':
+        return 'border-red-200 bg-red-50 text-red-700';
+      case 'CON_NOVEDAD':
+        return 'border-orange-200 bg-orange-50 text-orange-700';
+      case 'EN_PROCESO':
+      default:
+        return 'border-amber-200 bg-amber-50 text-amber-700';
+    }
+  }
+
+  iconoBadgeAprobacion(estado: string | undefined): string {
+    switch (estado) {
+      case 'ACEPTADA': return 'check_circle';
+      case 'RECHAZADA': return 'cancel';
+      case 'CON_NOVEDAD': return 'warning';
+      case 'EN_PROCESO':
+      default:
+        return 'schedule';
+    }
+  }
+
+  claseBordeTarjetaEntrada(g: GrupoEntrada): string {
+    const sel = g.fechaRecepcion === this.diaSeleccionado;
+    const est = g.estadoAprobacion || this.estadoAprobacionGrupo(g);
+    if (sel) {
+      switch (est) {
+        case 'ACEPTADA': return 'border-emerald-400 ring-2 ring-emerald-200';
+        case 'RECHAZADA': return 'border-red-400 ring-2 ring-red-200';
+        case 'CON_NOVEDAD': return 'border-orange-400 ring-2 ring-orange-200';
+        case 'EN_PROCESO':
+        default:
+          return 'border-amber-400 ring-2 ring-amber-200';
+      }
+    }
+    switch (est) {
+      case 'ACEPTADA': return 'border-emerald-200 hover:border-emerald-400';
+      case 'RECHAZADA': return 'border-red-200 hover:border-red-400';
+      case 'CON_NOVEDAD': return 'border-orange-200 hover:border-orange-400';
+      case 'EN_PROCESO':
+      default:
+        return 'border-amber-200 hover:border-amber-400';
+    }
+  }
+
+
+  // ----- Detalle de una entrada (al tocar su tarjeta en el Historial) -----
+  detalleEntrada: GrupoEntrada | null = null;
+  detalleLista: DetalleProducto[] = [];
+
+  responsableManual = '';
+
+  abrirDetalleEntrada(g: GrupoEntrada): void {
+    this.responsableManual = '';
+    this.detalleEntrada = g;
+    this.detalleLista = this.armarDetalle(g);
+  }
+
+  cerrarDetalleEntrada(): void { this.detalleEntrada = null; this.detalleLista = []; }
+
+  // Para entradas antiguas que se guardaron sin responsable: se escribe aquí y queda guardado en este navegador
+  asignarResponsableEntrada(): void {
+    const g = this.detalleEntrada;
+    const nombre = this.responsableManual.trim();
+    if (!g || !nombre) return;
+    for (const e of g.items) {
+      const extra: ExtraEntrada = { destino: g.destino, responsable: nombre, hora: e.hora || g.hora, fechaRegistro: e.fechaRegistro || g.fechaRegistro };
+      if (e.id != null) this.extras[`id:${e.id}`] = extra;
+      this.extras[this.claveCompuesta(e.idIngrediente, e.fechaRecepcion, e.cantidad)] = extra;
+      this.extras[`${e.idIngrediente}|${e.fechaRecepcion}`] = extra;
+    }
+    this.extras[`dia:${g.fechaRecepcion}|${this.norm(g.destino)}`] = { destino: g.destino, responsable: nombre, hora: g.hora, fechaRegistro: g.fechaRegistro };
+    this.guardarCache(this.claveExtras, this.extras);
+    this.reconstruirHistorial();
+    const actualizado = this.gruposEntradas.find(x => x.clave === g.clave);
+    if (actualizado) this.abrirDetalleEntrada(actualizado);
+    this.cdr.markForCheck();
+  }
+
+  private armarDetalle(g: GrupoEntrada): DetalleProducto[] {
+    const mapa = new Map<string, DetalleProducto>();
+    for (const e of g.items) {
+      const unidad = this.normalizarUnidad(e.unidad) || e.unidad;
+      const k = `${this.claveProducto(e.idIngrediente, e.ingrediente)}|${unidad}`;
+      const d = mapa.get(k) ?? {
+        clave: k, ingrediente: e.ingrediente,
+        categoria: this.categoriasInventario.get(e.idIngrediente ?? -1) ?? this.categoriaDe(e.ingrediente),
+        tipoMercado: this.tipoConservacionVisible(e.tipoMercado), unidad, cantidad: 0, veces: 0,
+        vencimiento: '', estado: '', frecuencia: e.frecuencia, lotes: [],
+        disponible: e.idIngrediente != null && this.saldosInventario.has(e.idIngrediente) ? this.saldosInventario.get(e.idIngrediente)! : null,
+        unidadDisponible: this.unidadesInventario.get(e.idIngrediente ?? -1) ?? unidad,
+        estadoAprobacion: this.estadoAprobacionEntrega(e.estadoEntrega),
+        cantidadRecibida: e.cantidadRecibida,
+        cantidadRechazada: e.cantidadRechazada,
+        motivoRechazo: e.motivoRechazo,
+      };
+      d.cantidad = Math.round((d.cantidad + e.cantidad) * 100) / 100;
+      d.veces++;
+      if (e.fechaVencimiento && (!d.vencimiento || e.fechaVencimiento < d.vencimiento)) { d.vencimiento = e.fechaVencimiento; d.estado = this.estadoDe(e); }
+      if (e.lote && !d.lotes.includes(e.lote)) d.lotes.push(e.lote);
+      mapa.set(k, d);
+    }
+
+    // ===== NUEVO: el estado de cada producto considera TODAS sus filas, no solo la primera =====
+    for (const d of mapa.values()) {
+      const filas = g.items.filter(e =>
+        `${this.claveProducto(e.idIngrediente, e.ingrediente)}|${this.normalizarUnidad(e.unidad) || e.unidad}` === d.clave);
+      d.estadoAprobacion = this.estadoAprobacionGrupo({ ...g, items: filas });
+    }
+    // ===== FIN NUEVO =====
+
+    return Array.from(mapa.values());
+  }
+
+  // Desde el "Registro del día": abre el formulario con esa fecha
+  registrarEnDia(): void {
+    this.modalDiaAbierto = false;
+    this.abrirModalEntrada(this.diaSeleccionado);
   }
 
   fueEnviado(nombre: string): boolean {
     return this.historialEnvios.some(e => e.ingrediente === nombre);
   }
 
-  // ===================== TOTAL DISPONIBLE (entradas − envíos) =====================
-  // Clave = id del producto (si no se encuentra, el nombre sin tildes)
-  private claveProducto(id: number | null | undefined, nombre: string): string {
-    const n = this.norm(nombre);
-    const idFinal = id ?? this.ingredientes.find(i => this.norm(i.nombre) === n)?.id ?? null;
-    return idFinal != null ? `id:${idFinal}` : `n:${n}`;
-  }
-
-  private recalcularTotales(): void {
-    const mapa = new Map<string, number>();
-    const conEntradas = new Set<string>();
-    for (const e of this.historial) {
-      const k = this.claveProducto(e.idIngrediente, e.ingrediente);
-      mapa.set(k, (mapa.get(k) ?? 0) + e.cantidad);
-      conEntradas.add(k);
-    }
-    for (const v of this.historialEnvios) {
-      const k = this.claveProducto(null, v.ingrediente);
-      mapa.set(k, (mapa.get(k) ?? 0) - v.cantidad);
-    }
-    mapa.forEach((valor, k) => mapa.set(k, Math.max(0, Math.round(valor * 100) / 100)));
-    this.totalesDisponibles = mapa;
-    this.productosConEntradas = conEntradas;
-  }
-
   tieneEntradas(p: ProductoCatalogo): boolean {
-    return this.productosConEntradas.has(this.claveProducto(p.id, p.nombre));
+    return this.saldosInventario.has(p.id);
   }
 
   totalDisponible(p: ProductoCatalogo): number {
-    return this.totalesDisponibles.get(this.claveProducto(p.id, p.nombre)) ?? 0;
+    return this.saldosInventario.get(p.id) ?? 0;
+  }
+
+  // ===================== BARRA VERDE DE EXISTENCIAS Y FACTURA (tarjetas) =====================
+  /** Producto con más existencias: la barra verde se calcula contra él. */
+  private get stockMaximo(): number {
+    return Math.max(1, ...Array.from(this.saldosInventario.values()));
+  }
+
+  /** Porcentaje (0–100) de la barra verde de existencias. */
+  porcentajeStock(cantidad: number): number {
+    return Math.min(100, Math.round(((Number(cantidad) || 0) / this.stockMaximo) * 100));
+  }
+
+  /** Color de la barra: poco = rojo (bajo), intermedio = amarillo (medio), bien = verde (alto). */
+  nivelStock(cantidad: number): 'bajo' | 'medio' | 'alto' {
+    const pct = this.porcentajeStock(cantidad);
+    return pct <= 25 ? 'bajo' : pct <= 60 ? 'medio' : 'alto';
+  }
+
+  /** Fila de la factura que corresponde a este producto (undefined si no está). */
+  seleccionDe(p: ProductoCatalogo): FilaEntrega | undefined {
+    return this.seleccionados.find(s => s.idIngrediente === p.id);
   }
 
   // ===================== INVENTARIO (ventana emergente) =====================
@@ -584,14 +1100,24 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     return hallada ? '/' + hallada[1] : null;
   }
 
+  // Imágenes de categorías (archivos dentro de /public).
+  // Las claves van en minúscula y sin tildes: la función las normaliza.
   private readonly imagenesCategoria: Record<string, string> = {
-    Todos: 'plato.png', 'Granos y cereales': 'granos.png', Despensa: 'sal.png', Lácteos: 'lacteos.png',
-    Carnes: 'carne.png', Huevos: 'huevos.png', Verduras: 'verduras.png', Frutas: 'frutas.png', Otros: 'otros.png',
+    'granos': 'granoss.png',
+    'granos y cereales': 'granoss.png',
+    'despensa': 'sal.png',
+    'lacteos': 'lacteo.png',
+    'mecato': 'mecato.png',
+    'carnes': 'carne.png',
+    'huevos': 'huevos.png',
+    'verduras': 'verduras.png',
+    'frutas': 'frutas.png',
+    'otros': 'otros.png',
   };
 
   imagenCategoria(nombre: string): string | null {
-    const a = this.imagenesCategoria[nombre];
-    return a ? '/' + a : null;
+    const archivo = this.imagenesCategoria[this.norm(nombre)];
+    return archivo ? '/' + archivo : null;
   }
 
   categoriaDe(nombre: string): string {
@@ -615,22 +1141,47 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     return e[c] ?? '📦';
   }
 
+  private idTipoMercadoDeProducto(producto: ProductoCatalogo): number | null {
+    const esPerecedero = this.esPerecedero(producto);
+    const claveEsperada = esPerecedero ? 'perecedero' : 'no perecedero';
+    const tipoPorNombre = this.tiposMercado.find(opcion => this.claveTipoMercado(opcion.nombre) === claveEsperada);
+    if (tipoPorNombre) return tipoPorNombre.id;
+
+    // Respaldo para los IDs estándar del catálogo cuando el servidor varía las etiquetas.
+    const idEstandar = esPerecedero ? 1 : 2;
+    return this.tiposMercado.find(opcion => opcion.id === idEstandar)?.id ?? null;
+  }
+
   get categoriasMenu(): CategoriaOpcion[] {
     const conteo = new Map<string, number>();
-    this.ingredientes.forEach(i => { const c = this.categoriaDe(i.nombre); conteo.set(c, (conteo.get(c) ?? 0) + 1); });
+    this.catalogoMenu.forEach(producto => {
+      conteo.set(producto.categoria, (conteo.get(producto.categoria) ?? 0) + 1);
+    });
     const lista = Array.from(conteo.entries()).sort((a, b) => a[0].localeCompare(b[0], 'es'))
       .map(([nombre, total]) => ({ nombre, emoji: this.emojiDeCategoria(nombre), total }));
-    return [{ nombre: 'Todos', emoji: this.emojiDeCategoria('Todos'), total: this.ingredientes.length }, ...lista];
+    return [{ nombre: 'Todos', emoji: this.emojiDeCategoria('Todos'), total: this.catalogoMenu.length }, ...lista];
   }
 
   // Todos los productos del catálogo, con su unidad y tipo (de su última entrada si existe)
   private get catalogoMenu(): ProductoCatalogo[] {
     return this.ingredientes.map(ing => {
       const ultima = this.ultimaEntradaDe(ing.id);
+      const categoria = this.categoriasInventario.get(ing.id) ?? this.categoriaDe(ing.nombre);
+      const tipoMercado = this.tiposInventario.get(ing.id) || undefined;
+      const producto = {
+        id: ing.id,
+        nombre: ing.nombre,
+        categoria,
+        unidad: this.unidadesInventario.get(ing.id)
+          ?? (ultima ? this.normalizarUnidad(ultima.unidad) : (this.unidadPorDefecto[ing.nombre] ?? 'Kg')),
+        idTipoMercado: null,
+        tipoMercado,
+      };
+
       return {
-        id: ing.id, nombre: ing.nombre, categoria: this.categoriaDe(ing.nombre),
-        unidad: ultima ? this.normalizarUnidad(ultima.unidad) : (this.unidadPorDefecto[ing.nombre] ?? 'Kg'),
-        idTipoMercado: ultima?.idTipoMercado ?? null,
+        ...producto,
+        idTipoMercado: this.idTipoMercadoDeProducto(producto),
+        tipoMercado,
       };
     }).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
   }
@@ -640,7 +1191,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     const q = this.textoFiltro.trim().toLowerCase();
     return this.catalogoMenu.filter(p =>
       (this.filtroMercado === 'Todos' || (this.filtroMercado === 'Perecederos') === this.esPerecedero(p))
-      && (this.categoriaMenu === 'Todos' || p.categoria === this.categoriaMenu)
+      && (this.categoriaMenu === 'Todos' || this.norm(p.categoria) === this.norm(this.categoriaMenu))
       && (!q || [p.nombre, this.nombreMostrado(p.nombre), p.categoria, this.nombreTipo(p)].some(t => t.toLowerCase().includes(q))));
   }
 
@@ -651,14 +1202,21 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
   ];
 
   esPerecedero(p: ProductoCatalogo): boolean {
-    const tipo = this.tiposMercado.find(t => t.id === p.idTipoMercado)?.nombre.toLowerCase();
-    if (tipo) return tipo.includes('perecedero') && !tipo.includes('no perecedero');
+    const tipo = this.claveTipoMercado(
+      p.tipoMercado ?? this.tiposMercado.find(t => t.id === p.idTipoMercado)?.nombre,
+    );
+    if (tipo === 'no perecedero') return false;
+    if (tipo === 'perecedero') return true;
+    const categoria = this.norm(p.categoria);
+    if (['carn', 'huevo', 'lact', 'verd', 'frut'].some(prefijo => categoria.startsWith(prefijo))) return true;
+    if (['grano', 'mecato', 'despensa'].some(prefijo => categoria.startsWith(prefijo))) return false;
     return p.nombre.toLowerCase().split(/\s+/).some(w =>
       this.perecederosPorNombre.some(k => w === k || (k.length >= 4 && w.startsWith(k))));
   }
 
   nombreTipo(p: ProductoCatalogo): string {
-    return this.tiposMercado.find(t => t.id === p.idTipoMercado)?.nombre || (this.esPerecedero(p) ? 'Perecedero' : 'No perecedero');
+    return p.tipoMercado || this.tiposMercado.find(t => t.id === p.idTipoMercado)?.nombre
+      || (this.esPerecedero(p) ? 'Perecedero' : 'No perecedero');
   }
 
   // Solo cambia lo que se ve en las tarjetas; imágenes, categorías y envíos usan el nombre original
@@ -731,9 +1289,26 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
 
   private agregarSeleccionado(p: ProductoCatalogo): void {
     if (this.tarjetaActiva(p)) return;
+    if (this.totalDisponible(p) <= 0) {
+      void this.alertas.warning('Sin inventario', `${p.nombre} no tiene cantidad disponible en el inventario central.`);
+      return;
+    }
+
     const ultima = this.ultimaEntradaDe(p.id);
-    if (!ultima) { void this.alertas.warning('Sin inventario', `${p.nombre} todavía no tiene entradas en el inventario.`); return; }
-    this.seleccionados.push(ultima);
+    const fechaHoy = this.fechaHoy();
+    this.seleccionados.push({
+      ...ultima,
+      idIngrediente: p.id,
+      idTipoMercado: this.idTipoMercadoDeProducto(p),
+      ingrediente: p.nombre,
+      tipoMercado: p.tipoMercado ?? ultima?.tipoMercado ?? this.nombreTipo(p),
+      categoria: this.esPerecedero(p) ? 'Perecederos' : 'Granos',
+      frecuencia: ultima?.frecuencia || 'Cada 8 días',
+      cantidad: this.totalDisponible(p),
+      unidad: p.unidad || ultima?.unidad || 'Kg',
+      fechaRecepcion: ultima?.fechaRecepcion || fechaHoy,
+      fechaVencimiento: this.fechaVencimientoParaEnvio(p, ultima?.fechaVencimiento),
+    });
   }
 
   private quitarPorProducto(p: ProductoCatalogo): void {
@@ -776,13 +1351,244 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
 
   cancelarDeslizar(): void { this.swipeInicio = null; this.swipeId = null; this.swipeDx = 0; }
 
+  // ===================== CÁLCULO AUTOMÁTICO POR SEDE Y GRAMAJES (HU 5) =====================
+  calculoAbastecimiento: CalculoAbastecimientoResponse | null = null;
+  cargandoCalculo = false;
+  errorCalculo = '';
+  idJornadaCalculo: number | null = null;
+  diasPerecederosFiltro: number | null = null;
+  diasNoPerecederosFiltro: number | null = null;
+  incluirTodosGramajes = false;
+  filtroTipoCalculo: 'Todos' | 'Perecedero' | 'No perecedero' = 'Todos';
+  ingredienteExpandidoId: number | null = null;
+  mostrarCalculoPanel = true;
+
+  // Autorización de excedentes y auditoría de soporte de cálculo
+  autorizacionExceso = false;
+  autorizadoPor = '';
+  justificacionExceso = '';
+  ultimoDocumentoCalculo = '';
+  mostrarModalSoporte = false;
+  cargandoSoporte = false;
+  soporteSeleccionado: CalculoEntregaSoporte | null = null;
+
+  get sedesDisponibles(): any[] {
+    return this.institucionActiva?.sedes ?? [];
+  }
+
+  get productosCalculoFiltrados(): ProductoCalculado[] {
+    const lista = this.calculoAbastecimiento?.productos_sugeridos ?? [];
+    const q = this.textoFiltro.trim().toLowerCase();
+    return lista.filter(p => {
+      if (this.filtroTipoCalculo === 'Perecedero' && !p.es_perecedero) return false;
+      if (this.filtroTipoCalculo === 'No perecedero' && p.es_perecedero) return false;
+      if (q && !p.nombre_ingrediente.toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }
+
+  alSeleccionarSede(nuevaSede: number | null): void {
+    const idNorm = nuevaSede != null ? Number(nuevaSede) : null;
+    if (idNorm === this.idSede && this.calculoAbastecimiento) return;
+    this.idSede = idNorm;
+    this.idJornadaCalculo = null;
+    this.diasPerecederosFiltro = null;
+    this.diasNoPerecederosFiltro = null;
+    this.ingredienteExpandidoId = null;
+    this.cargarHistorial();
+    if (this.idSede != null) {
+      this.calcularAbastecimiento(true);
+    } else {
+      this.calculoAbastecimiento = null;
+      this.errorCalculo = '';
+    }
+    this.cdr.markForCheck();
+  }
+
+  calcularAbastecimiento(sincronizarDiasDesdeContrato = false): void {
+    if (this.idSede == null) {
+      this.calculoAbastecimiento = null;
+      return;
+    }
+    const sedeSolicitada = this.idSede;
+    this.cargandoCalculo = true;
+    this.errorCalculo = '';
+
+    this.entregasService.calcularMercado({
+      id_sede: sedeSolicitada,
+      id_institucion: this.idInstitucion,
+      id_jornada: this.idJornadaCalculo,
+      dias_perecederos: sincronizarDiasDesdeContrato ? null : this.diasPerecederosFiltro,
+      dias_no_perecederos: sincronizarDiasDesdeContrato ? null : this.diasNoPerecederosFiltro,
+      incluir_todos_gramajes: this.incluirTodosGramajes,
+    }).subscribe({
+      next: resp => {
+        if (this.idSede !== sedeSolicitada) return;
+        this.calculoAbastecimiento = resp;
+        if (sincronizarDiasDesdeContrato || this.diasPerecederosFiltro == null) {
+          this.diasPerecederosFiltro = resp.periodicidad?.dias_perecederos ?? this.diasPerecederosFiltro;
+        }
+        if (sincronizarDiasDesdeContrato || this.diasNoPerecederosFiltro == null) {
+          this.diasNoPerecederosFiltro = resp.periodicidad?.dias_no_perecederos ?? this.diasNoPerecederosFiltro;
+        }
+        this.cargandoCalculo = false;
+        this.cdr.markForCheck();
+      },
+      error: err => {
+        if (this.idSede !== sedeSolicitada) return;
+        this.cargandoCalculo = false;
+        this.calculoAbastecimiento = null;
+        this.errorCalculo = this.describirError(err);
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  toggleDetalleGrado(idIngrediente: number): void {
+    this.ingredienteExpandidoId = this.ingredienteExpandidoId === idIngrediente ? null : idIngrediente;
+  }
+
+  calculadoDe(sel: FilaEntrega): ProductoCalculado | null {
+    return this.calculoAbastecimiento?.productos_sugeridos?.find(p => p.id_ingrediente === sel.idIngrediente) ?? null;
+  }
+
+  get itemsConExcesoCalculo(): Array<{ sel: FilaEntrega; enviado: number; requerido: number }> {
+    if (!this.calculoAbastecimiento) return [];
+    const salida: Array<{ sel: FilaEntrega; enviado: number; requerido: number }> = [];
+    for (const sel of this.productosParaEnviar) {
+      const enviado = this.cantidadEnviarDe(sel);
+      const calc = this.calculadoDe(sel);
+      const requerido = calc ? Number(calc.cantidad_sugerida_despacho ?? 0) : 0;
+      if (enviado > requerido + 0.0001) {
+        salida.push({ sel, enviado, requerido });
+      }
+    }
+    return salida;
+  }
+
+  private asegurarSeleccionDesdeCalculo(prod: ProductoCalculado): FilaEntrega {
+    let fila = this.seleccionados.find(s => s.idIngrediente === prod.id_ingrediente);
+    if (fila) return fila;
+    const catProd = this.catalogoMenu.find(c => c.id === prod.id_ingrediente);
+    const ultima = this.ultimaEntradaDe(prod.id_ingrediente);
+    const fechaHoy = this.fechaHoy();
+    const esPer = Boolean(prod.es_perecedero);
+    fila = {
+      ...ultima,
+      idIngrediente: prod.id_ingrediente,
+      idTipoMercado: prod.id_tipo_mercado ?? catProd?.idTipoMercado ?? this.idTipoMercadoDe(esPer),
+      ingrediente: prod.nombre_ingrediente,
+      tipoMercado: esPer ? 'Perecedero' : 'No perecedero',
+      categoria: esPer ? 'Perecederos' : 'Granos',
+      frecuencia: prod.periodicidad_aplicada || (esPer ? 'Semanal' : 'Mensual'),
+      cantidad: prod.cantidad_sugerida_despacho,
+      unidad: this.normalizarUnidad(prod.unidad_abreviatura || prod.unidad_medida) || prod.unidad_abreviatura || 'Kg',
+      fechaRecepcion: ultima?.fechaRecepcion || fechaHoy,
+      fechaVencimiento: catProd
+        ? this.fechaVencimientoParaEnvio(catProd, ultima?.fechaVencimiento)
+        : this.sumarDiasISO(fechaHoy, esPer ? 7 : 90),
+    };
+    this.seleccionados.push(fila);
+    return fila;
+  }
+
+  cargarProductoCalculo(prod: ProductoCalculado): void {
+    if (prod.error_conversion) {
+      void this.alertas.warning(
+        'Conversión incompatible',
+        prod.alerta_conversion || `Revisa la equivalencia de unidades para ${prod.nombre_ingrediente}.`,
+      );
+      return;
+    }
+    const sugerido = Math.round(Number(prod.cantidad_sugerida_despacho ?? 0) * 100) / 100;
+    if (sugerido <= 0) {
+      void this.alertas.info(
+        'Stock suficiente en sede',
+        `${prod.nombre_ingrediente} ya cubre el requerimiento con el inventario actual de la sede.`,
+      );
+      return;
+    }
+    const fila = this.asegurarSeleccionDesdeCalculo(prod);
+    this.fijarCantidadEnviar(fila, sugerido);
+    this.mostrarHistorialEnvios = false;
+    this.cdr.markForCheck();
+  }
+
+  cargarTodosSugeridos(): void {
+    const elegibles = this.productosCalculoFiltrados.filter(
+      p => !p.error_conversion && Number(p.cantidad_sugerida_despacho ?? 0) > 0,
+    );
+    if (!elegibles.length) {
+      void this.alertas.info('Sin cantidades pendientes', 'No hay productos con cantidad neta sugerida positiva para cargar.');
+      return;
+    }
+
+    // Validación estricta: No permitir combinar perecederos con no perecederos en un mismo despacho
+    const tienePer = elegibles.some(p => p.es_perecedero);
+    const tieneNoPer = elegibles.some(p => !p.es_perecedero);
+    if (tienePer && tieneNoPer) {
+      void this.alertas.warning(
+        'Tipos de mercado mixtos',
+        'El cálculo contiene perecederos y no perecederos. Selecciona la pestaña "Perecederos" o "No perecederos" para cargarlos por separado sin combinarlos.'
+      );
+      return;
+    }
+
+    elegibles.forEach(p => {
+      const fila = this.asegurarSeleccionDesdeCalculo(p);
+      this.fijarCantidadEnviar(fila, Math.round(Number(p.cantidad_sugerida_despacho) * 100) / 100);
+    });
+    this.mostrarHistorialEnvios = false;
+    this.cdr.markForCheck();
+  }
+
+  verSoporteCalculoPorEntrega(idEntrega?: number): void {
+    if (!idEntrega) return;
+    this.cargandoSoporte = true;
+    this.mostrarModalSoporte = true;
+    this.soporteSeleccionado = null;
+    this.entregasService.obtenerSoporteCalculoPorEntrega(idEntrega).subscribe({
+      next: soporte => {
+        this.soporteSeleccionado = soporte;
+        this.cargandoSoporte = false;
+        this.cdr.markForCheck();
+      },
+      error: err => {
+        this.cargandoSoporte = false;
+        this.mostrarModalSoporte = false;
+        void this.alertas.error('Soporte no disponible', this.describirError(err));
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
   // ===================== ENVÍO DESDE EL PANEL (un botón para uno o varios productos) =====================
   private cantidadesEnviar: Record<number, number | null> = {};
   errorEnvioPanel = '';
   guardandoEnvio = false;
 
+  // La fecha del envío es siempre la de hoy y se pone sola; el responsable es el usuario con sesión iniciada
+  private _envioFechaOverride: string | null = null;
+  private _envioResponsableOverride: string | null = null;
+  get envioFecha(): string {
+    return this._envioFechaOverride !== null ? this._envioFechaOverride : this.fechaHoy();
+  }
+  set envioFecha(valor: string) {
+    this._envioFechaOverride = valor;
+  }
+  get envioResponsable(): string {
+    if (this._envioResponsableOverride !== null) {
+      return this._envioResponsableOverride;
+    }
+    const usuario: any = this.authService.obtenerUsuario();
+    return usuario?.nombre ?? usuario?.username ?? usuario?.first_name ?? 'Sistema';
+  }
+  set envioResponsable(valor: string) {
+    this._envioResponsableOverride = valor;
+  }
+
   disponibleDe(sel: FilaEntrega): number {
-    return this.totalesDisponibles.get(this.claveProducto(sel.idIngrediente, sel.ingrediente)) ?? 0;
+    return sel.idIngrediente == null ? 0 : this.saldosInventario.get(sel.idIngrediente) ?? 0;
   }
 
   cantidadEnviarDe(sel: FilaEntrega): number {
@@ -805,22 +1611,146 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
 
   enviarSeleccionados(): void {
     if (this.guardandoEnvio) return;
-    const items = this.productosParaEnviar;
+    const items = this.productosParaEnviar.map(sel => {
+      const producto = this.catalogoMenu.find(p => p.id === sel.idIngrediente);
+      if (!producto) return sel;
+      return {
+        ...sel,
+        idTipoMercado: sel.idTipoMercado ?? this.idTipoMercadoDeProducto(producto),
+        fechaVencimiento: this.fechaVencimientoParaEnvio(producto, sel.fechaVencimiento),
+      };
+    });
     const fallo = (m: string) => { this.errorEnvioPanel = m; };
     this.errorEnvioPanel = '';
 
     if (!items.length) return fallo('Escribe la cantidad a enviar de al menos un producto.');
-    const excedidos = items.filter(s => this.cantidadEnviarDe(s) > this.disponibleDe(s));
-    if (excedidos.length) return fallo(`No puedes enviar más de lo disponible: ${excedidos.map(s => s.ingrediente).join(', ')}.`);
-    const incompletos = items.filter(s => !s.idIngrediente || !s.idTipoMercado || !s.fechaVencimiento);
-    if (incompletos.length) return fallo(`Faltan datos requeridos para registrar el envío de: ${incompletos.map(s => s.ingrediente).join(', ')}.`);
+
+    // Validación estricta: No combinar productos perecederos con no perecederos en la misma entrega
+    const tienePerecederos = items.some(s => this.esPerecedero(s as any));
+    const tieneNoPerecederos = items.some(s => !this.esPerecedero(s as any));
+    if (tienePerecederos && tieneNoPerecederos) {
+      return fallo('No se pueden combinar productos perecederos con no perecederos en una misma entrega. Registra los perecederos y los no perecederos en despachos separados.');
+    }
+
+    const excedidosStock = items.filter(s => this.cantidadEnviarDe(s) > this.disponibleDe(s));
+    if (excedidosStock.length) return fallo(`No puedes enviar más de lo disponible en bodega: ${excedidosStock.map(s => s.ingrediente).join(', ')}.`);
+
+    const excesosCalculo = this.itemsConExcesoCalculo;
+    if (excesosCalculo.length > 0) {
+      if (!this.autorizacionExceso) {
+        return fallo(
+          `Las cantidades de ${excesosCalculo.map(x => x.sel.ingrediente).join(', ')} superan el cálculo nutricional. Marca la autorización e ingresa responsable y justificación.`,
+        );
+      }
+      if (!this.autorizadoPor.trim() || this.justificacionExceso.trim().length < 5) {
+        return fallo('Ingresa quién autoriza el excedente y una justificación técnica de al menos 5 caracteres.');
+      }
+    }
+
+    const incompletos = items.flatMap(s => {
+      const producto = this.catalogoMenu.find(p => p.id === s.idIngrediente);
+      const mercadoEsperado = producto
+        ? (this.esPerecedero(producto) ? 'Perecedero' : 'No perecedero')
+        : 'sin producto de catálogo';
+      const faltantes = [
+        !s.idIngrediente ? 'ingrediente' : '',
+        !s.idTipoMercado
+          ? `tipo de mercado (categoría: ${producto?.categoria || 'sin dato'}; conservación: ${this.tiposInventario.get(s.idIngrediente ?? -1) || 'sin dato'}; esperado: ${mercadoEsperado}; opciones: ${this.tiposMercado.map(tipo => `${tipo.id}=${tipo.nombre}`).join(', ') || 'ninguna'})`
+          : '',
+        !s.fechaVencimiento ? 'fecha de vencimiento' : '',
+      ].filter(Boolean);
+      return faltantes.length ? [`${s.ingrediente} (${faltantes.join(', ')})`] : [];
+    });
+    if (incompletos.length) return fallo(`Faltan datos requeridos para registrar el envío: ${incompletos.join('; ')}.`);
 
     const destino = this.destinosDisponibles[0] || this.nombreInstitucion;
     const datos = this.datosInstitucion(destino);
     if (datos.id_institucion === undefined) return fallo('No se encontró el identificador de la institución.');
 
-    const hoy = this.fechaHoy();
+    const hoy = this.envioFecha;                       // siempre la fecha de hoy
+    // El responsable es el usuario que inició sesión (ya no se escribe a mano)
+    const usuario: any = this.authService.obtenerUsuario();
+    const responsable: string = (this.envioResponsable || '').trim();
+    if (!hoy.trim()) return fallo('Indica la fecha de envío.');
+    if (!responsable) return fallo('Indica el responsable del envío.');
     this.guardandoEnvio = true;
+
+    // Flujo HU 5 cuando hay una sede específica seleccionada: despacho-lote atómico + snapshot auditable
+    if (this.idSede != null) {
+      const payloadLote: DespachoLotePayload = {
+        id_sede: this.idSede,
+        fecha_entrega: hoy,
+        id_jornada: this.idJornadaCalculo ?? undefined,
+        id_contrato: this.calculoAbastecimiento?.contrato?.id_contrato ?? undefined,
+        dias_perecederos: this.diasPerecederosFiltro ?? undefined,
+        dias_no_perecederos: this.diasNoPerecederosFiltro ?? undefined,
+        incluir_todos_gramajes: this.incluirTodosGramajes,
+        validar_contra_calculo: this.calculoAbastecimiento != null,
+        autorizacion_exceso: this.autorizacionExceso,
+        autorizado_por: this.autorizacionExceso ? this.autorizadoPor.trim() : '',
+        justificacion_exceso: this.autorizacionExceso ? this.justificacionExceso.trim() : '',
+        observaciones: `Responsable: ${responsable}`,
+        frecuencia: items[0]?.frecuencia || 'Semanal',
+        items: items.map(sel => ({
+          id_ingrediente: sel.idIngrediente!,
+          cantidad: this.cantidadEnviarDe(sel),
+          unidad: this.normalizarUnidad(sel.unidad) || 'Kg',
+          id_tipo_mercado: sel.idTipoMercado!,
+          fecha_vencimiento: sel.fechaVencimiento,
+        })),
+      };
+
+      this.entregasService.despachoLote(payloadLote).subscribe({
+        next: resp => {
+          this.guardandoEnvio = false;
+          this.ultimoDocumentoCalculo = resp.codigo_documento;
+          if (resp.calculo_soporte) {
+            this.soporteSeleccionado = resp.calculo_soporte;
+          }
+          const despachos = resp.despachos ?? [];
+          const ahoraISO = new Date().toISOString();
+          const hora = this.horaDe(ahoraISO), lote = resp.codigo_documento || String(Date.now());
+          const registros: EnvioRegistro[] = items.map((sel, i) => ({
+            id: Number(despachos[i]?.id_entrega ?? Date.now() + i),
+            idInstitucion: datos.id_institucion ?? null,
+            ingrediente: sel.ingrediente,
+            cantidad: this.cantidadEnviarDe(sel),
+            unidad: this.normalizarUnidad(sel.unidad) || 'Kg',
+            destino, fechaSalida: hoy, fechaEntrega: hoy, enviadoEl: hoy, responsable,
+          }));
+
+          items.forEach((sel, i) => {
+            const idResp = despachos[i]?.id_entrega;
+            const cant = this.cantidadEnviarDe(sel);
+            const uni = this.normalizarUnidad(sel.unidad) || 'Kg';
+            this.recordarIdEnvio(idResp);
+            this.guardarExtra(idResp, { idIngrediente: sel.idIngrediente, cantidad: cant, unidad: uni, perecedero: this.esPerecedero(sel as any) }, { destino, responsable, hora, fechaRegistro: hoy, loteRegistro: lote });
+            this.fijarCantidadEnviar(sel, null);
+          });
+
+          this.autorizacionExceso = false;
+          this.autorizadoPor = '';
+          this.justificacionExceso = '';
+          this.historialEnvios = [...registros, ...this.historialEnvios];
+          this.cargarHistorial();
+          this.cargarCatalogos();
+          this.calcularAbastecimiento(false);
+          void this.alertas.success(
+            'Despacho registrado con soporte auditable',
+            `${items.length} producto(s) despachados a ${destino}. Documento: ${resp.codigo_documento}.`,
+          );
+          this.cdr.markForCheck();
+        },
+        error: err => {
+          this.guardandoEnvio = false;
+          const msg = err?.error?.error || this.describirError(err);
+          this.errorEnvioPanel = msg;
+          void this.alertas.error('No se pudo confirmar el despacho', msg);
+          this.cdr.markForCheck();
+        },
+      });
+      return;
+    }
 
     const peticiones = items.map(sel => {
       const cantidad = this.cantidadEnviarDe(sel);
@@ -828,12 +1758,13 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       return this.entregasService.registrar({
         id_ingrediente: sel.idIngrediente!, id_tipo_mercado: sel.idTipoMercado!, ...datos,
         fecha_entrega: hoy, fecha_salida: hoy, fecha_vencimiento: sel.fechaVencimiento,
-        cantidad, observaciones: '', frecuencia: sel.frecuencia, unidad, destino,
+        cantidad, frecuencia: sel.frecuencia, unidad, destino, responsable,
+        observaciones: `Responsable: ${responsable}`,
       } as any).pipe(
-        map(() => ({ ok: true, sel, cantidad, unidad, motivo: '' })),
+        map((resp: any) => ({ ok: true, sel, cantidad, unidad, motivo: '', idResp: (resp?.id ?? resp?.id_entrega) as any })),
         catchError(error => {
           console.error(`Error al enviar ${sel.ingrediente}:`, error?.error ?? error);   // respuesta completa en la consola (F12)
-          return of({ ok: false, sel, cantidad, unidad, motivo: this.describirError(error) });
+          return of({ ok: false, sel, cantidad, unidad, motivo: this.describirError(error), idResp: undefined as any });
         }),
       );
     });
@@ -847,12 +1778,67 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       // Se muestran al instante; al recargar se reemplazan por los del servidor
       const registros: EnvioRegistro[] = exitosos.map((r, i) => ({
         id: Date.now() + i, idInstitucion: datos.id_institucion ?? null, ingrediente: r.sel.ingrediente,
-        cantidad: r.cantidad, unidad: r.unidad, destino, fechaSalida: hoy, fechaEntrega: hoy, enviadoEl: hoy,
+        cantidad: r.cantidad, unidad: r.unidad, destino, fechaSalida: hoy, fechaEntrega: hoy, enviadoEl: hoy, responsable,
       }));
+
+      const ahoraISO = new Date().toISOString();
+      const hora = this.horaDe(ahoraISO), lote = String(Date.now());
+
+      exitosos.forEach(r => {
+        this.recordarIdEnvio(r.idResp);
+        this.guardarExtra(r.idResp, { idIngrediente: r.sel.idIngrediente, cantidad: r.cantidad, unidad: r.unidad, perecedero: this.esPerecedero(r.sel as any) }, { destino, responsable, hora, fechaRegistro: hoy, loteRegistro: lote });
+      });
+
+      try {
+        const locales: any[] = JSON.parse(localStorage.getItem('sirae_entregas_locales') || '[]');
+        exitosos.forEach(r => {
+          locales.unshift({
+            id: r.idResp,
+            idIngrediente: r.sel.idIngrediente,
+            idTipoMercado: r.sel.idTipoMercado,
+            ingrediente: r.sel.ingrediente,
+            tipoMercado: this.esPerecedero(r.sel as any) ? 'Perecederos' : 'Granos',
+            frecuencia: r.sel.frecuencia || 'Semanal',
+            cantidad: r.cantidad,
+            unidad: r.unidad,
+            fechaRecepcion: hoy,
+            fechaVencimiento: r.sel.fechaVencimiento || '',
+            destino,
+            institucionNombre: this.nombreInstitucion,
+            responsable,
+            observaciones: `Responsable: ${responsable}`,
+            estado: 'EN_TRANSITO',
+          });
+        });
+        localStorage.setItem('sirae_entregas_locales', JSON.stringify(locales));
+      } catch {}
+
       this.historialEnvios = [...registros, ...this.historialEnvios];
+
+      // Aparece de inmediato en Entradas
+      this.entregasRaw = [...exitosos.map((r, i) => ({
+        id: r.idResp ?? Date.now() + i,
+        id_ingrediente: r.sel.idIngrediente,
+        id_tipo_mercado: r.sel.idTipoMercado,
+        cantidad: r.cantidad,
+        unidad: r.unidad,
+        fecha_entrega: hoy,
+        fecha_salida: hoy,
+        fecha_vencimiento: r.sel.fechaVencimiento,
+        frecuencia: r.sel.frecuencia,
+        destino,
+        responsable,
+        observaciones: `Responsable: ${responsable}`,
+        created_at: ahoraISO,
+        lote_registro: lote,
+      })), ...this.entregasRaw];
+      this.reconstruirHistorial();
+
       exitosos.forEach(r => this.fijarCantidadEnviar(r.sel, null));
-      this.recalcularTotales();
-      if (exitosos.length) { this.mostrarHistorialEnvios = true; this.cargarHistorial(); }
+      if (exitosos.length) {
+        this.cargarHistorial();
+        this.cargarCatalogos();
+      }
 
       if (fallidos.length) {
         this.errorEnvioPanel = `Se enviaron ${exitosos.length} producto(s). No se pudo enviar: ${fallidos.map(r => `${r.sel.ingrediente} (${r.motivo})`).join('; ')}.`;
@@ -864,7 +1850,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ===================== CALENDARIO =====================
+  // ===================== CALENDARIO (vista Historial) =====================
   mostrarCalendario = false;
   mesCalendario = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
   diaSeleccionado = this.aISO(new Date());
@@ -928,7 +1914,8 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     return estado === 'Vencido' ? 'est-bad' : estado === 'Próximo a vencer' ? 'est-warn' : 'est-ok';
   }
 
-  // Entregas del día agrupadas por código (si no hay, usa el folio CI-AAAAMMDD)
+  // Entradas del día agrupadas por código (si no hay, usa el folio CI-AAAAMMDD).
+  // El mismo producto (y unidad) se suma en una sola línea.
   get registrosDelDia(): RegistroDia[] {
     const mapa = new Map<string, RegistroDia>();
     for (const e of this.delDia('fechaRecepcion')) {
@@ -939,6 +1926,15 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       mapa.set(codigo, reg);
     }
     for (const reg of mapa.values()) {
+      const unidos = new Map<string, FilaEntrega>();
+      for (const i of reg.items) {
+        const k = `${this.claveProducto(i.idIngrediente, i.ingrediente)}|${this.normalizarUnidad(i.unidad) || i.unidad}`;
+        const previo = unidos.get(k);
+        if (previo) previo.cantidad = Math.round((previo.cantidad + i.cantidad) * 100) / 100;
+        else unidos.set(k, { ...i });
+      }
+      reg.items = Array.from(unidos.values());
+
       reg.destino = reg.items.find(i => i.destino)?.destino || this.nombreInstitucion || '—';
       reg.hora = reg.items.find(i => i.hora)?.hora || '—';
       reg.responsable = reg.items.find(i => i.responsable)?.responsable || '—';
@@ -958,10 +1954,10 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
   guardandoEntrada = false;
   errorEntrada = '';
   busquedaEntrada = '';
-  readonly unidadesEntrada = ['Kg', 'Litros', 'Unidades'];
+  readonly unidadesEntrada = ['Kg', 'Libras', 'Litros', 'Unidades'];
 
-  abrirModalEntrada(): void {
-    this.entradaFecha = this.fechaHoy();
+  abrirModalEntrada(fecha?: string): void {
+    this.entradaFecha = fecha || this.fechaHoy();
     const sedeActual = this.nombreSede ? this.destinosDisponibles.find(d => d.endsWith(` - ${this.nombreSede}`)) : undefined;
     this.entradaDestino = sedeActual ?? this.destinosDisponibles[0] ?? '';
     this.entradaResponsable = this.busquedaEntrada = this.errorEntrada = '';
@@ -975,12 +1971,19 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
   }
 
   estaEnEntrada(id: number): boolean { return this.entradaFilas.some(f => f.idIngrediente === id); }
+
+  // Un producto no se repite: si ya tiene entrada ese día y destino, no se puede volver a registrar
+  yaRegistrado(id: number | null): boolean {
+    return id != null && this.historial.some(e => e.idIngrediente === id && e.fechaRecepcion === this.entradaFecha
+      && this.norm(e.destino || this.nombreInstitucion) === this.norm(this.entradaDestino));
+  }
   nombreIngrediente(id: number | null): string { return this.ingredientes.find(i => i.id === id)?.nombre ?? ''; }
 
   // Un toque agrega el producto; otro lo quita. Se sugiere su unidad y si es perecedero.
   alternarProductoEntrada(id: number): void {
     const i = this.entradaFilas.findIndex(f => f.idIngrediente === id);
     if (i >= 0) { this.entradaFilas.splice(i, 1); return; }
+    if (this.yaRegistrado(id)) { this.errorEntrada = `${this.nombreIngrediente(id)} ya está registrado ese día y no se puede repetir.`; return; }
     const producto = this.catalogoMenu.find(p => p.id === id);
     this.entradaFilas.push({
       idIngrediente: id, cantidad: null,
@@ -1021,14 +2024,71 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
 
   private claveCompuesta(idIng: number | null, fecha: string, cantidad: number): string { return `${idIng}|${fecha}|${cantidad}`; }
 
+  // ---- Respaldo del responsable de cada ENVÍO (solo para envíos antiguos que sí lo guardaron) ----
+  private readonly claveExtrasEnvio = 'sirae_envios_responsable';
+  private extrasEnvio: Record<string, string> = this.leerExtrasEnvio();
+
+  // ---- Ids de los registros que fueron ENVÍOS (por si el servidor no devuelve "fecha_salida") ----
+  private readonly claveIdsEnvio = 'sirae_envios_ids';
+  private idsEnvio = new Set<string>(this.leerIdsEnvio());
+
+  private leerIdsEnvio(): string[] {
+    try {
+      const v = JSON.parse(localStorage.getItem(this.claveIdsEnvio) || '[]');
+      return Array.isArray(v) ? v.map(String) : [];
+    } catch { return []; }
+  }
+
+  private esEnvio(item: any): boolean {
+    return !!item?.fecha_salida || this.idsEnvio.has(String(item?.id_entrega ?? item?.id));
+  }
+
+  private recordarIdEnvio(idResp: any): void {
+    if (idResp == null) return;
+    this.idsEnvio.add(String(idResp));
+    this.guardarCache(this.claveIdsEnvio, Array.from(this.idsEnvio));
+  }
+
+  private leerExtrasEnvio(): Record<string, string> {
+    try { return JSON.parse(localStorage.getItem(this.claveExtrasEnvio) || '{}'); } catch { return {}; }
+  }
+
+  private claveEnvio(ingrediente: string, fecha: string, cantidad: number): string {
+    return `${this.norm(ingrediente)}|${fecha}|${Number(cantidad)}`;
+  }
+
+  // Busca el responsable guardado (de envíos antiguos) probando de la clave más exacta a la más general
+  private responsableEnvioGuardado(item: any): string {
+    const ref = item.id_ingrediente ?? item.ingrediente;
+    const idIng = typeof ref === 'object' && ref ? Number(ref.id ?? ref.id_ingrediente) : Number(ref);
+    const nombre = (typeof item.ingrediente === 'string' ? item.ingrediente : '') || item.ingrediente_nombre
+      || (item.ingrediente && typeof item.ingrediente === 'object' ? item.ingrediente.nombre : '')
+      || this.ingredientes.find(i => i.id === idIng)?.nombre || '';
+    const fecha = this.soloFecha(item.fecha_salida ?? item.fecha_entrega);
+    const cant = Number(item.cantidad) || 0;
+    const destino = typeof item.destino === 'string' ? item.destino : '';
+    const e = this.extrasEnvio;
+    return e[`id:${item.id_entrega ?? item.id}`]
+      ?? e[`ing:${idIng}|${fecha}|${cant}`]
+      ?? e[this.claveEnvio(nombre, fecha, cant)]
+      ?? e[`ing:${idIng}|${fecha}`]
+      ?? e[`dia:${fecha}|${this.norm(destino)}`]
+      ?? e[`dia:${fecha}`] ?? '';
+  }
+
   private guardarExtra(id: number | undefined, fila: EntradaFila, datos: ExtraEntrada): void {
     if (id != null) this.extras[`id:${id}`] = datos;
     this.extras[this.claveCompuesta(fila.idIngrediente, this.entradaFecha, fila.cantidad ?? 0)] = datos;
+    this.extras[`${fila.idIngrediente}|${this.entradaFecha}`] = datos;   // respaldo: mismo producto y día
+    this.extras[`dia:${this.entradaFecha}|${this.norm(datos.destino)}`] = datos;   // respaldo: mismo día y destino
     this.guardarCache(this.claveExtras, this.extras);
   }
 
-  private extraDe(id: number | undefined, idIng: number | null, fecha: string, cantidad: number): ExtraEntrada | undefined {
-    return (id != null ? this.extras[`id:${id}`] : undefined) ?? this.extras[this.claveCompuesta(idIng, fecha, cantidad)];
+  private extraDe(id: number | undefined, idIng: number | null, fecha: string, cantidad: number, destino = ''): ExtraEntrada | undefined {
+    return (id != null ? this.extras[`id:${id}`] : undefined)
+      ?? this.extras[this.claveCompuesta(idIng, fecha, cantidad)]
+      ?? this.extras[`${idIng}|${fecha}`]
+      ?? this.extras[`dia:${fecha}|${this.norm(destino || this.destinosDisponibles[0] || this.nombreInstitucion)}`];
   }
 
   guardarEntrada(): void {
@@ -1039,8 +2099,18 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
 
     if (!this.entradaFecha) return error('Selecciona la fecha de entrega.');
     if (!this.entradaDestino.trim()) return error('Elige el destino.');
-    if (!this.entradaResponsable.trim()) return error('Escribe el nombre del responsable.');
+    if (!this.entradaResponsable.trim()) return error('Escribe quién hizo el registro (responsable).');
     if (!filas.length) return error('Toca los productos que entran para agregarlos.');
+
+    // Validación estricta: No combinar productos perecederos con no perecederos en la entrada manual
+    const tienePerEntrada = filas.some(f => f.perecedero);
+    const tieneNoPerEntrada = filas.some(f => !f.perecedero);
+    if (tienePerEntrada && tieneNoPerEntrada) {
+      return error('No se pueden combinar productos perecederos con no perecederos en un mismo registro. Debes registrarlos por separado.');
+    }
+
+    const repetidos = filas.filter(f => this.yaRegistrado(f.idIngrediente));
+    if (repetidos.length) return error(`Ya están registrados ese día y no se pueden repetir: ${repetidos.map(f => this.nombreIngrediente(f.idIngrediente)).join(', ')}.`);
     if (sinCantidad.length) return error(`Escribe la cantidad de: ${sinCantidad.map(f => this.nombreIngrediente(f.idIngrediente)).join(', ')}.`);
     if (filas.some(f => this.idTipoMercadoDe(f.perecedero) == null)) return error('No se encontró el tipo de mercado (Perecedero / No perecedero) en el catálogo del servidor.');
 
@@ -1053,9 +2123,10 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       frecuencia: this.datosAutomaticos(f).frecuencia, cantidad: f.cantidad!, unidad: f.unidad,
       fecha_entrega: this.entradaFecha, fecha_vencimiento: this.datosAutomaticos(f).vencimiento,
       ...this.datosInstitucion(this.entradaDestino),
-      destino: this.entradaDestino.trim(), responsable: this.entradaResponsable.trim(), observaciones: '',
+      destino: this.entradaDestino.trim(), responsable: this.entradaResponsable.trim(),
+      observaciones: `Responsable: ${this.entradaResponsable.trim()}`,   // se guarda en la base de datos
     } as any).pipe(
-      map((resp: any) => ({ ok: true, fila: f, id: resp?.id as number | undefined })),
+      map((resp: any) => ({ ok: true, fila: f, id: (resp?.id ?? resp?.id_entrega) as number | undefined })),
       catchError(err => {
         console.error('Error al registrar entrada', err);
         motivoFallo = this.describirError(err);
@@ -1073,6 +2144,30 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       const destino = this.entradaDestino.trim(), responsable = this.entradaResponsable.trim();
       exitosas.forEach(r => this.guardarExtra(r.id, r.fila, { destino, responsable, hora, fechaRegistro: this.fechaHoy(), loteRegistro: lote }));
 
+      try {
+        const locales: any[] = JSON.parse(localStorage.getItem('sirae_entregas_locales') || '[]');
+        exitosas.forEach(r => {
+          locales.unshift({
+            id: r.id,
+            idIngrediente: r.fila.idIngrediente,
+            idTipoMercado: this.idTipoMercadoDe(r.fila.perecedero),
+            ingrediente: this.nombreIngrediente(r.fila.idIngrediente),
+            tipoMercado: r.fila.perecedero ? 'Perecederos' : 'Granos',
+            frecuencia: this.datosAutomaticos(r.fila).frecuencia,
+            cantidad: r.fila.cantidad ?? 0,
+            unidad: r.fila.unidad,
+            fechaRecepcion: this.entradaFecha,
+            fechaVencimiento: this.datosAutomaticos(r.fila).vencimiento,
+            destino,
+            institucionNombre: this.nombreInstitucion,
+            responsable,
+            observaciones: `Responsable: ${responsable}`,
+            estado: 'EN_TRANSITO',
+          });
+        });
+        localStorage.setItem('sirae_entregas_locales', JSON.stringify(locales));
+      } catch {}
+
       if (exitosas.length) {
         this.mostrarHistorialEnvios = true;
         // Aparece en el Historial al instante; al responder el servidor se reemplaza por los datos reales
@@ -1088,6 +2183,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
         this.mesCalendario = new Date(anio, mes - 1, 1);
         this.diaSeleccionado = this.entradaFecha;
         this.cargarHistorial();
+        this.cargarCatalogos();
       }
 
       if (!fallidas.length) {
@@ -1146,12 +2242,32 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     const filasDetalle = lista.map(e => [this.fechaCorta(e.fechaRecepcion), esc(e.ingrediente), esc(e.tipoMercado), esc(e.frecuencia),
       esc(e.cantidad), esc(e.unidad), this.fechaCorta(e.fechaVencimiento), esc(this.estadoDe(e))]);
 
+    let tablaEnvios = '';
+    if (this.historialEnvios.length) {
+      const thAzul = 'style="background:#0D9488;color:#FFFFFF;font-weight:bold;text-align:center"';
+      const filasEnv = this.historialEnvios.map(v => [
+        this.fechaCorta(v.fechaSalida || v.fechaEntrega),
+        esc(v.destino),
+        esc(v.responsable || '—'),
+        esc(v.ingrediente),
+        esc(v.cantidad),
+        esc(v.unidad),
+      ]);
+      tablaEnvios = `<br><br>
+        <table><tr><td colspan="6" style="font-size:14pt;font-weight:bold;border:none">Facturas y envíos despachados</td></tr></table>
+        <table border="1"><thead><tr>
+          ${['Fecha de envío', 'Destino', 'Responsable (quién despachó)', 'Producto', 'Cantidad', 'Unidad'].map(c => `<th ${thAzul}>${c}</th>`).join('')}
+        </tr></thead>
+        <tbody>${filasEnv.map(f => `<tr>${f.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+    }
+
     const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
       <head><meta charset="UTF-8"></head><body>
       ${tabla(`Resumen por producto (total recibido) - ${esc(this.nombreInstitucion)}`,
         ['Producto', 'Tipo de mercado', 'Unidad', 'Total recibido', 'N.º de entregas', 'Última entrega', 'Próximo vencimiento', 'Estado última entrega'], filasResumen)}
       <br><br>
       ${tabla('Detalle de entregas', ['Fecha', 'Ingrediente', 'Tipo de mercado', 'Frecuencia', 'Cantidad', 'Unidad', 'Vencimiento', 'Estado'], filasDetalle)}
+      ${tablaEnvios}
       </body></html>`;
 
     const url = URL.createObjectURL(new Blob(['\ufeff' + html], { type: 'application/vnd.ms-excel;charset=utf-8;' }));

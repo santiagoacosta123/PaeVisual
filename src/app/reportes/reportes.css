@@ -1,0 +1,349 @@
+/* ========================================================= */
+/* ESTILOS PANTALLA: REPORTES Y PLANILLAS OFICIALES PAE     */
+/* ========================================================= */
+
+.fx-roboto, .fx-roboto *:not(.material-symbols-outlined) { 
+  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; 
+}
+
+.fx-panel { 
+  position: relative; 
+  background: #ffffff; 
+  border-radius: 24px; 
+  border: 1px solid #f1f5f9; 
+  box-shadow: 0 10px 30px -18px rgba(15, 23, 42, .08); 
+}
+
+.ico-naranja { 
+  background: linear-gradient(135deg, #faa911 0%, #e69a0c 100%); 
+  color: #fff; 
+}
+
+.btn-naranja { 
+  background: linear-gradient(135deg, #faa911 0%, #e69a0c 100%); 
+  color: #fff; 
+  box-shadow: 0 10px 20px -8px rgba(250, 169, 17, .6); 
+  transition: all .2s ease; 
+}
+
+.btn-naranja:hover:not(:disabled) { 
+  filter: brightness(1.05); 
+  transform: translateY(-2px); 
+}
+
+.btn-naranja:active:not(:disabled) { 
+  transform: scale(.97); 
+}
+
+.btn-outline-naranja {
+  background: #fff;
+  border: 1.5px solid #faa911;
+  color: #b45309;
+  transition: all .2s ease;
+}
+
+.btn-outline-naranja:hover:not(:disabled) {
+  background: #fffbeb;
+  transform: translateY(-2px);
+}
+
+.btn-rojo-pdf {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: #fff;
+  box-shadow: 0 8px 18px -6px rgba(239, 68, 68, .5);
+  transition: all .2s ease;
+}
+
+.btn-rojo-pdf:hover {
+  filter: brightness(1.06);
+  transform: translateY(-2px);
+}
+
+.pestana-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 14px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #64748b;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  cursor: pointer;
+  transition: all .2s ease;
+}
+
+.pestana-btn:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+.pestana-btn.activa {
+  background: #ffd03a;
+  border-color: #f5a300;
+  color: #1e293b;
+  box-shadow: 0 4px 12px -4px rgba(245, 163, 0, .4);
+}
+
+/* Tabla de Planillas Oficiales */
+.tabla-oficial-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: #fff;
+}
+
+.tabla-oficial {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  text-align: left;
+}
+
+.tabla-oficial th {
+  background: #f8fafc;
+  color: #1e293b;
+  font-weight: 800;
+  padding: 8px 10px;
+  border: 1px solid #cbd5e1;
+  text-transform: uppercase;
+  font-size: 11px;
+}
+
+.tabla-oficial td {
+  padding: 6px 10px;
+  border: 1px solid #e2e8f0;
+  color: #334155;
+}
+
+.tabla-oficial tr:hover td {
+  background-color: #fffdf5;
+}
+
+.tabla-kardex th, .tabla-kardex td {
+  text-align: center;
+  padding: 5px 6px;
+  font-size: 11px;
+}
+
+.tabla-kardex td.texto-izq {
+  text-align: left;
+}
+
+.col-semana {
+  background: #f1f5f9;
+  font-weight: 800;
+}
+
+/* Header oficial de las planillas en pantalla */
+.hoja-oficial-preview {
+  background: #ffffff;
+  border: 2px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 8px 24px -12px rgba(0,0,0,.1);
+}
+
+.encabezado-membrete {
+  border: 1.5px solid #000;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  display: grid;
+  grid-template-columns: 90px 1fr 140px;
+  gap: 12px;
+  align-items: center;
+  background: #fafafa;
+}
+
+.membrete-titulo {
+  text-align: center;
+}
+
+.membrete-titulo h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: .02em;
+  color: #000;
+}
+
+.membrete-titulo h4 {
+  margin: 2px 0 0;
+  font-size: 12px;
+  font-weight: 800;
+  color: #111;
+}
+
+.membrete-meta {
+  border-top: 1px solid #000;
+  margin-top: 6px;
+  padding-top: 4px;
+  display: flex;
+  justify-content: space-around;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+/* Grilla de Datos de la Sede */
+.grid-datos-sede {
+  border: 1px solid #000;
+  margin-bottom: 14px;
+  font-size: 11px;
+  background: #fff;
+}
+
+.grid-datos-sede table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.grid-datos-sede td, .grid-datos-sede th {
+  border: 1px solid #000;
+  padding: 4px 6px;
+}
+
+/* Bloque de Firmas */
+.bloque-firmas {
+  margin-top: 24px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.caja-firma {
+  border: 1px solid #000;
+  padding: 10px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 110px;
+  font-size: 10.5px;
+}
+
+.linea-firma {
+  margin-top: 35px;
+  border-top: 1px solid #000;
+  padding-top: 4px;
+}
+
+/* Inputs de edición en tabla */
+.input-tabla {
+  width: 100%;
+  border: 1px solid #faa911;
+  background: #fffbeb;
+  border-radius: 4px;
+  padding: 2px 4px;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-align: right;
+}
+
+/* ========================================================= */
+/* ESTILOS PARA IMPRESIÓN Y EXPORTACIÓN A PDF (@media print) */
+/* ========================================================= */
+
+@media print {
+  /* Ocultar elementos no imprimibles */
+  body {
+    background: #fff !important;
+    color: #000 !important;
+    font-size: 9pt !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Ocultar sidebar, nav, barras de herramientas, botones */
+  .no-print,
+  app-reportes-consumo > section > header,
+  app-reportes-consumo > section > section.fx-panel,
+  .pestanas-selector,
+  .barra-acciones-planillas,
+  .modal-overlay,
+  nav,
+  aside,
+  header.sx-hero,
+  button,
+  .sweet-alert,
+  .swal2-container {
+    display: none !important;
+  }
+
+  /* Contenedor que se imprime */
+  .zona-impresion-oficial {
+    display: block !important;
+    visibility: visible !important;
+    position: static !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  .hoja-oficial-preview {
+    border: none !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .encabezado-membrete {
+    border: 1.5pt solid #000 !important;
+    background: #fff !important;
+  }
+
+  .tabla-oficial-wrap {
+    border: none !important;
+    border-radius: 0 !important;
+    overflow: visible !important;
+  }
+
+  .tabla-oficial {
+    font-size: 7.5pt !important;
+    border-collapse: collapse !important;
+    width: 100% !important;
+  }
+
+  .tabla-oficial th,
+  .tabla-oficial td {
+    border: 0.8pt solid #000 !important;
+    padding: 2pt 3pt !important;
+    color: #000 !important;
+    background: #fff !important;
+  }
+
+  .tabla-kardex th,
+  .tabla-kardex td {
+    font-size: 6.8pt !important;
+    padding: 1.5pt 2pt !important;
+  }
+
+  .caja-firma {
+    border: 0.8pt solid #000 !important;
+    font-size: 7.5pt !important;
+    min-height: 80pt !important;
+  }
+
+  .linea-firma {
+    margin-top: 25pt !important;
+    border-top: 0.8pt solid #000 !important;
+  }
+
+  /* Evitar saltos de página partidos */
+  tr {
+    page-break-inside: avoid !important;
+  }
+
+  .seccion-perecederos,
+  .seccion-no-perecederos,
+  .seccion-aseo,
+  .bloque-firmas {
+    page-break-inside: avoid !important;
+  }
+
+  @page {
+    margin: 6mm;
+  }
+}

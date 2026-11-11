@@ -15,6 +15,19 @@ describe('delivery routes', () => {
     expect(registrationRoute?.component).not.toBe(historyRoute?.component);
   });
 
+  it('limits delivery registration to super administrators and supervisors', () => {
+    const registrationRoute = children.find(route => route.path === 'registrar-entrega-alimentos');
+
+    expect(registrationRoute?.data?.['roles']).toEqual([
+      'superadministrador',
+      'super administrador',
+      'super admin',
+      'supervisor',
+      'coordinador',
+      'coordinador pae',
+    ]);
+  });
+
   describe('PAE operational routes', () => {
     const layoutRoute = routes.find(route => route.children !== undefined);
     const children = layoutRoute?.children ?? [];

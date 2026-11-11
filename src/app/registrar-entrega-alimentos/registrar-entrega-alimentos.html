@@ -1,708 +1,1478 @@
 <style>
-    .sirae-root { font-family: 'Roboto', sans-serif; background-color: #FBF9F5; color: #0F172A; min-height: 100vh; }
-    .fx-panel { position: relative; background: #fff; border-radius: 28px; border: 1px solid #F1F5F9; box-shadow: 0 10px 30px -18px rgba(15, 23, 42, .18); }
-    .toolbar-grupos { display: flex; flex-wrap: nowrap; align-items: center; gap: 8px; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
-    .toolbar-grupos::-webkit-scrollbar { display: none; }
-    .toolbar-grupos > div { flex: 0 0 auto; }
-    .toolbar-grupos button { white-space: nowrap; }
+        /* =====================================================================
+           SIRAE · Registrar entrega  (estilo verde con fotos)
+           ===================================================================== */
+        .sirae-root {
+            --bg: #FFF8E7; --panel: #FFFFFF; --line: #F0E2B8;
+            --g-dark: #D99A0B; --g: #F4B41F; --g-mid: #F4B41F; --g-soft: #FFF4D6; --g-soft2: #FDE7A6;
+            --yellow: #FFC72C; --ink: #0F172A; --mute: #64748B;
+            font-family: 'Roboto', sans-serif; color: var(--ink); min-height: 100vh;
+            /* Sin fondo propio: usa el mismo fondo de la página (igual que la barra de arriba) */
+            background: transparent; border: 0; border-radius: 0; box-shadow: none;
+        }
+        .sirae-root h1, .sirae-root h2, .sirae-root h3, .sirae-root h4, .sirae-root h5 { color: var(--ink); }
+        .sirae-root .text-slate-900 { color: #000; }
 
-    /* Categorías */
-    .menu-scroll { display: flex; gap: 12px; overflow-x: auto; padding: 6px 4px 14px; scroll-snap-type: x proximity; }
-    .menu-scroll::-webkit-scrollbar { height: 6px; }
-    .menu-scroll::-webkit-scrollbar-thumb { background: #FFD9A8; border-radius: 9999px; }
-    .menu-chip { flex: 0 0 auto; width: 105px; scroll-snap-align: start; }
-    .cat-card { position: relative; background: #fff; border: 1px solid #F1F5F9; box-shadow: 0 6px 18px -10px rgba(15, 23, 42, .18); transition: all .25s ease; }
-    .cat-card.active { border-color: #FDBA74; background: #FFF7ED; box-shadow: 0 0 0 2px #FED7AA, 0 10px 20px -10px rgba(255, 138, 0, .35); }
-    .cat-card.active .cat-label { color: #C2410C; }
-    .cat-count { background: linear-gradient(135deg, #FFA928, #FF8A00); color: #fff; }
-    .swipe-hint { animation: fxSwipe 1.6s ease-in-out infinite; }
-    @keyframes fxSwipe { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(6px); } }
+        .fx-panel { position: relative; background: #fff; border-radius: 24px; border: 1.5px solid var(--line); box-shadow: 0 12px 30px -20px rgba(180, 120, 0, .35); }
+        .custom-scroll { scrollbar-width: thin; scrollbar-color: #F2D28A transparent; }
+        .custom-scroll::-webkit-scrollbar { width: 5px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #F2D28A; border-radius: 9999px; }
 
-    /* Tarjetas de producto */
-    .prod-card { touch-action: pan-y; user-select: none; -webkit-user-select: none; position: relative; background: #fff; border-radius: 20px; padding: 16px 10px 12px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; min-height: 190px; box-shadow: 0 4px 12px -8px rgba(15, 23, 42, .12); border: 1px solid #F1F5F9; transition: transform .2s ease, translate .2s ease, box-shadow .2s ease, border-color .2s ease, background .2s ease; cursor: grab; }
-    .prod-card img { -webkit-user-drag: none; pointer-events: none; }
-    .prod-card.arrastrando { transition: none; cursor: grabbing; z-index: 2; }
-    .prod-card.swipe-agregar { border-color: #34D399; background: #ECFDF5; }
-    .prod-card.swipe-quitar { border-color: #F87171; background: #FEF2F2; }
-    .prod-card:hover { transform: translateY(-2px); box-shadow: 0 10px 20px -8px rgba(255, 138, 0, .25); }
-    .prod-card.activa { border-color: #FDBA74; box-shadow: 0 0 0 2px #FED7AA, 0 10px 20px -8px rgba(255, 138, 0, .25); }
-    .prod-img { width: 72px; height: 72px; border-radius: 9999px; display: flex; align-items: center; justify-content: center; font-size: 32px; line-height: 1; overflow: hidden; border: 3px solid #fff; background: radial-gradient(circle at 30% 25%, #fff, #FFEFD6 72%); box-shadow: 0 4px 10px -4px rgba(255, 138, 0, .35); flex-shrink: 0; }
-    .prod-img.warn { background: radial-gradient(circle at 30% 25%, #fff, #FDE9B8 72%); }
-    .prod-img img, .mini-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .prod-nombre { margin: 0; font-size: 13px; font-weight: 900; color: #0F172A; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 32px; }
-    .prod-tipo { display: inline-flex; align-items: center; border-radius: 9999px; padding: 2px 10px; font-size: 10px; font-weight: 800; }
-    .prod-tipo.peco { background: #FFFBEB; color: #B45309; }
-    .prod-tipo.nope { background: #ECFDF5; color: #047857; }
-    .prod-unidad { font-size: 10px; font-weight: 600; color: #94A3B8; }
-    .prod-estados { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; margin-top: auto; }
-    .prod-estado { border-radius: 9999px; padding: 1px 8px; font-size: 9px; font-weight: 800; }
-    .prod-disponible { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: 2px; padding: 6px 10px; border-radius: 12px; background: #FFF7ED; border: 1px solid #FED7AA; }
-    .prod-disponible-label { font-size: 10px; font-weight: 700; color: #9A3412; }
-    .prod-disponible-valor { font-size: 14px; font-weight: 900; color: #EA580C; line-height: 1; }
-    .prod-disponible-valor small { font-size: 10px; font-weight: 700; color: #F97316; margin-left: 2px; }
-    .prod-disponible-vacio { font-size: 11px; font-weight: 800; color: #94A3B8; }
-    .prod-disponible.sin-stock { background: #FEF2F2; border-color: #FECACA; }
-    .prod-disponible.sin-stock .prod-disponible-label { color: #991B1B; }
-    .prod-disponible.sin-stock .prod-disponible-valor, .prod-disponible.sin-stock small { color: #DC2626; }
-    .prod-disponible.sin-entradas { background: #F8FAFC; border-color: #E2E8F0; }
-    .prod-disponible.sin-entradas .prod-disponible-label { color: #64748B; }
+        /* ============ Piezas reutilizables (también las usan los modales) ============ */
+        .swipe-hint { animation: fxSwipe 1.6s ease-in-out infinite; }
+        @keyframes fxSwipe { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(6px); } }
+        .mini-img { display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; border-radius: 9999px; font-size: 16px; line-height: 1; }
+        .mini-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .arrow-btn { flex: 0 0 auto; width: 32px; height: 32px; border-radius: 9999px; border: 1px solid #F7D98A; background: #fff; color: #A86B00; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 10px -6px rgba(244, 180, 31, .5); transition: background .2s ease; }
+        .arrow-btn:hover { background: #FFF4D6; }
+        .pag-btn { min-width: 34px; height: 34px; padding: 0 10px; border-radius: 10px; border: 1px solid #E2E8F0; background: #fff; color: #475569; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+        .pag-btn:hover:not(:disabled):not(.pill-on) { background: #FFF4D6; border-color: #F7D98A; }
+        .pag-btn:disabled { opacity: .4; cursor: not-allowed; }
+        .pill-on { background: linear-gradient(135deg, #FFCB4D, #F4B41F); color: #fff; box-shadow: 0 6px 14px -6px rgba(244, 180, 31, .7); }
+        .ico-naranja { background: linear-gradient(135deg, #FFCB4D, #F4B41F); color: #fff; }
+        .fx-input:focus { border-color: #F4B41F; box-shadow: 0 0 0 3px rgba(244, 180, 31, .18); }
+        .fx-up { animation: fxUp .3s ease both; }
+        @keyframes fxUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+        .fx-lift { transition: transform .25s ease; }
+        .fx-lift:hover { transform: translateY(-3px); }
+        .modal-fondo { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; background: rgba(15, 23, 42, .45); padding: 16px; }
+        .modal-caja { width: 100%; max-height: 92vh; overflow-y: auto; background: #fff; border-radius: 24px; padding: 24px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, .25); }
+        .modal-caja .text-orange-500, .modal-caja .text-orange-600, .modal-caja .text-orange-700 { color: #A86B00; }
+        .modal-caja .bg-orange-50 { background: #FFF4D6; }
+        .modal-caja .bg-orange-100 { background: #FDE7A6; }
+        .modal-caja .border-orange-400 { border-color: #F4B41F; }
+        .btn-cerrar { display: flex; height: 40px; width: 40px; flex-shrink: 0; align-items: center; justify-content: center; border: 0; border-radius: 12px; background: #F1F5F9; color: #64748B; cursor: pointer; }
+        .btn-cerrar:hover { background: #E2E8F0; }
+        .cant-btn { display: flex; height: 32px; width: 32px; flex-shrink: 0; align-items: center; justify-content: center; border-radius: 9999px; border: 1px solid #EFDFAF; background: #fff; color: #334155; cursor: pointer; }
+        .cant-btn:hover { background: #FFF4D6; }
+        .campo { width: 100%; border-radius: 12px; border: 1px solid #E2E8F0; background: #fff; padding: 8px 12px; font-size: 12px; font-weight: 600; color: #1E293B; outline: none; }
+        .campo.invalido { border-color: #FCA5A5; background: #FEF2F2; }
 
-    /* Piezas reutilizables */
-    .mini-img { display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; border-radius: 9999px; font-size: 16px; line-height: 1; }
-    .arrow-btn { flex: 0 0 auto; width: 32px; height: 32px; border-radius: 9999px; border: 1px solid #FFD9A8; background: #fff; color: #FF8A00; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 10px -6px rgba(255, 138, 0, .5); transition: background .2s ease; }
-    .arrow-btn:hover { background: #FFF1DB; }
-    .pag-btn { min-width: 34px; height: 34px; padding: 0 10px; border-radius: 9999px; border: 1px solid #E2E8F0; background: #fff; color: #475569; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
-    .pag-btn:hover:not(:disabled):not(.pill-on) { background: #FFF1DB; border-color: #FFD9A8; }
-    .pag-btn:disabled { opacity: .4; cursor: not-allowed; }
-    .pill-on { background: linear-gradient(135deg, #FFA928, #FF8A00); color: #fff; box-shadow: 0 6px 14px -6px rgba(255, 138, 0, .7); }
-    .ico-naranja { background: linear-gradient(135deg, #FFA928, #FF8A00); color: #fff; }
-    .fx-input:focus { border-color: #FF9500; box-shadow: 0 0 0 3px rgba(255, 149, 0, .18); }
-    .fx-up { animation: fxUp .3s ease both; }
-    @keyframes fxUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-    .fx-lift { transition: transform .25s ease; }
-    .fx-lift:hover { transform: translateY(-3px); }
-    .modal-fondo { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; background: rgba(15, 23, 42, .4); padding: 16px; }
-    .modal-caja { width: 100%; max-height: 92vh; overflow-y: auto; background: #fff; border-radius: 24px; padding: 24px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, .25); }
-    .btn-cerrar { display: flex; height: 40px; width: 40px; flex-shrink: 0; align-items: center; justify-content: center; border: 0; border-radius: 12px; background: #F1F5F9; color: #64748B; cursor: pointer; }
-    .btn-cerrar:hover { background: #E2E8F0; }
-    .cant-btn { display: flex; height: 32px; width: 32px; flex-shrink: 0; align-items: center; justify-content: center; border-radius: 9999px; border: 1px solid #E2E8F0; background: #fff; color: #475569; cursor: pointer; }
-    .cant-btn:hover { background: #FFF7ED; }
-    .campo { width: 100%; border-radius: 12px; border: 1px solid #E2E8F0; background: #fff; padding: 8px 12px; font-size: 12px; font-weight: 600; color: #1E293B; outline: none; }
+        /* ============ Calendario ============ */
+        .cal-cell { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-height: 92px; padding: 8px; border: 0; border-right: 1px solid #F5EBD0; border-bottom: 1px solid #F5EBD0; background: #fff; text-align: left; cursor: pointer; font-family: inherit; }
+        .cal-cell:hover { background: #FFFAEC; }
+        .cal-cell.fuera { background: #F8FAFC; }
+        .cal-cell.fuera .cal-num { color: #CBD5E1; }
+        .cal-cell.sel { background: #FFF4D6; outline: 2px solid #F4B41F; outline-offset: -2px; }
+        .cal-num { width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; border-radius: 9999px; font-size: 12px; font-weight: 700; color: #334155; }
+        .cal-num.hoy { background: linear-gradient(135deg, #FFCB4D, #F4B41F); color: #fff; box-shadow: 0 6px 12px -6px rgba(244, 180, 31, .8); }
+        .cal-chip { display: flex; align-items: center; gap: 4px; width: 100%; border-radius: 6px; padding: 2px 6px; font-size: 10px; font-weight: 600; line-height: 1.3; }
+        .cal-dot { width: 6px; height: 6px; border-radius: 9999px; background: currentColor; flex-shrink: 0; }
+        .est-ok { background: #ECFDF5; color: #047857; }
+        .est-warn { background: #FFFBEB; color: #B45309; }
+        .est-bad { background: #FEF2F2; color: #B91C1C; }
+        .cal-venc { background: #FFF1DB; color: #C2410C; }
+        .btn-hoy { cursor: pointer; border-radius: 9999px; border: 1px solid #F2C75A; background: #fff; padding: 6px 14px; font-size: 12px; font-weight: 700; color: #A86B00; font-family: inherit; }
+        .btn-hoy:hover { background: #FFF4D6; }
 
-    /* Calendario */
-    .cal-cell { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-height: 92px; padding: 8px; border: 0; border-right: 1px solid #F1F5F9; border-bottom: 1px solid #F1F5F9; background: #fff; text-align: left; cursor: pointer; font-family: inherit; }
-    .cal-cell:hover { background: #FFFAF1; }
-    .cal-cell.fuera { background: #F8FAFC; }
-    .cal-cell.fuera .cal-num { color: #CBD5E1; }
-    .cal-cell.sel { background: #FFF7ED; outline: 2px solid #FDBA74; outline-offset: -2px; }
-    .cal-num { width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; border-radius: 9999px; font-size: 12px; font-weight: 700; color: #334155; }
-    .cal-num.hoy { background: linear-gradient(135deg, #FFA928, #FF8A00); color: #fff; box-shadow: 0 6px 12px -6px rgba(255, 138, 0, .8); }
-    .cal-chip { display: flex; align-items: center; gap: 4px; width: 100%; border-radius: 6px; padding: 2px 6px; font-size: 10px; font-weight: 600; line-height: 1.3; }
-    .cal-dot { width: 6px; height: 6px; border-radius: 9999px; background: currentColor; flex-shrink: 0; }
-    .est-ok { background: #ECFDF5; color: #047857; }
-    .est-warn { background: #FFFBEB; color: #B45309; }
-    .est-bad { background: #FEF2F2; color: #B91C1C; }
-    .cal-venc { background: #FFF1DB; color: #C2410C; }
+        /* ============ Banner de bienvenida con foto (ahora va arriba de todo) ============ */
+        .hero { position: relative; overflow: hidden; display: grid; grid-template-columns: 1.2fr .8fr; align-items: center; gap: 20px; min-height: 176px; margin-bottom: 18px; padding: 22px 44px; border-radius: 24px; background: linear-gradient(110deg, #D99A0B 0%, #D99A0B 45%, #FFCB4D 100%); box-shadow: 0 22px 40px -26px rgba(180, 120, 0, .8); }
+        .hero::before { content: ''; position: absolute; width: 460px; height: 460px; right: -80px; top: -150px; border-radius: 50%; background: rgba(255, 255, 255, .07); pointer-events: none; }
+        .hero::after { content: ''; position: absolute; width: 280px; height: 280px; right: 22%; bottom: -190px; border-radius: 50%; background: rgba(255, 199, 44, .22); pointer-events: none; }
+        .hero-text { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
+        .hero h2 { margin: 0; font-size: clamp(24px, 2.8vw, 36px); font-weight: 900; line-height: 1.08; letter-spacing: -.02em; color: #fff; }
+        .hero h2 span { color: var(--yellow); }
+        .hero p { margin: 0; max-width: 440px; font-size: 13.5px; line-height: 1.45; color: #D6EEDD; font-weight: 500; }
+        .hero-btn { margin-top: 4px; height: 38px; padding: 0 22px; display: inline-flex; align-items: center; gap: 8px; border: 0; border-radius: 9999px; background: var(--yellow); color: #1A3B26; font-family: inherit; font-size: 13px; font-weight: 800; cursor: pointer; box-shadow: 0 14px 24px -14px rgba(255, 199, 44, .9); transition: transform .2s; }
+        .hero-btn:hover { transform: translateY(-2px); }
+        .hero-dots { display: flex; gap: 6px; margin-top: 6px; }
+        .hero-dots i { width: 8px; height: 8px; border-radius: 50%; background: rgba(255, 255, 255, .4); }
+        .hero-dots i:first-child { background: var(--yellow); }
+        .hero-art { position: relative; z-index: 1; height: 140px; }
+        .hero-plato, .hero-foto { position: absolute; right: 30px; top: 0; width: 140px; height: 140px; border-radius: 50%; }
+        .hero-plato { display: flex; align-items: center; justify-content: center; background: #fff; color: #A86B00; box-shadow: 0 24px 40px -20px rgba(0, 0, 0, .55); }
+        .hero-plato .material-symbols-outlined { font-size: 52px; }
+        .hero-foto { object-fit: cover; border: 5px solid rgba(255, 255, 255, .92); box-shadow: 0 24px 40px -18px rgba(0, 0, 0, .6); }
+        .hero-hoja { position: absolute; right: 14px; top: -10px; z-index: 3; font-size: 28px; color: var(--yellow); transform: rotate(20deg); }
 
-    /* Tarjeta de inventario (panel Factura) */
-    .inv-card { background: #fff; border: 1px solid #F1F5F9; border-radius: 18px; overflow: hidden; box-shadow: 0 6px 16px -10px rgba(15, 23, 42, .2); }
-    .inv-card-cantidad { padding: 10px 12px; background: #FFF7ED; border-top: 1px solid #FFEDD5; border-bottom: 1px solid #FFEDD5; }
-</style>
+        /* ============ Encabezado SIRAE con buscador (ahora debajo del banner) ============ */
+        .hd { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 20px; margin-bottom: 18px; padding: 12px 18px; border-radius: 20px; background: #fff; border: 1.5px solid var(--line); box-shadow: 0 10px 24px -20px rgba(180, 120, 0, .4); }
+        .hd-brand { display: flex; align-items: center; gap: 12px; }
+        .hd-logo { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 14px; background: linear-gradient(135deg, #FFCB4D, #F4B41F); color: #fff; box-shadow: 0 10px 18px -10px rgba(180, 120, 0, .8); }
+        .hd-title { margin: 0; display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 900; letter-spacing: .02em; color: #000; }
+        .hd-live { padding: 2px 9px; border-radius: 9999px; border: 1px solid #F5D27A; background: var(--g-soft); color: #A86B00; font-size: 10px; font-weight: 800; letter-spacing: 0; }
+        .hd-sub { margin: 2px 0 0; font-size: 11px; font-weight: 500; color: var(--mute); }
+        .hd-right { margin-left: auto; text-align: right; font-size: 11px; font-weight: 600; color: var(--mute); }
+        .hd-right b { color: #334155; }
+        .hd-right .hd-inst { color: #000; font-weight: 800; font-size: 12px; }
+        .search-box { position: relative; flex: 1 1 260px; max-width: 440px; min-width: 200px; margin: 0 auto; }
+        .search-box input { width: 100%; height: 42px; border-radius: 9999px; border: 1.5px solid var(--line); background: #FFFBF0; padding: 0 16px 0 44px; font-size: 13px; font-weight: 500; color: var(--ink); outline: none; transition: border-color .2s, box-shadow .2s, background .2s; }
+        .search-box input::placeholder { color: #94A3B8; }
+        .search-box input:focus { background: #fff; border-color: #F4B41F; box-shadow: 0 0 0 3px rgba(244, 180, 31, .15); }
+        .search-box .material-symbols-outlined { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 20px; color: #94A3B8; }
 
-<!-- Foto redonda del producto (o su emoji). Uso: <ng-container *ngTemplateOutlet="foto; context: { n: nombre, c: 'h-9 w-9 bg-orange-50' }"> -->
-<ng-template #foto let-n="n" let-c="c">
-    <div class="mini-img" [ngClass]="c">
-        <img *ngIf="imagenDe(n) as src; else em" [src]="src" [alt]="n" loading="lazy">
-        <ng-template #em>{{ emojiDe(n) }}</ng-template>
-    </div>
-</ng-template>
+        /* ============ Distribución ============ */
+        .layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 22px; align-items: start; }
+        @media (min-width: 1024px) { .layout { grid-template-columns: minmax(0, 1fr) 320px; } }
 
-<div class="sirae-root p-4 md:p-8">
-    <div class="relative mx-auto max-w-[1520px]">
+        /* ============ Barra de vista ============ */
+        .top-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 18px; }
+        .seg { display: inline-flex; padding: 4px; gap: 2px; border-radius: 12px; background: #fff; border: 1.5px solid var(--line); }
+        .seg button { height: 34px; padding: 0 16px; display: inline-flex; align-items: center; gap: 6px; border: 0; border-radius: 9px; background: transparent; color: #64748B; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; transition: background .2s, color .2s; }
+        .seg button.on { background: linear-gradient(135deg, #FFCB4D, #F4B41F); color: #fff; box-shadow: 0 6px 14px -8px rgba(244, 180, 31, .8); }
+        .btn-excel { height: 40px; padding: 0 16px; display: inline-flex; align-items: center; gap: 6px; border: 0; border-radius: 12px; background: linear-gradient(135deg, #FFCB4D, #F4B41F); color: #fff; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; transition: background .2s; }
+        .btn-excel:hover { filter: brightness(1.06); }
 
-        <!-- ENCABEZADO -->
-        <header class="mb-5 flex flex-col items-start justify-between gap-4 rounded-3xl border border-slate-100 bg-white p-5 shadow-sm md:flex-row md:items-center">
-            <div class="flex items-center gap-3">
-                <div class="ico-naranja flex h-12 w-12 items-center justify-center rounded-2xl shadow-md"><span class="material-symbols-outlined text-[26px]">local_mall</span></div>
-                <div>
-                    <div class="flex items-center gap-2">
-                        <h1 class="m-0 text-xl font-black tracking-tight text-slate-900">Menú Institucional</h1>
-                        <span class="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-600">En línea</span>
-                    </div>
-                    <p class="m-0 text-xs font-medium text-slate-500">SIRAE · Sistema de Control y Abastecimiento de Alimentos</p>
-                </div>
-            </div>
-            <div class="self-end text-right text-xs font-medium text-slate-500 md:self-auto">
-                <div class="flex items-center justify-end gap-1 font-bold text-slate-700"><span class="h-2 w-2 rounded-full bg-emerald-500"></span> {{ ahoraTexto }}</div>
-                <span class="inline-flex items-center gap-1 font-bold text-amber-700">
-                    <span class="material-symbols-outlined text-[14px]">school</span>{{ nombreInstitucion }}<span *ngIf="nombreSede"> · {{ nombreSede }}</span>
-                </span>
-            </div>
-        </header>
+        /* ============ Títulos de sección ============ */
+        .sec-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+        .sec-title { margin: 0; display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 900; color: #0F172A; }
+        .sec-title .material-symbols-outlined { font-size: 20px; color: #A86B00; }
+        .sec-sub { margin: 2px 0 0; font-size: 11px; font-weight: 600; color: #94A3B8; }
+        .link-all { border: 0; background: none; cursor: pointer; font-family: inherit; font-size: 12px; font-weight: 800; color: #A86B00; }
+        .link-all:hover { color: #8A5A00; }
 
-        <div *ngIf="errorHistorial" class="mb-4 rounded-2xl border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-700" role="alert">
-            No se pudo cargar el historial de entregas. <button type="button" (click)="cargarHistorial()" class="ml-2 underline">Reintentar</button>
+        /* ============ Categorías con foto ============ */
+        .cat-rail { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+        .cat-grid { flex: 1; min-width: 0; display: grid; grid-auto-flow: column; grid-auto-columns: 104px; gap: 10px; overflow-x: auto; padding: 4px 2px 10px; scroll-snap-type: x proximity; scrollbar-width: none; }
+        .cat-grid::-webkit-scrollbar { display: none; }
+        .cat2 { position: relative; scroll-snap-align: start; display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 6px 6px 8px; border-radius: 16px; border: 2px solid transparent; background: #fff; cursor: pointer; font-family: inherit; box-shadow: 0 6px 16px -12px rgba(180, 120, 0, .5); transition: border-color .2s, background .2s, transform .2s, box-shadow .2s; width: 104px; max-width: 104px; box-sizing: border-box; }
+        .cat2:hover { border-color: #F2C75A; transform: translateY(-2px); }
+        .cat2:focus-visible { outline: none; box-shadow: 0 0 0 3px #F5D27A; }
+        .cat2-foto { width: 100%; height: 58px; max-height: 58px; aspect-ratio: 1 / .62; display: flex; align-items: center; justify-content: center; border-radius: 12px; background: #FFF6DF; overflow: hidden; font-size: 30px; line-height: 1; }
+        .cat2-foto img { width: 100%; height: 100%; max-height: 58px; object-fit: cover; display: block; }
+        .cat2-nombre { margin: 0; max-width: 100%; font-size: 12px; font-weight: 800; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .cat2-total { min-width: 26px; height: 20px; padding: 0 8px; display: inline-flex; align-items: center; justify-content: center; border-radius: 9999px; background: #FBF0D2; color: #475569; font-size: 10px; font-weight: 900; }
+        .cat2.on { border-color: #F4B41F; background: #FFF8E6; }
+        .cat2.on .cat2-nombre { color: #8A5A00; }
+        .cat2.on .cat2-total { background: #F4B41F; color: #fff; }
+
+        /* ============ Pestañas ============ */
+        .tabs-line { display: flex; gap: 22px; margin-bottom: 6px; overflow-x: auto; scrollbar-width: none; border-bottom: 1.5px solid #F0E2B8; }
+        .tabs-line::-webkit-scrollbar { display: none; }
+        .tabs-line button { position: relative; padding: 0 0 10px; border: 0; background: none; cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 700; color: #64748B; white-space: nowrap; transition: color .2s; }
+        .tabs-line button:hover { color: #334155; }
+        .tabs-line button.on { color: #0F172A; font-weight: 900; }
+        .tabs-line button.on::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1.5px; height: 2px; border-radius: 2px; background: #F4B41F; }
+
+        .swipe-note { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; padding: 10px 14px; border-radius: 12px; border: 1.5px dashed #F2C75A; background: #FFF8E6; font-size: 11.5px; font-weight: 600; color: #7A4F00; }
+        .swipe-note .material-symbols-outlined { color: #A86B00; }
+
+        /* ============ Tarjeta de producto (un poco más compacta) ============ */
+        .pc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(136px, 1fr)); gap: 10px; }
+        .pc { position: relative; display: flex; flex-direction: column; gap: 6px; padding: 7px; border-radius: 16px; background: #fff; border: 1.5px solid #F3E8C8; cursor: grab; user-select: none; -webkit-user-select: none; touch-action: pan-y; box-shadow: 0 6px 16px -12px rgba(180, 120, 0, .45); transition: transform .2s, translate .2s, border-color .2s, background .2s, box-shadow .2s; }
+        .pc:hover { border-color: #F2C75A; box-shadow: 0 16px 28px -18px rgba(244, 180, 31, .5); transform: translateY(-2px); }
+        .pc:focus-visible { outline: none; box-shadow: 0 0 0 3px #F5D27A; }
+        .pc.arrastrando { transition: none; cursor: grabbing; z-index: 2; transform: none; }
+        .pc.activa { border-color: #F4B41F; background: #FFFAEC; }
+        .pc.swipe-agregar { border-color: #10B981; background: #ECFDF5; }
+        .pc.swipe-quitar { border-color: #F87171; background: #FEF2F2; }
+        .pc-foto { position: relative; aspect-ratio: 1 / 0.66; display: flex; align-items: center; justify-content: center; border-radius: 12px; background: #F4F7F5; overflow: hidden; font-size: 40px; line-height: 1; }
+        .pc-foto.peco { background: #FBF7EC; }
+        .pc-foto img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; -webkit-user-drag: none; }
+        .pc-check { position: absolute; top: 7px; right: 7px; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; border-radius: 6px; background: #fff; border: 1.5px solid #94A3B8; color: transparent; transition: all .2s; }
+        .pc-check .material-symbols-outlined { font-size: 14px; font-weight: 700; }
+        .pc.activa .pc-check { background: #F4B41F; border-color: #F4B41F; color: #fff; }
+        .pc-enviado { position: absolute; bottom: 7px; left: 7px; padding: 2px 8px; border-radius: 9999px; font-size: 9px; font-weight: 800; background: #F4B41F; color: #fff; }
+        .pc-nombre { margin: 2px 2px 0; font-size: 12.5px; font-weight: 900; line-height: 1.25; color: #000; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 30px; }
+
+        /* ---- Etiqueta de tipo (abajo de la tarjeta): Perecedero / No perecedero ---- */
+        .pc-tipo { display: flex; align-items: center; justify-content: center; gap: 5px; margin-top: 2px; padding: 5px 10px; border-radius: 10px; font-size: 10.5px; font-weight: 800; letter-spacing: .01em; white-space: nowrap; }
+        .pc-tipo .material-symbols-outlined { font-size: 14px; }
+        .pc-tipo.peco { background: #FFF6DD; color: #A15C07; border: 1px solid #F5D78A; }
+        .pc-tipo.nope { background: #FFF4D6; color: #A86B00; border: 1px solid #F5D27A; }
+
+        /* ---- Existencias: barra roja (poco) / amarilla (medio) / verde (bien) ---- */
+        .pc-stock { margin: 0 2px; }
+        .pc-stock-txt { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; font-size: 11px; font-weight: 700; color: #64748B; }
+        .pc-stock-txt b { font-weight: 900; color: #A86B00; }
+        .pc-stock-cant { font-weight: 800; color: #475569; }
+        .barra-stock { height: 5px; margin-top: 4px; border-radius: 9999px; background: #E2E8F0; overflow: hidden; }
+        .barra-stock > span { display: block; height: 100%; min-width: 0; border-radius: 9999px; background: linear-gradient(90deg, #10B981, #34D399); transition: width .4s ease, background .3s ease; }
+        .barra-stock > span.bajo { background: linear-gradient(90deg, #EF4444, #F87171); }
+        .barra-stock > span.medio { background: linear-gradient(90deg, #F59E0B, #FBBF24); }
+        .barra-stock > span.alto { background: linear-gradient(90deg, #10B981, #34D399); }
+
+        .pag-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-top: 22px; padding-top: 16px; border-top: 1.5px solid #F0E2B8; }
+
+        /* ============ Panel "Tu pedido" (derecha) ============ */
+        .inv-panel { display: flex; flex-direction: column; overflow: hidden; background: #fff; border-radius: 20px; border: 1.5px solid var(--line); box-shadow: 0 18px 36px -26px rgba(180, 120, 0, .6); }
+        .inv-head { flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 16px; background: linear-gradient(120deg, #D99A0B, #F4B41F); }
+        .inv-head-l { display: flex; align-items: center; gap: 10px; }
+        .inv-head-ico { width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; border-radius: 11px; background: rgba(255, 255, 255, .18); color: #fff; font-size: 20px; }
+        .inv-head h3 { margin: 0; font-size: 17px; font-weight: 900; letter-spacing: -.01em; color: #fff; }
+        .inv-count { padding: 4px 11px; border-radius: 9999px; background: #fff; color: #A86B00; font-size: 11px; font-weight: 900; white-space: nowrap; }
+        .inv-body { min-height: 0; padding: 12px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #F2D28A transparent; }
+        .inv-lista { display: flex; flex-direction: column; gap: 8px; }
+        .inv-row { padding: 8px; border-radius: 12px; border: 1.5px solid #F3E8C8; background: #FFFCF4; transition: border-color .2s, background .2s; }
+        .inv-row:hover { border-color: #F5D27A; background: #fff; }
+        .inv-row-main { display: flex; align-items: center; gap: 10px; }
+        .mini-img.inv-thumb { width: 40px; height: 40px; border-radius: 10px; background: #FFF6DF; font-size: 20px; }
+        .inv-info { flex: 1; min-width: 0; }
+        .inv-info h5 { margin: 0; font-size: 12px; font-weight: 900; color: #000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .inv-meta { display: inline-block; margin-top: 4px; padding: 2px 8px; border-radius: 9999px; background: #FFF4D6; color: #A86B00; font-size: 10px; font-weight: 800; }
+        .inv-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+        .inv-tags .inv-meta { margin-top: 0; }
+        .inv-tipo { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 800; }
+        .inv-tipo.peco { background: #FFF4D6; color: #A15C07; }
+        .inv-tipo.nope { background: #FFF4D6; color: #A86B00; }
+        .inv-quitar { width: 26px; height: 26px; flex: 0 0 26px; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 9999px; background: transparent; color: #94A3B8; cursor: pointer; transition: all .2s; }
+        .inv-quitar:hover { background: #FEE2E2; color: #B91C1C; }
+        .inv-qty { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; padding-top: 8px; border-top: 1.5px dashed #F0E2B8; }
+        .inv-qty > span { font-size: 11px; font-weight: 800; color: #475569; }
+        .inv-stepper { display: flex; align-items: center; gap: 6px; }
+        .inv-input { height: 28px; width: 56px; padding: 0 4px; border-radius: 8px; border: 1px solid #EFDFAF; background: #fff; color: #1E293B; text-align: center; font-size: 12px; font-weight: 900; outline: none; }
+        .inv-input:focus { border-color: #F4B41F; box-shadow: 0 0 0 3px rgba(244, 180, 31, .18); }
+        .inv-vacio { padding: 16px 12px; border-radius: 14px; border: 1.5px dashed #F0D58A; background: #FFFBEF; text-align: center; font-size: 12px; font-weight: 600; color: #64748B; margin: 0; }
+        .inv-vacio b { color: #A86B00; }
+        .inv-error { margin: 8px 0 0; padding: 6px 10px; border-radius: 8px; background: #FEF2F2; color: #DC2626; font-size: 10px; font-weight: 700; }
+
+        .resumen { margin-top: 10px; padding: 10px 12px; border-radius: 12px; border: 1.5px dashed #F0D58A; }
+        .resumen-tit { margin: 0 0 6px; font-size: 11px; font-weight: 800; color: #475569; }
+        .resumen-fila { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; font-size: 11px; font-weight: 600; color: #64748B; }
+        .resumen-fila b { color: #0F172A; font-weight: 800; }
+        .resumen-sub { margin: 0 0 8px; font-size: 10px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: #94A3B8; }
+        .resumen-linea { margin-top: 10px; padding-top: 10px; border-top: 1.5px solid #F0E2B8; }
+        .resumen-total { margin: 8px 0 0; padding: 8px 12px; border-radius: 10px; background: #FFF4D6; display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 900; color: #0F172A; }
+        .resumen-total b { color: #A86B00; font-size: 13px; }
+
+        .btn-enviar { margin-top: 10px; width: 100%; height: 40px; display: flex; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: 12px; background: linear-gradient(135deg, #FFCB4D, #F4B41F); color: #fff; font-family: inherit; font-size: 12px; font-weight: 800; cursor: pointer; box-shadow: 0 16px 26px -16px rgba(180, 120, 0, .9); transition: filter .2s, opacity .2s; }
+        .btn-enviar:hover:not(:disabled) { filter: brightness(1.1); }
+        .btn-enviar:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
+
+
+        .btn-inventario { margin-top: 10px; width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px; border-radius: 10px; border: 1.5px solid #F7D98A; background: #fff; color: #7A4F00; font-family: inherit; font-size: 12px; font-weight: 800; cursor: pointer; transition: background .2s; }
+        .btn-inventario:hover { background: #FFF8E6; }
+        .btn-inventario .inv-pill { padding: 2px 8px; border-radius: 9999px; background: #FFF4D6; color: #A86B00; font-size: 10px; font-weight: 900; white-space: nowrap; }
+
+        @media (min-width: 1024px) {
+            .panel-sticky { position: -webkit-sticky; position: sticky; top: 16px; z-index: 10; align-self: start; }
+            .panel-sticky .inv-panel { max-height: calc(100vh - 32px); }
+            .panel-sticky .fx-panel { max-height: calc(100vh - 32px); overflow-y: auto; scrollbar-width: thin; scrollbar-color: #F2D28A transparent; }
+        }
+        @media (max-width: 760px) {
+            .hero { grid-template-columns: 1fr; padding: 24px; }
+            .hero-art { display: none; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .pc, .cat2, .hero-btn { transition: none; }
+            .swipe-hint { animation: none; }
+        }
+
+        /* ===== Tema amarillo #F4B41F: texto oscuro sobre amarillo y ajustes ===== */
+        .pill-on, .ico-naranja, .cal-num.hoy, .seg button.on, .btn-excel, .btn-enviar, .hd-logo,
+        .pc.activa .pc-check, .pc-enviado, .cat2.on .cat2-total { color: #2B1D00; }
+        .btn-excel:hover { filter: brightness(1.06); }
+        .hero { background: linear-gradient(110deg, #F4B41F 0%, #FFC13A 50%, #FFD468 100%); box-shadow: 0 22px 40px -26px rgba(180, 120, 0, .7); }
+        .hero::before { background: rgba(255, 255, 255, .22); }
+        .hero::after { background: rgba(255, 255, 255, .28); }
+        .hero h2 { color: #2B1D00; }
+        .hero h2 span { color: #fff; text-shadow: 0 2px 0 rgba(139, 90, 0, .25); }
+        .hero p { color: #4A3300; }
+        .hero-btn { background: #2B1D00; color: #FFE08A; box-shadow: 0 14px 24px -14px rgba(43, 29, 0, .7); }
+        .hero-dots i { background: rgba(43, 29, 0, .25); }
+        .hero-dots i:first-child { background: #2B1D00; }
+        .hero-hoja { color: #fff; }
+        .inv-head { background: linear-gradient(120deg, #FFCB4D, #F4B41F); }
+        .inv-head h3 { color: #2B1D00; }
+        .inv-head-ico { background: rgba(255, 255, 255, .4); color: #2B1D00; }
+        .inv-count { background: #fff; color: #8A5A00; }
+        .pc-tipo.peco, .inv-tipo.peco { background: #FFE8D6; color: #B4470C; border-color: #F8C9A4; }
+        .pc-tipo.nope, .inv-tipo.nope { background: #FFF4D6; color: #8A5A00; border-color: #F5D27A; }
+
+        /* ===== Mismo amarillo en todos los botones principales ===== */
+        .seg button.on, .btn-excel, .btn-enviar, .pill-on { box-shadow: 0 8px 16px -10px rgba(244, 180, 31, .9); }
+        .btn-excel, .seg button.on { font-weight: 800; }
+        .btn-excel { border: 1px solid rgba(180, 120, 0, .18); }
+    </style>
+
+    <!-- Foto redonda del producto (o su emoji). Uso: <ng-container *ngTemplateOutlet="foto; context: { n: nombre, c: 'h-9 w-9 bg-orange-50' }"> -->
+    <ng-template #foto let-n="n" let-c="c">
+        <div class="mini-img" [ngClass]="c">
+            <img *ngIf="imagenDe(n) as src; else em" [src]="src" [alt]="n" loading="lazy">
+            <ng-template #em>{{ emojiDe(n) }}</ng-template>
         </div>
-        <p *ngIf="cargandoHistorial" class="mb-4 text-center text-xs font-semibold text-slate-500" role="status">Cargando entregas...</p>
+    </ng-template>
 
-        <div class="grid grid-cols-1 gap-6 lg:grid-cols-12">
+    <div class="sirae-root">
+        <div class="relative mx-auto max-w-[1520px]">
 
-            <!-- ================= COLUMNA IZQUIERDA: CATÁLOGO Y CALENDARIO ================= -->
-            <section class="fx-panel p-4 sm:p-6 lg:col-span-8">
+            <!-- 1) BANNER DE BIENVENIDA: ahora va arriba de todo (solo en la vista Menú) -->
+            <div class="hero" *ngIf="!mostrarCalendario">
+                <div class="hero-text">
+                    <h2>Bienvenido a <span>SIRAE</span></h2>
+                    <p>Gestiona, controla y organiza el PAE de manera fácil y eficiente.</p>
+                    <button type="button" class="hero-btn" (click)="catalogoRef.scrollIntoView({ behavior: 'smooth', block: 'start' })">
+                        Explorar menú <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+                    </button>
+                    <div class="hero-dots" aria-hidden="true"><i></i><i></i><i></i></div>
+                </div>
+                <div class="hero-art" aria-hidden="true">
+                    <span class="hero-hoja material-symbols-outlined">eco</span>
+                    <!-- Respaldo si la foto no carga -->
+                    <div class="hero-plato"><span class="material-symbols-outlined">restaurant</span></div>
+                    <!-- Foto del círculo: public/image.png -->
+                    <img class="hero-foto" src="/image.png" alt="Plato saludable" width="140" height="140" style="width:140px; height:140px; max-width:140px; max-height:140px; object-fit:cover; border-radius:50%;"
+                        (error)="$any($event.target).style.display = 'none'">
+                </div>
+            </div>
 
-                <!-- Búsqueda, filtros y acciones -->
-                <div class="mb-5 flex flex-wrap items-center gap-3">
-                    <div class="relative min-w-[200px] flex-1">
-                        <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[19px] text-slate-400">search</span>
-                        <input type="text" [(ngModel)]="textoFiltro" (ngModelChange)="paginaActual = 1" placeholder="Buscar: arroz, frijol, pollo, leche..."
-                            class="fx-input w-full rounded-full border border-slate-200 bg-slate-50/70 py-2 pl-11 pr-4 text-xs font-medium text-slate-800 outline-none">
-                    </div>
-                    <div class="toolbar-grupos">
-                        <div class="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 p-1" role="group" aria-label="Tipo de producto">
-                            <button *ngFor="let f of [['Todos', 'Todos'], ['Perecederos', 'Perecederos'], ['Granos', 'No perecederos']]" type="button"
-                                (click)="mostrarCalendario = false; setMercado($any(f[0]))"
-                                [class.pill-on]="!mostrarCalendario && filtroMercado === f[0]" [class.text-slate-500]="mostrarCalendario || filtroMercado !== f[0]"
-                                class="cursor-pointer rounded-full px-3 py-1 text-xs font-bold transition">{{ f[1] }}</button>
-                        </div>
-                        <div class="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 p-1" role="group" aria-label="Acciones">
-                            <button type="button" (click)="irACalendario()" [class.pill-on]="mostrarCalendario" [class.text-slate-500]="!mostrarCalendario"
-                                class="inline-flex cursor-pointer items-center gap-1 rounded-full px-3 py-1 text-xs font-bold transition">
-                                <span class="material-symbols-outlined text-[14px]">calendar_month</span> Calendario
-                            </button>
-                            <button type="button" (click)="exportarExcelHistorial()" class="inline-flex cursor-pointer items-center gap-1 rounded-full bg-emerald-600 px-3 py-1 text-xs font-bold text-white transition hover:bg-emerald-700">
-                                <span class="material-symbols-outlined text-[14px]">table_view</span> Excel
-                            </button>
-                        </div>
+            <!-- 2) ENCABEZADO SIRAE con buscador, institución y hora (ahora debajo del banner) -->
+            <header class="hd">
+                <div class="hd-brand">
+                    <div class="hd-logo"><span class="material-symbols-outlined text-[24px]">local_mall</span></div>
+                    <div>
+                        <h1 class="hd-title">SIRAE <span class="hd-live">En línea</span></h1>
+                        <p class="hd-sub">Menú institucional · Control y abastecimiento de alimentos</p>
                     </div>
                 </div>
 
-                <!-- ===== VISTA: CALENDARIO ===== -->
-                <div *ngIf="mostrarCalendario">
-                    <div class="mb-3 flex items-center justify-between gap-2">
-                        <div class="flex items-center gap-2">
-                            <button type="button" class="arrow-btn" aria-label="Mes anterior" (click)="mesAnterior()"><span class="material-symbols-outlined text-[18px]">chevron_left</span></button>
-                            <h3 class="m-0 min-w-[150px] text-center text-base font-black text-slate-900">{{ tituloMes }}</h3>
-                            <button type="button" class="arrow-btn" aria-label="Mes siguiente" (click)="mesSiguiente()"><span class="material-symbols-outlined text-[18px]">chevron_right</span></button>
+                <div class="search-box">
+                    <span class="material-symbols-outlined">search</span>
+                    <input type="text" [(ngModel)]="textoFiltro" (ngModelChange)="paginaActual = 1"
+                        placeholder="Buscar productos de abastecimiento..." aria-label="Buscar producto">
+                </div>
+
+                <div class="hd-right">
+                    <div><b>{{ ahoraTexto }}</b></div>
+                    <div class="hd-inst inline-flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[14px]" style="color:#A86B00">school</span>{{ nombreInstitucion }}<span *ngIf="nombreSede"> · {{ nombreSede }}</span>
+                    </div>
+                </div>
+            </header>
+
+            <div *ngIf="errorHistorial" class="mb-4 rounded-2xl border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-700" role="alert">
+                No se pudo cargar el historial de entregas. <button type="button" (click)="cargarHistorial()" class="ml-2 underline">Reintentar</button>
+            </div>
+            <p *ngIf="cargandoHistorial" class="mb-4 text-center text-xs font-semibold text-slate-500" role="status">Cargando entregas...</p>
+
+            <!-- 3) Vista y acciones -->
+            <div class="top-bar">
+                <div class="seg" role="group" aria-label="Vista">
+                    <button type="button" [class.on]="!mostrarCalendario" (click)="mostrarCalendario = false">
+                        <span class="material-symbols-outlined text-[16px]">storefront</span> Menú
+                    </button>
+                    <button type="button" [class.on]="mostrarCalendario" (click)="irACalendario()">
+                        <span class="material-symbols-outlined text-[16px]">history</span> Historial
+                    </button>
+                </div>
+
+                <button type="button" class="btn-excel" (click)="exportarExcelHistorial()">
+                    <span class="material-symbols-outlined text-[16px]">table_view</span> Excel
+                </button>
+            </div>
+
+            <!-- 3B) PANEL HU 5: CÁLCULO AUTOMÁTICO DE ABASTECIMIENTO POR SEDE Y GRAMAJES -->
+            <section *ngIf="!mostrarCalendario && (idInstitucion !== null || sedesDisponibles.length > 0)"
+                     class="mb-6 rounded-3xl border border-amber-200 bg-white p-4 sm:p-5 shadow-sm">
+                <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#FFF4D6] text-[#A86B00]">
+                            <span class="material-symbols-outlined text-[22px]">calculate</span>
                         </div>
-                        <div class="flex items-center gap-2">
-                            <button type="button" (click)="abrirModalEntrada()" class="pill-on inline-flex cursor-pointer items-center gap-1 rounded-full px-3.5 py-1.5 text-xs font-bold hover:opacity-90">
-                                <span class="material-symbols-outlined text-[16px]">add_circle</span> Entradas
-                            </button>
-                            <button type="button" (click)="irAHoy()" class="cursor-pointer rounded-full border border-orange-300 bg-white px-3.5 py-1.5 text-xs font-bold text-orange-600 hover:bg-orange-50">Hoy</button>
+                        <div class="min-w-0">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <h2 class="m-0 text-sm sm:text-base font-black text-slate-900">Cálculo automático de abastecimiento por sede</h2>
+                                <span class="rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[10px] font-bold text-emerald-700">
+                                    No descuenta bodega hasta confirmar despacho
+                                </span>
+                                <button *ngIf="ultimoDocumentoCalculo && soporteSeleccionado"
+                                        type="button"
+                                        (click)="mostrarModalSoporte = true"
+                                        class="cursor-pointer rounded-full border border-amber-300 bg-[#FFF4D6] px-2.5 py-0.5 text-[10px] font-black text-[#8A5A00]">
+                                    Soporte: {{ ultimoDocumentoCalculo }}
+                                </button>
+                            </div>
+                            <p class="m-0 text-[11px] font-semibold text-slate-500">
+                                Cruza cupos por grado, gramajes activos, menús y periodicidad contractual frente a bodega central y stock en sede.
+                            </p>
                         </div>
                     </div>
 
-                    <div class="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] font-semibold text-slate-500">
-                        <span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-emerald-500"></span> Vigente</span>
-                        <span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-amber-500"></span> Próximo a vencer</span>
-                        <span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-red-500"></span> Vencido</span>
-                        <span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-orange-500"></span> Productos que vencen ese día</span>
-                    </div>
-
-                    <div class="overflow-hidden rounded-2xl border border-slate-100">
-                        <div class="grid grid-cols-7 bg-slate-50 text-center text-[10px] font-black uppercase tracking-wide text-slate-500">
-                            <div *ngFor="let nombre of nombresDias" class="py-2.5">{{ nombre }}</div>
-                        </div>
-                        <div class="grid grid-cols-7">
-                            <button type="button" *ngFor="let dia of diasCalendario; trackBy: trackPor" (click)="seleccionarDia(dia.iso)"
-                                [attr.aria-label]="fechaCorta(dia.iso)" [attr.aria-pressed]="dia.seleccionado"
-                                class="cal-cell" [class.fuera]="!dia.enMes" [class.sel]="dia.seleccionado">
-                                <span class="cal-num" [class.hoy]="dia.esHoy">{{ dia.numero }}</span>
-                                <span *ngIf="dia.entregas > 0" class="cal-chip" [ngClass]="claseChipEstado(dia.estado)"><span class="cal-dot"></span>Entrega · {{ dia.entregas }} prod.</span>
-                                <span *ngIf="dia.vencen > 0" class="cal-chip cal-venc"><span class="cal-dot"></span>Vencen · {{ dia.vencen }}</span>
-                            </button>
-                        </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button *ngIf="idSede != null"
+                                type="button"
+                                (click)="calcularAbastecimiento(false)"
+                                [disabled]="cargandoCalculo"
+                                class="cursor-pointer inline-flex items-center gap-1 rounded-full border border-amber-300 bg-[#FFF4D6] px-3 py-1.5 text-xs font-extrabold text-[#8A5A00]">
+                            <span class="material-symbols-outlined text-[15px]">refresh</span>
+                            {{ cargandoCalculo ? 'Calculando...' : 'Recalcular' }}
+                        </button>
+                        <button *ngIf="calculoAbastecimiento && productosCalculoFiltrados.length > 0"
+                                type="button"
+                                (click)="cargarTodosSugeridos()"
+                                class="cursor-pointer inline-flex items-center gap-1 rounded-full border-0 bg-[#F4B41F] px-3.5 py-1.5 text-xs font-black text-[#2B1D00] shadow-sm">
+                            <span class="material-symbols-outlined text-[15px]">playlist_add_check</span>
+                            Cargar sugeridos al pedido
+                        </button>
+                        <button type="button"
+                                (click)="mostrarCalculoPanel = !mostrarCalculoPanel"
+                                class="cursor-pointer inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-600">
+                            <span class="material-symbols-outlined text-[16px]">{{ mostrarCalculoPanel ? 'expand_less' : 'expand_more' }}</span>
+                            {{ mostrarCalculoPanel ? 'Ocultar' : 'Mostrar' }}
+                        </button>
                     </div>
                 </div>
 
-                <!-- ===== VISTA: MENÚ ===== -->
-                <div *ngIf="!mostrarCalendario">
-
-                    <!-- Categorías -->
-                    <div class="mb-2 flex items-center justify-between">
-                        <h3 class="m-0 text-sm font-black text-slate-900">Categorías de Abastecimiento SIRAE</h3>
-                        <button type="button" (click)="categoriaMenu = 'Todos'; paginaActual = 1" class="cursor-pointer text-xs font-bold text-orange-500 hover:text-orange-600">Ver todo &gt;</button>
-                    </div>
-                    <div class="mb-5 flex items-center gap-2">
-                        <button type="button" class="arrow-btn" aria-label="Categorías anteriores" (click)="menuChips.scrollBy({ left: -260, behavior: 'smooth' })"><span class="material-symbols-outlined text-[18px]">chevron_left</span></button>
-                        <div #menuChips class="menu-scroll min-w-0 flex-1">
-                            <button type="button" *ngFor="let categoria of categoriasMenu; trackBy: trackPor"
-                                (click)="categoriaMenu = categoria.nombre; paginaActual = 1"
-                                [class.active]="categoriaMenu === categoria.nombre" [attr.aria-pressed]="categoriaMenu === categoria.nombre"
-                                class="cat-card fx-lift menu-chip cursor-pointer rounded-2xl p-2.5 text-center">
-                                <div class="mx-auto mb-1 flex h-9 w-9 items-center justify-center overflow-hidden rounded-full text-xl">
-                                    <img *ngIf="imagenCategoria(categoria.nombre) as src; else sinFotoCat" [src]="src" [alt]="categoria.nombre" class="h-full w-full object-cover" loading="lazy">
-                                    <ng-template #sinFotoCat>{{ categoria.emoji }}</ng-template>
-                                </div>
-                                <p class="cat-label m-0 truncate text-[11px] font-bold text-slate-700">{{ categoria.nombre }}</p>
-                                <span class="cat-count mx-auto mt-1 flex h-4 min-w-[18px] items-center justify-center rounded-full px-1 text-[9px] font-black">{{ categoria.total }}</span>
-                            </button>
+                <div *ngIf="mostrarCalculoPanel" class="mt-4">
+                    <!-- Parámetros del cálculo -->
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5 items-end">
+                        <div>
+                            <label class="mb-1 block text-[11px] font-bold text-slate-600">Sede destino *</label>
+                            <select [ngModel]="idSede"
+                                    (ngModelChange)="alSeleccionarSede($event)"
+                                    class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-800 outline-none">
+                                <option [ngValue]="null">-- Seleccionar sede --</option>
+                                <option *ngFor="let s of sedesDisponibles" [ngValue]="s.id_sede ?? s.id">
+                                    {{ s.nombre_sede || ('Sede #' + (s.id_sede ?? s.id)) }}
+                                </option>
+                            </select>
                         </div>
-                        <button type="button" class="arrow-btn" aria-label="Más categorías" (click)="menuChips.scrollBy({ left: 260, behavior: 'smooth' })"><span class="material-symbols-outlined text-[18px]">chevron_right</span></button>
+
+                        <div>
+                            <label class="mb-1 block text-[11px] font-bold text-slate-600">Jornada</label>
+                            <select [(ngModel)]="idJornadaCalculo"
+                                    (ngModelChange)="calcularAbastecimiento(false)"
+                                    [disabled]="idSede == null"
+                                    class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-800 outline-none">
+                                <option [ngValue]="null">Todas las jornadas</option>
+                                <option *ngFor="let j of calculoAbastecimiento?.jornadas ?? []" [ngValue]="j.id_jornada">
+                                    {{ j.jornada_nombre }} ({{ j.cupos }} cupos)
+                                </option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="mb-1 block text-[11px] font-bold text-slate-600">
+                                Días perecederos
+                                <span *ngIf="calculoAbastecimiento?.periodicidad?.periodicidad_perecederos as per" class="text-[10px] font-bold text-[#A86B00]">
+                                    ({{ per }})
+                                </span>
+                            </label>
+                            <input type="number" min="1" max="365"
+                                   [(ngModel)]="diasPerecederosFiltro"
+                                   (ngModelChange)="calcularAbastecimiento(false)"
+                                   [disabled]="idSede == null"
+                                   placeholder="Ej: 5"
+                                   class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-800 outline-none" />
+                        </div>
+
+                        <div>
+                            <label class="mb-1 block text-[11px] font-bold text-slate-600">
+                                Días no perecederos
+                                <span *ngIf="calculoAbastecimiento?.periodicidad?.periodicidad_no_perecederos as noper" class="text-[10px] font-bold text-[#A86B00]">
+                                    ({{ noper }})
+                                </span>
+                            </label>
+                            <input type="number" min="1" max="365"
+                                   [(ngModel)]="diasNoPerecederosFiltro"
+                                   (ngModelChange)="calcularAbastecimiento(false)"
+                                   [disabled]="idSede == null"
+                                   placeholder="Ej: 20"
+                                   class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-800 outline-none" />
+                        </div>
+
+                        <label class="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] font-semibold text-slate-700 cursor-pointer">
+                            <input type="checkbox"
+                                   [(ngModel)]="incluirTodosGramajes"
+                                   (ngModelChange)="calcularAbastecimiento(false)"
+                                   [disabled]="idSede == null" />
+                            <span>Incluir gramajes aunque falte menú</span>
+                        </label>
                     </div>
 
-                    <div id="catalogo-top" class="mb-3 scroll-mt-4">
-                        <h3 class="m-0 text-sm font-black text-slate-900">Productos de Abastecimiento</h3>
-                        <p class="m-0 text-[11px] font-semibold text-slate-400">
-                            {{ totalProductosMenu > 0 ? 'Mostrando ' + desdeMostrado + '–' + hastaMostrado + ' de ' + totalProductosMenu + ' productos' : '0 productos' }}
-                        </p>
+                    <div *ngIf="idSede == null" class="mt-3 rounded-2xl border border-dashed border-amber-300 bg-[#FFF9EB] p-4 text-center text-xs font-semibold text-[#8A5A00]">
+                        Selecciona una sede para calcular automáticamente las raciones requeridas por grado, periodo del contrato y disponibilidad en bodega central.
                     </div>
 
-                    <div class="mb-4 flex items-center gap-2 rounded-2xl border border-orange-200 bg-orange-50 px-3 py-2 text-[11px] font-semibold text-orange-700" role="note">
-                        <span class="material-symbols-outlined swipe-hint text-[18px]">swipe_right</span>
-                        <span>Desliza un producto hacia la derecha para ver en el panel cuánta cantidad hay y todos sus detalles. Hacia la izquierda lo quita.</span>
+                    <div *ngIf="errorCalculo" class="mt-3 rounded-2xl border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-700" role="alert">
+                        {{ errorCalculo }}
                     </div>
-                    <p *ngIf="cargandoCatalogos" class="mb-3 text-center text-xs font-semibold text-slate-500" role="status">Cargando productos...</p>
 
-                    <!-- Productos de la página, agrupados por categoría -->
-                    <section *ngFor="let grupo of gruposPagina; trackBy: trackPor" class="mb-6">
-                        <div class="flex items-center gap-2 border-b border-orange-100 pb-2">
-                            <span class="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full text-lg">
-                                <img *ngIf="imagenCategoria(grupo.nombre) as src; else sinFotoGrupo" [src]="src" [alt]="grupo.nombre" class="h-full w-full object-cover" loading="lazy">
-                                <ng-template #sinFotoGrupo>{{ grupo.emoji }}</ng-template>
+                    <ng-container *ngIf="calculoAbastecimiento as calc">
+                        <!-- Resumen de parámetros resueltos -->
+                        <div class="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+                            <div class="rounded-2xl border border-slate-100 bg-slate-50 p-3">
+                                <span class="block text-[10px] font-bold uppercase text-slate-400">Contrato vigente</span>
+                                <span class="mt-0.5 block text-xs font-black text-slate-900">
+                                    {{ calc.contrato?.numero_cor || 'Sin contrato vinculado' }}
+                                </span>
+                            </div>
+                            <div class="rounded-2xl border border-slate-100 bg-slate-50 p-3">
+                                <span class="block text-[10px] font-bold uppercase text-slate-400">Cupos proyectados</span>
+                                <span class="mt-0.5 block text-xs font-black text-[#A86B00]">
+                                    {{ calc.total_cupos || 0 }} estudiantes
+                                </span>
+                            </div>
+                            <div class="rounded-2xl border border-slate-100 bg-slate-50 p-3">
+                                <span class="block text-[10px] font-bold uppercase text-slate-400">Menús programados</span>
+                                <span class="mt-0.5 block text-xs font-black text-slate-900">
+                                    {{ calc.total_menus_programados || 0 }} · {{ calc.origen_productos || '—' }}
+                                </span>
+                            </div>
+                            <div class="rounded-2xl border border-slate-100 bg-slate-50 p-3">
+                                <span class="block text-[10px] font-bold uppercase text-slate-400">Productos calculados</span>
+                                <span class="mt-0.5 block text-xs font-black text-slate-900">
+                                    {{ calc.resumen_tipos?.perecederos || 0 }} perecederos · {{ calc.resumen_tipos?.no_perecederos || 0 }} no per.
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Cupos por grado -->
+                        <div *ngIf="(calc.cupos_por_grado?.length ?? 0) > 0" class="mt-3 flex flex-wrap items-center gap-1.5">
+                            <span class="text-[10px] font-black uppercase tracking-wider text-slate-400 mr-1">Grados atendidos:</span>
+                            <span *ngFor="let cg of calc.cupos_por_grado"
+                                  class="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-[11px] font-bold text-slate-700">
+                                {{ cg.grado_nombre }}<ng-container *ngIf="cg.jornada_nombre"> ({{ cg.jornada_nombre }})</ng-container>: <b>{{ cg.cupos }}</b>
                             </span>
-                            <h4 class="m-0 text-sm font-black text-slate-900">{{ grupo.nombre }}</h4>
-                            <span class="cat-count flex h-4 min-w-[18px] items-center justify-center rounded-full px-1 text-[9px] font-black">{{ grupo.total }}</span>
                         </div>
 
-                        <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
-                            <!-- Deslizar a la derecha = muestra el producto en el panel -->
-                            <article *ngFor="let producto of grupo.productos; trackBy: trackPor" class="prod-card fx-up"
-                                [class.activa]="tarjetaActiva(producto)" [class.arrastrando]="swipeId === producto.id"
-                                [class.swipe-agregar]="swipeId === producto.id && swipeDx >= umbralSwipe"
-                                [class.swipe-quitar]="swipeId === producto.id && swipeDx <= -umbralSwipe"
-                                [style.translate]="swipeId === producto.id ? swipeDx + 'px' : null" [attr.aria-label]="nombreMostrado(producto.nombre)"
-                                (pointerdown)="alIniciarDeslizar($event, producto)" (pointermove)="alMoverDeslizar($event)"
-                                (pointerup)="alTerminarDeslizar(producto)" (pointercancel)="cancelarDeslizar()">
-
-                                <div class="prod-img" [class.warn]="esPerecedero(producto)">
-                                    <img *ngIf="imagenDe(producto.nombre) as src; else sinFotoProd" [src]="src" [alt]="nombreMostrado(producto.nombre)" loading="lazy" draggable="false">
-                                    <ng-template #sinFotoProd><span>{{ emojiDe(producto.nombre) }}</span></ng-template>
-                                </div>
-
-                                <h4 class="prod-nombre" [title]="nombreMostrado(producto.nombre)">{{ nombreMostrado(producto.nombre) }}</h4>
-                                <span class="prod-tipo" [ngClass]="esPerecedero(producto) ? 'peco' : 'nope'">{{ nombreTipo(producto) }}</span>
-                                <span class="prod-unidad">Unidad: {{ producto.unidad }}</span>
-
-                                <div class="prod-disponible" [class.sin-entradas]="!tieneEntradas(producto)" [class.sin-stock]="tieneEntradas(producto) && totalDisponible(producto) <= 0">
-                                    <span class="prod-disponible-label">{{ tieneEntradas(producto) && totalDisponible(producto) <= 0 ? 'Agotado' : 'Disponible' }}</span>
-                                    <span *ngIf="tieneEntradas(producto); else sinEntradasTpl" class="prod-disponible-valor">{{ totalDisponible(producto) | number:'1.0-2' }}<small>{{ producto.unidad }}</small></span>
-                                    <ng-template #sinEntradasTpl><span class="prod-disponible-vacio">Sin entradas</span></ng-template>
-                                </div>
-
-                                <div class="prod-estados">
-                                    <span *ngIf="tarjetaActiva(producto)" class="prod-estado bg-orange-100 text-orange-700">✓ En el panel</span>
-                                    <span *ngIf="fueEnviado(producto.nombre)" class="prod-estado bg-emerald-100 text-emerald-700">✓ Enviado</span>
-                                </div>
-                            </article>
+                        <!-- Alertas de parametrización faltante / conversiones inválidas -->
+                        <div *ngIf="(calc.faltantes_configuracion?.length ?? 0) > 0"
+                             class="mt-3 rounded-2xl border border-amber-300 bg-amber-50 p-3">
+                            <div class="flex items-center gap-1.5 text-xs font-black text-amber-900">
+                                <span class="material-symbols-outlined text-[17px]">warning</span>
+                                Parametrización pendiente o alertas de configuración ({{ calc.faltantes_configuracion?.length }})
+                            </div>
+                            <ul class="m-0 mt-1.5 list-disc pl-5 text-[11px] font-semibold text-amber-800 space-y-0.5">
+                                <li *ngFor="let f of calc.faltantes_configuracion">
+                                    <b>[{{ f.tipo }}]</b> {{ f.mensaje }}
+                                </li>
+                            </ul>
                         </div>
-                    </section>
 
-                    <p *ngIf="!cargandoCatalogos && totalProductosMenu === 0" class="rounded-2xl border border-slate-100 bg-white p-4 text-center text-xs text-slate-500">No hay productos para los filtros seleccionados.</p>
-
-                    <!-- Paginación -->
-                    <nav *ngIf="totalPaginas > 1" class="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4" aria-label="Paginación de productos">
-                        <span class="text-[11px] font-semibold text-slate-500">Página {{ paginaEfectiva }} de {{ totalPaginas }}</span>
-                        <div class="flex flex-wrap items-center gap-1.5">
-                            <button type="button" class="pag-btn" (click)="irAPagina(paginaEfectiva - 1)" [disabled]="paginaEfectiva === 1" aria-label="Página anterior"><span class="material-symbols-outlined text-[18px]">chevron_left</span></button>
-                            <ng-container *ngFor="let n of numerosPagina">
-                                <span *ngIf="n === '…'" class="px-1 text-xs font-bold text-slate-400">…</span>
-                                <button *ngIf="n !== '…'" type="button" class="pag-btn" [class.pill-on]="n === paginaEfectiva" [attr.aria-current]="n === paginaEfectiva ? 'page' : null" (click)="irAPagina(n)">{{ n }}</button>
-                            </ng-container>
-                            <button type="button" class="pag-btn" (click)="irAPagina(paginaEfectiva + 1)" [disabled]="paginaEfectiva === totalPaginas" aria-label="Página siguiente"><span class="material-symbols-outlined text-[18px]">chevron_right</span></button>
+                        <!-- Filtro Perecedero / No perecedero -->
+                        <div class="mt-3 flex flex-wrap items-center justify-between gap-2">
+                            <div class="inline-flex rounded-full border border-slate-200 bg-slate-50 p-0.5 text-[11px] font-bold">
+                                <button type="button"
+                                        (click)="filtroTipoCalculo = 'Todos'"
+                                        [class]="filtroTipoCalculo === 'Todos' ? 'rounded-full bg-[#F4B41F] px-3 py-1 text-[#2B1D00] font-black border-0 cursor-pointer' : 'rounded-full bg-transparent px-3 py-1 text-slate-600 border-0 cursor-pointer'">
+                                    Todos ({{ calc.productos_sugeridos?.length || 0 }})
+                                </button>
+                                <button type="button"
+                                        (click)="filtroTipoCalculo = 'Perecedero'"
+                                        [class]="filtroTipoCalculo === 'Perecedero' ? 'rounded-full bg-[#F4B41F] px-3 py-1 text-[#2B1D00] font-black border-0 cursor-pointer' : 'rounded-full bg-transparent px-3 py-1 text-slate-600 border-0 cursor-pointer'">
+                                    Perecederos ({{ calc.resumen_tipos?.perecederos || 0 }})
+                                </button>
+                                <button type="button"
+                                        (click)="filtroTipoCalculo = 'No perecedero'"
+                                        [class]="filtroTipoCalculo === 'No perecedero' ? 'rounded-full bg-[#F4B41F] px-3 py-1 text-[#2B1D00] font-black border-0 cursor-pointer' : 'rounded-full bg-transparent px-3 py-1 text-slate-600 border-0 cursor-pointer'">
+                                    No perecederos ({{ calc.resumen_tipos?.no_perecederos || 0 }})
+                                </button>
+                            </div>
                         </div>
-                    </nav>
+
+                        <!-- Tabla consolidada + detalle por grado expandible -->
+                        <div *ngIf="productosCalculoFiltrados.length === 0"
+                             class="mt-3 rounded-2xl border border-dashed border-slate-200 p-4 text-center text-xs font-semibold text-slate-500">
+                            No hay productos calculados con los parámetros actuales. Revisa las alertas de parametrización arriba.
+                        </div>
+
+                        <div *ngIf="productosCalculoFiltrados.length > 0" class="mt-3 overflow-x-auto rounded-2xl border border-slate-200">
+                            <table class="w-full border-collapse text-left text-xs">
+                                <thead class="bg-slate-50 text-[10px] font-black uppercase tracking-wider text-slate-500">
+                                    <tr>
+                                        <th class="p-3">Producto / Tipo</th>
+                                        <th class="p-3">Periodo</th>
+                                        <th class="p-3">Cupos y detalle grado</th>
+                                        <th class="p-3">Total requerido</th>
+                                        <th class="p-3">Stock sede / Neto</th>
+                                        <th class="p-3">Bodega central</th>
+                                        <th class="p-3 text-right">Pedido</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100 bg-white">
+                                    <ng-container *ngFor="let p of productosCalculoFiltrados">
+                                        <tr class="hover:bg-amber-50/30">
+                                            <td class="p-3">
+                                                <div class="font-black text-slate-900">{{ p.nombre_ingrediente }}</div>
+                                                <div class="mt-0.5 flex flex-wrap items-center gap-1">
+                                                    <span class="rounded-full px-2 py-0.5 text-[10px] font-extrabold"
+                                                          [ngClass]="p.es_perecedero ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-[#FFF4D6] text-[#8A5A00] border border-[#F5D27A]'">
+                                                        {{ p.clasificacion_tipo || (p.es_perecedero ? 'Perecedero' : 'No perecedero') }}
+                                                    </span>
+                                                    <span *ngIf="p.tiene_gramajes_faltantes" class="rounded-full bg-red-50 border border-red-200 px-2 py-0.5 text-[10px] font-bold text-red-700">
+                                                        Falta gramaje en {{ p.grados_sin_gramaje?.length }} grado(s)
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td class="p-3">
+                                                <span class="font-bold text-slate-800">{{ p.dias_periodo }} días</span>
+                                                <span class="block text-[10px] text-slate-500">{{ p.periodicidad_aplicada || '—' }}</span>
+                                            </td>
+                                            <td class="p-3">
+                                                <span class="font-bold text-slate-800">{{ p.cupos_totales_utilizados || 0 }} cupos</span>
+                                                <button type="button"
+                                                        (click)="toggleDetalleGrado(p.id_ingrediente)"
+                                                        class="mt-0.5 block cursor-pointer border-0 bg-transparent p-0 text-[11px] font-black text-[#A86B00] underline">
+                                                    {{ ingredienteExpandidoId === p.id_ingrediente ? 'Ocultar grados' : 'Ver detalle por grado (' + (p.detalle_por_grado?.length || 0) + ')' }}
+                                                </button>
+                                            </td>
+                                            <td class="p-3">
+                                                <span class="font-black text-slate-900">{{ p.cantidad_total_requerida | number:'1.0-2' }} {{ p.unidad_abreviatura || p.unidad_medida }}</span>
+                                                <span *ngIf="p.presentacion_requerida" class="block text-[10px] text-slate-500">{{ p.presentacion_requerida }}</span>
+                                            </td>
+                                            <td class="p-3">
+                                                <span class="block text-[11px] text-slate-500">Sede: {{ (p.stock_actual_sede || 0) | number:'1.0-2' }}</span>
+                                                <span class="font-black text-[#A86B00]">Neto: {{ p.cantidad_sugerida_despacho | number:'1.0-2' }} {{ p.unidad_abreviatura || p.unidad_medida }}</span>
+                                            </td>
+                                            <td class="p-3">
+                                                <div class="font-bold text-slate-800">{{ (p.stock_bodega_central || 0) | number:'1.0-2' }} {{ p.unidad_abreviatura || p.unidad_medida }}</div>
+                                                <span class="mt-0.5 inline-block rounded-full px-2 py-0.5 text-[10px] font-black"
+                                                      [ngClass]="p.estado_bodega_central === 'SUFICIENTE' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-red-50 text-red-700 border border-red-200'">
+                                                    {{ p.estado_bodega_central }}
+                                                </span>
+                                                <span *ngIf="(p.pendiente_abastecer || 0) > 0" class="block mt-0.5 text-[10px] font-bold text-red-700">
+                                                    Pendiente: {{ p.pendiente_abastecer | number:'1.0-2' }} {{ p.unidad_abreviatura || p.unidad_medida }}
+                                                </span>
+                                                <span *ngIf="p.error_conversion" class="block mt-0.5 text-[10px] font-bold text-red-700">
+                                                    {{ p.alerta_conversion }}
+                                                </span>
+                                            </td>
+                                            <td class="p-3 text-right">
+                                                <button type="button"
+                                                        (click)="cargarProductoCalculo(p)"
+                                                        [disabled]="p.error_conversion || (p.cantidad_sugerida_despacho || 0) <= 0"
+                                                        class="cursor-pointer rounded-full border border-amber-300 bg-[#FFF4D6] px-3 py-1 text-[11px] font-black text-[#8A5A00] disabled:cursor-not-allowed disabled:opacity-45">
+                                                    Aplicar
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        <!-- Fila expandible: detalle por grado -->
+                                        <tr *ngIf="ingredienteExpandidoId === p.id_ingrediente" class="bg-slate-50/80">
+                                            <td colspan="7" class="p-3">
+                                                <div class="rounded-xl border border-slate-200 bg-white p-3">
+                                                    <div class="mb-2 text-[11px] font-black uppercase tracking-wider text-slate-500">
+                                                        Desglose nutricional por grado y jornada · {{ p.nombre_ingrediente }}
+                                                    </div>
+                                                    <table class="w-full border-collapse text-left text-[11px]">
+                                                        <thead class="text-[10px] font-extrabold text-slate-400 border-b border-slate-100">
+                                                            <tr>
+                                                                <th class="py-1.5 pr-2">Jornada</th>
+                                                                <th class="py-1.5 pr-2">Grado / Grupo</th>
+                                                                <th class="py-1.5 pr-2">Cupos</th>
+                                                                <th class="py-1.5 pr-2">Gramaje / ración</th>
+                                                                <th class="py-1.5 pr-2">Días</th>
+                                                                <th class="py-1.5 pr-2">Total grado</th>
+                                                                <th class="py-1.5">Estado</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody class="divide-y divide-slate-100">
+                                                            <tr *ngFor="let g of p.detalle_por_grado ?? []">
+                                                                <td class="py-1.5 pr-2 font-semibold text-slate-700">{{ g.jornada_nombre }}</td>
+                                                                <td class="py-1.5 pr-2">
+                                                                    <b>{{ g.grado_nombre }}</b>
+                                                                    <span *ngIf="g.grupo_gramaje" class="text-[10px] text-slate-400"> ({{ g.grupo_gramaje }})</span>
+                                                                </td>
+                                                                <td class="py-1.5 pr-2 font-bold">{{ g.cupos }}</td>
+                                                                <td class="py-1.5 pr-2">
+                                                                    <ng-container *ngIf="g.estado === 'CALCULADO'">
+                                                                        {{ g.porcion_original | number:'1.0-4' }} {{ g.unidad_gramaje }}
+                                                                        <span class="text-slate-400">→ {{ g.porcion_convertida | number:'1.0-4' }} {{ g.unidad_destino }}</span>
+                                                                    </ng-container>
+                                                                    <ng-container *ngIf="g.estado !== 'CALCULADO'">—</ng-container>
+                                                                </td>
+                                                                <td class="py-1.5 pr-2">{{ g.dias_periodo }}</td>
+                                                                <td class="py-1.5 pr-2 font-black text-slate-900">
+                                                                    {{ (g.cantidad_requerida || 0) | number:'1.0-2' }} {{ g.unidad_destino || (p.unidad_abreviatura || p.unidad_medida) }}
+                                                                </td>
+                                                                <td class="py-1.5">
+                                                                    <span class="rounded-full px-2 py-0.5 text-[10px] font-bold"
+                                                                          [ngClass]="g.estado === 'CALCULADO' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'">
+                                                                        {{ g.estado }}
+                                                                    </span>
+                                                                    <span *ngIf="g.mensaje" class="block text-[10px] text-red-600">{{ g.mensaje }}</span>
+                                                                </td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </ng-container>
+                                </tbody>
+                            </table>
+                        </div>
+                    </ng-container>
                 </div>
             </section>
 
-            <!-- ================= COLUMNA DERECHA ================= -->
-            <aside class="flex flex-col gap-4 lg:col-span-4">
+            <div #catalogoRef class="layout scroll-mt-4">
 
-                <!-- ===== SOLO CALENDARIO: lo del día elegido ===== -->
-                <div *ngIf="mostrarCalendario" class="fx-panel rounded-3xl p-4 sm:p-5">
-                    <div class="mb-3 border-b border-slate-100 pb-2.5">
-                        <span class="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Calendario de entregas</span>
-                        <h3 class="m-0 text-sm font-black text-slate-900">{{ fechaDiaModal(diaSeleccionado) }}</h3>
-                    </div>
-                    <p *ngIf="registrosDelDia.length === 0 && vencenDelDia.length === 0" class="rounded-xl border border-dashed border-slate-200 p-4 text-center text-xs text-slate-500">Selecciona un día con entregas o vencimientos.</p>
+                <!-- ================= COLUMNA IZQUIERDA: CATÁLOGO Y CALENDARIO ================= -->
+                <section class="min-w-0">
 
-                    <div *ngFor="let reg of registrosDelDia; trackBy: trackPor" class="fx-up mb-3 rounded-xl border border-slate-100 bg-white p-2.5">
-                        <div class="flex items-center justify-between gap-2">
-                            <p class="m-0 truncate text-xs font-black text-slate-900">{{ reg.codigo }} · {{ reg.destino }}</p>
-                            <span class="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[9px] font-black text-amber-700">{{ reg.estado }}</span>
-                        </div>
-                        <p *ngIf="reg.fechaRegistro" class="m-0 mt-0.5 text-[10px] font-semibold text-slate-400">Registrado el {{ fechaCorta(reg.fechaRegistro) }}</p>
-                        <div *ngFor="let e of reg.items; trackBy: trackPor" class="mt-2 flex items-center justify-between gap-2">
-                            <div class="flex min-w-0 items-center gap-2">
-                                <ng-container *ngTemplateOutlet="foto; context: { n: e.ingrediente, c: 'h-7 w-7 bg-orange-50' }"></ng-container>
-                                <span class="truncate text-[11px] font-bold text-slate-700">{{ e.ingrediente }}</span>
+                    <!-- ===== VISTA: CALENDARIO ===== -->
+                    <div *ngIf="mostrarCalendario">
+                        <div class="mb-3 flex items-center justify-between gap-2">
+                            <div class="flex items-center gap-2">
+                                <button type="button" class="arrow-btn" aria-label="Mes anterior" (click)="mesAnterior()"><span class="material-symbols-outlined text-[18px]">chevron_left</span></button>
+                                <h3 class="m-0 min-w-[150px] text-center text-base font-black">{{ tituloMes }}</h3>
+                                <button type="button" class="arrow-btn" aria-label="Mes siguiente" (click)="mesSiguiente()"><span class="material-symbols-outlined text-[18px]">chevron_right</span></button>
                             </div>
-                            <span class="shrink-0 text-[11px] font-black text-orange-600">{{ e.cantidad }} {{ e.unidad }}</span>
+                            <div class="flex items-center gap-2">
+                                <button type="button" (click)="irAHoy()" class="btn-hoy">Hoy</button>
+                            </div>
+                        </div>
+
+                        <div class="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] font-semibold text-slate-500">
+                            <span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-emerald-500"></span> Vigente</span>
+                            <span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-amber-500"></span> Próximo a vencer</span>
+                            <span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-red-500"></span> Vencido</span>
+                            <span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-orange-500"></span> Productos que vencen ese día</span>
+                            <span class="inline-flex items-center gap-1 text-slate-400">· Toca un día para ver su detalle</span>
+                        </div>
+
+                        <div class="overflow-hidden rounded-2xl border border-slate-100 bg-white">
+                            <div class="grid grid-cols-7 bg-slate-50 text-center text-[10px] font-black uppercase tracking-wide text-slate-500">
+                                <div *ngFor="let nombre of nombresDias" class="py-2.5">{{ nombre }}</div>
+                            </div>
+                            <div class="grid grid-cols-7">
+                                <button type="button" *ngFor="let dia of diasCalendario; trackBy: trackPor" (click)="seleccionarDia(dia.iso)"
+                                    [attr.aria-label]="fechaCorta(dia.iso)" [attr.aria-pressed]="dia.seleccionado"
+                                    class="cal-cell" [class.fuera]="!dia.enMes" [class.sel]="dia.seleccionado">
+                                    <span class="cal-num" [class.hoy]="dia.esHoy">{{ dia.numero }}</span>
+                                    <span *ngIf="dia.entregas > 0" class="cal-chip" [ngClass]="claseChipEstado(dia.estado)"><span class="cal-dot"></span>Entrada · {{ dia.entregas }} prod.</span>
+                                    <span *ngIf="dia.vencen > 0" class="cal-chip cal-venc"><span class="cal-dot"></span>Vencen · {{ dia.vencen }}</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
 
-                    <div *ngIf="vencenDelDia.length > 0" class="mt-2">
-                        <h4 class="m-0 mb-2 text-[10px] font-black uppercase tracking-wider text-orange-500">Vencen este día</h4>
-                        <div *ngFor="let e of vencenDelDia; trackBy: trackPor" class="flex items-center justify-between gap-2 border-b border-orange-100 py-1.5 last:border-b-0">
-                            <span class="truncate text-[11px] font-bold text-slate-700">{{ e.ingrediente }}</span>
-                            <span class="shrink-0 text-[11px] font-black text-slate-900">{{ e.cantidad }} {{ e.unidad }}</span>
-                        </div>
-                    </div>
-                </div>
+                    <!-- ===== VISTA: MENÚ ===== -->
+                    <div *ngIf="!mostrarCalendario">
 
-                <!-- ===== SOLO MENÚ: factura (productos para enviar) e historial ===== -->
-                <div *ngIf="!mostrarCalendario" class="fx-panel rounded-3xl p-4 sm:p-5">
-                    <div class="mb-3 border-b border-slate-100 pb-3">
-                        <div class="flex items-center justify-between">
+                        <!-- Categorías -->
+                        <div class="sec-head" *ngIf="totalProductosMenu > 0">
+                            <h3 class="sec-title"><span class="material-symbols-outlined">grid_view</span> Categorías de abastecimiento</h3>
+                            <button type="button" class="link-all" (click)="categoriaMenu = 'Todos'; paginaActual = 1">Ver todas →</button>
+                        </div>
+
+                        <div class="cat-rail" *ngIf="totalProductosMenu > 0">
+                            <button type="button" class="arrow-btn" aria-label="Categorías anteriores" (click)="menuChips.scrollBy({ left: -340, behavior: 'smooth' })">
+                                <span class="material-symbols-outlined text-[18px]">chevron_left</span>
+                            </button>
+
+                            <div #menuChips class="cat-grid">
+                                <button type="button" *ngFor="let categoria of categoriasMenu; trackBy: trackPor"
+                                    class="cat2" [class.on]="categoriaMenu === categoria.nombre"
+                                    [attr.aria-pressed]="categoriaMenu === categoria.nombre"
+                                    (click)="categoriaMenu = categoria.nombre; paginaActual = 1">
+                                    <span class="cat2-foto">
+                                        <img *ngIf="imagenCategoria(categoria.nombre) as src; else sinFotoCat" [src]="src" [alt]="categoria.nombre" loading="lazy">
+                                        <ng-template #sinFotoCat>{{ categoria.emoji }}</ng-template>
+                                    </span>
+                                    <span class="cat2-nombre" [title]="categoria.nombre">{{ categoria.nombre }}</span>
+                                    <span class="cat2-total">{{ categoria.total }}</span>
+                                </button>
+                            </div>
+
+                            <button type="button" class="arrow-btn" aria-label="Más categorías" (click)="menuChips.scrollBy({ left: 340, behavior: 'smooth' })">
+                                <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+                            </button>
+                        </div>
+
+                        <!-- Productos disponibles -->
+                        <div class="sec-head">
                             <div>
-                                <span class="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Factura</span>
-                                <h3 class="m-0 text-sm font-black text-slate-900">Productos para enviar</h3>
-                            </div>
-                            <span class="rounded-full bg-orange-100 px-2.5 py-0.5 text-[11px] font-black text-orange-600">{{ seleccionados.length }} productos</span>
-                        </div>
-                        <div class="mt-3 flex items-start gap-2.5 rounded-2xl border border-orange-100 bg-orange-50 px-3 py-2.5">
-                            <span class="material-symbols-outlined mt-0.5 text-[20px] text-orange-500">school</span>
-                            <div class="min-w-0">
-                                <span class="block text-[9px] font-bold text-slate-400">Institución / sede</span>
-                                <span class="block break-words text-xs font-black leading-snug text-slate-900">{{ destinosDisponibles[0] || nombreInstitucion }}</span>
+                                <h3 class="sec-title"><span class="material-symbols-outlined">inventory_2</span> Productos disponibles</h3>
+                                <p class="sec-sub">
+                                    {{ totalProductosMenu > 0 ? 'Mostrando ' + desdeMostrado + '–' + hastaMostrado + ' de ' + totalProductosMenu + ' productos' : '0 productos' }}
+                                </p>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- Pestañas -->
-                    <div class="mb-3 flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 p-1">
-                        <button type="button" (click)="mostrarHistorialEnvios = false" [class.pill-on]="!mostrarHistorialEnvios" [class.text-slate-500]="mostrarHistorialEnvios"
-                            class="inline-flex flex-1 cursor-pointer items-center justify-center gap-1 rounded-full px-3 py-1 text-xs font-bold transition">
-                            <span class="material-symbols-outlined text-[14px]">receipt_long</span> Factura
-                        </button>
-                        <button type="button" (click)="mostrarHistorialEnvios = true" [class.pill-on]="mostrarHistorialEnvios" [class.text-slate-500]="!mostrarHistorialEnvios"
-                            class="inline-flex flex-1 cursor-pointer items-center justify-center gap-1 rounded-full px-3 py-1 text-xs font-bold transition">
-                            <span class="material-symbols-outlined text-[14px]">history</span> Historial ({{ historialEnvios.length + entradasHistorial.length }})
-                        </button>
-                    </div>
+                        <!-- Pestañas por tipo -->
+                        <div id="catalogo-top" class="tabs-line scroll-mt-4" role="tablist" aria-label="Tipo de producto">
+                            <button *ngFor="let f of [['Todos', 'Todos'], ['Perecederos', 'Perecederos'], ['Granos', 'No perecederos']]"
+                                type="button" role="tab" [class.on]="filtroMercado === f[0]" [attr.aria-selected]="filtroMercado === f[0]"
+                                (click)="setMercado($any(f[0]))">{{ f[1] }}</button>
+                        </div>
 
-                    <!-- ===== FACTURA ===== -->
-                    <ng-container *ngIf="!mostrarHistorialEnvios; else vistaHistorial">
-                        <p *ngIf="seleccionados.length === 0" class="rounded-xl border border-dashed border-slate-200 p-4 text-center text-xs text-slate-500">Desliza un producto del catálogo hacia la derecha para verlo aquí.</p>
+                        <div class="swipe-note mt-4" role="note">
+                            <span class="material-symbols-outlined swipe-hint text-[20px]">swipe_right</span>
+                            <span>Desliza el producto a la <b>derecha</b> para agregarlo a tu pedido. A la <b>izquierda</b> lo quita.</span>
+                        </div>
 
-                        <div class="flex max-h-[620px] flex-col gap-3 overflow-y-auto pr-1">
-                            <article *ngFor="let sel of seleccionados; trackBy: trackPor" class="inv-card fx-up" [attr.aria-label]="sel.ingrediente">
-                                <header class="flex items-center justify-between gap-2 px-3 pb-2.5 pt-3">
-                                    <div class="flex min-w-0 items-center gap-2.5">
-                                        <ng-container *ngTemplateOutlet="foto; context: { n: sel.ingrediente, c: 'h-11 w-11 bg-orange-50 text-xl' }"></ng-container>
-                                        <div class="min-w-0">
-                                            <h5 class="m-0 truncate text-sm font-black text-slate-900">{{ sel.ingrediente }}</h5>
-                                            <p class="m-0 truncate text-[11px] font-semibold text-slate-400">{{ categoriaDe(sel.ingrediente) }} · {{ sel.tipoMercado }}</p>
+                        <p *ngIf="cargandoCatalogos" class="mb-3 text-center text-xs font-semibold text-slate-500" role="status">Cargando productos...</p>
+
+                        <!-- Productos de la página -->
+                        <div class="pc-grid">
+                            <ng-container *ngFor="let grupo of gruposPagina; trackBy: trackPor">
+
+                                <article *ngFor="let producto of grupo.productos; trackBy: trackPor" class="pc fx-up"
+                                    [class.activa]="tarjetaActiva(producto)" [class.arrastrando]="swipeId === producto.id"
+                                    [class.swipe-agregar]="swipeId === producto.id && swipeDx >= umbralSwipe"
+                                    [class.swipe-quitar]="swipeId === producto.id && swipeDx <= -umbralSwipe"
+                                    [style.translate]="swipeId === producto.id ? swipeDx + 'px' : null"
+                                    [attr.aria-label]="nombreMostrado(producto.nombre)"
+                                    (pointerdown)="alIniciarDeslizar($event, producto)" (pointermove)="alMoverDeslizar($event)"
+                                    (pointerup)="alTerminarDeslizar(producto)" (pointercancel)="cancelarDeslizar()">
+
+                                    <!-- Foto con casilla -->
+                                    <div class="pc-foto" [class.peco]="esPerecedero(producto)">
+                                        <img *ngIf="imagenDe(producto.nombre) as src; else sinFotoProd" [src]="src" [alt]="nombreMostrado(producto.nombre)" loading="lazy" draggable="false">
+                                        <ng-template #sinFotoProd><span>{{ emojiDe(producto.nombre) }}</span></ng-template>
+                                        <span class="pc-check" aria-hidden="true"><span class="material-symbols-outlined">check</span></span>
+                                        <span *ngIf="fueEnviado(producto.nombre)" class="pc-enviado">✓ Enviado</span>
+                                    </div>
+
+                                    <h4 class="pc-nombre" [title]="nombreMostrado(producto.nombre)">{{ nombreMostrado(producto.nombre) }}</h4>
+
+                                    <!-- Unidad y existencia con barra de color -->
+                                    <div class="pc-stock">
+                                        <div class="pc-stock-txt">
+                                            <span>Unidad: <b>{{ producto.unidad }}</b></span>
+                                            <span class="pc-stock-cant">{{ totalDisponible(producto) | number:'1.0-2' }} {{ producto.unidad }}</span>
                                         </div>
+                                        <div class="barra-stock"><span [style.width.%]="porcentajeStock(totalDisponible(producto))" [ngClass]="nivelStock(totalDisponible(producto))"></span></div>
                                     </div>
-                                    <button type="button" (click)="quitarSeleccionado(sel)" [attr.aria-label]="'Quitar ' + sel.ingrediente"
-                                        class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200">
-                                        <span class="material-symbols-outlined text-[16px]">close</span>
-                                    </button>
-                                </header>
 
-                                <div class="inv-card-cantidad">
-                                    <span class="block text-[10px] font-bold text-slate-500">Cantidad disponible</span>
-                                    <span class="text-xl font-black leading-none text-orange-600">{{ disponibleDe(sel) }}</span>
-                                    <span class="ml-1 text-xs font-bold text-orange-500">{{ sel.unidad }}</span>
-                                </div>
-
-                                <!-- El botón Enviar es uno solo, debajo de todos los productos -->
-                                <div class="px-3 py-3">
-                                    <span class="mb-1.5 block text-[10px] font-bold text-slate-500">Cantidad a enviar</span>
-                                    <div class="flex items-center gap-1.5">
-                                        <button type="button" class="cant-btn" aria-label="Restar" (click)="ajustarCantidadEnviar(sel, -1)"><span class="material-symbols-outlined text-[16px]">remove</span></button>
-                                        <input type="number" min="0" [max]="disponibleDe(sel)" step="any" placeholder="0"
-                                            [ngModel]="cantidadEnviarDe(sel) || null" (ngModelChange)="fijarCantidadEnviar(sel, $event)"
-                                            [attr.aria-label]="'Cantidad de ' + sel.ingrediente + ' a enviar'"
-                                            class="fx-input min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-center text-sm font-black text-slate-800 outline-none">
-                                        <button type="button" class="cant-btn" aria-label="Sumar" (click)="ajustarCantidadEnviar(sel, 1)"><span class="material-symbols-outlined text-[16px]">add</span></button>
-                                        <span class="shrink-0 text-xs font-black text-slate-700">{{ sel.unidad }}</span>
+                                    <!-- Tipo (abajo): Perecedero / No perecedero -->
+                                    <div class="pc-tipo" [ngClass]="esPerecedero(producto) ? 'peco' : 'nope'">
+                                        <span class="material-symbols-outlined">{{ esPerecedero(producto) ? 'schedule' : 'verified' }}</span>
+                                        {{ nombreTipo(producto) }}
                                     </div>
-                                    <p class="m-0 mt-1.5 text-[10px] font-semibold" [ngClass]="cantidadEnviarDe(sel) > disponibleDe(sel) ? 'text-red-600' : 'text-slate-400'">
-                                        {{ cantidadEnviarDe(sel) > disponibleDe(sel) ? 'No puedes enviar más de lo disponible' : 'Disponible: ' + disponibleDe(sel) + ' ' + sel.unidad }}
-                                    </p>
-                                </div>
-                            </article>
+                                </article>
+                            </ng-container>
                         </div>
 
-                        <!-- Un solo botón para enviar (uno o varios productos) -->
-                        <div *ngIf="seleccionados.length > 0" class="mt-3">
-                            <p *ngIf="errorEnvioPanel" class="m-0 mb-2 rounded-xl border border-red-200 bg-red-50 p-2 text-[11px] font-semibold text-red-700" role="alert">{{ errorEnvioPanel }}</p>
-                            <button type="button" (click)="enviarSeleccionados()" [disabled]="guardandoEnvio || productosParaEnviar.length === 0"
-                                class="pill-on flex w-full cursor-pointer items-center justify-center gap-2 rounded-full px-4 py-2.5 text-xs font-bold transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">
-                                <span class="material-symbols-outlined text-[18px]">{{ guardandoEnvio ? 'hourglass_top' : 'send' }}</span>
-                                {{ guardandoEnvio ? 'Enviando...' : (seleccionados.length === 1 ? 'Enviar' : 'Enviar todos' + (productosParaEnviar.length ? ' (' + productosParaEnviar.length + ')' : '')) }}
-                            </button>
+                        <p *ngIf="!cargandoCatalogos && totalProductosMenu === 0" class="rounded-2xl border border-slate-100 bg-white p-4 text-center text-xs text-slate-500">No hay productos para los filtros seleccionados.</p>
+
+                        <!-- Paginación -->
+                        <nav *ngIf="totalPaginas > 1" class="pag-bar" aria-label="Paginación de productos">
+                            <span class="text-[11px] font-semibold text-slate-500">Página {{ paginaEfectiva }} de {{ totalPaginas }}</span>
+                            <div class="flex flex-wrap items-center gap-1.5">
+                                <button type="button" class="pag-btn" (click)="irAPagina(paginaEfectiva - 1)" [disabled]="paginaEfectiva === 1" aria-label="Página anterior"><span class="material-symbols-outlined text-[18px]">chevron_left</span></button>
+                                <ng-container *ngFor="let n of numerosPagina">
+                                    <span *ngIf="n === '…'" class="px-1 text-xs font-bold text-slate-400">…</span>
+                                    <button *ngIf="n !== '…'" type="button" class="pag-btn" [class.pill-on]="n === paginaEfectiva" [attr.aria-current]="n === paginaEfectiva ? 'page' : null" (click)="irAPagina(n)">{{ n }}</button>
+                                </ng-container>
+                                <button type="button" class="pag-btn" (click)="irAPagina(paginaEfectiva + 1)" [disabled]="paginaEfectiva === totalPaginas" aria-label="Página siguiente"><span class="material-symbols-outlined text-[18px]">chevron_right</span></button>
+                            </div>
+                        </nav>
+                    </div>
+                </section>
+
+                <!-- ================= COLUMNA DERECHA (FIJA AL HACER SCROLL) ================= -->
+                <aside class="panel-sticky flex flex-col gap-4">
+
+                    <!-- ===== SOLO HISTORIAL: entradas registradas, una tarjeta por fecha y destino ===== -->
+                    <div *ngIf="mostrarCalendario" class="fx-panel rounded-3xl p-4 sm:p-5">
+                        <div class="mb-3 flex items-end justify-between gap-3 border-b border-slate-100 pb-2.5">
+                            <div class="min-w-0">
+                                <span class="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Historial</span>
+                                <h3 class="m-0 truncate text-sm font-black text-slate-900">{{ filtroFecha ? fechaDiaModal(filtroFecha) : 'Todas las fechas' }}</h3>
+                            </div>
+                            <div class="flex shrink-0 items-center gap-1">
+                                <input type="date" [ngModel]="filtroFecha" (ngModelChange)="alElegirFecha($event)" aria-label="Buscar por fecha" class="fx-input campo !w-[140px] !px-2 !py-1.5">
+                                <button *ngIf="filtroFecha" type="button" (click)="alElegirFecha('')" aria-label="Quitar filtro de fecha" title="Ver todas las fechas"
+                                    class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-slate-100 text-slate-500"><span class="material-symbols-outlined text-[16px]">close</span></button>
+                            </div>
                         </div>
 
-                        <div class="mt-4 border-t border-slate-100 pt-4">
-                            <button type="button" (click)="mostrarModalInventario = true" class="pill-on flex w-full cursor-pointer items-center justify-center gap-2 rounded-full px-4 py-2.5 text-xs font-bold transition hover:opacity-90">
-                                <span class="material-symbols-outlined text-[18px]">inventory_2</span> Ver inventario
-                                <span class="rounded-full bg-white/25 px-2 py-0.5 text-[10px] font-black">{{ inventarioDisponible.length }} disponibles · {{ inventarioNoDisponible.length }} no disponibles</span>
-                            </button>
+                        <!-- Productos que vencen el día elegido -->
+                        <div *ngIf="vencenDelDia.length > 0" class="mb-3">
+                            <h4 class="m-0 mb-2 text-[10px] font-black uppercase tracking-wider text-orange-500">Vencen el {{ fechaCorta(diaSeleccionado) }}</h4>
+                            <div *ngFor="let e of vencenDelDia; trackBy: trackPor" class="flex items-center justify-between gap-2 border-b border-orange-100 py-1.5 last:border-b-0">
+                                <span class="truncate text-[11px] font-bold text-slate-700">{{ e.ingrediente }}</span>
+                                <span class="shrink-0 text-[11px] font-black text-slate-900">{{ e.cantidad }} {{ e.unidad }}</span>
+                            </div>
                         </div>
-                    </ng-container>
 
-                    <!-- ===== HISTORIAL: entradas y envíos, una tarjeta por registro ===== -->
-                    <ng-template #vistaHistorial>
-                        <div class="mb-4 grid grid-cols-2 gap-2">
-                            <div class="rounded-2xl bg-orange-50 p-3 text-center"><span class="block text-xl font-black leading-none text-orange-600">{{ historialEnvios.length }}</span><span class="text-[10px] font-bold text-slate-500">productos enviados</span></div>
-                            <div class="rounded-2xl bg-emerald-50 p-3 text-center"><span class="block text-xl font-black leading-none text-emerald-600">{{ entradasHistorial.length }}</span><span class="text-[10px] font-bold text-slate-500">productos registrados</span></div>
+                        <div class="mb-4 rounded-2xl bg-[#FFF4D6] p-3 text-center">
+                            <span class="block text-xl font-black leading-none text-[#A86B00]">{{ totalProductosRegistrados }}</span>
+                            <span class="text-[10px] font-bold text-slate-500">productos registrados</span>
                         </div>
 
                         <!-- Entradas registradas -->
                         <div class="mb-2 flex items-center justify-between">
                             <h4 class="m-0 text-[10px] font-black uppercase tracking-wider text-slate-400">Entradas registradas</h4>
-                            <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-black text-emerald-700">{{ gruposEntradas.length }} {{ gruposEntradas.length === 1 ? 'registro' : 'registros' }}</span>
+                            <span class="rounded-full bg-[#FDE7A6] px-2 py-0.5 text-[10px] font-black text-[#8A5A00]">{{ entradasFiltradas.length }} {{ entradasFiltradas.length === 1 ? 'registro' : 'registros' }}</span>
                         </div>
-                        <p *ngIf="gruposEntradas.length === 0" class="rounded-xl border border-dashed border-slate-200 p-4 text-center text-xs text-slate-500">Aún no has registrado entradas.</p>
-                        <div class="max-h-[520px] overflow-y-auto pr-1">
-                            <article *ngFor="let g of gruposEntradas; trackBy: trackPor" class="fx-up mb-3 overflow-hidden rounded-2xl border border-emerald-200 bg-white shadow-sm">
-                                <header class="border-b border-emerald-100 bg-emerald-50 px-3.5 py-3">
-                                    <div class="flex items-start gap-3">
-                                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500 text-white"><span class="material-symbols-outlined text-[20px]">inventory_2</span></span>
-                                        <p class="m-0 min-w-0 flex-1 break-words text-xs font-black leading-snug text-slate-900">{{ g.destino }}</p>
-                                    </div>
-                                    <div class="mt-2 flex items-center justify-between gap-2">
-                                        <p class="m-0 flex items-center gap-1 text-[11px] font-bold text-emerald-700"><span class="material-symbols-outlined text-[14px]">event</span>{{ fechaCorta(g.fechaRegistro) }}<ng-container *ngIf="g.hora"> · {{ g.hora }}</ng-container></p>
-                                        <span class="shrink-0 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-black text-emerald-700">{{ g.productos.length }} {{ g.productos.length === 1 ? 'producto' : 'productos' }}</span>
-                                    </div>
-                                </header>
-                                <ul class="m-0 list-none p-0">
-                                    <li *ngFor="let r of g.productos; trackBy: trackPor" class="flex items-center justify-between gap-2 border-b border-slate-100 px-3.5 py-2.5 last:border-b-0">
-                                        <div class="flex min-w-0 items-center gap-2.5">
-                                            <ng-container *ngTemplateOutlet="foto; context: { n: r.ingrediente, c: 'h-9 w-9 bg-orange-50' }"></ng-container>
-                                            <div class="min-w-0">
-                                                <h5 class="m-0 truncate text-xs font-bold text-slate-800">{{ r.ingrediente }}</h5>
-                                                <p class="m-0 truncate text-[10px] text-slate-400">{{ categoriaDe(r.ingrediente) }}<ng-container *ngIf="r.veces > 1"> · {{ r.veces }} entradas</ng-container></p>
-                                            </div>
-                                        </div>
-                                        <div class="shrink-0 text-right">
-                                            <span class="block text-[9px] font-bold text-slate-400">Cantidad registrada</span>
-                                            <span class="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-black text-emerald-600">{{ r.cantidad | number:'1.0-2' }} {{ r.unidad }}</span>
-                                        </div>
-                                    </li>
-                                </ul>
-                            </article>
-                        </div>
+                        <p *ngIf="entradasFiltradas.length === 0" class="rounded-xl border border-dashed border-slate-200 p-4 text-center text-xs text-slate-500">{{ filtroFecha ? 'No hay entradas en esa fecha.' : 'Aún no has registrado entradas.' }}</p>
 
-                        <!-- Enviado a la institución -->
-                        <div class="mb-2 mt-5 flex items-center justify-between">
-                            <h4 class="m-0 text-[10px] font-black uppercase tracking-wider text-slate-400">Enviado a la institución</h4>
-                            <span class="rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-black text-orange-700">{{ gruposEnvios.length }} {{ gruposEnvios.length === 1 ? 'envío' : 'envíos' }}</span>
-                        </div>
-                        <p *ngIf="gruposEnvios.length === 0" class="rounded-xl border border-dashed border-slate-200 p-4 text-center text-xs text-slate-500">Aún no has enviado nada.</p>
-                        <div class="max-h-[520px] overflow-y-auto pr-1">
-                            <article *ngFor="let g of gruposEnvios; trackBy: trackPor" class="fx-up mb-3 overflow-hidden rounded-2xl border border-orange-200 bg-white shadow-sm">
-                                <header class="border-b border-orange-100 bg-orange-50 px-3.5 py-3">
-                                    <div class="flex items-start gap-3">
-                                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-500 text-white"><span class="material-symbols-outlined text-[20px]">local_shipping</span></span>
-                                        <p class="m-0 min-w-0 flex-1 break-words text-xs font-black leading-snug text-slate-900">{{ g.destino || '—' }}</p>
+                        <div class="custom-scroll max-h-[560px] overflow-y-auto pr-1">
+                            <article *ngFor="let g of gruposEntradasVisibles; trackBy: trackPor" (click)="abrirDetalleEntrada(g)" (keydown.enter)="abrirDetalleEntrada(g)" tabindex="0" role="button"
+                                class="fx-up fx-lift mb-2 cursor-pointer rounded-2xl border bg-white px-3 py-2.5 shadow-sm transition"
+                                [ngClass]="claseBordeTarjetaEntrada(g)">
+                                <div class="flex items-center gap-3">
+                                    <div class="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-xl bg-[#F4B41F] leading-none text-[#2B1D00]">
+                                        <span class="text-base font-black">{{ diaDe(g.fechaRecepcion) }}</span>
+                                        <span class="mt-0.5 text-[9px] font-bold">{{ mesCortoDe(g.fechaRecepcion) }}</span>
                                     </div>
-                                    <div class="mt-2 flex items-center justify-between gap-2">
-                                        <p class="m-0 text-[11px] font-bold text-orange-700">Envío a la institución</p>
-                                        <span class="shrink-0 rounded-full bg-orange-100 px-2.5 py-0.5 text-[10px] font-black text-orange-700">{{ g.items.length }} {{ g.items.length === 1 ? 'producto' : 'productos' }}</span>
+                                    <div class="min-w-0 flex-1">
+                                        <div class="flex items-center justify-between gap-1">
+                                            <p class="m-0 truncate text-xs font-black text-slate-900">{{ g.productos.length }} {{ g.productos.length === 1 ? 'producto' : 'productos' }} · {{ fechaCorta(g.fechaRecepcion) }}</p>
+                                        </div>
+                                        <p class="m-0 truncate text-[10px] font-semibold text-slate-500">{{ resumenEntrada(g) }}</p>
+                                        <div class="m-0 mt-1 flex items-center justify-between gap-2">
+                                            <p class="m-0 flex items-center gap-1 truncate text-[10px] font-bold text-[#8A5A00]">
+                                                <span class="material-symbols-outlined text-[12px]">person</span>{{ g.responsable || 'Sin responsable' }}
+                                            </p>
+                                            <!-- Estado de aprobación del administrador -->
+                                            <span class="inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-black tracking-tight"
+                                                [ngClass]="claseBadgeAprobacion(g.estadoAprobacion || estadoAprobacionGrupo(g))">
+                                                <span class="material-symbols-outlined text-[11px] leading-none">{{ iconoBadgeAprobacion(g.estadoAprobacion || estadoAprobacionGrupo(g)) }}</span>
+                                                {{ textoBadgeAprobacion(g.estadoAprobacion || estadoAprobacionGrupo(g)) }}
+                                            </span>
+                                        </div>
                                     </div>
-                                </header>
-                                <div class="grid grid-cols-2 gap-3 border-b border-slate-100 bg-slate-50 px-3.5 py-2.5">
-                                    <div><span class="block text-[9px] font-bold text-slate-400">Fecha de salida</span><span class="block text-[11px] font-black text-slate-800">{{ fechaCorta(g.fechaSalida) || '—' }}</span></div>
-                                    <div><span class="block text-[9px] font-bold text-slate-400">Fecha de entrega</span><span class="block text-[11px] font-black text-slate-800">{{ fechaCorta(g.fechaEntrega) || '—' }}</span></div>
+                                    <span class="material-symbols-outlined shrink-0 text-[18px] text-slate-300">chevron_right</span>
                                 </div>
-                                <ul class="m-0 list-none p-0">
-                                    <li *ngFor="let envio of g.items; trackBy: trackPor" class="flex items-center justify-between gap-2 border-b border-slate-100 px-3.5 py-2.5 last:border-b-0">
-                                        <div class="flex min-w-0 items-center gap-2.5">
-                                            <ng-container *ngTemplateOutlet="foto; context: { n: envio.ingrediente, c: 'h-9 w-9 bg-orange-50' }"></ng-container>
-                                            <div class="min-w-0">
-                                                <h5 class="m-0 truncate text-xs font-bold text-slate-800">{{ envio.ingrediente }}</h5>
-                                                <p class="m-0 truncate text-[10px] text-slate-400">{{ categoriaDe(envio.ingrediente) }}</p>
-                                            </div>
-                                        </div>
-                                        <span class="shrink-0 rounded-full bg-orange-50 px-2.5 py-1 text-xs font-black text-orange-600">{{ envio.cantidad }} {{ envio.unidad }}</span>
-                                    </li>
-                                </ul>
                             </article>
                         </div>
-                    </ng-template>
-                </div>
-            </aside>
-        </div>
-    </div>
-</div>
 
-<!-- ================= MODAL: REGISTRAR ENTRADA ================= -->
-<div *ngIf="mostrarModalEntrada" class="modal-fondo" (click)="mostrarModalEntrada = false">
-    <div class="modal-caja fx-up max-w-[760px]" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Registrar entrada">
-        <div class="flex items-start justify-between border-b border-slate-200 pb-4">
-            <div>
-                <p class="m-0 text-[10px] font-black uppercase tracking-wider text-orange-500">Nueva entrada</p>
-                <h3 class="m-0 mt-1 text-lg font-black text-slate-900">Registrar entrada de alimentos</h3>
-                <p class="m-0 mt-1 text-[11px] font-semibold text-slate-500">{{ nombreInstitucion }}</p>
-            </div>
-            <button type="button" class="btn-cerrar" aria-label="Cerrar" (click)="mostrarModalEntrada = false"><span class="material-symbols-outlined text-[20px]">close</span></button>
-        </div>
-
-        <div class="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <label class="block"><span class="mb-1 block text-[11px] font-bold text-slate-500">Fecha de entrega</span><input type="date" [(ngModel)]="entradaFecha" class="fx-input campo"></label>
-            <label class="block"><span class="mb-1 block text-[11px] font-bold text-slate-500">Destino (institución o sede)</span>
-                <select [(ngModel)]="entradaDestino" aria-label="Destino" class="fx-input campo cursor-pointer"><option *ngFor="let d of destinosDisponibles" [ngValue]="d">{{ d }}</option></select>
-            </label>
-            <label class="block"><span class="mb-1 block text-[11px] font-bold text-slate-500">Responsable</span><input type="text" [(ngModel)]="entradaResponsable" placeholder="Quién registra la entrada" autocomplete="off" class="fx-input campo"></label>
-        </div>
-
-        <div class="mt-6 flex flex-wrap items-center justify-between gap-2">
-            <h4 class="m-0 text-sm font-black text-slate-900">1. Toca los productos que entran</h4>
-            <div class="relative w-full sm:w-56">
-                <span class="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[17px] text-slate-400">search</span>
-                <input type="text" [(ngModel)]="busquedaEntrada" placeholder="Buscar producto..." autocomplete="off" class="fx-input w-full rounded-full border border-slate-200 bg-slate-50 py-1.5 pl-9 pr-3 text-xs font-medium text-slate-800 outline-none">
-            </div>
-        </div>
-        <div class="mt-3 grid max-h-[200px] grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-3 md:grid-cols-4">
-            <button type="button" *ngFor="let ing of productosRapidos; trackBy: trackPor" (click)="alternarProductoEntrada(ing.id)" [attr.aria-pressed]="estaEnEntrada(ing.id)"
-                class="flex cursor-pointer items-center gap-2 rounded-2xl border p-2 text-left transition"
-                [ngClass]="estaEnEntrada(ing.id) ? 'border-orange-400 bg-orange-50 text-orange-700' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'">
-                <ng-container *ngTemplateOutlet="foto; context: { n: ing.nombre, c: 'h-8 w-8 bg-orange-50' }"></ng-container>
-                <span class="min-w-0 flex-1 truncate text-[11px] font-bold">{{ ing.nombre }}</span>
-                <span *ngIf="estaEnEntrada(ing.id)" class="material-symbols-outlined text-[16px] text-orange-500">check_circle</span>
-            </button>
-            <p *ngIf="productosRapidos.length === 0" class="col-span-full m-0 py-3 text-center text-xs text-slate-500">No hay productos con ese nombre.</p>
-        </div>
-
-        <h4 class="m-0 mt-6 text-sm font-black text-slate-900">2. Escribe la cantidad ({{ entradaFilas.length }})</h4>
-        <p *ngIf="entradaFilas.length === 0" class="mt-3 rounded-2xl border border-dashed border-slate-200 p-4 text-center text-xs text-slate-500">Aún no has elegido productos. Tócalos arriba para agregarlos.</p>
-        <div class="mt-3 flex flex-col gap-2.5">
-            <div *ngFor="let fila of entradaFilas; let i = index" class="fx-up rounded-2xl border border-slate-100 bg-slate-50 p-3">
-                <div class="flex flex-wrap items-center gap-3">
-                    <div class="flex min-w-[140px] flex-1 items-center gap-2">
-                        <ng-container *ngTemplateOutlet="foto; context: { n: nombreIngrediente(fila.idIngrediente), c: 'h-9 w-9 bg-white' }"></ng-container>
-                        <span class="truncate text-xs font-black text-slate-900">{{ nombreIngrediente(fila.idIngrediente) }}</span>
+                        <button *ngIf="entradasFiltradas.length > limiteEntradas" type="button" (click)="verTodasEntradas = !verTodasEntradas"
+                            class="mt-1 w-full cursor-pointer rounded-full border border-[#F5D27A] bg-white px-3 py-1.5 text-[11px] font-bold text-[#8A5A00]">
+                            {{ verTodasEntradas ? 'Ver menos' : 'Ver todas las entradas (' + entradasFiltradas.length + ')' }}
+                        </button>
                     </div>
-                    <div class="flex items-center gap-1">
-                        <button type="button" class="cant-btn" aria-label="Restar" (click)="ajustarCantidadEntrada(fila, -1)"><span class="material-symbols-outlined text-[16px]">remove</span></button>
-                        <input type="number" min="0" step="any" [(ngModel)]="fila.cantidad" placeholder="0" aria-label="Cantidad" class="fx-input w-20 rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-center text-xs font-black text-slate-800 outline-none">
-                        <button type="button" class="cant-btn" aria-label="Sumar" (click)="ajustarCantidadEntrada(fila, 1)"><span class="material-symbols-outlined text-[16px]">add</span></button>
-                    </div>
-                    <select [(ngModel)]="fila.unidad" aria-label="Unidad" class="fx-input rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-xs font-semibold text-slate-800 outline-none">
-                        <option *ngFor="let u of unidadesEntrada" [value]="u">{{ u }}</option>
-                    </select>
-                    <div class="flex items-center gap-1">
-                        <button type="button" (click)="fila.perecedero = true" [class.pill-on]="fila.perecedero" [class.text-slate-500]="!fila.perecedero" class="cursor-pointer rounded-full border border-slate-200 px-3 py-1 text-[11px] font-bold transition">Perecedero</button>
-                        <button type="button" (click)="fila.perecedero = false" [class.pill-on]="!fila.perecedero" [class.text-slate-500]="fila.perecedero" class="cursor-pointer rounded-full border border-slate-200 px-3 py-1 text-[11px] font-bold transition">No perecedero</button>
-                    </div>
-                    <button type="button" (click)="quitarFilaEntrada(i)" aria-label="Quitar producto" class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-white text-slate-400 hover:bg-red-50 hover:text-red-600"><span class="material-symbols-outlined text-[18px]">delete</span></button>
-                </div>
-            </div>
-        </div>
 
-        <p *ngIf="errorEntrada" class="mt-4 rounded-2xl border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-700" role="alert">{{ errorEntrada }}</p>
-        <div class="mt-6 flex items-center justify-end gap-2 border-t border-slate-100 pt-4">
-            <button type="button" (click)="mostrarModalEntrada = false" [disabled]="guardandoEntrada" class="cursor-pointer rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50">Cancelar</button>
-            <button type="button" (click)="guardarEntrada()" [disabled]="guardandoEntrada" class="pill-on inline-flex cursor-pointer items-center gap-1 rounded-full px-5 py-2 text-xs font-bold transition hover:opacity-90 disabled:opacity-60">
-                <span class="material-symbols-outlined text-[16px]">save</span>{{ guardandoEntrada ? 'Guardando...' : 'Guardar entrada' }}
-            </button>
-        </div>
-    </div>
-</div>
+                    <!-- ===== SOLO MENÚ: TU PEDIDO ===== -->
+                    <div *ngIf="!mostrarCalendario" class="inv-panel">
 
-<!-- ================= MODAL: REGISTRO DEL DÍA ================= -->
-<div *ngIf="modalDiaAbierto" class="modal-fondo" (click)="modalDiaAbierto = false">
-    <div class="modal-caja fx-up max-w-[640px]" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Registro del día">
-        <div class="flex items-start justify-between border-b border-slate-200 pb-4">
-            <div>
-                <p class="m-0 text-[10px] font-black uppercase tracking-wider text-orange-500">Registro del día</p>
-                <h3 class="m-0 mt-1 text-lg font-black text-slate-900">{{ fechaDiaModal(diaSeleccionado) }}</h3>
-            </div>
-            <button type="button" class="btn-cerrar" aria-label="Cerrar" (click)="modalDiaAbierto = false"><span class="material-symbols-outlined text-[20px]">close</span></button>
-        </div>
-
-        <p *ngIf="registrosDelDia.length === 0 && vencenDelDia.length === 0" class="m-0 py-6 text-center text-xs text-slate-500">No hay entregas ni vencimientos este día.</p>
-
-        <div *ngFor="let reg of registrosDelDia; trackBy: trackPor" class="mt-5">
-            <div class="flex items-center justify-between gap-3">
-                <div class="flex items-center gap-3">
-                    <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600"><span class="material-symbols-outlined text-[24px]">local_shipping</span></div>
-                    <div><p class="m-0 text-sm font-black text-slate-900">{{ reg.codigo }}</p><p class="m-0 text-[10px] text-slate-400">{{ reg.descripcion }}</p></div>
-                </div>
-                <span class="rounded-full border border-amber-200 bg-amber-50 px-3 py-0.5 text-[10px] font-black text-amber-700">{{ reg.estado }}</span>
-            </div>
-
-            <div class="mt-4 grid grid-cols-2 gap-4 rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                <div><p class="m-0 text-[10px] text-slate-400">Destino</p><p class="m-0 text-xs font-black text-slate-800">{{ reg.destino }}</p></div>
-                <div><p class="m-0 text-[10px] text-slate-400">Hora registrada</p><p class="m-0 text-xs font-black text-slate-800">{{ reg.hora }}</p></div>
-                <div><p class="m-0 text-[10px] text-slate-400">Fecha de registro</p><p class="m-0 text-xs font-black text-slate-800">{{ reg.fechaRegistro ? fechaCorta(reg.fechaRegistro) : '—' }}</p></div>
-                <div><p class="m-0 text-[10px] text-slate-400">Responsable</p><p class="m-0 text-xs font-black text-slate-800">{{ reg.responsable }}</p></div>
-            </div>
-
-            <div class="mt-5 flex items-center justify-between">
-                <h4 class="m-0 text-sm font-black text-slate-900">Productos registrados</h4>
-                <span class="text-[10px] font-semibold text-sky-600">{{ reg.items.length }} productos</span>
-            </div>
-            <div class="mt-2 overflow-hidden rounded-2xl border border-slate-200">
-                <div *ngFor="let e of reg.items; let i = index; trackBy: trackPor" class="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3 last:border-b-0">
-                    <div class="flex min-w-0 items-center gap-3">
-                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-orange-100 text-[10px] font-black text-orange-600">{{ i + 1 }}</span>
-                        <ng-container *ngTemplateOutlet="foto; context: { n: e.ingrediente, c: 'h-9 w-9 bg-orange-50' }"></ng-container>
-                        <div class="min-w-0"><p class="m-0 truncate text-xs font-black text-slate-900">{{ e.ingrediente }}</p><p class="m-0 truncate text-[10px] text-sky-600">Lote {{ e.lote || '—' }}</p></div>
-                    </div>
-                    <span class="shrink-0 text-xs font-black text-slate-900">{{ e.cantidad }} {{ e.unidad }}</span>
-                </div>
-            </div>
-        </div>
-
-        <div *ngIf="vencenDelDia.length > 0" class="mt-6">
-            <div class="flex items-center justify-between">
-                <h4 class="m-0 text-sm font-black text-slate-900">Vencen este día</h4>
-                <span class="text-[10px] font-semibold text-orange-600">{{ vencenDelDia.length }} productos</span>
-            </div>
-            <div class="mt-2 overflow-hidden rounded-2xl border border-orange-100">
-                <div *ngFor="let e of vencenDelDia; let i = index; trackBy: trackPor" class="flex items-center justify-between gap-3 border-b border-orange-100 bg-orange-50/40 px-4 py-3 last:border-b-0">
-                    <div class="flex min-w-0 items-center gap-3">
-                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-orange-100 text-[10px] font-black text-orange-600">{{ i + 1 }}</span>
-                        <ng-container *ngTemplateOutlet="foto; context: { n: e.ingrediente, c: 'h-9 w-9 bg-white' }"></ng-container>
-                        <div class="min-w-0"><p class="m-0 truncate text-xs font-black text-slate-900">{{ e.ingrediente }}</p><p class="m-0 truncate text-[10px] text-slate-400">Recibido el {{ fechaCorta(e.fechaRecepcion) }}</p></div>
-                    </div>
-                    <span class="shrink-0 text-xs font-black text-slate-900">{{ e.cantidad }} {{ e.unidad }}</span>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- ================= MODAL: INVENTARIO ================= -->
-<div *ngIf="mostrarModalInventario" class="modal-fondo" (click)="mostrarModalInventario = false">
-    <div class="modal-caja fx-up flex max-w-[860px] flex-col !p-0" style="max-height: 90vh" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Inventario">
-        <div class="flex items-start justify-between border-b border-slate-200 p-6 pb-4">
-            <div>
-                <p class="m-0 text-[10px] font-black uppercase tracking-wider text-orange-500">Existencias</p>
-                <h3 class="m-0 mt-1 text-lg font-black text-slate-900">Inventario</h3>
-                <p class="m-0 mt-1 text-[11px] font-semibold text-slate-500">{{ nombreInstitucion }}<span *ngIf="nombreSede"> · {{ nombreSede }}</span></p>
-            </div>
-            <button type="button" class="btn-cerrar" aria-label="Cerrar" (click)="mostrarModalInventario = false"><span class="material-symbols-outlined text-[20px]">close</span></button>
-        </div>
-
-        <div class="grid min-h-0 flex-1 grid-cols-1 gap-6 overflow-y-auto p-6 md:grid-cols-2">
-            <!-- Disponibles -->
-            <section>
-                <div class="mb-3 flex items-center justify-between">
-                    <h5 class="m-0 text-[11px] font-black uppercase tracking-wider text-emerald-600">Disponibles</h5>
-                    <span class="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-black text-emerald-700">{{ inventarioDisponible.length }} productos</span>
-                </div>
-                <p *ngIf="inventarioDisponible.length === 0" class="rounded-xl border border-dashed border-slate-200 p-4 text-center text-xs text-slate-500">No hay productos disponibles. Registra una entrada desde el calendario.</p>
-                <div class="flex max-h-[52vh] flex-col gap-2 overflow-y-auto pr-1">
-                    <div *ngFor="let item of inventarioDisponible; trackBy: trackPor" class="flex items-center justify-between gap-2 rounded-xl border border-slate-100 bg-white p-2.5">
-                        <div class="flex min-w-0 items-center gap-2">
-                            <ng-container *ngTemplateOutlet="foto; context: { n: item.producto.nombre, c: 'h-10 w-10 bg-orange-50' }"></ng-container>
-                            <div class="min-w-0"><h5 class="m-0 truncate text-xs font-bold text-slate-800">{{ nombreMostrado(item.producto.nombre) }}</h5><p class="m-0 truncate text-[10px] text-slate-400">{{ item.producto.categoria }}</p></div>
+                        <div class="inv-head">
+                            <div class="inv-head-l">
+                                <span class="inv-head-ico material-symbols-outlined">shopping_cart</span>
+                                <h3>Tu pedido</h3>
+                            </div>
+                            <span class="inv-count">{{ seleccionados.length }} {{ seleccionados.length === 1 ? 'producto' : 'productos' }}</span>
                         </div>
-                        <div class="shrink-0 text-right">
-                            <span class="block text-sm font-black text-orange-600">{{ item.cantidad | number:'1.0-2' }} {{ item.unidad }}</span>
-                            <span *ngIf="item.estado" class="cal-chip !w-auto justify-end" [ngClass]="claseChipEstado(item.estado)"><span class="cal-dot"></span>{{ item.estado }}</span>
+
+                        <div class="inv-body">
+
+                            <p *ngIf="seleccionados.length === 0" class="inv-vacio">
+                                Desliza un producto hacia la <b>derecha</b> para verlo aquí.
+                            </p>
+
+                            <!-- Lista de productos seleccionados -->
+                            <div *ngIf="seleccionados.length > 0" class="inv-lista custom-scroll max-h-[260px] overflow-y-auto pr-1">
+                                <article *ngFor="let sel of seleccionados; trackBy: trackPor" class="inv-row fx-up" [attr.aria-label]="sel.ingrediente">
+                                    <div class="inv-row-main">
+                                        <ng-container *ngTemplateOutlet="foto; context: { n: sel.ingrediente, c: 'inv-thumb' }"></ng-container>
+                                        <div class="inv-info">
+                                            <h5 [title]="sel.ingrediente">{{ sel.ingrediente }}</h5>
+                                            <div class="inv-tags">
+                                                <span class="inv-meta">Unidad: {{ sel.unidad }}</span>
+                                                <span class="inv-tipo" [ngClass]="esPerecedero($any(sel)) ? 'peco' : 'nope'">
+                                                    <span class="cal-dot"></span>{{ nombreTipo($any(sel)) }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <button type="button" class="inv-quitar" (click)="quitarSeleccionado(sel)" [attr.aria-label]="'Quitar ' + sel.ingrediente">
+                                            <span class="material-symbols-outlined text-[16px]">close</span>
+                                        </button>
+                                    </div>
+
+                                    <div class="inv-qty">
+                                        <span>A enviar</span>
+                                        <div class="inv-stepper">
+                                            <button type="button" class="cant-btn !h-7 !w-7" aria-label="Restar" (click)="ajustarCantidadEnviar(sel, -1)">
+                                                <span class="material-symbols-outlined text-[14px]">remove</span>
+                                            </button>
+                                            <input type="number" min="0" [max]="disponibleDe(sel)" step="any" placeholder="0"
+                                                [ngModel]="cantidadEnviarDe(sel) || null" (ngModelChange)="fijarCantidadEnviar(sel, $event)"
+                                                [attr.aria-label]="'Cantidad de ' + sel.ingrediente + ' a enviar'"
+                                                class="inv-input">
+                                            <button type="button" class="cant-btn !h-7 !w-7" aria-label="Sumar" (click)="ajustarCantidadEnviar(sel, 1)">
+                                                <span class="material-symbols-outlined text-[14px]">add</span>
+                                            </button>
+                                            <span class="min-w-[20px]" style="font-size:11px;font-weight:800;color:#64748B">{{ sel.unidad }}</span>
+                                        </div>
+                                    </div>
+
+                                    <p *ngIf="cantidadEnviarDe(sel) > disponibleDe(sel)" class="inv-error">
+                                        No puedes enviar más de {{ disponibleDe(sel) }} {{ sel.unidad }}
+                                    </p>
+
+                                    <ng-container *ngIf="calculadoDe(sel) as calcRow">
+                                        <p class="m-0 mt-1 text-[10px] font-semibold text-slate-500">
+                                            Requerido neto cálculo: <b class="text-slate-800">{{ calcRow.cantidad_sugerida_despacho | number:'1.0-2' }} {{ sel.unidad }}</b>
+                                            (periodo: {{ calcRow.cantidad_total_requerida | number:'1.0-2' }} {{ sel.unidad }})
+                                        </p>
+                                        <p *ngIf="cantidadEnviarDe(sel) > calcRow.cantidad_sugerida_despacho + 0.0001"
+                                           class="m-0 mt-0.5 text-[10px] font-bold text-amber-700">
+                                            Supera lo requerido en +{{ (cantidadEnviarDe(sel) - calcRow.cantidad_sugerida_despacho) | number:'1.0-2' }} {{ sel.unidad }} (requiere autorización).
+                                        </p>
+                                    </ng-container>
+                                </article>
+                            </div>
+
+                            <ng-container *ngIf="seleccionados.length > 0">
+                                <!-- Resumen del envío -->
+                                <div class="resumen">
+                                    <p class="resumen-tit">Resumen del envío</p>
+                                    <p class="resumen-sub">Disponible en inventario</p>
+
+                                    <div *ngFor="let sel of seleccionados; trackBy: trackPor" class="resumen-fila">
+                                        <span class="truncate pr-2">{{ sel.ingrediente }}</span>
+                                        <b class="shrink-0" style="color:#A86B00">{{ disponibleDe(sel) | number:'1.0-2' }} {{ sel.unidad }}</b>
+                                    </div>
+
+                                    <!-- Fecha automática (hoy) -->
+                                    <div class="resumen-fila resumen-linea">
+                                        <span>Fecha de envío</span>
+                                        <b class="inline-flex items-center gap-1">
+                                            <span class="material-symbols-outlined text-[14px]" style="color:#A86B00">event</span>
+                                            {{ fechaCorta(envioFecha) }}
+                                        </b>
+                                    </div>
+
+                                    <div class="resumen-total"><span>Total a enviar</span><b>{{ productosParaEnviar.length }} {{ productosParaEnviar.length === 1 ? 'producto' : 'productos' }}</b></div>
+                                </div>
+
+                                <!-- Autorización obligatoria cuando supera cálculo -->
+                                <div *ngIf="itemsConExcesoCalculo.length > 0"
+                                     class="mt-3 rounded-2xl border border-amber-300 bg-amber-50 p-3 text-left">
+                                    <div class="flex items-center gap-1.5 text-[11px] font-black text-amber-900">
+                                        <span class="material-symbols-outlined text-[16px]">verified_user</span>
+                                        Autorización obligatoria de excedente ({{ itemsConExcesoCalculo.length }})
+                                    </div>
+                                    <p class="m-0 mt-1 text-[10px] font-semibold text-amber-800">
+                                        Estás intentando despachar más de lo requerido por el cálculo para:
+                                        <b>{{ itemsConExcesoCalculo.length }}</b> producto(s).
+                                    </p>
+                                    <label class="mt-2 flex items-center gap-2 text-[11px] font-bold text-slate-800 cursor-pointer">
+                                        <input type="checkbox" [(ngModel)]="autorizacionExceso" />
+                                        <span>Autorizo este despacho con exceso sobre el cálculo</span>
+                                    </label>
+                                    <input *ngIf="autorizacionExceso"
+                                           type="text"
+                                           [(ngModel)]="autorizadoPor"
+                                           placeholder="Autorizado por (nombre y cargo) *"
+                                           class="mt-2 w-full rounded-xl border border-amber-300 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-800 outline-none" />
+                                    <textarea *ngIf="autorizacionExceso"
+                                              [(ngModel)]="justificacionExceso"
+                                              rows="2"
+                                              placeholder="Justificación técnica obligatoria (mín. 5 caracteres) *"
+                                              class="mt-1.5 w-full rounded-xl border border-amber-300 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-800 outline-none"></textarea>
+                                </div>
+
+                                <p *ngIf="errorEnvioPanel" class="m-0 mt-3 rounded-xl border border-red-200 bg-red-50 p-2 text-[11px] font-semibold text-red-700" role="alert">{{ errorEnvioPanel }}</p>
+
+                                <button type="button" class="btn-enviar" (click)="enviarSeleccionados()" [disabled]="guardandoEnvio || productosParaEnviar.length === 0">
+                                    <span class="material-symbols-outlined text-[18px]">{{ guardandoEnvio ? 'hourglass_top' : 'send' }}</span>
+                                    {{ guardandoEnvio ? 'Enviando...' : (seleccionados.length === 1 ? 'Confirmar envío · 1 producto' : 'Confirmar envío · ' + productosParaEnviar.length + ' productos') }}
+                                </button>
+
+                            </ng-container>
+
+                            <button type="button" class="btn-inventario" (click)="mostrarModalInventario = true">
+                                <span class="flex items-center gap-1.5">
+                                    <span class="material-symbols-outlined text-[18px]" style="color:#A86B00">inventory_2</span> Ver inventario
+                                </span>
+                                <span class="inv-pill">
+                                    {{ inventarioDisponible.length }} disp. · {{ inventarioNoDisponible.length }} agotados
+                                </span>
+                            </button>
                         </div>
                     </div>
-                </div>
-            </section>
-
-            <!-- No disponibles -->
-            <section>
-                <div class="mb-3 flex items-center justify-between">
-                    <h5 class="m-0 text-[11px] font-black uppercase tracking-wider text-red-500">No disponibles</h5>
-                    <span class="rounded-full bg-red-100 px-2.5 py-0.5 text-[11px] font-black text-red-700">{{ inventarioNoDisponible.length }} productos</span>
-                </div>
-                <p *ngIf="inventarioNoDisponible.length === 0" class="rounded-xl border border-dashed border-slate-200 p-4 text-center text-xs text-slate-500">Todos los productos tienen existencias.</p>
-                <div class="flex max-h-[52vh] flex-col gap-2 overflow-y-auto pr-1">
-                    <div *ngFor="let item of inventarioNoDisponible; trackBy: trackPor" class="flex items-center justify-between gap-2 rounded-xl border border-slate-100 bg-slate-50 p-2.5">
-                        <div class="flex min-w-0 items-center gap-2">
-                            <ng-container *ngTemplateOutlet="foto; context: { n: item.producto.nombre, c: 'h-10 w-10 bg-white opacity-70' }"></ng-container>
-                            <div class="min-w-0"><h5 class="m-0 truncate text-xs font-bold text-slate-600">{{ nombreMostrado(item.producto.nombre) }}</h5><p class="m-0 truncate text-[10px] text-slate-400">{{ item.producto.categoria }}</p></div>
-                        </div>
-                        <span class="shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-black" [ngClass]="item.motivo === 'Agotado' ? 'bg-red-100 text-red-700' : 'bg-slate-200 text-slate-600'">{{ item.motivo }}</span>
-                    </div>
-                </div>
-            </section>
-        </div>
-
-        <div class="flex items-center justify-end border-t border-slate-100 p-4">
-            <button type="button" (click)="mostrarModalInventario = false" class="pill-on cursor-pointer rounded-full px-6 py-2 text-xs font-bold transition hover:opacity-90">Cerrar</button>
+                </aside>
+            </div>
         </div>
     </div>
-</div>
+
+    <!-- ================= MODAL: REGISTRAR ENTRADA ================= -->
+    <div *ngIf="mostrarModalEntrada" class="modal-fondo" (click)="mostrarModalEntrada = false">
+        <div class="modal-caja fx-up max-w-[760px]" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Registrar entrada">
+            <div class="flex items-start justify-between border-b border-slate-200 pb-4">
+                <div>
+                    <p class="m-0 text-[10px] font-black uppercase tracking-wider text-orange-500">Nueva entrada</p>
+                    <h3 class="m-0 mt-1 text-lg font-black text-slate-900">Registrar entrada de alimentos</h3>
+                    <p class="m-0 mt-1 text-[11px] font-semibold text-slate-500">{{ nombreInstitucion }}</p>
+                </div>
+                <button type="button" class="btn-cerrar" aria-label="Cerrar" (click)="mostrarModalEntrada = false"><span class="material-symbols-outlined text-[20px]">close</span></button>
+            </div>
+
+            <div class="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <label class="block">
+                    <span class="mb-1 block text-[11px] font-bold text-slate-500">Fecha de registro <span class="text-red-500">*</span></span>
+                    <input type="date" [(ngModel)]="entradaFecha" required aria-label="Fecha de registro" class="fx-input campo" [class.invalido]="!entradaFecha">
+                    <span class="mt-1 block text-[10px] font-semibold" [ngClass]="entradaFecha ? 'text-slate-400' : 'text-red-500'">
+                        {{ entradaFecha ? 'Los productos se registrarán el ' + fechaCorta(entradaFecha) : 'Elige la fecha con la que se registrarán los productos' }}
+                    </span>
+                </label>
+                <label class="block"><span class="mb-1 block text-[11px] font-bold text-slate-500">Destino (institución o sede)</span>
+                    <select [(ngModel)]="entradaDestino" aria-label="Destino" class="fx-input campo cursor-pointer"><option *ngFor="let d of destinosDisponibles" [ngValue]="d">{{ d }}</option></select>
+                </label>
+                <label class="block"><span class="mb-1 block text-[11px] font-bold text-slate-500">Responsable (quién lo hizo) <span class="text-red-500">*</span></span>
+                    <input type="text" [(ngModel)]="entradaResponsable" required placeholder="Nombre de quien registra" autocomplete="off" class="fx-input campo" [class.invalido]="!entradaResponsable.trim()">
+                    <span class="mt-1 block text-[10px] font-semibold" [ngClass]="entradaResponsable.trim() ? 'text-slate-400' : 'text-red-500'">{{ entradaResponsable.trim() ? 'Quedará guardado en el historial' : 'Obligatorio para guardar' }}</span>
+                </label>
+            </div>
+
+            <div class="mt-6 flex flex-wrap items-center justify-between gap-2">
+                <h4 class="m-0 text-sm font-black text-slate-900">1. Toca los productos que entran</h4>
+                <div class="relative w-full sm:w-56">
+                    <span class="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[17px] text-slate-400">search</span>
+                    <input type="text" [(ngModel)]="busquedaEntrada" placeholder="Buscar producto..." autocomplete="off" class="fx-input w-full rounded-full border border-slate-200 bg-slate-50 py-1.5 pl-9 pr-3 text-xs font-medium text-slate-800 outline-none">
+                </div>
+            </div>
+            <div class="mt-3 grid max-h-[200px] grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-3 md:grid-cols-4">
+                <button type="button" *ngFor="let ing of productosRapidos; trackBy: trackPor" (click)="alternarProductoEntrada(ing.id)" [attr.aria-pressed]="estaEnEntrada(ing.id)"
+                    class="flex cursor-pointer items-center gap-2 rounded-2xl border p-2 text-left transition"
+                    [disabled]="yaRegistrado(ing.id)"
+                    [ngClass]="yaRegistrado(ing.id) ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400 opacity-60' : estaEnEntrada(ing.id) ? 'border-orange-400 bg-orange-50 text-orange-700' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'">
+                    <ng-container *ngTemplateOutlet="foto; context: { n: ing.nombre, c: 'h-8 w-8 bg-orange-50' }"></ng-container>
+                    <span class="min-w-0 flex-1 truncate text-[11px] font-bold">{{ ing.nombre }}</span>
+                    <span *ngIf="yaRegistrado(ing.id)" class="shrink-0 text-[9px] font-black">Ya registrado</span>
+                    <span *ngIf="estaEnEntrada(ing.id)" class="material-symbols-outlined text-[16px] text-orange-500">check_circle</span>
+                </button>
+                <p *ngIf="productosRapidos.length === 0" class="col-span-full m-0 py-3 text-center text-xs text-slate-500">No hay productos con ese nombre.</p>
+            </div>
+
+            <h4 class="m-0 mt-6 text-sm font-black text-slate-900">2. Escribe la cantidad ({{ entradaFilas.length }})</h4>
+            <p *ngIf="entradaFilas.length === 0" class="mt-3 rounded-2xl border border-dashed border-slate-200 p-4 text-center text-xs text-slate-500">Aún no has elegido productos. Tócalos arriba para agregarlos.</p>
+            <div class="mt-3 flex flex-col gap-2.5">
+                <div *ngFor="let fila of entradaFilas; let i = index" class="fx-up rounded-2xl border border-slate-100 bg-slate-50 p-3">
+                    <div class="flex flex-wrap items-center gap-3">
+                        <div class="flex min-w-[140px] flex-1 items-center gap-2">
+                            <ng-container *ngTemplateOutlet="foto; context: { n: nombreIngrediente(fila.idIngrediente), c: 'h-9 w-9 bg-white' }"></ng-container>
+                            <span class="truncate text-xs font-black text-slate-900">{{ nombreIngrediente(fila.idIngrediente) }}</span>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <button type="button" class="cant-btn" aria-label="Restar" (click)="ajustarCantidadEntrada(fila, -1)"><span class="material-symbols-outlined text-[16px]">remove</span></button>
+                            <input type="number" min="0" step="any" [(ngModel)]="fila.cantidad" placeholder="0" aria-label="Cantidad" class="fx-input w-20 rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-center text-xs font-black text-slate-800 outline-none">
+                            <button type="button" class="cant-btn" aria-label="Sumar" (click)="ajustarCantidadEntrada(fila, 1)"><span class="material-symbols-outlined text-[16px]">add</span></button>
+                        </div>
+                        <select [(ngModel)]="fila.unidad" aria-label="Unidad" class="fx-input rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-xs font-semibold text-slate-800 outline-none">
+                            <option *ngFor="let u of unidadesEntrada" [value]="u">{{ u }}</option>
+                        </select>
+                        <div class="flex items-center gap-1">
+                            <button type="button" (click)="fila.perecedero = true" [class.pill-on]="fila.perecedero" [class.text-slate-500]="!fila.perecedero" class="cursor-pointer rounded-full border border-slate-200 px-3 py-1 text-[11px] font-bold transition">Perecedero</button>
+                            <button type="button" (click)="fila.perecedero = false" [class.pill-on]="!fila.perecedero" [class.text-slate-500]="fila.perecedero" class="cursor-pointer rounded-full border border-slate-200 px-3 py-1 text-[11px] font-bold transition">No perecedero</button>
+                        </div>
+                        <button type="button" (click)="quitarFilaEntrada(i)" aria-label="Quitar producto" class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-white text-slate-400 hover:bg-red-50 hover:text-red-600"><span class="material-symbols-outlined text-[18px]">delete</span></button>
+                    </div>
+                </div>
+            </div>
+
+            <p *ngIf="errorEntrada" class="mt-4 rounded-2xl border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-700" role="alert">{{ errorEntrada }}</p>
+            <div class="mt-6 flex items-center justify-end gap-2 border-t border-slate-100 pt-4">
+                <button type="button" (click)="mostrarModalEntrada = false" [disabled]="guardandoEntrada" class="cursor-pointer rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50">Cancelar</button>
+                <button type="button" (click)="guardarEntrada()" [disabled]="guardandoEntrada" class="pill-on inline-flex cursor-pointer items-center gap-1 rounded-full px-5 py-2 text-xs font-bold transition hover:opacity-90 disabled:opacity-60">
+                    <span class="material-symbols-outlined text-[16px]">save</span>{{ guardandoEntrada ? 'Guardando...' : 'Guardar entrada' }}
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= MODAL: REGISTRO DEL DÍA ================= -->
+    <div *ngIf="modalDiaAbierto" class="modal-fondo" (click)="modalDiaAbierto = false">
+        <div class="modal-caja fx-up max-w-[640px]" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Registro del día">
+            <div class="flex items-start justify-between border-b border-slate-200 pb-4">
+                <div>
+                    <p class="m-0 text-[10px] font-black uppercase tracking-wider text-orange-500">Registro del día</p>
+                    <h3 class="m-0 mt-1 text-lg font-black text-slate-900">{{ fechaDiaModal(diaSeleccionado) }}</h3>
+                </div>
+                <button type="button" class="btn-cerrar" aria-label="Cerrar" (click)="modalDiaAbierto = false"><span class="material-symbols-outlined text-[20px]">close</span></button>
+            </div>
+
+            <p *ngIf="registrosDelDia.length === 0 && vencenDelDia.length === 0" class="m-0 py-6 text-center text-xs text-slate-500">No hay entradas ni vencimientos este día.</p>
+
+            <div *ngFor="let reg of registrosDelDia; trackBy: trackPor" class="mt-5">
+                <div class="flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-3">
+                        <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600"><span class="material-symbols-outlined text-[24px]">local_shipping</span></div>
+                        <div><p class="m-0 text-sm font-black text-slate-900">{{ reg.codigo }}</p><p class="m-0 text-[10px] text-slate-400">{{ reg.descripcion }}</p></div>
+                    </div>
+                    <span class="rounded-full border border-amber-200 bg-amber-50 px-3 py-0.5 text-[10px] font-black text-amber-700">{{ reg.estado }}</span>
+                </div>
+
+                <div class="mt-4 grid grid-cols-2 gap-4 rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                    <div><p class="m-0 text-[10px] text-slate-400">Destino</p><p class="m-0 text-xs font-black text-slate-800">{{ reg.destino }}</p></div>
+                    <div><p class="m-0 text-[10px] text-slate-400">Hora registrada</p><p class="m-0 text-xs font-black text-slate-800">{{ reg.hora }}</p></div>
+                    <div><p class="m-0 text-[10px] text-slate-400">Fecha de registro</p><p class="m-0 text-xs font-black text-slate-800">{{ reg.fechaRegistro ? fechaCorta(reg.fechaRegistro) : '—' }}</p></div>
+                    <div><p class="m-0 text-[10px] text-slate-400">Responsable</p><p class="m-0 text-xs font-black text-slate-800">{{ reg.responsable }}</p></div>
+                </div>
+
+                <div class="mt-5 flex items-center justify-between">
+                    <h4 class="m-0 text-sm font-black text-slate-900">Productos registrados</h4>
+                    <span class="text-[10px] font-semibold text-sky-600">{{ reg.items.length }} productos</span>
+                </div>
+                <div class="mt-2 overflow-hidden rounded-2xl border border-slate-200">
+                    <div *ngFor="let e of reg.items; let i = index; trackBy: trackPor" class="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3 last:border-b-0">
+                        <div class="flex min-w-0 items-center gap-3">
+                            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-orange-100 text-[10px] font-black text-orange-600">{{ i + 1 }}</span>
+                            <ng-container *ngTemplateOutlet="foto; context: { n: e.ingrediente, c: 'h-9 w-9 bg-orange-50' }"></ng-container>
+                            <div class="min-w-0"><p class="m-0 truncate text-xs font-black text-slate-900">{{ e.ingrediente }}</p><p class="m-0 truncate text-[10px] text-sky-600">Lote {{ e.lote || '—' }}</p></div>
+                        </div>
+                        <span class="shrink-0 text-xs font-black text-slate-900">{{ e.cantidad }} {{ e.unidad }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div *ngIf="vencenDelDia.length > 0" class="mt-6">
+                <div class="flex items-center justify-between">
+                    <h4 class="m-0 text-sm font-black text-slate-900">Vencen este día</h4>
+                    <span class="text-[10px] font-semibold text-orange-600">{{ vencenDelDia.length }} productos</span>
+                </div>
+                <div class="mt-2 overflow-hidden rounded-2xl border border-orange-100">
+                    <div *ngFor="let e of vencenDelDia; let i = index; trackBy: trackPor" class="flex items-center justify-between gap-3 border-b border-orange-100 bg-orange-50/40 px-4 py-3 last:border-b-0">
+                        <div class="flex min-w-0 items-center gap-3">
+                            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-orange-100 text-[10px] font-black text-orange-600">{{ i + 1 }}</span>
+                            <ng-container *ngTemplateOutlet="foto; context: { n: e.ingrediente, c: 'h-9 w-9 bg-white' }"></ng-container>
+                            <div class="min-w-0"><p class="m-0 truncate text-xs font-black text-slate-900">{{ e.ingrediente }}</p><p class="m-0 truncate text-[10px] text-slate-400">Recibido el {{ fechaCorta(e.fechaRecepcion) }}</p></div>
+                        </div>
+                        <span class="shrink-0 text-xs font-black text-slate-900">{{ e.cantidad }} {{ e.unidad }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= MODAL: INVENTARIO ================= -->
+    <div *ngIf="mostrarModalInventario" class="modal-fondo" (click)="mostrarModalInventario = false">
+        <div class="modal-caja fx-up flex max-w-[860px] flex-col !p-0" style="max-height: 90vh" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Inventario">
+            <div class="flex items-start justify-between border-b border-slate-200 p-6 pb-4">
+                <div>
+                    <p class="m-0 text-[10px] font-black uppercase tracking-wider text-orange-500">Existencias</p>
+                    <h3 class="m-0 mt-1 text-lg font-black text-slate-900">Inventario</h3>
+                    <p class="m-0 mt-1 text-[11px] font-semibold text-slate-500">{{ nombreInstitucion }}<span *ngIf="nombreSede"> · {{ nombreSede }}</span></p>
+                </div>
+                <button type="button" class="btn-cerrar" aria-label="Cerrar" (click)="mostrarModalInventario = false"><span class="material-symbols-outlined text-[20px]">close</span></button>
+            </div>
+
+            <div class="grid min-h-0 flex-1 grid-cols-1 gap-6 overflow-y-auto p-6 md:grid-cols-2">
+                <!-- Disponibles -->
+                <section>
+                    <div class="mb-3 flex items-center justify-between">
+                        <h5 class="m-0 text-[11px] font-black uppercase tracking-wider text-emerald-600">Disponibles</h5>
+                        <span class="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-black text-emerald-700">{{ inventarioDisponible.length }} productos</span>
+                    </div>
+                    <p *ngIf="inventarioDisponible.length === 0" class="rounded-xl border border-dashed border-slate-200 p-4 text-center text-xs text-slate-500">No hay productos disponibles. Registra una entrada desde el historial.</p>
+                    <div class="flex max-h-[52vh] flex-col gap-2 overflow-y-auto pr-1">
+                        <div *ngFor="let item of inventarioDisponible; trackBy: trackPor" class="rounded-xl border border-slate-100 bg-white p-2.5"><div class="flex items-center justify-between gap-2">
+                            <div class="flex min-w-0 items-center gap-2">
+                                <ng-container *ngTemplateOutlet="foto; context: { n: item.producto.nombre, c: 'h-10 w-10 bg-orange-50' }"></ng-container>
+                                <div class="min-w-0"><h5 class="m-0 truncate text-xs font-bold text-slate-800">{{ nombreMostrado(item.producto.nombre) }}</h5><p class="m-0 truncate text-[10px] text-slate-400">{{ item.producto.categoria }}</p></div>
+                            </div>
+                            <div class="shrink-0 text-right">
+                                <span class="block text-sm font-black text-orange-600">{{ item.cantidad | number:'1.0-2' }} {{ item.unidad }}</span>
+                                <span *ngIf="item.estado" class="cal-chip !w-auto justify-end" [ngClass]="claseChipEstado(item.estado)"><span class="cal-dot"></span>{{ item.estado }}</span>
+                            </div>
+                            </div>
+                            <div class="barra-stock"><span [style.width.%]="porcentajeStock(item.cantidad)" [ngClass]="nivelStock(item.cantidad)"></span></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- No disponibles (también muestran su cantidad) -->
+                <section>
+                    <div class="mb-3 flex items-center justify-between">
+                        <h5 class="m-0 text-[11px] font-black uppercase tracking-wider text-red-500">No disponibles</h5>
+                        <span class="rounded-full bg-red-100 px-2.5 py-0.5 text-[11px] font-black text-red-700">{{ inventarioNoDisponible.length }} productos</span>
+                    </div>
+                    <p *ngIf="inventarioNoDisponible.length === 0" class="rounded-xl border border-dashed border-slate-200 p-4 text-center text-xs text-slate-500">Todos los productos tienen existencias.</p>
+                    <div class="flex max-h-[52vh] flex-col gap-2 overflow-y-auto pr-1">
+                        <div *ngFor="let item of inventarioNoDisponible; trackBy: trackPor" class="rounded-xl border border-slate-100 bg-slate-50 p-2.5"><div class="flex items-center justify-between gap-2">
+                            <div class="flex min-w-0 items-center gap-2">
+                                <ng-container *ngTemplateOutlet="foto; context: { n: item.producto.nombre, c: 'h-10 w-10 bg-white opacity-70' }"></ng-container>
+                                <div class="min-w-0"><h5 class="m-0 truncate text-xs font-bold text-slate-600">{{ nombreMostrado(item.producto.nombre) }}</h5><p class="m-0 truncate text-[10px] text-slate-400">{{ item.producto.categoria }}</p></div>
+                            </div>
+                            <div class="shrink-0 text-right">
+                                <span class="block text-sm font-black text-slate-500">{{ item.cantidad | number:'1.0-2' }} {{ item.unidad }}</span>
+                                <span class="inline-block rounded-full px-2.5 py-0.5 text-[10px] font-black" [ngClass]="item.motivo === 'Agotado' ? 'bg-red-100 text-red-700' : 'bg-slate-200 text-slate-600'">{{ item.motivo }}</span>
+                            </div>
+                            </div>
+                            <div class="barra-stock"><span [style.width.%]="porcentajeStock(item.cantidad)" [ngClass]="nivelStock(item.cantidad)"></span></div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <div class="flex items-center justify-end border-t border-slate-100 p-4">
+                <button type="button" (click)="mostrarModalInventario = false" class="pill-on cursor-pointer rounded-full px-6 py-2 text-xs font-bold transition hover:opacity-90">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= MODAL: DETALLE DE LA ENTRADA ================= -->
+    <div *ngIf="detalleEntrada as d" class="modal-fondo" (click)="cerrarDetalleEntrada()">
+        <div class="modal-caja fx-up max-w-[640px]" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Detalle de la entrada">
+            <div class="flex items-start justify-between border-b border-slate-200 pb-4">
+                <div>
+                    <p class="m-0 text-[10px] font-black uppercase tracking-wider text-[#A86B00]">Detalle de la entrada</p>
+                    <h3 class="m-0 mt-1 text-lg font-black text-slate-900">{{ fechaDiaModal(d.fechaRecepcion) }}</h3>
+                    <p class="m-0 mt-1 text-[11px] font-semibold text-slate-500">
+                        {{ d.destino }}
+                        <span *ngIf="d.documentoEntrega" class="ml-2 rounded-full bg-[#FFF4D6] px-2 py-0.5 text-[10px] font-black text-[#8A5A00]">
+                            {{ d.documentoEntrega }}
+                        </span>
+                    </p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button *ngIf="d.primerIdEntrega && (d.documentoEntrega || d.idCalculoEntrega)"
+                            type="button"
+                            (click)="verSoporteCalculoPorEntrega(d.primerIdEntrega)"
+                            class="cursor-pointer rounded-full border border-amber-300 bg-[#FFF4D6] px-3 py-1 text-[11px] font-black text-[#8A5A00]">
+                        Soporte cálculo
+                    </button>
+                    <button type="button" class="btn-cerrar" aria-label="Cerrar" (click)="cerrarDetalleEntrada()"><span class="material-symbols-outlined text-[20px]">close</span></button>
+                </div>
+            </div>
+
+            <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                <div><p class="m-0 text-[10px] text-slate-400">Fecha de entrada</p><p class="m-0 text-xs font-black text-slate-800">{{ fechaCorta(d.fechaRecepcion) }}</p></div>
+                <div><p class="m-0 text-[10px] text-slate-400">Registrado el</p><p class="m-0 text-xs font-black text-slate-800">{{ d.fechaRegistro ? fechaCorta(d.fechaRegistro) : '—' }}<ng-container *ngIf="d.hora"> · {{ d.hora }}</ng-container></p></div>
+                <div><p class="m-0 text-[10px] text-slate-400">Responsable (quién lo hizo)</p><p class="m-0 text-xs font-black text-slate-800">{{ d.responsable || 'Sin responsable' }}</p></div>
+                <div><p class="m-0 text-[10px] text-slate-400">Productos</p><p class="m-0 text-xs font-black text-slate-800">{{ detalleLista.length }}</p></div>
+                <div class="sm:col-span-2">
+                    <p class="m-0 text-[10px] text-slate-400">Estado de aprobación (administrador)</p>
+                    <div class="mt-1 flex flex-wrap items-center gap-2">
+                        <span class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-black"
+                            [ngClass]="claseBadgeAprobacion(d.estadoAprobacion || estadoAprobacionGrupo(d))">
+                            <span class="material-symbols-outlined text-[13px] leading-none">{{ iconoBadgeAprobacion(d.estadoAprobacion || estadoAprobacionGrupo(d)) }}</span>
+                            {{ textoBadgeAprobacion(d.estadoAprobacion || estadoAprobacionGrupo(d)) }}
+                        </span>
+                        <span class="text-[11px] font-semibold text-amber-700" *ngIf="(d.estadoAprobacion || estadoAprobacionGrupo(d)) === 'EN_PROCESO'">
+                            En espera de revisión y aprobación por el colegio
+                        </span>
+                        <span class="text-[11px] font-semibold text-emerald-700" *ngIf="(d.estadoAprobacion || estadoAprobacionGrupo(d)) === 'ACEPTADA'">
+                            Aprobada y recibida a conformidad por el colegio
+                        </span>
+                        <span class="text-[11px] font-semibold text-red-600" *ngIf="(d.estadoAprobacion || estadoAprobacionGrupo(d)) === 'RECHAZADA'">
+                            Rechazada por el colegio en control de calidad
+                        </span>
+                        <span class="text-[11px] font-semibold text-orange-700" *ngIf="(d.estadoAprobacion || estadoAprobacionGrupo(d)) === 'CON_NOVEDAD'">
+                            Recibida con novedad o averías reportadas
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <h4 class="m-0 mt-5 text-sm font-black text-slate-900">Productos de esta entrada</h4>
+            <div class="mt-2 flex flex-col gap-3">
+                <div *ngFor="let p of detalleLista; trackBy: trackPor" class="rounded-2xl border border-slate-200 bg-white p-3">
+                    <div class="flex items-center justify-between gap-3">
+                        <div class="flex min-w-0 items-center gap-3">
+                            <ng-container *ngTemplateOutlet="foto; context: { n: p.ingrediente, c: 'h-11 w-11 bg-orange-50 text-xl' }"></ng-container>
+                            <div class="min-w-0">
+                                <p class="m-0 truncate text-sm font-black text-slate-900">{{ p.ingrediente }}</p>
+                                <p class="m-0 truncate text-[10px] font-semibold text-slate-400">{{ p.categoria }}<ng-container *ngIf="p.tipoMercado"> · {{ p.tipoMercado }}</ng-container></p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-black"
+                                [ngClass]="claseBadgeAprobacion(p.estadoAprobacion || d.estadoAprobacion || 'EN_PROCESO')">
+                                <span class="material-symbols-outlined text-[11px] leading-none">{{ iconoBadgeAprobacion(p.estadoAprobacion || d.estadoAprobacion || 'EN_PROCESO') }}</span>
+                                {{ textoBadgeAprobacion(p.estadoAprobacion || d.estadoAprobacion || 'EN_PROCESO') }}
+                            </span>
+                            <span *ngIf="p.estado" class="cal-chip !w-auto" [ngClass]="claseChipEstado(p.estado)"><span class="cal-dot"></span>{{ p.estado }}</span>
+                        </div>
+                    </div>
+                    <p class="m-0 mt-2 rounded-xl bg-[#FFF4D6] px-3 py-2 text-xs font-bold text-slate-700">
+                        Registraste <span class="text-base font-black text-[#A86B00]">{{ p.cantidad | number:'1.0-2' }}</span>
+                        <span class="font-black text-[#A86B00]"> {{ unidadTexto(p.unidad, p.cantidad) }}</span> de {{ nombreMinuscula(p.ingrediente) }}
+                    </p>
+                    <div *ngIf="p.motivoRechazo" class="mt-2 rounded-xl bg-red-50 p-2.5 text-[11px] text-red-700 border border-red-200">
+                        <span class="font-black block">Motivo de rechazo:</span>
+                        <span>{{ p.motivoRechazo }}</span>
+                    </div>
+                    <div class="mt-2 grid grid-cols-2 gap-2 text-[10px]">
+                        <div><span class="block font-bold text-slate-400">Vence</span><span class="block text-[11px] font-black text-slate-800">{{ p.vencimiento ? fechaCorta(p.vencimiento) : '—' }}</span></div>
+                        <div><span class="block font-bold text-slate-400">Frecuencia</span><span class="block text-[11px] font-black text-slate-800">{{ p.frecuencia || '—' }}</span></div>
+                        <div *ngIf="p.disponible !== null"><span class="block font-bold text-slate-400">Queda en inventario</span><span class="block text-[11px] font-black text-slate-800">{{ p.disponible | number:'1.0-2' }} {{ unidadTexto(p.unidadDisponible, p.disponible) }}</span></div>
+                        <div *ngIf="p.lotes.length"><span class="block font-bold text-slate-400">Lote</span><span class="block truncate text-[11px] font-black text-slate-800">{{ p.lotes.join(', ') }}</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= MODAL: SOPORTE AUDITABLE DE CÁLCULO (HU 5) ================= -->
+    <div *ngIf="mostrarModalSoporte" class="modal-fondo" (click)="mostrarModalSoporte = false">
+        <div class="modal-caja fx-up max-w-[760px]" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Soporte de cálculo">
+            <div class="flex items-start justify-between border-b border-slate-200 pb-4">
+                <div>
+                    <p class="m-0 text-[10px] font-black uppercase tracking-wider text-[#A86B00]">Soporte auditable de cálculo (HU 5)</p>
+                    <h3 class="m-0 mt-1 text-lg font-black text-slate-900">
+                        {{ soporteSeleccionado?.codigo_documento || 'Cargando soporte...' }}
+                    </h3>
+                    <p *ngIf="soporteSeleccionado as sop" class="m-0 mt-1 text-[11px] font-semibold text-slate-500">
+                        {{ sop.sede_nombre || 'Sede' }} · {{ sop.contrato_numero || 'Sin contrato' }} · {{ sop.periodo_descripcion }}
+                    </p>
+                </div>
+                <button type="button" class="btn-cerrar" aria-label="Cerrar" (click)="mostrarModalSoporte = false">
+                    <span class="material-symbols-outlined text-[20px]">close</span>
+                </button>
+            </div>
+
+            <div *ngIf="cargandoSoporte" class="py-8 text-center text-xs font-semibold text-slate-500">
+                Consultando cálculo original vinculado...
+            </div>
+
+            <ng-container *ngIf="!cargandoSoporte && soporteSeleccionado as sop">
+                <div class="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-3">
+                    <div>
+                        <span class="block text-[10px] font-bold text-slate-400">Cupos totales</span>
+                        <span class="text-xs font-black text-slate-900">{{ sop.total_cupos || 0 }}</span>
+                    </div>
+                    <div>
+                        <span class="block text-[10px] font-bold text-slate-400">Días perecederos</span>
+                        <span class="text-xs font-black text-slate-900">{{ sop.dias_perecederos || 0 }} días</span>
+                    </div>
+                    <div>
+                        <span class="block text-[10px] font-bold text-slate-400">Días no perecederos</span>
+                        <span class="text-xs font-black text-slate-900">{{ sop.dias_no_perecederos || 0 }} días</span>
+                    </div>
+                    <div>
+                        <span class="block text-[10px] font-bold text-slate-400">Fecha registro</span>
+                        <span class="text-xs font-black text-slate-900">{{ (sop.fecha_creacion || '').slice(0, 10) }}</span>
+                    </div>
+                </div>
+
+                <div *ngIf="sop.autorizacion_exceso" class="mt-3 rounded-2xl border border-amber-300 bg-amber-50 p-3 text-xs">
+                    <div class="font-black text-amber-900">Despacho autorizado con excedente</div>
+                    <div class="mt-1 text-amber-800"><b>Autorizado por:</b> {{ sop.autorizado_por }}</div>
+                    <div class="text-amber-800"><b>Justificación:</b> {{ sop.justificacion_exceso }}</div>
+                </div>
+
+                <h4 class="m-0 mt-4 text-sm font-black text-slate-900">Consolidado guardado en el despacho</h4>
+                <div class="mt-2 overflow-x-auto rounded-2xl border border-slate-200">
+                    <table class="w-full border-collapse text-left text-xs">
+                        <thead class="bg-slate-50 text-[10px] font-black uppercase text-slate-500">
+                            <tr>
+                                <th class="p-2.5">Producto</th>
+                                <th class="p-2.5">Tipo</th>
+                                <th class="p-2.5">Días</th>
+                                <th class="p-2.5">Total requerido</th>
+                                <th class="p-2.5">Sugerido neto</th>
+                                <th class="p-2.5">Bodega central</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            <tr *ngFor="let c of sop.consolidado_snapshot ?? []">
+                                <td class="p-2.5 font-bold text-slate-900">{{ c.nombre_ingrediente }}</td>
+                                <td class="p-2.5">{{ c.clasificacion_tipo || (c.es_perecedero ? 'Perecedero' : 'No perecedero') }}</td>
+                                <td class="p-2.5">{{ c.dias_periodo }} d</td>
+                                <td class="p-2.5 font-bold">{{ c.cantidad_total_requerida | number:'1.0-2' }} {{ c.unidad_abreviatura || c.unidad_medida }}</td>
+                                <td class="p-2.5 font-black text-[#A86B00]">{{ c.cantidad_sugerida_despacho | number:'1.0-2' }} {{ c.unidad_abreviatura || c.unidad_medida }}</td>
+                                <td class="p-2.5">{{ (c.stock_bodega_central || 0) | number:'1.0-2' }} ({{ c.estado_bodega_central }})</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <details *ngIf="(sop.detalle_grados_snapshot?.length ?? 0) > 0" class="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                    <summary class="cursor-pointer text-xs font-black text-slate-800">
+                        Ver detalle por grado guardado en este soporte ({{ sop.detalle_grados_snapshot?.length }})
+                    </summary>
+                    <div class="mt-2 overflow-x-auto">
+                        <table class="w-full border-collapse text-left text-[11px] bg-white rounded-xl overflow-hidden">
+                            <thead class="bg-slate-100 text-[10px] font-black text-slate-500">
+                                <tr>
+                                    <th class="p-2">Producto</th>
+                                    <th class="p-2">Jornada / Grado</th>
+                                    <th class="p-2">Cupos</th>
+                                    <th class="p-2">Días</th>
+                                    <th class="p-2">Requerido</th>
+                                    <th class="p-2">Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                <tr *ngFor="let g of sop.detalle_grados_snapshot ?? []">
+                                    <td class="p-2 font-bold text-slate-800">{{ g.nombre_ingrediente }}</td>
+                                    <td class="p-2">{{ g.jornada_nombre }} · {{ g.grado_nombre }}</td>
+                                    <td class="p-2">{{ g.cupos }}</td>
+                                    <td class="p-2">{{ g.dias_periodo }} d</td>
+                                    <td class="p-2 font-bold">{{ (g.cantidad_requerida || 0) | number:'1.0-2' }} {{ g.unidad_destino }}</td>
+                                    <td class="p-2">{{ g.estado }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </details>
+            </ng-container>
+        </div>
+    </div>

@@ -12,12 +12,35 @@ export interface AuthState {
   autenticado: boolean;
 }
 
+function esTokenExpirado(token: string): boolean {
+  if (!token) return true;
+  const partes = token.split('.');
+  if (partes.length !== 3) return false;
+  try {
+    const base64 = partes[1].replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    const payload = JSON.parse(jsonPayload);
+    if (typeof payload.exp === 'number') {
+      const ahoraSegundos = Math.floor(Date.now() / 1000);
+      return payload.exp <= ahoraSegundos;
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
 function obtenerEstadoInicial(): AuthState {
   try {
     if (typeof localStorage !== 'undefined') {
       const token = localStorage.getItem('access_token') || localStorage.getItem('token') || '';
       const usuarioRaw = localStorage.getItem('usuario');
-      if (token && usuarioRaw) {
+      if (token && usuarioRaw && !esTokenExpirado(token)) {
         const usuario = JSON.parse(usuarioRaw);
         return {
           username: usuario.correo || '',

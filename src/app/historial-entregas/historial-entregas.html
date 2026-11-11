@@ -1,460 +1,493 @@
-<div class="flex w-full flex-col gap-6" style="font-family: 'Roboto', sans-serif;">
-  <section class="rounded-[24px] border border-slate-200/80 bg-white p-5 shadow-sm sm:p-7">
-    <header class="mb-6 flex flex-col justify-between gap-4 rounded-[16px] border px-5 py-4 sm:flex-row sm:items-center"
-      style="background-color: rgba(244, 180, 31, 0.1); border-color: rgba(244, 180, 31, 0.3);">
-      <div>
-        <h1 class="m-0 flex items-center gap-2.5 text-lg font-bold tracking-tight text-slate-900">
-          <span class="material-symbols-outlined text-[22px]" style="color: #F4B41F;">history</span>
-          Historial de Entregas
-        </h1>
-        <p class="mb-0 mt-1 text-xs font-medium text-slate-600">Consulta, busca y administra las entregas del inventario.</p>
-      </div>
-      <div class="flex flex-wrap items-center gap-2">
-        <!-- SP-249: Botón para exportar a Excel -->
-        <button type="button" (click)="exportarExcel()"
-          class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-[13px] font-black text-white shadow-md transition hover:bg-emerald-700">
-          <span class="material-symbols-outlined text-[18px]">download</span>
-          Exportar Excel
-        </button>
-      </div>
-    </header>
+<div class="he-layout">
 
-    <div class="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
-      <article class="flex items-center gap-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-        <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
-          <span class="material-symbols-outlined">inventory_2</span>
-        </span>
-        <div>
-          <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-slate-500">Entregas registradas</p>
-          <p class="mb-0 mt-1 text-2xl font-black text-slate-900">{{ entregas.length }}</p>
+  <!-- =========================================================
+       CABECERA DE LA PÁGINA (ESTILO SUPER ADMINISTRADOR)
+       ========================================================= -->
+  <header class="he-page-header">
+    <div class="he-page-header-left">
+      <!-- Ícono circular idéntico al de Banco de Datos y Facturas Compra -->
+      <div class="he-page-icon-badge" aria-hidden="true">
+        <span class="material-symbols-outlined" style="font-size: 24px; color: #b45309;">local_shipping</span>
+      </div>
+
+      <!-- Título, píldora institucional y descripción -->
+      <div class="he-page-title-box">
+        <div class="he-title-row">
+          <h1 class="he-page-title">Historial de Entregas</h1>
+          <span *ngIf="institucionNombreUsuario" class="he-institution-pill">
+            {{ institucionNombreUsuario }}
+          </span>
         </div>
-      </article>
-      <article class="flex items-center gap-4 rounded-2xl border border-orange-200 bg-orange-50/70 p-4">
-        <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-orange-100 text-orange-700">
-          <span class="material-symbols-outlined">schedule</span>
-        </span>
-        <div>
-          <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-orange-700">Próximas a vencer</p>
-          <p class="mb-0 mt-1 text-2xl font-black text-slate-900">{{ porVencer }}</p>
-        </div>
-      </article>
-      <article class="flex items-center gap-4 rounded-2xl border border-red-200 bg-red-50/70 p-4">
-        <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-red-100 text-red-700">
-          <span class="material-symbols-outlined">warning</span>
-        </span>
-        <div>
-          <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-red-700">Vencidas</p>
-          <p class="mb-0 mt-1 text-2xl font-black text-slate-900">{{ vencidas }}</p>
-        </div>
-      </article>
+        <p class="he-page-subtitle">Inspecciona y confirma los alimentos despachados por el supervisor para el inventario escolar.</p>
+      </div>
     </div>
 
-    <div class="mb-5 flex flex-wrap items-center gap-3">
-      <button type="button" (click)="filtroMercado = 'Todas'"
-        class="flex cursor-pointer items-center gap-2 rounded-xl border px-4 py-2.5 text-[13px] font-bold transition"
-        [ngClass]="filtroMercado === 'Todas' ? 'border-transparent text-slate-900 shadow-md' : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'"
-        [style.background-color]="filtroMercado === 'Todas' ? '#F4B41F' : null">
-        <span class="material-symbols-outlined text-[18px]">inventory_2</span>
-        Todas
+    <!-- Acciones de Cabecera: Solo botón Actualizar -->
+    <div class="he-header-actions">
+      <button type="button" class="he-btn-refresh" (click)="cargarHistorial()" [disabled]="cargando" title="Actualizar entregas">
+        <span class="material-symbols-outlined" style="font-size: 18px;" [class.animate-spin]="cargando">refresh</span>
+        <span>{{ cargando ? 'Actualizando...' : 'Actualizar' }}</span>
       </button>
-      <button type="button" (click)="filtroMercado = 'Perecederos'"
-        class="flex cursor-pointer items-center gap-2 rounded-xl border px-4 py-2.5 text-[13px] font-bold transition"
-        [ngClass]="filtroMercado === 'Perecederos' ? 'border-transparent text-slate-900 shadow-md' : 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100'"
-        [style.background-color]="filtroMercado === 'Perecederos' ? '#F4B41F' : null">
-        <span class="material-symbols-outlined text-[18px]">nutrition</span>
-        Perecederos
+
+      <!-- Botón CRUD manual exclusivo para Super Administrador -->
+      <button *ngIf="esSuperAdmin" type="button" class="he-btn-refresh" (click)="toggleCrud()">
+        <span class="material-symbols-outlined" style="font-size: 18px;">{{ crudAbierto ? 'close' : 'add' }}</span>
+        <span>{{ crudAbierto ? 'Cerrar' : 'Añadir entrega' }}</span>
       </button>
-      <div class="flex min-w-[240px] flex-1 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 shadow-sm focus-within:border-[#F4B41F]">
-        <span class="material-symbols-outlined text-[18px] text-slate-400">search</span>
-        <input [(ngModel)]="filtroTexto" name="buscarHistorial" type="search"
-          placeholder="Buscar ingrediente, frecuencia..."
-          class="w-full border-0 bg-transparent py-2.5 text-[13px] font-medium text-slate-800 outline-none placeholder:text-slate-400" />
-      </div>
-      <button type="button" (click)="cargarHistorial()" [disabled]="cargando"
-        class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-[13px] font-bold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50">
-        <span class="material-symbols-outlined text-[18px]">refresh</span>
-        Actualizar
+    </div>
+  </header>
+
+  <!-- =========================================================
+       FORMULARIO CRUD (Solo visible si Super Admin abre el panel)
+       ========================================================= -->
+  <div *ngIf="crudAbierto && esSuperAdmin" style="background:#fffcf0; border:1px solid #f2ead0; border-radius:14px; padding:18px 22px; display:flex; flex-direction:column; gap:14px;">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <h2 id="crudFormTitle" style="margin:0; font-size:14px; font-weight:800; color:#0f172a;">
+        {{ editandoId ? 'Editar entrega' : 'Crear nueva entrega' }}
+      </h2>
+      <button *ngIf="editandoId" type="button" (click)="cancelarEdicion()" class="he-btn-cancel" style="height:30px; padding:0 12px; font-size:11.5px;">
+        Cancelar edición
       </button>
     </div>
 
-    <div *ngIf="crudAbierto" class="mb-6 overflow-hidden rounded-2xl border border-amber-200 bg-amber-50/30">
-      <div class="flex flex-col justify-between gap-3 border-b border-amber-100 bg-amber-50 px-5 py-4 sm:flex-row sm:items-center">
-        <div>
-          <h2 id="crudFormTitle" class="m-0 flex items-center gap-2 text-sm font-black uppercase tracking-wide text-slate-800">
-            <span class="material-symbols-outlined text-[19px] text-amber-600">{{ editandoId ? 'edit_note' : 'add_circle' }}</span>
-            {{ editandoId ? 'Editar entrega' : 'Crear nueva entrega' }}
-          </h2>
-          <p class="mb-0 mt-1 text-xs text-slate-600">Completa los datos y guarda los cambios del inventario.</p>
-        </div>
-        <button *ngIf="editandoId" type="button" (click)="cancelarEdicion()"
-          class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50">
-          <span class="material-symbols-outlined text-[17px]">close</span>
-          Cancelar edición
+    <form (ngSubmit)="guardarDesdeCrud()" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:12px;">
+      <div class="he-form-group">
+        <label class="he-form-label">Ingrediente *</label>
+        <select [(ngModel)]="crudForm.idIngrediente" name="crudIngrediente" required class="he-form-input">
+          <option [ngValue]="null">Seleccionar...</option>
+          <option *ngFor="let ing of ingredientes" [ngValue]="ing.id">{{ ing.nombre }}</option>
+        </select>
+      </div>
+
+      <div class="he-form-group">
+        <label class="he-form-label">Tipo de Mercado *</label>
+        <select [(ngModel)]="crudForm.idTipoMercado" name="crudTipoMercado" required class="he-form-input">
+          <option [ngValue]="null">Seleccionar...</option>
+          <option *ngFor="let tm of tiposMercado" [ngValue]="tm.id">{{ tm.nombre }}</option>
+        </select>
+      </div>
+
+      <div class="he-form-group">
+        <label class="he-form-label">Frecuencia *</label>
+        <select [(ngModel)]="crudForm.frecuencia" name="crudFrecuencia" required class="he-form-input">
+          <option value="Semanal">Semanal</option>
+          <option value="Quincenal">Quincenal</option>
+          <option value="Mensual">Mensual</option>
+        </select>
+      </div>
+
+      <div class="he-form-group">
+        <label class="he-form-label">Cantidad *</label>
+        <input [(ngModel)]="crudForm.cantidad" name="crudCantidad" type="number" step="0.01" min="0.01" required class="he-form-input" placeholder="0.00" />
+      </div>
+
+      <div class="he-form-group">
+        <label class="he-form-label">Unidad *</label>
+        <input [(ngModel)]="crudForm.unidad" name="crudUnidad" type="text" required class="he-form-input" placeholder="Kg" />
+      </div>
+
+      <div class="he-form-group">
+        <label class="he-form-label">Fecha Entrega *</label>
+        <input [(ngModel)]="crudForm.fechaRecepcion" name="crudFecha" type="date" required class="he-form-input" />
+      </div>
+
+      <div class="he-form-group" style="grid-column: 1 / -1; display:flex; justify-content:flex-end;">
+        <button type="submit" [disabled]="guardando" class="he-btn-confirm" style="height:36px;">
+          <span>{{ guardando ? 'Guardando...' : (editandoId ? 'Actualizar' : 'Guardar') }}</span>
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- =========================================================
+       CARD PRINCIPAL DE DATOS Y TABLA
+       ========================================================= -->
+  <main class="he-table-card">
+
+    <!-- Barra de Filtros y Búsqueda -->
+    <div class="he-filters-bar">
+      
+      <!-- Pestañas de Estado con Contador -->
+      <div class="he-status-pills-row">
+        <button type="button" class="he-status-pill" [class.active]="filtroEstado === 'TODAS'" (click)="cambiarFiltroEstado('TODAS')">
+          <span>Todas</span>
+          <span class="he-pill-count">{{ contarEstado('TODAS') }}</span>
+        </button>
+
+        <button type="button" class="he-status-pill por-recibir" [class.active]="filtroEstado === 'POR_RECIBIR'" (click)="cambiarFiltroEstado('POR_RECIBIR')">
+          <span>Por Recibir</span>
+          <span class="he-pill-count">{{ contarEstado('POR_RECIBIR') }}</span>
+        </button>
+
+        <button type="button" class="he-status-pill recibida" [class.active]="filtroEstado === 'RECIBIDA'" (click)="cambiarFiltroEstado('RECIBIDA')">
+          <span>Recibidas</span>
+          <span class="he-pill-count">{{ contarEstado('RECIBIDA') }}</span>
+        </button>
+
+        <button type="button" class="he-status-pill con-novedad" [class.active]="filtroEstado === 'CON_NOVEDAD'" (click)="cambiarFiltroEstado('CON_NOVEDAD')">
+          <span>Con Novedad</span>
+          <span class="he-pill-count">{{ contarEstado('CON_NOVEDAD') }}</span>
         </button>
       </div>
 
-      <form (ngSubmit)="guardarDesdeCrud()" class="grid grid-cols-1 gap-4 p-5 sm:grid-cols-2 lg:grid-cols-4">
-        <label class="flex flex-col gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-600">
-          Ingrediente *
-          <select [(ngModel)]="crudForm.idIngrediente" name="crudIngrediente" required
-            [disabled]="cargandoCatalogos || !ingredientes.length"
-            class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium normal-case tracking-normal text-slate-800 outline-none focus:border-[#F4B41F] focus:ring-2 focus:ring-[#F4B41F]/30 disabled:opacity-60">
-            <option [ngValue]="null" disabled>Selecciona ingrediente</option>
-            <option *ngFor="let ingrediente of ingredientes" [ngValue]="ingrediente.id">{{ ingrediente.nombre }}</option>
-          </select>
-        </label>
-        <label class="flex flex-col gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-600">
-          Tipo de mercado *
-          <select [(ngModel)]="crudForm.idTipoMercado" name="crudTipoMercado" required
-            [disabled]="cargandoCatalogos || !tiposMercado.length"
-            class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium normal-case tracking-normal text-slate-800 outline-none focus:border-[#F4B41F] focus:ring-2 focus:ring-[#F4B41F]/30 disabled:opacity-60">
-            <option [ngValue]="null" disabled>Selecciona mercado</option>
-            <option *ngFor="let tipo of tiposMercado" [ngValue]="tipo.id">{{ tipo.nombre }}</option>
-          </select>
-        </label>
-        <label class="flex flex-col gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-600">
-          Frecuencia *
-          <select [(ngModel)]="crudForm.frecuencia" name="crudFrecuencia" required
-            class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium normal-case tracking-normal text-slate-800 outline-none focus:border-[#F4B41F] focus:ring-2 focus:ring-[#F4B41F]/30">
-            <option value="Semanal">Semanal</option>
-            <option value="Quincenal">Quincenal</option>
-            <option value="Mensual">Mensual</option>
-          </select>
-        </label>
-        <label class="flex flex-col gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-600">
-          Cantidad *
-          <input [(ngModel)]="crudForm.cantidad" name="crudCantidad" type="number" min="0.01" step="0.01" required
-            class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium normal-case tracking-normal text-slate-800 outline-none focus:border-[#F4B41F] focus:ring-2 focus:ring-[#F4B41F]/30" />
-        </label>
-        <label class="flex flex-col gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-600">
-          Unidad *
-          <select [(ngModel)]="crudForm.unidad" name="crudUnidad" required
-            class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium normal-case tracking-normal text-slate-800 outline-none focus:border-[#F4B41F] focus:ring-2 focus:ring-[#F4B41F]/30">
-            <option value="Kg">Kilogramos (Kg)</option>
-            <option value="Litros">Litros</option>
-            <option value="Unidades">Unidades</option>
-          </select>
-        </label>
-        <label class="flex flex-col gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-600">
-          Fecha de recepción *
-          <input [(ngModel)]="crudForm.fechaRecepcion" name="crudFechaRecepcion" type="date" required
-            class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium normal-case tracking-normal text-slate-800 outline-none focus:border-[#F4B41F] focus:ring-2 focus:ring-[#F4B41F]/30" />
-        </label>
-        <label class="flex flex-col gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-600">
-          Fecha de vencimiento *
-          <input [(ngModel)]="crudForm.fechaVencimiento" name="crudFechaVencimiento" type="date" required
-            class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium normal-case tracking-normal text-slate-800 outline-none focus:border-[#F4B41F] focus:ring-2 focus:ring-[#F4B41F]/30" />
-        </label>
-        <label class="flex flex-col gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-600 sm:col-span-2 lg:col-span-1">
-          Observaciones
-          <input [(ngModel)]="crudForm.observaciones" name="crudObservaciones" type="text"
-            class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium normal-case tracking-normal text-slate-800 outline-none focus:border-[#F4B41F] focus:ring-2 focus:ring-[#F4B41F]/30" />
-        </label>
-        <div class="flex items-end sm:col-span-2 lg:col-span-4">
-          <button type="submit" [disabled]="guardando || cargandoCatalogos || !ingredientes.length || !tiposMercado.length"
-            class="inline-flex cursor-pointer items-center gap-2 rounded-xl px-5 py-2.5 text-[13px] font-black text-slate-900 shadow-sm transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50"
-            style="background-color: #F4B41F;">
-            <span class="material-symbols-outlined text-[18px]">{{ guardando ? 'hourglass_top' : (editandoId ? 'save' : 'add') }}</span>
-            {{ guardando ? 'Guardando...' : (editandoId ? 'Guardar cambios' : 'Crear entrega') }}
+      <!-- Buscador -->
+      <div class="he-controls-right">
+        <div class="he-search-box">
+          <span class="material-symbols-outlined he-search-icon" aria-hidden="true">search</span>
+          <input
+            type="text"
+            [(ngModel)]="filtroTexto"
+            placeholder="Buscar alimento, responsable..."
+            class="he-search-input"
+          />
+          <button
+            *ngIf="filtroTexto"
+            type="button"
+            class="he-search-clear"
+            (click)="filtroTexto = ''"
+            title="Limpiar búsqueda"
+          >
+            ✕
           </button>
-          <p *ngIf="!cargandoCatalogos && (!ingredientes.length || !tiposMercado.length)"
-            class="mb-0 ml-3 text-xs font-semibold text-red-600">
-            {{ !tiposMercado.length ? 'No hay tipos de mercado configurados.' : 'No hay ingredientes disponibles.' }}
-          </p>
         </div>
-      </form>
+      </div>
+
     </div>
 
-    <div *ngIf="errorMensaje" role="alert"
-      class="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
-      {{ errorMensaje }}
+    <div *ngIf="gruposPorFecha.length > 1" class="he-groups-controls">
+      <span class="he-groups-caption">
+        <span class="material-symbols-outlined" aria-hidden="true">calendar_month</span>
+        Entregas agrupadas por día
+      </span>
+      <div class="he-groups-control-actions">
+        <button type="button" (click)="expandirGrupos()">Expandir todos</button>
+        <button type="button" (click)="contraerGrupos()">Contraer todos</button>
+      </div>
     </div>
-    <p *ngIf="cargando" class="py-10 text-center text-sm text-slate-500" role="status">Cargando historial...</p>
 
-    <div *ngIf="!cargando && !errorMensaje" class="overflow-x-auto rounded-xl border border-slate-100">
-      <table class="w-full min-w-[1050px] border-collapse text-left text-[13px]">
+    <!-- Tabla de Entregas -->
+    <div class="he-table-wrapper">
+      <table class="he-data-table">
         <thead>
-          <tr class="border-b border-slate-200 bg-slate-50/80 font-bold text-slate-600">
-            <th class="px-4 py-3.5">Fecha</th>
-            <th class="px-4 py-3.5">Ingrediente</th>
-            <th class="px-4 py-3.5">Destino (Colegio / Sede)</th>
-            <th class="px-4 py-3.5 text-center">Tipo Mercado</th>
-            <th class="px-4 py-3.5 text-center">Cantidad</th>
-            <th class="px-4 py-3.5 text-center">Estado Despacho</th>
-            <th class="px-4 py-3.5 text-center">Vigencia</th>
-            <th class="px-4 py-3.5 text-center">Acciones</th>
+          <tr>
+            <th>Fecha</th>
+            <th>Alimento / Insumo</th>
+            <th>Destino</th>
+            <th style="text-align: center;">Tipo</th>
+            <th style="text-align: center;">Cantidad</th>
+            <th style="text-align: center;">Estado</th>
+            <th style="text-align: right;">Acciones</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-slate-100/80">
-          <tr *ngFor="let entrega of entregasFiltradas" class="transition hover:bg-slate-50/50">
-            <td class="px-4 py-3.5 font-bold text-slate-800">{{ entrega.fechaRecepcion | date:'dd/MM/yyyy' }}</td>
-            <td class="px-4 py-3.5 font-semibold text-slate-800">
-              {{ entrega.ingrediente }}
-              <div *ngIf="entrega.observaciones" class="text-[11px] font-normal text-slate-400 truncate max-w-[200px]" [title]="entrega.observaciones">
-                {{ entrega.observaciones }}
-              </div>
-            </td>
-            <td class="px-4 py-3.5 font-medium text-slate-600">
-              <div class="flex flex-col">
-                <span class="font-bold text-slate-700 text-xs">{{ entrega.institucionNombre || 'Institución asignada' }}</span>
-                <span *ngIf="entrega.sedeNombre" class="text-[11px] text-slate-400 flex items-center gap-1">
-                  <span class="material-symbols-outlined text-[13px]">room</span>
-                  {{ entrega.sedeNombre }}
-                </span>
-              </div>
-            </td>
-            <td class="px-4 py-3.5 text-center">
-              <span [ngClass]="{'border-amber-200 bg-amber-100/60 text-amber-800': entrega.tipoMercado === 'Granos', 'border-blue-200 bg-blue-50 text-blue-700': entrega.tipoMercado !== 'Granos'}"
-                class="inline-block min-w-[75px] rounded-lg border px-2 py-0.5 text-[11px] font-bold">
-                {{ entrega.tipoMercado }}
-              </span>
-            </td>
-            <td class="px-4 py-3.5 text-center">
-              <span class="font-black text-slate-800">{{ entrega.cantidad }}</span>
-              <span class="ml-1 text-[11px] font-semibold text-slate-500">{{ entrega.unidad || 'Kg' }}</span>
-              <!-- Indicador si hubo rechazo -->
-              <div *ngIf="entrega.cantidadRechazada && entrega.cantidadRechazada > 0" class="text-[10px] font-bold text-red-600">
-                -{{ entrega.cantidadRechazada }} averiado
-              </div>
-            </td>
-
-            <!-- Estado Operativo de Despacho / Recepción -->
-            <td class="px-4 py-3.5 text-center">
-              <span class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-black shadow-xs"
-                [ngClass]="claseEstadoEntrega(entrega)">
-                <span class="material-symbols-outlined text-[15px]">{{ iconoEstadoEntrega(entrega) }}</span>
-                {{ estadoEntrega(entrega) }}
-              </span>
-            </td>
-
-            <!-- Vencimiento -->
-            <td class="px-4 py-3.5 text-center">
-              <span class="inline-block min-w-[70px] rounded-full border px-2.5 py-0.5 text-[11px] font-bold"
-                [ngClass]="claseEstado(entrega)">
-                {{ estado(entrega) }}
-              </span>
-            </td>
-
-            <!-- Acciones -->
-            <td class="px-4 py-3.5 text-center">
-              <div class="flex items-center justify-center gap-1.5">
-                <!-- Botón de Recepción para el Administrador de la Institución -->
-                <button *ngIf="esAdministrador && (!entrega.estado || entrega.estado === 'EN_TRANSITO')"
-                  type="button" (click)="abrirModalRecepcion(entrega)"
-                  class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-black text-slate-900 shadow-sm transition hover:brightness-95"
-                  style="background-color: #fac94b;"
-                  title="Confirmar recepción física y control de calidad">
-                  <span class="material-symbols-outlined text-[16px]">verified</span>
-                  Recibir
-                </button>
-
-                <!-- Botón para ver novedad cuando hay averías reportadas -->
-                <button *ngIf="entrega.estado === 'CON_NOVEDAD' || entrega.estado === 'RECHAZADA'"
-                  type="button" (click)="verDetalleNovedad(entrega)"
-                  class="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-orange-200 bg-orange-50 px-2.5 py-1 text-xs font-bold text-orange-800 hover:bg-orange-100"
-                  title="Ver detalle del reporte de calidad">
-                  <span class="material-symbols-outlined text-[15px]">report_problem</span>
-                  Ver novedad
-                </button>
-
-                <!-- Acciones CRUD clásicas si está abierto -->
-                <button *ngIf="crudAbierto" type="button" (click)="editar(entrega)" title="Editar entrega"
-                  class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-amber-200 hover:bg-amber-50 hover:text-amber-700">
-                  <span class="material-symbols-outlined text-[18px]">edit</span>
-                </button>
-                <button *ngIf="crudAbierto" type="button" (click)="eliminar(entrega)" title="Eliminar entrega"
-                  class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600">
-                  <span class="material-symbols-outlined text-[18px]">delete</span>
-                </button>
+        <tbody>
+          <!-- Spinner de carga inicial si la lista está vacía -->
+          <tr *ngIf="cargando && entregas.length === 0">
+            <td colspan="7">
+              <div class="he-empty-state">
+                <span class="material-symbols-outlined animate-spin he-empty-icon" style="color: #fac94b;">progress_activity</span>
+                <span>Sincronizando entregas con el servidor...</span>
               </div>
             </td>
           </tr>
-          <tr *ngIf="entregasFiltradas.length === 0">
-            <td colspan="8" class="px-4 py-14 text-center">
-              <div class="flex flex-col items-center justify-center gap-2">
-                <div class="flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-400">
-                  <span class="material-symbols-outlined text-[24px]">inventory_2</span>
-                </div>
-                <p class="m-0 text-xs font-bold text-slate-800">
-                  {{ entregas.length === 0 ? 'Aún no hay entregas registradas' : 'No se encontraron entregas' }}
-                </p>
+
+          <!-- Empty state si no hay resultados -->
+          <tr *ngIf="!cargando && entregasFiltradas.length === 0">
+            <td colspan="7">
+              <div class="he-empty-state">
+                <span class="material-symbols-outlined he-empty-icon">inbox</span>
+                <span style="font-weight: 700; color: #0f172a;">No hay entregas para mostrar</span>
+                <span style="font-size: 12px;">No se encontraron registros con los filtros seleccionados.</span>
               </div>
             </td>
           </tr>
+
+          <ng-container *ngFor="let grupo of gruposPorFecha">
+            <tr class="he-day-group-row">
+              <td colspan="7">
+                <button
+                  type="button"
+                  class="he-day-group-toggle"
+                  [attr.aria-expanded]="grupoEstaExpandido(grupo.fecha)"
+                  (click)="alternarGrupoFecha(grupo.fecha)"
+                >
+                  <span class="material-symbols-outlined he-day-group-chevron" aria-hidden="true">
+                    {{ grupoEstaExpandido(grupo.fecha) ? 'expand_less' : 'expand_more' }}
+                  </span>
+                  <span class="he-day-group-date">{{ formatoFecha(grupo.fecha) }}</span>
+                  <span class="he-day-group-count">
+                    {{ grupo.entregas.length }} {{ grupo.entregas.length === 1 ? 'entrega' : 'entregas' }}
+                  </span>
+                  <span *ngIf="grupo.pendientes > 0" class="he-day-group-pending">
+                    <span class="material-symbols-outlined" aria-hidden="true">schedule</span>
+                    {{ grupo.pendientes }} por recibir
+                  </span>
+                  <span *ngIf="grupo.recibidas > 0" class="he-day-group-received">
+                    <span class="material-symbols-outlined" aria-hidden="true">check_circle</span>
+                    {{ grupo.recibidas }} recibidas
+                  </span>
+                  <span *ngIf="grupo.novedades > 0" class="he-day-group-issues">
+                    <span class="material-symbols-outlined" aria-hidden="true">warning</span>
+                    {{ grupo.novedades }} con novedad
+                  </span>
+                </button>
+              </td>
+            </tr>
+
+            <ng-container *ngIf="grupoEstaExpandido(grupo.fecha)">
+              <tr *ngFor="let entrega of grupo.entregas">
+                <td style="font-weight: 600; color: #0f172a; white-space: nowrap;">
+                  {{ formatoFecha(entrega.fechaRecepcion) }}
+                </td>
+
+                <td>
+                  <div class="he-primary-name">{{ entrega.ingrediente }}</div>
+                  <div *ngIf="entrega.observaciones" class="he-sub-name" [title]="entrega.observaciones">
+                    {{ entrega.observaciones }}
+                  </div>
+                </td>
+
+                <td>
+                  <span style="font-weight: 600; color: #334155;">{{ entrega.institucionNombre || institucionNombreUsuario || 'Institución asignada' }}</span>
+                  <span *ngIf="tieneSedes && entrega.sedeNombre" style="display:block; font-size:11.5px; color:#b45309;">
+                    {{ entrega.sedeNombre }}
+                  </span>
+                </td>
+
+                <td style="text-align: center;">
+                  <span class="he-tag-market" [ngClass]="entrega.tipoMercado === 'Granos' ? 'grano' : 'perecedero'">
+                    {{ entrega.tipoMercado }}
+                  </span>
+                </td>
+
+                <td style="text-align: center; white-space: nowrap;">
+                  <strong style="color: #0f172a; font-weight: 800;">{{ entrega.cantidad }}</strong>
+                  <span style="font-size: 11.5px; color: #64748b; margin-left: 3px;">{{ entrega.unidad || 'Kg' }}</span>
+                </td>
+
+                <td style="text-align: center;">
+                  <span *ngIf="['EN_TRANSITO', 'PENDIENTE', 'EN_PROCESO'].includes((entrega.estado || 'EN_TRANSITO').toUpperCase())" class="he-status-badge transito">
+                    <span class="he-status-dot"></span>
+                    <span>En tránsito</span>
+                  </span>
+
+                  <span *ngIf="(entrega.estado || '').toUpperCase() === 'RECIBIDA'" class="he-status-badge recibida">
+                    <span class="he-status-dot"></span>
+                    <span>Recibida OK</span>
+                  </span>
+
+                  <span *ngIf="(entrega.estado || '').toUpperCase() === 'CON_NOVEDAD' || (entrega.estado || '').toUpperCase() === 'RECHAZADA'" class="he-status-badge novedad">
+                    <span class="he-status-dot"></span>
+                    <span>{{ (entrega.estado || '').toUpperCase() === 'RECHAZADA' ? 'Rechazada' : 'Con Novedad' }}</span>
+                  </span>
+                </td>
+
+                <td style="text-align: right; white-space: nowrap;">
+                  <div *ngIf="esAdministrador && ['EN_TRANSITO', 'PENDIENTE', 'EN_PROCESO'].includes((entrega.estado || 'EN_TRANSITO').toUpperCase())" class="he-delivery-actions">
+                    <button
+                      type="button"
+                      class="he-btn-receive"
+                      (click)="abrirModalRecepcion(entrega)"
+                      title="Inspeccionar y confirmar recepción"
+                    >
+                      <span>Recibir</span>
+                    </button>
+                    <button
+                      type="button"
+                      class="he-btn-reject"
+                      (click)="abrirModalRechazo(entrega)"
+                      title="Rechazar toda la entrega"
+                    >
+                      <span>Rechazar</span>
+                    </button>
+                  </div>
+
+                  <span *ngIf="(entrega.estado || '').toUpperCase() === 'RECIBIDA'" class="he-text-accredited">
+                    <span class="material-symbols-outlined" style="font-size: 15px;">check_circle</span>
+                    <span>Acreditada</span>
+                  </span>
+
+                  <button
+                    *ngIf="(entrega.estado || '').toUpperCase() === 'CON_NOVEDAD' || (entrega.estado || '').toUpperCase() === 'RECHAZADA'"
+                    type="button"
+                    class="he-btn-view-detail"
+                    (click)="verDetalleNovedad(entrega)"
+                  >
+                    Ver novedad
+                  </button>
+
+                  <div *ngIf="esSuperAdmin" style="display:inline-flex; align-items:center; gap:6px; margin-left:8px;">
+                    <button type="button" (click)="editar(entrega)" title="Editar entrega" style="background:none; border:none; cursor:pointer; color:#64748b; padding:2px;">
+                      <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+                    </button>
+                    <button type="button" (click)="eliminar(entrega)" title="Eliminar entrega" style="background:none; border:none; cursor:pointer; color:#ef4444; padding:2px;">
+                      <span class="material-symbols-outlined" style="font-size:17px;">delete</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </ng-container>
+          </ng-container>
         </tbody>
       </table>
     </div>
-    <p *ngIf="!cargando && !errorMensaje" class="mb-0 mt-3 text-xs font-medium text-slate-500">
-      Mostrando {{ entregasFiltradas.length }} de {{ entregas.length }} entregas.
-    </p>
-  </section>
 
-  <!-- =========================================================================
-       MODAL DE RECEPCIÓN TÉCNICA Y CONTROL DE CALIDAD ("Si un tomate llega dañado")
-       ========================================================================= -->
-  <div *ngIf="modalRecepcionAbierto && entregaSeleccionada"
-    class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs">
-    <div class="w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl transition-all sm:p-7">
-      
-      <!-- Encabezado Modal -->
-      <div class="flex items-start justify-between border-b border-slate-100 pb-4">
-        <div class="flex items-center gap-3">
-          <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
-            <span class="material-symbols-outlined text-[24px]">verified</span>
+    <!-- Pie de tabla informativo -->
+    <div style="display:flex; justify-content:space-between; align-items:center; font-size:12px; color:#64748b; padding-top:4px;">
+      <span>Mostrando {{ entregasFiltradas.length }} de {{ entregas.length }} entrega(s)</span>
+      <span>SIRAE PAE &bull; Control Institucional</span>
+    </div>
+
+  </main>
+
+  <!-- =========================================================
+       MODAL DE CONTROL DE CALIDAD Y RECEPCIÓN TÉCNICA
+       ========================================================= -->
+  <div *ngIf="modalRecepcionAbierto && entregaSeleccionada" class="he-modal-backdrop" (click)="cerrarModalRecepcion()">
+    <div class="he-modal-card" (click)="$event.stopPropagation()">
+      <div class="he-modal-header">
+        <div class="he-modal-header-left">
+          <div class="he-modal-icon-badge">
+            <span class="material-symbols-outlined" style="font-size: 20px;">task_alt</span>
           </div>
           <div>
-            <h3 class="m-0 text-base font-black text-slate-900">Recepción Técnica de Alimentos</h3>
-            <p class="m-0 text-xs font-medium text-slate-500">Inspección física y control de calidad al recibir en colegio</p>
+            <h3 class="he-modal-title">{{ modoRechazoDirecto ? 'Rechazar entrega' : 'Control de Calidad y Recepción' }}</h3>
+            <p class="he-modal-sub">
+              {{ modoRechazoDirecto ? 'Confirma el rechazo total e indica el motivo.' : 'Inspecciona el estado físico del insumo antes de acreditarlo.' }}
+            </p>
           </div>
         </div>
-        <button type="button" (click)="cerrarModalRecepcion()"
-          class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700">
-          <span class="material-symbols-outlined text-[20px]">close</span>
+        <button type="button" class="he-modal-close" (click)="cerrarModalRecepcion()" title="Cerrar">
+          <span class="material-symbols-outlined" style="font-size: 18px;">close</span>
         </button>
       </div>
 
-      <!-- Resumen del Despacho -->
-      <div class="my-4 rounded-2xl border border-slate-100 bg-slate-50/80 p-4">
-        <div class="grid grid-cols-2 gap-3 text-xs">
+      <div class="he-modal-body">
+        <div class="he-info-banner">
           <div>
-            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Producto / Insumo</span>
-            <p class="m-0 font-bold text-slate-800 text-sm">{{ entregaSeleccionada.ingrediente }}</p>
+            <div class="he-info-label">Alimento / Insumo</div>
+            <div class="he-info-value">{{ entregaSeleccionada.ingrediente }}</div>
           </div>
-          <div>
-            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Cantidad Despachada</span>
-            <p class="m-0 font-black text-amber-600 text-sm">
-              {{ entregaSeleccionada.cantidad }} {{ entregaSeleccionada.unidad || 'Kg' }}
-            </p>
+          <div style="text-align: right;">
+            <div class="he-info-label">Cantidad Despachada</div>
+            <div class="he-info-value">{{ entregaSeleccionada.cantidad }} {{ entregaSeleccionada.unidad || 'Kg' }}</div>
           </div>
-          <div>
-            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Tipo de Mercado</span>
-            <p class="m-0 font-semibold text-slate-700">{{ entregaSeleccionada.tipoMercado }}</p>
+        </div>
+
+        <div class="he-form-grid">
+          <div class="he-form-group">
+            <label class="he-form-label">Cant. Conforme (Buen estado)</label>
+            <input
+              type="number"
+              [(ngModel)]="formRecepcion.cantidadRecibida"
+              (input)="onCambioCantidades('recibida')"
+              [readonly]="modoRechazoDirecto"
+              min="0"
+              [max]="entregaSeleccionada.cantidad || 0"
+              step="0.01"
+              class="he-form-input"
+            />
           </div>
-          <div>
-            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Fecha Despacho</span>
-            <p class="m-0 font-semibold text-slate-700">{{ entregaSeleccionada.fechaRecepcion | date:'dd/MM/yyyy' }}</p>
+
+          <div class="he-form-group">
+            <label class="he-form-label">Cant. Dañada / Rechazada</label>
+            <input
+              type="number"
+              [(ngModel)]="formRecepcion.cantidadRechazada"
+              (input)="onCambioCantidades('rechazada')"
+              [readonly]="modoRechazoDirecto"
+              min="0"
+              [max]="entregaSeleccionada.cantidad || 0"
+              step="0.01"
+              class="he-form-input"
+              style="color: #991b1b; font-weight: 700;"
+            />
           </div>
+        </div>
+
+        <div *ngIf="formRecepcion.cantidadRechazada > 0" class="he-form-group">
+          <label class="he-form-label" style="color: #991b1b;">Motivo del rechazo / Avería *</label>
+          <textarea
+            [(ngModel)]="formRecepcion.motivoRechazo"
+            rows="2"
+            placeholder="Especifica el motivo (ej: empaque roto, producto golpeado o magullado)..."
+            class="he-form-textarea"
+          ></textarea>
         </div>
       </div>
 
-      <!-- Formulario de Control de Calidad -->
-      <form (ngSubmit)="confirmarRecepcion()" class="space-y-4">
-        <div class="grid grid-cols-2 gap-4">
-          <!-- Cantidad Recibida OK -->
-          <div class="flex flex-col gap-1.5">
-            <label class="text-[11px] font-black uppercase tracking-wider text-emerald-700 flex items-center gap-1">
-              <span class="material-symbols-outlined text-[15px]">check_circle</span>
-              Aceptado (Buen Estado) *
-            </label>
-            <div class="relative">
-              <input type="number" [(ngModel)]="formRecepcion.cantidadRecibida" name="cantRecibida"
-                (ngModelChange)="onCambioCantidades('recibida')"
-                min="0" [max]="entregaSeleccionada.cantidad || 99999" step="0.01" required
-                class="w-full rounded-xl border border-emerald-300 bg-emerald-50/30 px-3 py-2.5 text-sm font-black text-emerald-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20" />
-              <span class="absolute right-3 top-2.5 text-xs font-bold text-emerald-600">{{ entregaSeleccionada.unidad || 'Kg' }}</span>
-            </div>
-            <p class="m-0 text-[10px] text-slate-400">Ingresará directamente a la bodega del colegio.</p>
-          </div>
-
-          <!-- Cantidad Rechazada / Averiada -->
-          <div class="flex flex-col gap-1.5">
-            <label class="text-[11px] font-black uppercase tracking-wider text-red-700 flex items-center gap-1">
-              <span class="material-symbols-outlined text-[15px]">cancel</span>
-              Rechazado / Averiado *
-            </label>
-            <div class="relative">
-              <input type="number" [(ngModel)]="formRecepcion.cantidadRechazada" name="cantRechazada"
-                (ngModelChange)="onCambioCantidades('rechazada')"
-                min="0" [max]="entregaSeleccionada.cantidad || 99999" step="0.01" required
-                class="w-full rounded-xl border border-red-300 bg-red-50/30 px-3 py-2.5 text-sm font-black text-red-900 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20" />
-              <span class="absolute right-3 top-2.5 text-xs font-bold text-red-600">{{ entregaSeleccionada.unidad || 'Kg' }}</span>
-            </div>
-            <p class="m-0 text-[10px] text-slate-400">No ingresará al inventario y se registrará novedad.</p>
-          </div>
-        </div>
-
-        <!-- Alerta y Justificación de Avería ("Si un tomate llega dañado...") -->
-        <div *ngIf="formRecepcion.cantidadRechazada > 0" class="rounded-2xl border border-red-200 bg-red-50/60 p-4 space-y-2">
-          <div class="flex items-center gap-2 text-xs font-bold text-red-800">
-            <span class="material-symbols-outlined text-[18px]">warning</span>
-            <span>Reporte de producto en mal estado ({{ formRecepcion.cantidadRechazada }} {{ entregaSeleccionada.unidad }})</span>
-          </div>
-          <label class="flex flex-col gap-1 text-[11px] font-bold text-slate-700">
-            Motivo del rechazo o daño *
-            <textarea [(ngModel)]="formRecepcion.motivoRechazo" name="motivoRechazo" rows="2" required
-              placeholder="Ej: Los tomates llegaron magullados o podridos por exceso de calor en el transporte..."
-              class="w-full rounded-xl border border-red-300 bg-white p-2.5 text-xs text-slate-800 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20"></textarea>
-          </label>
-        </div>
-
-        <!-- Botones de Acción -->
-        <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
-          <button type="button" (click)="cerrarModalRecepcion()" [disabled]="procesandoRecepcion"
-            class="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-50">
-            Cancelar
-          </button>
-          <button type="submit" [disabled]="procesandoRecepcion"
-            class="inline-flex cursor-pointer items-center gap-2 rounded-xl px-5 py-2.5 text-xs font-black text-slate-900 shadow-md transition hover:brightness-95 disabled:opacity-50"
-            style="background-color: #fac94b;">
-            <span class="material-symbols-outlined text-[17px]">{{ procesandoRecepcion ? 'hourglass_top' : 'check' }}</span>
-            {{ procesandoRecepcion ? 'Guardando...' : 'Confirmar e Ingresar a Inventario' }}
-          </button>
-        </div>
-      </form>
-
+      <div class="he-modal-footer">
+        <button type="button" class="he-btn-cancel" (click)="cerrarModalRecepcion()" [disabled]="procesandoRecepcion">
+          Cancelar
+        </button>
+        <button type="button" class="he-btn-confirm" (click)="confirmarRecepcion()" [disabled]="procesandoRecepcion">
+          <span *ngIf="procesandoRecepcion" class="material-symbols-outlined animate-spin" style="font-size: 16px;">progress_activity</span>
+          <span>{{ procesandoRecepcion ? 'Procesando...' : (modoRechazoDirecto ? 'Confirmar rechazo' : 'Confirmar e ingresar') }}</span>
+        </button>
+      </div>
     </div>
   </div>
 
-  <!-- =========================================================================
-       MODAL DE DETALLE DE NOVEDAD / CONTROL DE CALIDAD
-       ========================================================================= -->
-  <div *ngIf="modalDetalleAbierto && entregaDetalle"
-    class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs">
-    <div class="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl">
-      <div class="flex items-start justify-between border-b border-slate-100 pb-3">
-        <div class="flex items-center gap-2.5 text-orange-700">
-          <span class="material-symbols-outlined text-[24px]">report_problem</span>
-          <h3 class="m-0 text-base font-black text-slate-900">Auditoría de Novedad PAE</h3>
+  <!-- =========================================================
+       MODAL DETALLE DE NOVEDAD
+       ========================================================= -->
+  <div *ngIf="modalDetalleAbierto && entregaDetalle" class="he-modal-backdrop" (click)="cerrarModalDetalle()">
+    <div class="he-modal-card" (click)="$event.stopPropagation()">
+      <div class="he-modal-header">
+        <div class="he-modal-header-left">
+          <div class="he-modal-icon-badge" style="background:#fee2e2; border-color:#fca5a5; color:#991b1b;">
+            <span class="material-symbols-outlined" style="font-size: 20px;">report_problem</span>
+          </div>
+          <div>
+            <h3 class="he-modal-title">Acta de Novedad Técnica</h3>
+            <p class="he-modal-sub">Detalle de inspección y control de calidad registrado.</p>
+          </div>
         </div>
-        <button type="button" (click)="cerrarModalDetalle()"
-          class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-slate-400 hover:bg-slate-100">
-          <span class="material-symbols-outlined text-[20px]">close</span>
+        <button type="button" class="he-modal-close" (click)="cerrarModalDetalle()">
+          <span class="material-symbols-outlined" style="font-size: 18px;">close</span>
         </button>
       </div>
 
-      <div class="my-4 space-y-3 text-xs">
-        <div class="rounded-xl bg-slate-50 p-3 border border-slate-100">
-          <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-slate-400">Insumo</p>
-          <p class="m-0 text-sm font-bold text-slate-800">{{ entregaDetalle.ingrediente }}</p>
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div class="rounded-xl bg-emerald-50 p-3 border border-emerald-100 text-emerald-800">
-            <span class="text-[10px] font-bold uppercase">Recibido OK</span>
-            <p class="m-0 text-sm font-black">{{ entregaDetalle.cantidadRecibida }} {{ entregaDetalle.unidad }}</p>
+      <div class="he-modal-body">
+        <div class="he-info-banner">
+          <div>
+            <div class="he-info-label">Alimento</div>
+            <div class="he-info-value">{{ entregaDetalle.ingrediente }}</div>
           </div>
-          <div class="rounded-xl bg-red-50 p-3 border border-red-100 text-red-800">
-            <span class="text-[10px] font-bold uppercase">Averiado / Rechazado</span>
-            <p class="m-0 text-sm font-black">{{ entregaDetalle.cantidadRechazada }} {{ entregaDetalle.unidad }}</p>
+          <div style="text-align: right;">
+            <div class="he-info-label">Fecha de Entrega</div>
+            <div class="he-info-value">{{ entregaDetalle.fechaRecepcion | date:'dd/MM/yyyy' }}</div>
           </div>
         </div>
 
-        <div class="rounded-xl bg-amber-50/60 p-3 border border-amber-200">
-          <span class="text-[11px] font-black uppercase text-amber-900">Motivo del Reporte</span>
-          <p class="mb-0 mt-1 text-xs font-semibold text-slate-800 leading-relaxed">
-            {{ entregaDetalle.motivoRechazo || 'Sin observación registrada.' }}
-          </p>
+        <div class="he-form-grid">
+          <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:12px;">
+            <div style="font-size:11px; font-weight:700; color:#166534; text-transform:uppercase;">Conforme</div>
+            <div style="font-size:18px; font-weight:800; color:#166534; margin-top:2px;">
+              {{ entregaDetalle.cantidadRecibida ?? entregaDetalle.cantidad }} {{ entregaDetalle.unidad || 'Kg' }}
+            </div>
+          </div>
+
+          <div style="background:#fee2e2; border:1px solid #fca5a5; border-radius:10px; padding:12px;">
+            <div style="font-size:11px; font-weight:700; color:#991b1b; text-transform:uppercase;">Dañado / Rechazado</div>
+            <div style="font-size:18px; font-weight:800; color:#991b1b; margin-top:2px;">
+              {{ entregaDetalle.cantidadRechazada || 0 }} {{ entregaDetalle.unidad || 'Kg' }}
+            </div>
+          </div>
         </div>
 
-        <div *ngIf="entregaDetalle.usuarioReceptorNombre" class="text-[11px] text-slate-500 pt-1">
-          Recepción realizada por: <span class="font-bold text-slate-700">{{ entregaDetalle.usuarioReceptorNombre }}</span>
+        <div *ngIf="entregaDetalle.motivoRechazo" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px;">
+          <div style="font-size:11.5px; font-weight:700; color:#475569; text-transform:uppercase;">Motivo Reportado</div>
+          <p style="margin:4px 0 0 0; font-size:13px; color:#0f172a;">{{ entregaDetalle.motivoRechazo }}</p>
+        </div>
+
+        <div *ngIf="entregaDetalle.usuarioReceptorNombre" style="font-size:12px; color:#64748b;">
+          Recibido e inspeccionado por: <strong style="color:#0f172a;">{{ entregaDetalle.usuarioReceptorNombre }}</strong>
         </div>
       </div>
 
-      <div class="flex justify-end pt-2 border-t border-slate-100">
-        <button type="button" (click)="cerrarModalDetalle()"
-          class="rounded-xl px-4 py-2 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200">
-          Cerrar
+      <div class="he-modal-footer">
+        <button type="button" class="he-btn-confirm" (click)="cerrarModalDetalle()">
+          Entendido
         </button>
       </div>
     </div>

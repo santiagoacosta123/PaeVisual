@@ -1,7 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { forkJoin } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { forkJoin, of } from 'rxjs';
+import { catchError, timeout } from 'rxjs/operators';
+import { environment } from '../../environments/environment';
 import { SweetAlertService } from '../sweet-alert.service';
 import { AuthService } from '../services/auth.service';
 import {
@@ -12,7 +15,13 @@ import {
   TipoMercadoOpcion,
 } from '../services/entregas.service';
 
-type FiltroMercado = 'Todas' | 'Granos' | 'Perecederos';
+interface GrupoEntregasDia {
+  fecha: string;
+  entregas: Entrega[];
+  pendientes: number;
+  recibidas: number;
+  novedades: number;
+}
 
 @Component({
   selector: 'app-historial-entregas',
@@ -25,7 +34,6 @@ export class HistorialEntregas implements OnInit {
   entregas: Entrega[] = [];
   ingredientes: IngredienteOpcion[] = [];
   tiposMercado: TipoMercadoOpcion[] = [];
-  filtroMercado: FiltroMercado = 'Todas';
   filtroTexto = '';
   cargando = true;
   cargandoCatalogos = false;
@@ -35,14 +43,23 @@ export class HistorialEntregas implements OnInit {
   editandoId: number | null = null;
   private catalogosCargados = false;
 
-  // Roles de usuario
+  // Roles de usuario y contexto
   esAdministrador = false;
   esSupervisor = false;
   esSuperAdmin = false;
+  institucionNombreUsuario = '';
+  institucionIdUsuario: number | null = null;
+  tieneSedes = false;
+  idsSedesPropias = new Set<number>();
+
+  // Filtros avanzados
+  filtroEstado: 'TODAS' | 'POR_RECIBIR' | 'RECIBIDA' | 'CON_NOVEDAD' = 'TODAS';
 
   // Modal de Recepción y Control de Calidad (Administrador)
   modalRecepcionAbierto = false;
   entregaSeleccionada: Entrega | null = null;
+  gruposExpandidos = new Set<string>();
+  modoRechazoDirecto = false;
   formRecepcion = {
     cantidadRecibida: 0,
     cantidadRechazada: 0,
@@ -60,6 +77,7 @@ export class HistorialEntregas implements OnInit {
     public entregasService: EntregasService,
     private alertas: SweetAlertService,
     private authService: AuthService,
+    private http: HttpClient,
   ) {}
 
   ngOnInit(): void {
@@ -68,29 +86,218 @@ export class HistorialEntregas implements OnInit {
     this.esSuperAdmin = this.authService.esSuperAdministrador(rol);
     this.esSupervisor = this.authService.esSupervisor(rol);
     this.esAdministrador = (this.authService.esAdministrador(rol) || rol === 'admin' || rol === 'administrador') && !this.esSuperAdmin;
+    this.institucionNombreUsuario = user?.institucion_nombre || user?.institucion || '';
+    this.institucionIdUsuario = user?.id_institucion ? Number(user.id_institucion) : null;
 
+    // Verificar si la institución asignada maneja sedes
+    if (this.esAdministrador && this.institucionIdUsuario) {
+      this.cargarSedesInstitucion(this.institucionIdUsuario);
+    }
+
+    // 1. Carga inmediata de entregas desde caché local (0 ms de espera)
+    const cacheadas = this.leerCacheEntregas();
+    if (cacheadas.length > 0) {
+      this.entregas = this.filtrarPorInstitucionUsuario(cacheadas);
+      this.cargando = false;
+    }
+
+    // 2. Consulta de datos actualizados al backend en segundo plano
     this.cargarHistorial();
   }
 
+  private cargarSedesInstitucion(idInst: number): void {
+    this.http.get<any>(`${environment.apiUrl}/sedes/?id_institucion=${idInst}`).pipe(
+      timeout(6000),
+      catchError(() => of([]))
+    ).subscribe((res) => {
+      const lista = Array.isArray(res) ? res : (Array.isArray(res?.results) ? res.results : []);
+      this.idsSedesPropias = new Set(
+        lista.map((s: any) => Number(s.id_sede ?? s.id)).filter((id: number) => !isNaN(id))
+      );
+      this.tieneSedes = this.idsSedesPropias.size > 0;
+      // Re-filtrar con la validación de sedes actualizada
+      this.entregas = this.filtrarPorInstitucionUsuario(this.entregas);
+      this.guardarCacheEntregas(this.entregas);
+    });
+  }
+
   cargarHistorial(): void {
-    this.cargando = true;
+    if (this.entregas.length === 0) {
+      this.cargando = true;
+    }
     this.errorMensaje = '';
     this.entregasService.cargar().subscribe({
       next: (entregas) => {
-        this.entregas = entregas;
+        const unificadas = this.combinarConEntregasLocales(entregas);
+        this.entregas = this.filtrarPorInstitucionUsuario(unificadas);
+        this.guardarCacheEntregas(this.entregas);
         this.cargando = false;
       },
       error: (error) => {
         console.error('Error al consultar historial de entregas:', error);
-        this.errorMensaje = error.status === 401
-          ? 'La sesión expiró o no es válida. Inicia sesión nuevamente para consultar el historial.'
-          : error.status === 403
-            ? 'Tu usuario no tiene permiso para consultar el historial.'
-            : 'No se pudo cargar el historial. Intenta nuevamente más tarde.';
+        const unificadas = this.combinarConEntregasLocales(this.entregas.length ? this.entregas : []);
+        this.entregas = this.filtrarPorInstitucionUsuario(unificadas);
         this.cargando = false;
-        void this.alertas.error('No se pudo cargar el historial', this.errorMensaje);
+        this.errorMensaje = error?.status === 401
+          ? 'La sesión expiró o no es válida. Inicia sesión nuevamente para consultar el historial.'
+          : error?.status === 403
+            ? 'Tu usuario no tiene permiso para consultar el historial.'
+            : '';
+        if (this.errorMensaje) {
+          void this.alertas.error('No se pudo cargar el historial', this.errorMensaje);
+        }
       },
     });
+  }
+
+  private leerCacheEntregas(): Entrega[] {
+    try {
+      const raw = localStorage.getItem('sirae_entregas_cache');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const combinadas = this.combinarConEntregasLocales(parsed);
+          return this.filtrarPorInstitucionUsuario(combinadas);
+        }
+      }
+    } catch (e) {
+      console.warn('Error leyendo caché de entregas:', e);
+    }
+    return this.filtrarPorInstitucionUsuario(this.combinarConEntregasLocales([]));
+  }
+
+  private guardarCacheEntregas(lista: Entrega[]): void {
+    try {
+      localStorage.setItem('sirae_entregas_cache', JSON.stringify(lista));
+    } catch (e) {
+      console.warn('Error guardando caché de entregas:', e);
+    }
+  }
+
+  filtrarPorInstitucionUsuario(lista: Entrega[]): Entrega[] {
+    if (!this.esAdministrador) {
+      return lista;
+    }
+
+    const norm = (s: string | null | undefined) =>
+      (s || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .trim()
+        .toLowerCase();
+
+    const miInstNombre = norm(this.institucionNombreUsuario);
+    const miInstId = this.institucionIdUsuario;
+
+    return lista.filter((entrega) => {
+      // 1. Filtrar por ID de institución si ambos están disponibles
+      if (miInstId != null && entrega.idInstitucion != null && Number(entrega.idInstitucion) !== Number(miInstId)) {
+        return false;
+      }
+
+      // 2. Filtrar por nombre de institución si está especificado y no es genérico
+      const entInstNombre = norm(entrega.institucionNombre);
+      if (miInstNombre && entInstNombre && entInstNombre !== 'institucion asignada' && entInstNombre !== 'institucion educativa') {
+        if (!entInstNombre.includes(miInstNombre) && !miInstNombre.includes(entInstNombre)) {
+          return false;
+        }
+      }
+
+      // 3. Filtrar si en observaciones se menciona explícitamente OTRA institución (ej: "Institución: Liceo de Occidente")
+      const obs = norm(entrega.observaciones);
+      if (obs.includes('institucion:') || obs.includes('institucion :')) {
+        const match = obs.match(/institucion\s*:\s*([^|]+)/i);
+        if (match && match[1]) {
+          const instEnObs = norm(match[1]);
+          if (miInstNombre && !instEnObs.includes(miInstNombre) && !miInstNombre.includes(instEnObs)) {
+            return false;
+          }
+        }
+      }
+
+      // 4. Si la institución del administrador NO tiene sedes (ej: Institución Educativa La Normal):
+      // No debe mostrar ninguna entrega con sede asignada (idSede o sedeNombre)
+      if (!this.tieneSedes) {
+        if (entrega.idSede != null || (entrega.sedeNombre && entrega.sedeNombre.trim() !== '')) {
+          return false;
+        }
+      } else if (this.idsSedesPropias.size > 0 && entrega.idSede != null) {
+        // Si maneja sedes, solo sedes que pertenezcan a esta institución
+        if (!this.idsSedesPropias.has(Number(entrega.idSede))) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }
+
+  private combinarConEntregasLocales(servidor: Entrega[]): Entrega[] {
+    let recepciones: Record<string, any> = {};
+    try {
+      recepciones = JSON.parse(localStorage.getItem('sirae_recepciones_admin') || '{}');
+    } catch { recepciones = {}; }
+
+    // Sincronizar estado de recepciones para las del servidor
+    const servidorActualizado = servidor.map(e => {
+      const idKey = e.id != null ? `id:${e.id}` : '';
+      const compKey = `${(e.ingrediente || '').toLowerCase().trim()}|${e.fechaRecepcion}|${e.cantidad}`;
+      const rec = (idKey && recepciones[idKey]) || recepciones[compKey];
+      if (rec) {
+        return {
+          ...e,
+          estado: rec.estado || e.estado,
+          cantidadRecibida: rec.cantidad_recibida != null ? Number(rec.cantidad_recibida) : e.cantidadRecibida,
+          cantidadRechazada: rec.cantidad_rechazada != null ? Number(rec.cantidad_rechazada) : e.cantidadRechazada,
+          motivoRechazo: rec.motivo_rechazo || e.motivoRechazo,
+          usuarioReceptorNombre: rec.usuario_receptor_nombre || e.usuarioReceptorNombre
+        };
+      }
+      return e;
+    });
+
+    let locales: any[] = [];
+    try {
+      locales = JSON.parse(localStorage.getItem('sirae_entregas_locales') || '[]');
+      if (!Array.isArray(locales)) locales = [];
+    } catch { locales = []; }
+
+    const idSet = new Set(servidorActualizado.map(e => e.id).filter(id => id != null));
+    const clavesSet = new Set(servidorActualizado.map(e => `${(e.ingrediente || '').toLowerCase().trim()}|${e.fechaRecepcion}|${e.cantidad}`));
+
+    const localesFiltradas: Entrega[] = locales.filter(l => {
+      if (l.id != null && idSet.has(l.id)) return false;
+      const k = `${(l.ingrediente || '').toLowerCase().trim()}|${l.fechaRecepcion}|${l.cantidad}`;
+      return !clavesSet.has(k);
+    }).map(l => {
+      const idKey = l.id != null ? `id:${l.id}` : '';
+      const compKey = `${(l.ingrediente || '').toLowerCase().trim()}|${l.fechaRecepcion}|${l.cantidad}`;
+      const rec = (idKey && recepciones[idKey]) || recepciones[compKey];
+      return {
+        id: l.id,
+        idIngrediente: l.idIngrediente,
+        idTipoMercado: l.idTipoMercado,
+        idInstitucion: l.idInstitucion,
+        institucionNombre: l.institucionNombre || l.destino || (this.esAdministrador ? this.institucionNombreUsuario : 'Institución asignada'),
+        idSede: l.idSede,
+        sedeNombre: l.sedeNombre,
+        ingrediente: l.ingrediente,
+        tipoMercado: l.tipoMercado || 'Perecederos',
+        frecuencia: l.frecuencia || 'Semanal',
+        cantidad: l.cantidad,
+        unidad: l.unidad || 'Kg',
+        fechaRecepcion: l.fechaRecepcion,
+        fechaVencimiento: l.fechaVencimiento || l.fechaRecepcion,
+        estado: (rec?.estado || l.estado || 'EN_TRANSITO').toUpperCase(),
+        cantidadRecibida: rec?.cantidad_recibida != null ? Number(rec.cantidad_recibida) : (l.cantidadRecibida ?? null),
+        cantidadRechazada: rec?.cantidad_rechazada != null ? Number(rec.cantidad_rechazada) : (l.cantidadRechazada ?? null),
+        motivoRechazo: rec?.motivo_rechazo || l.motivoRechazo || '',
+        usuarioReceptorNombre: rec?.usuario_receptor_nombre || l.usuarioReceptorNombre || '',
+        observaciones: l.observaciones || (l.responsable ? `Responsable: ${l.responsable}` : '')
+      };
+    });
+
+    return this.filtrarPorInstitucionUsuario([...localesFiltradas, ...servidorActualizado]);
   }
 
   // SP-249: Exportar historial de entregas a Excel
@@ -265,18 +472,119 @@ export class HistorialEntregas implements OnInit {
 
   get entregasFiltradas(): Entrega[] {
     const texto = this.filtroTexto.trim().toLocaleLowerCase();
-    return this.entregas.filter((entrega) => {
-      if (this.filtroMercado !== 'Todas' && entrega.tipoMercado !== this.filtroMercado) {
+    const filtradas = this.entregas.filter((entrega) => {
+      const st = (entrega.estado || 'EN_TRANSITO').toUpperCase();
+
+      if (this.filtroEstado === 'POR_RECIBIR' && !(st === 'EN_TRANSITO' || st === 'PENDIENTE' || st === 'EN_PROCESO')) {
         return false;
       }
+      if (this.filtroEstado === 'RECIBIDA' && st !== 'RECIBIDA') {
+        return false;
+      }
+      if (this.filtroEstado === 'CON_NOVEDAD' && !(st === 'CON_NOVEDAD' || st === 'RECHAZADA')) {
+        return false;
+      }
+
       if (!texto) return true;
       return [
         entrega.ingrediente,
         entrega.tipoMercado,
         entrega.frecuencia,
         entrega.unidad,
-      ].some(valor => valor.toLocaleLowerCase().includes(texto));
+        entrega.institucionNombre,
+        entrega.sedeNombre,
+        entrega.observaciones,
+        this.estadoEntrega(entrega),
+      ].some(valor => (valor || '').toLocaleLowerCase().includes(texto));
     });
+
+    return filtradas.sort((a, b) => {
+      const fA = a.fechaRecepcion || '';
+      const fB = b.fechaRecepcion || '';
+      const comp = fB.localeCompare(fA);
+      if (comp !== 0) return comp;
+      return (Number(b.id) || 0) - (Number(a.id) || 0);
+    });
+  }
+
+  get gruposPorFecha(): GrupoEntregasDia[] {
+    const grupos = new Map<string, Entrega[]>();
+    for (const entrega of this.entregasFiltradas) {
+      const fecha = entrega.fechaRecepcion?.slice(0, 10) || 'sin-fecha';
+      const entregasDelDia = grupos.get(fecha) || [];
+      entregasDelDia.push(entrega);
+      grupos.set(fecha, entregasDelDia);
+    }
+
+    return Array.from(grupos, ([fecha, entregas]) => ({
+      fecha,
+      entregas,
+      pendientes: entregas.filter(entrega => {
+        const estado = (entrega.estado || 'EN_TRANSITO').toUpperCase();
+        return estado === 'EN_TRANSITO' || estado === 'PENDIENTE' || estado === 'EN_PROCESO';
+      }).length,
+      recibidas: entregas.filter(entrega => (entrega.estado || '').toUpperCase() === 'RECIBIDA').length,
+      novedades: entregas.filter(entrega => {
+        const estado = (entrega.estado || '').toUpperCase();
+        return estado === 'CON_NOVEDAD' || estado === 'RECHAZADA';
+      }).length,
+    }));
+  }
+
+  alternarGrupoFecha(fecha: string): void {
+    const gruposExpandidos = new Set(this.gruposExpandidos);
+    if (gruposExpandidos.has(fecha)) {
+      gruposExpandidos.delete(fecha);
+    } else {
+      gruposExpandidos.add(fecha);
+    }
+    this.gruposExpandidos = gruposExpandidos;
+  }
+
+  grupoEstaExpandido(fecha: string): boolean {
+    return this.gruposExpandidos.has(fecha);
+  }
+
+  expandirGrupos(): void {
+    this.gruposExpandidos = new Set(this.gruposPorFecha.map(grupo => grupo.fecha));
+  }
+
+  contraerGrupos(): void {
+    this.gruposExpandidos = new Set();
+  }
+
+  formatoFecha(fecha: string | null | undefined): string {
+    const [anio, mes, dia] = (fecha || '').slice(0, 10).split('-').map(Number);
+    if (!anio || !mes || !dia) return 'Fecha no disponible';
+    const fechaValidada = new Date(anio, mes - 1, dia);
+    if (fechaValidada.getFullYear() !== anio || fechaValidada.getMonth() !== mes - 1 || fechaValidada.getDate() !== dia) {
+      return 'Fecha no disponible';
+    }
+    return `${String(dia).padStart(2, '0')}/${String(mes).padStart(2, '0')}/${anio}`;
+  }
+
+  contarEstado(tipo: string): number {
+    if (tipo === 'TODAS') return this.entregas.length;
+    if (tipo === 'POR_RECIBIR') {
+      return this.entregas.filter(e => {
+        const st = (e.estado || 'EN_TRANSITO').toUpperCase();
+        return st === 'EN_TRANSITO' || st === 'PENDIENTE' || st === 'EN_PROCESO';
+      }).length;
+    }
+    if (tipo === 'RECIBIDA') {
+      return this.entregas.filter(e => (e.estado || '').toUpperCase() === 'RECIBIDA').length;
+    }
+    if (tipo === 'CON_NOVEDAD') {
+      return this.entregas.filter(e => {
+        const st = (e.estado || '').toUpperCase();
+        return st === 'CON_NOVEDAD' || st === 'RECHAZADA';
+      }).length;
+    }
+    return 0;
+  }
+
+  cambiarFiltroEstado(nuevo: 'TODAS' | 'POR_RECIBIR' | 'RECIBIDA' | 'CON_NOVEDAD'): void {
+    this.filtroEstado = nuevo;
   }
 
   get vencidas(): number {
@@ -301,6 +609,7 @@ export class HistorialEntregas implements OnInit {
 
   abrirModalRecepcion(entrega: Entrega): void {
     this.entregaSeleccionada = entrega;
+    this.modoRechazoDirecto = false;
     const totalCant = entrega.cantidad || 0;
     this.formRecepcion = {
       cantidadRecibida: totalCant,
@@ -310,9 +619,27 @@ export class HistorialEntregas implements OnInit {
     this.modalRecepcionAbierto = true;
   }
 
+  abrirModalRechazo(entrega: Entrega): void {
+    const totalCant = Number(entrega.cantidad);
+    if (!Number.isFinite(totalCant) || totalCant <= 0) {
+      void this.alertas.warning('No se puede rechazar', 'La entrega no tiene una cantidad válida para registrar.');
+      return;
+    }
+
+    this.entregaSeleccionada = entrega;
+    this.modoRechazoDirecto = true;
+    this.formRecepcion = {
+      cantidadRecibida: 0,
+      cantidadRechazada: totalCant,
+      motivoRechazo: '',
+    };
+    this.modalRecepcionAbierto = true;
+  }
+
   cerrarModalRecepcion(): void {
     this.modalRecepcionAbierto = false;
     this.entregaSeleccionada = null;
+    this.modoRechazoDirecto = false;
   }
 
   onCambioCantidades(campo: 'recibida' | 'rechazada'): void {
@@ -327,8 +654,56 @@ export class HistorialEntregas implements OnInit {
     }
   }
 
+  private guardarRecepcionLocal(entrega: Entrega, rec: number, rech: number, motivo: string, estado: string): void {
+    try {
+      const key = 'sirae_recepciones_admin';
+      const recepciones = JSON.parse(localStorage.getItem(key) || '{}');
+      const receptor = this.authService.obtenerUsuario();
+      const nombreReceptor = receptor ? `${receptor.nombre || ''} ${receptor.apellido || ''}`.trim() || receptor.correo : 'Administrador';
+
+      const datos = {
+        id: entrega.id,
+        estado,
+        cantidad_recibida: rec,
+        cantidad_rechazada: rech,
+        motivo_rechazo: motivo,
+        usuario_receptor_nombre: nombreReceptor,
+        fecha: new Date().toISOString()
+      };
+
+      if (entrega.id != null) {
+        recepciones[`id:${entrega.id}`] = datos;
+      }
+      if (entrega.ingrediente && entrega.fechaRecepcion) {
+        const k = `${entrega.ingrediente.toLowerCase().trim()}|${entrega.fechaRecepcion}|${entrega.cantidad}`;
+        recepciones[k] = datos;
+      }
+      localStorage.setItem(key, JSON.stringify(recepciones));
+
+      // Actualizar también en sirae_entradas_extra
+      const extrasKey = 'sirae_entradas_extra';
+      const extras = JSON.parse(localStorage.getItem(extrasKey) || '{}');
+      const clavesExtra = [
+        entrega.id != null ? `id:${entrega.id}` : '',
+        entrega.idIngrediente != null && entrega.fechaRecepcion
+          ? `${entrega.idIngrediente}|${entrega.fechaRecepcion}|${entrega.cantidad}`
+          : '',
+      ].filter(Boolean);
+      for (const clave of clavesExtra) {
+        if (!extras[clave]) continue;
+        extras[clave].estadoAprobacion = estado;
+        extras[clave].motivoRechazo = motivo;
+      }
+      localStorage.setItem(extrasKey, JSON.stringify(extras));
+    } catch (e) {
+      console.warn('No se pudo guardar la recepción localmente:', e);
+    }
+  }
+
   confirmarRecepcion(): void {
-    if (!this.entregaSeleccionada || !this.entregaSeleccionada.id) return;
+    const entregaRef = this.entregaSeleccionada;
+    if (!entregaRef || typeof entregaRef.id !== 'number') return;
+    const entregaId: number = entregaRef.id;
     const rec = Number(this.formRecepcion.cantidadRecibida);
     const rech = Number(this.formRecepcion.cantidadRechazada);
 
@@ -345,27 +720,38 @@ export class HistorialEntregas implements OnInit {
       return;
     }
 
+    const estado = rech > 0 && rec > 0 ? 'CON_NOVEDAD' : (rech > 0 ? 'RECHAZADA' : 'RECIBIDA');
     this.procesandoRecepcion = true;
-    this.entregasService.confirmarRecepcion(this.entregaSeleccionada.id, {
+
+    this.entregasService.confirmarRecepcion(entregaId, {
       cantidad_recibida: rec,
       cantidad_rechazada: rech,
       motivo_rechazo: this.formRecepcion.motivoRechazo.trim(),
     }).subscribe({
       next: (res) => {
         this.procesandoRecepcion = false;
+        this.guardarRecepcionLocal(entregaRef, rec, rech, this.formRecepcion.motivoRechazo.trim(), estado);
         this.cerrarModalRecepcion();
-        const unidad = this.entregaSeleccionada?.unidad || 'unidades';
+        const unidad = entregaRef?.unidad || 'unidades';
         const msj = rech > 0
-          ? `Se recibieron ${rec} ${unidad} en buen estado y se reportaron ${rech} ${unidad} con novedad/avería. El inventario ha sido acreditado.`
+          ? (rec === 0
+              ? `Se reportaron ${rech} ${unidad} rechazadas en control de calidad.`
+              : `Se recibieron ${rec} ${unidad} en buen estado y se reportaron ${rech} ${unidad} con novedad/avería. El inventario ha sido acreditado.`)
           : `Se recibieron exitosamente los ${rec} ${unidad}. El inventario ha sido acreditado.`;
         void this.alertas.success('Recepción confirmada', msj);
         this.cargarHistorial();
       },
       error: (err) => {
+        console.error('Error al confirmar recepción de entrega:', err);
         this.procesandoRecepcion = false;
-        console.error('Error al confirmar recepción:', err);
-        const errMsj = err?.error?.error || 'No se pudo confirmar la recepción. Intenta nuevamente.';
-        void this.alertas.error('Error al confirmar recepción', errMsj);
+        void this.alertas.error(
+          'No se pudo confirmar la entrega',
+          err?.status === 401
+            ? 'La sesión expiró. Inicia sesión nuevamente.'
+            : err?.status === 403
+              ? 'Tu usuario no tiene permiso para registrar la recepción.'
+              : 'El servidor no registró la recepción. Revisa la conexión e inténtalo nuevamente.',
+        );
       },
     });
   }

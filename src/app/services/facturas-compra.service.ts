@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
@@ -77,9 +77,12 @@ export class FacturasCompraService {
   private readonly baseUrl = `${environment.apiUrl}/facturas-compra/`;
   private readonly inventarioCentralUrl = `${environment.apiUrl}/inventario-central/`;
 
+  private http = inject(HttpClient);
+  private authService = inject(AuthService);
+
   constructor(
-    private http: HttpClient,
-    private authService: AuthService
+
+
   ) {}
 
   private getHeaders(): { headers: HttpHeaders } {

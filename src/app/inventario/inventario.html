@@ -15,6 +15,19 @@
 
   <!-- CONTENIDO -->
   <section class="bd-section">
+  <!-- BUSCADOR -->
+  <div style="margin: 0 0 16px 0; max-width: 420px; position: relative;">
+    <input 
+      type="text" 
+      class="bd-input" 
+      placeholder="Buscar ingrediente o categoría..." 
+      [(ngModel)]="busquedaTexto" 
+      (ngModelChange)="aplicarFiltroInventario()"
+      style="padding-left: 36px; height: 38px; border-radius: 8px; font-size: 13px;"
+    />
+    <span class="material-symbols-outlined" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 18px; color: #888;">search</span>
+  </div>
+
     <div class="bd-table-container">
       <div class="bd-table-scroll">
         <table class="bd-table">
@@ -29,7 +42,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let item of listaInventario">
+            <tr *ngFor="let item of listaInventarioFiltrada; trackBy: trackPorInventario">
               <td>
                 <img [src]="item.imagen || 'https://via.placeholder.com/150'" alt="img" style="width:45px; height:45px; border-radius:6px; object-fit:cover; border:1px solid #e4e2dc;" />
               </td>
@@ -59,7 +72,33 @@
                 </button>
               </td>
             </tr>
-            <tr *ngIf="listaInventario.length === 0">
+
+            <!-- ESTADO DE CARGA -->
+            <tr *ngIf="cargando">
+              <td colspan="6" style="text-align:center; padding:40px; color:#555;">
+                <div class="bd-empty" style="min-height:auto; padding: 20px;">
+                  <span class="material-symbols-outlined" aria-hidden="true" style="margin-bottom:10px; font-size: 36px; display:inline-block;">hourglass_top</span>
+                  <h3 style="margin:0; font-weight:600;">Cargando inventario...</h3>
+                  <p style="margin:5px 0 0; font-size:13px; color:#888;">Consultando datos del servidor...</p>
+                </div>
+              </td>
+            </tr>
+
+            <!-- ESTADO DE ERROR -->
+            <tr *ngIf="!cargando && errorCarga">
+              <td colspan="6" style="text-align:center; padding:40px; color:#dc2626;">
+                <div class="bd-empty" style="min-height:auto; padding: 20px;">
+                  <span class="material-symbols-outlined" aria-hidden="true" style="margin-bottom:10px; font-size: 36px;">warning</span>
+                  <h3 style="margin:0; font-weight:600;">{{ errorCarga }}</h3>
+                  <button type="button" class="bd-new-button" style="margin-top:12px; display:inline-flex;" (click)="cargarDatos()">
+                    Reintentar
+                  </button>
+                </div>
+              </td>
+            </tr>
+
+            <!-- ESTADO VACÍO -->
+            <tr *ngIf="!cargando && !errorCarga && listaInventario.length === 0">
               <td colspan="6" style="text-align:center; padding:40px; color:#8b8b84;">
                 <div class="bd-empty" style="min-height:auto; padding: 20px;">
                   <span class="material-symbols-outlined" aria-hidden="true" style="margin-bottom:10px;">inbox</span>

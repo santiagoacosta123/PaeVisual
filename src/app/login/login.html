@@ -102,7 +102,7 @@
           </div>
           <div class="w-full h-[2px] bg-[#0b6638] rounded-xs transition-all group-focus-within:h-[2.5px] group-focus-within:bg-[#084b29]"></div>
           <span class="text-xs text-red-600 font-medium mt-1.5" *ngIf="correo?.invalid && (correo?.dirty || correo?.touched)">
-            Ingresa un correo electrónico válido
+            {{ correo?.errors?.['required'] ? 'El correo electrónico es obligatorio' : 'Ingresa un correo electrónico válido' }}
           </span>
         </div>
 
@@ -145,18 +145,19 @@
           </div>
           <div class="w-full h-[2px] bg-[#0b6638] rounded-xs transition-all group-focus-within:h-[2.5px] group-focus-within:bg-[#084b29]"></div>
           <span class="text-xs text-red-600 font-medium mt-1.5" *ngIf="clave?.invalid && (clave?.dirty || clave?.touched)">
-            Mínimo 6 caracteres
+            {{ clave?.errors?.['required'] ? 'La contraseña es obligatoria' : 'Mínimo 6 caracteres' }}
           </span>
         </div>
 
         <!-- ¿OLVIDASTE TU CONTRASEÑA? -->
         <div class="flex justify-end -mt-3">
-          <a 
-            href="#" 
+          <button
+            type="button"
+            (click)="abrirModalRecuperar()"
             class="text-sm font-semibold text-[#fab005] hover:underline transition cursor-pointer"
           >
             ¿Olvidaste tu contraseña?
-          </a>
+          </button>
         </div>
 
         <!-- ALERTA DE ERROR GENERAL -->
@@ -185,4 +186,84 @@
 
   </div>
 
+</div>
+
+<div
+  *ngIf="mostrarModalRecuperar"
+  class="fixed inset-0 z-[300] flex items-center justify-center bg-black/50 p-4"
+  role="presentation"
+  (click)="cerrarModalRecuperar()"
+>
+  <section
+    class="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl sm:p-8"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="titulo-recuperacion"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="mb-5 flex items-start justify-between gap-4">
+      <div>
+        <h2 id="titulo-recuperacion" class="text-xl font-bold text-slate-800">
+          Recuperar contraseña
+        </h2>
+        <p class="mt-2 text-sm text-slate-600">
+          Te enviaremos un código de verificación al correo registrado.
+        </p>
+      </div>
+      <button
+        type="button"
+        (click)="cerrarModalRecuperar()"
+        [disabled]="enviandoRecuperacion"
+        aria-label="Cerrar recuperación de contraseña"
+        class="rounded-lg px-2 py-1 text-xl text-slate-500 hover:bg-slate-100 disabled:opacity-50"
+      >
+        &times;
+      </button>
+    </div>
+
+    <form (ngSubmit)="enviarCorreoRecuperacion()" class="space-y-4">
+      <label for="correo-recuperacion" class="block text-sm font-semibold text-slate-700">
+        Correo electrónico
+      </label>
+      <input
+        id="correo-recuperacion"
+        name="correoRecuperacion"
+        type="email"
+        [(ngModel)]="correoRecuperacion"
+        autocomplete="email"
+        required
+        [disabled]="enviandoRecuperacion"
+        placeholder="nombre@correo.com"
+        class="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 disabled:bg-slate-100"
+      />
+
+      <p *ngIf="errorRecuperacion" class="text-sm text-red-700" role="alert">
+        {{ errorRecuperacion }}
+      </p>
+      <p *ngIf="mensajeRecuperacion" class="text-sm text-green-700" role="status">
+        {{ mensajeRecuperacion }}
+      </p>
+      <p *ngIf="codigoRecuperacionDesarrollo" class="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
+        Código de desarrollo: <strong>{{ codigoRecuperacionDesarrollo }}</strong>
+      </p>
+
+      <button
+        *ngIf="!mensajeRecuperacion"
+        type="submit"
+        [disabled]="enviandoRecuperacion"
+        class="w-full rounded-lg bg-amber-400 px-4 py-3 font-bold text-slate-900 hover:bg-amber-500 disabled:cursor-wait disabled:opacity-50"
+      >
+        {{ enviandoRecuperacion ? 'Enviando código...' : 'Enviar código' }}
+      </button>
+
+      <button
+        *ngIf="mensajeRecuperacion"
+        type="button"
+        (click)="continuarRecuperacion()"
+        class="w-full rounded-lg bg-amber-400 px-4 py-3 font-bold text-slate-900 hover:bg-amber-500"
+      >
+        Ingresar código y cambiar contraseña
+      </button>
+    </form>
+  </section>
 </div>

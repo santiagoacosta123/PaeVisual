@@ -4,18 +4,22 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Subscription, forkJoin, of } from 'rxjs';
-import { map, timeout, catchError } from 'rxjs/operators';
-import { environment } from '@env/environment';
+import { catchError, finalize, map, throwIfEmpty, timeout } from 'rxjs/operators';
+import { environment } from '../../environments/environment';
 import { AuthService, InstitucionAsignada } from '../core/auth/auth.service';
+import { FacturasCompraService, InventarioCentralItem } from '../services/facturas-compra.service';
+import { IMAGENES_INSTITUCION } from '../dashboard-supervisor/imagenes-instituciones';
 
-type EstadoInventario = 'Ok' | 'Bajo' | 'Crítico';
 type FiltroEstado = 'Todos' | 'ACTIVO' | 'INACTIVO';
 type Pestana = 'inventario' | 'entregas';
 
 // NUEVO: filtros y vista del inventario
-type FiltroInv = 'Todos' | 'Ok' | 'Bajo' | 'Por vencer' | 'Agotado';
-type OrdenInv = 'urgencia' | 'nombre' | 'vence';
+type FiltroInv = 'Todos' | 'Óptimo' | 'Bajo Stock' | 'Agotado';
+type OrdenInv = 'urgencia' | 'nombre';
 type VistaInv = 'tarjetas' | 'tabla';
+
+const API_TIMEOUT_MS = 8000;
+const MAX_STOCK_PERCENTAGE = 100;
 
 // Tarjeta de Sede individual
 export interface SedeCard {
@@ -32,6 +36,19 @@ export interface SedeCard {
   diasInventario?: number;
   // true cuando la "sede" es en realidad la institución completa (la institución no maneja sedes)
   esInstitucion?: boolean;
+  raw?: any;
+}
+
+export interface InstitucionSede {
+  id_institucion: number;
+  nombre_institucion: string;
+  nit?: string;
+  representante_legal?: string;
+  telefono?: string;
+  correo_contacto?: string;
+  estado?: string;
+  administrador_asignado?: any;
+  total_sedes?: number;
 }
 
 // Tarjeta de ingrediente para la sede
@@ -39,12 +56,12 @@ export interface ProductoInventario {
   nombre: string;
   emoji: string;
   categoria: string;
+  conservacion: string;
   unidad: string;
   saldo: number;
-  vence: string;
+  stockMinimo: number;
   nivel: number;
-  cobertura: number; // NUEVO: días de cobertura
-  estado: 'Ok' | 'Bajo' | 'Por vencer' | 'Agotado';
+  estado: 'Óptimo' | 'Bajo Stock' | 'Agotado';
 }
 
 // NUEVO: productos agrupados por categoría
@@ -135,12 +152,16 @@ const ARCHIVOS_IMAGEN: Record<string, string> = {
   'plato': 'plato.png',
 };
 
-function leerTexto(item: any, ...claves: string[]): string {
+function leerTexto(item: unknown, ...claves: string[]): string {
+  if (item === null || typeof item !== 'object' || Array.isArray(item)) return '';
+  const record = item as Record<string, unknown>;
   for (const k of claves) {
-    const v = item?.[k];
+    const v = record[k];
     if (v == null) continue;
     if (typeof v === 'object') {
-      const nombre = String(v.nombre ?? v.name ?? '');
+      if (v === null || Array.isArray(v)) continue;
+      const objeto = v as Record<string, unknown>;
+      const nombre = String(objeto['nombre'] ?? objeto['name'] ?? '');
       if (nombre.trim() !== '') return nombre;
       continue;
     }
@@ -149,10 +170,12 @@ function leerTexto(item: any, ...claves: string[]): string {
   return '';
 }
 
-function leerNumero(item: any, ...claves: string[]): number {
+function leerNumero(item: unknown, ...claves: string[]): number {
+  if (item === null || typeof item !== 'object' || Array.isArray(item)) return 0;
+  const record = item as Record<string, unknown>;
   for (const k of claves) {
-    if (item?.[k] == null || item[k] === '') continue;
-    const v = Number(item[k]);
+    if (record[k] == null || record[k] === '') continue;
+    const v = Number(record[k]);
     if (!Number.isNaN(v)) return v;
   }
   return 0;
@@ -164,7 +187,7 @@ function normalizar(s: string): string {
 
 // Saca la lista de una respuesta que puede venir como arreglo o como { results: [...] }
 function listaDe(d: any): any[] {
-  return (Array.isArray(d) ? d : (d?.results ?? [])) as any[];
+  return (Array.isArray(d) ? d : (d?.results ?? d?.value ?? [])) as any[];
 }
 
 @Component({
@@ -177,6 +200,7 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
   private http = inject(HttpClient);
   private authService = inject(AuthService);
   private router = inject(Router);
+  private facturasCompraService = inject(FacturasCompraService);
 
   private readonly urlInstituciones = `${environment.apiUrl}/instituciones/`;
   private readonly urlIngredientes = `${environment.apiUrl}/ingredientes/`;
@@ -194,11 +218,14 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
   private nombresIngredientes = new Map<number, string>();
   private subInstitucion?: Subscription;
   private subEntregas?: Subscription;
+  private subInventario?: Subscription;
 
   // Institución y Sedes
   institucionActiva: InstitucionAsignada | null = null;
   institucionesSupervisor: InstitucionAsignada[] = [];
   sedes: SedeCard[] = [];
+  puedeSeleccionarInstitucion = false;
+  errorInstituciones = '';
 
   cargando = false;
   avisoRespaldo = '';
@@ -210,6 +237,11 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
 
   // Detalle de sede (solo lectura)
   seleccionada: SedeCard | null = null;
+  institucionSeleccionada: InstitucionAsignada | null = null;
+  sedesDeInstitucion: SedeCard[] = [];
+  cargandoSedesInstitucion = false;
+  institucionesSede: InstitucionSede[] = [];
+  cargandoInstitucionesSede = false;
   pestana: Pestana = 'inventario';
   pestanas: { id: Pestana; nombre: string; icono: string }[] = [
     { id: 'inventario', nombre: 'Inventario de la Sede', icono: 'inventory_2' },
@@ -217,6 +249,8 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
   ];
 
   inventario: ProductoInventario[] = [];
+  cargandoInventario = false;
+  errorInventario = '';
 
   // NUEVO: filtros y vista del inventario
   textoInv = '';
@@ -224,7 +258,7 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
   filtroInv: FiltroInv = 'Todos';
   ordenInv: OrdenInv = 'urgencia';
   vistaInv: VistaInv = 'tarjetas';
-  estadosInv: FiltroInv[] = ['Todos', 'Ok', 'Bajo', 'Por vencer', 'Agotado'];
+  estadosInv: FiltroInv[] = ['Todos', 'Óptimo', 'Bajo Stock', 'Agotado'];
 
   entregasUnidas: EntregaUnida[] = [];
   enviosSede: EnvioRegistro[] = [];   // envíos que llegan a esta sede
@@ -241,6 +275,9 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
     // 1. Carga inmediata desde el almacenamiento local / AuthService (0 ms de bloqueo)
     this.institucionActiva = this.authService.obtenerInstitucionActiva();
     this.institucionesSupervisor = this.authService.obtenerInstitucionesSupervisor();
+    const usuario = this.authService.obtenerUsuario();
+    this.puedeSeleccionarInstitucion = this.authService.esSuperAdministrador(usuario?.rol)
+      || this.authService.esAdministrador(usuario?.rol);
 
     this.construirListaSedes();
 
@@ -259,6 +296,7 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.subInstitucion?.unsubscribe();
     this.subEntregas?.unsubscribe();
+    this.subInventario?.unsubscribe();
   }
 
   // =====================================================
@@ -271,7 +309,9 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
       this.sedes = [];
       this.seleccionada = null;
       this.cargando = false;
-      this.irACambiarInstitucion();
+      if (!this.puedeSeleccionarInstitucion) {
+        this.irACambiarInstitucion();
+      }
       return;
     }
 
@@ -285,26 +325,23 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
       direccion: s.direccion || '',
       telefono: s.telefono || '',
       estado: s.estado || 'ACTIVO',
-      id_institucion: inst.id_institucion,
-      nombre_institucion: inst.nombre_institucion,
+      id_institucion: s.id_institucion ?? inst.id_institucion,
+      nombre_institucion: s.nombre_institucion ?? inst.nombre_institucion,
       matriculados: s.matriculados ?? 120,
       asistenciaPromedio: s.asistencia_promedio ?? 95,
       diasInventario: s.dias_inventario ?? 14,
+      raw: s,
     }));
 
     this.cargando = false;
 
     if (this.sinSedes) {
-      // Institución sin sedes: se abre la institución directamente
-      this.abrirInstitucionSinSedes();
+      this.seleccionada = null;
     } else if (
       this.seleccionada &&
       (this.seleccionada.esInstitucion ||
         this.seleccionada.id_institucion !== inst.id_institucion)
     ) {
-      // Se cambió a una institución con sedes (o a otra): se vuelve a la lista de sedes
-      this.subEntregas?.unsubscribe();
-      this.cargandoEntregas = false;
       this.seleccionada = null;
     }
   }
@@ -332,16 +369,21 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
     if (this.sedes.length === 0) {
       this.cargando = true;
     }
+    this.errorInstituciones = '';
 
     this.http.get<any>(this.urlInstituciones).pipe(
       timeout(6000),
       map(d => listaDe(d)),
+      throwIfEmpty(() => new Error('La respuesta de instituciones llegó vacía.')),
       catchError(err => {
         console.warn('Sincronización en segundo plano de instituciones:', err);
+        this.errorInstituciones = 'No se pudieron cargar las instituciones. Revisa tu conexión e inténtalo de nuevo.';
         return of([] as any[]);
+      }),
+      finalize(() => {
+        this.cargando = false;
       })
     ).subscribe((lista) => {
-      this.cargando = false;
       if (lista.length > 0) {
         this.institucionesSupervisor = lista.map((item: any) => ({
           id_institucion: item.id_institucion ?? item.id,
@@ -365,7 +407,7 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
             encontrada &&
             JSON.stringify(encontrada) !== JSON.stringify(this.institucionActiva)
           ) {
-            this.authService.establecerInstitucionActiva(encontrada);
+            this.authService.actualizarInstitucionActiva(encontrada);
           }
         }
       }
@@ -402,32 +444,323 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
     return s.id_sede;
   }
 
+  imagenDe(indice: number): string {
+    return IMAGENES_INSTITUCION[indice % IMAGENES_INSTITUCION.length];
+  }
+
+  // NUEVO: imagen de cada institución en la pantalla de selección.
+  // Usa el id para que cada institución conserve siempre la misma imagen.
+  imagenInstitucion(inst: InstitucionAsignada, indice: number): string {
+    const base = Number(inst.id_institucion);
+    const pos = Number.isFinite(base) && base > 0 ? base - 1 : indice;
+    return IMAGENES_INSTITUCION[pos % IMAGENES_INSTITUCION.length];
+  }
+
+  trackInstitucion(_: number, inst: InstitucionAsignada): number {
+    return inst.id_institucion;
+  }
+
   // =====================================================
   //  ACCIONES
   // =====================================================
   irACambiarInstitucion(): void {
+    if (this.puedeSeleccionarInstitucion) {
+      this.authService.limpiarInstitucionActiva();
+      this.institucionActiva = null;
+      this.construirListaSedes();
+      return;
+    }
     this.router.navigate(['/dashboard-supervisor'], { queryParams: { cambiar: 'true' } });
   }
 
-  irAEntregas(sede: SedeCard): void {
-    this.router.navigate(['/registrar-entrega-alimentos'], {
-      queryParams: sede.esInstitucion ? {} : { sede: sede.id_sede }
+  seleccionarInstitucion(inst: InstitucionAsignada): void {
+    this.authService.establecerInstitucionActiva(inst);
+    this.institucionActiva = inst;
+  }
+
+  seleccionarSede(sede: SedeCard): void {
+    if (sede.esInstitucion) {
+      this.authService.limpiarSedeActiva();
+      this.router.navigate(['/dashboard-supervisor']);
+      return;
+    }
+    this.authService.establecerSedeActiva({
+      id_sede: sede.id_sede,
+      nombre_sede: sede.nombre_sede,
+      id_institucion: sede.id_institucion ?? this.institucionActiva?.id_institucion,
+      nombre_institucion: sede.nombre_institucion ?? this.institucionSeleccionada?.nombre_institucion,
     });
+    this.router.navigate(['/dashboard-supervisor']);
+  }
+
+  // Lleva a "Registrar entrega" con la institución y la sede de la tarjeta ya enviadas
+  irAEntregas(sede: SedeCard): void {
+    if (!sede.esInstitucion) {
+      this.authService.establecerSedeActiva({
+        id_sede: sede.id_sede,
+        nombre_sede: sede.nombre_sede,
+        id_institucion: sede.id_institucion ?? this.institucionActiva?.id_institucion,
+        nombre_institucion: sede.nombre_institucion ?? this.institucionSeleccionada?.nombre_institucion,
+      });
+    } else {
+      this.authService.limpiarSedeActiva();
+    }
+
+    const queryParams: Record<string, string | number> = {};
+
+    if (sede.id_institucion != null) queryParams['institucion'] = sede.id_institucion;
+
+    if (!sede.esInstitucion) {
+      queryParams['sede'] = sede.id_sede;
+      queryParams['nombreSede'] = sede.nombre_sede;
+      // Mismo formato "Institución - Sede" que usa leerEnviosDeSede() para el destino
+      queryParams['destino'] = `${sede.nombre_institucion} - ${sede.nombre_sede}`;
+    } else {
+      queryParams['destino'] = sede.nombre_institucion ?? '';
+    }
+
+    this.router.navigate(['/registrar-entrega-alimentos'], { queryParams });
   }
 
   abrir(sede: SedeCard): void {
     this.seleccionada = sede;
-    this.pestana = 'inventario';
-    this.limpiarFiltrosInv();
-    this.inventario = this.inventarioDe(sede);
-    this.cargarEntregas(sede);
+    this.cargarSedesDeInstitucion(sede);
   }
 
   volver(): void {
-    // Si la institución no maneja sedes no hay lista a la cual volver
-    if (this.sinSedes) return;
-    this.subEntregas?.unsubscribe();
-    this.cargandoEntregas = false;
+    this.seleccionada = null;
+    this.sedesDeInstitucion = [];
+    this.institucionSeleccionada = null;
+    this.cargandoSedesInstitucion = false;
+    this.institucionesSede = [];
+    this.cargandoInstitucionesSede = false;
+  }
+
+  // =====================================================
+  //  SEDES DE LA INSTITUCIÓN
+  // =====================================================
+  cargarSedesDeInstitucion(sede: SedeCard): void {
+    this.cargandoSedesInstitucion = true;
+    this.sedesDeInstitucion = [];
+
+    const idInst = sede.id_institucion ?? this.institucionActiva?.id_institucion;
+    const nombreInst = normalizar(sede.nombre_institucion ?? this.institucionActiva?.nombre_institucion ?? '');
+
+    // Buscar la institución correspondiente en institucionesSupervisor o institucionActiva
+    let instEncontrada: InstitucionAsignada | null = null;
+    if (idInst != null) {
+      instEncontrada = this.institucionesSupervisor.find(i => Number(i.id_institucion) === Number(idInst)) ?? null;
+    }
+    if (!instEncontrada && nombreInst) {
+      instEncontrada = this.institucionesSupervisor.find(i => normalizar(i.nombre_institucion) === nombreInst) ?? null;
+    }
+    if (!instEncontrada && this.institucionActiva) {
+      if (idInst == null || Number(this.institucionActiva.id_institucion) === Number(idInst)) {
+        instEncontrada = this.institucionActiva;
+      }
+    }
+
+    this.institucionSeleccionada = instEncontrada ?? {
+      id_institucion: Number(idInst ?? 0),
+      nombre_institucion: sede.nombre_institucion || this.institucionActiva?.nombre_institucion || 'Institución educativa',
+      nit: '',
+      sedes: []
+    };
+
+    const resolverSedes = (sedesRaw: any[]) => {
+      if (Array.isArray(sedesRaw) && sedesRaw.length > 0) {
+        this.sedesDeInstitucion = sedesRaw.map((s: any, idx: number) => ({
+          id_sede: Number(s.id_sede ?? s.id ?? (idx + 1)),
+          nombre_sede: s.nombre_sede ?? s.nombre ?? `Sede ${idx + 1}`,
+          codigo_dane: s.codigo_dane ?? '',
+          direccion: s.direccion ?? '',
+          telefono: s.telefono ?? '',
+          estado: s.estado ?? 'ACTIVO',
+          id_institucion: Number(idInst ?? this.institucionSeleccionada?.id_institucion ?? 0),
+          nombre_institucion: this.institucionSeleccionada?.nombre_institucion ?? sede.nombre_institucion,
+          matriculados: s.matriculados ?? s.total_estudiantes,
+          asistenciaPromedio: s.asistencia_promedio,
+          diasInventario: s.dias_inventario,
+          raw: s,
+        }));
+      } else {
+        this.sedesDeInstitucion = [sede];
+      }
+      this.cargandoSedesInstitucion = false;
+    };
+
+    if (instEncontrada && Array.isArray(instEncontrada.sedes) && instEncontrada.sedes.length > 0) {
+      resolverSedes(instEncontrada.sedes);
+    } else if (this.sedes.length > 0) {
+      const propias = this.sedes.filter(s => {
+        if (idInst != null && s.id_institucion != null) {
+          return Number(s.id_institucion) === Number(idInst);
+        }
+        return true;
+      });
+      resolverSedes(propias.length > 0 ? propias : [sede]);
+    } else {
+      this.http.get<any>(this.urlInstituciones).pipe(
+        timeout(5000),
+        map(d => listaDe(d)),
+        catchError(() => of([]))
+      ).subscribe(lista => {
+        const encontrada = lista.find((item: any) =>
+          (idInst != null && Number(item.id_institucion ?? item.id) === Number(idInst)) ||
+          (nombreInst && normalizar(item.nombre_institucion ?? item.nombre ?? '') === nombreInst)
+        );
+        if (encontrada) {
+          this.institucionSeleccionada = {
+            id_institucion: encontrada.id_institucion ?? encontrada.id,
+            nombre_institucion: encontrada.nombre_institucion ?? encontrada.nombre,
+            nit: encontrada.nit ?? '',
+            representante_legal: encontrada.representante_legal,
+            telefono: encontrada.telefono,
+            correo_contacto: encontrada.correo_contacto,
+            estado: encontrada.estado ?? 'ACTIVO',
+            sedes: encontrada.sedes ?? []
+          };
+          resolverSedes(encontrada.sedes ?? []);
+        } else {
+          resolverSedes([sede]);
+        }
+      });
+    }
+  }
+
+  // =====================================================
+  //  INSTITUCIONES DE LA SEDE
+  // =====================================================
+  cargarInstitucionesDeSede(sede: SedeCard): void {
+    this.cargandoInstitucionesSede = true;
+    this.institucionesSede = [];
+
+    const resolver = (institucionesDisponibles: any[]) => {
+      const mapa = new Map<number | string, InstitucionSede>();
+
+      // 1. Si la sede tiene instituciones directas en su objeto raw
+      const raw = sede.raw;
+      if (raw) {
+        if (Array.isArray(raw.instituciones)) {
+          for (const item of raw.instituciones) {
+            const inst = this.mapearAInstitucionSede(item);
+            if (inst) mapa.set(inst.id_institucion || inst.nombre_institucion, inst);
+          }
+        }
+        if (raw.institucion && typeof raw.institucion === 'object') {
+          const inst = this.mapearAInstitucionSede(raw.institucion);
+          if (inst) mapa.set(inst.id_institucion || inst.nombre_institucion, inst);
+        }
+      }
+
+      // 2. Buscar en la lista de instituciones (supervisor / servidor)
+      for (const item of institucionesDisponibles) {
+        const idInst = Number(item.id_institucion ?? item.id);
+        const sedesDeInst = Array.isArray(item.sedes) ? item.sedes : [];
+        const tieneEstaSede = sedesDeInst.some((s: any) => {
+          const idSede = Number(s.id_sede ?? s.id);
+          const nomSede = normalizar(s.nombre_sede ?? s.nombre ?? '');
+          return (sede.id_sede > 0 && idSede === Number(sede.id_sede)) ||
+                 (nomSede && nomSede === normalizar(sede.nombre_sede));
+        });
+
+        const coincideId = sede.id_institucion != null && idInst === Number(sede.id_institucion);
+        const coincideNombre = !!(sede.nombre_institucion &&
+          normalizar(item.nombre_institucion ?? item.nombre ?? '') === normalizar(sede.nombre_institucion));
+
+        if (tieneEstaSede || coincideId || coincideNombre) {
+          const inst = this.mapearAInstitucionSede(item);
+          if (inst) mapa.set(inst.id_institucion || inst.nombre_institucion, inst);
+        }
+      }
+
+      // 3. Si la institución activa coincide y aún no está en el mapa
+      if (this.institucionActiva) {
+        const instAct = this.institucionActiva;
+        const sedesDeAct = Array.isArray(instAct.sedes) ? instAct.sedes : [];
+        const tieneEstaSede = sedesDeAct.some((s: any) => Number(s.id_sede ?? s.id) === Number(sede.id_sede));
+        const coincideId = sede.id_institucion != null && Number(instAct.id_institucion) === Number(sede.id_institucion);
+        const coincideNombre = !!(sede.nombre_institucion &&
+          normalizar(instAct.nombre_institucion) === normalizar(sede.nombre_institucion));
+
+        if (tieneEstaSede || coincideId || coincideNombre) {
+          const inst = this.mapearAInstitucionSede(instAct);
+          if (inst) mapa.set(inst.id_institucion || inst.nombre_institucion, inst);
+        }
+      }
+
+      // 4. Fallback si no se encontró objeto completo pero la sede tiene datos de su institución
+      if (mapa.size === 0 && (sede.nombre_institucion || sede.id_institucion)) {
+        mapa.set(sede.id_institucion ?? sede.nombre_institucion!, {
+          id_institucion: sede.id_institucion ?? 0,
+          nombre_institucion: sede.nombre_institucion || 'Institución educativa',
+          nit: '',
+          representante_legal: '',
+          telefono: sede.telefono || '',
+          correo_contacto: '',
+          estado: sede.estado || 'ACTIVO',
+          total_sedes: 1
+        });
+      }
+
+      this.institucionesSede = Array.from(mapa.values());
+      this.cargandoInstitucionesSede = false;
+    };
+
+    if (this.institucionesSupervisor.length > 0) {
+      resolver(this.institucionesSupervisor);
+    } else {
+      this.http.get<any>(this.urlInstituciones).pipe(
+        timeout(5000),
+        map(d => listaDe(d)),
+        catchError(() => of([]))
+      ).subscribe(lista => {
+        resolver(lista);
+      });
+    }
+  }
+
+  private mapearAInstitucionSede(item: any): InstitucionSede | null {
+    if (!item || typeof item !== 'object') return null;
+    const nombre = item.nombre_institucion || item.nombre || '';
+    if (!nombre) return null;
+
+    const sedesList = Array.isArray(item.sedes) ? item.sedes : [];
+
+    return {
+      id_institucion: Number(item.id_institucion ?? item.id ?? 0),
+      nombre_institucion: String(nombre),
+      nit: item.nit ? String(item.nit) : '',
+      representante_legal: item.representante_legal ? String(item.representante_legal) : '',
+      telefono: item.telefono ? String(item.telefono) : '',
+      correo_contacto: item.correo_contacto ? String(item.correo_contacto) : '',
+      estado: item.estado ? String(item.estado) : 'ACTIVO',
+      administrador_asignado: item.administrador_asignado,
+      total_sedes: sedesList.length,
+    };
+  }
+
+  trackInstitucionSede(_: number, inst: InstitucionSede): number | string {
+    return inst.id_institucion || inst.nombre_institucion;
+  }
+
+  seleccionarInstitucionDirecta(inst: InstitucionSede): void {
+    const encontrada = this.institucionesSupervisor.find(i => i.id_institucion === inst.id_institucion);
+    if (encontrada) {
+      this.seleccionarInstitucion(encontrada);
+    } else {
+      const nuevaInst: InstitucionAsignada = {
+        id_institucion: inst.id_institucion,
+        nombre_institucion: inst.nombre_institucion,
+        nit: inst.nit,
+        representante_legal: inst.representante_legal,
+        telefono: inst.telefono,
+        correo_contacto: inst.correo_contacto,
+        estado: inst.estado,
+        sedes: []
+      };
+      this.seleccionarInstitucion(nuevaInst);
+    }
     this.seleccionada = null;
   }
 
@@ -437,23 +770,22 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
 
   claseEstado(estado?: string): string {
     const est = (estado || '').toUpperCase();
-    if (est === 'ACTIVO' || est === 'OK' || est === 'RECIBIDA') {
-      return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+    if (est === 'ACTIVO' || est === 'OK' || est === 'ÓPTIMO' || est === 'RECIBIDA') {
+      return 'border-amber-200 bg-amber-50 text-amber-800';
     }
-    if (est === 'BAJO' || est === 'DESPACHADA' || est === 'POR VENCER') {
+    if (est === 'BAJO' || est === 'BAJO STOCK' || est === 'DESPACHADA') {
       return 'border-amber-200 bg-amber-50 text-amber-700';
     }
+    if (est === 'AGOTADO') return 'border-red-200 bg-red-50 text-red-700';
     return 'border-slate-200 bg-slate-50 text-slate-600';
   }
 
   claseBarra(estado: string): string {
-    return estado === 'Ok' ? 'bg-emerald-500' : estado === 'Bajo' ? 'bg-amber-500' : 'bg-red-500';
+    return estado === 'Óptimo' ? 'bg-emerald-500' : estado === 'Bajo Stock' ? 'bg-amber-500' : 'bg-red-500';
   }
 
   barraProducto(p: ProductoInventario): string {
-    if (p.estado === 'Ok') return this.claseBarra('Ok');
-    if (p.estado === 'Bajo' || p.estado === 'Por vencer') return this.claseBarra('Bajo');
-    return this.claseBarra('Crítico');
+    return this.claseBarra(p.estado);
   }
 
   // =====================================================
@@ -612,7 +944,7 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
 
   emojiDe(nombre: string): string {
     const n = normalizar(nombre);
-    return EMOJI_PRODUCTO[n] ?? this.catalogoMuestra.find(p => normalizar(p.nombre) === n)?.emoji ?? '📦';
+    return EMOJI_PRODUCTO[n] ?? '📦';
   }
 
   private marcaTiempo(valor: string): number {
@@ -637,45 +969,46 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
   // =====================================================
   //  INVENTARIO DE SEDE
   // =====================================================
-  private readonly catalogoMuestra = [
-    { nombre: 'Arroz',    emoji: '🌾', categoria: 'Granos y cereales', unidad: 'Kg',       porNino: 0.08, perecedero: false },
-    { nombre: 'Fríjol',   emoji: '🫘', categoria: 'Granos y cereales', unidad: 'Kg',       porNino: 0.04, perecedero: false },
-    { nombre: 'Lenteja',  emoji: '🫘', categoria: 'Granos y cereales', unidad: 'Kg',       porNino: 0.03, perecedero: false },
-    { nombre: 'Aceite',   emoji: '🫒', categoria: 'Despensa',          unidad: 'Litros',   porNino: 0.01, perecedero: false },
-    { nombre: 'Pollo',    emoji: '🍗', categoria: 'Carnes y huevos',   unidad: 'Kg',       porNino: 0.07, perecedero: true },
-    { nombre: 'Huevos',   emoji: '🥚', categoria: 'Carnes y huevos',   unidad: 'Unidades', porNino: 0.5,  perecedero: true },
-    { nombre: 'Leche',    emoji: '🥛', categoria: 'Lácteos',           unidad: 'Litros',   porNino: 0.2,  perecedero: true },
-    { nombre: 'Papa',     emoji: '🥔', categoria: 'Verduras',          unidad: 'Kg',       porNino: 0.1,  perecedero: true },
-    { nombre: 'Plátano',  emoji: '🍌', categoria: 'Frutas',            unidad: 'Kg',       porNino: 0.08, perecedero: true },
-  ];
+  private cargarInventario(): void {
+    this.subInventario?.unsubscribe();
+    this.cargandoInventario = true;
+    this.errorInventario = '';
+    this.inventario = [];
 
-  private inventarioDe(s: SedeCard): ProductoInventario[] {
-    const matriculados = s.matriculados ?? 120;
-    const asistencia = s.asistenciaPromedio ?? 95;
-    const diasInventario = s.diasInventario ?? 12;
-    const asistentes = matriculados * (asistencia / 100);
+    this.subInventario = this.facturasCompraService.getInventarioCentral()
+      .pipe(timeout(API_TIMEOUT_MS))
+      .subscribe({
+      next: (items: InventarioCentralItem[]) => {
+        this.inventario = items.map(item => {
+          const saldo = Number(item.cantidad_disponible) || 0;
+          const stockMinimo = Number(item.stock_minimo) || 0;
+          const estado: ProductoInventario['estado'] = saldo <= 0
+            ? 'Agotado'
+            : saldo <= stockMinimo
+              ? 'Bajo Stock'
+              : 'Óptimo';
 
-    return this.catalogoMuestra.map((p, indice) => {
-      const cobertura = p.perecedero ? Math.min(diasInventario, 7) : diasInventario;
-      const saldo = Math.round(asistentes * p.porNino * cobertura * 10) / 10;
-      const diasVence = p.perecedero ? 4 + (indice % 4) : 90 + indice * 10;
-
-      let estado: ProductoInventario['estado'] = 'Ok';
-      if (saldo <= 0) estado = 'Agotado';
-      else if (cobertura < 4) estado = 'Bajo';
-      else if (p.perecedero && diasVence <= 4) estado = 'Por vencer';
-
-      return {
-        nombre: p.nombre,
-        emoji: p.emoji,
-        categoria: p.categoria,
-        unidad: p.unidad,
-        saldo,
-        vence: this.sumarDias(this.hoy(), diasVence),
-        nivel: Math.max(0, Math.min(100, Math.round((cobertura / (p.perecedero ? 7 : 30)) * 100))),
-        cobertura,
-        estado,
-      };
+          return {
+            nombre: item.ingrediente_nombre,
+            emoji: this.emojiDe(item.ingrediente_nombre),
+            categoria: item.categoria_nombre || 'General',
+            conservacion: item.tipo_conservacion || 'No perecedero',
+            unidad: item.unidad_medida_abreviatura || item.unidad_medida_nombre || 'Kg',
+            saldo,
+            stockMinimo,
+            nivel: stockMinimo > 0
+              ? Math.min(MAX_STOCK_PERCENTAGE, Math.round((saldo / stockMinimo) * MAX_STOCK_PERCENTAGE))
+              : (saldo > 0 ? MAX_STOCK_PERCENTAGE : 0),
+            estado,
+          };
+        });
+        this.cargandoInventario = false;
+      },
+      error: (error) => {
+        console.error('Error al cargar el inventario del supervisor:', error);
+        this.cargandoInventario = false;
+        this.errorInventario = 'No se pudo cargar el inventario. Verifica la conexión e intenta nuevamente.';
+      },
     });
   }
 
@@ -686,16 +1019,15 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
     const c = (e: string) => this.inventario.filter(p => p.estado === e).length;
     return {
       Todos: this.inventario.length,
-      Ok: c('Ok'),
-      Bajo: c('Bajo'),
-      'Por vencer': c('Por vencer'),
+      'Óptimo': c('Óptimo'),
+      'Bajo Stock': c('Bajo Stock'),
       Agotado: c('Agotado'),
     };
   }
 
   get requierenAccion(): number {
     const r = this.resumenInv;
-    return r.Bajo + r['Por vencer'] + r.Agotado;
+    return r['Bajo Stock'] + r.Agotado;
   }
 
   get categoriasInv(): string[] {
@@ -703,7 +1035,7 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
   }
 
   private pesoEstado(p: ProductoInventario): number {
-    return { Agotado: 0, Bajo: 1, 'Por vencer': 2, Ok: 3 }[p.estado];
+    return { Agotado: 0, 'Bajo Stock': 1, Óptimo: 2 }[p.estado];
   }
 
   get inventarioFiltrado(): ProductoInventario[] {
@@ -715,7 +1047,6 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
         (!q || p.nombre.toLowerCase().includes(q) || p.categoria.toLowerCase().includes(q)))
       .sort((a, b) => {
         if (this.ordenInv === 'nombre') return a.nombre.localeCompare(b.nombre);
-        if (this.ordenInv === 'vence') return (a.vence || '9999').localeCompare(b.vence || '9999');
         return this.pesoEstado(a) - this.pesoEstado(b) || a.nombre.localeCompare(b.nombre);
       });
   }
@@ -739,29 +1070,32 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
   }
 
   necesitaEnvio(p: ProductoInventario): boolean {
-    return p.estado !== 'Ok';
+    return p.estado !== 'Óptimo';
   }
 
   // Lleva a Registrar entrega con el producto (y la sede) ya elegidos
   enviarProducto(p: ProductoInventario): void {
     const queryParams: Record<string, string | number> = { producto: p.nombre };
-    if (this.seleccionada && !this.seleccionada.esInstitucion) {
-      queryParams['sede'] = this.seleccionada.id_sede;
+    if (this.seleccionada) {
+      if (this.seleccionada.id_institucion != null) queryParams['institucion'] = this.seleccionada.id_institucion;
+      if (!this.seleccionada.esInstitucion) {
+        queryParams['sede'] = this.seleccionada.id_sede;
+        queryParams['nombreSede'] = this.seleccionada.nombre_sede;
+        queryParams['destino'] = `${this.seleccionada.nombre_institucion} - ${this.seleccionada.nombre_sede}`;
+      } else {
+        queryParams['destino'] = this.seleccionada.nombre_institucion ?? '';
+      }
     }
     this.router.navigate(['/registrar-entrega-alimentos'], { queryParams });
   }
 
-  textoCobertura(p: ProductoInventario): string {
-    return p.cobertura > 0 ? `${p.cobertura} ${p.cobertura === 1 ? 'día' : 'días'}` : '—';
-  }
-
   claseKpi(e: FiltroInv): string {
-    return { Todos: 'text-slate-900', Ok: 'text-emerald-600', Bajo: 'text-amber-600', 'Por vencer': 'text-orange-600', Agotado: 'text-red-600' }[e];
+    return { Todos: 'text-slate-900', 'Óptimo': 'text-emerald-600', 'Bajo Stock': 'text-amber-600', Agotado: 'text-red-600' }[e];
   }
 
   // Texto de color según el estado (para las tarjetas compactas)
-  claseTextoEstado(estado: string): string {
-    return { Ok: 'text-emerald-600', Bajo: 'text-amber-600', 'Por vencer': 'text-orange-600', Agotado: 'text-red-600' }[estado] ?? 'text-slate-500';
+  claseTextoEstado(estado: ProductoInventario['estado']): string {
+    return { 'Óptimo': 'text-emerald-600', 'Bajo Stock': 'text-amber-600', Agotado: 'text-red-600' }[estado] ?? 'text-slate-500';
   }
 
   // Imagen de la categoría (archivos de la carpeta public; si falta, se usa el emoji)

@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { ProductoService } from '../services/producto.service';
 import { CustomSelectComponent } from '../shared/custom-select/custom-select';
 
@@ -58,12 +60,14 @@ export class InventarioComponent implements OnInit {
 
   mostrarModal = false;
   esEdicion = false;
+  cargando = false;
+  errorCarga: string | null = null;
 
   categorias: Categoria[] = [];
-
   unidadesMedida: UnidadMedida[] = [];
-
   listaInventario: Ingrediente[] = [];
+  listaInventarioFiltrada: Ingrediente[] = [];
+  busquedaTexto: string = "";
 
   formIngrediente: Ingrediente = {
     nombre: '',
@@ -83,85 +87,124 @@ export class InventarioComponent implements OnInit {
     this.cargarDatos();
   }
 
+  /**
+   * Carga ordenada y sincronizada con forkJoin:
+   * Realiza una sola petición por cada recurso en paralelo sin duplicados.
+   */
   cargarDatos(): void {
+    this.cargando = true;
+    this.errorCarga = null;
 
-    this.productoService.getCategorias().subscribe({
-      next: (categorias: Categoria[]) => {
-        this.categorias = categorias;
-        this.cargarInventario();
+    forkJoin({
+      categorias: this.productoService.getCategorias().pipe(
+        catchError(err => {
+          console.error('Error cargando categorías:', err);
+          return of([]);
+        })
+      ),
+      ingredientes: this.productoService.getIngredientes().pipe(
+        catchError(err => {
+          console.error('Error cargando ingredientes:', err);
+          return of([]);
+        })
+      ),
+      unidades: this.productoService.getUnidades().pipe(
+        catchError(err => {
+          console.error('Error cargando unidades de medida:', err);
+          return of([]);
+        })
+      ),
+      inventario: this.productoService.getProductos().pipe(
+        catchError(err => {
+          console.error('Error cargando inventario:', err);
+          return of([]);
+        })
+      )
+    }).subscribe({
+      next: ({ categorias, ingredientes, unidades, inventario }) => {
+        this.categorias = Array.isArray(categorias) ? categorias : (categorias?.results || []);
+        this.ingredientes = Array.isArray(ingredientes) ? ingredientes : (ingredientes?.results || []);
+        this.unidadesMedida = Array.isArray(unidades) ? unidades : (unidades?.results || []);
+
+        const listaInv = Array.isArray(inventario) ? inventario : (inventario?.results || []);
+        this.procesarInventario(listaInv);
+        this.cargando = false;
       },
       error: (error) => {
-        console.error('Error cargando categorías:', error);
-        this.cargarInventario();
-      }
-    });
-
-    this.productoService.getIngredientes().subscribe({
-      next: (ingredientes: IngredienteApi[]) => {
-        this.ingredientes = ingredientes;
-        this.cargarInventario();
-      },
-      error: (error) => {
-        console.error('Error cargando ingredientes:', error);
-      }
-    });
-
-    this.productoService.getUnidades().subscribe({
-      next: (unidades: UnidadMedida[]) => {
-        this.unidadesMedida = unidades;
-        this.cargarInventario();
-      },
-      error: (error) => {
-        console.error('Error cargando unidades de medida:', error);
+        console.error('Error general cargando inventario:', error);
+        this.errorCarga = 'No se pudieron cargar los datos del inventario.';
+        this.cargando = false;
       }
     });
   }
 
+  aplicarFiltroInventario(): void {
+    const q = (this.busquedaTexto || "").trim().toLowerCase();
+    if (!q) {
+      this.listaInventarioFiltrada = this.listaInventario;
+      return;
+    }
+    this.listaInventarioFiltrada = this.listaInventario.filter(item =>
+      (item.nombre && item.nombre.toLowerCase().includes(q)) ||
+      (item.categoria_nombre && item.categoria_nombre.toLowerCase().includes(q)) ||
+      (item.descripcion && item.descripcion.toLowerCase().includes(q))
+    );
+  }
+
+  trackPorInventario(index: number, item: Ingrediente): any {
+    return item.id_inventario || item.id_ingrediente || index;
+  }
+
+  /**
+   * Mapea los registros del inventario cruzándolos con los datos maestros en memoria
+   */
+  private procesarInventario(inventario: InventarioApi[]): void {
+    const resultado = inventario.map(item => {
+      const ingrediente = this.ingredientes.find(
+        i => i.id_ingrediente === item.id_ingrediente
+      );
+
+      const categoria = this.categorias.find(
+        c => c.id_categoria_inventario === ingrediente?.id_categoria_inventario
+      );
+
+      const unidad = this.unidadesMedida.find(
+        u => u.id_unidad_medida === item.id_unidad_medida
+      );
+
+      return {
+        id_inventario: item.id_inventario,
+        id_ingrediente: item.id_ingrediente,
+        nombre: ingrediente?.nombre_ingrediente || `Ingrediente ${item.id_ingrediente}`,
+        descripcion: ingrediente?.descripcion || 'Sin descripción',
+        imagen: ingrediente?.imagen_ingrediente || '',
+        id_categoria: ingrediente?.id_categoria_inventario || 0,
+        categoria_nombre: categoria?.nombre_categoria || 'Sin categoría',
+        id_unidad_medida: item.id_unidad_medida,
+        unidad_nombre: unidad
+          ? `${unidad.nombre_unidad} (${unidad.abreviatura})`
+          : `ID unidad: ${item.id_unidad_medida}`,
+        stock_actual: Number(item.cantidad_actual),
+        stock_minimo: Number(item.stock_minimo)
+      };
+    });
+    this.listaInventario = resultado;
+    this.aplicarFiltroInventario();
+  }
+
+  /**
+   * Recarga únicamente la tabla de inventario cuando ya tenemos los catálogos en memoria
+   */
   cargarInventario(): void {
-
     this.productoService.getProductos().subscribe({
-      next: (inventario: InventarioApi[]) => {
-
-        this.listaInventario = inventario.map(item => {
-
-          const ingrediente = this.ingredientes.find(
-            i => i.id_ingrediente === item.id_ingrediente
-          );
-
-          const categoria = this.categorias.find(
-            c => c.id_categoria_inventario === ingrediente?.id_categoria_inventario
-          );
-
-          const unidad = this.unidadesMedida.find(
-            u => u.id_unidad_medida === item.id_unidad_medida
-          );
-
-          return {
-            id_inventario: item.id_inventario,
-            id_ingrediente: item.id_ingrediente,
-            nombre: ingrediente?.nombre_ingrediente || `Ingrediente ${item.id_ingrediente}`,
-            descripcion: ingrediente?.descripcion || 'Sin descripción',
-            imagen: ingrediente?.imagen_ingrediente || '',
-            id_categoria: ingrediente?.id_categoria_inventario || 0,
-            categoria_nombre: categoria?.nombre_categoria || 'Sin categoría',
-            id_unidad_medida: item.id_unidad_medida,
-            unidad_nombre: unidad
-              ? `${unidad.nombre_unidad} (${unidad.abreviatura})`
-              : `ID unidad: ${item.id_unidad_medida}`,
-            stock_actual: Number(item.cantidad_actual),
-            stock_minimo: Number(item.stock_minimo)
-          };
-
-        });
-
-        console.log('Inventario cargado:', this.listaInventario);
-
+      next: (inventario: any) => {
+        const listaInv = Array.isArray(inventario) ? inventario : (inventario?.results || []);
+        this.procesarInventario(listaInv);
       },
       error: (error) => {
-        console.error('Error cargando inventario:', error);
+        console.error('Error recargando inventario:', error);
       }
     });
-
   }
 
   mostrarModalMovimiento = false;
@@ -209,7 +252,6 @@ export class InventarioComponent implements OnInit {
         const und = this.unidadesMedida.find(u => u.id_unidad_medida === Number(this.formIngrediente.id_unidad_medida));
         if (und) itemList.unidad_nombre = `${und.nombre_unidad} (${und.abreviatura})`;
 
-        // Simular update en el backend (ya que no creamos los endpoints específicos de ingrediente)
         this.productoService.actualizarProducto(this.formIngrediente.id_inventario!, {
           id_ingrediente: this.formIngrediente.id_ingrediente,
           cantidad_actual: this.formIngrediente.stock_actual.toString(),
@@ -234,6 +276,7 @@ export class InventarioComponent implements OnInit {
       if (und) nuevoItem.unidad_nombre = `${und.nombre_unidad} (${und.abreviatura})`;
 
       this.listaInventario.unshift(nuevoItem);
+      this.aplicarFiltroInventario();
 
       const payloadInventario = {
         id_ingrediente: nuevoItem.id_ingrediente,
@@ -258,6 +301,7 @@ export class InventarioComponent implements OnInit {
           this.listaInventario = this.listaInventario.filter(
             item => item.id_inventario !== id
           );
+          this.aplicarFiltroInventario();
         },
         error: (error) => {
           console.error('Error eliminando inventario:', error);

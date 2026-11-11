@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, map } from 'rxjs';
+import { Observable, of } from 'rxjs';
+import { map, tap } from 'rxjs/operators';
 import { environment } from '@env/environment';
 
 export interface AsistenciaDiaria {
@@ -26,6 +27,7 @@ export interface AsistenciaDiariaPayload {
 @Injectable({ providedIn: 'root' })
 export class AsistenciaDiariaService {
   private readonly baseUrl = environment.apiUrl;
+  private cacheGrados: GradoAsistencia[] | null = null;
 
   constructor(private http: HttpClient) {}
 
@@ -43,12 +45,16 @@ export class AsistenciaDiariaService {
     );
   }
 
-  getGrados(): Observable<GradoAsistencia[]> {
+  getGrados(forzarRecarga = false): Observable<GradoAsistencia[]> {
+    if (!forzarRecarga && this.cacheGrados) {
+      return of(this.cacheGrados);
+    }
     return this.http.get<unknown>(`${this.baseUrl}/grados/`).pipe(
       map(data => this.listaDe(data).map(item => ({
         id_grado: Number(item['id_grado']),
         nombre_grado: String(item['nombre_grado'] ?? ''),
-      })))
+      }))),
+      tap(grados => this.cacheGrados = grados)
     );
   }
 

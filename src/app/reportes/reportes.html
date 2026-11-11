@@ -1,319 +1,1515 @@
-<style>
-/* Misma línea visual (naranja SIRAE) del resto de pantallas */
-.fx-roboto, .fx-roboto *:not(.material-symbols-outlined) { font-family: 'Roboto', sans-serif; }
-.fx-panel { position: relative; background: #fff; border-radius: 28px; border: 1px solid #F1F5F9; box-shadow: 0 10px 30px -18px rgba(15, 23, 42, .18); }
-.ico-naranja { background: linear-gradient(135deg, #faa911 0%, #e69a0c 100%); color: #fff; }
-.ico-suave { background: #FFF4DC; color: #faa911; }
-.btn-naranja { background: linear-gradient(135deg, #faa911 0%, #e69a0c 100%); color: #fff; box-shadow: 0 10px 20px -8px rgba(250, 169, 17, .7); transition: transform .2s ease, filter .2s ease; }
-.btn-naranja:hover:not(:disabled) { filter: brightness(1.06); transform: translateY(-2px); }
-.btn-naranja:active:not(:disabled) { transform: scale(.97); }
-.pill-on { background: linear-gradient(135deg, #faa911, #e69a0c); color: #fff; box-shadow: 0 6px 14px -6px rgba(250, 169, 17, .7); }
-.fx-input:focus { border-color: #faa911; box-shadow: 0 0 0 3px rgba(250, 169, 17, .18); outline: none; }
-.fx-lift { transition: transform .25s ease, box-shadow .25s ease; }
-.fx-lift:hover { transform: translateY(-3px); box-shadow: 0 16px 30px -18px rgba(250, 169, 17, .4); }
-.barra-naranja { background: linear-gradient(90deg, #FDCB5E, #faa911); }
-.tabla-scroll { max-height: 520px; overflow: auto; }
-.tabla-scroll thead th { position: sticky; top: 0; z-index: 1; }
-@keyframes fxUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
-.fx-up { animation: fxUp .45s cubic-bezier(.2, .8, .2, 1) both; }
-</style>
+<section class="flex w-full flex-col gap-6 fx-roboto" style="font-family: 'Roboto', sans-serif;">
 
-<section class="flex w-full flex-col gap-6" style="font-family: 'Roboto', sans-serif;">
-
-  <!-- ============ ENCABEZADO ============ -->
-  <header class="flex flex-col gap-4 rounded-3xl border border-slate-100 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-6">
-    <div class="flex items-center gap-4">
-      <div class="ico-naranja flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl shadow-md">
-        <span class="material-symbols-outlined text-[30px]">summarize</span>
+  <!-- ENCABEZADO GENERAL DE REPORTES Y PLANILLAS -->
+  <header class="flex flex-col gap-4 border-b border-[#f5d98a] pb-4 sm:flex-row sm:items-center sm:justify-between no-print">
+    <div>
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-3 py-1 text-xs font-black text-amber-800">
+          <span class="material-symbols-outlined text-[15px]">verified</span>
+          Sistema Oficial SIRAE - Reportes y Planillas PAE
+        </span>
+        <span class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
+          <span class="material-symbols-outlined text-[15px]">badge</span>
+          Perfil: {{ alcance?.rol || rolActual || 'Usuario Autorizado' }}
+        </span>
+        <span *ngIf="alcance" class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 border border-emerald-200">
+          <span class="material-symbols-outlined text-[15px]">shield_person</span>
+          Ámbito: {{ alcance.instituciones.length }} Inst. / {{ alcance.sedes.length }} Sedes
+        </span>
       </div>
-      <div>
-        <span class="text-[11px] font-bold uppercase tracking-wider text-[#faa911]">Reportes PAE</span>
-        <h1 class="m-0 text-2xl font-black tracking-tight text-slate-900">Reporte global de sedes</h1>
-        <p class="m-0 text-xs font-medium text-slate-500">Cupos y entregas de alimentos de las sedes de tu institución.</p>
-      </div>
+      <h1 class="m-0 mt-1.5 text-2xl font-black tracking-tight text-slate-900">Reportes Operativos, Plantillas y Planillas PAE</h1>
+      <p class="m-0 text-xs text-slate-500">
+        Datos trazables en tiempo real desde contratos, cupos, gramajes, entregas, inventarios, preparaciones y asistencia.
+      </p>
     </div>
-    <button type="button" (click)="exportarCsvSedes()" [disabled]="cargando || resumenSedes.length === 0"
-      class="btn-naranja inline-flex cursor-pointer items-center justify-center gap-2 self-start rounded-xl px-4 py-2.5 text-sm font-black disabled:cursor-not-allowed disabled:opacity-50 sm:self-auto">
-      <span class="material-symbols-outlined text-[20px]">download</span>
-      Exportar reporte (CSV)
-    </button>
+
+    <div class="flex flex-wrap items-center gap-2.5">
+      <div *ngIf="institucionActiva" class="flex items-center gap-2.5 rounded-xl border border-[#f5d98a] bg-white px-3.5 py-2">
+        <span class="material-symbols-outlined text-[#faa911]">school</span>
+        <div>
+          <span class="block text-[10px] font-bold uppercase tracking-wide text-slate-400">Contexto Activo</span>
+          <strong class="block text-xs font-black text-slate-800">
+            {{ institucionActiva.nombre_institucion }}
+            <span *ngIf="sedeActiva"> - {{ sedeActiva.nombre_sede }}</span>
+          </strong>
+        </div>
+      </div>
+
+      <button *ngIf="planillaActiva" type="button" (click)="imprimirDocumentoOficial()"
+        class="btn-rojo-pdf inline-flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-black shadow-md">
+        <span class="material-symbols-outlined text-[18px]">picture_as_pdf</span>
+        Imprimir / Guardar PDF
+      </button>
+    </div>
   </header>
 
-  <!-- Qué datos usa este reporte -->
-  <div class="flex items-start gap-3 rounded-2xl border border-sky-100 bg-sky-50/70 p-4 text-xs font-medium leading-5 text-sky-900">
-    <span class="material-symbols-outlined mt-0.5 text-[20px] text-sky-600">info</span>
-    <p class="m-0">Este reporte usa los datos disponibles hoy: sedes, cupos de los contratos y entregas de alimentos. La asistencia y las raciones servidas se sumarán cuando el sistema las ponga a disposición del Supervisor.</p>
-  </div>
+  <!-- PESTAÑAS PRINCIPALES -->
+  <nav class="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-3 pestanas-selector no-print" aria-label="Módulos de Reportes">
+    <button type="button" class="pestana-btn" [class.activa]="pestanaActiva === 'consolidados'" (click)="cambiarPestanaPrincipal('consolidados')">
+      <span class="material-symbols-outlined text-[20px]">monitoring</span>
+      Reportes Operativos Consolidados
+    </button>
 
-  <!-- Aviso de datos incompletos -->
-  <div *ngIf="avisoDatos" role="status"
-    class="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50/70 p-4 text-xs font-medium leading-5 text-amber-900">
-    <span class="material-symbols-outlined mt-0.5 text-[20px] text-amber-600">warning</span>
-    <p class="m-0">{{ avisoDatos }}</p>
-  </div>
+    <button type="button" class="pestana-btn" [class.activa]="pestanaActiva === 'planillas'" (click)="cambiarPestanaPrincipal('planillas')">
+      <span class="material-symbols-outlined text-[20px]">description</span>
+      Planillas Auto-Diligenciadas
+    </button>
 
-  <!-- ============ FILTROS ============ -->
-  <section class="fx-panel p-5 sm:p-6" aria-label="Filtros del reporte">
-    <div class="grid grid-cols-1 items-end gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <button type="button" class="pestana-btn" [class.activa]="pestanaActiva === 'plantillas'" (click)="cambiarPestanaPrincipal('plantillas')">
+      <span class="material-symbols-outlined text-[20px]">design_services</span>
+      {{ esSuperAdmin ? 'Constructor de Plantillas' : 'Catálogo de Plantillas' }}
+    </button>
 
-      <label class="flex flex-col gap-1.5 text-xs font-bold text-slate-600">
-        Desde
-        <span class="relative">
-          <span class="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-slate-400">calendar_today</span>
-          <input type="date" [(ngModel)]="fechaDesde"
-            class="fx-input w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-sm font-semibold text-slate-800">
-        </span>
-      </label>
+    <button type="button" class="pestana-btn" [class.activa]="pestanaActiva === 'historial'" (click)="cambiarPestanaPrincipal('historial')">
+      <span class="material-symbols-outlined text-[20px]">local_shipping</span>
+      Historial de Entregas por Sede
+    </button>
+  </nav>
 
-      <label class="flex flex-col gap-1.5 text-xs font-bold text-slate-600">
-        Hasta
-        <span class="relative">
-          <span class="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-slate-400">event</span>
-          <input type="date" [(ngModel)]="fechaHasta"
-            class="fx-input w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-sm font-semibold text-slate-800">
-        </span>
-      </label>
+  <!-- ======================================================================= -->
+  <!-- PESTAÑA 1: REPORTES OPERATIVOS CONSOLIDADOS (SIR-173)                   -->
+  <!-- ======================================================================= -->
+  <section *ngIf="pestanaActiva === 'consolidados'" class="flex flex-col gap-6 no-print">
 
-      <label class="flex flex-col gap-1.5 text-xs font-bold text-slate-600">
-        Sede
-        <span class="relative">
-          <span class="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-slate-400">school</span>
-          <select [(ngModel)]="sedeFiltro"
-            class="fx-input w-full cursor-pointer rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-sm font-semibold text-slate-800">
-            <option value="Todas">Todas las sedes</option>
-            <option *ngFor="let sede of sedesDisponibles" [ngValue]="sede.id">{{ sede.nombre }}</option>
+    <!-- FILTROS CONSOLIDADO -->
+    <section class="fx-panel p-5" aria-label="Filtros Reporte Consolidado">
+      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <label class="flex flex-col gap-1 text-xs font-bold text-slate-700">
+          Tipo de Reporte (SIRAE)
+          <select [(ngModel)]="tipoReporteFiltro" (change)="cargarConsolidado()"
+            class="h-10 rounded-xl border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800 focus:border-[#faa911] focus:outline-none">
+            <option *ngFor="let t of (consolidado?.tipos_disponibles || [])" [value]="t.codigo">{{ t.nombre }}</option>
+            <option *ngIf="!consolidado?.tipos_disponibles?.length" value="RESUMEN_GENERAL">Resumen general del operador / contrato</option>
           </select>
-        </span>
-      </label>
+        </label>
 
-      <button type="button" (click)="cargar()" [disabled]="cargando || (!!fechaDesde && !!fechaHasta && fechaDesde > fechaHasta)"
-        class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-orange-50 disabled:cursor-not-allowed disabled:opacity-50">
-        <span class="material-symbols-outlined text-[20px]" [class.animate-spin]="cargando">refresh</span>
-        {{ cargando ? 'Actualizando...' : 'Actualizar datos' }}
-      </button>
+        <label class="flex flex-col gap-1 text-xs font-bold text-slate-700">
+          Institución Educativa
+          <select [(ngModel)]="filtroInstId" (change)="filtroSedeId = null; filtroContratoId = null; cargarConsolidado()"
+            class="h-10 rounded-xl border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800 focus:border-[#faa911] focus:outline-none">
+            <option [ngValue]="null">Todas las instituciones autorizadas</option>
+            <option *ngFor="let inst of (alcance?.instituciones || [])" [ngValue]="inst.id_institucion">
+              {{ inst.nombre_institucion }} ({{ inst.nit }})
+            </option>
+          </select>
+        </label>
+
+        <label class="flex flex-col gap-1 text-xs font-bold text-slate-700">
+          Sede Educativa
+          <select [(ngModel)]="filtroSedeId" (change)="cargarConsolidado()"
+            class="h-10 rounded-xl border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800 focus:border-[#faa911] focus:outline-none">
+            <option [ngValue]="null">Todas las sedes del ámbito</option>
+            <option *ngFor="let s of sedesPorInstitucion(filtroInstId)" [ngValue]="s.id_sede">
+              {{ s.nombre_sede }} ({{ s.codigo_dane || 'S/C' }})
+            </option>
+          </select>
+        </label>
+
+        <label class="flex flex-col gap-1 text-xs font-bold text-slate-700">
+          Jornada
+          <select [(ngModel)]="filtroJornadaId" (change)="cargarConsolidado()"
+            class="h-10 rounded-xl border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800 focus:border-[#faa911] focus:outline-none">
+            <option [ngValue]="null">Todas las jornadas</option>
+            <option *ngFor="let j of (alcance?.jornadas || [])" [ngValue]="j.id_jornada">{{ j.nombre_jornada }}</option>
+          </select>
+        </label>
+
+        <label class="flex flex-col gap-1 text-xs font-bold text-slate-700">
+          Contrato PAE
+          <select [(ngModel)]="filtroContratoId" (change)="cargarConsolidado()"
+            class="h-10 rounded-xl border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800 focus:border-[#faa911] focus:outline-none">
+            <option [ngValue]="null">Todos los contratos</option>
+            <option *ngFor="let c of contratosPorAlcance(filtroInstId, filtroSedeId)" [ngValue]="c.id_contrato">
+              {{ c.numero_cor }} - {{ c.operador }} ({{ c.estado }})
+            </option>
+          </select>
+        </label>
+
+        <label class="flex flex-col gap-1 text-xs font-bold text-slate-700">
+          Fecha Desde
+          <input type="date" [(ngModel)]="fechaDesde"
+            class="h-10 rounded-xl border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800 focus:border-[#faa911] focus:outline-none" />
+        </label>
+
+        <label class="flex flex-col gap-1 text-xs font-bold text-slate-700">
+          Fecha Hasta
+          <input type="date" [(ngModel)]="fechaHasta"
+            class="h-10 rounded-xl border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800 focus:border-[#faa911] focus:outline-none" />
+        </label>
+
+        <div class="flex items-end gap-2">
+          <button type="button" (click)="cargarConsolidado()" [disabled]="cargandoConsolidado"
+            class="btn-naranja flex-1 inline-flex h-10 cursor-pointer items-center justify-center gap-1.5 rounded-xl px-3 text-xs font-black">
+            <span class="material-symbols-outlined text-[18px]">refresh</span>
+            {{ cargandoConsolidado ? 'Consultando...' : 'Consultar' }}
+          </button>
+          <button type="button" (click)="descargarConsolidadoCsv()" [disabled]="!consolidado"
+            class="btn-outline-naranja inline-flex h-10 cursor-pointer items-center justify-center gap-1.5 rounded-xl px-3 text-xs font-black">
+            <span class="material-symbols-outlined text-[18px]">download</span>
+            CSV
+          </button>
+        </div>
+      </div>
+
+      <div *ngIf="consolidado" class="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-2.5 text-[11px] text-slate-500">
+        <span>Última actualización de datos en SIRAE: <strong class="text-slate-700">{{ consolidado.fecha_actualizacion }}</strong></span>
+        <span>Contratos incluidos: <strong>{{ consolidado.resumen_ejecutivo['contratos_activos'] || 0 }} activos</strong> / {{ consolidado.resumen_ejecutivo['total_contratos'] || 0 }} totales</span>
+      </div>
+    </section>
+
+    <!-- ERROR CONTROLADO (ej: 403 fuera de alcance) -->
+    <div *ngIf="errorConsolidado" class="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-xs font-bold text-rose-800">
+      {{ errorConsolidado }}
     </div>
 
-    <!-- Rangos rápidos -->
-    <div class="mt-4 flex flex-wrap items-center gap-2">
-      <span class="text-[11px] font-bold uppercase tracking-wide text-slate-400">Rango rápido</span>
-      <button type="button" (click)="rango(7)" class="cursor-pointer rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-600 transition hover:bg-orange-50">Últimos 7 días</button>
-      <button type="button" (click)="rango(30)" class="cursor-pointer rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-600 transition hover:bg-orange-50">Últimos 30 días</button>
-      <button type="button" (click)="rango(null)" class="cursor-pointer rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-600 transition hover:bg-orange-50">Ver todo</button>
+    <!-- TARJETAS KPI EJECUTIVAS -->
+    <div *ngIf="consolidado as rep" class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+      <div class="fx-panel p-4 text-center">
+        <span class="block text-[10px] font-bold uppercase text-slate-500">Instituciones / Sedes</span>
+        <strong class="mt-1 block text-xl font-black text-slate-900">
+          {{ rep.resumen_ejecutivo['instituciones_autorizadas'] || 0 }} / {{ rep.resumen_ejecutivo['sedes_autorizadas'] || 0 }}
+        </strong>
+      </div>
+      <div class="fx-panel p-4 text-center">
+        <span class="block text-[10px] font-bold uppercase text-slate-500">Cupos Totales</span>
+        <strong class="mt-1 block text-xl font-black text-amber-700">{{ rep.resumen_ejecutivo['total_cupos'] || 0 }}</strong>
+      </div>
+      <div class="fx-panel p-4 text-center">
+        <span class="block text-[10px] font-bold uppercase text-slate-500">Programado (Kg/Und)</span>
+        <strong class="mt-1 block text-xl font-black text-sky-700">{{ rep.resumen_ejecutivo['productos_programados'] || 0 }}</strong>
+      </div>
+      <div class="fx-panel p-4 text-center">
+        <span class="block text-[10px] font-bold uppercase text-slate-500">Despachado / Recibido</span>
+        <strong class="mt-1 block text-xl font-black text-emerald-700">
+          {{ rep.resumen_ejecutivo['productos_despachados'] || 0 }} / {{ rep.resumen_ejecutivo['productos_recibidos'] || 0 }}
+        </strong>
+      </div>
+      <div class="fx-panel p-4 text-center">
+        <span class="block text-[10px] font-bold uppercase text-slate-500">Consumido / Cobertura</span>
+        <strong class="mt-1 block text-xl font-black text-indigo-700">
+          {{ rep.resumen_ejecutivo['productos_consumidos'] || 0 }} ({{ rep.resumen_ejecutivo['cobertura_asistencia_promedio'] || 0 }}%)
+        </strong>
+      </div>
+      <div class="fx-panel p-4 text-center">
+        <span class="block text-[10px] font-bold uppercase text-slate-500">Stock Crítico / Novedades</span>
+        <strong class="mt-1 block text-xl font-black" [class.text-rose-600]="(rep.resumen_ejecutivo['productos_bajo_minimo'] || 0) + (rep.resumen_ejecutivo['total_novedades'] || 0) > 0">
+          {{ rep.resumen_ejecutivo['productos_bajo_minimo'] || 0 }} / {{ rep.resumen_ejecutivo['total_novedades'] || 0 }}
+        </strong>
+      </div>
     </div>
 
-    <!-- Aviso si las fechas están al revés -->
-    <p *ngIf="fechaDesde && fechaHasta && fechaDesde > fechaHasta" role="alert"
-      class="m-0 mt-4 flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800">
-      <span class="material-symbols-outlined text-[18px]">warning</span>
-      La fecha "Desde" no puede ser posterior a "Hasta".
-    </p>
+    <!-- DETALLE ESPECÍFICO DEL TIPO DE REPORTE SELECCIONADO -->
+    <section *ngIf="consolidado as rep" class="fx-panel p-5">
+      <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h2 class="m-0 text-base font-black text-slate-900">Detalle del Reporte: {{ rep.tipo_reporte }}</h2>
+          <p class="m-0 text-xs text-slate-500">{{ rep.detalle.length }} registros calculados con datos vigentes</p>
+        </div>
+      </div>
+
+      <div class="tabla-oficial-wrap">
+        <table class="tabla-oficial">
+          <thead *ngIf="columnasDetalleConsolidado.length > 0">
+            <tr>
+              <th *ngFor="let col of columnasDetalleConsolidado">{{ etiquetaCol(col) }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of rep.detalle">
+              <td *ngFor="let col of columnasDetalleConsolidado">
+                {{ row[col] === null || row[col] === undefined || row[col] === '' ? '—' : row[col] }}
+              </td>
+            </tr>
+            <tr *ngIf="rep.detalle.length === 0">
+              <td class="p-8 text-center text-slate-400">
+                No existen registros operativos en SIRAE para los filtros y ámbito seleccionados.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- BALANCE COMPARATIVO POR PRODUCTO (PROGRAMADO vs DESPACHADO vs RECIBIDO vs CONSUMIDO) -->
+    <section *ngIf="consolidado as rep" class="fx-panel p-5">
+      <div class="mb-3">
+        <h2 class="m-0 text-base font-black text-slate-900">Balance Trazable por Producto</h2>
+        <p class="m-0 text-xs text-slate-500">Diferenciación automática entre cantidad programada, despachada, recibida en sede y consumida.</p>
+      </div>
+      <div class="tabla-oficial-wrap">
+        <table class="tabla-oficial">
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th>Conservación</th>
+              <th>Unidad</th>
+              <th class="text-right">Programado</th>
+              <th class="text-right">Despachado</th>
+              <th class="text-right">Recibido</th>
+              <th class="text-right">Consumido</th>
+              <th class="text-right">Dif. Recepción</th>
+              <th class="text-right">Remanente</th>
+              <th>Estado Flujo</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of rep.comparativo_productos">
+              <td class="font-bold text-slate-900">{{ item.nombre_ingrediente }}</td>
+              <td>{{ item.tipo_conservacion }}</td>
+              <td>{{ item.unidad || '—' }}</td>
+              <td class="text-right font-semibold text-sky-700">{{ item.cantidad_programada }}</td>
+              <td class="text-right font-semibold">{{ item.cantidad_despachada }}</td>
+              <td class="text-right font-semibold text-emerald-700">{{ item.cantidad_recibida }}</td>
+              <td class="text-right font-semibold text-indigo-700">{{ item.cantidad_consumida }}</td>
+              <td class="text-right" [class.text-rose-600]="item.diferencia_recepcion < 0">{{ item.diferencia_recepcion }}</td>
+              <td class="text-right font-bold">{{ item.saldo_remanente }}</td>
+              <td>
+                <span class="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-black text-slate-700">{{ item.estado_fila }}</span>
+              </td>
+            </tr>
+            <tr *ngIf="rep.comparativo_productos.length === 0">
+              <td colspan="10" class="p-6 text-center text-slate-400">Sin movimientos de productos en el periodo.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- CONSOLIDADO MULTI-SEDE -->
+    <section *ngIf="consolidado?.consolidado_sedes?.length" class="fx-panel p-5">
+      <h2 class="m-0 mb-3 text-base font-black text-slate-900">Consolidado por Sede Educativa</h2>
+      <div class="tabla-oficial-wrap">
+        <table class="tabla-oficial">
+          <thead>
+            <tr>
+              <th>Institución</th>
+              <th>Sede</th>
+              <th>DANE</th>
+              <th class="text-right">Cupos</th>
+              <th class="text-right">Entregas</th>
+              <th class="text-right">Programado</th>
+              <th class="text-right">Despachado</th>
+              <th class="text-right">Recibido</th>
+              <th class="text-right">Novedades</th>
+              <th class="text-right">Stock Crítico</th>
+              <th>Última Entrega</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let s of consolidado!.consolidado_sedes">
+              <td>{{ s.institucion_nombre }}</td>
+              <td class="font-bold text-slate-900">{{ s.nombre }}</td>
+              <td>{{ s.codigo_dane || '—' }}</td>
+              <td class="text-right font-bold">{{ s.cupos }}</td>
+              <td class="text-right">{{ s.entregas }}</td>
+              <td class="text-right">{{ s.cantidad_programada }}</td>
+              <td class="text-right">{{ s.cantidad_despachada }}</td>
+              <td class="text-right font-bold text-emerald-700">{{ s.cantidad_recibida }}</td>
+              <td class="text-right" [class.text-rose-600]="s.con_novedad > 0">{{ s.con_novedad }}</td>
+              <td class="text-right" [class.text-rose-600]="s.productos_bajo_minimo > 0">{{ s.productos_bajo_minimo }}</td>
+              <td>{{ s.ultima_entrega || '—' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
   </section>
 
-  <!-- ============ INDICADORES ============ -->
-  <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
-    <div class="fx-panel fx-lift fx-up p-5">
-      <div class="ico-suave mb-3 flex h-10 w-10 items-center justify-center rounded-xl"><span class="material-symbols-outlined text-[22px]">school</span></div>
-      <p class="m-0 text-[11px] font-bold uppercase tracking-wide text-slate-400">Sedes</p>
-      <p class="m-0 text-2xl font-black text-slate-900">{{ totales.sedes }}</p>
-      <p class="m-0 text-[11px] text-slate-400">{{ totales.dias }} días con entregas</p>
-    </div>
-    <div class="fx-panel fx-lift fx-up p-5">
-      <div class="ico-suave mb-3 flex h-10 w-10 items-center justify-center rounded-xl"><span class="material-symbols-outlined text-[22px]">groups</span></div>
-      <p class="m-0 text-[11px] font-bold uppercase tracking-wide text-slate-400">Cupos contratados</p>
-      <p class="m-0 text-2xl font-black text-slate-900">{{ totales.cupos }}</p>
-      <p class="m-0 text-[11px] text-slate-400">estudiantes en contratos vigentes</p>
-    </div>
-    <div class="fx-panel fx-lift fx-up p-5">
-      <div class="ico-suave mb-3 flex h-10 w-10 items-center justify-center rounded-xl"><span class="material-symbols-outlined text-[22px]">local_shipping</span></div>
-      <p class="m-0 text-[11px] font-bold uppercase tracking-wide text-slate-400">Entregas</p>
-      <p class="m-0 text-2xl font-black text-[#e69a0c]">{{ totales.entregas }}</p>
-      <p class="m-0 text-[11px] text-slate-400">{{ totales.kilos }} kg recibidos</p>
-    </div>
-    <div class="fx-panel fx-lift fx-up p-5">
-      <div class="ico-suave mb-3 flex h-10 w-10 items-center justify-center rounded-xl"><span class="material-symbols-outlined text-[22px]">report</span></div>
-      <p class="m-0 text-[11px] font-bold uppercase tracking-wide text-slate-400">Novedades</p>
-      <p class="m-0 text-2xl font-black text-slate-900">{{ totales.novedades }}</p>
-      <p class="m-0 text-[11px] text-slate-400">con novedad o rechazadas</p>
-    </div>
-  </div>
+  <!-- ======================================================================= -->
+  <!-- PESTAÑA 2: PLANILLAS AUTO-DILIGENCIADAS Y VISOR OFICIAL (SIR-171/172)   -->
+  <!-- ======================================================================= -->
+  <section *ngIf="pestanaActiva === 'planillas'" class="flex flex-col gap-6">
 
-  <!-- ============ RESUMEN POR SEDE ============ -->
-  <section class="fx-panel overflow-hidden">
-    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
-      <div>
-        <h2 class="m-0 text-base font-black text-slate-900">Resumen por sede</h2>
-        <p class="m-0 text-[11px] font-medium text-slate-500">Haz clic en el título de una columna para ordenar, o en una sede para ver sus entregas día a día.</p>
+    <!-- PANEL GENERADOR AUTOMÁTICO (SIR-171) -->
+    <section class="fx-panel p-5 no-print" aria-label="Generador Automático de Planillas">
+      <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h2 class="m-0 text-base font-black text-slate-900">Generar Planilla Automática desde SIRAE</h2>
+          <p class="m-0 text-xs text-slate-500">
+            Recopila automáticamente contratos, cupos, gramajes, entregas, recepciones, asistencia y preparaciones; marca campos faltantes como PENDIENTE.
+          </p>
+        </div>
       </div>
-      <span class="rounded-full bg-orange-100 px-3 py-1 text-xs font-black text-[#e69a0c]">
-        {{ resumenSedes.length }} {{ resumenSedes.length === 1 ? 'sede' : 'sedes' }}
-      </span>
-    </div>
 
-    <div class="tabla-scroll">
-      <table class="w-full min-w-[860px] border-collapse text-left text-sm">
-        <thead class="bg-orange-50/70 text-[11px] uppercase tracking-wider text-slate-500">
-          <tr>
-            <th scope="col" class="px-5 py-3 font-bold">
-              <button type="button" (click)="ordenarPor('nombre')" class="inline-flex cursor-pointer items-center gap-1 font-bold uppercase tracking-wider hover:text-[#e69a0c]">
-                Sede <span class="material-symbols-outlined text-[14px]">{{ iconoOrden('nombre') }}</span>
-              </button>
-            </th>
-            <th scope="col" class="px-5 py-3 text-right font-bold">
-              <button type="button" (click)="ordenarPor('cupos')" class="inline-flex cursor-pointer items-center gap-1 font-bold uppercase tracking-wider hover:text-[#e69a0c]">
-                Cupos <span class="material-symbols-outlined text-[14px]">{{ iconoOrden('cupos') }}</span>
-              </button>
-            </th>
-            <th scope="col" class="px-5 py-3 text-right font-bold">
-              <button type="button" (click)="ordenarPor('entregas')" class="inline-flex cursor-pointer items-center gap-1 font-bold uppercase tracking-wider hover:text-[#e69a0c]">
-                Entregas <span class="material-symbols-outlined text-[14px]">{{ iconoOrden('entregas') }}</span>
-              </button>
-            </th>
-            <th scope="col" class="px-5 py-3 text-right font-bold">
-              <button type="button" (click)="ordenarPor('kilos')" class="inline-flex cursor-pointer items-center gap-1 font-bold uppercase tracking-wider hover:text-[#e69a0c]">
-                Kg recibidos <span class="material-symbols-outlined text-[14px]">{{ iconoOrden('kilos') }}</span>
-              </button>
-            </th>
-            <th scope="col" class="px-5 py-3 text-right font-bold">
-              <button type="button" (click)="ordenarPor('novedades')" class="inline-flex cursor-pointer items-center gap-1 font-bold uppercase tracking-wider hover:text-[#e69a0c]">
-                Novedades <span class="material-symbols-outlined text-[14px]">{{ iconoOrden('novedades') }}</span>
-              </button>
-            </th>
-            <th scope="col" class="px-5 py-3 text-right font-bold">
-              <button type="button" (click)="ordenarPor('dias')" class="inline-flex cursor-pointer items-center gap-1 font-bold uppercase tracking-wider hover:text-[#e69a0c]">
-                Días <span class="material-symbols-outlined text-[14px]">{{ iconoOrden('dias') }}</span>
-              </button>
-            </th>
-            <th scope="col" class="px-5 py-3 font-bold">Ingrediente más entregado</th>
-            <th scope="col" class="px-5 py-3 text-center font-bold">Detalle</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let s of resumenSedes; trackBy: trackSede" (click)="abrirSede(s)"
-            class="cursor-pointer border-t border-slate-100 transition hover:bg-orange-50/40">
-            <td class="px-5 py-3">
-              <div class="flex items-center gap-2">
-                <span class="ico-suave flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"><span class="material-symbols-outlined text-[18px]">school</span></span>
-                <span class="font-bold text-slate-900">{{ s.nombre }}</span>
+      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <label class="flex flex-col gap-1 text-xs font-bold text-slate-700">
+          Plantilla Oficial Publicada (Opcional)
+          <select [(ngModel)]="genPlantillaId"
+            class="h-10 rounded-xl border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800">
+            <option [ngValue]="null">Selección automática según proceso PAE</option>
+            <ng-container *ngFor="let tpl of plantillas">
+              <option *ngIf="tpl.version_publicada && tpl.activa" [ngValue]="tpl.id_plantilla">
+                {{ tpl.codigo }} - {{ tpl.nombre }} (v{{ tpl.version_publicada.numero_version }})
+              </option>
+            </ng-container>
+          </select>
+        </label>
+
+        <label class="flex flex-col gap-1 text-xs font-bold text-slate-700" *ngIf="!genPlantillaId">
+          Proceso PAE
+          <select [(ngModel)]="genProceso"
+            class="h-10 rounded-xl border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800">
+            <option *ngFor="let p of (metadatosPlantillas?.procesos_pae || [])" [value]="p.codigo">{{ p.nombre }}</option>
+            <option *ngIf="!metadatosPlantillas?.procesos_pae?.length" value="REMISION">Remisión de alimentos</option>
+          </select>
+        </label>
+
+        <label class="flex flex-col gap-1 text-xs font-bold text-slate-700">
+          Institución
+          <select [(ngModel)]="genInstId" (change)="genSedeId = null; genContratoId = null"
+            class="h-10 rounded-xl border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800">
+            <option [ngValue]="null">Seleccionar / Ámbito actual</option>
+            <option *ngFor="let inst of (alcance?.instituciones || [])" [ngValue]="inst.id_institucion">
+              {{ inst.nombre_institucion }}
+            </option>
+          </select>
+        </label>
+
+        <label class="flex flex-col gap-1 text-xs font-bold text-slate-700">
+          Sede Educativa
+          <select [(ngModel)]="genSedeId"
+            class="h-10 rounded-xl border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800">
+            <option [ngValue]="null">Consolidado de institución / Todas</option>
+            <option *ngFor="let s of sedesPorInstitucion(genInstId)" [ngValue]="s.id_sede">{{ s.nombre_sede }}</option>
+          </select>
+        </label>
+
+        <label class="flex flex-col gap-1 text-xs font-bold text-slate-700">
+          Contrato (Opcional)
+          <select [(ngModel)]="genContratoId"
+            class="h-10 rounded-xl border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800">
+            <option [ngValue]="null">Automático según institución/sede</option>
+            <option *ngFor="let c of contratosPorAlcance(genInstId, genSedeId)" [ngValue]="c.id_contrato">
+              {{ c.numero_cor }} - {{ c.operador }}
+            </option>
+          </select>
+        </label>
+
+        <label class="flex flex-col gap-1 text-xs font-bold text-slate-700">
+          Jornada (Opcional)
+          <select [(ngModel)]="genJornadaId"
+            class="h-10 rounded-xl border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800">
+            <option [ngValue]="null">Todas las jornadas</option>
+            <option *ngFor="let j of (alcance?.jornadas || [])" [ngValue]="j.id_jornada">{{ j.nombre_jornada }}</option>
+          </select>
+        </label>
+
+        <label class="flex flex-col gap-1 text-xs font-bold text-slate-700">
+          Periodo (Clave anti-duplicados)
+          <input type="text" [(ngModel)]="genPeriodo" placeholder="Ej: 2026-11 o SEMANA-1"
+            class="h-10 rounded-xl border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800" />
+        </label>
+
+        <div class="grid grid-cols-2 gap-2">
+          <label class="flex flex-col gap-1 text-xs font-bold text-slate-700">
+            Inicio
+            <input type="date" [(ngModel)]="genFechaInicio"
+              class="h-10 rounded-xl border border-slate-300 bg-white px-2 text-xs font-semibold text-slate-800" />
+          </label>
+          <label class="flex flex-col gap-1 text-xs font-bold text-slate-700">
+            Fin
+            <input type="date" [(ngModel)]="genFechaFin"
+              class="h-10 rounded-xl border border-slate-300 bg-white px-2 text-xs font-semibold text-slate-800" />
+          </label>
+        </div>
+      </div>
+
+      <div class="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <input type="text" [(ngModel)]="genObservaciones" placeholder="Observaciones iniciales del evento / responsable..."
+          class="h-10 flex-1 rounded-xl border border-slate-300 bg-white px-3 text-xs text-slate-800" />
+
+        <div class="flex flex-wrap gap-2">
+          <button type="button" (click)="generarNuevaPlanilla(false)" [disabled]="generandoPlanilla"
+            class="btn-naranja inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-xl px-4 text-xs font-black">
+            <span class="material-symbols-outlined text-[18px]">auto_fix_high</span>
+            {{ generandoPlanilla ? 'Generando...' : 'Generar Planilla' }}
+          </button>
+          <button type="button" (click)="generarNuevaPlanilla(true)" [disabled]="generandoPlanilla"
+            class="btn-outline-naranja inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-xl px-4 text-xs font-black">
+            <span class="material-symbols-outlined text-[18px]">sync</span>
+            Regenerar Borrador
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- CONSULTA, BÚSQUEDA Y LISTADO DE PLANILLAS GENERADAS (SIR-172) -->
+    <section class="fx-panel p-5 no-print" aria-label="Listado de Planillas Generadas">
+      <div class="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <h2 class="m-0 text-base font-black text-slate-900">Planillas Generadas en tu Ámbito ({{ planillas.length }})</h2>
+          <p class="m-0 text-xs text-slate-500">Consulta filtrada por permisos institucionales, proceso, estado y periodo.</p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <input type="text" [(ngModel)]="busquedaPlanilla" (keyup.enter)="cargarPlanillasGeneradas()"
+            placeholder="Buscar código, documento o sede..."
+            class="h-9 rounded-xl border border-slate-300 bg-white px-3 text-xs text-slate-800" />
+
+          <select [(ngModel)]="filtroProcesoPlanilla" (change)="cargarPlanillasGeneradas()"
+            class="h-9 rounded-xl border border-slate-300 bg-white px-2.5 text-xs font-semibold text-slate-700">
+            <option value="">Todos los procesos</option>
+            <option *ngFor="let p of (metadatosPlantillas?.procesos_pae || [])" [value]="p.codigo">{{ p.nombre }}</option>
+          </select>
+
+          <select [(ngModel)]="filtroEstadoPlanilla" (change)="cargarPlanillasGeneradas()"
+            class="h-9 rounded-xl border border-slate-300 bg-white px-2.5 text-xs font-semibold text-slate-700">
+            <option value="">Todos los estados</option>
+            <option value="BORRADOR">Borrador</option>
+            <option value="PENDIENTE">Pendiente</option>
+            <option value="OBSERVADO">Observado</option>
+            <option value="VALIDADO">Validado</option>
+            <option value="CERRADO">Cerrado</option>
+          </select>
+
+          <input type="text" [(ngModel)]="filtroPeriodoPlanilla" (keyup.enter)="cargarPlanillasGeneradas()"
+            placeholder="Periodo..."
+            class="h-9 w-28 rounded-xl border border-slate-300 bg-white px-2.5 text-xs text-slate-800" />
+
+          <button type="button" (click)="cargarPlanillasGeneradas()" [disabled]="cargandoPlanillas"
+            class="btn-naranja inline-flex h-9 cursor-pointer items-center gap-1 rounded-xl px-3 text-xs font-black">
+            <span class="material-symbols-outlined text-[16px]">search</span>
+            Buscar
+          </button>
+        </div>
+      </div>
+
+      <div class="tabla-oficial-wrap">
+        <table class="tabla-oficial">
+          <thead>
+            <tr>
+              <th>Documento</th>
+              <th>Proceso / Plantilla</th>
+              <th>Institución / Sede</th>
+              <th>Periodo</th>
+              <th>Generación</th>
+              <th>Pendientes</th>
+              <th>Estado</th>
+              <th class="text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let p of planillas">
+              <td>
+                <strong class="block text-slate-900">{{ p.codigo_documento }}</strong>
+                <span class="text-[11px] text-slate-500">{{ p.nombre_documento }}</span>
+              </td>
+              <td>
+                <span class="font-bold text-slate-800">{{ p.categoria_proceso }}</span>
+                <span class="block text-[10px] text-slate-500">{{ p.plantilla_codigo }} v{{ p.version_numero }}</span>
+              </td>
+              <td>
+                <strong class="block text-slate-800">{{ p.institucion_nombre }}</strong>
+                <span class="text-[11px] text-slate-500">{{ p.sede_nombre || 'Consolidado' }}</span>
+              </td>
+              <td>{{ p.periodo }}</td>
+              <td>
+                <span class="block">{{ p.fecha_generacion | slice:0:10 }}</span>
+                <span class="text-[10px] text-slate-500">{{ p.responsable_nombre }}</span>
+              </td>
+              <td>
+                <span *ngIf="p.total_pendientes > 0" class="rounded-md bg-amber-100 px-2 py-0.5 text-[10px] font-black text-amber-800">
+                  {{ p.total_pendientes }} pendiente(s)
+                </span>
+                <span *ngIf="p.total_pendientes === 0" class="rounded-md bg-emerald-100 px-2 py-0.5 text-[10px] font-black text-emerald-800">
+                  Completo
+                </span>
+              </td>
+              <td>
+                <span class="rounded-md border px-2 py-0.5 text-[10px] font-black" [ngClass]="claseEstadoPlanilla(p.estado)">
+                  {{ etiquetaEstadoPlanilla(p.estado) }}
+                </span>
+              </td>
+              <td class="text-center">
+                <div class="inline-flex items-center gap-1.5">
+                  <button type="button" (click)="abrirPlanillaDetalle(p.id_planilla)"
+                    class="cursor-pointer rounded-lg bg-amber-100 px-2.5 py-1 text-[11px] font-black text-amber-900 hover:bg-amber-200">
+                    Visualizar
+                  </button>
+                  <button type="button" (click)="descargarPlanillaCsv(p.id_planilla, p.codigo_documento)"
+                    class="cursor-pointer rounded-lg border border-slate-300 bg-white px-2 py-1 text-[11px] font-bold text-slate-700 hover:bg-slate-50">
+                    CSV
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="planillas.length === 0">
+              <td colspan="8" class="p-8 text-center text-slate-400">
+                {{ cargandoPlanillas ? 'Cargando planillas...' : 'No hay planillas generadas para los filtros actuales.' }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- VISOR OFICIAL E IMPRIMIBLE DE LA PLANILLA SELECCIONADA -->
+    <section *ngIf="planillaActiva as doc" class="flex flex-col gap-4">
+
+      <!-- BARRA DE ACCIONES DEL DOCUMENTO -->
+      <div class="fx-panel flex flex-wrap items-center justify-between gap-3 p-4 barra-acciones-planillas no-print">
+        <div>
+          <span class="inline-block rounded-md border px-2 py-0.5 text-[10px] font-black" [ngClass]="claseEstadoPlanilla(doc.estado)">
+            {{ etiquetaEstadoPlanilla(doc.estado) }}
+          </span>
+          <strong class="ml-2 text-sm font-black text-slate-900">{{ doc.codigo_documento }}</strong>
+          <span class="ml-2 text-xs text-slate-500">
+            Plantilla {{ doc.plantilla_codigo }} v{{ doc.version_numero }} · Evento: {{ doc.evento_origen }}
+          </span>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <button *ngIf="doc.estado !== 'CERRADO'" type="button" (click)="guardarManualesPlanilla()" [disabled]="guardandoPlanilla"
+            class="btn-naranja inline-flex cursor-pointer items-center gap-1 rounded-xl px-3 py-2 text-xs font-black">
+            <span class="material-symbols-outlined text-[16px]">save</span>
+            Guardar Cambios
+          </button>
+
+          <button *ngIf="doc.estado !== 'CERRADO' && doc.estado !== 'VALIDADO'" type="button" (click)="regenerarPlanillaActiva()" [disabled]="generandoPlanilla"
+            class="btn-outline-naranja inline-flex cursor-pointer items-center gap-1 rounded-xl px-3 py-2 text-xs font-black">
+            <span class="material-symbols-outlined text-[16px]">sync</span>
+            Recalcular SIRAE
+          </button>
+
+          <button *ngIf="doc.estado !== 'CERRADO' && (esSuperAdmin || esSupervisor || esAdministrador)" type="button"
+            (click)="guardarManualesPlanilla('OBSERVADO')" [disabled]="guardandoPlanilla"
+            class="cursor-pointer rounded-xl border border-rose-300 bg-rose-50 px-3 py-2 text-xs font-black text-rose-800 hover:bg-rose-100">
+            Observar
+          </button>
+
+          <button *ngIf="doc.estado !== 'CERRADO' && (esSuperAdmin || esSupervisor || esAdministrador)" type="button"
+            (click)="guardarManualesPlanilla('VALIDADO')" [disabled]="guardandoPlanilla"
+            class="cursor-pointer rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-800 hover:bg-emerald-100">
+            Validar
+          </button>
+
+          <button *ngIf="doc.estado !== 'CERRADO' && (esSuperAdmin || esSupervisor)" type="button"
+            (click)="guardarManualesPlanilla('CERRADO')" [disabled]="guardandoPlanilla"
+            class="cursor-pointer rounded-xl border border-slate-400 bg-slate-100 px-3 py-2 text-xs font-black text-slate-800 hover:bg-slate-200">
+            Cerrar
+          </button>
+
+          <button type="button" (click)="descargarPlanillaCsv(doc.id_planilla, doc.codigo_documento)"
+            class="cursor-pointer rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50">
+            CSV
+          </button>
+
+          <button type="button" (click)="imprimirDocumentoOficial()"
+            class="btn-rojo-pdf inline-flex cursor-pointer items-center gap-1 rounded-xl px-3 py-2 text-xs font-black">
+            <span class="material-symbols-outlined text-[16px]">print</span>
+            Imprimir / PDF
+          </button>
+
+          <button type="button" (click)="cerrarPlanillaDetalle()"
+            class="cursor-pointer rounded-xl bg-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-300">
+            Cerrar Visor
+          </button>
+        </div>
+      </div>
+
+      <!-- HOJA OFICIAL IMPRIMIBLE -->
+      <div class="zona-impresion-oficial">
+        <div class="hoja-oficial-preview">
+
+          <!-- MEMBRETE -->
+          <div class="encabezado-membrete">
+            <div class="text-center font-black text-xs">
+              <div>SIRAE - PAE</div>
+              <div class="mt-1 text-[10px] font-bold">{{ doc.categoria_proceso }}</div>
+            </div>
+
+            <div class="membrete-titulo">
+              <h3>{{ doc.contenido_snapshot?.encabezado?.titulo || doc.nombre_documento }}</h3>
+              <h4>{{ doc.contenido_snapshot?.encabezado?.subtitulo || 'PROGRAMA DE ALIMENTACIÓN ESCOLAR' }}</h4>
+              <div class="membrete-meta">
+                <span>CÓDIGO: {{ doc.codigo_documento }}</span>
+                <span>PLANTILLA: {{ doc.plantilla_codigo }} v{{ doc.version_numero }}</span>
+                <span>PERIODO: {{ doc.periodo }}</span>
               </div>
-            </td>
-            <td class="px-5 py-3 text-right font-black text-slate-800">{{ s.cupos }}</td>
-            <td class="px-5 py-3 text-right text-base font-black text-[#e69a0c]">{{ s.entregas }}</td>
-            <td class="px-5 py-3 text-right font-bold text-slate-700">{{ s.kilos }}</td>
-            <td class="px-5 py-3 text-right font-bold" [ngClass]="s.novedades > 0 ? 'text-amber-600' : 'text-slate-400'">{{ s.novedades }}</td>
-            <td class="px-5 py-3 text-right font-bold text-slate-700">{{ s.dias }}</td>
-            <td class="max-w-[200px] truncate px-5 py-3 text-slate-600" [title]="s.ingredienteTop">{{ s.ingredienteTop }}</td>
-            <td class="px-5 py-3 text-center">
-              <button type="button" (click)="abrirSede(s); $event.stopPropagation()" [attr.aria-label]="'Ver detalle de ' + s.nombre"
-                class="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-[#faa911] bg-white text-[#e69a0c] transition hover:bg-orange-50">
-                <span class="material-symbols-outlined text-[18px]">visibility</span>
-              </button>
-            </td>
-          </tr>
-        </tbody>
-        <tfoot *ngIf="resumenSedes.length > 1" class="border-t-2 border-orange-200 bg-orange-50/50 text-sm">
-          <tr>
-            <td class="px-5 py-3 font-black text-slate-900">Total</td>
-            <td class="px-5 py-3 text-right font-black text-slate-900">{{ totales.cupos }}</td>
-            <td class="px-5 py-3 text-right font-black text-[#e69a0c]">{{ totales.entregas }}</td>
-            <td class="px-5 py-3 text-right font-black text-slate-900">{{ totales.kilos }}</td>
-            <td class="px-5 py-3 text-right font-black text-slate-900">{{ totales.novedades }}</td>
-            <td class="px-5 py-3 text-right font-black text-slate-900">{{ totales.dias }}</td>
-            <td class="px-5 py-3"></td>
-            <td class="px-5 py-3"></td>
-          </tr>
-        </tfoot>
-      </table>
-    </div>
+            </div>
 
-    <div *ngIf="resumenSedes.length === 0" class="flex flex-col items-center gap-3 px-6 py-12 text-center">
-      <div class="ico-suave flex h-14 w-14 items-center justify-center rounded-2xl">
-        <span class="material-symbols-outlined text-[28px]">search_off</span>
+            <div class="text-right text-[10px] font-bold">
+              <div>Estado: {{ doc.estado }}</div>
+              <div>Fecha: {{ doc.fecha_generacion | slice:0:10 }}</div>
+            </div>
+          </div>
+
+          <!-- DATOS DEL ÁMBITO -->
+          <div class="grid-datos-sede">
+            <table>
+              <tbody>
+                <tr>
+                  <th>Institución Educativa</th>
+                  <td>{{ doc.contenido_snapshot?.encabezado?.institucion?.nombre || doc.institucion_nombre }}</td>
+                  <th>NIT</th>
+                  <td>{{ doc.contenido_snapshot?.encabezado?.institucion?.nit || '—' }}</td>
+                </tr>
+                <tr>
+                  <th>Sede Educativa</th>
+                  <td>{{ doc.contenido_snapshot?.encabezado?.sede?.nombre || doc.sede_nombre }}</td>
+                  <th>Código DANE</th>
+                  <td>{{ doc.contenido_snapshot?.encabezado?.sede?.codigo_dane || '—' }}</td>
+                </tr>
+                <tr>
+                  <th>Contrato / Operador</th>
+                  <td>
+                    {{ doc.contenido_snapshot?.encabezado?.contrato?.numero_cor || doc.contrato_numero || 'PENDIENTE' }}
+                    <span *ngIf="doc.contenido_snapshot?.encabezado?.contrato?.operador">
+                      ({{ doc.contenido_snapshot.encabezado.contrato.operador }})
+                    </span>
+                  </td>
+                  <th>Jornada / Rango</th>
+                  <td>
+                    {{ doc.contenido_snapshot?.encabezado?.jornada?.nombre || doc.jornada_nombre || 'Todas' }}
+                    <span *ngIf="doc.fecha_inicio || doc.fecha_fin"> ({{ doc.fecha_inicio || '...' }} a {{ doc.fecha_fin || '...' }})</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- ALERTAS DE PENDIENTES Y CONFIGURACIÓN -->
+          <div *ngIf="doc.campos_pendientes?.length" class="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900 no-print">
+            <strong class="block font-black">Campos o secciones marcados como PENDIENTE ({{ doc.campos_pendientes?.length }}):</strong>
+            <ul class="m-0 mt-1 pl-4">
+              <li *ngFor="let pend of doc.campos_pendientes">{{ pend.motivo || pend.etiqueta }}</li>
+            </ul>
+          </div>
+
+          <div *ngIf="doc.contenido_snapshot?.alertas_conversion?.length || doc.contenido_snapshot?.alertas_configuracion?.length"
+            class="mb-4 rounded-xl border border-sky-200 bg-sky-50 p-3 text-xs text-sky-900 no-print">
+            <strong class="block font-black">Notas de Cálculo / Conversiones de Unidad:</strong>
+            <ul class="m-0 mt-1 pl-4">
+              <li *ngFor="let ac of (doc.contenido_snapshot?.alertas_conversion || [])">{{ ac }}</li>
+              <li *ngFor="let cfg of (doc.contenido_snapshot?.alertas_configuracion || [])">{{ cfg.mensaje || cfg }}</li>
+            </ul>
+          </div>
+
+          <!-- RESUMEN DE CUPOS Y BALANCE DE CADENA -->
+          <div *ngIf="doc.contenido_snapshot?.totales_cadena as tc" class="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-6 text-center text-xs">
+            <div class="rounded-lg border border-slate-300 p-2">
+              <span class="block text-[10px] text-slate-500">Cupos Totales</span>
+              <strong>{{ tc.total_cupos }}</strong>
+            </div>
+            <div class="rounded-lg border border-slate-300 p-2">
+              <span class="block text-[10px] text-slate-500">Programado</span>
+              <strong>{{ tc.total_programado }}</strong>
+            </div>
+            <div class="rounded-lg border border-slate-300 p-2">
+              <span class="block text-[10px] text-slate-500">Despachado</span>
+              <strong>{{ tc.total_despachado }}</strong>
+            </div>
+            <div class="rounded-lg border border-slate-300 p-2">
+              <span class="block text-[10px] text-slate-500">Recibido</span>
+              <strong>{{ tc.total_recibido }}</strong>
+            </div>
+            <div class="rounded-lg border border-slate-300 p-2">
+              <span class="block text-[10px] text-slate-500">Consumido</span>
+              <strong>{{ tc.total_consumido }}</strong>
+            </div>
+            <div class="rounded-lg border border-slate-300 p-2">
+              <span class="block text-[10px] text-slate-500">Asistencia</span>
+              <strong>{{ tc.total_asistencia }}</strong>
+            </div>
+          </div>
+
+          <!-- CAMPOS DE LA PLANILLA (AUTOMÁTICOS Y MANUALES) -->
+          <div *ngIf="doc.contenido_snapshot?.campos?.length" class="mb-4">
+            <h4 class="m-0 mb-2 text-xs font-black uppercase text-slate-800">Campos del Documento</h4>
+            <div class="tabla-oficial-wrap">
+              <table class="tabla-oficial">
+                <thead>
+                  <tr>
+                    <th>Campo</th>
+                    <th>Origen / Fuente</th>
+                    <th>Valor</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let cmp of doc.contenido_snapshot.campos">
+                    <td class="font-bold">
+                      {{ cmp.etiqueta }}
+                      <span *ngIf="cmp.requerido" class="text-rose-600">*</span>
+                    </td>
+                    <td class="text-[11px] text-slate-500">
+                      {{ cmp.origen }} {{ cmp.fuente_sirae ? '(' + cmp.fuente_sirae + ')' : '' }}
+                    </td>
+                    <td>
+                      <ng-container *ngIf="cmp.origen === 'MANUAL' && doc.estado !== 'CERRADO'; else campoSoloLectura">
+                        <input type="text" [(ngModel)]="manualesEdit[cmp.codigo]"
+                          [placeholder]="cmp.valor === 'PENDIENTE' ? 'Pendiente por diligenciar...' : ''"
+                          class="input-tabla text-left" />
+                      </ng-container>
+                      <ng-template #campoSoloLectura>
+                        <span [class.font-black]="cmp.pendiente" [class.text-amber-700]="cmp.pendiente">
+                          {{ cmp.valor }}
+                        </span>
+                      </ng-template>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- TABLAS OPERATIVAS DILIGENCIADAS -->
+          <div *ngFor="let tbl of (doc.contenido_snapshot?.tablas || [])" class="mb-5">
+            <div class="mb-1.5 flex items-center justify-between">
+              <h4 class="m-0 text-xs font-black uppercase text-slate-900">{{ tbl.titulo }}</h4>
+              <span *ngIf="tbl.pendiente" class="rounded bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">
+                PENDIENTE (sin registros en {{ tbl.fuente_sirae }})
+              </span>
+            </div>
+
+            <div class="tabla-oficial-wrap">
+              <table class="tabla-oficial">
+                <thead>
+                  <tr>
+                    <th *ngFor="let col of tbl.columnas">{{ col.etiqueta || col.codigo }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let row of tbl.filas; let rIdx = index">
+                    <td *ngFor="let col of tbl.columnas" [class.text-right]="col.tipo === 'NUMERO' || col.tipo === 'FORMULA'">
+                      <ng-container *ngIf="col.origen === 'MANUAL' && doc.estado !== 'CERRADO'; else celdaAuto">
+                        <input [type]="col.tipo === 'NUMERO' ? 'number' : 'text'"
+                          [ngModel]="valorManualTabla(tbl.codigo, rIdx, col.codigo, row[col.codigo])"
+                          (ngModelChange)="actualizarManualTabla(tbl.codigo, rIdx, col.codigo, $event)"
+                          class="input-tabla" />
+                      </ng-container>
+                      <ng-template #celdaAuto>
+                        <span [class.text-amber-700]="row[col.codigo] === 'PENDIENTE'" [class.font-bold]="row[col.codigo] === 'PENDIENTE'">
+                          {{ row[col.codigo] === null || row[col.codigo] === undefined || row[col.codigo] === '' ? '—' : row[col.codigo] }}
+                        </span>
+                      </ng-template>
+                    </td>
+                  </tr>
+                  <tr *ngIf="!tbl.filas?.length">
+                    <td [attr.colspan]="tbl.columnas.length || 1" class="p-4 text-center text-slate-400">
+                      PENDIENTE - Sin registros disponibles para esta sección en el periodo seleccionado.
+                    </td>
+                  </tr>
+                </tbody>
+                <tfoot *ngIf="clavesDe(tbl.totales).length > 0">
+                  <tr class="bg-slate-100 font-black">
+                    <td *ngFor="let col of tbl.columnas; let cIdx = index" [class.text-right]="col.tipo === 'NUMERO' || col.tipo === 'FORMULA'">
+                      {{ cIdx === 0 && tbl.totales[col.codigo] === undefined ? 'TOTALES' : (tbl.totales[col.codigo] ?? '') }}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+
+          <!-- OBSERVACIONES -->
+          <div class="mb-4">
+            <label class="block text-xs font-black uppercase text-slate-700 mb-1">Observaciones</label>
+            <textarea *ngIf="doc.estado !== 'CERRADO'; else obsLectura" [(ngModel)]="observacionEdit" rows="2"
+              placeholder="Registrar observaciones operativas, hallazgos o soportes de revisión..."
+              class="w-full rounded-xl border border-slate-300 p-2.5 text-xs text-slate-800 no-print"></textarea>
+            <div *ngIf="doc.estado !== 'CERRADO'" class="hidden print:block border border-slate-400 p-2 text-xs">
+              {{ observacionEdit || 'Sin observaciones adicionales.' }}
+            </div>
+            <ng-template #obsLectura>
+              <div class="border border-slate-400 p-2 text-xs">{{ doc.observaciones || 'Sin observaciones.' }}</div>
+            </ng-template>
+          </div>
+
+          <!-- FIRMAS DE RESPONSABLES REALES EN BD -->
+          <div class="bloque-firmas">
+            <div class="caja-firma">
+              <strong>Supervisor Asignado</strong>
+              <div class="linea-firma">
+                <span>{{ doc.contenido_snapshot?.responsables?.supervisor || 'PENDIENTE DE ASIGNACIÓN' }}</span>
+              </div>
+            </div>
+            <div class="caja-firma">
+              <strong>Administrador Institucional</strong>
+              <div class="linea-firma">
+                <span>{{ doc.contenido_snapshot?.responsables?.administrador_institucional || 'PENDIENTE DE ASIGNACIÓN' }}</span>
+              </div>
+            </div>
+            <div class="caja-firma">
+              <strong>Jefa de Manipuladoras / Generado por</strong>
+              <div class="linea-firma">
+                <span class="block">{{ doc.contenido_snapshot?.responsables?.jefa_manipuladoras || 'PENDIENTE DE ASIGNACIÓN' }}</span>
+                <span class="text-[9px] text-slate-500">Generó: {{ doc.contenido_snapshot?.responsables?.generado_por || doc.responsable_nombre }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- TRAZABILIDAD -->
+          <div class="mt-4 border-t border-slate-300 pt-2 text-[10px] text-slate-500">
+            <strong>Trazabilidad SIRAE:</strong>
+            Plantilla {{ doc.plantilla_codigo }} v{{ doc.version_numero }} · Generado: {{ doc.fecha_generacion }}
+            <span *ngIf="doc.revisado_por_nombre"> · Revisado por: {{ doc.revisado_por_nombre }}</span>
+            <span *ngIf="doc.registros_origen">
+              · IDs origen (Contratos: {{ doc.registros_origen['contrato_ids']?.length || 0 }},
+              Entregas: {{ doc.registros_origen['entrega_ids']?.length || 0 }},
+              Inventarios: {{ doc.registros_origen['inventario_ids']?.length || 0 }},
+              Asistencias: {{ doc.registros_origen['asistencia_ids']?.length || 0 }})
+            </span>
+          </div>
+
+        </div>
       </div>
-      <p class="m-0 text-sm font-black text-slate-800">No hay sedes para mostrar</p>
-      <p class="m-0 max-w-sm text-xs font-medium text-slate-500">Cambia las fechas o la sede, o usa "Ver todo" en el rango rápido. Si el problema sigue, revisa que la institución tenga sedes registradas.</p>
-    </div>
+    </section>
+
   </section>
-</section>
 
-<!-- ================= VENTANA EMERGENTE: DETALLE DE UNA SEDE ================= -->
-<div *ngIf="sedeDetalle as sede" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4" (click)="cerrarSede()">
-  <div class="fx-roboto fx-up max-h-[90vh] w-full max-w-[760px] overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl"
-    (click)="$event.stopPropagation()" role="dialog" aria-modal="true" [attr.aria-label]="'Detalle de ' + sede.nombre"
-    style="font-family: 'Roboto', sans-serif;">
+  <!-- ======================================================================= -->
+  <!-- PESTAÑA 3: CONSTRUCTOR DE PLANTILLAS OFICIALES Y VERSIONADO (SIR-170)   -->
+  <!-- ======================================================================= -->
+  <section *ngIf="pestanaActiva === 'plantillas'" class="grid grid-cols-1 gap-6 lg:grid-cols-12 no-print">
 
-    <!-- Encabezado -->
-    <div class="flex items-start justify-between gap-3 border-b border-slate-200 pb-4">
+    <!-- LISTA DE PLANTILLAS -->
+    <aside class="fx-panel flex flex-col gap-3 p-5 lg:col-span-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="m-0 text-base font-black text-slate-900">Plantillas Oficiales</h2>
+          <p class="m-0 text-xs text-slate-500">{{ plantillas.length }} formatos registrados</p>
+        </div>
+        <button *ngIf="esSuperAdmin" type="button" (click)="iniciarNuevaPlantilla()"
+          class="btn-naranja inline-flex cursor-pointer items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-black">
+          <span class="material-symbols-outlined text-[16px]">add</span>
+          Nueva
+        </button>
+      </div>
+
+      <div class="flex flex-col gap-2 max-h-[650px] overflow-y-auto pr-1">
+        <button *ngFor="let tpl of plantillas" type="button" (click)="seleccionarPlantilla(tpl)"
+          class="flex flex-col items-start gap-1 rounded-2xl border p-3 text-left transition cursor-pointer"
+          [ngClass]="plantillaForm.id_plantilla === tpl.id_plantilla ? 'border-[#faa911] bg-amber-50/70' : 'border-slate-200 bg-white hover:bg-slate-50'">
+          <div class="flex w-full items-center justify-between gap-2">
+            <strong class="text-xs font-black text-slate-900">{{ tpl.codigo }}</strong>
+            <span class="rounded-md px-2 py-0.5 text-[10px] font-black"
+              [ngClass]="tpl.version_publicada ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'">
+              {{ tpl.version_publicada ? 'Pub. v' + tpl.version_publicada.numero_version : 'En borrador' }}
+            </span>
+          </div>
+          <span class="text-xs font-bold text-slate-700">{{ tpl.nombre }}</span>
+          <span class="text-[11px] text-slate-500">{{ tpl.categoria_proceso_display || tpl.categoria_proceso }}</span>
+        </button>
+
+        <div *ngIf="plantillas.length === 0" class="p-6 text-center text-xs text-slate-400">
+          {{ cargandoPlantillas ? 'Cargando catálogo...' : 'No tienes plantillas disponibles para tu rol.' }}
+        </div>
+      </div>
+    </aside>
+
+    <!-- EDITOR / DETALLE Y PREVISUALIZACIÓN DE PLANTILLA -->
+    <section class="fx-panel flex flex-col gap-5 p-5 lg:col-span-8">
+
+      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3">
+        <div>
+          <h2 class="m-0 text-lg font-black text-slate-900">
+            {{ plantillaForm.id_plantilla ? 'Configuración: ' + plantillaForm.nombre : 'Nueva Plantilla Oficial PAE' }}
+          </h2>
+          <p class="m-0 text-xs text-slate-500">
+            Versión v{{ plantillaForm.numero_version }} · Estado: <strong>{{ plantillaForm.estado_version }}</strong>
+          </p>
+        </div>
+
+        <div class="flex flex-wrap gap-2">
+          <button *ngIf="esSuperAdmin && plantillaForm.es_inmutable && plantillaForm.id_plantilla" type="button"
+            (click)="crearNuevaVersion()" [disabled]="guardandoPlantilla"
+            class="btn-naranja inline-flex cursor-pointer items-center gap-1 rounded-xl px-3.5 py-2 text-xs font-black">
+            <span class="material-symbols-outlined text-[16px]">content_copy</span>
+            Crear Nueva Versión en Borrador
+          </button>
+
+          <button *ngIf="esSuperAdmin && !plantillaForm.es_inmutable" type="button" (click)="guardarPlantilla()" [disabled]="guardandoPlantilla"
+            class="btn-naranja inline-flex cursor-pointer items-center gap-1 rounded-xl px-3.5 py-2 text-xs font-black">
+            <span class="material-symbols-outlined text-[16px]">save</span>
+            {{ guardandoPlantilla ? 'Guardando...' : 'Guardar Borrador' }}
+          </button>
+
+          <button *ngIf="esSuperAdmin && plantillaForm.id_plantilla && plantillaForm.estado_version === 'BORRADOR'" type="button"
+            (click)="publicarPlantilla()" [disabled]="guardandoPlantilla"
+            class="cursor-pointer rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-black text-white hover:bg-emerald-700">
+            Publicar Versión
+          </button>
+        </div>
+      </div>
+
+      <!-- AVISO DE INMUTABILIDAD -->
+      <div *ngIf="plantillaForm.es_inmutable" class="rounded-2xl border border-amber-300 bg-amber-50 p-3.5 text-xs text-amber-900">
+        <strong class="font-black">Versión inmutable ({{ plantillaForm.estado_version }}):</strong>
+        Las versiones publicadas o utilizadas en planillas históricas no pueden modificarse retroactivamente.
+        <span *ngIf="esSuperAdmin">Usa "Crear Nueva Versión en Borrador" para evolucionar el formato sin alterar documentos anteriores.</span>
+      </div>
+
+      <!-- DATOS GENERALES -->
+      <fieldset [disabled]="!esSuperAdmin || plantillaForm.es_inmutable" class="flex flex-col gap-4 border-0 p-0 m-0">
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <label class="flex flex-col gap-1 text-xs font-bold text-slate-700">
+            Código único
+            <input type="text" [(ngModel)]="plantillaForm.codigo" [disabled]="!!plantillaForm.id_plantilla"
+              placeholder="EJ: PAE-REM-01"
+              class="h-9 rounded-xl border border-slate-300 bg-white px-3 text-xs font-semibold" />
+          </label>
+          <label class="flex flex-col gap-1 text-xs font-bold text-slate-700">
+            Nombre de la Plantilla
+            <input type="text" [(ngModel)]="plantillaForm.nombre" placeholder="Nombre oficial del formato"
+              class="h-9 rounded-xl border border-slate-300 bg-white px-3 text-xs font-semibold" />
+          </label>
+          <label class="flex flex-col gap-1 text-xs font-bold text-slate-700">
+            Proceso del PAE
+            <select [(ngModel)]="plantillaForm.categoria_proceso"
+              class="h-9 rounded-xl border border-slate-300 bg-white px-3 text-xs font-semibold">
+              <option *ngFor="let p of (metadatosPlantillas?.procesos_pae || [])" [value]="p.codigo">{{ p.nombre }}</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <label class="flex flex-col gap-1 text-xs font-bold text-slate-700">
+            Descripción
+            <input type="text" [(ngModel)]="plantillaForm.descripcion"
+              class="h-9 rounded-xl border border-slate-300 bg-white px-3 text-xs" />
+          </label>
+          <label class="flex flex-col gap-1 text-xs font-bold text-slate-700">
+            Finalidad operativa
+            <input type="text" [(ngModel)]="plantillaForm.finalidad"
+              class="h-9 rounded-xl border border-slate-300 bg-white px-3 text-xs" />
+          </label>
+        </div>
+
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div>
+            <span class="block text-xs font-bold text-slate-700 mb-1.5">Roles autorizados</span>
+            <div class="flex flex-wrap gap-2">
+              <label *ngFor="let rol of (metadatosPlantillas?.roles_disponibles || [])"
+                class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                <input type="checkbox" [checked]="tieneRolAutorizado(rol.codigo)" (change)="toggleRolAutorizado(rol.codigo)" />
+                {{ rol.nombre }}
+              </label>
+            </div>
+          </div>
+          <label class="flex flex-col gap-1 text-xs font-bold text-slate-700">
+            Notas de versión
+            <input type="text" [(ngModel)]="plantillaForm.notas_version" placeholder="Resumen de cambios de esta versión..."
+              class="h-9 rounded-xl border border-slate-300 bg-white px-3 text-xs" />
+          </label>
+        </div>
+
+        <!-- SECCIONES -->
+        <div class="rounded-2xl border border-slate-200 p-3.5">
+          <div class="mb-2 flex items-center justify-between">
+            <h3 class="m-0 text-xs font-black uppercase text-slate-800">Secciones ({{ plantillaForm.esquema.secciones.length }})</h3>
+            <button *ngIf="esSuperAdmin && !plantillaForm.es_inmutable" type="button" (click)="agregarSeccion()"
+              class="cursor-pointer rounded-lg bg-amber-100 px-2.5 py-1 text-[11px] font-black text-amber-900">
+              + Sección
+            </button>
+          </div>
+          <div class="flex flex-col gap-2">
+            <div *ngFor="let sec of plantillaForm.esquema.secciones; let si = index" class="grid grid-cols-1 gap-2 sm:grid-cols-5 items-center">
+              <input type="text" [(ngModel)]="sec.codigo" placeholder="Código" class="h-8 rounded-lg border border-slate-300 px-2 text-xs" />
+              <input type="text" [(ngModel)]="sec.titulo" placeholder="Título sección" class="h-8 rounded-lg border border-slate-300 px-2 text-xs sm:col-span-2" />
+              <select [(ngModel)]="sec.fuente_sirae" class="h-8 rounded-lg border border-slate-300 px-2 text-xs">
+                <option value="">Manual</option>
+                <option *ngFor="let f of (metadatosPlantillas?.fuentes_sirae || [])" [value]="f.codigo">{{ f.nombre }}</option>
+              </select>
+              <button *ngIf="esSuperAdmin && !plantillaForm.es_inmutable" type="button" (click)="eliminarSeccion(si)"
+                class="cursor-pointer rounded-lg bg-rose-50 px-2 py-1 text-xs font-bold text-rose-700">
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- CAMPOS -->
+        <div class="rounded-2xl border border-slate-200 p-3.5">
+          <div class="mb-2 flex items-center justify-between">
+            <h3 class="m-0 text-xs font-black uppercase text-slate-800">Campos Automáticos y Manuales ({{ plantillaForm.esquema.campos.length }})</h3>
+            <button *ngIf="esSuperAdmin && !plantillaForm.es_inmutable" type="button" (click)="agregarCampo()"
+              class="cursor-pointer rounded-lg bg-amber-100 px-2.5 py-1 text-[11px] font-black text-amber-900">
+              + Campo
+            </button>
+          </div>
+          <div class="flex flex-col gap-2">
+            <div *ngFor="let cmp of plantillaForm.esquema.campos; let ci = index" class="grid grid-cols-1 gap-2 rounded-xl bg-slate-50 p-2 sm:grid-cols-6 items-center">
+              <input type="text" [(ngModel)]="cmp.codigo" placeholder="Código" class="h-8 rounded-lg border border-slate-300 bg-white px-2 text-xs" />
+              <input type="text" [(ngModel)]="cmp.etiqueta" placeholder="Etiqueta" class="h-8 rounded-lg border border-slate-300 bg-white px-2 text-xs" />
+              <select [(ngModel)]="cmp.origen" class="h-8 rounded-lg border border-slate-300 bg-white px-2 text-xs">
+                <option value="AUTOMATICO">Automático SIRAE</option>
+                <option value="MANUAL">Manual usuario</option>
+              </select>
+              <select [(ngModel)]="cmp.fuente_sirae" [disabled]="cmp.origen === 'MANUAL'" class="h-8 rounded-lg border border-slate-300 bg-white px-2 text-xs">
+                <option value="">-- Fuente --</option>
+                <option *ngFor="let f of (metadatosPlantillas?.fuentes_sirae || [])" [value]="f.codigo">{{ f.nombre }}</option>
+              </select>
+              <select [(ngModel)]="cmp.campo_fuente" [disabled]="cmp.origen === 'MANUAL'" class="h-8 rounded-lg border border-slate-300 bg-white px-2 text-xs">
+                <option value="">-- Campo fuente --</option>
+                <option *ngFor="let cf of camposDeFuente(cmp.fuente_sirae)" [value]="cf">{{ cf }}</option>
+              </select>
+              <button *ngIf="esSuperAdmin && !plantillaForm.es_inmutable" type="button" (click)="eliminarCampo(ci)"
+                class="cursor-pointer rounded-lg bg-rose-50 px-2 py-1 text-xs font-bold text-rose-700">
+                Quitar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- TABLAS, COLUMNAS, FÓRMULAS Y CONVERSIONES DE UNIDADES -->
+        <div class="rounded-2xl border border-slate-200 p-3.5 flex flex-col gap-3">
+          <div class="flex items-center justify-between">
+            <h3 class="m-0 text-xs font-black uppercase text-slate-800">Tablas, Fórmulas y Conversiones ({{ plantillaForm.esquema.tablas.length }})</h3>
+            <button *ngIf="esSuperAdmin && !plantillaForm.es_inmutable" type="button" (click)="agregarTabla()"
+              class="cursor-pointer rounded-lg bg-amber-100 px-2.5 py-1 text-[11px] font-black text-amber-900">
+              + Tabla
+            </button>
+          </div>
+
+          <div *ngFor="let tbl of plantillaForm.esquema.tablas; let ti = index" class="rounded-xl border border-slate-200 bg-slate-50/70 p-3 flex flex-col gap-2.5">
+            <div class="grid grid-cols-1 gap-2 sm:grid-cols-4 items-center">
+              <input type="text" [(ngModel)]="tbl.codigo" placeholder="Código tabla" class="h-8 rounded-lg border border-slate-300 bg-white px-2 text-xs font-bold" />
+              <input type="text" [(ngModel)]="tbl.titulo" placeholder="Título tabla" class="h-8 rounded-lg border border-slate-300 bg-white px-2 text-xs sm:col-span-2" />
+              <select [(ngModel)]="tbl.fuente_sirae" class="h-8 rounded-lg border border-slate-300 bg-white px-2 text-xs">
+                <option *ngFor="let f of (metadatosPlantillas?.fuentes_sirae || [])" [value]="f.codigo">{{ f.nombre }}</option>
+              </select>
+            </div>
+
+            <div class="flex items-center justify-between text-[11px] font-bold text-slate-600">
+              <span>Columnas ({{ tbl.columnas.length }})</span>
+              <div class="flex gap-2">
+                <button *ngIf="esSuperAdmin && !plantillaForm.es_inmutable" type="button" (click)="agregarColumna(ti)"
+                  class="cursor-pointer rounded bg-white border border-slate-300 px-2 py-0.5 text-[11px] font-bold">
+                  + Columna
+                </button>
+                <button *ngIf="esSuperAdmin && !plantillaForm.es_inmutable" type="button" (click)="agregarConversion(ti)"
+                  class="cursor-pointer rounded bg-white border border-sky-300 px-2 py-0.5 text-[11px] font-bold text-sky-700">
+                  + Conversión
+                </button>
+                <button *ngIf="esSuperAdmin && !plantillaForm.es_inmutable" type="button" (click)="eliminarTabla(ti)"
+                  class="cursor-pointer rounded bg-rose-50 px-2 py-0.5 text-[11px] font-bold text-rose-700">
+                  Quitar Tabla
+                </button>
+              </div>
+            </div>
+
+            <div *ngFor="let col of tbl.columnas; let cli = index" class="grid grid-cols-1 gap-1.5 sm:grid-cols-7 items-center bg-white rounded-lg p-1.5 border border-slate-200">
+              <input type="text" [(ngModel)]="col.codigo" placeholder="código" class="h-7 rounded border border-slate-200 px-1.5 text-[11px]" />
+              <input type="text" [(ngModel)]="col.etiqueta" placeholder="Etiqueta" class="h-7 rounded border border-slate-200 px-1.5 text-[11px]" />
+              <select [(ngModel)]="col.origen" class="h-7 rounded border border-slate-200 px-1 text-[11px]">
+                <option value="AUTOMATICO">Auto</option>
+                <option value="MANUAL">Manual</option>
+              </select>
+              <select [(ngModel)]="col.tipo" class="h-7 rounded border border-slate-200 px-1 text-[11px]">
+                <option value="TEXTO">Texto</option>
+                <option value="NUMERO">Número</option>
+                <option value="FORMULA">Fórmula</option>
+                <option value="FECHA">Fecha</option>
+              </select>
+              <input type="text" [(ngModel)]="col.formula" placeholder="Fórmula ej: a - b" class="h-7 rounded border border-slate-200 px-1.5 text-[11px]" />
+              <label class="inline-flex items-center gap-1 text-[10px] font-bold text-slate-600">
+                <input type="checkbox" [(ngModel)]="col.calcular_total" /> Sumar
+              </label>
+              <button *ngIf="esSuperAdmin && !plantillaForm.es_inmutable" type="button" (click)="eliminarColumna(ti, cli)"
+                class="cursor-pointer rounded bg-rose-50 px-1.5 py-0.5 text-[10px] font-bold text-rose-700">
+                X
+              </button>
+            </div>
+
+            <!-- CONVERSIONES DE UNIDAD -->
+            <div *ngIf="tbl.conversiones_unidad?.length" class="mt-1 flex flex-col gap-1.5">
+              <span class="text-[10px] font-bold uppercase text-sky-700">Conversiones de Unidades Configuradas</span>
+              <div *ngFor="let conv of (tbl.conversiones_unidad || []); let cvi = index"
+                class="grid grid-cols-1 gap-1.5 sm:grid-cols-5 items-center bg-sky-50/60 rounded-lg p-1.5 border border-sky-200">
+                <input type="text" [(ngModel)]="conv.columna_origen" placeholder="Col. origen" class="h-7 rounded border border-sky-200 bg-white px-1.5 text-[11px]" />
+                <input type="text" [(ngModel)]="conv.columna_destino" placeholder="Col. destino" class="h-7 rounded border border-sky-200 bg-white px-1.5 text-[11px]" />
+                <select [(ngModel)]="conv.unidad_origen_abrev" class="h-7 rounded border border-sky-200 bg-white px-1 text-[11px]">
+                  <option *ngFor="let u of (metadatosPlantillas?.unidades_medida || [])" [value]="u.abreviatura">{{ u.abreviatura }} ({{ u.nombre }})</option>
+                  <option value="g">g</option>
+                  <option value="kg">kg</option>
+                </select>
+                <select [(ngModel)]="conv.unidad_destino_abrev" class="h-7 rounded border border-sky-200 bg-white px-1 text-[11px]">
+                  <option *ngFor="let u of (metadatosPlantillas?.unidades_medida || [])" [value]="u.abreviatura">{{ u.abreviatura }} ({{ u.nombre }})</option>
+                  <option value="kg">kg</option>
+                  <option value="g">g</option>
+                </select>
+                <button *ngIf="esSuperAdmin && !plantillaForm.es_inmutable" type="button" (click)="eliminarConversion(ti, cvi)"
+                  class="cursor-pointer rounded bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-700">
+                  Quitar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </fieldset>
+
+      <!-- BARRA Y PANEL DE PREVISUALIZACIÓN ANTES DE PUBLICAR -->
+      <div *ngIf="plantillaForm.id_plantilla" class="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-3.5">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-xs font-bold text-slate-700">Previsualizar con sede real:</span>
+          <select [(ngModel)]="previewSedeId" class="h-9 rounded-xl border border-slate-300 bg-white px-2.5 text-xs">
+            <option [ngValue]="null">Ámbito general / primera disponible</option>
+            <option *ngFor="let s of (alcance?.sedes || [])" [ngValue]="s.id_sede">{{ s.nombre_sede }}</option>
+          </select>
+        </div>
+        <button type="button" (click)="previsualizarPlantilla()" [disabled]="previsualizando"
+          class="btn-outline-naranja inline-flex cursor-pointer items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-black">
+          <span class="material-symbols-outlined text-[16px]">preview</span>
+          {{ previsualizando ? 'Generando vista previa...' : 'Previsualizar Plantilla' }}
+        </button>
+      </div>
+
+      <div *ngIf="previewPlantilla as prev" class="rounded-2xl border-2 border-amber-300 bg-white p-4">
+        <div class="mb-2 flex items-center justify-between">
+          <strong class="text-sm font-black text-slate-900">
+            Vista Previa v{{ prev.numero_version }} ({{ prev.estado_version }}) · Estado doc estimado: {{ prev.estado_documento_estimado }}
+          </strong>
+          <button type="button" (click)="previewPlantilla = null" class="cursor-pointer text-xs font-bold text-slate-500">Cerrar</button>
+        </div>
+        <p class="m-0 mb-3 text-xs text-slate-600">
+          Institución: <strong>{{ prev.preview?.encabezado?.institucion?.nombre }}</strong> ·
+          Sede: <strong>{{ prev.preview?.encabezado?.sede?.nombre }}</strong> ·
+          Pendientes detectados: <strong>{{ prev.campos_pendientes?.length || 0 }}</strong>
+        </p>
+        <div *ngFor="let pt of (prev.preview?.tablas || [])" class="mb-3">
+          <strong class="block text-xs text-slate-800 mb-1">{{ pt.titulo }} ({{ pt.filas?.length || 0 }} filas)</strong>
+          <div class="tabla-oficial-wrap">
+            <table class="tabla-oficial">
+              <thead>
+                <tr>
+                  <th *ngFor="let col of pt.columnas">{{ col.etiqueta || col.codigo }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let row of (pt.filas || []) | slice:0:5">
+                  <td *ngFor="let col of pt.columnas">{{ $any(row)[col.codigo] ?? '—' }}</td>
+                </tr>
+                <tr *ngIf="!pt.filas?.length">
+                  <td [attr.colspan]="pt.columnas?.length || 1" class="text-center text-slate-400 p-3">Sin datos operativos para la sede de muestra</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </section>
+  </section>
+
+  <!-- ======================================================================= -->
+  <!-- PESTAÑA 4: HISTORIAL DE ENTREGAS POR SEDE (FLUJO SUPERVISOR)            -->
+  <!-- ======================================================================= -->
+  <section *ngIf="pestanaActiva === 'historial'" class="flex flex-col gap-6 no-print">
+
+    <!-- AVISO SI NO HAY INSTITUCIÓN ACTIVA PARA EL HISTORIAL POR SEDE -->
+    <div *ngIf="!institucionActiva"
+      class="flex flex-col items-center justify-center gap-4 rounded-3xl border border-dashed border-amber-300 bg-amber-50/50 p-10 text-center">
+      <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
+        <span class="material-symbols-outlined text-[32px]">school</span>
+      </div>
       <div>
-        <p class="m-0 text-[10px] font-black uppercase tracking-wider text-[#faa911]">Detalle de la sede</p>
-        <h3 class="m-0 mt-1 text-lg font-black text-slate-900">{{ sede.nombre }}</h3>
-        <p class="m-0 mt-0.5 text-[11px] text-slate-400">
-          {{ fechaDesde || fechaHasta ? 'Del ' + (fechaCorta(fechaDesde) || 'inicio') + ' al ' + (fechaCorta(fechaHasta) || 'hoy') : 'Todo el periodo disponible' }}
+        <h2 class="m-0 text-lg font-black text-slate-800">Selecciona una institución para el historial detallado por sede</h2>
+        <p class="m-0 mt-1 max-w-md text-xs text-slate-600">
+          Para ver el consolidado global multi-institución usa la pestaña "Reportes Operativos Consolidados", o selecciona una institución en tu panel de supervisor.
         </p>
       </div>
-      <button type="button" (click)="cerrarSede()" aria-label="Cerrar"
-        class="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200">
-        <span class="material-symbols-outlined text-[20px]">close</span>
-      </button>
-    </div>
-
-    <!-- Indicadores de la sede -->
-    <div class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-      <div class="rounded-2xl border border-slate-100 bg-slate-50 p-3">
-        <p class="m-0 text-[10px] font-bold uppercase text-slate-400">Cupos</p>
-        <p class="m-0 text-lg font-black text-slate-900">{{ sede.cupos }}</p>
-      </div>
-      <div class="rounded-2xl border border-slate-100 bg-slate-50 p-3">
-        <p class="m-0 text-[10px] font-bold uppercase text-slate-400">Entregas</p>
-        <p class="m-0 text-lg font-black text-[#e69a0c]">{{ sede.entregas }}</p>
-      </div>
-      <div class="rounded-2xl border border-slate-100 bg-slate-50 p-3">
-        <p class="m-0 text-[10px] font-bold uppercase text-slate-400">Kg recibidos</p>
-        <p class="m-0 text-lg font-black text-[#e69a0c]">{{ sede.kilos }}</p>
-      </div>
-      <div class="rounded-2xl border border-slate-100 bg-slate-50 p-3">
-        <p class="m-0 text-[10px] font-bold uppercase text-slate-400">Novedades</p>
-        <p class="m-0 text-lg font-black text-slate-900">{{ sede.novedades }}</p>
-      </div>
-    </div>
-
-    <!-- Ingredientes entregados en la sede -->
-    <div class="mt-5">
-      <h4 class="m-0 mb-2 text-sm font-black text-slate-900">Ingredientes entregados</h4>
       <div class="flex flex-wrap gap-2">
-        <span *ngFor="let i of ingredientesSede" class="inline-flex items-center gap-1.5 rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-xs font-bold text-orange-700">
-          {{ i.ingrediente }}
-          <span class="rounded-full bg-white px-1.5 text-[10px] font-black text-[#e69a0c]">{{ i.veces }}×</span>
-        </span>
-        <span *ngIf="ingredientesSede.length === 0" class="text-xs text-slate-500">Sin entregas en el rango seleccionado.</span>
+        <button type="button" (click)="cambiarPestanaPrincipal('consolidados')"
+          class="btn-naranja inline-flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2 text-xs font-black">
+          <span class="material-symbols-outlined text-[18px]">monitoring</span>
+          Ir a Reportes Consolidados
+        </button>
+        <button *ngIf="esSupervisor" type="button" (click)="irAInicioSupervisor()"
+          class="btn-outline-naranja inline-flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2 text-xs font-black">
+          <span class="material-symbols-outlined text-[18px]">space_dashboard</span>
+          Ir al Panel del Supervisor
+        </button>
       </div>
     </div>
 
-    <!-- Entregas día a día -->
-    <div class="mt-5 flex items-center justify-between">
-      <h4 class="m-0 text-sm font-black text-slate-900">Entregas</h4>
-      <span class="text-[11px] font-semibold text-sky-600">{{ entregasSede.length }} {{ entregasSede.length === 1 ? 'entrega' : 'entregas' }}</span>
-    </div>
-    <div class="mt-2 max-h-[300px] overflow-y-auto rounded-2xl border border-slate-200">
-      <div *ngFor="let e of entregasSede; trackBy: trackEntrega"
-        class="flex flex-col gap-2 border-b border-slate-100 px-4 py-3 last:border-b-0 sm:flex-row sm:items-center sm:justify-between">
-        <div class="min-w-0">
-          <p class="m-0 text-xs font-black text-slate-900">{{ diaSemana(e.fecha) }} {{ fechaCorta(e.fecha) }}</p>
-          <p class="m-0 truncate text-[11px] text-slate-500">{{ e.ingrediente }} · {{ e.tipoMercado }}</p>
+    <ng-container *ngIf="institucionActiva">
+      <div *ngIf="avisoDatos" class="rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-xs font-bold text-amber-900">
+        {{ avisoDatos }}
+      </div>
+
+      <!-- FILTROS HISTORIAL -->
+      <section class="fx-panel p-5 sm:p-6" aria-label="Filtros del reporte">
+        <div class="grid grid-cols-1 items-end gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <label class="flex flex-col gap-1.5 text-xs font-bold text-slate-600">
+            Desde
+            <input type="date" [(ngModel)]="fechaDesde" (change)="paginaActual = 1"
+              class="fx-input h-11 w-full rounded-2xl border border-slate-200 bg-slate-50/60 px-3.5 text-xs font-bold text-slate-800 transition" />
+          </label>
+
+          <label class="flex flex-col gap-1.5 text-xs font-bold text-slate-600">
+            Hasta
+            <input type="date" [(ngModel)]="fechaHasta" (change)="paginaActual = 1"
+              class="fx-input h-11 w-full rounded-2xl border border-slate-200 bg-slate-50/60 px-3.5 text-xs font-bold text-slate-800 transition" />
+          </label>
+
+          <label class="flex flex-col gap-1.5 text-xs font-bold text-slate-600">
+            Filtrar por sede
+            <select [(ngModel)]="sedeFiltro" (change)="paginaActual = 1"
+              class="fx-input h-11 w-full rounded-2xl border border-slate-200 bg-slate-50/60 px-3.5 text-xs font-bold text-slate-800 transition">
+              <option [ngValue]="'Todas'">Todas las sedes ({{ sedesDisponibles.length }})</option>
+              <option *ngFor="let s of sedesDisponibles" [ngValue]="s.id">{{ s.nombre }}</option>
+            </select>
+          </label>
+
+          <div class="flex items-center gap-2">
+            <button type="button" (click)="cargar()"
+              class="btn-naranja flex-1 inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-2xl text-xs font-black shadow-md">
+              <span class="material-symbols-outlined text-[18px]">refresh</span>
+              Actualizar
+            </button>
+            <button type="button" (click)="exportarExcelOficial()" [disabled]="exportandoExcel"
+              class="inline-flex h-11 cursor-pointer items-center justify-center gap-1.5 rounded-2xl border border-emerald-300 bg-emerald-50 px-3 text-xs font-black text-emerald-800 shadow-sm hover:bg-emerald-100">
+              <span class="material-symbols-outlined text-[18px]">table_view</span>
+              Excel
+            </button>
+          </div>
         </div>
-        <div class="flex items-center gap-3">
-          <span class="whitespace-nowrap text-xs font-black text-[#e69a0c]">{{ e.cantidad }} {{ e.unidad }}</span>
-          <span class="whitespace-nowrap rounded-full px-2.5 py-0.5 text-[11px] font-bold" [ngClass]="claseEstado(e.estado)">{{ etiquetaEstado(e.estado) }}</span>
+      </section>
+
+      <!-- TARJETAS DE TOTALES GLOBALES -->
+      <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        <div class="fx-panel flex flex-col p-4 text-center">
+          <span class="text-[11px] font-bold text-slate-500">Sedes</span>
+          <span class="text-xl font-black text-slate-800">{{ totales.sedes }}</span>
+        </div>
+        <div class="fx-panel flex flex-col p-4 text-center">
+          <span class="text-[11px] font-bold text-slate-500">Cupos Totales</span>
+          <span class="text-xl font-black text-amber-700">{{ totales.cupos }}</span>
+        </div>
+        <div class="fx-panel flex flex-col p-4 text-center">
+          <span class="text-[11px] font-bold text-slate-500">Entregas</span>
+          <span class="text-xl font-black text-slate-800">{{ totales.entregas }}</span>
+        </div>
+        <div class="fx-panel flex flex-col p-4 text-center">
+          <span class="text-[11px] font-bold text-slate-500">Kg Recibidos</span>
+          <span class="text-xl font-black text-emerald-700">{{ totales.kilos }}</span>
+        </div>
+        <div class="fx-panel flex flex-col p-4 text-center">
+          <span class="text-[11px] font-bold text-slate-500">Novedades</span>
+          <span class="text-xl font-black" [class.text-red-600]="totales.novedades > 0">{{ totales.novedades }}</span>
+        </div>
+        <div class="fx-panel flex flex-col p-4 text-center">
+          <span class="text-[11px] font-bold text-slate-500">Ingredientes</span>
+          <span class="text-xl font-black text-slate-800">{{ totales.ingredientes }}</span>
         </div>
       </div>
-      <p *ngIf="entregasSede.length === 0" class="m-0 p-6 text-center text-xs text-slate-500">Esta sede no tiene entregas en el rango seleccionado.</p>
-    </div>
 
-    <div class="mt-5 flex justify-end">
-      <button type="button" (click)="exportarCsvSede()" [disabled]="entregasSede.length === 0"
-        class="btn-naranja inline-flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2 text-sm font-black disabled:cursor-not-allowed disabled:opacity-50">
-        <span class="material-symbols-outlined text-[20px]">download</span>
-        Exportar esta sede (CSV)
-      </button>
+      <!-- TABLA RESUMEN POR SEDE -->
+      <section class="fx-panel p-5 sm:p-6">
+        <div class="flex items-center justify-between pb-4">
+          <h2 class="m-0 text-base font-black text-slate-900">Resumen Consolidado por Sede</h2>
+          <button type="button" (click)="exportarCsvSedes()"
+            class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50">
+            <span class="material-symbols-outlined text-[16px]">download</span> Exportar CSV
+          </button>
+        </div>
+
+        <div class="tabla-oficial-wrap">
+          <table class="tabla-oficial">
+            <thead>
+              <tr>
+                <th (click)="ordenarPor('nombre')" class="cursor-pointer">Sede <span class="material-symbols-outlined text-[14px]">{{ iconoOrden('nombre') }}</span></th>
+                <th (click)="ordenarPor('cupos')" class="cursor-pointer text-right">Cupos <span class="material-symbols-outlined text-[14px]">{{ iconoOrden('cupos') }}</span></th>
+                <th (click)="ordenarPor('entregas')" class="cursor-pointer text-right">Entregas <span class="material-symbols-outlined text-[14px]">{{ iconoOrden('entregas') }}</span></th>
+                <th (click)="ordenarPor('kilos')" class="cursor-pointer text-right">Kg Recibidos <span class="material-symbols-outlined text-[14px]">{{ iconoOrden('kilos') }}</span></th>
+                <th (click)="ordenarPor('novedades')" class="cursor-pointer text-right">Novedades <span class="material-symbols-outlined text-[14px]">{{ iconoOrden('novedades') }}</span></th>
+                <th>Alimento Más Entregado</th>
+                <th>Última Entrega</th>
+                <th style="text-align: center;">Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let s of resumenSedes; trackBy: trackSede">
+                <td style="font-weight: 800; color: #1e293b;">{{ s.nombre }}</td>
+                <td style="text-align: right; font-weight: bold;">{{ s.cupos }}</td>
+                <td style="text-align: right;">{{ s.entregas }}</td>
+                <td style="text-align: right; font-weight: bold; color: #047857;">{{ s.kilos }} Kg</td>
+                <td style="text-align: right; font-weight: bold;" [class.text-red-600]="s.novedades > 0">{{ s.novedades }}</td>
+                <td>{{ s.ingredienteTop }}</td>
+                <td>{{ s.ultimaEntrega ? fechaCorta(s.ultimaEntrega) : '—' }}</td>
+                <td style="text-align: center;">
+                  <button type="button" (click)="abrirSede(s)"
+                    class="rounded-lg bg-amber-100 px-2.5 py-1 text-[11px] font-black text-amber-900 hover:bg-amber-200 cursor-pointer">
+                    Ver Detalle
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- HISTORIAL DETALLADO DE RECEPCIONES -->
+      <section class="fx-panel p-5 sm:p-6">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pb-4">
+          <div>
+            <h2 class="m-0 text-base font-black text-slate-900">Historial Detallado de Entregas Recibidas</h2>
+            <p class="m-0 text-xs text-slate-500">Registro individual de recepción de insumos</p>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <input type="text" [(ngModel)]="textoBusqueda" (input)="alCambiarBusqueda()" placeholder="Buscar ingrediente, sede..."
+              class="h-9 rounded-xl border border-slate-300 bg-white px-3 text-xs text-slate-800 shadow-xs focus:outline-none" />
+
+            <div class="flex rounded-xl border border-slate-300 bg-white p-0.5 text-xs">
+              <button type="button" (click)="cambiarEstadoFiltro('TODAS')" [class.font-black]="estadoFiltro === 'TODAS'" [class.bg-amber-100]="estadoFiltro === 'TODAS'" class="rounded-lg px-2.5 py-1">Todas ({{ contarEstado('TODAS') }})</button>
+              <button type="button" (click)="cambiarEstadoFiltro('RECIBIDA')" [class.font-black]="estadoFiltro === 'RECIBIDA'" [class.bg-emerald-100]="estadoFiltro === 'RECIBIDA'" class="rounded-lg px-2.5 py-1">Recibidas</button>
+              <button type="button" (click)="cambiarEstadoFiltro('CON_NOVEDAD')" [class.font-black]="estadoFiltro === 'CON_NOVEDAD'" [class.bg-amber-100]="estadoFiltro === 'CON_NOVEDAD'" class="rounded-lg px-2.5 py-1">Novedad</button>
+              <button type="button" (click)="cambiarEstadoFiltro('RECHAZADA')" [class.font-black]="estadoFiltro === 'RECHAZADA'" [class.bg-red-100]="estadoFiltro === 'RECHAZADA'" class="rounded-lg px-2.5 py-1">Rechazadas</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="tabla-oficial-wrap">
+          <table class="tabla-oficial">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Sede</th>
+                <th>Ingrediente</th>
+                <th>Tipo Mercado</th>
+                <th style="text-align: right;">Cantidad</th>
+                <th>Unidad</th>
+                <th>Estado</th>
+                <th style="text-align: right;">Kg Válidos</th>
+                <th style="text-align: center;">Detalle</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let e of entregasPaginadas; trackBy: trackEntrega">
+                <td>{{ fechaCorta(e.fecha) }}</td>
+                <td style="font-weight: 700;">{{ e.sede }}</td>
+                <td style="font-weight: 800; color: #0f172a;">{{ e.ingrediente }}</td>
+                <td><span class="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-700">{{ e.tipoMercado }}</span></td>
+                <td style="text-align: right; font-weight: bold;">{{ e.cantidad }}</td>
+                <td>{{ e.unidad }}</td>
+                <td><span class="rounded-md px-2 py-0.5 text-[10px] font-black" [ngClass]="claseEstado(e.estado)">{{ etiquetaEstado(e.estado) }}</span></td>
+                <td style="text-align: right; font-weight: bold;">{{ e.kilos > 0 ? e.kilos + ' Kg' : '—' }}</td>
+                <td style="text-align: center;">
+                  <button type="button" (click)="abrirEntrega(e)"
+                    class="rounded-lg bg-slate-100 p-1 text-slate-700 hover:bg-slate-200 cursor-pointer">
+                    <span class="material-symbols-outlined text-[16px]">visibility</span>
+                  </button>
+                </td>
+              </tr>
+              <tr *ngIf="entregasHistorial.length === 0">
+                <td colspan="9" class="p-8 text-center text-slate-400">
+                  No se encontraron entregas con los filtros seleccionados.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div *ngIf="entregasHistorial.length > filasPorPagina" class="mt-4 flex items-center justify-between text-xs text-slate-600">
+          <span>Mostrando {{ (paginaActual - 1) * filasPorPagina + 1 }} a {{ min(paginaActual * filasPorPagina, entregasHistorial.length) }} de {{ entregasHistorial.length }} entregas</span>
+          <div class="flex items-center gap-1">
+            <button type="button" (click)="cambiarPagina(paginaActual - 1)" [disabled]="paginaActual === 1"
+              class="rounded-lg border border-slate-300 px-2 py-1 disabled:opacity-40">Anterior</button>
+            <span class="px-2 font-bold">{{ paginaActual }} / {{ totalPaginas }}</span>
+            <button type="button" (click)="cambiarPagina(paginaActual + 1)" [disabled]="paginaActual === totalPaginas"
+              class="rounded-lg border border-slate-300 px-2 py-1 disabled:opacity-40">Siguiente</button>
+          </div>
+        </div>
+      </section>
+    </ng-container>
+
+  </section>
+
+  <!-- MODAL DETALLE DE SEDE -->
+  <div *ngIf="sedeDetalle as s" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 no-print">
+    <div class="fx-panel w-full max-w-2xl max-h-[85vh] flex flex-col p-6 overflow-hidden">
+      <div class="flex items-center justify-between border-b pb-3">
+        <div>
+          <h3 class="m-0 text-lg font-black text-slate-900">{{ s.nombre }}</h3>
+          <p class="m-0 text-xs text-slate-500">Detalle de recepciones y cupos en el periodo</p>
+        </div>
+        <button type="button" (click)="cerrarSede()" class="rounded-lg p-1 text-slate-400 hover:text-slate-800">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div class="my-4 grid grid-cols-3 gap-3 text-center">
+        <div class="rounded-xl bg-slate-50 p-3">
+          <span class="block text-[10px] font-bold text-slate-500">Cupos</span>
+          <strong class="text-base font-black text-slate-800">{{ s.cupos }}</strong>
+        </div>
+        <div class="rounded-xl bg-amber-50 p-3">
+          <span class="block text-[10px] font-bold text-amber-700">Entregas</span>
+          <strong class="text-base font-black text-amber-800">{{ s.entregas }}</strong>
+        </div>
+        <div class="rounded-xl bg-emerald-50 p-3">
+          <span class="block text-[10px] font-bold text-emerald-700">Kg Recibidos</span>
+          <strong class="text-base font-black text-emerald-800">{{ s.kilos }} Kg</strong>
+        </div>
+      </div>
+
+      <div class="flex-1 overflow-y-auto">
+        <h4 class="text-xs font-black uppercase text-slate-700 mb-2">Entregas de esta sede:</h4>
+        <table class="tabla-oficial text-xs">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Alimento</th>
+              <th>Cantidad</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let e of entregasSede">
+              <td>{{ fechaCorta(e.fecha) }}</td>
+              <td style="font-weight: 700;">{{ e.ingrediente }}</td>
+              <td>{{ e.cantidad }} {{ e.unidad }}</td>
+              <td><span class="rounded px-1.5 py-0.5 text-[10px] font-bold" [ngClass]="claseEstado(e.estado)">{{ etiquetaEstado(e.estado) }}</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="mt-4 flex justify-end gap-2 border-t pt-3">
+        <button type="button" (click)="exportarCsvSede()" class="btn-outline-naranja rounded-xl px-4 py-2 text-xs font-bold">
+          Exportar CSV
+        </button>
+        <button type="button" (click)="cerrarSede()" class="btn-naranja rounded-xl px-4 py-2 text-xs font-bold">
+          Cerrar
+        </button>
+      </div>
     </div>
   </div>
-</div>
+
+  <!-- MODAL DETALLE DE ENTREGA INDIVIDUAL -->
+  <div *ngIf="entregaDetalle as e" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 no-print">
+    <div class="fx-panel w-full max-w-md p-6">
+      <div class="flex items-center justify-between border-b pb-3">
+        <h3 class="m-0 text-base font-black text-slate-900">Detalle de Recepción</h3>
+        <button type="button" (click)="cerrarEntrega()" class="rounded-lg p-1 text-slate-400 hover:text-slate-800">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div class="my-4 flex flex-col gap-2.5 text-xs">
+        <div><strong class="text-slate-500">Ingrediente:</strong> <span class="font-bold text-slate-800 text-sm ml-1">{{ e.ingrediente }}</span></div>
+        <div><strong class="text-slate-500">Sede:</strong> <span class="font-bold text-slate-800 ml-1">{{ e.sede }}</span></div>
+        <div><strong class="text-slate-500">Fecha:</strong> <span class="ml-1">{{ fechaCorta(e.fecha) }}</span></div>
+        <div><strong class="text-slate-500">Tipo de Mercado:</strong> <span class="ml-1">{{ e.tipoMercado }}</span></div>
+        <div><strong class="text-slate-500">Cantidad Registrada:</strong> <span class="font-black ml-1">{{ e.cantidad }} {{ e.unidad }}</span></div>
+        <div>
+          <strong class="text-slate-500">Estado:</strong>
+          <span class="ml-1 rounded px-2 py-0.5 font-black text-[11px]" [ngClass]="claseEstado(e.estado)">{{ etiquetaEstado(e.estado) }}</span>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 border-t pt-3">
+        <button *ngIf="e.estado === 'CON_NOVEDAD' || e.estado === 'RECHAZADA'" type="button" (click)="reponerEntrega(e)"
+          class="btn-naranja rounded-xl px-4 py-2 text-xs font-black">
+          Reponer Entrega
+        </button>
+        <button type="button" (click)="cerrarEntrega()" class="btn-outline-naranja rounded-xl px-4 py-2 text-xs font-bold">
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+
+</section>
