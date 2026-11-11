@@ -16,6 +16,7 @@ import { MenusComponent } from './menus/menus';
 import { EntradasInventario } from './entradas-inventario/entradas-inventario';
 import { ContratoDetalleComponent } from './contrato-detalle/contrato-detalle';
 import { NotificacionesComponent } from './notificaciones/notificaciones.component';
+import { MensajeriaComponent } from './mensajeria/mensajeria.component';
 import { DashboardSupervisor } from './dashboard-supervisor/dashboard-supervisor';
 import { authGuard, guestGuard, roleGuard } from '@core/auth';
 import { BancoDatosComponent } from './banco-datos/banco-datos';
@@ -241,6 +242,10 @@ export const routes: Routes = [
       {
         path: 'notificaciones',
         component: NotificacionesComponent
+      },
+      {
+        path: 'mensajeria',
+        component: MensajeriaComponent
       },
       {
         path: 'banco-datos',

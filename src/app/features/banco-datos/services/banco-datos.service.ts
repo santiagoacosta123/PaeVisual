@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of, throwError } from 'rxjs';
 import { tap } from 'rxjs/operators';
-import { environment } from '@env/environment';
+import { environment } from '@env/environment'; // Asumimos que existe
 
 @Injectable({
   providedIn: 'root'
@@ -71,6 +71,11 @@ export class BancoDatosService {
       'gramajes': 'gramage/',
       'ingredientes': 'ingredientes/',
       'recetas': 'recetas/',
+      'menus': 'platos/',
+      'platos': 'platos/',
+      'detalle_plato': 'detalle_plato/',
+      'receta_componente': 'receta_componente/',
+      'pasos_preparacion': 'pasos_preparacion/',
       'instituciones': 'instituciones/',
       'sedes': 'sedes/',
       'sede_jornadas': 'sede-jornadas/',
@@ -89,6 +94,12 @@ export class BancoDatosService {
       ? `${this.apiUrl}/sedes/?id_institucion=${idInstitucion}`
       : `${this.apiUrl}/sedes/`;
     return this.http.get(url);
+  }
+
+  subirImagenPlato(idPlato: number, archivo: File): Observable<any> {
+    const formData = new FormData();
+    formData.append('imagen', archivo);
+    return this.http.post(`${this.apiUrl}/platos/${idPlato}/subir-imagen/`, formData);
   }
 
   cambiarEstadoGramaje(id: number, estado?: string, observaciones?: string): Observable<any> {

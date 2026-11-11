@@ -1103,7 +1103,6 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
   // Imágenes de categorías (archivos dentro de /public).
   // Las claves van en minúscula y sin tildes: la función las normaliza.
   private readonly imagenesCategoria: Record<string, string> = {
-    'todos': 'plato.png',
     'granos': 'granoss.png',
     'granos y cereales': 'granoss.png',
     'despensa': 'sal.png',
@@ -1523,6 +1522,18 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       void this.alertas.info('Sin cantidades pendientes', 'No hay productos con cantidad neta sugerida positiva para cargar.');
       return;
     }
+
+    // Validación estricta: No permitir combinar perecederos con no perecederos en un mismo despacho
+    const tienePer = elegibles.some(p => p.es_perecedero);
+    const tieneNoPer = elegibles.some(p => !p.es_perecedero);
+    if (tienePer && tieneNoPer) {
+      void this.alertas.warning(
+        'Tipos de mercado mixtos',
+        'El cálculo contiene perecederos y no perecederos. Selecciona la pestaña "Perecederos" o "No perecederos" para cargarlos por separado sin combinarlos.'
+      );
+      return;
+    }
+
     elegibles.forEach(p => {
       const fila = this.asegurarSeleccionDesdeCalculo(p);
       this.fijarCantidadEnviar(fila, Math.round(Number(p.cantidad_sugerida_despacho) * 100) / 100);
@@ -1613,6 +1624,14 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     this.errorEnvioPanel = '';
 
     if (!items.length) return fallo('Escribe la cantidad a enviar de al menos un producto.');
+
+    // Validación estricta: No combinar productos perecederos con no perecederos en la misma entrega
+    const tienePerecederos = items.some(s => this.esPerecedero(s as any));
+    const tieneNoPerecederos = items.some(s => !this.esPerecedero(s as any));
+    if (tienePerecederos && tieneNoPerecederos) {
+      return fallo('No se pueden combinar productos perecederos con no perecederos en una misma entrega. Registra los perecederos y los no perecederos en despachos separados.');
+    }
+
     const excedidosStock = items.filter(s => this.cantidadEnviarDe(s) > this.disponibleDe(s));
     if (excedidosStock.length) return fallo(`No puedes enviar más de lo disponible en bodega: ${excedidosStock.map(s => s.ingrediente).join(', ')}.`);
 
@@ -2082,6 +2101,14 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     if (!this.entradaDestino.trim()) return error('Elige el destino.');
     if (!this.entradaResponsable.trim()) return error('Escribe quién hizo el registro (responsable).');
     if (!filas.length) return error('Toca los productos que entran para agregarlos.');
+
+    // Validación estricta: No combinar productos perecederos con no perecederos en la entrada manual
+    const tienePerEntrada = filas.some(f => f.perecedero);
+    const tieneNoPerEntrada = filas.some(f => !f.perecedero);
+    if (tienePerEntrada && tieneNoPerEntrada) {
+      return error('No se pueden combinar productos perecederos con no perecederos en un mismo registro. Debes registrarlos por separado.');
+    }
+
     const repetidos = filas.filter(f => this.yaRegistrado(f.idIngrediente));
     if (repetidos.length) return error(`Ya están registrados ese día y no se pueden repetir: ${repetidos.map(f => this.nombreIngrediente(f.idIngrediente)).join(', ')}.`);
     if (sinCantidad.length) return error(`Escribe la cantidad de: ${sinCantidad.map(f => this.nombreIngrediente(f.idIngrediente)).join(', ')}.`);

@@ -1,793 +1,1281 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { forkJoin } from 'rxjs';
-import { PlatosService } from '../services/platos.service';
-import { SeccionesMenuService } from '../services/secciones-menu.service';
-import { DetallePlatosService } from '../services/detalle-platos.service';
-import { MenusService } from '../services/menus.service';
-import { SiraeService } from '../services/contratos_pae.service';
-import { AuthService } from '../services/auth.service';
+import { HttpClient } from '@angular/common/http';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
+import { environment } from '@env/environment';
+import { AuthService } from '@core/auth';
 import { SweetAlertService } from '../sweet-alert.service';
-import { CustomSelectComponent } from '../shared/custom-select/custom-select';
-import { ProductoService } from '../features/inventario/services/producto.service';
-import { RecetaComponente, RecetaComponentesService } from '../services/receta-componentes.service';
-import { SugerenciaReceta, SugerenciasRecetasService } from '../services/sugerencias-recetas.service';
+
+export interface CeldaDiaMinutaSede {
+  tiene_menu_registrado: boolean;
+  numeroMenu: number; // 1..20
+  semana: number; // 1..4
+  diaSemana: string; // Lunes..Viernes
+  fecha: string;
+  jornada: string; // Jornada Mañana | Jornada Tarde | Jornada Única
+  seccion: string; // Desayuno | Almuerzo | Merienda
+  id_menu?: number;
+  id_plato?: number;
+  nombre_plato: string;
+  origen: 'PAE_ESTIPULADO' | 'SUGERENCIA_IA' | 'PENDIENTE';
+  ninos_presentes: number;
+  estado: string;
+  componentes: {
+    bebida_leche: string;
+    proteico: string;
+    cereal: string;
+    fruta: string;
+    agua: string;
+  };
+  ingredientes: string[];
+  pasos: string[];
+}
+
+export interface SemanaMinutaSede {
+  numeroSemana: number;
+  titulo: string;
+  dias: CeldaDiaMinutaSede[];
+}
 
 @Component({
   selector: 'app-menus',
   standalone: true,
-  imports: [CommonModule, FormsModule, CustomSelectComponent],
+  imports: [CommonModule, FormsModule],
   templateUrl: './menus.html',
   styleUrls: ['./menus.css']
 })
 export class MenusComponent implements OnInit {
-  pestanaActiva: string = 'menus';
+  private apiUrl = environment.apiUrl;
+  private readonly STORAGE_MINUTA_SEDE_KEY = 'sirae_minutas_por_sede_v1';
 
-  // ---------- Datos Principales ----------
-  menus: any[] = [];
+  pestanaActiva: 'minuta' | 'menus' | 'platos' | 'preparaciones' = 'minuta';
+
+  // Roles y contexto del usuario actual
+  currentUser: any = null;
+  esSuperAdmin = false;
+  esAdministrador = false;
+  esJefaManipuladoras = false;
+
+  // Sedes de la institución y Jefa asignada por sede
+  sedesInstitucion: any[] = [];
+  sedeSeleccionadaId: number | null = null;
+  usuariosInstitucion: any[] = [];
+
+  // Filtros de la Minuta de 20 días por Sede
+  filtroSeccionMinuta: 'TODAS' | 'Desayuno' | 'Almuerzo' | 'Merienda' = 'TODAS';
+  semanaSeleccionada: number = 1;
+
+  readonly filasComponentesPAE: {
+    key: 'bebida_leche' | 'proteico' | 'cereal' | 'fruta' | 'agua';
+    label: string;
+    icon: string;
+  }[] = [
+    { key: 'bebida_leche', label: 'Bebida con leche', icon: 'local_cafe' },
+    { key: 'proteico', label: 'Alimento proteico', icon: 'egg_alt' },
+    { key: 'cereal', label: 'Cereal acompañante', icon: 'bakery_dining' },
+    { key: 'fruta', label: 'Fruta', icon: 'nutrition' },
+    { key: 'agua', label: 'Agua', icon: 'water_drop' }
+  ];
+
+  // Datos crudos del backend
+  menusDiarios: any[] = [];
   platos: any[] = [];
   preparacionesAsignadas: any[] = [];
-  seccionesMenu: any[] = [];
+  detallesPlatoTodos: any[] = [];
 
-  // ---------- Detalle de Platos ----------
-  platoSeleccionado: any = null;
-  mostrarDetallePlato: boolean = false;
-  detallesPlato: any[] = [];
-  recetaComponentes: RecetaComponente[] = [];
-  ingredientesCatalogo: any[] = [];
-  recetaForm: any = {
-    id_receta_componente: null,
-    id_ingrediente: '',
-    cantidad: null,
-    base_cantidad: 'POR_NINO',
-    porciones_base: null,
-  };
-  menuSugerenciaId: number | null = null;
-  mostrarSugerenciaReceta = false;
-  cargandoSugerencia = false;
-  sugerenciaReceta: SugerenciaReceta | null = null;
-
-  // ---------- Filtros y Búsqueda ----------
-  filtroTexto: string = '';
-  seccionSel: string = 'Todas';
-  fechaDesde: string = '';
-  fechaHasta: string = '';
-  filtrosAplicados = { texto: '', seccion: 'Todas', desde: '', hasta: '' };
-
-  // ---------- Paginación ----------
-  paginaActual: number = 1;
-  porPagina: number = 10;
-
-  // ---------- Catálogos Auxiliares ----------
+  // Catálogos para selects
   jornadas: any[] = [];
   contratos: any[] = [];
+  seccionesMenu: any[] = [
+    { id_seccion: 1, nombre_seccion: 'Desayuno' },
+    { id_seccion: 2, nombre_seccion: 'Almuerzo' },
+    { id_seccion: 3, nombre_seccion: 'Merienda' }
+  ];
   usuariosManipuladoras: any[] = [];
-  esJefa = false;
-  esSuperAdministrador = false;
-  esAdministrador = false;
-  cargandoMenus = false;
+
+  // Sugerencias de IA + Platos Estipulados PAE por defecto
+  cargandoSugerenciasIA = false;
+  opcionesSugeridasIA: any[] = [];
+  platosEstipuladosPAE: any[] = [];
+  platosGeneradosIA: any[] = [];
+  textoSugerenciaIA = '';
+  modoFuenteEleccion: 'TODOS' | 'PAE_ESTIPULADO' | 'IA_INVENTARIO' = 'TODOS';
+  preferenciaIA = '';
+
+  // Modal de programación de Menú del Día por Sede (Jefa / Admin)
+  mostrarModalProgramarDia = false;
+  guardandoMenuDia = false;
+  programarDiaForm = {
+    id_sede: null as number | null,
+    numero_menu_ciclo: 1,
+    fecha: this.obtenerFechaManana(),
+    id_seccion: 1,
+    id_jornada: 1,
+    ninos_presentes: 120,
+    origen_eleccion: 'PAE_ESTIPULADO' as 'PAE_ESTIPULADO' | 'SUGERENCIA_IA',
+    opcionSeleccionadaIndex: 0,
+    id_plato: null as number | null,
+    nombre_plato: '',
+    bebida_leche: '',
+    proteico: '',
+    cereal: '',
+    fruta: '',
+    agua: 'Agua potable tratada',
+    ingredientes: [] as string[],
+    pasos: [] as string[]
+  };
+
+  // Modal para ver la Ficha Técnica de Receta de un día de la Minuta
+  mostrarModalFichaReceta = false;
+  celdaRecetaSeleccionada: CeldaDiaMinutaSede | null = null;
+
+  // Estados de formularios clásicos
+  mostrarFormulario = false;
+  esEdicion = false;
+  idEditando: number | null = null;
+  mostrarDetallePlato = false;
+  platoSeleccionado: any = null;
+  detallesPlato: any[] = [];
+
+  menuForm = {
+    id_jornada: null as number | null,
+    fecha: '',
+    ninos_presentes: null as number | null,
+    id_contrato: null as number | null,
+    id_seccion: 1 as number | null,
+    id_sede: null as number | null,
+    id_plato: null as number | null,
+    estado: 'Programado',
+    informacion_nutricional: ''
+  };
+
+  platoForm = {
+    id_seccion: null as number | null,
+    nombre_plato: '',
+    componente: ''
+  };
+
+  preparacionForm = {
+    id_menu: null as number | null,
+    id_plato: null as number | null,
+    id_usuario_manipuladora: null as number | null,
+    fecha: '',
+    hora_programada: '',
+    estado_preparacion: 'Pendiente',
+    observaciones: ''
+  };
+
+  detalleForm = {
+    id_menu: null as number | null,
+    porcion_por_nino: null as number | null,
+    total_a_preparar: null as number | null,
+    unidad_total: 'raciones',
+    estado_preparacion: 'Pendiente'
+  };
+
+  constructor(
+    private http: HttpClient,
+    private cdr: ChangeDetectorRef,
+    private authService: AuthService,
+    private sweetAlert: SweetAlertService
+  ) {}
+
+  ngOnInit(): void {
+    this.currentUser = this.authService.obtenerUsuario();
+    this.esSuperAdmin = this.authService.esSuperAdministrador(this.currentUser?.rol);
+    this.esAdministrador = this.authService.esAdministrador(this.currentUser?.rol);
+    const rolNorm = (this.authService.normalizarRol(this.currentUser?.rol) || '').toLowerCase();
+    this.esJefaManipuladoras = rolNorm.includes('jefa') || rolNorm.includes('jefe');
+
+    this.cargarContextoSedesYDatos();
+  }
+
+  obtenerFechaManana(): string {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
+  cargarContextoSedesYDatos(): void {
+    forkJoin({
+      sedes: this.http.get<any>(`${this.apiUrl}/sedes/`).pipe(catchError(() => of([]))),
+      usuarios: this.http.get<any>(`${this.apiUrl}/usuarios/`).pipe(catchError(() => of([]))),
+      jornadas: this.http.get<any>(`${this.apiUrl}/jornadas/`).pipe(catchError(() => of([]))),
+      contratos: this.http.get<any>(`${this.apiUrl}/contratos/`).pipe(catchError(() => of([]))),
+      secciones: this.http.get<any>(`${this.apiUrl}/secciones-menu/`).pipe(catchError(() => of([]))),
+      platos: this.http.get<any>(`${this.apiUrl}/platos/`).pipe(catchError(() => of([]))),
+      menus: this.http.get<any>(`${this.apiUrl}/menus/`).pipe(catchError(() => of([]))),
+      detalles: this.http.get<any>(`${this.apiUrl}/detalle-platos/`).pipe(catchError(() => of([]))),
+      preparaciones: this.http.get<any>(`${this.apiUrl}/preparaciones-asignadas/`).pipe(catchError(() => of([])))
+    }).subscribe(({ sedes, usuarios, jornadas, contratos, secciones, platos, menus, detalles, preparaciones }) => {
+      const listaSedes = Array.isArray(sedes) ? sedes : (sedes?.results || []);
+      const listaUsuarios = Array.isArray(usuarios) ? usuarios : (usuarios?.results || []);
+
+      const idInstUsuario = typeof this.currentUser?.id_institucion === 'object'
+        ? (this.currentUser?.id_institucion?.id_institucion || this.currentUser?.id_institucion?.id)
+        : this.currentUser?.id_institucion;
+      const idSedeUsuario = typeof this.currentUser?.id_sede === 'object'
+        ? (this.currentUser?.id_sede?.id_sede || this.currentUser?.id_sede?.id)
+        : this.currentUser?.id_sede;
+
+      if (this.esJefaManipuladoras && idSedeUsuario) {
+        this.sedesInstitucion = listaSedes.filter((s: any) => Number(s.id_sede || s.id) === Number(idSedeUsuario));
+      } else if (this.esAdministrador && idInstUsuario) {
+        this.sedesInstitucion = listaSedes.filter((s: any) => {
+          const sInst = typeof s.id_institucion === 'object'
+            ? (s.id_institucion?.id_institucion || s.id_institucion?.id)
+            : s.id_institucion;
+          return Number(sInst) === Number(idInstUsuario);
+        });
+      } else {
+        this.sedesInstitucion = listaSedes;
+      }
+
+      if (this.sedesInstitucion.length > 0 && !this.sedeSeleccionadaId) {
+        this.sedeSeleccionadaId = Number(
+          idSedeUsuario || this.sedesInstitucion[0].id_sede || this.sedesInstitucion[0].id
+        );
+      }
+
+      this.usuariosInstitucion = listaUsuarios;
+      this.usuariosManipuladoras = listaUsuarios
+        .filter((u: any) => {
+          const rolNom = (u.rol_detalle?.nombre_rol || u.rol_detalle?.nombre || u.rol || '').toString().toLowerCase();
+          return rolNom.includes('manipuladora') || rolNom.includes('jefa') || rolNom.includes('cocina');
+        })
+        .map((u: any) => ({
+          id_usuario_manipuladora: u.id_usuario || u.id,
+          nombre: `${u.nombre || ''} ${u.apellido || ''}`.trim() || u.correo,
+          id_sede: typeof u.id_sede === 'object' ? (u.id_sede?.id_sede || u.id_sede?.id) : u.id_sede
+        }));
+
+      this.jornadas = Array.isArray(jornadas) ? jornadas : (jornadas?.results || []);
+      this.contratos = Array.isArray(contratos) ? contratos : (contratos?.results || []);
+      const secApi = Array.isArray(secciones) ? secciones : (secciones?.results || []);
+      if (secApi.length > 0) {
+        this.seccionesMenu = secApi;
+      }
+
+      this.platos = Array.isArray(platos) ? platos : (platos?.results || []);
+      this.menusDiarios = Array.isArray(menus) ? menus : (menus?.results || []);
+      this.detallesPlatoTodos = Array.isArray(detalles) ? detalles : (detalles?.results || []);
+      const preps = Array.isArray(preparaciones) ? preparaciones : (preparaciones?.results || []);
+      this.preparacionesAsignadas = preps.map((p: any) => ({
+        ...p,
+        nombre_menu: `Menú #${p.id_menu}`,
+        nombre_plato: this.getNombrePlato(p.id_plato),
+        manipuladora: this.getNombreManipuladora(p.id_usuario_manipuladora)
+      }));
+
+      this.cdr.detectChanges();
+    });
+  }
+
+  // ============================================================
+  // INFORMACIÓN DE SEDE Y JEFA DE MANIPULADORAS POR SEDE
+  // ============================================================
+
+  get sedeActualObj(): any | null {
+    if (!this.sedeSeleccionadaId) return null;
+    return this.sedesInstitucion.find(
+      s => Number(s.id_sede || s.id) === Number(this.sedeSeleccionadaId)
+    ) || null;
+  }
+
+  obtenerJefaDeSede(idSede: number | null): any | null {
+    if (!idSede) return null;
+    return this.usuariosInstitucion.find(u => {
+      if (u.is_active === false) return false;
+      const uSede = typeof u.id_sede === 'object' ? (u.id_sede?.id_sede || u.id_sede?.id) : u.id_sede;
+      if (Number(uSede) !== Number(idSede)) return false;
+      const rolNom = (u.rol_detalle?.nombre_rol || u.rol_detalle?.nombre || u.rol || '').toString().toLowerCase();
+      return rolNom.includes('jefa') || rolNom.includes('jefe');
+    }) || null;
+  }
+
+  obtenerNombreJefaDeSede(idSede: number | null): string {
+    const jefa = this.obtenerJefaDeSede(idSede);
+    if (!jefa) return 'Sin jefa asignada';
+    return `${jefa.nombre || ''} ${jefa.apellido || ''}`.trim() || jefa.correo;
+  }
+
+  get nombreJefaSedeActual(): string {
+    const jefa = this.obtenerJefaDeSede(this.sedeSeleccionadaId);
+    if (!jefa) return 'Sin Jefa asignada en esta sede';
+    return `${jefa.nombre || ''} ${jefa.apellido || ''}`.trim() || jefa.correo;
+  }
+
+  seleccionarSede(idSede: number): void {
+    this.sedeSeleccionadaId = Number(idSede);
+    this.cdr.detectChanges();
+  }
+
+  get sedesOpcionesSelect(): any[] {
+    return this.sedesInstitucion.map(s => {
+      const id = Number(s.id_sede || s.id);
+      const jefa = this.obtenerJefaDeSede(id);
+      const jefaTexto = jefa ? ` — Jefa: ${jefa.nombre} ${jefa.apellido || ''}`.trim() : ' — Sin Jefa asignada';
+      return {
+        id_sede: id,
+        label: `${s.nombre_sede || s.nombre}${jefaTexto}`
+      };
+    });
+  }
+
+  // ============================================================
+  // CONSTRUCCIÓN DINÁMICA DE LA MINUTA DE 20 DÍAS POR SEDE
+  // ============================================================
+
+  private leerMinutasLocalesPorSede(): Record<string, Record<number, Partial<CeldaDiaMinutaSede>>> {
+    try {
+      const raw = localStorage.getItem(this.STORAGE_MINUTA_SEDE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  }
+
+  private guardarDiaEnMinutaLocalSede(idSede: number, numeroMenu: number, datos: Partial<CeldaDiaMinutaSede>): void {
+    try {
+      const todo = this.leerMinutasLocalesPorSede();
+      const key = String(idSede);
+      if (!todo[key]) todo[key] = {};
+      todo[key][numeroMenu] = { ...(todo[key][numeroMenu] || {}), ...datos };
+      localStorage.setItem(this.STORAGE_MINUTA_SEDE_KEY, JSON.stringify(todo));
+    } catch (e) {
+      console.warn('No se pudo guardar minuta local de la sede:', e);
+    }
+  }
+
+  extraerComponentesDesdePlato(nombrePlato: string, componenteTexto: string, platoObj?: any): {
+    bebida_leche: string;
+    proteico: string;
+    cereal: string;
+    fruta: string;
+    agua: string;
+  } {
+    const base = {
+      bebida_leche: '—',
+      proteico: '—',
+      cereal: '—',
+      fruta: '—',
+      agua: '—'
+    };
+
+    // 1. Revisar componentes estructurados del objeto plato
+    if (platoObj && Array.isArray(platoObj.componentes)) {
+      for (const comp of platoObj.componentes) {
+        const tipo = (comp.tipo_componente || '').toLowerCase();
+        const nom = (comp.nombre_componente || '').trim();
+        if (!nom) continue;
+        if (tipo.includes('bebida') || tipo.includes('leche')) base.bebida_leche = nom;
+        else if (tipo.includes('proteico') || tipo.includes('proteina')) base.proteico = nom;
+        else if (tipo.includes('cereal')) base.cereal = nom;
+        else if (tipo.includes('fruta')) base.fruta = nom;
+        else if (tipo.includes('agua')) base.agua = nom;
+      }
+    }
+
+    if (platoObj && Array.isArray(platoObj.receta_componentes)) {
+      for (const rc of platoObj.receta_componentes) {
+        const tipo = (rc.tipo_componente || '').toLowerCase();
+        const nom = (rc.nombre_componente || rc.nombre_ingrediente || '').trim();
+        if (!nom) continue;
+        if ((tipo.includes('bebida') || tipo.includes('leche')) && base.bebida_leche === '—') base.bebida_leche = nom;
+        else if ((tipo.includes('proteico') || tipo.includes('proteina')) && base.proteico === '—') base.proteico = nom;
+        else if (tipo.includes('cereal') && base.cereal === '—') base.cereal = nom;
+        else if (tipo.includes('fruta') && base.fruta === '—') base.fruta = nom;
+        else if (tipo.includes('agua') && base.agua === '—') base.agua = nom;
+      }
+    }
+
+    // 2. Extraer desde el texto del componente o nombre del plato
+    const texto = `${componenteTexto || ''} | ${nombrePlato || ''}`;
+    const partes = texto.split(/[,•|\/]+/).map(s => s.trim()).filter(Boolean);
+
+    for (const p of partes) {
+      const low = p.toLowerCase();
+      if ((low.includes('bebida') || low.includes('leche') || low.includes('avena') || low.includes('colada') || low.includes('chocolate') || low.includes('café') || low.includes('peto')) && base.bebida_leche === '—') {
+        base.bebida_leche = p.replace(/^bebida con leche:\s*/i, '').trim();
+      } else if ((low.includes('proteico') || low.includes('huevo') || low.includes('pollo') || low.includes('carne') || low.includes('queso') || low.includes('lenteja') || low.includes('frijol')) && base.proteico === '—') {
+        base.proteico = p.replace(/^alimento proteico:\s*/i, '').trim();
+      } else if ((low.includes('cereal') || low.includes('arepa') || low.includes('arroz') || low.includes('pan') || low.includes('papa') || low.includes('maduro') || low.includes('bollo') || low.includes('galleta') || low.includes('envuelto') || low.includes('pasta') || low.includes('fideos')) && base.cereal === '—') {
+        base.cereal = p.replace(/^cereal acompañante:\s*/i, '').trim();
+      } else if ((low.includes('fruta') || low.includes('mango') || low.includes('mandarina') || low.includes('pera') || low.includes('banano') || low.includes('melón') || low.includes('manzana') || low.includes('granadilla') || low.includes('papaya') || low.includes('guayaba') || low.includes('piña')) && base.fruta === '—') {
+        base.fruta = p.replace(/^fruta:\s*/i, '').trim();
+      } else if (low.includes('agua') && base.agua === '—') {
+        base.agua = p.replace(/^agua:\s*/i, '').trim();
+      }
+    }
+
+    return base;
+  }
+
+  private getCatalogo20MenusBasePAE(): {
+    numeroMenu: number;
+    semana: number;
+    nombre_plato: string;
+    seccion: string;
+    componentes: { bebida_leche: string; proteico: string; cereal: string; fruta: string; agua: string };
+    ingredientes: string[];
+    pasos: string[];
+  }[] {
+    return [
+      {
+        numeroMenu: 1, semana: 1, seccion: 'Desayuno',
+        nombre_plato: 'Menú 1: Pericos con arroz',
+        componentes: { bebida_leche: 'Refresco de avena', proteico: 'Huevos pericos', cereal: 'Arroz blanco', fruta: '—', agua: 'Agua potable' },
+        ingredientes: ['Avena en hojuelas', 'Leche', 'Huevos', 'Tomate y cebolla', 'Arroz blanco', 'Agua potable'],
+        pasos: ['Preparar el refresco de avena con leche.', 'Elaborar los huevos pericos bien cocidos con tomate y cebolla.', 'Cocinar el arroz blanco y servir con agua potable.']
+      },
+      {
+        numeroMenu: 2, semana: 1, seccion: 'Almuerzo',
+        nombre_plato: 'Menú 2: Pollo en salsa blanca con pasta',
+        componentes: { bebida_leche: 'Jugo de fruta en leche', proteico: 'Pollo en salsa blanca', cereal: 'Pasta', fruta: '—', agua: '—' },
+        ingredientes: ['Leche', 'Fruta de cosecha', 'Pechuga de pollo', 'Pasta alimenticia'],
+        pasos: ['Licuar el jugo de fruta en leche pasteurizada.', 'Cocinar el pollo y preparar en salsa blanca.', 'Cocinar la pasta al dente y servir caliente.']
+      },
+      {
+        numeroMenu: 3, semana: 1, seccion: 'Desayuno',
+        nombre_plato: 'Menú 3: Arepa con chocolate',
+        componentes: { bebida_leche: 'Chocolate en leche', proteico: '—', cereal: 'Arepa de maíz', fruta: 'Banano / Fruta cosecha', agua: '—' },
+        ingredientes: ['Chocolate', 'Leche', 'Harina de maíz', 'Banano'],
+        pasos: ['Preparar el chocolate en leche caliente.', 'Asar la arepa de maíz en plancha limpia.', 'Lavar y desinfectar el banano para servir.']
+      },
+      {
+        numeroMenu: 4, semana: 1, seccion: 'Almuerzo',
+        nombre_plato: 'Menú 4: Lentejas con arroz',
+        componentes: { bebida_leche: 'Jugo de fruta en leche', proteico: 'Lentejas con papa guisada', cereal: 'Arroz', fruta: '—', agua: '—' },
+        ingredientes: ['Leche', 'Fruta', 'Lentejas', 'Papa común', 'Arroz blanco'],
+        pasos: ['Preparar el jugo de fruta en leche.', 'Cocinar las lentejas con papa guisada.', 'Preparar el arroz blanco y servir.']
+      },
+      {
+        numeroMenu: 5, semana: 1, seccion: 'Desayuno',
+        nombre_plato: 'Menú 5: Torta de huevo con arroz',
+        componentes: { bebida_leche: 'Agua de panela en leche', proteico: 'Torta de huevo', cereal: 'Arroz blanco', fruta: '—', agua: '—' },
+        ingredientes: ['Panela', 'Leche', 'Huevos', 'Arroz blanco'],
+        pasos: ['Preparar el agua de panela con leche.', 'Cocinar completamente la torta de huevo.', 'Acompañar con arroz blanco recién hecho.']
+      },
+      {
+        numeroMenu: 6, semana: 2, seccion: 'Almuerzo',
+        nombre_plato: 'Menú 6: Carne guisada con arroz',
+        componentes: { bebida_leche: 'Refresco de avena', proteico: 'Carne de res guisada', cereal: 'Arroz blanco', fruta: '—', agua: '—' },
+        ingredientes: ['Avena', 'Leche', 'Carne de res', 'Tomate y cebolla', 'Arroz blanco'],
+        pasos: ['Preparar el refresco de avena en leche.', 'Guisar la carne de res hasta que esté blanda.', 'Servir acompañada de arroz blanco.']
+      },
+      {
+        numeroMenu: 7, semana: 2, seccion: 'Merienda',
+        nombre_plato: 'Menú 7: Hojaldras con chocolate',
+        componentes: { bebida_leche: 'Chocolate en leche', proteico: '—', cereal: 'Hojaldra', fruta: 'Papaya / Fruta cosecha', agua: 'Agua potable' },
+        ingredientes: ['Chocolate', 'Leche', 'Hojaldra', 'Papaya', 'Agua potable'],
+        pasos: ['Preparar el chocolate en leche caliente.', 'Porcionar la papaya lavada y desinfectada.', 'Entregar con hojaldra fresca y agua potable.']
+      },
+      {
+        numeroMenu: 8, semana: 2, seccion: 'Almuerzo',
+        nombre_plato: 'Menú 8: Frijoles guisados con arroz',
+        componentes: { bebida_leche: 'Agua de panela en leche', proteico: 'Frijoles guisados con papa', cereal: 'Arroz con fideos', fruta: '—', agua: '—' },
+        ingredientes: ['Panela', 'Leche', 'Frijol', 'Papa', 'Arroz', 'Fideos'],
+        pasos: ['Preparar el agua de panela en leche.', 'Cocinar los frijoles guisados con papa.', 'Preparar el arroz con fideos dorados y servir.']
+      },
+      {
+        numeroMenu: 9, semana: 2, seccion: 'Merienda',
+        nombre_plato: 'Menú 9: Galleta cuca con leche',
+        componentes: { bebida_leche: 'Leche', proteico: 'Galleta cuca', cereal: 'Maní salado', fruta: 'Mango / Fruta cosecha', agua: '—' },
+        ingredientes: ['Leche pasteurizada', 'Galleta cuca', 'Maní salado', 'Mango'],
+        pasos: ['Servir la porción de leche.', 'Acompañar con galleta cuca y maní salado.', 'Entregar con mango lavado y desinfectado.']
+      },
+      {
+        numeroMenu: 10, semana: 2, seccion: 'Desayuno',
+        nombre_plato: 'Menú 10: Huevos revueltos con arroz',
+        componentes: { bebida_leche: 'Jugo de fruta en leche', proteico: 'Huevos revueltos', cereal: 'Arroz blanco', fruta: '—', agua: '—' },
+        ingredientes: ['Leche', 'Fruta de cosecha', 'Huevos', 'Arroz blanco'],
+        pasos: ['Preparar el jugo de fruta en leche.', 'Cocinar los huevos revueltos bien cocidos.', 'Servir con arroz blanco caliente.']
+      },
+      {
+        numeroMenu: 11, semana: 3, seccion: 'Almuerzo',
+        nombre_plato: 'Menú 11: Pollo guisado con arroz',
+        componentes: { bebida_leche: 'Refresco de avena', proteico: 'Pollo guisado', cereal: 'Arroz blanco', fruta: '—', agua: '—' },
+        ingredientes: ['Avena', 'Leche', 'Pollo', 'Arroz blanco'],
+        pasos: ['Preparar el refresco de avena en leche.', 'Cocinar el pollo guisado con verduras.', 'Servir con arroz blanco.']
+      },
+      {
+        numeroMenu: 12, semana: 3, seccion: 'Almuerzo',
+        nombre_plato: 'Menú 12: Lentejas guisadas con arroz',
+        componentes: { bebida_leche: 'Agua de panela en leche', proteico: 'Lentejas guisadas con papa', cereal: 'Arroz blanco', fruta: 'Mango / Fruta cosecha', agua: '—' },
+        ingredientes: ['Panela', 'Leche', 'Lentejas', 'Papa', 'Arroz blanco', 'Mango'],
+        pasos: ['Preparar el agua de panela en leche.', 'Guisar las lentejas con papa.', 'Servir con arroz blanco y porción de mango.']
+      },
+      {
+        numeroMenu: 13, semana: 3, seccion: 'Desayuno',
+        nombre_plato: 'Menú 13: Torta de huevo con quinua',
+        componentes: { bebida_leche: 'Colada de quinua', proteico: 'Torta de huevo', cereal: 'Arroz blanco', fruta: '—', agua: '—' },
+        ingredientes: ['Quinua', 'Leche', 'Huevos', 'Arroz blanco'],
+        pasos: ['Preparar la colada de quinua con leche.', 'Cocinar la torta de huevo.', 'Acompañar con arroz blanco.']
+      },
+      {
+        numeroMenu: 14, semana: 3, seccion: 'Merienda',
+        nombre_plato: 'Menú 14: Torta pastel con yogurt',
+        componentes: { bebida_leche: 'Yogurt', proteico: '—', cereal: 'Torta pastel', fruta: 'Manzana / Fruta cosecha', agua: '—' },
+        ingredientes: ['Yogurt pasteurizado', 'Torta pastel', 'Manzana'],
+        pasos: ['Servir el yogurt frío.', 'Entregar con porción de torta pastel.', 'Acompañar con manzana lavada y desinfectada.']
+      },
+      {
+        numeroMenu: 15, semana: 3, seccion: 'Almuerzo',
+        nombre_plato: 'Menú 15: Arroz con cerdo y verduras',
+        componentes: { bebida_leche: 'Jugo de fruta en leche guayaba', proteico: 'Arroz con carne de cerdo y verduras', cereal: 'Arroz con carne de cerdo y verduras', fruta: '—', agua: 'Agua potable' },
+        ingredientes: ['Guayaba', 'Leche', 'Carne de cerdo', 'Arroz', 'Verduras', 'Agua potable'],
+        pasos: ['Preparar el jugo de guayaba en leche.', 'Cocinar la carne de cerdo e integrar con el arroz y verduras.', 'Servir con agua potable.']
+      },
+      {
+        numeroMenu: 16, semana: 4, seccion: 'Almuerzo',
+        nombre_plato: 'Menú 16: Lentejas con colada de quinua',
+        componentes: { bebida_leche: 'Colada de quinua saborizada', proteico: 'Lentejas guisadas con papa', cereal: 'Arroz blanco', fruta: '—', agua: '—' },
+        ingredientes: ['Quinua', 'Leche', 'Lentejas', 'Papa', 'Arroz blanco'],
+        pasos: ['Preparar la colada de quinua saborizada en leche.', 'Cocinar las lentejas guisadas con papa.', 'Servir con arroz blanco.']
+      },
+      {
+        numeroMenu: 17, semana: 4, seccion: 'Desayuno',
+        nombre_plato: 'Menú 17: Pericos con chocolate',
+        componentes: { bebida_leche: 'Chocolate en leche', proteico: 'Huevos pericos', cereal: 'Arroz blanco', fruta: '—', agua: '—' },
+        ingredientes: ['Chocolate', 'Leche', 'Huevos', 'Tomate y cebolla', 'Arroz blanco'],
+        pasos: ['Preparar el chocolate en leche.', 'Cocinar los huevos pericos.', 'Servir con arroz blanco.']
+      },
+      {
+        numeroMenu: 18, semana: 4, seccion: 'Merienda',
+        nombre_plato: 'Menú 18: Arroz con leche y galletas',
+        componentes: { bebida_leche: 'Arroz con leche y canela', proteico: '—', cereal: 'Galleta tipo crackers salada', fruta: 'Mango / Papaya / Melón', agua: 'Agua potable' },
+        ingredientes: ['Arroz', 'Leche', 'Canela', 'Galleta tipo crackers', 'Mango, papaya o melón', 'Agua potable'],
+        pasos: ['Preparar el arroz con leche y canela.', 'Acompañar con galleta tipo crackers salada.', 'Entregar con porción de fruta y agua potable.']
+      },
+      {
+        numeroMenu: 19, semana: 4, seccion: 'Almuerzo',
+        nombre_plato: 'Menú 19: Pollo con verduras y papas',
+        componentes: { bebida_leche: 'Refresco de avena', proteico: 'Pollo en julianas con verduras', cereal: 'Papas en casco', fruta: '—', agua: '—' },
+        ingredientes: ['Avena', 'Leche', 'Pechuga de pollo', 'Verduras', 'Papa común'],
+        pasos: ['Preparar el refresco de avena en leche.', 'Saltear y cocinar bien el pollo en julianas con verduras.', 'Cocinar las papas en casco y servir.']
+      },
+      {
+        numeroMenu: 20, semana: 4, seccion: 'Almuerzo',
+        nombre_plato: 'Menú 20: Frijoles con arroz y fideos',
+        componentes: { bebida_leche: 'Agua de panela en leche', proteico: 'Frijoles guisados con papa', cereal: 'Arroz con fideos', fruta: '—', agua: '—' },
+        ingredientes: ['Panela', 'Leche', 'Frijol', 'Papa', 'Arroz', 'Fideos'],
+        pasos: ['Preparar el agua de panela en leche.', 'Cocinar los frijoles guisados con papa.', 'Servir con arroz con fideos.']
+      }
+    ];
+  }
+
+  /**
+   * Filtra los menús diarios registrados en el backend que pertenecen a la Sede seleccionada.
+   * Cada sede tiene su propia Jefa de Manipuladoras y por tanto su propia programación de 20 días.
+   */
+  get menusDeSedeSeleccionada(): any[] {
+    if (!this.sedeSeleccionadaId) return this.menusDiarios;
+    const idSede = Number(this.sedeSeleccionadaId);
+
+    // Contratos asociados a esta sede
+    const contratosDeSede = this.contratos
+      .filter(c => {
+        const cSede = typeof c.id_sede === 'object' ? (c.id_sede?.id_sede || c.id_sede?.id) : c.id_sede;
+        return Number(cSede) === idSede;
+      })
+      .map(c => Number(c.id_contrato));
+
+    return this.menusDiarios.filter(m => {
+      if (m.id_sede && Number(m.id_sede) === idSede) {
+        return true;
+      }
+      const rawInfo = String(m.informacion_nutricional || '');
+      const matchSede = rawInfo.match(/\[SEDE:(\d+)\]/);
+      if (matchSede) {
+        return Number(matchSede[1]) === idSede;
+      }
+      if (contratosDeSede.length > 0 && contratosDeSede.includes(Number(m.id_contrato))) {
+        return true;
+      }
+      return false;
+    });
+  }
+
+  /**
+   * Construye las 4 semanas (Menú 1 a Menú 20) específicas para la Sede seleccionada.
+   * Se alimenta exclusivamente de los menús registrados para la sede.
+   */
+  get semanasMinutaSedeActual(): SemanaMinutaSede[] {
+    const menusSede = [...this.menusDeSedeSeleccionada].sort((a, b) =>
+      String(a.fecha || '').localeCompare(String(b.fecha || ''))
+    );
+
+    const diasSemanaNombres = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
+    const celdas20: CeldaDiaMinutaSede[] = [];
+
+    for (let i = 0; i < 20; i++) {
+      const numMenu = i + 1;
+      const numSemana = Math.floor(i / 5) + 1;
+      const diaNombre = diasSemanaNombres[i % 5];
+
+      // Verificar si hay un menú registrado en el backend para este día de la sede
+      const menuBackend = menusSede.find(m => {
+        const info = String(m.informacion_nutricional || '');
+        const matchDia = info.match(/\[MENU_CICLO:(\d+)\]/);
+        return matchDia ? Number(matchDia[1]) === numMenu : false;
+      }) || (menusSede[i] || null);
+
+      if (menuBackend) {
+        const platoDet = (menuBackend.platos_detalle && menuBackend.platos_detalle[0]) || null;
+        const platoCatalogo = platoDet?.id_plato
+          ? this.platos.find(p => Number(p.id_plato) === Number(platoDet.id_plato))
+          : (menuBackend.id_plato ? this.platos.find(p => Number(p.id_plato) === Number(menuBackend.id_plato)) : null);
+
+        const nombrePlato = platoDet?.nombre_plato || platoCatalogo?.nombre_plato || menuBackend.nombre_plato || `Menú ${numMenu}`;
+        const compTexto = platoDet?.componente || platoCatalogo?.componente || menuBackend.componente_plato || '';
+        const infoLimpia = String(menuBackend.informacion_nutricional_limpia || menuBackend.informacion_nutricional || '');
+        const esIA = infoLimpia.toUpperCase().includes('IA');
+
+        const seccionNombre = this.getNombreSeccion(menuBackend.id_seccion || platoDet?.id_seccion || platoCatalogo?.id_seccion);
+        const jornadaNombre = menuBackend.id_jornada
+          ? this.getNombreJornada(menuBackend.id_jornada)
+          : 'Jornada Mañana';
+
+        const comps = this.extraerComponentesDesdePlato(nombrePlato, compTexto, platoCatalogo);
+        const ingList = (platoCatalogo?.receta_componentes || []).map((rc: any) => rc.nombre_ingrediente || rc.nombre_componente).filter(Boolean);
+        const pasosList = (platoCatalogo?.pasos_preparacion || []).map((ps: any) => ps.descripcion_paso).filter(Boolean);
+
+        celdas20.push({
+          tiene_menu_registrado: true,
+          numeroMenu: numMenu,
+          semana: numSemana,
+          diaSemana: diaNombre,
+          fecha: menuBackend.fecha || `Día ${numMenu}`,
+          jornada: jornadaNombre,
+          seccion: seccionNombre !== 'Desconocida' ? seccionNombre : 'Almuerzo',
+          id_menu: menuBackend.id_menu,
+          id_plato: platoDet?.id_plato || platoCatalogo?.id_plato,
+          nombre_plato: nombrePlato,
+          origen: esIA ? 'SUGERENCIA_IA' : 'PAE_ESTIPULADO',
+          ninos_presentes: Number(menuBackend.ninos_presentes || 0),
+          estado: menuBackend.estado || 'Elegido por Jefa',
+          componentes: comps,
+          ingredientes: ingList,
+          pasos: pasosList
+        });
+      } else {
+        // Día pendiente de elección por parte de la Jefa de Manipuladoras (sin datos quemados)
+        celdas20.push({
+          tiene_menu_registrado: false,
+          numeroMenu: numMenu,
+          semana: numSemana,
+          diaSemana: diaNombre,
+          fecha: 'Pendiente',
+          jornada: 'Pendiente',
+          seccion: 'Pendiente',
+          nombre_plato: 'Sin menú seleccionado',
+          origen: 'PENDIENTE',
+          ninos_presentes: 0,
+          estado: 'Pendiente de registro por la Jefa',
+          componentes: {
+            bebida_leche: '—',
+            proteico: '—',
+            cereal: '—',
+            fruta: '—',
+            agua: '—'
+          },
+          ingredientes: [],
+          pasos: []
+        });
+      }
+    }
+
+    const semanas: SemanaMinutaSede[] = [1, 2, 3, 4].map(numSem => {
+      const inicio = (numSem - 1) * 5 + 1;
+      const fin = numSem * 5;
+      const diasFiltrados = celdas20
+        .filter(c => c.semana === numSem)
+        .filter(c => {
+          if (this.filtroSeccionMinuta === 'TODAS') return true;
+          return c.tiene_menu_registrado && c.seccion.toLowerCase() === this.filtroSeccionMinuta.toLowerCase();
+        });
+
+      return {
+        numeroSemana: numSem,
+        titulo: `Semana ${numSem} (Menú ${inicio} al Menú ${fin})`,
+        dias: diasFiltrados
+      };
+    });
+
+    return semanas;
+  }
+
+  get semanaActualMinuta(): SemanaMinutaSede | undefined {
+    return this.semanasMinutaSedeActual.find(s => s.numeroSemana === Number(this.semanaSeleccionada)) || this.semanasMinutaSedeActual[0];
+  }
+
+  contarDiasElegidosPorJefa(idSede: number | null): number {
+    if (!idSede) return 0;
+    const locales = Object.keys(this.leerMinutasLocalesPorSede()[String(idSede)] || {}).length;
+    const enBackend = this.menusDiarios.filter(m => Number(m.id_sede) === Number(idSede)).length;
+    return Math.min(20, Math.max(locales, enBackend));
+  }
+
+  // ============================================================
+  // PROGRAMACIÓN DEL MENÚ DEL DÍA (ESTIPULADO PAE O SUGERENCIA IA)
+  // ============================================================
+
+  abrirModalProgramarMenuDia(celda?: CeldaDiaMinutaSede): void {
+    const idSede = Number(this.sedeSeleccionadaId || this.currentUser?.id_sede || (this.sedesInstitucion[0]?.id_sede));
+    const numMenu = celda ? celda.numeroMenu : 1;
+    const seccionId = celda
+      ? (celda.seccion === 'Desayuno' ? 1 : celda.seccion === 'Merienda' ? 3 : 2)
+      : 1;
+
+    this.programarDiaForm = {
+      id_sede: idSede,
+      numero_menu_ciclo: numMenu,
+      fecha: celda && /^\d{4}-\d{2}-\d{2}$/.test(celda.fecha) ? celda.fecha : this.obtenerFechaManana(),
+      id_seccion: seccionId,
+      id_jornada: this.jornadas[0]?.id_jornada || 1,
+      ninos_presentes: celda?.ninos_presentes || 120,
+      origen_eleccion: celda?.origen === 'SUGERENCIA_IA' ? 'SUGERENCIA_IA' : 'PAE_ESTIPULADO',
+      opcionSeleccionadaIndex: 0,
+      id_plato: celda?.id_plato || null,
+      nombre_plato: celda?.nombre_plato || '',
+      bebida_leche: celda?.componentes?.bebida_leche || '',
+      proteico: celda?.componentes?.proteico || '',
+      cereal: celda?.componentes?.cereal || '',
+      fruta: celda?.componentes?.fruta || '',
+      agua: celda?.componentes?.agua || 'Agua',
+      ingredientes: [...(celda?.ingredientes || [])],
+      pasos: [...(celda?.pasos || [])]
+    };
+
+    this.mostrarModalProgramarDia = true;
+    this.consultarSugerenciasIAParaSede();
+  }
+
+  cerrarModalProgramarMenuDia(): void {
+    this.mostrarModalProgramarDia = false;
+  }
+
+  /**
+   * Llama a `/api/ia/sugerencias-recetas/` que devuelve por defecto los platos
+   * estipulados del PAE (creados por el Super Admin + ciclo oficial) junto con
+   * las nuevas sugerencias generadas por la IA según el inventario de la sede.
+   */
+  consultarSugerenciasIAParaSede(): void {
+    const idSede = Number(this.programarDiaForm.id_sede || this.sedeSeleccionadaId || 1);
+    const ninos = Number(this.programarDiaForm.ninos_presentes || 100);
+    const idSeccion = Number(this.programarDiaForm.id_seccion || 1);
+
+    this.cargandoSugerenciasIA = true;
+
+    this.http.post<any>(`${this.apiUrl}/ia/sugerencias-recetas/`, {
+      id_sede: idSede,
+      ninos_presentes: ninos > 0 ? ninos : 100,
+      id_seccion: idSeccion,
+      preferencia: this.preferenciaIA || ''
+    }).pipe(
+      catchError(() => of(null))
+    ).subscribe((resp) => {
+      this.cargandoSugerenciasIA = false;
+
+      if (resp && (Array.isArray(resp.todas_las_opciones) || Array.isArray(resp.platos_estipulados_pae))) {
+        this.platosEstipuladosPAE = resp.platos_estipulados_pae || [];
+        this.platosGeneradosIA = resp.sugerencias_ia_estructuradas || [];
+        this.opcionesSugeridasIA = resp.todas_las_opciones || [
+          ...this.platosEstipuladosPAE,
+          ...this.platosGeneradosIA
+        ];
+        this.textoSugerenciaIA = resp.sugerencias || '';
+      } else {
+        // Fallback construyendo desde el catálogo global de platos del Super Admin + ciclo oficial PAE
+        const platosCatalogo = this.platos.map(p => ({
+          id_plato: p.id_plato,
+          nombre_plato: p.nombre_plato,
+          id_seccion: p.id_seccion || 2,
+          componente: p.componente || 'Alimento proteico, Cereal acompañante',
+          imagen_url: p.imagen_url,
+          ingredientes: (p.receta_componentes || []).map((rc: any) => rc.nombre_ingrediente),
+          pasos: (p.pasos_preparacion || []).map((ps: any) => ps.descripcion_paso),
+          origen: 'PAE_ESTIPULADO',
+          etiqueta: 'Catálogo Global Super Admin (PAE)'
+        }));
+
+        const base20 = this.getCatalogo20MenusBasePAE().map(b => ({
+          id_plato: null,
+          nombre_plato: b.nombre_plato,
+          id_seccion: b.seccion === 'Desayuno' ? 1 : b.seccion === 'Merienda' ? 3 : 2,
+          componente: `${b.componentes.bebida_leche}, ${b.componentes.proteico}, ${b.componentes.cereal}, ${b.componentes.fruta}`,
+          componentes_detalle: b.componentes,
+          ingredientes: b.ingredientes,
+          pasos: b.pasos,
+          origen: 'PAE_ESTIPULADO',
+          etiqueta: `Menú Estipulado PAE #${b.numeroMenu} (Por defecto en IA)`
+        }));
+
+        const iaExtras = [
+          {
+            id_plato: null,
+            nombre_plato: 'Sugerencia IA: Arroz nutritivo con pollo guisado, bebida láctea y fruta de temporada',
+            id_seccion: idSeccion,
+            componente: 'Bebida con leche, Alimento proteico, Cereal acompañante, Fruta, Agua',
+            componentes_detalle: {
+              'Bebida con leche': 'Avena tibia en leche',
+              'Alimento proteico': 'Pollo guisado con vegetales',
+              'Cereal acompañante': 'Arroz con zanahoria',
+              'Fruta': 'Mango / Banano',
+              'Agua': 'Agua'
+            },
+            ingredientes: ['Pollo', 'Arroz', 'Leche', 'Avena', 'Zanahoria', 'Fruta fresca'],
+            pasos: [
+              'Verificar existencias en inventario de la sede y desinfectar ingredientes.',
+              'Cocinar el pollo en guiso natural y preparar el arroz con zanahoria.',
+              'Servir con avena en leche, fruta fresca y agua tratada.'
+            ],
+            origen: 'IA_INVENTARIO',
+            etiqueta: 'Generado por IA según Inventario de la Sede'
+          },
+          {
+            id_plato: null,
+            nombre_plato: 'Sugerencia IA: Cazuela escolar de lentejas con huevo cocido, arepa y fruta',
+            id_seccion: idSeccion,
+            componente: 'Bebida con leche, Alimento proteico, Cereal acompañante, Fruta, Agua',
+            componentes_detalle: {
+              'Bebida con leche': 'Colada de maizena en leche',
+              'Alimento proteico': 'Lentejas con huevo cocido',
+              'Cereal acompañante': 'Arepa redonda de maíz',
+              'Fruta': 'Mandarina',
+              'Agua': 'Agua'
+            },
+            ingredientes: ['Lentejas', 'Huevos', 'Harina de maíz', 'Leche', 'Maizena', 'Mandarina'],
+            pasos: [
+              'Remojar y cocinar las lentejas con guiso suave.',
+              'Cocinar los huevos duros y asar las arepas de maíz.',
+              'Acompañar con colada en leche, mandarina y agua potable.'
+            ],
+            origen: 'IA_INVENTARIO',
+            etiqueta: 'Generado por IA según Inventario de la Sede'
+          }
+        ];
+
+        this.platosEstipuladosPAE = [...platosCatalogo, ...base20];
+        this.platosGeneradosIA = iaExtras;
+        this.opcionesSugeridasIA = [...iaExtras, ...this.platosEstipuladosPAE];
+      }
+
+      if (this.opcionesFiltradasModalProgramar.length > 0 && !this.programarDiaForm.nombre_plato) {
+        this.seleccionarOpcionParaDia(this.opcionesFiltradasModalProgramar[0], 0);
+      }
+      this.cdr.detectChanges();
+    });
+  }
+
+  get opcionesFiltradasModalProgramar(): any[] {
+    if (this.modoFuenteEleccion === 'PAE_ESTIPULADO') {
+      return this.opcionesSugeridasIA.filter(o => o.origen === 'PAE_ESTIPULADO');
+    }
+    if (this.modoFuenteEleccion === 'IA_INVENTARIO') {
+      return this.opcionesSugeridasIA.filter(o => o.origen === 'IA_INVENTARIO');
+    }
+    return this.opcionesSugeridasIA;
+  }
+
+  seleccionarOpcionParaDia(opcion: any, idx: number): void {
+    this.programarDiaForm.opcionSeleccionadaIndex = idx;
+    this.programarDiaForm.id_plato = opcion.id_plato || null;
+    this.programarDiaForm.nombre_plato = opcion.nombre_plato;
+    this.programarDiaForm.origen_eleccion = opcion.origen === 'IA_INVENTARIO' ? 'SUGERENCIA_IA' : 'PAE_ESTIPULADO';
+
+    const det = opcion.componentes_detalle;
+    if (det) {
+      this.programarDiaForm.bebida_leche = det['Bebida con leche'] || det.bebida_leche || 'Bebida láctea';
+      this.programarDiaForm.proteico = det['Alimento proteico'] || det.proteico || 'Proteína';
+      this.programarDiaForm.cereal = det['Cereal acompañante'] || det.cereal || 'Cereal';
+      this.programarDiaForm.fruta = det['Fruta'] || det.fruta || 'Fruta fresca';
+      this.programarDiaForm.agua = det['Agua'] || det.agua || 'Agua';
+    } else {
+      const extraidos = this.extraerComponentesDesdePlato(opcion.nombre_plato, opcion.componente);
+      this.programarDiaForm.bebida_leche = extraidos.bebida_leche;
+      this.programarDiaForm.proteico = extraidos.proteico;
+      this.programarDiaForm.cereal = extraidos.cereal;
+      this.programarDiaForm.fruta = extraidos.fruta;
+      this.programarDiaForm.agua = extraidos.agua;
+    }
+
+    this.programarDiaForm.ingredientes = Array.isArray(opcion.ingredientes) ? [...opcion.ingredientes] : [];
+    this.programarDiaForm.pasos = Array.isArray(opcion.pasos) ? [...opcion.pasos] : [];
+  }
+
+  guardarProgramacionDiaSede(): void {
+    const idSede = Number(this.programarDiaForm.id_sede || this.sedeSeleccionadaId);
+    if (!idSede) {
+      this.sweetAlert.warning('Sede requerida', 'Selecciona la sede para la cual vas a programar el menú del día.');
+      return;
+    }
+    if (!this.programarDiaForm.nombre_plato.trim()) {
+      this.sweetAlert.warning('Plato requerido', 'Elige un plato estipulado del PAE o una sugerencia de la IA.');
+      return;
+    }
+
+    const numMenu = Number(this.programarDiaForm.numero_menu_ciclo || 1);
+    const seccionNombre = this.getNombreSeccion(this.programarDiaForm.id_seccion);
+    const jornadaNombre = this.jornadas.length > 0
+      ? this.getNombreJornada(Number(this.programarDiaForm.id_jornada || this.jornadas[0].id_jornada))
+      : 'Jornada Mañana';
+
+    // 1. Guardar inmediatamente en la minuta de la sede
+    this.guardarDiaEnMinutaLocalSede(idSede, numMenu, {
+      numeroMenu: numMenu,
+      semana: Math.floor((numMenu - 1) / 5) + 1,
+      fecha: this.programarDiaForm.fecha,
+      jornada: jornadaNombre,
+      seccion: seccionNombre !== 'Desconocida' ? seccionNombre : 'Almuerzo',
+      id_plato: this.programarDiaForm.id_plato || undefined,
+      nombre_plato: this.programarDiaForm.nombre_plato.trim(),
+      origen: this.programarDiaForm.origen_eleccion,
+      ninos_presentes: Number(this.programarDiaForm.ninos_presentes || 120),
+      estado: 'Elegido por Jefa',
+      componentes: {
+        bebida_leche: this.programarDiaForm.bebida_leche || 'Bebida con leche',
+        proteico: this.programarDiaForm.proteico || 'Alimento proteico',
+        cereal: this.programarDiaForm.cereal || 'Cereal acompañante',
+        fruta: this.programarDiaForm.fruta || 'Fruta',
+        agua: this.programarDiaForm.agua || 'Agua'
+      },
+      ingredientes: this.programarDiaForm.ingredientes,
+      pasos: this.programarDiaForm.pasos
+    });
+
+    // 2. Persistir también en el backend (`/api/menus/`) asociado a la sede
+    const contratoSede = this.contratos.find(c => {
+      const cSede = typeof c.id_sede === 'object' ? (c.id_sede?.id_sede || c.id_sede?.id) : c.id_sede;
+      return Number(cSede) === idSede;
+    }) || this.contratos[0];
+
+    if (contratoSede && this.jornadas.length > 0) {
+      this.guardandoMenuDia = true;
+      const etiquetaOrigen = this.programarDiaForm.origen_eleccion === 'SUGERENCIA_IA' ? 'Sugerencia IA' : 'Estipulado PAE';
+      const infoNutricional = `[SEDE:${idSede}] [MENU_CICLO:${numMenu}] [${etiquetaOrigen}] ${this.programarDiaForm.nombre_plato} | Bebida: ${this.programarDiaForm.bebida_leche} | Proteico: ${this.programarDiaForm.proteico} | Cereal: ${this.programarDiaForm.cereal} | Fruta: ${this.programarDiaForm.fruta}`;
+
+      this.http.post<any>(`${this.apiUrl}/menus/`, {
+        id_jornada: Number(this.programarDiaForm.id_jornada || this.jornadas[0].id_jornada),
+        fecha: this.programarDiaForm.fecha,
+        ninos_presentes: Number(this.programarDiaForm.ninos_presentes || 120),
+        id_contrato: Number(contratoSede.id_contrato),
+        id_seccion: Number(this.programarDiaForm.id_seccion || 1),
+        id_sede: idSede,
+        id_plato: this.programarDiaForm.id_plato || null,
+        estado: 'Programado',
+        informacion_nutricional: infoNutricional
+      }).pipe(catchError(() => of(null))).subscribe(() => {
+        this.guardandoMenuDia = false;
+        this.mostrarModalProgramarDia = false;
+        this.cargarMenus();
+        this.sweetAlert.success(
+          'Menú del Día Programado',
+          `El Menú #${numMenu} (${seccionNombre}) quedó registrado para la sede y ya es visible en la Minuta de 20 Días del Administrador.`
+        );
+      });
+    } else {
+      this.mostrarModalProgramarDia = false;
+      this.sweetAlert.success(
+        'Menú del Día Programado',
+        `El Menú #${numMenu} (${seccionNombre}) quedó actualizado en la Minuta de 20 Días de la sede seleccionada.`
+      );
+      this.cdr.detectChanges();
+    }
+  }
+
+  verFichaRecetaDia(celda: CeldaDiaMinutaSede): void {
+    this.celdaRecetaSeleccionada = celda;
+    this.mostrarModalFichaReceta = true;
+  }
+
+  cerrarModalFichaReceta(): void {
+    this.mostrarModalFichaReceta = false;
+    this.celdaRecetaSeleccionada = null;
+  }
+
+  // ============================================================
+  // MÉTODOS AUXILIARES Y CRUD DE TABLAS SECUNDARIAS
+  // ============================================================
 
   get contratosOpciones(): any[] {
-    return (this.contratos || []).map((c: any) => ({
-      id_contrato: c.id_contrato,
-      label: `${c.numero_cor || ''} - ${c.institucion || ''}`
+    return this.contratos.map(c => ({
+      ...c,
+      label: `Contrato #${c.id_contrato} - ${c.institucion || c.operador || 'PAE'}`
     }));
   }
 
   get menusOpciones(): any[] {
-    return (this.menus || []).map((m: any) => ({
-      id_menu: m.id_menu,
-      label: `Menú #${m.id_menu} (${m.fecha || ''})`
+    return this.menusDiarios.map(m => ({
+      ...m,
+      label: `Menú #${m.id_menu} (${m.fecha})`
     }));
   }
 
   get detalleMenusOpciones(): any[] {
-    return (this.menus || []).map((m: any) => ({
-      id_menu: m.id_menu,
-      label: `${m.fecha || ''} - ${m.nombre_jornada || ''} - ${m.institucion || ''}`
+    return this.menusDiarios.map(m => ({
+      ...m,
+      label: `#${m.id_menu} (${m.fecha})`
     }));
   }
 
-  get menusParaSugerencia(): any[] {
-    const menusConPlato = new Set(
-      this.detallesPlato.map(detalle => Number(detalle.id_menu)),
-    );
-    return this.menus.filter(menu => menusConPlato.has(Number(menu.id_menu)));
+  getNombreJornada(id: number): string {
+    const j = this.jornadas.find(x => x.id_jornada == id);
+    return j ? j.nombre_jornada : `Jornada #${id}`;
   }
 
-  // ---------- Modales y Formularios ----------
-  mostrarFormulario: boolean = false;
-  esEdicion: boolean = false;
-
-  menuForm: any = {
-    id_menu: null, id_jornada: '', fecha: '', ninos_presentes: null,
-    estado: 'ACTIVO', informacion_nutricional: '', id_contrato: ''
-  };
-
-  platoForm: any = {
-    id_plato: null, id_seccion: '', nombre_plato: '', componente: ''
-  };
-
-  preparacionForm: any = {
-    id_preparacion_asignada: null, id_menu: '', id_plato: '',
-    id_usuario_manipuladora: '', fecha: '', hora_programada: '',
-    estado_preparacion: 'PENDIENTE', observaciones: ''
-  };
-
-  detalleForm: any = {
-    id_detalle_plato: null, id_menu: '', id_plato: '',
-    porcion_por_nino: null, total_a_preparar: null,
-    unidad_total: '', estado_preparacion: 'Pendiente'
-  };  constructor(
-    private platosService: PlatosService,
-    private seccionesService: SeccionesMenuService,
-    private detallesService: DetallePlatosService,
-    private menusService: MenusService,
-    private catalogosService: SiraeService,
-    private authService: AuthService,
-    private sweetAlert: SweetAlertService,
-    private recetaComponentesService: RecetaComponentesService,
-    private sugerenciasRecetasService: SugerenciasRecetasService,
-    private productoService: ProductoService,
-    private cdr: ChangeDetectorRef
-  ) {}
-
-  ngOnInit(): void {
-    const rol = this.authService.obtenerUsuario()?.rol;
-    this.esJefa = this.authService.esJefa(rol);
-    const rolNorm = this.authService.normalizarRol(rol);
-    this.esSuperAdministrador = ['superadmin', 'super administrador', 'superadministrador'].includes(rolNorm);
-    this.esAdministrador = ['admin', 'administrador', 'superadmin', 'super administrador', 'superadministrador'].includes(rolNorm);
-    if (this.esSuperAdministrador) {
-      this.pestanaActiva = 'menus';
-    }
-    this.cargarDatos();
+  getNombreSeccion(id: any): string {
+    if (!id) return 'Desconocida';
+    const s = this.seccionesMenu.find(x => x.id_seccion == id);
+    if (s) return s.nombre_seccion;
+    if (Number(id) === 1) return 'Desayuno';
+    if (Number(id) === 2) return 'Almuerzo';
+    if (Number(id) === 3) return 'Merienda';
+    return 'Desconocida';
   }
 
-  cargarDatos(): void {
-    this.cargandoMenus = true;
-    forkJoin({
-      menus: this.menusService.listar(),
-      jornadas: this.catalogosService.getJornadas(),
-      contratos: this.catalogosService.getContratos(),
-    }).subscribe({
-      next: ({ menus, jornadas, contratos }) => {
-        this.jornadas = jornadas;
-        this.contratos = contratos;
-        this.menus = menus.map(menu => ({
-          ...menu,
-          nombre_jornada: jornadas.find(j => Number(j.id_jornada) === menu.id_jornada)?.nombre_jornada || `Jornada ${menu.id_jornada}`,
-          institucion: contratos.find(c => Number(c.id_contrato) === menu.id_contrato)?.institucion || `Contrato ${menu.id_contrato}`,
+  getNombrePlato(id: number): string {
+    const p = this.platos.find(x => x.id_plato == id);
+    return p ? p.nombre_plato : `Plato #${id}`;
+  }
+
+  getNombreManipuladora(id: number): string {
+    const u = this.usuariosManipuladoras.find(x => x.id_usuario_manipuladora == id);
+    return u ? u.nombre : `Usuario #${id}`;
+  }
+
+  cargarMenus(): void {
+    this.http.get<any[]>(`${this.apiUrl}/menus/`).subscribe({
+      next: (data) => {
+        this.menusDiarios = Array.isArray(data) ? data : (data as any).results || [];
+        this.cdr.detectChanges();
+      },
+      error: (err) => console.error('Error al cargar menús:', err)
+    });
+  }
+
+  cargarPlatos(): void {
+    this.http.get<any[]>(`${this.apiUrl}/platos/`).subscribe({
+      next: (data) => {
+        this.platos = Array.isArray(data) ? data : (data as any).results || [];
+        this.cdr.detectChanges();
+      },
+      error: (err) => console.error('Error al cargar platos:', err)
+    });
+  }
+
+  cargarPreparaciones(): void {
+    this.http.get<any[]>(`${this.apiUrl}/preparaciones-asignadas/`).subscribe({
+      next: (data) => {
+        const raw = Array.isArray(data) ? data : (data as any).results || [];
+        this.preparacionesAsignadas = raw.map((p: any) => ({
+          ...p,
+          nombre_menu: `Menú #${p.id_menu}`,
+          nombre_plato: this.getNombrePlato(p.id_plato),
+          manipuladora: this.getNombreManipuladora(p.id_usuario_manipuladora)
         }));
-        this.cargandoMenus = false;
         this.cdr.detectChanges();
       },
-      error: (error) => {
-        console.error('Error al cargar menús y catálogos:', error);
-        this.cargandoMenus = false;
-        this.cdr.detectChanges();
-        void this.sweetAlert.error(
-          'No se pudieron cargar los menús',
-          error.status === 403
-            ? 'Tu usuario no tiene permiso para consultar este módulo.'
-            : 'Verifica la conexión e intenta nuevamente.',
-        );
-      },
-    });
-
-    this.platosService.getPlatos().subscribe({
-      next: (data) => {
-        this.platos = data;
-        this.cdr.detectChanges();
-      },
-      error: (err) => {
-        console.error('Error al cargar platos:', err);
-        void this.sweetAlert.error('No se pudo cargar el catálogo de platos', 'Verifica tu sesión y vuelve a intentarlo.');
-      },
-    });
-
-    this.seccionesService.getSecciones().subscribe({
-      next: (data) => {
-        this.seccionesMenu = data;
-        this.cdr.detectChanges();
-      },
-      error: (err) => {
-        console.error('Error al cargar secciones de menú:', err);
-        void this.sweetAlert.error('No se pudieron cargar las secciones', 'Verifica la conexión e intenta nuevamente.');
-      },
+      error: (err) => console.error('Error al cargar preparaciones:', err)
     });
   }
 
-  cambiarPestana(pestana: string): void {
-    if (this.esSuperAdministrador && pestana === 'platos') return;
-    if (this.esJefa && !['menus', 'platos'].includes(pestana)) return;
-    if (pestana === 'preparaciones') return;
+  cambiarPestana(pestana: 'minuta' | 'menus' | 'platos' | 'preparaciones'): void {
     this.pestanaActiva = pestana;
-    this.paginaActual = 1;
-    this.limpiarFiltros();
     this.cerrarFormulario();
-    this.cerrarDetalle();
-    this.cdr.detectChanges();
   }
 
-  // =====================================================
-  //  FILTROS Y BÚSQUEDA
-  // =====================================================
-  aplicarBusqueda(): void {
-    this.filtrosAplicados = {
-      texto: this.filtroTexto,
-      seccion: this.seccionSel,
-      desde: this.fechaDesde,
-      hasta: this.fechaHasta
-    };
-    this.paginaActual = 1;
-  }
-
-  limpiarFiltros(): void {
-    this.filtroTexto = '';
-    this.seccionSel = 'Todas';
-    this.fechaDesde = '';
-    this.fechaHasta = '';
-    this.aplicarBusqueda();
-  }
-
-  get itemsFiltrados(): any[] {
-    const f = this.filtrosAplicados;
-    const texto = f.texto.trim().toLowerCase();
-
-    if (this.pestanaActiva === 'menus') {
-      return this.menus.filter(m => {
-        if (texto && !m.nombre_jornada.toLowerCase().includes(texto) && !m.institucion.toLowerCase().includes(texto)) return false;
-        if (f.desde && m.fecha < f.desde) return false;
-        if (f.hasta && m.fecha > f.hasta) return false;
-        return true;
-      });
-    }
-
-    if (this.pestanaActiva === 'platos') {
-      return this.platos.filter(p => {
-        if (f.seccion !== 'Todas' && String(p.id_seccion) !== String(f.seccion)) return false;
-        if (texto && !p.nombre_plato.toLowerCase().includes(texto) && !(p.componente || '').toLowerCase().includes(texto)) return false;
-        return true;
-      });
-    }
-
-    if (this.pestanaActiva === 'preparaciones') {
-      return this.preparacionesAsignadas.filter(p => {
-        if (texto && !p.nombre_plato.toLowerCase().includes(texto) && !p.manipuladora.toLowerCase().includes(texto)) return false;
-        if (f.desde && p.fecha < f.desde) return false;
-        if (f.hasta && p.fecha > f.hasta) return false;
-        return true;
-      });
-    }
-
-    return [];
-  }
-
-  // =====================================================
-  //  PAGINACIÓN
-  // =====================================================
-  get totalPaginas(): number {
-    return Math.max(1, Math.ceil(this.itemsFiltrados.length / this.porPagina));
-  }
-
-  get paginas(): number[] {
-    return Array.from({ length: this.totalPaginas }, (_, i) => i + 1);
-  }
-
-  get itemsPaginados(): any[] {
-    if (this.paginaActual > this.totalPaginas) this.paginaActual = this.totalPaginas;
-    const inicio = (this.paginaActual - 1) * this.porPagina;
-    return this.itemsFiltrados.slice(inicio, inicio + this.porPagina);
-  }
-
-  get desdeRegistro(): number {
-    return this.itemsFiltrados.length === 0 ? 0 : (this.paginaActual - 1) * this.porPagina + 1;
-  }
-
-  get hastaRegistro(): number {
-    return Math.min(this.paginaActual * this.porPagina, this.itemsFiltrados.length);
-  }
-
-  irAPagina(p: number): void {
-    if (p >= 1 && p <= this.totalPaginas) this.paginaActual = p;
-  }
-
-  // =====================================================
-  //  FORMULARIOS Y MODALES
-  // =====================================================
   abrirFormulario(): void {
-    if (this.esJefa && this.pestanaActiva !== 'menus') return;
+    if (this.pestanaActiva === 'minuta' || this.pestanaActiva === 'menus') {
+      this.abrirModalProgramarMenuDia();
+      return;
+    }
     this.esEdicion = false;
-    this.resetFormularios();
+    this.idEditando = null;
+    this.limpiarFormularios();
     this.mostrarFormulario = true;
-    this.cdr.detectChanges();
   }
 
   abrirEdicion(item: any): void {
-    if (this.esJefa && this.pestanaActiva !== 'menus') return;
     this.esEdicion = true;
+    this.mostrarFormulario = true;
+
     if (this.pestanaActiva === 'menus') {
+      this.idEditando = item.id_menu;
       this.menuForm = { ...item };
     } else if (this.pestanaActiva === 'platos') {
+      this.idEditando = item.id_plato;
       this.platoForm = { ...item };
     } else if (this.pestanaActiva === 'preparaciones') {
-      this.preparacionForm = { ...item };
+      this.idEditando = item.id_preparacion_asignada;
+      this.preparacionForm = {
+        id_menu: item.id_menu,
+        id_plato: item.id_plato,
+        id_usuario_manipuladora: item.id_usuario_manipuladora,
+        fecha: item.fecha,
+        hora_programada: item.hora_programada,
+        estado_preparacion: item.estado_preparacion,
+        observaciones: item.observaciones
+      };
     }
-    this.mostrarFormulario = true;
-    this.cdr.detectChanges();
   }
 
   cerrarFormulario(): void {
     this.mostrarFormulario = false;
-    this.resetFormularios();
-    this.cdr.detectChanges();
+    this.esEdicion = false;
+    this.idEditando = null;
+    this.limpiarFormularios();
   }
 
-  resetFormularios(): void {
-    this.menuForm = { id_menu: null, id_jornada: '', fecha: '', ninos_presentes: null, estado: 'ACTIVO', informacion_nutricional: '', id_contrato: '' };
-    this.platoForm = { id_plato: null, id_seccion: '', nombre_plato: '', componente: '' };
-    this.preparacionForm = { id_preparacion_asignada: null, id_menu: '', id_plato: '', id_usuario_manipuladora: '', fecha: '', hora_programada: '', estado_preparacion: 'PENDIENTE', observaciones: '' };
+  limpiarFormularios(): void {
+    this.menuForm = {
+      id_jornada: null,
+      fecha: '',
+      ninos_presentes: null,
+      id_contrato: null,
+      id_seccion: 1,
+      id_sede: this.sedeSeleccionadaId,
+      id_plato: null,
+      estado: 'Programado',
+      informacion_nutricional: ''
+    };
+    this.platoForm = { id_seccion: null, nombre_plato: '', componente: '' };
+    this.preparacionForm = {
+      id_menu: null,
+      id_plato: null,
+      id_usuario_manipuladora: null,
+      fecha: '',
+      hora_programada: '',
+      estado_preparacion: 'Pendiente',
+      observaciones: ''
+    };
   }
 
   guardarTodo(): void {
     if (this.pestanaActiva === 'menus') {
-      const idJornada = Number(this.menuForm.id_jornada);
-      const idContrato = Number(this.menuForm.id_contrato);
-      const ninosPresentes = Number(this.menuForm.ninos_presentes);
-      if (!idJornada || !idContrato || !this.menuForm.fecha || !Number.isInteger(ninosPresentes) || ninosPresentes < 0) {
-        void this.sweetAlert.warning('Revisa los datos', 'Selecciona jornada, contrato, fecha y una cantidad válida de niños presentes.');
+      if (!this.menuForm.id_jornada || !this.menuForm.fecha || !this.menuForm.ninos_presentes || !this.menuForm.id_contrato) {
+        this.sweetAlert.warning('Campos obligatorios', 'Por favor completa todos los campos obligatorios.');
         return;
       }
-      const payload = {
-        id_jornada: idJornada,
+
+      const body = {
+        id_jornada: Number(this.menuForm.id_jornada),
         fecha: this.menuForm.fecha,
-        ninos_presentes: ninosPresentes,
-        estado: this.menuForm.estado,
-        informacion_nutricional: this.menuForm.informacion_nutricional || '',
-        id_contrato: idContrato,
+        ninos_presentes: Number(this.menuForm.ninos_presentes),
+        id_contrato: Number(this.menuForm.id_contrato),
+        id_seccion: Number(this.menuForm.id_seccion || 1),
+        id_sede: Number(this.menuForm.id_sede || this.sedeSeleccionadaId),
+        id_plato: this.menuForm.id_plato ? Number(this.menuForm.id_plato) : null,
+        estado: this.menuForm.estado || 'Programado',
+        informacion_nutricional: this.menuForm.informacion_nutricional || 'Estandarizado PAE'
       };
-      const request = this.esEdicion
-        ? this.menusService.actualizar(Number(this.menuForm.id_menu), payload)
-        : this.menusService.crear(payload);
-      request.subscribe({
-        next: () => {
-          void this.sweetAlert.success(
-            this.esEdicion ? 'Menú actualizado' : 'Menú creado',
-            this.esEdicion ? 'El menú fue actualizado correctamente.' : 'El menú quedó registrado.',
-          );
-          this.cerrarFormulario();
-          this.cargarDatos();
-        },
-        error: (error) => {
-          console.error('Error al guardar menú:', error);
-          void this.sweetAlert.error('No se pudo guardar el menú', 'Verifica los campos y vuelve a intentarlo.');
-        },
+
+      const req = (this.esEdicion && this.idEditando)
+        ? this.http.put(`${this.apiUrl}/menus/${this.idEditando}/`, body)
+        : this.http.post(`${this.apiUrl}/menus/`, body);
+
+      req.subscribe({
+        next: () => { this.cargarMenus(); this.cerrarFormulario(); },
+        error: () => this.sweetAlert.error('Error', 'Error al guardar el menú.')
       });
-
-    } else if (this.pestanaActiva === 'platos') {
-      if (!this.esAdministrador) return;
-      if (this.esEdicion) {
-        this.platosService.updatePlato(this.platoForm.id_plato, this.platoForm).subscribe({
-          next: () => {
-            this.sweetAlert.success('Plato actualizado', 'Se actualizó el plato con éxito.');
-            this.cargarDatos();
-            this.cerrarFormulario();
-          },
-          error: () => this.sweetAlert.error('Error', 'No se pudo actualizar el plato.')
-        });
-      } else {
-        this.platosService.createPlato(this.platoForm).subscribe({
-          next: () => {
-            this.sweetAlert.success('Plato creado', 'El plato fue registrado.');
-            this.cargarDatos();
-            this.cerrarFormulario();
-          },
-          error: (err) => {
-            console.error('Error al crear plato:', err);
-            this.sweetAlert.error('Error', 'No se pudo registrar el plato. ' + (err.status === 404 ? 'API no encontrada (404)' : 'Revisa la consola.'));
-          }
-        });
-      }
-
     } else if (this.pestanaActiva === 'preparaciones') {
-      const menuObj = this.menus.find(m => m.id_menu == this.preparacionForm.id_menu);
-      const platoObj = this.platos.find(p => p.id_plato == this.preparacionForm.id_plato);
-      const manipObj = this.usuariosManipuladoras.find(u => u.id_usuario_manipuladora == this.preparacionForm.id_usuario_manipuladora);
-
-      if (this.esEdicion) {
-        const index = this.preparacionesAsignadas.findIndex(p => p.id_preparacion_asignada === this.preparacionForm.id_preparacion_asignada);
-        if (index !== -1) {
-          this.preparacionesAsignadas[index] = {
-            ...this.preparacionForm,
-            nombre_menu: menuObj ? `Menú #${menuObj.id_menu}` : '',
-            nombre_plato: platoObj?.nombre_plato || 'Plato',
-            manipuladora: manipObj?.nombre || 'Manipuladora'
-          };
-        }
-        this.sweetAlert.success('Preparación actualizada', 'Se actualizó la asignación.');
-      } else {
-        const nuevaPrep = {
-          ...this.preparacionForm,
-          id_preparacion_asignada: Date.now(),
-          nombre_menu: menuObj ? `Menú #${menuObj.id_menu}` : '',
-          nombre_plato: platoObj?.nombre_plato || 'Plato',
-          manipuladora: manipObj?.nombre || 'Manipuladora'
-        };
-        this.preparacionesAsignadas.push(nuevaPrep);
-        this.sweetAlert.success('Preparación asignada', 'Se registró la nueva preparación.');
+      if (!this.preparacionForm.id_menu || !this.preparacionForm.id_plato || !this.preparacionForm.id_usuario_manipuladora || !this.preparacionForm.fecha || !this.preparacionForm.hora_programada) {
+        this.sweetAlert.warning('Campos obligatorios', 'Completa todos los campos obligatorios.');
+        return;
       }
-      this.cerrarFormulario();
+
+      const body = {
+        id_menu: Number(this.preparacionForm.id_menu),
+        id_plato: Number(this.preparacionForm.id_plato),
+        id_usuario_manipuladora: Number(this.preparacionForm.id_usuario_manipuladora),
+        fecha: this.preparacionForm.fecha,
+        hora_programada: this.preparacionForm.hora_programada,
+        estado_preparacion: this.preparacionForm.estado_preparacion || 'Pendiente',
+        observaciones: this.preparacionForm.observaciones || 'Sin observaciones'
+      };
+
+      const req = (this.esEdicion && this.idEditando)
+        ? this.http.put(`${this.apiUrl}/preparaciones-asignadas/${this.idEditando}/`, body)
+        : this.http.post(`${this.apiUrl}/preparaciones-asignadas/`, body);
+
+      req.subscribe({
+        next: () => { this.cargarPreparaciones(); this.cerrarFormulario(); },
+        error: () => this.sweetAlert.error('Error', 'Error al guardar la preparación.')
+      });
     }
   }
 
   eliminarItem(lista: any[], item: any): void {
-    if (this.esJefa && this.pestanaActiva === 'platos') return;
-    if (this.pestanaActiva === 'menus') {
-      void this.sweetAlert.confirm('¿Eliminar menú?', 'Esta acción no se puede deshacer.', 'Eliminar').then(result => {
-        if (!result.isConfirmed) return;
-        this.menusService.eliminar(Number(item.id_menu)).subscribe({
-          next: () => {
-            this.menus = this.menus.filter(menu => menu.id_menu !== item.id_menu);
-            void this.sweetAlert.success('Menú eliminado', 'El menú fue eliminado correctamente.');
-          },
-          error: (error) => {
-            console.error('Error al eliminar menú:', error);
-            void this.sweetAlert.error('No se pudo eliminar', 'Verifica si el menú tiene registros asociados.');
-          },
-        });
-      });
-    } else if (this.pestanaActiva === 'platos') {
-      this.sweetAlert.confirm('¿Eliminar plato?', 'Esta acción no se puede deshacer.', 'Eliminar').then(res => {
-        if (res.isConfirmed) {
-          this.platosService.deletePlato(item.id_plato).subscribe({
-            next: () => {
-              this.sweetAlert.success('Eliminado', 'Plato eliminado correctamente.');
-              this.cargarDatos();
-            }
-          });
-        }
-      });
-    } else {
-      this.sweetAlert.confirm('¿Eliminar registro?', 'Esta acción quitará el elemento.', 'Sí, eliminar').then(res => {
-        if (res.isConfirmed) {
-          const index = lista.indexOf(item);
-          if (index > -1) {
-            lista.splice(index, 1);
-            this.sweetAlert.success('Eliminado', 'Registro eliminado correctamente.');
-          }
-        }
-      });
-    }
+    let endpoint = '';
+    let id = null;
+
+    if (this.pestanaActiva === 'menus') { endpoint = 'menus'; id = item.id_menu; }
+    else if (this.pestanaActiva === 'platos') { endpoint = 'platos'; id = item.id_plato; }
+    else if (this.pestanaActiva === 'preparaciones') { endpoint = 'preparaciones-asignadas'; id = item.id_preparacion_asignada; }
+
+    if (!id) return;
+
+    this.http.delete(`${this.apiUrl}/${endpoint}/${id}/`).subscribe({
+      next: () => {
+        if (this.pestanaActiva === 'menus') this.cargarMenus();
+        else if (this.pestanaActiva === 'platos') this.cargarPlatos();
+        else if (this.pestanaActiva === 'preparaciones') this.cargarPreparaciones();
+      },
+      error: (err) => console.error('Error al eliminar:', err)
+    });
   }
 
-  // =====================================================
-  //  CRUD DETALLE PLATO
-  // =====================================================
   abrirDetalle(plato: any): void {
     this.platoSeleccionado = plato;
     this.mostrarDetallePlato = true;
-    this.menuSugerenciaId = null;
-    this.detalleForm = {
-      id_detalle_plato: null, id_menu: '', id_plato: plato.id_plato,
-      porcion_por_nino: null, total_a_preparar: null,
-      unidad_total: '', estado_preparacion: 'Pendiente'
-    };
     this.cargarDetallesPlato(plato.id_plato);
-    this.cargarRecetaComponentes(plato.id_plato);
-    this.cargarIngredientesCatalogo();
-    this.resetRecetaForm();
   }
 
   cerrarDetalle(): void {
     this.mostrarDetallePlato = false;
     this.platoSeleccionado = null;
-    this.mostrarSugerenciaReceta = false;
-    this.sugerenciaReceta = null;
-    this.resetRecetaForm();
-  }
-
-  cargarRecetaComponentes(idPlato: number): void {
-    this.recetaComponentesService.listar().subscribe({
-      next: (data) => {
-        this.recetaComponentes = data.filter(
-          componente => Number(componente.id_plato) === Number(idPlato),
-        );
-        this.cdr.detectChanges();
-      },
-      error: (error) => {
-        console.error('Error al cargar los ingredientes de la receta:', error);
-        void this.sweetAlert.error(
-          'No se cargó la receta',
-          'Verifica la conexión y vuelve a intentarlo.',
-        );
-      },
-    });
-  }
-
-  cargarIngredientesCatalogo(): void {
-    if (this.ingredientesCatalogo.length > 0) return;
-    this.productoService.getIngredientes().subscribe({
-      next: (data) => {
-        this.ingredientesCatalogo = Array.isArray(data)
-          ? data
-          : Array.isArray(data?.results)
-            ? data.results
-            : [];
-        this.cdr.detectChanges();
-      },
-      error: (error) => {
-        console.error('Error al cargar ingredientes para la receta:', error);
-        void this.sweetAlert.error(
-          'No se cargaron los ingredientes',
-          'Verifica la conexión y vuelve a intentarlo.',
-        );
-      },
-    });
-  }
-
-  resetRecetaForm(): void {
-    this.recetaForm = {
-      id_receta_componente: null,
-      id_ingrediente: '',
-      cantidad: null,
-      base_cantidad: 'POR_NINO',
-      porciones_base: null,
-    };
-  }
-
-  nombreIngrediente(id: number): string {
-    const ingrediente = this.ingredientesCatalogo.find(
-      item => Number(item.id_ingrediente) === Number(id),
-    );
-    return ingrediente?.nombre_ingrediente || `Ingrediente #${id}`;
-  }
-
-  editarRecetaComponente(componente: RecetaComponente): void {
-    this.recetaForm = { ...componente };
-  }
-
-  guardarRecetaComponente(): void {
-    const cantidad = Number(this.recetaForm.cantidad);
-    const idIngrediente = Number(this.recetaForm.id_ingrediente);
-    const porcionesBase = Number(this.recetaForm.porciones_base);
-    if (!idIngrediente || !Number.isFinite(cantidad) || cantidad <= 0) {
-      void this.sweetAlert.warning(
-        'Revisa el ingrediente',
-        'Selecciona un ingrediente e indica una cantidad mayor que cero.',
-      );
-      return;
-    }
-    if (
-      this.recetaForm.base_cantidad === 'TOTAL_PREPARACION'
-      && (!Number.isInteger(porcionesBase) || porcionesBase <= 0)
-    ) {
-      void this.sweetAlert.warning(
-        'Indica la base de porciones',
-        'Señala para cuántos niños corresponde la cantidad total.',
-      );
-      return;
-    }
-
-    const payload = {
-      id_plato: Number(this.platoSeleccionado.id_plato),
-      id_ingrediente: idIngrediente,
-      cantidad,
-      base_cantidad: this.recetaForm.base_cantidad as 'POR_NINO' | 'TOTAL_PREPARACION',
-      porciones_base: this.recetaForm.base_cantidad === 'TOTAL_PREPARACION'
-        ? porcionesBase
-        : null,
-    };
-    const id = Number(this.recetaForm.id_receta_componente);
-    const request = id
-      ? this.recetaComponentesService.actualizar(id, payload)
-      : this.recetaComponentesService.crear(payload);
-    request.subscribe({
-      next: () => {
-        this.resetRecetaForm();
-        this.cargarRecetaComponentes(this.platoSeleccionado.id_plato);
-        void this.sweetAlert.success(
-          'Receta guardada',
-          'Se actualizaron los ingredientes base del plato.',
-        );
-      },
-      error: (error) => {
-        console.error('Error al guardar el ingrediente de la receta:', error);
-        void this.sweetAlert.error(
-          'No se guardó la receta',
-          error.error?.base_cantidad || error.error?.porciones_base
-            || 'Verifica los datos e intenta nuevamente.',
-        );
-      },
-    });
-  }
-
-  eliminarRecetaComponente(id: number): void {
-    void this.sweetAlert.confirm(
-      '¿Quitar ingrediente?',
-      'Se eliminará de la receta registrada.',
-      'Sí, eliminar',
-    ).then(result => {
-      if (!result.isConfirmed) return;
-      this.recetaComponentesService.eliminar(id).subscribe({
-        next: () => {
-          this.cargarRecetaComponentes(this.platoSeleccionado.id_plato);
-          void this.sweetAlert.success('Ingrediente eliminado', 'Se actualizó la receta.');
-        },
-        error: (error) => {
-          console.error('Error al eliminar ingrediente de receta:', error);
-          void this.sweetAlert.error(
-            'No se eliminó el ingrediente',
-            'Verifica tus permisos e intenta nuevamente.',
-          );
-        },
-      });
-    });
-  }
-
-  solicitarSugerenciaReceta(): void {
-    if (!this.menuSugerenciaId || !this.platoSeleccionado?.id_plato) {
-      void this.sweetAlert.warning(
-        'Selecciona un menú',
-        'La sugerencia requiere conocer cuántos niños están registrados en el menú.',
-      );
-      return;
-    }
-
-    this.cargandoSugerencia = true;
-    this.sugerenciaReceta = null;
-    this.sugerenciasRecetasService
-      .sugerir(this.menuSugerenciaId, Number(this.platoSeleccionado.id_plato))
-      .subscribe({
-        next: (sugerencia) => {
-          this.sugerenciaReceta = sugerencia;
-          this.mostrarSugerenciaReceta = true;
-          this.cargandoSugerencia = false;
-          this.cdr.detectChanges();
-        },
-        error: (error) => {
-          this.cargandoSugerencia = false;
-          console.error('Error al generar la sugerencia de receta:', error);
-          void this.sweetAlert.error(
-            'No se pudo generar la sugerencia',
-            error.error?.error || 'Verifica la receta, el inventario y vuelve a intentarlo.',
-          );
-        },
-      });
+    this.detallesPlato = [];
   }
 
   cargarDetallesPlato(idPlato: number): void {
-    this.detallesService.getDetalles().subscribe({
+    this.http.get<any[]>(`${this.apiUrl}/detalle-platos/`).subscribe({
       next: (data) => {
-        this.detallesPlato = data.filter((d: any) => Number(d.id_plato) === idPlato);
+        const todos = Array.isArray(data) ? data : (data as any).results || [];
+        this.detallesPlato = todos.filter((d: any) => d.id_plato == idPlato);
+        this.cdr.detectChanges();
       },
-      error: (error) => {
-        console.error('Error al cargar los detalles del plato:', error);
-        void this.sweetAlert.error('No se cargaron las porciones', 'Verifica la conexión y vuelve a intentarlo.');
-      },
+      error: (err) => console.error('Error al cargar detalles del plato:', err)
     });
   }
 
   guardarDetalle(): void {
-    const total = this.detalleForm.total_a_preparar === '' || this.detalleForm.total_a_preparar == null
-      ? Number.NaN
-      : Number(this.detalleForm.total_a_preparar);
-    const porcion = this.detalleForm.porcion_por_nino === '' || this.detalleForm.porcion_por_nino == null
-      ? Number.NaN
-      : Number(this.detalleForm.porcion_por_nino);
-    if (!Number(this.detalleForm.id_menu) || !Number.isFinite(total) || total <= 0
-      || !Number.isFinite(porcion) || porcion <= 0 || !this.detalleForm.unidad_total) {
-      void this.sweetAlert.warning(
-        'Completa los datos del plato',
-        'Selecciona un menú e indica una porción, el total a preparar y su unidad.',
-      );
-      return;
-    }
-    this.detalleForm.id_plato = this.platoSeleccionado.id_plato;
-    this.detalleForm.porcion_por_nino = porcion;
-    this.detalleForm.total_a_preparar = total;
-    this.detallesService.createDetalle(this.detalleForm).subscribe({
-      next: () => {
-        this.sweetAlert.success('Detalle agregado', 'Se agregó el detalle al plato.');
-        this.cargarDetallesPlato(this.platoSeleccionado.id_plato);
-        this.detalleForm = {
-          id_detalle_plato: null, id_menu: '', id_plato: this.platoSeleccionado.id_plato,
-          porcion_por_nino: null, total_a_preparar: null,
-          unidad_total: '', estado_preparacion: 'Pendiente'
-        };
-      },
-      error: () => this.sweetAlert.error('Error', 'No se pudo agregar el detalle.')
-    });
-  }
+    if (!this.detalleForm.id_menu || !this.platoSeleccionado) return;
 
-  eliminarDetalle(id: number): void {
-    this.sweetAlert.confirm('¿Eliminar detalle?', 'Se quitará del plato.', 'Sí, eliminar').then(res => {
-      if (res.isConfirmed) {
-        this.detallesService.deleteDetalle(id).subscribe({
-          next: () => {
-            this.sweetAlert.success('Eliminado', 'Detalle eliminado.');
-            this.cargarDetallesPlato(this.platoSeleccionado.id_plato);
-          },
-          error: (error) => {
-            console.error('Error al eliminar el detalle del plato:', error);
-            void this.sweetAlert.error('No se pudo eliminar', 'Verifica tus permisos e intenta nuevamente.');
-          },
-        });
+    const body = {
+      id_menu: Number(this.detalleForm.id_menu),
+      id_plato: Number(this.platoSeleccionado.id_plato),
+      porcion_por_nino: Number(this.detalleForm.porcion_por_nino) || 1,
+      total_a_preparar: Number(this.detalleForm.total_a_preparar) || 100,
+      unidad_total: this.detalleForm.unidad_total || 'raciones',
+      estado_preparacion: 'Pendiente'
+    };
+
+    this.http.post(`${this.apiUrl}/detalle-platos/`, body).subscribe({
+      next: () => {
+        this.cargarDetallesPlato(this.platoSeleccionado.id_plato);
+        this.detalleForm = { id_menu: null, porcion_por_nino: null, total_a_preparar: null, unidad_total: 'raciones', estado_preparacion: 'Pendiente' };
       }
     });
   }
 
-  getNombreSeccion(id_seccion: number): string {
-    if (!id_seccion) return 'General';
-    const sec = this.seccionesMenu.find(s => s.id_seccion === id_seccion);
-    return sec ? sec.nombre_seccion : 'General';
-  }
-
-  // =====================================================
-  //  EXPORTAR A EXCEL
-  // =====================================================
-  exportarExcel(): void {
-    if (this.itemsFiltrados.length === 0) {
-      void this.sweetAlert.warning('No hay registros para exportar', 'Aplica otros filtros o agrega información antes de exportar.');
-      return;
-    }
-
-    let filasHtml = '';
-    let encabezadoHtml = '';
-
-    if (this.pestanaActiva === 'menus') {
-      encabezadoHtml = `<tr><th>ID</th><th>Fecha</th><th>Jornada</th><th>Institución</th><th>Niños</th><th>Estado</th></tr>`;
-      filasHtml = this.itemsFiltrados.map(m => `
-        <tr>
-          <td>${m.id_menu}</td>
-          <td>${m.fecha}</td>
-          <td>${m.nombre_jornada}</td>
-          <td>${m.institucion}</td>
-          <td>${m.ninos_presentes}</td>
-          <td>${m.estado}</td>
-        </tr>`).join('');
-    } else if (this.pestanaActiva === 'platos') {
-      encabezadoHtml = `<tr><th>ID</th><th>Plato</th><th>Sección</th><th>Componente</th></tr>`;
-      filasHtml = this.itemsFiltrados.map(p => `
-        <tr>
-          <td>${p.id_plato}</td>
-          <td>${p.nombre_plato}</td>
-          <td>${this.getNombreSeccion(p.id_seccion)}</td>
-          <td>${p.componente || 'N/A'}</td>
-        </tr>`).join('');
-    } else {
-      encabezadoHtml = `<tr><th>ID</th><th>Menú</th><th>Plato</th><th>Manipuladora</th><th>Fecha</th><th>Hora</th><th>Estado</th></tr>`;
-      filasHtml = this.itemsFiltrados.map(pr => `
-        <tr>
-          <td>${pr.id_preparacion_asignada}</td>
-          <td>${pr.nombre_menu}</td>
-          <td>${pr.nombre_plato}</td>
-          <td>${pr.manipuladora}</td>
-          <td>${pr.fecha}</td>
-          <td>${pr.hora_programada}</td>
-          <td>${pr.estado_preparacion}</td>
-        </tr>`).join('');
-    }
-
-    const html = `
-      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
-      <head><meta charset="UTF-8"></head>
-      <body>
-        <table border="1">
-          <thead>${encabezadoHtml}</thead>
-          <tbody>${filasHtml}</tbody>
-        </table>
-      </body></html>`;
-
-    const blob = new Blob(['\ufeff' + html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `reporte_${this.pestanaActiva}_${new Date().toISOString().split('T')[0]}.xls`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+  eliminarDetalle(idDetalle: number): void {
+    this.http.delete(`${this.apiUrl}/detalle-platos/${idDetalle}/`).subscribe({
+      next: () => this.cargarDetallesPlato(this.platoSeleccionado.id_plato)
+    });
   }
 }

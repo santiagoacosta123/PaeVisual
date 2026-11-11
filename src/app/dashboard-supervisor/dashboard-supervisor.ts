@@ -218,25 +218,56 @@ export class DashboardSupervisor implements OnInit, AfterViewInit, OnDestroy {
     if (!this.institucionActiva) return;
 
     const idInst = Number(this.institucionActiva.id_institucion);
+    const claveCache = `sirae_entregas_cache_${idInst}`;
 
+    // 1. CARGA INMEDIATA EN 0ms (caché local o entregas en memoria o datos base)
+    // Esto garantiza que las gráficas aparezcan de inmediato sin demoras
+    let entregasIniciales: Entrega[] = [];
+    try {
+      const guardadas = localStorage.getItem(claveCache);
+      if (guardadas) {
+        const parsed = JSON.parse(guardadas);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          entregasIniciales = parsed;
+        }
+      }
+    } catch {}
+
+    if (entregasIniciales.length === 0 && Array.isArray(this.entregasService.entregas) && this.entregasService.entregas.length > 0) {
+      entregasIniciales = this.entregasService.entregas.filter(e => {
+        if (Number(e.idInstitucion) === idInst) return true;
+        if (this.institucionActiva?.sedes?.some(s => Number(s.id_sede) === Number(e.idSede))) return true;
+        return false;
+      });
+    }
+
+    if (entregasIniciales.length === 0) {
+      entregasIniciales = this.generarEntregasEjemplo(this.institucionActiva);
+    }
+
+    this.todasEntregas = entregasIniciales;
+    this.procesarMetricas();
+    this.programarRenderGraficos();
+
+    // 2. SINCRONIZACIÓN EN SEGUNDO PLANO (no bloquea la interfaz)
     this.entregasService.cargar().pipe(
-      timeout(7000),
+      timeout(4000),
       catchError(() => of([] as Entrega[]))
     ).subscribe(entregas => {
-      let delInst = (entregas || []).filter(e => {
+      const delInst = (entregas || []).filter(e => {
         if (Number(e.idInstitucion) === idInst) return true;
         if (this.institucionActiva?.sedes?.some(s => Number(s.id_sede) === Number(e.idSede))) return true;
         return false;
       });
 
-      // Si aún no hay entregas en backend para esta institución, generamos datos de muestra funcionales
-      if (delInst.length === 0) {
-        delInst = this.generarEntregasEjemplo(this.institucionActiva!);
+      if (delInst.length > 0) {
+        this.todasEntregas = delInst;
+        try {
+          localStorage.setItem(claveCache, JSON.stringify(delInst));
+        } catch {}
+        this.procesarMetricas();
+        this.programarRenderGraficos();
       }
-
-      this.todasEntregas = delInst;
-      this.procesarMetricas();
-      this.programarRenderGraficos();
     });
   }
 
@@ -355,15 +386,15 @@ export class DashboardSupervisor implements OnInit, AfterViewInit, OnDestroy {
       pct: totalEstados > 0 ? Math.round((l.valor / totalEstados) * 100) : 0,
     }));
 
-    // Composición de alimentos
+    // Composición de alimentos estricta: sólo perecederos reales en perecederos, sin mezclar
     let perecederos = 0;
     let noPerecederos = 0;
     for (const e of lista) {
-      const tipo = (e.tipoMercado || '').toLowerCase();
-      if (tipo.includes('no') || tipo.includes('abarrote') || tipo.includes('grano')) {
-        noPerecederos += Number(e.cantidad) || 1;
+      const cant = Number(e.cantidad) || 1;
+      if (this.esPerecederoEntrega(e)) {
+        perecederos += cant;
       } else {
-        perecederos += Number(e.cantidad) || 1;
+        noPerecederos += cant;
       }
     }
     this.totalPerecederos = perecederos;
@@ -399,21 +430,45 @@ export class DashboardSupervisor implements OnInit, AfterViewInit, OnDestroy {
     this.programarRenderGraficos();
   }
 
+  /**
+   * Clasifica de forma estricta si un producto o entrega es perecedero o no.
+   * Evita mezclar perecederos con no perecederos.
+   */
+  esPerecederoEntrega(e: Entrega): boolean {
+    const tipo = (e.tipoMercado || '').toLowerCase().trim();
+    if (tipo.includes('no perecedero') || tipo.includes('no_perecedero') || tipo.includes('no-perecedero') || tipo.includes('abarrote') || tipo.includes('grano')) {
+      return false;
+    }
+    if (tipo.includes('perecedero')) {
+      return true;
+    }
+    const ing = (e.ingrediente || '').toLowerCase().trim();
+    const perecederosKeywords = [
+      'leche', 'huevo', 'carne', 'pollo', 'res', 'cerdo', 'pescado', 'queso', 'yogur',
+      'fruta', 'naranja', 'banano', 'manzana', 'pera', 'guayaba', 'mandarina', 'mango',
+      'verdura', 'tomate', 'cebolla', 'zanahoria', 'papa', 'yuca', 'platano', 'plátano',
+      'ahuyama', 'habichuela', 'lechuga', 'espinaca', 'repollo'
+    ];
+    return perecederosKeywords.some(k => ing.includes(k));
+  }
+
   // =========================================================================
-  //  GRÁFICOS CHART.JS
+  //  GRÁFICOS CHART.JS (OPTIMIZADOS PARA CARGA ULTRA RÁPIDA)
   // =========================================================================
 
   private programarRenderGraficos(): void {
     if (this.timerRenderGraficos) clearTimeout(this.timerRenderGraficos);
+    // Render inmediato en el siguiente ciclo de renderizado sin esperas
     this.timerRenderGraficos = setTimeout(() => {
       this.renderizarGraficos();
-    }, 60);
+    }, 0);
   }
 
   private renderizarGraficos(): void {
-    this.destruirGraficos();
-
-    if (!this.institucionActiva) return;
+    if (!this.institucionActiva) {
+      this.destruirGraficos();
+      return;
+    }
 
     this.crearGraficoEstados();
     this.crearGraficoSedes();
@@ -428,14 +483,24 @@ export class DashboardSupervisor implements OnInit, AfterViewInit, OnDestroy {
 
     const dataValues = [this.recibidasConformes, this.conNovedad, this.enTransito, this.rechazadas];
     const total = dataValues.reduce((a, b) => a + b, 0);
+    const dataFinal = total > 0 ? dataValues : [1];
+    const bgFinal = total > 0 ? COLORES_ESTADO : ['#E2E8F0'];
+
+    // Si ya existe la instancia, actualizamos los datos al instante sin destruir
+    if (this.chartEstados) {
+      this.chartEstados.data.datasets[0].data = dataFinal;
+      this.chartEstados.data.datasets[0].backgroundColor = bgFinal;
+      this.chartEstados.update('none');
+      return;
+    }
 
     this.chartEstados = new Chart(ctx, {
       type: 'doughnut',
       data: {
         labels: ['Recibidas conformes', 'Con novedades', 'En tránsito', 'Rechazadas'],
         datasets: [{
-          data: total > 0 ? dataValues : [1],
-          backgroundColor: total > 0 ? COLORES_ESTADO : ['#E2E8F0'],
+          data: dataFinal,
+          backgroundColor: bgFinal,
           borderColor: '#FFFFFF',
           borderWidth: 3,
           borderRadius: 6,
@@ -445,6 +510,7 @@ export class DashboardSupervisor implements OnInit, AfterViewInit, OnDestroy {
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        animation: { duration: 250 },
         cutout: '72%',
         plugins: {
           legend: { display: false },
@@ -488,15 +554,27 @@ export class DashboardSupervisor implements OnInit, AfterViewInit, OnDestroy {
 
     const labels = Object.keys(mapaSedes);
     const dataCounts = labels.map(l => mapaSedes[l]);
+    const finalLabels = labels.length > 0 ? labels : ['Sin sedes'];
+    const finalCounts = dataCounts.length > 0 ? dataCounts : [0];
+    const bgColors = finalLabels.map((_, i) => COLORES_SEDES[i % COLORES_SEDES.length]);
+
+    // Si ya existe la instancia, actualizamos los datos al instante
+    if (this.chartSedes) {
+      this.chartSedes.data.labels = finalLabels;
+      this.chartSedes.data.datasets[0].data = finalCounts;
+      this.chartSedes.data.datasets[0].backgroundColor = bgColors;
+      this.chartSedes.update('none');
+      return;
+    }
 
     this.chartSedes = new Chart(ctx, {
       type: 'bar',
       data: {
-        labels: labels.length > 0 ? labels : ['Sin sedes'],
+        labels: finalLabels,
         datasets: [{
           label: 'Entregas despachadas',
-          data: dataCounts.length > 0 ? dataCounts : [0],
-          backgroundColor: (labels.length > 0 ? labels : ['x']).map((_, i) => COLORES_SEDES[i % COLORES_SEDES.length]),
+          data: finalCounts,
+          backgroundColor: bgColors,
           borderWidth: 0,
           borderRadius: { topLeft: 10, topRight: 10, bottomLeft: 0, bottomRight: 0 },
           borderSkipped: false,
@@ -507,6 +585,7 @@ export class DashboardSupervisor implements OnInit, AfterViewInit, OnDestroy {
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        animation: { duration: 250 },
         layout: { padding: { top: 22 } },
         scales: {
           y: {
@@ -522,7 +601,7 @@ export class DashboardSupervisor implements OnInit, AfterViewInit, OnDestroy {
               maxRotation: 20,
               minRotation: 0,
               callback: function (val, index) {
-                const label = labels[index] || '';
+                const label = finalLabels[index] || '';
                 return label.length > 18 ? label.slice(0, 16) + '...' : label;
               }
             },
@@ -555,14 +634,24 @@ export class DashboardSupervisor implements OnInit, AfterViewInit, OnDestroy {
     const perecederos = this.totalPerecederos;
     const noPerecederos = this.totalNoPerecederos;
     const total = perecederos + noPerecederos;
+    const dataVals = total > 0 ? [perecederos, noPerecederos] : [1];
+    const bgColors = total > 0 ? COLORES_CATEGORIAS : ['#E2E8F0'];
+
+    // Si ya existe la instancia, actualizamos los datos al instante
+    if (this.chartCategorias) {
+      this.chartCategorias.data.datasets[0].data = dataVals;
+      this.chartCategorias.data.datasets[0].backgroundColor = bgColors;
+      this.chartCategorias.update('none');
+      return;
+    }
 
     this.chartCategorias = new Chart(ctx, {
       type: 'doughnut',
       data: {
         labels: ['Perecederos', 'No perecederos'],
         datasets: [{
-          data: total > 0 ? [perecederos, noPerecederos] : [1],
-          backgroundColor: total > 0 ? COLORES_CATEGORIAS : ['#E2E8F0'],
+          data: dataVals,
+          backgroundColor: bgColors,
           borderColor: '#FFFFFF',
           borderWidth: 3,
           borderRadius: 6,
@@ -572,6 +661,7 @@ export class DashboardSupervisor implements OnInit, AfterViewInit, OnDestroy {
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        animation: { duration: 250 },
         cutout: '66%',
         plugins: {
           legend: { display: false },
@@ -776,7 +866,6 @@ export class DashboardSupervisor implements OnInit, AfterViewInit, OnDestroy {
       this.cdr.detectChanges();
     });
   }
-
   normalizarInstitucion(item: any, respaldo?: InstitucionAsignada): InstitucionAsignada {
     return normalizarInstitucionSupervisor(item, respaldo, false, []);
   }
