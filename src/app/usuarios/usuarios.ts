@@ -44,6 +44,19 @@ export class UsuariosComponent implements OnInit {
     );
   }
 
+  get esAdminInstitucional(): boolean {
+    const usuarioActual = this.authService.obtenerUsuario();
+    if (!usuarioActual || this.esSuperAdmin) return false;
+    return this.authService.esAdministrador(usuarioActual.rol);
+  }
+
+  get idInstitucionAdminActual(): number | null {
+    const usuarioActual = this.authService.obtenerUsuario();
+    const raw: any = usuarioActual?.id_institucion;
+    if (!raw) return null;
+    return typeof raw === 'object' ? Number(raw.id_institucion || raw.id) : Number(raw);
+  }
+
   get opcionesFiltroRol(): any[] {
     const catalogo = this.todosLosRoles.length > 0 ? this.todosLosRoles : this.roles;
     let rolesOpciones = catalogo;
@@ -202,7 +215,79 @@ export class UsuariosComponent implements OnInit {
     if (this.esSuperAdmin) {
       return this.esUsuarioAdmin(u) || this.esUsuarioSupervisor(u);
     }
+    if (this.esAdminInstitucional && this.idInstitucionAdminActual) {
+      const uInst = typeof u.id_institucion === 'object'
+        ? (u.id_institucion?.id_institucion || u.id_institucion?.id)
+        : u.id_institucion;
+      if (uInst && Number(uInst) !== Number(this.idInstitucionAdminActual)) {
+        return false;
+      }
+      return !this.esUsuarioAdmin(u) && !this.esUsuarioSupervisor(u);
+    }
     return true;
+  }
+
+  esUsuarioJefa(u: any): boolean {
+    if (!u) return false;
+    const nomDetalle = (u.rol_detalle?.nombre_rol || u.rol_detalle?.nombre || '').toLowerCase();
+    if (nomDetalle.includes('jefa') || nomDetalle.includes('jefe')) return true;
+    if (typeof u.rol === 'string' && (u.rol.toLowerCase().includes('jefa') || u.rol.toLowerCase().includes('jefe'))) {
+      return true;
+    }
+    const idRol = typeof u.rol === 'object' ? (u.rol?.id_rol || u.rol?.id || u.rol?.pk) : u.rol;
+    if (idRol) {
+      const nomCat = this.obtenerNombreRol(idRol).toLowerCase();
+      if (nomCat.includes('jefa') || nomCat.includes('jefe')) return true;
+    }
+    return false;
+  }
+
+  esRolJefa(): boolean {
+    if (!this.usuarioForm.rol) return false;
+    const nom = this.obtenerNombreRol(this.usuarioForm.rol).toLowerCase();
+    return nom.includes('jefa') || nom.includes('jefe');
+  }
+
+  esRolManipuladoraOCocina(): boolean {
+    if (!this.usuarioForm.rol) return false;
+    const nom = this.obtenerNombreRol(this.usuarioForm.rol).toLowerCase();
+    return nom.includes('jefa') || nom.includes('jefe') || nom.includes('manipuladora') || nom.includes('cocina');
+  }
+
+  obtenerJefaAsignadaASede(sede: any): any | null {
+    const idSede = Number(sede?.id_sede || sede?.id);
+    if (!idSede) return null;
+    return this.usuarios.find(u => {
+      if (u.is_active === false) return false;
+      if (!this.esUsuarioJefa(u)) return false;
+      const uSede = typeof u.id_sede === 'object' ? (u.id_sede?.id_sede || u.id_sede?.id) : u.id_sede;
+      if (Number(uSede) !== idSede) return false;
+      const uId = u.id_usuario || u.id || u.pk;
+      if (this.modoEdicion && this.usuarioSeleccionadoId && Number(uId) === Number(this.usuarioSeleccionadoId)) {
+        return false;
+      }
+      return true;
+    }) || null;
+  }
+
+  sedeAsignadaAOtraJefa(sede: any): boolean {
+    return !!this.obtenerJefaAsignadaASede(sede);
+  }
+
+  get sedesOpcionesFormulario(): any[] {
+    const lista = this.sedesDeInstitucionSeleccionada;
+    const validarJefaUnica = this.esRolJefa();
+    return lista.map(s => {
+      const jefaActual = validarJefaUnica ? this.obtenerJefaAsignadaASede(s) : null;
+      const ocupadoTexto = jefaActual
+        ? ` (⚠️ Jefa actual: ${jefaActual.nombre || ''} ${jefaActual.apellido || ''})`.trim()
+        : '';
+      return {
+        ...s,
+        nombre_sede_display: `${s.nombre_sede || s.nombre}${ocupadoTexto}`,
+        deshabilitado: !!jefaActual
+      };
+    });
   }
 
   contarSedesSupervisor(u: any): number {
@@ -562,7 +647,7 @@ export class UsuariosComponent implements OnInit {
       tipo_documento: 'CC',
       numero_documento: '',
       rol: '',
-      id_institucion: null,
+      id_institucion: this.esAdminInstitucional ? this.idInstitucionAdminActual : null,
       id_sede: null,
       password: '',
       is_active: true
@@ -599,6 +684,30 @@ export class UsuariosComponent implements OnInit {
     if (this.esRolRequiereInstitucion() && !this.usuarioForm.id_institucion) {
       this.sweetAlert.warning('Institución requerida', 'Debes seleccionar la institución educativa a la que pertenecerá el administrador.');
       return;
+    }
+
+    if (this.esAdminInstitucional && this.idInstitucionAdminActual) {
+      this.usuarioForm.id_institucion = this.idInstitucionAdminActual;
+    }
+
+    if ((this.esAdminInstitucional || this.esRolManipuladoraOCocina()) && !this.usuarioForm.id_sede) {
+      this.sweetAlert.warning(
+        'Sede requerida',
+        'Debes seleccionar la sede educativa a la que pertenecerá la Jefa de Manipuladoras o Manipuladora.'
+      );
+      return;
+    }
+
+    if (this.esRolJefa() && this.usuarioForm.id_sede) {
+      const sedeSel = this.sedes.find(s => Number(s.id_sede || s.id) === Number(this.usuarioForm.id_sede));
+      const jefaExistente = this.obtenerJefaAsignadaASede(sedeSel || { id_sede: this.usuarioForm.id_sede });
+      if (jefaExistente) {
+        this.sweetAlert.warning(
+          'Sede ya cuenta con Jefa de Manipuladoras',
+          `La sede "${sedeSel?.nombre_sede || 'seleccionada'}" ya tiene asignada a la Jefa de Manipuladoras ${jefaExistente.nombre} ${jefaExistente.apellido || ''}. Cada sede maneja su propia minuta de 20 días con una única Jefa de Manipuladoras responsable.`
+        );
+        return;
+      }
     }
 
     if (this.esRolAdmin() && this.usuarioForm.id_institucion) {

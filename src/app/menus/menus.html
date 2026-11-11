@@ -1,514 +1,213 @@
-<div class="flex flex-col gap-5 relative" style="font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;">
+<div class="flex flex-col gap-4 max-w-7xl font-sans">
 
-  <!-- ===================== CABECERA PRINCIPAL Y PESTAÑAS ===================== -->
-  <header class="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-6 py-5 rounded-xl border border-[#f2ead0] sticky top-[-24px] z-20 shadow-xs"
+  <!-- ===================== CABECERA: CONTEXTO INSTITUCIONAL Y SELECTOR DE SEDE ===================== -->
+  <header class="bg-white border border-amber-200/80 rounded-2xl p-5 shadow-xs flex flex-col gap-4"
     style="background: linear-gradient(135deg, #fffcf0 0%, #ffffff 100%);">
-    
-    <div class="flex items-center gap-4">
-      <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-amber-200 bg-amber-50 text-amber-700 shadow-xs">
-        <span class="material-symbols-outlined text-[24px]">restaurant_menu</span>
-      </div>
+    <div class="flex flex-wrap items-center justify-between gap-4">
       <div>
-        <h1 class="m-0 text-xl font-bold tracking-tight text-slate-900">
-          Programación de Menús y Raciones
-        </h1>
-        <p class="m-0 mt-0.5 text-xs font-medium text-slate-600">
-          Planificación nutricional y control de servicios alimentarios del programa PAE.
+        <div class="flex items-center gap-2 flex-wrap">
+          <h1 class="text-lg font-extrabold text-slate-900 m-0 tracking-tight">
+            Minuta
+          </h1>
+          <span
+            class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
+            {{ esJefaManipuladoras ? 'Encargada de la Sede' : 'Administrador Institucional' }}
+          </span>
+        </div>
+        <p class="text-xs text-slate-600 m-0 mt-0.5">
+          Consulta de la minuta y menús seleccionados para cada sede.
         </p>
       </div>
     </div>
 
-    <!-- Pestañas y Botón Acción -->
-    <div class="flex flex-wrap items-center gap-3">
-      <!-- Pestañas (Solo visibles para administrador institucional y jefa; Super Admin gestiona Menús) -->
-      <div *ngIf="!esSuperAdministrador" class="inline-flex bg-slate-100 p-1 rounded-xl border border-slate-200 gap-1">
-        <button type="button" (click)="cambiarPestana('menus')"
-          [class]="pestanaActiva === 'menus' ? 'bg-[#fac94b] text-slate-900 font-bold shadow-xs' : 'bg-transparent text-slate-600 hover:text-slate-900 font-medium'"
-          class="px-4 py-2 rounded-lg text-xs transition cursor-pointer">
-          Menús
-        </button>
-
-        <button type="button" (click)="cambiarPestana('platos')"
-          [class]="pestanaActiva === 'platos' ? 'bg-[#fac94b] text-slate-900 font-bold shadow-xs' : 'bg-transparent text-slate-600 hover:text-slate-900 font-medium'"
-          class="px-4 py-2 rounded-lg text-xs transition cursor-pointer">
-          {{ esJefa ? 'Seleccionar platos' : 'Platos' }}
-        </button>
+    <!-- BARRA DE SELECCIÓN DE SEDE (1 Minuta diferente de 20 días por cada Sede) -->
+    <div class="bg-white/90 border border-slate-200 rounded-xl p-3.5 flex flex-col gap-3">
+      <div class="flex items-center gap-2">
+        <span class="text-xs font-bold text-slate-800 uppercase tracking-wider">
+          Sedes de la Institución ({{ sedesInstitucion.length }} {{ sedesInstitucion.length === 1 ? 'Sede' : 'Sedes — Cada sede maneja su propia minuta' }}):
+        </span>
       </div>
 
-      <!-- Botón de Acción -->
-      <button type="button" (click)="abrirFormulario()"
-        class="h-[38px] px-5 inline-flex items-center justify-center gap-2 border-none rounded-full bg-[#fac94b] text-slate-900 text-[13px] font-bold cursor-pointer whitespace-nowrap shadow-[0_2px_8px_rgba(251,191,36,0.28)] transition-all hover:bg-[#f59e0b]">
-        <span class="material-symbols-outlined text-[18px]">add</span>
-        <span>{{ (esSuperAdministrador || pestanaActiva === 'menus') ? 'Nuevo menú' : 'Nuevo plato' }}</span>
-      </button>
+      <!-- Tarjetas de Sedes con el nombre de su Jefa abajo -->
+      <div *ngIf="sedesInstitucion.length > 0" class="flex items-center gap-2.5 overflow-x-auto pb-1">
+        <button *ngFor="let s of sedesInstitucion; let idx = index" type="button"
+          (click)="seleccionarSede(s.id_sede || s.id)" [ngClass]="(s.id_sede || s.id) === sedeSeleccionadaId
+            ? 'bg-[#fac94b] text-slate-950 border-amber-400 shadow-2xs font-bold'
+            : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200'"
+          class="px-4 py-2 rounded-xl border text-left transition cursor-pointer shrink-0 flex items-center gap-2.5 min-w-[190px]">
+          <span
+            [ngClass]="(s.id_sede || s.id) === sedeSeleccionadaId ? 'bg-amber-500/30 text-slate-950 font-black' : 'bg-slate-100 text-slate-600 font-bold'"
+            class="w-6 h-6 rounded-lg text-[11px] inline-flex items-center justify-center shrink-0">
+            {{ idx + 1 }}
+          </span>
+          <div class="overflow-hidden flex flex-col">
+            <span class="text-xs font-extrabold truncate leading-tight">{{ s.nombre_sede || s.nombre }}</span>
+            <span class="text-[11px] font-semibold truncate leading-tight mt-0.5"
+              [ngClass]="(s.id_sede || s.id) === sedeSeleccionadaId ? 'text-amber-950/80' : 'text-slate-500'">
+              {{ obtenerNombreJefaDeSede(s.id_sede || s.id) }}
+            </span>
+          </div>
+        </button>
+      </div>
     </div>
   </header>
 
-  <!-- PESTAÑA 1: MENÚS -->
-  <div *ngIf="pestanaActiva === 'menus'" class="flex flex-col gap-4">
-    <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs">
+  <!-- ===================================================================== -->
+  <!-- MINUTA SEMANAL DE LA SEDE (FORMATO OFICIAL PAE POR SEMANAS)           -->
+  <!-- ===================================================================== -->
+  <div class="flex flex-col gap-4">
 
-      <!-- Tabla de Menús -->
-      <div class="overflow-x-auto">
-        <table class="w-full border-collapse text-left text-xs">
-          <thead>
-            <tr class="border-b border-slate-200 text-slate-500 font-semibold">
-              <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase">JORNADA</th>
-              <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase">FECHA</th>
-              <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase">NIÑOS PRESENTES</th>
-              <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase">INSTITUCIÓN / CONTRATO</th>
-              <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase">INFORMACIÓN NUTRICIONAL</th>
-              <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase text-right">ACCIONES</th>
-            </tr>
-          </thead>
-          <tbody class="text-slate-900">
-            <tr *ngFor="let m of menus" class="border-b border-slate-100 hover:bg-slate-50/50 transition">
-              <td class="py-3 px-3 font-semibold text-slate-900">{{ m.nombre_jornada }}</td>
-              <td class="py-3 px-3 text-slate-600">{{ m.fecha }}</td>
-              <td class="py-3 px-3">
-                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800">
-                  {{ m.ninos_presentes }} niños
-                </span>
-              </td>
-              <td class="py-3 px-3 text-slate-700 font-medium">{{ m.institucion }}</td>
-              <td class="py-3 px-3 text-slate-500 italic">{{ m.informacion_nutricional }}</td>
-              <td class="py-3 px-3 text-right">
-                <div class="flex items-center justify-end gap-1.5">
-                  <button type="button" (click)="abrirEdicion(m)" class="w-8 h-8 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-300 text-slate-600 hover:text-slate-900 inline-flex items-center justify-center transition cursor-pointer" title="Editar">
-                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                    </svg>
-                  </button>
-                  <button type="button" (click)="eliminarItem(menus, m)" class="w-8 h-8 rounded-lg bg-slate-50 hover:bg-rose-50 border border-slate-300 text-slate-600 hover:text-rose-600 inline-flex items-center justify-center transition cursor-pointer" title="Eliminar">
-                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <polyline points="3 6 5 6 21 6"></polyline>
-                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                      <line x1="10" y1="11" x2="10" y2="17"></line>
-                      <line x1="14" y1="11" x2="14" y2="17"></line>
-                    </svg>
-                  </button>
-                </div>
-              </td>
-            </tr>
-            <tr *ngIf="cargandoMenus">
-              <td colspan="6" class="py-6 px-3 text-center text-slate-500">Cargando menús registrados...</td>
-            </tr>
-            <tr *ngIf="!cargandoMenus && menus.length === 0">
-              <td colspan="6" class="py-6 px-3 text-center text-slate-400 italic">No se encontraron menús registrados.</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+    <!-- SELECTOR DE SEMANAS (1 A 4) Y FILTROS -->
+    <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs flex flex-wrap items-center justify-between gap-3">
 
-      <!-- Pie de tabla: Paginación -->
-      <div class="flex items-center justify-between pt-3.5 mt-3.5 border-t border-slate-100 text-xs text-slate-500">
-        <span>Mostrando {{ menus.length }} registros</span>
-        <div class="flex items-center gap-1.5">
-          <button type="button" class="w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 inline-flex items-center justify-center cursor-pointer">
-            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-          </button>
-          <span class="w-7 h-7 rounded-lg bg-slate-900 text-white font-semibold inline-flex items-center justify-center text-xs">1</span>
-          <button type="button" class="w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 inline-flex items-center justify-center cursor-pointer">
-            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-          </button>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- PESTAÑA 2: PLATOS -->
-  <div *ngIf="pestanaActiva === 'platos'" class="flex flex-col gap-4">
-    <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs">
-
-      <!-- Encabezado -->
-      <div class="flex items-center justify-between gap-3 mb-4">
-        <div>
-          <h3 class="text-base font-bold text-slate-900 m-0">Platos y Recetas</h3>
-          <p class="text-xs text-slate-500 m-0">Catálogo de platos organizados por componentes y secciones de menú.</p>
-        </div>
-
-        <button *ngIf="esAdministrador" type="button" (click)="abrirFormulario()" class="bg-amber-400 hover:bg-amber-500 text-amber-950 font-semibold px-4 py-2 rounded-xl text-xs transition cursor-pointer whitespace-nowrap inline-flex items-center gap-1.5 shadow-2xs">
-          <span>+ Nuevo plato</span>
+      <!-- Selector de Semana 1 a 4 -->
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="text-xs font-bold text-slate-700 mr-1">
+          Seleccionar Semana:
+        </span>
+        <button *ngFor="let s of [1, 2, 3, 4]" type="button" (click)="semanaSeleccionada = s" [ngClass]="semanaSeleccionada === s
+            ? 'bg-[#fac94b] text-slate-950 font-bold border-amber-400 shadow-2xs'
+            : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200 font-semibold'"
+          class="px-3.5 py-1.5 rounded-xl text-xs border transition cursor-pointer inline-flex items-center gap-2">
+          <span>Semana {{ s }}</span>
+          <span class="text-[10px] px-2 py-0.5 rounded-full font-bold"
+            [ngClass]="semanaSeleccionada === s ? 'bg-amber-500/30 text-slate-950' : 'bg-slate-100 text-slate-600'">
+            Menús {{ (s - 1) * 5 + 1 }} al {{ s * 5 }}
+          </span>
         </button>
       </div>
 
-      <!-- Tabla de Platos -->
-      <div class="overflow-x-auto">
-        <table class="w-full border-collapse text-left text-xs">
-          <thead>
-            <tr class="border-b border-slate-200 text-slate-500 font-semibold">
-              <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase">SECCIÓN</th>
-              <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase">NOMBRE DEL PLATO</th>
-              <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase">COMPONENTE</th>
-              <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase text-right">ACCIONES</th>
-            </tr>
-          </thead>
-          <tbody class="text-slate-900">
-            <tr *ngFor="let p of platos" class="border-b border-slate-100 hover:bg-slate-50/50 transition">
-              <td class="py-3 px-3">
-                <span class="bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border border-slate-200 inline-block">
-                  {{ getNombreSeccion(p.id_seccion) }}
-                </span>
-              </td>
-              <td class="py-3 px-3 font-bold text-slate-900">{{ p.nombre_plato }}</td>
-              <td class="py-3 px-3 text-slate-600">{{ p.componente }}</td>
-              <td class="py-3 px-3 text-right">
-                <div class="flex items-center justify-end gap-1.5">
-                  <button type="button" (click)="abrirDetalle(p)" class="w-8 h-8 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-300 text-slate-600 hover:text-slate-900 inline-flex items-center justify-center transition cursor-pointer" title="Ver Detalles">
-                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                      <circle cx="12" cy="12" r="3"></circle>
-                    </svg>
-                  </button>
-                  <button *ngIf="esAdministrador" type="button" (click)="abrirEdicion(p)" class="w-8 h-8 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-300 text-slate-600 hover:text-slate-900 inline-flex items-center justify-center transition cursor-pointer" title="Editar">
-                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                    </svg>
-                  </button>
-                  <button *ngIf="esAdministrador" type="button" (click)="eliminarItem(platos, p)" class="w-8 h-8 rounded-lg bg-slate-50 hover:bg-rose-50 border border-slate-300 text-slate-600 hover:text-rose-600 inline-flex items-center justify-center transition cursor-pointer" title="Eliminar">
-                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <polyline points="3 6 5 6 21 6"></polyline>
-                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                      <line x1="10" y1="11" x2="10" y2="17"></line>
-                      <line x1="14" y1="11" x2="14" y2="17"></line>
-                    </svg>
-                  </button>
-                </div>
-              </td>
-            </tr>
-            <tr *ngIf="platos.length === 0">
-              <td colspan="4" class="py-6 px-3 text-center text-slate-400 italic">No hay platos registrados.</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Pie de tabla: Paginación -->
-      <div class="flex items-center justify-between pt-3.5 mt-3.5 border-t border-slate-100 text-xs text-slate-500">
-        <span>Mostrando {{ platos.length }} registros</span>
-        <div class="flex items-center gap-1.5">
-          <button type="button" class="w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 inline-flex items-center justify-center cursor-pointer">
-            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-          </button>
-          <span class="w-7 h-7 rounded-lg bg-slate-900 text-white font-semibold inline-flex items-center justify-center text-xs">1</span>
-          <button type="button" class="w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 inline-flex items-center justify-center cursor-pointer">
-            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-          </button>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- PESTAÑA 3: PREPARACIONES -->
-  <div *ngIf="pestanaActiva === 'preparaciones'" class="flex flex-col gap-4">
-    <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs">
-
-      <!-- Encabezado -->
-      <div class="flex items-center justify-between gap-3 mb-4">
-        <div>
-          <h3 class="text-base font-bold text-slate-900 m-0">Preparaciones Asignadas</h3>
-          <p class="text-xs text-slate-500 m-0">Asignación de tareas operativas y turnos a manipuladoras de alimentos.</p>
-        </div>
-
-        <button type="button" (click)="abrirFormulario()" class="bg-amber-400 hover:bg-amber-500 text-amber-950 font-semibold px-4 py-2 rounded-xl text-xs transition cursor-pointer whitespace-nowrap inline-flex items-center gap-1.5 shadow-2xs">
-          <span>+ Asignar preparación</span>
+      <!-- Filtro por Momento del Día (Desayuno / Almuerzo / Merienda) -->
+      <div class="flex flex-wrap items-center gap-1.5">
+        <span class="text-xs font-bold text-slate-700 mr-1">
+          Momento:
+        </span>
+        <button *ngFor="let sec of ['TODAS', 'Desayuno', 'Almuerzo', 'Merienda']" type="button"
+          (click)="filtroSeccionMinuta = $any(sec)" [ngClass]="filtroSeccionMinuta === sec
+            ? 'bg-amber-100 text-amber-950 border-amber-300 font-bold'
+            : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200 font-medium'"
+          class="px-3 py-1.5 rounded-lg text-xs border transition cursor-pointer">
+          {{ sec === 'TODAS' ? 'Todos' : sec }}
         </button>
       </div>
+    </div>
 
-      <!-- Tabla de Preparaciones -->
-      <div class="overflow-x-auto">
-        <table class="w-full border-collapse text-left text-xs">
+    <!-- TARJETA DE LA SEMANA SELECCIONADA (Estilo Banco de Datos Superadmin) -->
+    <div *ngIf="semanaActualMinuta as semana"
+      class="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs flex flex-col gap-4">
+
+      <!-- Encabezado Limpio e Institucional de la Semana -->
+      <div class="flex items-center justify-between pb-3.5 border-b border-slate-100 flex-wrap gap-3">
+        <div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <h2 class="text-base font-extrabold text-slate-900 m-0">
+              Minuta Semanal — Semana {{ semana.numeroSemana }}
+            </h2>
+            <span
+              class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
+              Menús {{ (semana.numeroSemana - 1) * 5 + 1 }} al {{ semana.numeroSemana * 5 }}
+            </span>
+          </div>
+          <p class="text-xs text-slate-500 m-0 mt-0.5">
+            Sede: <strong class="text-slate-700">{{ sedeActualObj?.nombre_sede || 'Sede Principal' }}</strong> •
+            Menús registrados para la sede.
+          </p>
+        </div>
+      </div>
+      </div>
+
+      <!-- Tabla estilo Minuta PAE por Semana (Lunes a Viernes) -->
+      <div class="overflow-x-auto rounded-xl border border-slate-200">
+        <table class="w-full border-collapse text-left text-xs min-w-[760px]">
           <thead>
-            <tr class="border-b border-slate-200 text-slate-500 font-semibold">
-              <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase">MENÚ</th>
-              <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase">PLATO</th>
-              <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase">MANIPULADORA</th>
-              <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase">PROGRAMACIÓN</th>
-              <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase">ESTADO</th>
-              <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase">OBSERVACIONES</th>
-              <th class="py-2.5 px-3 text-[11px] tracking-wider uppercase text-right">ACCIONES</th>
+            <tr class="bg-slate-50/80 border-b border-slate-200 text-slate-700">
+              <th
+                class="py-3 px-4 text-left font-bold uppercase tracking-wider text-[11px] text-slate-600 w-48 border-r border-slate-200 bg-slate-50">
+                Componente PAE
+              </th>
+              <th *ngFor="let dia of semana.dias" class="py-3 px-3 text-center border-r border-slate-200 min-w-[190px]">
+                <div class="flex flex-col items-center gap-0.5">
+                  <span class="text-[12.5px] font-extrabold uppercase text-slate-900 tracking-tight">
+                    {{ dia.diaSemana }}
+                  </span>
+                  <div class="inline-flex items-center gap-1.5 mt-0.5">
+                    <span
+                      class="px-2 py-0.5 rounded font-extrabold text-[10.5px] bg-amber-50 text-amber-900 border border-amber-200">
+                      Menú {{ dia.numeroMenu }}
+                    </span>
+                    <span class="text-[10.5px] text-slate-500 font-medium">
+                      {{ dia.tiene_menu_registrado ? dia.fecha : 'Pendiente' }}
+                    </span>
+                  </div>
+                </div>
+              </th>
             </tr>
           </thead>
-          <tbody class="text-slate-900">
-            <tr *ngFor="let prep of preparacionesAsignadas" class="border-b border-slate-100 hover:bg-slate-50/50 transition">
-              <td class="py-3 px-3 font-semibold text-slate-900">{{ prep.nombre_menu }}</td>
-              <td class="py-3 px-3 text-slate-600 font-medium">{{ prep.nombre_plato }}</td>
-              <td class="py-3 px-3 font-semibold text-slate-900">{{ prep.manipuladora }}</td>
-              <td class="py-3 px-3 text-slate-500">{{ prep.fecha }} ({{ prep.hora_programada }})</td>
-              <td class="py-3 px-3">
-                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-800">
-                  {{ prep.estado_preparacion }}
-                </span>
+          <tbody class="divide-y divide-slate-100 text-slate-800">
+
+            <!-- FILA 1: PLATO SELECCIONADO / MENÚ DEL DÍA (Elegido por la Sede) -->
+            <tr class="bg-amber-50/30 border-b border-amber-200">
+              <td class="py-3 px-4 font-bold text-amber-950 border-r border-slate-200 bg-amber-50/50 align-middle">
+                <div class="flex flex-col">
+                  <span class="text-[10px] uppercase tracking-wider text-amber-800 font-extrabold">Elección de la Sede</span>
+                  <span class="text-xs font-black text-slate-900">Plato Seleccionado</span>
+                </div>
               </td>
-              <td class="py-3 px-3 text-slate-500">{{ prep.observaciones }}</td>
-              <td class="py-3 px-3 text-right">
-                <div class="flex items-center justify-end gap-1.5">
-                  <button type="button" (click)="abrirEdicion(prep)" class="w-8 h-8 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-300 text-slate-600 hover:text-slate-900 inline-flex items-center justify-center transition cursor-pointer" title="Editar">
-                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                    </svg>
-                  </button>
-                  <button type="button" (click)="eliminarItem(preparacionesAsignadas, prep)" class="w-8 h-8 rounded-lg bg-slate-50 hover:bg-rose-50 border border-slate-300 text-slate-600 hover:text-rose-600 inline-flex items-center justify-center transition cursor-pointer" title="Eliminar">
-                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <polyline points="3 6 5 6 21 6"></polyline>
-                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                      <line x1="10" y1="11" x2="10" y2="17"></line>
-                      <line x1="14" y1="11" x2="14" y2="17"></line>
-                    </svg>
-                  </button>
+              <td *ngFor="let dia of semana.dias"
+                class="py-3 px-3 text-center border-r border-slate-200 align-middle">
+                
+                <!-- Si ya fue registrado -->
+                <div *ngIf="dia.tiene_menu_registrado"
+                  class="bg-white border border-amber-200/90 rounded-xl p-3 shadow-2xs flex flex-col items-center gap-1.5 text-center min-h-[74px] justify-center">
+                  <!-- Momento del día (Desayuno, Almuerzo o Merienda) -->
+                  <span
+                    [ngClass]="dia.seccion === 'Desayuno'
+                      ? 'bg-sky-50 text-sky-800 border-sky-200'
+                      : (dia.seccion === 'Merienda' ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-emerald-50 text-emerald-800 border-emerald-200')"
+                    class="px-2.5 py-0.5 rounded-full text-[10px] font-bold border">
+                    {{ dia.seccion }}
+                  </span>
+
+                  <!-- Nombre del plato elegido -->
+                  <div class="font-extrabold text-slate-900 text-xs leading-snug">
+                    {{ dia.nombre_plato }}
+                  </div>
+                </div>
+
+                <!-- Si aún no ha sido seleccionado -->
+                <div *ngIf="!dia.tiene_menu_registrado"
+                  class="bg-slate-50/70 border border-dashed border-slate-300 rounded-xl p-3 flex flex-col items-center justify-center gap-1 text-center min-h-[74px]">
+                  <span class="text-xs text-slate-400 font-medium italic">Sin registrar</span>
                 </div>
               </td>
             </tr>
-            <tr *ngIf="preparacionesAsignadas.length === 0">
-              <td colspan="7" class="py-6 px-3 text-center text-slate-400 italic">No hay preparaciones asignadas.</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
 
-      <!-- Pie de tabla: Paginación -->
-      <div class="flex items-center justify-between pt-3.5 mt-3.5 border-t border-slate-100 text-xs text-slate-500">
-        <span>Mostrando {{ preparacionesAsignadas.length }} registros</span>
-        <div class="flex items-center gap-1.5">
-          <button type="button" class="w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 inline-flex items-center justify-center cursor-pointer">
-            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-          </button>
-          <span class="w-7 h-7 rounded-lg bg-slate-900 text-white font-semibold inline-flex items-center justify-center text-xs">1</span>
-          <button type="button" class="w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 inline-flex items-center justify-center cursor-pointer">
-            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-          </button>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- MODAL DE CREACIÓN / EDICIÓN -->
-  <div *ngIf="mostrarFormulario" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-    <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto space-y-4">
-      
-      <!-- Encabezado del Modal -->
-      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-        <h3 class="text-base font-bold text-slate-900 m-0">
-          {{ esEdicion ? 'EDITAR' : 'NUEVO' }} {{ pestanaActiva === 'menus' ? 'MENÚ' : (pestanaActiva === 'platos' ? 'PLATO' : 'PREPARACIÓN') }}
-        </h3>
-        <button type="button" (click)="cerrarFormulario()" class="text-slate-400 hover:text-slate-600 text-lg cursor-pointer bg-transparent border-none">✕</button>
-      </div>
-
-      <!-- Inputs Formulario Menús -->
-      <div *ngIf="pestanaActiva === 'menus'" class="flex flex-col gap-3.5 text-xs">
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label class="block font-semibold text-slate-700 mb-1.5">Jornada *</label>
-            <app-custom-select
-              [options]="jornadas"
-              valueField="id_jornada"
-              labelField="nombre_jornada"
-              placeholder="Seleccionar jornada..."
-              [(ngModel)]="menuForm.id_jornada"
-            ></app-custom-select>
-          </div>
-          <div>
-            <label class="block font-semibold text-slate-700 mb-1.5">Fecha *</label>
-            <input type="date" [(ngModel)]="menuForm.fecha" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500">
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label class="block font-semibold text-slate-700 mb-1.5">Niños Presentes *</label>
-            <input type="number" [(ngModel)]="menuForm.ninos_presentes" placeholder="Ej. 150" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500">
-          </div>
-          <div>
-            <label class="block font-semibold text-slate-700 mb-1.5">Contrato PAE *</label>
-            <app-custom-select
-              [options]="contratosOpciones"
-              valueField="id_contrato"
-              labelField="label"
-              placeholder="Seleccionar contrato..."
-              [(ngModel)]="menuForm.id_contrato"
-            ></app-custom-select>
-          </div>
-        </div>
-
-        <div>
-          <label class="block font-semibold text-slate-700 mb-1.5">Información Nutricional</label>
-          <input type="text" [(ngModel)]="menuForm.informacion_nutricional" placeholder="Detalles nutricionales..." class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500">
-        </div>
-      </div>
-
-      <!-- Inputs Formulario Platos -->
-      <div *ngIf="pestanaActiva === 'platos'" class="flex flex-col gap-3.5 text-xs">
-        <div>
-          <label class="block font-semibold text-slate-700 mb-1.5">Sección de Menú *</label>
-          <app-custom-select
-            [options]="seccionesMenu"
-            valueField="id_seccion"
-            labelField="nombre_seccion"
-            placeholder="Seleccione una sección..."
-            [(ngModel)]="platoForm.id_seccion"
-          ></app-custom-select>
-        </div>
-
-        <div>
-          <label class="block font-semibold text-slate-700 mb-1.5">Nombre del Plato *</label>
-          <input type="text" [(ngModel)]="platoForm.nombre_plato" placeholder="Ej. Seco de Pollo" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500">
-        </div>
-
-        <div>
-          <label class="block font-semibold text-slate-700 mb-1.5">Componente *</label>
-          <input type="text" [(ngModel)]="platoForm.componente" placeholder="Ej. Proteína / Cereal" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500">
-        </div>
-      </div>
-
-      <!-- Inputs Formulario Preparaciones -->
-      <div *ngIf="pestanaActiva === 'preparaciones'" class="flex flex-col gap-3.5 text-xs">
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label class="block font-semibold text-slate-700 mb-1.5">Menú *</label>
-            <app-custom-select
-              [options]="menusOpciones"
-              valueField="id_menu"
-              labelField="label"
-              placeholder="Seleccionar menú..."
-              [(ngModel)]="preparacionForm.id_menu"
-            ></app-custom-select>
-          </div>
-          <div>
-            <label class="block font-semibold text-slate-700 mb-1.5">Plato *</label>
-            <app-custom-select
-              [options]="platos"
-              valueField="id_plato"
-              labelField="nombre_plato"
-              placeholder="Seleccionar plato..."
-              [(ngModel)]="preparacionForm.id_plato"
-            ></app-custom-select>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label class="block font-semibold text-slate-700 mb-1.5">Manipuladora *</label>
-            <app-custom-select
-              [options]="usuariosManipuladoras"
-              valueField="id_usuario_manipuladora"
-              labelField="nombre"
-              placeholder="Seleccionar manipuladora..."
-              [(ngModel)]="preparacionForm.id_usuario_manipuladora"
-            ></app-custom-select>
-          </div>
-          <div>
-            <label class="block font-semibold text-slate-700 mb-1.5">Fecha y Hora Programada *</label>
-            <div class="flex gap-2">
-              <input type="date" [(ngModel)]="preparacionForm.fecha" class="flex-1 px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500">
-              <input type="time" [(ngModel)]="preparacionForm.hora_programada" class="w-24 px-2 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500">
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <label class="block font-semibold text-slate-700 mb-1.5">Observaciones</label>
-          <input type="text" [(ngModel)]="preparacionForm.observaciones" placeholder="Instrucciones o notas adicionales..." class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500">
-        </div>
-      </div>
-
-      <!-- Pie del Modal -->
-      <div class="flex items-center justify-end gap-3 pt-3.5 border-t border-slate-100">
-        <button type="button" (click)="cerrarFormulario()" class="bg-white border border-slate-300 text-slate-700 font-semibold px-4 py-2 rounded-xl text-xs hover:bg-slate-50 transition cursor-pointer">Cancelar</button>
-        <button type="button" (click)="guardarTodo()" class="bg-slate-900 hover:bg-slate-800 text-white font-semibold px-4 py-2 rounded-xl text-xs transition cursor-pointer shadow-2xs">Guardar</button>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- MODAL: DETALLE PLATO -->
-  <div *ngIf="mostrarDetallePlato" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-    <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xl w-full max-w-xl max-h-[90vh] overflow-y-auto space-y-4">
-      
-      <!-- Encabezado del Modal -->
-      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-        <div>
-          <h3 class="text-base font-bold text-slate-900 m-0">Detalles de Preparación</h3>
-          <p class="text-xs text-slate-500 m-0">{{ platoSeleccionado?.nombre_plato }} • {{ platoSeleccionado?.componente }}</p>
-        </div>
-        <button type="button" (click)="cerrarDetalle()" class="text-slate-400 hover:text-slate-600 text-lg cursor-pointer bg-transparent border-none">✕</button>
-      </div>
-
-      <!-- Formulario para agregar detalle -->
-      <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex flex-col gap-2.5">
-        <span class="text-[11px] font-bold text-slate-600 uppercase tracking-wider">Agregar Detalle de Porción</span>
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
-          <div>
-            <label class="block font-semibold text-slate-500 text-[10px] mb-1">Menú *</label>
-            <app-custom-select
-              [options]="detalleMenusOpciones"
-              valueField="id_menu"
-              labelField="label"
-              placeholder="Selecciona menú..."
-              size="sm"
-              [(ngModel)]="detalleForm.id_menu"
-            ></app-custom-select>
-          </div>
-          <div>
-            <label class="block font-semibold text-slate-500 text-[10px] mb-1">Porción/Niño</label>
-            <input type="number" [(ngModel)]="detalleForm.porcion_por_nino" placeholder="Ej. 120" class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none">
-          </div>
-          <div>
-            <label class="block font-semibold text-slate-500 text-[10px] mb-1">Total Preparar</label>
-            <input type="number" [(ngModel)]="detalleForm.total_a_preparar" placeholder="Ej. 18" class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none">
-          </div>
-          <div>
-            <label class="block font-semibold text-slate-500 text-[10px] mb-1">Unidad</label>
-            <input type="text" [(ngModel)]="detalleForm.unidad_total" placeholder="Ej. kg" class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none">
-          </div>
-        </div>
-        <div class="flex justify-end pt-1">
-          <button type="button" (click)="guardarDetalle()" class="bg-amber-400 hover:bg-amber-500 text-amber-950 font-semibold px-3 py-1.5 rounded-lg text-xs cursor-pointer shadow-2xs">
-            + Agregar a plato
-          </button>
-        </div>
-      </div>
-
-      <!-- Tabla de detalles registrados -->
-      <div class="overflow-x-auto">
-        <table class="w-full border-collapse text-left text-xs">
-          <thead>
-            <tr class="border-b border-slate-200 text-slate-500 font-semibold">
-              <th class="py-2 px-2.5 text-[11px] uppercase">ID MENÚ</th>
-              <th class="py-2 px-2.5 text-[11px] uppercase">PORCIÓN / NIÑO</th>
-              <th class="py-2 px-2.5 text-[11px] uppercase">TOTAL A PREPARAR</th>
-              <th class="py-2 px-2.5 text-[11px] uppercase text-right">ACCIONES</th>
-            </tr>
-          </thead>
-          <tbody class="text-slate-900">
-            <tr *ngFor="let det of detallesPlato" class="border-b border-slate-100 hover:bg-slate-50/50">
-              <td class="py-2.5 px-2.5 font-semibold">Menú #{{ det.id_menu }}</td>
-              <td class="py-2.5 px-2.5">{{ det.porcion_por_nino }}</td>
-              <td class="py-2.5 px-2.5 font-bold text-slate-900">{{ det.total_a_preparar }} {{ det.unidad_total }}</td>
-              <td class="py-2.5 px-2.5 text-right">
-                <button type="button" (click)="eliminarDetalle(det.id_detalle_plato)" class="w-7 h-7 rounded bg-slate-50 hover:bg-rose-50 border border-slate-200 text-rose-600 inline-flex items-center justify-center cursor-pointer" title="Eliminar">
-                  <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                </button>
+            <!-- FILAS DE LOS 5 COMPONENTES (Idéntico al formato oficial del PAE) -->
+            <tr *ngFor="let comp of filasComponentesPAE; let odd = odd"
+              [ngClass]="odd ? 'bg-slate-50/40' : 'bg-white'"
+              class="border-b border-slate-100 hover:bg-amber-50/15 transition">
+              <td class="py-2.5 px-4 font-semibold text-slate-700 border-r border-slate-200 text-xs bg-slate-50/30">
+                {{ comp.label }}
+              </td>
+              <td *ngFor="let dia of semana.dias"
+                class="py-2.5 px-3 text-center border-r border-slate-200 font-medium text-slate-700 align-middle text-xs">
+                <span [class.text-slate-400]="!dia.componentes[comp.key] || dia.componentes[comp.key] === '—'">
+                  {{ dia.componentes[comp.key] || '—' }}
+                </span>
               </td>
             </tr>
-            <tr *ngIf="detallesPlato.length === 0">
-              <td colspan="4" class="py-4 px-2.5 text-center text-slate-400 italic">No hay detalles registrados para este plato.</td>
-            </tr>
+
           </tbody>
         </table>
       </div>
 
-      <!-- Pie del Modal -->
-      <div class="flex justify-end pt-3 border-t border-slate-100">
-        <button type="button" (click)="cerrarDetalle()" class="bg-white border border-slate-300 text-slate-700 font-semibold px-4 py-1.5 rounded-xl text-xs hover:bg-slate-50 cursor-pointer">Cerrar</button>
+      <!-- Estado vacío si el filtro por sección excluyó todos los días -->
+      <div *ngIf="semana.dias.length === 0" class="p-8 text-center text-xs text-slate-500 italic">
+        No hay menús registrados en la Semana {{ semana.numeroSemana }} para el momento seleccionado ({{
+        filtroSeccionMinuta }}).
       </div>
-
     </div>
+
   </div>
 
 </div>

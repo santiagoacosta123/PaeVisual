@@ -244,7 +244,7 @@
           <div class="bd-form-group" style="grid-column: 1 / -1" *ngIf="!esRolSupervisor() && esRolConInstitucion()">
             <label>
               {{ esRolAdmin() ? 'Institución Educativa que Administrará' : 'Institución Educativa Asignada' }}
-              <span style="color: #ef4444" *ngIf="esRolRequiereInstitucion()">*</span>
+              <span style="color: #ef4444" *ngIf="esRolRequiereInstitucion() || esAdminInstitucional">*</span>
             </label>
             <app-custom-select
               [options]="institucionesOpcionesAdmin"
@@ -252,6 +252,7 @@
               labelField="nombre_display"
               placeholder="Selecciona la institución educativa..."
               name="id_institucion"
+              [disabled]="esAdminInstitucional"
               [(ngModel)]="usuarioForm.id_institucion"
               (ngModelChange)="onInstitucionChange()"
             ></app-custom-select>
@@ -303,15 +304,21 @@
 
           <!-- Selector de Sede cuando la institución tiene sedes y el rol es de sede -->
           <div class="bd-form-group" style="grid-column: 1 / -1" *ngIf="usuarioForm.id_institucion && sedesDeInstitucionSeleccionada.length > 0 && esRolConSede()">
-            <label>Sede Educativa (Opcional)</label>
+            <label>
+              Sede Educativa Asignada
+              <span style="color: #ef4444" *ngIf="esAdminInstitucional || esRolManipuladoraOCocina()">*</span>
+            </label>
             <app-custom-select
-              [options]="sedesDeInstitucionSeleccionada"
+              [options]="sedesOpcionesFormulario"
               valueField="id_sede"
-              labelField="nombre_sede"
-              placeholder="Selecciona una sede específica..."
+              labelField="nombre_sede_display"
+              placeholder="Selecciona la sede donde prestará servicio..."
               name="id_sede"
               [(ngModel)]="usuarioForm.id_sede"
             ></app-custom-select>
+            <span *ngIf="esRolJefa()" style="font-size: 11px; color: #b45309; margin-top: 4px; display: block; font-weight: 600;">
+              Cada sede cuenta con 1 única Jefa de Manipuladoras, quien elige el menú diario (estipulado PAE o sugerencia IA) y conforma la minuta de 20 días de su sede.
+            </span>
           </div>
 
           <div class="bd-form-group" style="grid-column: 1 / -1; flex-direction: row; align-items: center; gap: 8px; margin-top: 5px;">

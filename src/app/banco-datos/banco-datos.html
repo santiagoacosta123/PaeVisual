@@ -159,7 +159,7 @@
         </div>
 
         <!-- Selector Estado -->
-        <div class="bd-filter-group" style="width: 140px;">
+        <div *ngIf="tabActual !== 'menus'" class="bd-filter-group" style="width: 140px;">
           <label class="bd-filter-label">Estado</label>
           <app-custom-select
             [options]="opcionesFiltroEstado"
@@ -174,7 +174,7 @@
         </div>
 
         <!-- Botón Filtros -->
-        <div class="bd-filter-action-group">
+        <div *ngIf="tabActual !== 'menus'" class="bd-filter-action-group">
           <button type="button" class="bd-btn-filter" (click)="toggleFiltrosAvanzados()">
             <span class="material-symbols-outlined" aria-hidden="true">tune</span>
             <span>Filtros</span>
@@ -247,10 +247,12 @@
         <p *ngIf="busquedaTexto || (filtroEstado && filtroEstado !== 'TODOS')">No se encontraron registros que coincidan con los filtros aplicados.</p>
         <p *ngIf="!busquedaTexto && (!filtroEstado || filtroEstado === 'TODOS') && tabActual === 'sedes' && filtroInstitucionSede !== 'TODAS'">No hay sedes registradas para la institución seleccionada.</p>
         <p *ngIf="!busquedaTexto && (!filtroEstado || filtroEstado === 'TODOS') && (tabActual !== 'sedes' || filtroInstitucionSede === 'TODAS')">Crea el primer registro para empezar a gestionarlo.</p>
-        <button type="button" class="bd-btn-add" (click)="abrirModal()">
-          <span class="material-symbols-outlined" aria-hidden="true">add</span>
-          <span>Añadir {{ tab.singular }}</span>
-        </button>
+        <div class="bd-empty-actions-row">
+          <button type="button" class="bd-btn-add" (click)="abrirModal()">
+            <span class="material-symbols-outlined" aria-hidden="true">add</span>
+            <span>Añadir {{ tab.singular }}</span>
+          </button>
+        </div>
       </div>
 
       <!-- ================= TABLA DE DATOS ================= -->
@@ -272,9 +274,47 @@
                 
                 <!-- Celda Primaria: Ícono temático + Nombre -->
                 <div *ngIf="primer" class="bd-primary-cell">
-                  <span class="material-symbols-outlined bd-cell-icon" aria-hidden="true">{{ tab.icon }}</span>
+                  <span *ngIf="tabActual !== 'menus'" class="material-symbols-outlined bd-cell-icon" aria-hidden="true">{{ tab.icon }}</span>
                   <span class="bd-primary-name" [title]="valorCelda(item, campo)">{{ valorCelda(item, campo) }}</span>
                 </div>
+
+                <!-- Celdas especiales de la tabla Platos y Recetas -->
+                <ng-container *ngIf="!primer && tabActual === 'menus' && !esCampoEstado(campo)">
+                  <!-- Columna: Componentes del plato -->
+                  <div *ngIf="campo.name === 'componente'" class="bd-menu-componentes-cell">
+                    <span
+                      *ngFor="let comp of (item.componentes || []).slice(0, 3)"
+                      class="bd-comp-mini-pill"
+                      [title]="comp.tipo_componente + ': ' + comp.nombre_componente"
+                    >
+                      <strong>{{ comp.tipo_componente }}:</strong> {{ comp.nombre_componente }}
+                    </span>
+                    <span
+                      *ngIf="(item.componentes || []).length > 3"
+                      class="bd-comp-more-pill"
+                    >
+                      +{{ item.componentes.length - 3 }} más
+                    </span>
+                  </div>
+
+                  <!-- Columna: Resumen de Receta (Ingredientes y Pasos) -->
+                  <div *ngIf="campo.name === 'resumen_receta'" class="bd-menu-receta-cell">
+                    <button
+                      type="button"
+                      class="bd-receta-trigger-pill"
+                      [class.has-data]="(item.totalIngredientes || 0) > 0 || (item.totalPasos || 0) > 0"
+                      (click)="((item.totalIngredientes || 0) > 0 || (item.totalPasos || 0) > 0) ? abrirModalVerReceta(item) : abrirModal(item)"
+                      title="Ver o configurar ingredientes y pasos de preparación"
+                    >
+                      <span *ngIf="(item.totalIngredientes || 0) > 0 || (item.totalPasos || 0) > 0">
+                        Ver receta ({{ item.totalIngredientes || 0 }} ingr. • {{ item.totalPasos || 0 }} pasos)
+                      </span>
+                      <span *ngIf="!(item.totalIngredientes > 0) && !(item.totalPasos > 0)">
+                        Configurar receta
+                      </span>
+                    </button>
+                  </div>
+                </ng-container>
 
                 <!-- Celda de Estado (Badge verde o rojo) -->
                 <ng-container *ngIf="!primer && esCampoEstado(campo)">
@@ -291,8 +331,8 @@
                   </span>
                 </ng-container>
 
-                <!-- Resto de celdas estándar -->
-                <span *ngIf="!primer && !esCampoEstado(campo)" class="bd-cell-text" [title]="valorCelda(item, campo)">
+                <!-- Resto de celdas estándar (otras tablas) -->
+                <span *ngIf="!primer && tabActual !== 'menus' && !esCampoEstado(campo)" class="bd-cell-text" [title]="valorCelda(item, campo)">
                   {{ valorCelda(item, campo) }}
                 </span>
               </td>
@@ -320,6 +360,16 @@
                     >
                       <span class="material-symbols-outlined item-icon-sedes" aria-hidden="true">domain</span>
                       <span>Ver sedes</span>
+                    </button>
+
+                    <button
+                      *ngIf="tabActual === 'menus'"
+                      type="button"
+                      class="bd-menu-item"
+                      (click)="abrirModalVerReceta(item); cerrarMenuAccion()"
+                    >
+                      <span class="material-symbols-outlined item-icon-sedes" aria-hidden="true">menu_book</span>
+                      <span>Ver receta</span>
                     </button>
 
                     <button
@@ -419,6 +469,7 @@
     <form
       #formulario="ngForm"
       class="bd-modal-window"
+      [class.bd-modal-window-menus]="tabActual === 'menus'"
       role="dialog"
       aria-modal="true"
       (click)="$event.stopPropagation()"
@@ -428,15 +479,17 @@
       <div class="bd-modal-head">
         <div>
           <span class="bd-modal-eyebrow">{{ tab.nombre | uppercase }}</span>
-          <h2 class="bd-modal-heading">{{ modoEdicion ? 'Editar ' : 'Nuevo ' }}{{ tab.singular }}</h2>
+          <h2 class="bd-modal-heading">
+            {{ tabActual === 'menus' ? (modoEdicion ? 'Configurar receta y componentes del menú' : 'Nuevo menú / plato del ciclo PAE') : ((modoEdicion ? 'Editar ' : 'Nuevo ') + tab.singular) }}
+          </h2>
         </div>
         <button type="button" class="bd-modal-close-btn" (click)="cerrarModal()" title="Cerrar">
           <span class="material-symbols-outlined" aria-hidden="true">close</span>
         </button>
       </div>
 
-      <!-- Cuerpo del Modal -->
-      <div class="bd-modal-content">
+      <!-- Cuerpo del Modal: Tablas Estándar -->
+      <div class="bd-modal-content" *ngIf="tabActual !== 'menus'">
         <p class="bd-modal-desc">Ingresa los datos correspondientes para registrar o actualizar el elemento.</p>
         
         <div class="bd-form-fields-grid">
@@ -497,6 +550,274 @@
         </div>
       </div>
 
+      <!-- Cuerpo del Modal: Formulario Especializado de MENÚS / PLATOS (Ciclo PAE) -->
+      <div class="bd-modal-content bd-menus-modal-body" *ngIf="tabActual === 'menus'">
+        
+        <!-- 1. Autocompletar rápido desde el Recetario Oficial PAE -->
+        <div class="bd-minuta-quickfill-card" *ngIf="!modoEdicion">
+          <div class="bd-minuta-quickfill-left">
+            <div>
+              <span class="bd-minuta-qf-title">Plantilla rápida de Platos Estipulados PAE</span>
+              <span class="bd-minuta-qf-desc">Elige un plato oficial del PAE para precargar su nombre, componentes, ingredientes y preparación.</span>
+            </div>
+          </div>
+          <div class="bd-minuta-quickfill-select">
+            <app-custom-select
+              name="plantilla_minuta_pae"
+              [options]="plantillasMinutaOpciones"
+              valueField="id"
+              labelField="label"
+              placeholder="Seleccionar plato oficial PAE…"
+              [(ngModel)]="plantillaMenuSeleccionada"
+              (ngModelChange)="aplicarPlantillaMenuPAE($event)"
+            ></app-custom-select>
+          </div>
+        </div>
+
+        <!-- 2. Datos principales del Plato y Receta Global -->
+        <div class="bd-menus-section-box">
+          <div class="bd-menus-section-header">
+            <div>
+              <h3 class="bd-menus-section-title">Información del plato global</h3>
+              <p class="bd-menus-section-sub">Define el nombre del plato que estará disponible de forma global para las instituciones.</p>
+            </div>
+          </div>
+
+          <div class="bd-menus-top-grid">
+            <div class="bd-field-box" style="grid-column: 1 / -1;">
+              <label class="bd-field-label">
+                Nombre del plato <span class="bd-required-asterisk">*</span>
+              </label>
+              <input
+                type="text"
+                name="menu_nombre_plato"
+                class="bd-field-input"
+                [(ngModel)]="menuRecetaForm.nombre_plato"
+                placeholder="Ingresa el nombre del plato"
+                autocomplete="off"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Componentes del plato + Ingredientes separados por componente + Pasos de preparación -->
+        <div class="bd-menus-section-box">
+          <div class="bd-menus-section-header bd-menus-section-header-between">
+            <div class="bd-menus-section-header-left">
+              <div>
+                <h3 class="bd-menus-section-title">Componentes del plato, ingredientes y preparación</h3>
+                <p class="bd-menus-section-sub">
+                  Registra cada componente por separado (proteico, cereal, bebida, sopa o fruta).
+                </p>
+              </div>
+            </div>
+
+            <button type="button" class="bd-btn-add-comp" (click)="agregarComponenteAlPlato()">
+              <span class="material-symbols-outlined" aria-hidden="true">add</span>
+              <span>Añadir componente</span>
+            </button>
+          </div>
+
+          <!-- Lista de tarjetas de componentes -->
+          <div class="bd-componentes-list">
+            <div
+              *ngFor="let comp of menuRecetaForm.componentes; let idxComp = index"
+              class="bd-comp-card"
+            >
+              <!-- Cabecera del componente -->
+              <div class="bd-comp-card-head">
+                <div class="bd-comp-badge-num">Componente {{ idxComp + 1 }}</div>
+
+                <div class="bd-comp-head-fields">
+                  <div class="bd-field-box">
+                    <label class="bd-field-label">Categoría del componente <span class="bd-required-asterisk">*</span></label>
+                    <app-custom-select
+                      [name]="'comp_tipo_' + comp.id_temporal"
+                      [options]="tiposComponentePAE"
+                      valueField="id"
+                      labelField="label"
+                      placeholder="Categoría…"
+                      [(ngModel)]="comp.tipo_componente"
+                    ></app-custom-select>
+                  </div>
+
+                  <div class="bd-field-box">
+                    <label class="bd-field-label">Nombre de la preparación / componente <span class="bd-required-asterisk">*</span></label>
+                    <input
+                      type="text"
+                      [name]="'comp_nombre_' + comp.id_temporal"
+                      class="bd-field-input"
+                      [(ngModel)]="comp.nombre_componente"
+                      (blur)="onNombreComponenteChange(comp)"
+                      placeholder="Ej: Huevos pericos, Arroz blanco, Frijoles guisados con papa…"
+                    />
+                  </div>
+
+                  <div class="bd-field-box" *ngIf="opcionesComponentesReutilizables.length > 0">
+                    <label class="bd-field-label">Reutilizar receta guardada (Opcional)</label>
+                    <app-custom-select
+                      [name]="'comp_reutilizar_' + comp.id_temporal"
+                      [options]="opcionesComponentesReutilizables"
+                      valueField="id"
+                      labelField="label"
+                      placeholder="Copiar ingredientes y pasos de…"
+                      [allowClear]="true"
+                      [ngModel]="''"
+                      (ngModelChange)="reutilizarComponenteGuardado(comp, $event)"
+                    ></app-custom-select>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  class="bd-comp-delete-btn"
+                  (click)="eliminarComponenteDelPlato(idxComp)"
+                  title="Eliminar este componente"
+                >
+                  <span class="material-symbols-outlined" aria-hidden="true">delete</span>
+                </button>
+              </div>
+
+              <!-- Cuerpo del componente en 2 columnas: Ingredientes | Pasos de preparación -->
+              <div class="bd-comp-card-split">
+                
+                <!-- COLUMNA A: INGREDIENTES DEL COMPONENTE -->
+                <div class="bd-comp-subbox">
+                  <div class="bd-comp-subbox-head">
+                    <div>
+                      <h4 class="bd-comp-subbox-title">Ingredientes de este componente</h4>
+                      <span class="bd-comp-subbox-caption">Selecciona los insumos del inventario que se usan para preparar {{ comp.nombre_componente || 'este componente' }}.</span>
+                    </div>
+                  </div>
+
+                  <!-- Selector para agregar ingrediente -->
+                  <div class="bd-ing-adder-row">
+                    <div class="bd-ing-select-col">
+                      <app-custom-select
+                        [name]="'ing_sel_' + comp.id_temporal"
+                        [options]="opciones['ingredientes'] || []"
+                        valueField="id"
+                        labelField="label"
+                        placeholder="Buscar ingrediente del inventario…"
+                        [allowClear]="true"
+                        [(ngModel)]="comp.ingredienteTempId"
+                      ></app-custom-select>
+                    </div>
+                    <input
+                      type="text"
+                      [name]="'ing_obs_' + comp.id_temporal"
+                      class="bd-field-input bd-ing-obs-input"
+                      [(ngModel)]="comp.observacionTemp"
+                      placeholder="Uso u obs. (ej: para el guiso)"
+                      (keydown.enter)="$event.preventDefault(); agregarIngredienteAComponente(comp)"
+                    />
+                    <button
+                      type="button"
+                      class="bd-btn-add-ing"
+                      (click)="agregarIngredienteAComponente(comp)"
+                    >
+                      <span class="material-symbols-outlined" aria-hidden="true">add</span>
+                      <span>Agregar</span>
+                    </button>
+                  </div>
+
+                  <!-- Lista de ingredientes agregados a este componente -->
+                  <div class="bd-ing-chips-list" *ngIf="comp.ingredientes.length > 0">
+                    <div
+                      *ngFor="let ing of comp.ingredientes; let idxIng = index"
+                      class="bd-ing-chip-item"
+                    >
+                      <div class="bd-ing-chip-info">
+                        <span class="bd-ing-chip-name">{{ ing.nombre_ingrediente }}</span>
+                        <span *ngIf="ing.unidad" class="bd-ing-chip-unit">{{ ing.unidad }}</span>
+                        <span *ngIf="ing.observacion" class="bd-ing-chip-obs">({{ ing.observacion }})</span>
+                      </div>
+                      <button
+                        type="button"
+                        class="bd-ing-chip-remove"
+                        (click)="quitarIngredienteDeComponente(comp, idxIng)"
+                        title="Quitar ingrediente"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+
+                  <div *ngIf="comp.ingredientes.length === 0" class="bd-subbox-empty">
+                    Aún no has agregado ingredientes a este componente.
+                  </div>
+                </div>
+
+                <!-- COLUMNA B: PASOS DE PREPARACIÓN DEL COMPONENTE -->
+                <div class="bd-comp-subbox">
+                  <div class="bd-comp-subbox-head">
+                    <div>
+                      <h4 class="bd-comp-subbox-title">Pasos de preparación</h4>
+                      <span class="bd-comp-subbox-caption">Describe paso a paso cómo preparar {{ comp.nombre_componente || 'este componente' }}.</span>
+                    </div>
+                  </div>
+
+                  <div class="bd-pasos-list">
+                    <div
+                      *ngFor="let paso of comp.pasos; let idxPaso = index"
+                      class="bd-paso-item-row"
+                    >
+                      <span class="bd-paso-num-badge">{{ idxPaso + 1 }}</span>
+                      <input
+                        type="text"
+                        [name]="'paso_' + comp.id_temporal + '_' + idxPaso"
+                        class="bd-field-input bd-paso-input"
+                        [(ngModel)]="paso.descripcion_paso"
+                        [placeholder]="'Paso ' + (idxPaso + 1) + ': Ej. Lavar y picar los ingredientes…'"
+                      />
+                      <div class="bd-paso-actions">
+                        <button
+                          type="button"
+                          class="bd-paso-btn"
+                          [disabled]="idxPaso === 0"
+                          (click)="moverPasoComponente(comp, idxPaso, -1)"
+                          title="Subir paso"
+                        >
+                          ↑
+                        </button>
+                        <button
+                          type="button"
+                          class="bd-paso-btn"
+                          [disabled]="idxPaso === comp.pasos.length - 1"
+                          (click)="moverPasoComponente(comp, idxPaso, 1)"
+                          title="Bajar paso"
+                        >
+                          ↓
+                        </button>
+                        <button
+                          type="button"
+                          class="bd-paso-btn bd-paso-btn-del"
+                          (click)="quitarPasoDeComponente(comp, idxPaso)"
+                          title="Quitar paso"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    class="bd-btn-add-paso"
+                    (click)="agregarPasoAComponente(comp)"
+                  >
+                    <span class="material-symbols-outlined" aria-hidden="true">add</span>
+                    <span>Añadir otro paso</span>
+                  </button>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
       <!-- Pie del Modal -->
       <div class="bd-modal-foot">
         <button type="button" class="bd-modal-btn-cancel" (click)="cerrarModal()">Cancelar</button>
@@ -506,6 +827,81 @@
         </button>
       </div>
     </form>
+  </div>
+
+
+  <!-- ===================== MODAL VER FICHA TÉCNICA / RECETA COMPLETA ===================== -->
+  <div *ngIf="modalVerRecetaAbierto && recetaDetalleSeleccionada" class="bd-modal-overlay" (click)="cerrarModalVerReceta()">
+    <div class="bd-modal-window bd-modal-window-menus" (click)="$event.stopPropagation()">
+      <div class="bd-modal-head">
+        <div>
+          <span class="bd-modal-eyebrow">RECETA GLOBAL PAE</span>
+          <h2 class="bd-modal-heading">{{ recetaDetalleSeleccionada.nombre_plato }}</h2>
+        </div>
+        <button type="button" class="bd-modal-close-btn" (click)="cerrarModalVerReceta()" title="Cerrar">
+          <span class="material-symbols-outlined" aria-hidden="true">close</span>
+        </button>
+      </div>
+
+      <div class="bd-modal-content bd-receta-viewer-body">
+        <!-- Resumen superior de componentes, ingredientes y pasos -->
+        <div class="bd-receta-hero-card">
+          <div class="bd-receta-hero-info">
+            <div class="bd-receta-stats-row">
+              <span><strong>{{ (recetaDetalleSeleccionada.componentes || []).length }}</strong> componentes</span>
+              <span>•</span>
+              <span><strong>{{ recetaDetalleSeleccionada.totalIngredientes || 0 }}</strong> ingredientes asociados</span>
+              <span>•</span>
+              <span><strong>{{ recetaDetalleSeleccionada.totalPasos || 0 }}</strong> pasos de preparación</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Desglose por cada componente -->
+        <div class="bd-receta-comp-grid">
+          <div *ngFor="let comp of recetaDetalleSeleccionada.componentes; let i = index" class="bd-receta-comp-card">
+            <div class="bd-receta-comp-header">
+              <span class="bd-comp-badge-num">{{ comp.tipo_componente }}</span>
+              <h4 class="bd-receta-comp-name">{{ comp.nombre_componente }}</h4>
+            </div>
+
+            <div class="bd-receta-comp-columns">
+              <div>
+                <h5 class="bd-receta-subtitle">Ingredientes (para descuento de inventario)</h5>
+                <ul class="bd-receta-ing-list" *ngIf="comp.ingredientes?.length > 0">
+                  <li *ngFor="let ing of comp.ingredientes">
+                    <strong>{{ ing.nombre_ingrediente }}</strong>
+                    <span *ngIf="ing.unidad" class="bd-ing-chip-unit">{{ ing.unidad }}</span>
+                    <span *ngIf="ing.observacion" class="bd-ing-chip-obs"> — {{ ing.observacion }}</span>
+                  </li>
+                </ul>
+                <p *ngIf="!comp.ingredientes?.length" class="bd-subbox-empty">Sin ingredientes registrados aún.</p>
+              </div>
+
+              <div>
+                <h5 class="bd-receta-subtitle">Pasos de preparación</h5>
+                <ol class="bd-receta-pasos-list" *ngIf="comp.pasos?.length > 0 && comp.pasos[0]?.descripcion_paso">
+                  <ng-container *ngFor="let p of comp.pasos">
+                    <li *ngIf="p.descripcion_paso">{{ p.descripcion_paso }}</li>
+                  </ng-container>
+                </ol>
+                <p *ngIf="!comp.pasos?.length || !comp.pasos[0]?.descripcion_paso" class="bd-subbox-empty">
+                  Sin pasos de preparación registrados aún.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bd-modal-foot">
+        <button type="button" class="bd-modal-btn-cancel" (click)="cerrarModalVerReceta()">Cerrar</button>
+        <button type="button" class="bd-btn-add" (click)="editarDesdeVistaReceta()">
+          <span class="material-symbols-outlined" aria-hidden="true">edit</span>
+          <span>Editar receta y componentes</span>
+        </button>
+      </div>
+    </div>
   </div>
 
 
