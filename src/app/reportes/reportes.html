@@ -118,10 +118,10 @@
 
         <!-- Botones de Acción Rápida -->
         <div class="flex items-center gap-2">
-          <button type="button" (click)="sincronizarConManipuladoras()" title="Autocompletar con los datos enviados por manipuladoras y entregas"
+          <button type="button" (click)="sincronizarConManipuladoras()" [disabled]="cargandoPlanillas" title="Autocompletar con los datos enviados por manipuladoras y entregas"
             class="btn-naranja flex-1 inline-flex h-10 cursor-pointer items-center justify-center gap-1.5 rounded-xl px-3 text-xs font-black shadow-xs">
             <span class="material-symbols-outlined text-[18px]">sync</span>
-            Sincronizar
+            {{ cargandoPlanillas ? 'Cargando...' : 'Sincronizar' }}
           </button>
 
           <button type="button" (click)="modoEdicion = !modoEdicion" title="Activar/desactivar modo edición de celdas"

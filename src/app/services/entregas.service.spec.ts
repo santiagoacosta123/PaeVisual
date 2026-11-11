@@ -85,4 +85,16 @@ describe('EntregasService', () => {
     expect(request.request.headers.has('Authorization')).toBe(false);
     request.flush([]);
   });
+
+  it('propagates server errors when a caller requires fresh delivery data', () => {
+    let receivedError: unknown;
+    service.cargar(true).subscribe({
+      error: error => receivedError = error,
+    });
+
+    const request = httpTestingController.expectOne(service.apiUrl);
+    request.flush({ detail: 'Unavailable' }, { status: 503, statusText: 'Service Unavailable' });
+
+    expect(receivedError).toBeTruthy();
+  });
 });

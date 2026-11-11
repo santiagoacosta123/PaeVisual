@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, forkJoin, of } from 'rxjs';
+import { Observable, forkJoin, of, throwError } from 'rxjs';
 import { map, tap, catchError, timeout } from 'rxjs/operators';
 import { environment } from '@env/environment';
 import { AuthService } from '@core/auth';
@@ -103,14 +103,14 @@ export class EntregasService {
   }
 
   // ---------- Cargar desde el backend ----------
-  cargar(): Observable<Entrega[]> {
+  cargar(propagarError = false): Observable<Entrega[]> {
     return this.http.get<any>(this.apiUrl, this.getHeaders()).pipe(
       timeout(10000),
       map(data => this.listaDe(data).map(item => this.normalizar(item))),
       tap(lista => (this.entregas = lista)),
       catchError(err => {
         console.warn('Error o timeout al cargar entregas desde servidor:', err);
-        return of(this.entregas || []);
+        return propagarError ? throwError(() => err) : of(this.entregas || []);
       })
     );
   }
