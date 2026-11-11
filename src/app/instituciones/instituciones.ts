@@ -407,7 +407,7 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
             encontrada &&
             JSON.stringify(encontrada) !== JSON.stringify(this.institucionActiva)
           ) {
-            this.authService.establecerInstitucionActiva(encontrada);
+            this.authService.actualizarInstitucionActiva(encontrada);
           }
         }
       }

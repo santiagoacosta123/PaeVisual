@@ -15,7 +15,13 @@ import {
   TipoMercadoOpcion,
 } from '../services/entregas.service';
 
-type FiltroMercado = 'Todas' | 'Granos' | 'Perecederos';
+interface GrupoEntregasDia {
+  fecha: string;
+  entregas: Entrega[];
+  pendientes: number;
+  recibidas: number;
+  novedades: number;
+}
 
 @Component({
   selector: 'app-historial-entregas',
@@ -28,7 +34,6 @@ export class HistorialEntregas implements OnInit {
   entregas: Entrega[] = [];
   ingredientes: IngredienteOpcion[] = [];
   tiposMercado: TipoMercadoOpcion[] = [];
-  filtroMercado: FiltroMercado = 'Todas';
   filtroTexto = '';
   cargando = true;
   cargandoCatalogos = false;
@@ -53,6 +58,8 @@ export class HistorialEntregas implements OnInit {
   // Modal de Recepción y Control de Calidad (Administrador)
   modalRecepcionAbierto = false;
   entregaSeleccionada: Entrega | null = null;
+  gruposExpandidos = new Set<string>();
+  modoRechazoDirecto = false;
   formRecepcion = {
     cantidadRecibida: 0,
     cantidadRechazada: 0,
@@ -478,9 +485,6 @@ export class HistorialEntregas implements OnInit {
         return false;
       }
 
-      if (this.filtroMercado !== 'Todas' && entrega.tipoMercado !== this.filtroMercado) {
-        return false;
-      }
       if (!texto) return true;
       return [
         entrega.ingrediente,
@@ -501,6 +505,62 @@ export class HistorialEntregas implements OnInit {
       if (comp !== 0) return comp;
       return (Number(b.id) || 0) - (Number(a.id) || 0);
     });
+  }
+
+  get gruposPorFecha(): GrupoEntregasDia[] {
+    const grupos = new Map<string, Entrega[]>();
+    for (const entrega of this.entregasFiltradas) {
+      const fecha = entrega.fechaRecepcion?.slice(0, 10) || 'sin-fecha';
+      const entregasDelDia = grupos.get(fecha) || [];
+      entregasDelDia.push(entrega);
+      grupos.set(fecha, entregasDelDia);
+    }
+
+    return Array.from(grupos, ([fecha, entregas]) => ({
+      fecha,
+      entregas,
+      pendientes: entregas.filter(entrega => {
+        const estado = (entrega.estado || 'EN_TRANSITO').toUpperCase();
+        return estado === 'EN_TRANSITO' || estado === 'PENDIENTE' || estado === 'EN_PROCESO';
+      }).length,
+      recibidas: entregas.filter(entrega => (entrega.estado || '').toUpperCase() === 'RECIBIDA').length,
+      novedades: entregas.filter(entrega => {
+        const estado = (entrega.estado || '').toUpperCase();
+        return estado === 'CON_NOVEDAD' || estado === 'RECHAZADA';
+      }).length,
+    }));
+  }
+
+  alternarGrupoFecha(fecha: string): void {
+    const gruposExpandidos = new Set(this.gruposExpandidos);
+    if (gruposExpandidos.has(fecha)) {
+      gruposExpandidos.delete(fecha);
+    } else {
+      gruposExpandidos.add(fecha);
+    }
+    this.gruposExpandidos = gruposExpandidos;
+  }
+
+  grupoEstaExpandido(fecha: string): boolean {
+    return this.gruposExpandidos.has(fecha);
+  }
+
+  expandirGrupos(): void {
+    this.gruposExpandidos = new Set(this.gruposPorFecha.map(grupo => grupo.fecha));
+  }
+
+  contraerGrupos(): void {
+    this.gruposExpandidos = new Set();
+  }
+
+  formatoFecha(fecha: string | null | undefined): string {
+    const [anio, mes, dia] = (fecha || '').slice(0, 10).split('-').map(Number);
+    if (!anio || !mes || !dia) return 'Fecha no disponible';
+    const fechaValidada = new Date(anio, mes - 1, dia);
+    if (fechaValidada.getFullYear() !== anio || fechaValidada.getMonth() !== mes - 1 || fechaValidada.getDate() !== dia) {
+      return 'Fecha no disponible';
+    }
+    return `${String(dia).padStart(2, '0')}/${String(mes).padStart(2, '0')}/${anio}`;
   }
 
   contarEstado(tipo: string): number {
@@ -549,6 +609,7 @@ export class HistorialEntregas implements OnInit {
 
   abrirModalRecepcion(entrega: Entrega): void {
     this.entregaSeleccionada = entrega;
+    this.modoRechazoDirecto = false;
     const totalCant = entrega.cantidad || 0;
     this.formRecepcion = {
       cantidadRecibida: totalCant,
@@ -558,9 +619,27 @@ export class HistorialEntregas implements OnInit {
     this.modalRecepcionAbierto = true;
   }
 
+  abrirModalRechazo(entrega: Entrega): void {
+    const totalCant = Number(entrega.cantidad);
+    if (!Number.isFinite(totalCant) || totalCant <= 0) {
+      void this.alertas.warning('No se puede rechazar', 'La entrega no tiene una cantidad válida para registrar.');
+      return;
+    }
+
+    this.entregaSeleccionada = entrega;
+    this.modoRechazoDirecto = true;
+    this.formRecepcion = {
+      cantidadRecibida: 0,
+      cantidadRechazada: totalCant,
+      motivoRechazo: '',
+    };
+    this.modalRecepcionAbierto = true;
+  }
+
   cerrarModalRecepcion(): void {
     this.modalRecepcionAbierto = false;
     this.entregaSeleccionada = null;
+    this.modoRechazoDirecto = false;
   }
 
   onCambioCantidades(campo: 'recibida' | 'rechazada'): void {
@@ -604,17 +683,16 @@ export class HistorialEntregas implements OnInit {
       // Actualizar también en sirae_entradas_extra
       const extrasKey = 'sirae_entradas_extra';
       const extras = JSON.parse(localStorage.getItem(extrasKey) || '{}');
-      if (entrega.id != null && extras[`id:${entrega.id}`]) {
-        extras[`id:${entrega.id}`].estadoAprobacion = estado;
-        extras[`id:${entrega.id}`].motivoRechazo = motivo;
-      }
-      if (entrega.fechaRecepcion) {
-        Object.keys(extras).forEach(k => {
-          if (k.includes(entrega.fechaRecepcion)) {
-            extras[k].estadoAprobacion = estado;
-            if (motivo) extras[k].motivoRechazo = motivo;
-          }
-        });
+      const clavesExtra = [
+        entrega.id != null ? `id:${entrega.id}` : '',
+        entrega.idIngrediente != null && entrega.fechaRecepcion
+          ? `${entrega.idIngrediente}|${entrega.fechaRecepcion}|${entrega.cantidad}`
+          : '',
+      ].filter(Boolean);
+      for (const clave of clavesExtra) {
+        if (!extras[clave]) continue;
+        extras[clave].estadoAprobacion = estado;
+        extras[clave].motivoRechazo = motivo;
       }
       localStorage.setItem(extrasKey, JSON.stringify(extras));
     } catch (e) {
@@ -664,24 +742,16 @@ export class HistorialEntregas implements OnInit {
         this.cargarHistorial();
       },
       error: (err) => {
+        console.error('Error al confirmar recepción de entrega:', err);
         this.procesandoRecepcion = false;
-        // Aplicar persistencia local para asegurar sincronización con la vista de supervisor
-        this.guardarRecepcionLocal(entregaRef, rec, rech, this.formRecepcion.motivoRechazo.trim(), estado);
-        if (entregaRef) {
-          entregaRef.estado = estado;
-          entregaRef.cantidadRecibida = rec;
-          entregaRef.cantidadRechazada = rech;
-          entregaRef.motivoRechazo = this.formRecepcion.motivoRechazo.trim();
-        }
-        this.cerrarModalRecepcion();
-        const unidad = entregaRef?.unidad || 'unidades';
-        const msj = rech > 0
-          ? (rec === 0
-              ? `Se reportaron ${rech} ${unidad} rechazadas en control de calidad.`
-              : `Se recibieron ${rec} ${unidad} en buen estado y se reportaron ${rech} ${unidad} con novedad/avería. El inventario ha sido acreditado.`)
-          : `Se recibieron exitosamente los ${rec} ${unidad}. El inventario ha sido acreditado.`;
-        void this.alertas.success('Recepción confirmada', msj);
-        this.cargarHistorial();
+        void this.alertas.error(
+          'No se pudo confirmar la entrega',
+          err?.status === 401
+            ? 'La sesión expiró. Inicia sesión nuevamente.'
+            : err?.status === 403
+              ? 'Tu usuario no tiene permiso para registrar la recepción.'
+              : 'El servidor no registró la recepción. Revisa la conexión e inténtalo nuevamente.',
+        );
       },
     });
   }
