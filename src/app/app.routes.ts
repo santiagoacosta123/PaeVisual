@@ -29,6 +29,7 @@ import { AsistenciaDiariaComponent } from './asistencia-diaria/asistencia-diaria
 import { Reportes } from './reportes/reportes';
 import { InstitucionesComponent } from './instituciones/instituciones';
 import { FacturasCompraComponent } from './facturas-compra/facturas-compra';
+import { PerfilComponent } from './perfil/perfil';
 
 // NUEVO: página de Instituciones
 
@@ -56,6 +57,11 @@ export const routes: Routes = [
     canActivate: [authGuard],
     canActivateChild: [authGuard],
     children: [
+      {
+        path: 'perfil',
+        component: PerfilComponent
+      },
+
       {
         path: 'inicio',
         component: InicioComponent

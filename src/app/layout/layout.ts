@@ -9,7 +9,7 @@ import {
 } from '@angular/router';
 import { filter, timeout, catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { NotificacionService } from '../notificaciones/notificacion.service';
 import { Notificacion } from '../notificaciones/notificacion.model';
@@ -27,7 +27,8 @@ import { SweetAlertService } from '../core/services/sweet-alert.service';
     RouterOutlet,
     RouterLink,
     RouterLinkActive,
-    FormsModule
+    FormsModule,
+    ReactiveFormsModule
   ],
   templateUrl: './layout.html',
   styleUrls: ['./layout.css']
@@ -83,6 +84,12 @@ export class LayoutComponent implements OnInit {
   };
 
   editForm = { ...this.perfil };
+
+  private fb = inject(FormBuilder);
+  perfilForm: FormGroup = this.fb.group({
+    nombre: ['', [Validators.required, Validators.minLength(2), Validators.pattern(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\.\-]+$/)]],
+    apellido: ['', [Validators.required, Validators.minLength(2), Validators.pattern(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\.\-]+$/)]],
+  });
 
   passwordForm = { actual: '', nueva: '', confirmar: '' };
   passwordProcesando = false;
@@ -413,42 +420,41 @@ export class LayoutComponent implements OnInit {
     this.passwordMensaje = '';
 
     if (vista === 'editar') {
-      this.editForm = { ...this.perfil };
+      const u = this.authService.obtenerUsuario();
+      this.perfilForm.patchValue({
+        nombre: u?.nombre || '',
+        apellido: u?.apellido || '',
+      });
+      this.perfilForm.markAsPristine();
+      this.perfilForm.markAsUntouched();
     }
   }
 
   guardarPerfil(): void {
-    const nombreCompleto = this.editForm.nombre.trim();
-    if (!nombreCompleto || !this.editForm.correo.trim()) {
-      void this.sweetAlert.warning('Datos incompletos', 'Ingresa tu nombre y correo electrónico.');
+    if (this.perfilForm.invalid) {
+      this.perfilForm.markAllAsTouched();
+      void this.sweetAlert.warning('Datos inválidos', 'El nombre y apellido deben tener al menos 2 letras válidas.');
       return;
     }
 
-    const [nombre, ...resto] = nombreCompleto.split(/\s+/);
-    const apellido = resto.join(' ');
+    const { nombre, apellido } = this.perfilForm.value;
     this.authService.actualizarPerfil({
-      nombre,
-      apellido,
-      correo: this.editForm.correo.trim(),
+      nombre: nombre.trim(),
+      apellido: apellido.trim(),
     }).subscribe({
       next: (usuarioActualizado) => {
-        const usuario = this.authService.obtenerUsuario();
-        if (usuario) {
-          const actualizado = {
-            ...usuario,
-            nombre: usuarioActualizado.nombre ?? nombre,
-            apellido: usuarioActualizado.apellido ?? apellido,
-            correo: usuarioActualizado.correo ?? this.editForm.correo.trim(),
-          };
-          localStorage.setItem('usuario', JSON.stringify(actualizado));
-        }
-        this.perfil = { ...this.editForm };
+        const nom = usuarioActualizado.nombre ?? nombre.trim();
+        const ape = usuarioActualizado.apellido ?? apellido.trim();
+        this.perfil.nombre = `${nom} ${ape}`.trim();
         this.vistaActual = 'perfil';
         void this.sweetAlert.success('Perfil actualizado', 'Tus datos se guardaron correctamente.');
         this.cdr.detectChanges();
       },
       error: (err: any) => {
-        const mensaje = err.error?.correo?.[0] || err.error?.detail || 'No fue posible guardar los datos.';
+        const mensaje = err.error?.nombre?.[0]
+          || err.error?.apellido?.[0]
+          || err.error?.detail
+          || 'No fue posible guardar los datos.';
         void this.sweetAlert.error('No se pudo actualizar el perfil', mensaje);
       }
     });

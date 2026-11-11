@@ -236,3 +236,217 @@ describe('AuthService - Cierre de Sesión (Logout)', () => {
     expect(guardResult).toEqual(router.parseUrl('/login'));
   });
 });
+
+describe('Módulo de Conservación Segura de Sesión (Persistencia de Sesión)', () => {
+  let service: AuthService;
+  let httpMock: HttpTestingController;
+  let router: Router;
+  let store: MockStore;
+
+  const tokenValido = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjk5OTk5OTk5OTl9.sig';
+  const tokenExpirado = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE1MDAwMDAwMDB9.sig';
+
+  beforeEach(() => {
+    localStorage.clear();
+    sessionStorage.clear();
+
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideMockStore(),
+        AuthService,
+      ],
+    });
+
+    service = TestBed.inject(AuthService);
+    httpMock = TestBed.inject(HttpTestingController);
+    router = TestBed.inject(Router);
+    store = TestBed.inject(MockStore);
+  });
+
+  afterEach(() => {
+    httpMock.verify();
+    localStorage.clear();
+    sessionStorage.clear();
+  });
+
+  it('Criterio 1 y 5: Almacenamiento local seguro y Cero contraseñas en texto plano', () => {
+    const payloadConClaveInsegura: any = {
+      id_usuario: 42,
+      nombre: 'Lucía',
+      apellido: 'Méndez',
+      correo: 'lucia@sirae.com',
+      numero_documento: '55443322',
+      rol: 'Administrador',
+      is_active: true,
+      password: 'TextoPlanoSuperSecreto123!',
+      clave: '12345678',
+      contrasena: 'password-sensible',
+    };
+
+    service.guardarSesion({
+      access: tokenValido,
+      refresh: 'refresh-42',
+      usuario: payloadConClaveInsegura,
+    });
+
+    expect(localStorage.getItem('access_token')).toBe(tokenValido);
+    expect(localStorage.getItem('refresh_token')).toBe('refresh-42');
+
+    const usuarioRaw = localStorage.getItem('usuario') || '';
+    expect(usuarioRaw).not.toContain('TextoPlanoSuperSecreto123!');
+    expect(usuarioRaw).not.toContain('12345678');
+    expect(usuarioRaw).not.toContain('password-sensible');
+
+    const usuarioRecuperado = service.obtenerUsuario();
+    expect(usuarioRecuperado?.id_usuario).toBe(42);
+    expect(usuarioRecuperado?.correo).toBe('lucia@sirae.com');
+    expect(usuarioRecuperado?.rol).toBe('Administrador');
+    expect((usuarioRecuperado as any).password).toBeUndefined();
+    expect((usuarioRecuperado as any).clave).toBeUndefined();
+    expect((usuarioRecuperado as any).contrasena).toBeUndefined();
+  });
+
+  it('Criterio 2: Restauración y rehidratación automática de la sesión al recargar la app', () => {
+    const dispatchSpy = vi.spyOn(store, 'dispatch');
+
+    localStorage.setItem('access_token', tokenValido);
+    localStorage.setItem('refresh_token', 'refresh-token-restored');
+    localStorage.setItem(
+      'usuario',
+      JSON.stringify({
+        id_usuario: 50,
+        nombre: 'Andrés',
+        apellido: 'Castro',
+        correo: 'andres@sirae.com',
+        numero_documento: '77889900',
+        rol: 'Supervisor',
+        is_active: true,
+        institucion_nombre: 'Institución Educativa Norte',
+      })
+    );
+    localStorage.setItem(
+      'sirae_institucion_activa',
+      JSON.stringify({
+        id_institucion: 3,
+        nombre_institucion: 'Sede Principal Norte',
+      })
+    );
+
+    const restaurada = service.restaurarSesion();
+    expect(restaurada).toBe(true);
+    expect(service.estaAutenticado()).toBe(true);
+    expect(service.obtenerUsuario()?.correo).toBe('andres@sirae.com');
+    expect(service.obtenerInstitucionActiva()?.nombre_institucion).toBe('Sede Principal Norte');
+
+    expect(dispatchSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: '[Auth] Login',
+        username: 'andres@sirae.com',
+        token: tokenValido,
+        rol: 'Supervisor',
+      })
+    );
+  });
+
+  it('Criterio 3: Validación activa con el backend al inicializar la aplicación (/auth/verify/)', () => {
+    localStorage.setItem('access_token', tokenValido);
+    localStorage.setItem(
+      'usuario',
+      JSON.stringify({
+        id_usuario: 60,
+        nombre: 'Paola',
+        apellido: 'Reyes',
+        correo: 'paola@sirae.com',
+        numero_documento: '11223344',
+        rol: 'Administrador',
+        is_active: true,
+      })
+    );
+
+    let resultadoValidacion: boolean | undefined;
+    service.verificarSesionInicial().subscribe((val) => {
+      resultadoValidacion = val;
+    });
+
+    const req = httpMock.expectOne(`${environment.apiUrl}/auth/verify/`);
+    expect(req.request.method).toBe('GET');
+    req.flush({
+      valido: true,
+      usuario: {
+        id_usuario: 60,
+        nombre: 'Paola',
+        apellido: 'Reyes',
+        correo: 'paola@sirae.com',
+        numero_documento: '11223344',
+        rol: 'Administrador',
+        is_active: true,
+        institucion_nombre: 'Institución Central',
+      },
+    });
+
+    expect(resultadoValidacion).toBe(true);
+    expect(service.estaAutenticado()).toBe(true);
+    expect(service.obtenerUsuario()?.institucion_nombre).toBe('Institución Central');
+  });
+
+  it('Criterio 4: Manejo de sesiones inválidas o revocadas en el backend con limpieza y redirección a /login', () => {
+    const navigateSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+
+    localStorage.setItem('access_token', tokenValido);
+    localStorage.setItem(
+      'usuario',
+      JSON.stringify({
+        id_usuario: 70,
+        nombre: 'Usuario',
+        apellido: 'Revocado',
+        correo: 'revocado@sirae.com',
+        numero_documento: '990011',
+        rol: 'Administrador',
+      })
+    );
+
+    let resultadoValidacion: boolean | undefined;
+    service.verificarSesionInicial().subscribe((val) => {
+      resultadoValidacion = val;
+    });
+
+    const req = httpMock.expectOne(`${environment.apiUrl}/auth/verify/`);
+    req.flush({ detail: 'Token inválido o sesión revocada.' }, { status: 401, statusText: 'Unauthorized' });
+
+    expect(resultadoValidacion).toBe(false);
+    expect(localStorage.getItem('access_token')).toBeNull();
+    expect(localStorage.getItem('usuario')).toBeNull();
+    expect(service.estaAutenticado()).toBe(false);
+    expect(navigateSpy).toHaveBeenCalledWith(['/login'], { replaceUrl: true });
+  });
+
+  it('Criterio 4: Token expirado localmente dispara limpieza inmediata sin requerir petición remota', () => {
+    const navigateSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+
+    localStorage.setItem('access_token', tokenExpirado);
+    localStorage.setItem(
+      'usuario',
+      JSON.stringify({
+        id_usuario: 80,
+        correo: 'expirado@sirae.com',
+        rol: 'Supervisor',
+      })
+    );
+
+    let resultadoValidacion: boolean | undefined;
+    service.verificarSesionInicial().subscribe((val) => {
+      resultadoValidacion = val;
+    });
+
+    httpMock.expectNone(`${environment.apiUrl}/auth/verify/`);
+
+    expect(resultadoValidacion).toBe(false);
+    expect(localStorage.getItem('access_token')).toBeNull();
+    expect(localStorage.getItem('usuario')).toBeNull();
+    expect(service.estaAutenticado()).toBe(false);
+    expect(navigateSpy).toHaveBeenCalledWith(['/login'], { replaceUrl: true });
+  });
+});

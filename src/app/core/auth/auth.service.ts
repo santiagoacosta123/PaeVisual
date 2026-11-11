@@ -1,10 +1,10 @@
 import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
-import { Observable, BehaviorSubject, EMPTY, catchError, finalize, timeout } from 'rxjs';
+import { Observable, BehaviorSubject, EMPTY, of, catchError, finalize, timeout, map, tap } from 'rxjs';
 import { Store } from '@ngrx/store';
 import { environment } from '../../../environments/environment';
-import { logout } from '../../store/action';
+import { login as loginAction, logout } from '../../store/action';
 
 export interface LoginResponse {
   access: string;
@@ -93,6 +93,95 @@ export class AuthService {
 
   constructor() {
     this.institucionActivaSubject.next(this.obtenerInstitucionActiva());
+    this.restaurarSesion();
+  }
+
+  /**
+   * Criterio 1 y 5: Sanitización estricta de datos de usuario.
+   * Elimina cualquier contraseña, clave o credencial en texto plano y retiene
+   * únicamente los datos mínimos indispensables para la sesión.
+   */
+  sanitizarDatosUsuario(usuario: any): AuthenticatedUser {
+    if (!usuario || typeof usuario !== 'object') {
+      return {
+        id_usuario: 0,
+        nombre: '',
+        apellido: '',
+        correo: '',
+        numero_documento: '',
+        rol: null,
+      };
+    }
+
+    const {
+      password,
+      clave,
+      contrasena,
+      token_password,
+      pin,
+      credenciales,
+      ...datosLimpios
+    } = usuario;
+
+    return {
+      id_usuario: Number(datosLimpios.id_usuario || 0),
+      nombre: String(datosLimpios.nombre || '').trim(),
+      apellido: String(datosLimpios.apellido || '').trim(),
+      correo: String(datosLimpios.correo || '').trim().toLowerCase(),
+      numero_documento: String(datosLimpios.numero_documento || '').trim(),
+      rol: datosLimpios.rol || null,
+      estado: datosLimpios.estado || (datosLimpios.is_active ? 'Activo' : 'Inactivo'),
+      is_active: datosLimpios.is_active !== undefined ? Boolean(datosLimpios.is_active) : true,
+      id_institucion: datosLimpios.id_institucion ?? null,
+      institucion: datosLimpios.institucion || datosLimpios.institucion_nombre || null,
+      institucion_nombre: datosLimpios.institucion_nombre || datosLimpios.institucion || null,
+      id_sede: datosLimpios.id_sede ?? null,
+      sede_nombre: datosLimpios.sede_nombre || null,
+      instituciones_supervisor: Array.isArray(datosLimpios.instituciones_supervisor)
+        ? datosLimpios.instituciones_supervisor
+        : [],
+      is_superuser: Boolean(datosLimpios.is_superuser),
+      debe_cambiar_password: Boolean(datosLimpios.debe_cambiar_password),
+    };
+  }
+
+  /**
+   * Sincroniza el usuario autenticado y el token en el Store de NgRx.
+   */
+  sincronizarStore(usuario: AuthenticatedUser, token: string): void {
+    if (!this.store) {
+      return;
+    }
+    this.store.dispatch(loginAction({
+      username: usuario.correo,
+      token,
+      rol: usuario.rol || '',
+      nombre: `${usuario.nombre} ${usuario.apellido}`.trim() || usuario.correo,
+      id_usuario: usuario.id_usuario,
+      institucion: usuario.institucion_nombre || usuario.institucion || '',
+      mensaje: 'Sesión activa sincronizada',
+    }));
+  }
+
+  /**
+   * Criterio 2: Restauración y rehidratación de sesión al abrir o recargar la app.
+   */
+  restaurarSesion(): boolean {
+    if (!this.estaAutenticado()) {
+      return false;
+    }
+
+    const usuario = this.obtenerUsuario();
+    const token = this.obtenerToken();
+
+    if (usuario && token) {
+      this.sincronizarStore(usuario, token);
+      this.institucionActivaSubject.next(this.obtenerInstitucionActiva());
+      this.sedeActivaSubject.next(this.obtenerSedeActiva());
+      return true;
+    }
+
+    return false;
   }
 
   private estaDisponibleStorage(): boolean {
@@ -223,15 +312,50 @@ export class AuthService {
     );
   }
 
-  actualizarPerfil(data: { nombre: string; apellido: string; correo: string }): Observable<AuthenticatedUser> {
-    const usuario = this.obtenerUsuario();
-    if (!usuario?.id_usuario) {
-      throw new Error('No se pudo identificar al usuario autenticado.');
-    }
+  /**
+   * Criterio 1: Obtiene los datos actualizados del perfil desde el endpoint /api/usuarios/me/.
+   */
+  obtenerPerfil(): Observable<AuthenticatedUser> {
+    return this.http.get<AuthenticatedUser>(`${this.apiBaseUrl}/usuarios/me/`).pipe(
+      tap((usuarioPerfil) => {
+        if (usuarioPerfil && this.estaDisponibleStorage()) {
+          const usuarioActual = this.obtenerUsuario();
+          if (usuarioActual) {
+            const fusionado = { ...usuarioActual, ...usuarioPerfil };
+            localStorage.setItem(this.USUARIO, JSON.stringify(this.sanitizarDatosUsuario(fusionado)));
+            this.sincronizarStore(fusionado, this.obtenerToken() || '');
+          }
+        }
+      })
+    );
+  }
 
+  /**
+   * Criterios 4 y 5: Actualización autorizada de datos de perfil propio (nombre, apellido)
+   * garantizando la restricción estricta de campos protegidos.
+   */
+  actualizarPerfil(data: { nombre: string; apellido: string; correo?: string }): Observable<AuthenticatedUser> {
     return this.http.patch<AuthenticatedUser>(
-      `${this.apiBaseUrl}/usuarios/${usuario.id_usuario}/`,
-      data
+      `${this.apiBaseUrl}/usuarios/me/`,
+      {
+        nombre: (data.nombre ?? '').trim(),
+        apellido: (data.apellido ?? '').trim(),
+      }
+    ).pipe(
+      tap((usuarioActualizado) => {
+        const usuario = this.obtenerUsuario();
+        if (usuario && usuarioActualizado) {
+          const actualizado: AuthenticatedUser = {
+            ...usuario,
+            nombre: usuarioActualizado.nombre ?? usuario.nombre,
+            apellido: usuarioActualizado.apellido ?? usuario.apellido,
+          };
+          if (this.estaDisponibleStorage()) {
+            localStorage.setItem(this.USUARIO, JSON.stringify(this.sanitizarDatosUsuario(actualizado)));
+          }
+          this.sincronizarStore(actualizado, this.obtenerToken() || '');
+        }
+      })
     );
   }
 
@@ -249,14 +373,17 @@ export class AuthService {
     }
 
     if (respuesta.usuario) {
+      const usuarioSanitizado = this.sanitizarDatosUsuario(respuesta.usuario);
       localStorage.setItem(
         this.USUARIO,
-        JSON.stringify(respuesta.usuario)
+        JSON.stringify(usuarioSanitizado)
       );
+      this.sincronizarStore(usuarioSanitizado, respuesta.access || this.obtenerToken() || '');
     }
 
     // Cada nuevo inicio de sesión debe empezar sin institución activa previa
     this.limpiarInstitucionActiva();
+    this.limpiarSessionStorage();
   }
 
   obtenerToken(): string | null {
@@ -448,5 +575,68 @@ export class AuthService {
         })
       ).subscribe();
     }
+  }
+
+  /**
+   * Criterios 3 y 4: Validación activa de la vigencia del token con el backend.
+   * Consulta al endpoint de validación `/auth/verify/` (o `/usuarios/me/`).
+   * Si el servidor indica que el token expiró o fue revocado (401/403), limpia
+   * inmediatamente todos los datos locales sensibles y redirige a `/login`.
+   */
+  verificarSesionServidor(): Observable<boolean> {
+    const token = this.obtenerToken();
+    if (!token) {
+      this.limpiarSesion();
+      return of(false);
+    }
+
+    if (this.tokenExpirado(token)) {
+      this.limpiarSesion();
+      void this.router.navigate(['/login'], { replaceUrl: true });
+      return of(false);
+    }
+
+    return this.http.get<{ valido?: boolean; usuario?: any }>(`${this.apiBaseUrl}/auth/verify/`).pipe(
+      map((resp) => {
+        if (resp && resp.usuario) {
+          const usuarioSanitizado = this.sanitizarDatosUsuario(resp.usuario);
+          if (this.estaDisponibleStorage()) {
+            localStorage.setItem(this.USUARIO, JSON.stringify(usuarioSanitizado));
+          }
+          this.sincronizarStore(usuarioSanitizado, token);
+        }
+        return true;
+      }),
+      catchError((error) => {
+        if (error.status === 401 || error.status === 403) {
+          this.limpiarSesion();
+          void this.router.navigate(['/login'], { replaceUrl: true });
+          return of(false);
+        }
+        return of(true);
+      })
+    );
+  }
+
+  /**
+   * Criterios 2, 3 y 4: Mecanismo de arranque para APP_INITIALIZER.
+   * Al abrir o recargar la app comprueba si existe una sesión y verifica su vigencia activa con el backend.
+   */
+  verificarSesionInicial(): Observable<boolean> {
+    const token = this.obtenerToken();
+    if (!token) {
+      return of(true);
+    }
+
+    if (this.tokenExpirado(token)) {
+      this.limpiarSesion();
+      void this.router.navigate(['/login'], { replaceUrl: true });
+      return of(false);
+    }
+
+    return this.verificarSesionServidor().pipe(
+      timeout(10000),
+      catchError(() => of(true))
+    );
   }
 }

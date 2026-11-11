@@ -275,8 +275,12 @@
               </div>
 
               <div style="display:flex; flex-direction:column; gap:2px;">
+                <a routerLink="/perfil" (click)="cerrarPanel()" class="svh-act">
+                  <span class="material-symbols-outlined svh-act-ico">badge</span> Ver perfil completo
+                  <span class="material-symbols-outlined svh-act-go">chevron_right</span>
+                </a>
                 <button type="button" (click)="irA('editar')" class="svh-act">
-                  <span class="material-symbols-outlined svh-act-ico">person</span> Editar Perfil
+                  <span class="material-symbols-outlined svh-act-ico">person</span> Editar información personal
                   <span class="material-symbols-outlined svh-act-go">chevron_right</span>
                 </button>
                 <button type="button" (click)="irA('password')" class="svh-act">
@@ -291,21 +295,25 @@
 
             <!-- Vista Editar -->
             <div *ngIf="vistaActual === 'editar'" style="font-size:12px;">
-              <h4 style="margin:0 0 12px 0; font-size:14px; font-weight:700; color:#0f172a;">Editar Perfil</h4>
-              <div style="display:flex; flex-direction:column; gap:10px;">
+              <h4 style="margin:0 0 12px 0; font-size:14px; font-weight:700; color:#0f172a;">Editar información personal</h4>
+              <form [formGroup]="perfilForm" (ngSubmit)="guardarPerfil()" style="display:flex; flex-direction:column; gap:10px;">
                 <div>
                   <label style="display:block; margin-bottom:4px; font-weight:600; color:#475569;">Nombre</label>
-                  <input [(ngModel)]="editForm.nombre" type="text" style="width:100%; border:1px solid #cbd5e1; border-radius:8px; padding:6px 10px; box-sizing:border-box;" />
+                  <input formControlName="nombre" type="text" style="width:100%; border:1px solid #cbd5e1; border-radius:8px; padding:6px 10px; box-sizing:border-box;" />
                 </div>
                 <div>
-                  <label style="display:block; margin-bottom:4px; font-weight:600; color:#475569;">Correo</label>
-                  <input [(ngModel)]="editForm.correo" type="email" style="width:100%; border:1px solid #cbd5e1; border-radius:8px; padding:6px 10px; box-sizing:border-box;" />
+                  <label style="display:block; margin-bottom:4px; font-weight:600; color:#475569;">Apellido</label>
+                  <input formControlName="apellido" type="text" style="width:100%; border:1px solid #cbd5e1; border-radius:8px; padding:6px 10px; box-sizing:border-box;" />
+                </div>
+                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:6px 10px; display:flex; justify-content:space-between; align-items:center;">
+                  <span style="font-size:11px; color:#64748b; font-weight:600;">Correo (Protegido): {{ perfil.correo }}</span>
+                  <span class="material-symbols-outlined" style="font-size:14px; color:#94a3b8;">lock</span>
                 </div>
                 <div style="display:flex; gap:8px; margin-top:8px;">
-                  <button type="button" (click)="guardarPerfil()" style="flex:1; background:#fac94b; color:#000000; border:none; padding:8px; border-radius:8px; font-weight:700; cursor:pointer;">Guardar</button>
+                  <button type="submit" [disabled]="perfilForm.invalid" style="flex:1; background:#fac94b; color:#000000; border:none; padding:8px; border-radius:8px; font-weight:700; cursor:pointer;">Guardar</button>
                   <button type="button" (click)="irA('perfil')" style="flex:1; background:#f1f5f9; border:1px solid #cbd5e1; padding:8px; border-radius:8px; font-weight:600; cursor:pointer;">Cancelar</button>
                 </div>
-              </div>
+              </form>
             </div>
 
             <!-- Vista Cambiar Contraseña -->
@@ -500,9 +508,13 @@
               </div>
 
               <div class="profile-actions-list">
+                <a routerLink="/perfil" (click)="cerrarPanel()" class="profile-action-btn">
+                  <span class="material-symbols-outlined" aria-hidden="true">badge</span>
+                  <span>Ver perfil completo</span>
+                </a>
                 <button type="button" class="profile-action-btn" (click)="irA('editar')">
                   <span class="material-symbols-outlined" aria-hidden="true">edit</span>
-                  <span>Editar Perfil</span>
+                  <span>Editar información personal</span>
                 </button>
                 <button type="button" class="profile-action-btn" (click)="irA('password')">
                   <span class="material-symbols-outlined" aria-hidden="true">lock</span>
@@ -518,23 +530,29 @@
             <!-- Vista Editar Perfil -->
             <div *ngIf="vistaActual === 'editar'" class="profile-edit-view">
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                <h4 class="popover-view-title" style="margin:0;">Editar Perfil</h4>
+                <h4 class="popover-view-title" style="margin:0;">Editar información personal</h4>
                 <button type="button" (click)="cerrarPanel()" style="background:none; border:none; color:#94a3b8; cursor:pointer; padding:2px;" title="Cerrar">
                   <span class="material-symbols-outlined" style="font-size:18px;">close</span>
                 </button>
               </div>
-              <div class="popover-form-group">
-                <label>Nombre</label>
-                <input [(ngModel)]="editForm.nombre" type="text" class="popover-input" />
-              </div>
-              <div class="popover-form-group">
-                <label>Correo</label>
-                <input [(ngModel)]="editForm.correo" type="email" class="popover-input" />
-              </div>
-              <div class="popover-btn-row">
-                <button type="button" class="btn-save-popover" (click)="guardarPerfil()">Guardar</button>
-                <button type="button" class="btn-cancel-popover" (click)="irA('perfil')">Volver</button>
-              </div>
+              <form [formGroup]="perfilForm" (ngSubmit)="guardarPerfil()">
+                <div class="popover-form-group">
+                  <label>Nombre</label>
+                  <input formControlName="nombre" type="text" class="popover-input" />
+                </div>
+                <div class="popover-form-group">
+                  <label>Apellido</label>
+                  <input formControlName="apellido" type="text" class="popover-input" />
+                </div>
+                <div class="popover-form-group" style="opacity:0.85;">
+                  <label>Correo Institucional (Protegido)</label>
+                  <input [value]="perfil.correo" type="text" disabled class="popover-input" style="background:#f1f5f9; cursor:not-allowed;" />
+                </div>
+                <div class="popover-btn-row">
+                  <button type="submit" [disabled]="perfilForm.invalid" class="btn-save-popover">Guardar</button>
+                  <button type="button" class="btn-cancel-popover" (click)="irA('perfil')">Volver</button>
+                </div>
+              </form>
             </div>
 
             <!-- Vista Cambiar Contraseña -->
@@ -724,9 +742,13 @@
               </div>
 
               <div class="profile-actions-list">
+                <a routerLink="/perfil" (click)="cerrarPanel()" class="profile-action-btn">
+                  <span class="material-symbols-outlined" aria-hidden="true">badge</span>
+                  <span>Ver perfil completo</span>
+                </a>
                 <button type="button" class="profile-action-btn" (click)="irA('editar')">
                   <span class="material-symbols-outlined" aria-hidden="true">edit</span>
-                  <span>Editar Perfil</span>
+                  <span>Editar información personal</span>
                 </button>
                 <button type="button" class="profile-action-btn" (click)="irA('password')">
                   <span class="material-symbols-outlined" aria-hidden="true">lock</span>
@@ -742,23 +764,29 @@
             <!-- Vista Editar Perfil -->
             <div *ngIf="vistaActual === 'editar'" class="profile-edit-view">
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                <h4 class="popover-view-title" style="margin:0;">Editar Perfil</h4>
+                <h4 class="popover-view-title" style="margin:0;">Editar información personal</h4>
                 <button type="button" (click)="cerrarPanel()" style="background:none; border:none; color:#94a3b8; cursor:pointer; padding:2px;" title="Cerrar">
                   <span class="material-symbols-outlined" style="font-size:18px;">close</span>
                 </button>
               </div>
-              <div class="popover-form-group">
-                <label>Nombre</label>
-                <input [(ngModel)]="editForm.nombre" type="text" class="popover-input" />
-              </div>
-              <div class="popover-form-group">
-                <label>Correo</label>
-                <input [(ngModel)]="editForm.correo" type="email" class="popover-input" />
-              </div>
-              <div class="popover-btn-row">
-                <button type="button" class="btn-save-popover" (click)="guardarPerfil()">Guardar</button>
-                <button type="button" class="btn-cancel-popover" (click)="irA('perfil')">Volver</button>
-              </div>
+              <form [formGroup]="perfilForm" (ngSubmit)="guardarPerfil()">
+                <div class="popover-form-group">
+                  <label>Nombre</label>
+                  <input formControlName="nombre" type="text" class="popover-input" />
+                </div>
+                <div class="popover-form-group">
+                  <label>Apellido</label>
+                  <input formControlName="apellido" type="text" class="popover-input" />
+                </div>
+                <div class="popover-form-group" style="opacity:0.85;">
+                  <label>Correo Institucional (Protegido)</label>
+                  <input [value]="perfil.correo" type="text" disabled class="popover-input" style="background:#f1f5f9; cursor:not-allowed;" />
+                </div>
+                <div class="popover-btn-row">
+                  <button type="submit" [disabled]="perfilForm.invalid" class="btn-save-popover">Guardar</button>
+                  <button type="button" class="btn-cancel-popover" (click)="irA('perfil')">Volver</button>
+                </div>
+              </form>
             </div>
 
             <!-- Vista Cambiar Contraseña -->
