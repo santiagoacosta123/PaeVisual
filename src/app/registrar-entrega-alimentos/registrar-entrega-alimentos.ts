@@ -183,6 +183,14 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       this.institucionActiva = institucion;
       this.idInstitucion = institucion?.id_institucion ?? this.authService.obtenerUsuario()?.id_institucion ?? null;
       if (anterior !== this.idInstitucion) {
+        const sedesInstitucion = Array.isArray(institucion?.sedes) ? institucion.sedes : [];
+        const sigueEnInstitucion = this.idSede != null && sedesInstitucion.some(
+          (s: any) => Number(s?.id_sede ?? s?.id) === Number(this.idSede)
+        );
+        if (this.idSede != null && !sigueEnInstitucion) {
+          this.idSede = null;
+          this.calculoAbastecimiento = null;
+        }
         this.cargarHistorial();
         if (this.idSede != null) this.calcularAbastecimiento(true);
       }

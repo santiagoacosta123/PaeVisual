@@ -9,6 +9,7 @@ import { AuthService } from '../core/auth/auth.service';
 describe('SedesAdministradorComponent', () => {
   let component: SedesAdministradorComponent;
   let get: ReturnType<typeof vi.fn>;
+  let post: ReturnType<typeof vi.fn>;
   let obtenerUsuario: ReturnType<typeof vi.fn>;
 
   const sedes = [
@@ -51,9 +52,10 @@ describe('SedesAdministradorComponent', () => {
     obtenerUsuario = vi.fn(() => ({
       institucion_nombre: 'Institución asignada al administrador',
     }));
+    post = vi.fn(() => of({ mensaje: 'Configuración guardada correctamente.', jornadas: [] }));
     TestBed.configureTestingModule({
       providers: [
-        { provide: HttpClient, useValue: { get, post: vi.fn(), put: vi.fn() } },
+        { provide: HttpClient, useValue: { get, post, put: vi.fn() } },
         { provide: AuthService, useValue: { obtenerUsuario } },
         { provide: ChangeDetectorRef, useValue: { markForCheck: vi.fn() } },
       ],
@@ -123,5 +125,60 @@ describe('SedesAdministradorComponent', () => {
 
     expect(component.configuracion?.cupos_totales).toBe(0);
     expect(component.configuracion?.jornadas).toEqual([]);
+  });
+
+  it('posts only enabled jornadas and positive grado cupos to /configuracion/', () => {
+    get.mockImplementation((url: string) => {
+      if (url.includes('/jornadas/')) {
+        return of([
+          { id_jornada: 2, nombre_jornada: 'Mañana', estado: 'ACTIVA' },
+          { id_jornada: 3, nombre_jornada: 'Tarde', estado: 'ACTIVA' },
+        ]);
+      }
+      if (url.includes('/grados/')) {
+        return of([
+          { id_grado: 1, nombre_grado: 'Primero', estado: 'ACTIVO' },
+          { id_grado: 2, nombre_grado: 'Segundo', estado: 'ACTIVO' },
+          { id_grado: 3, nombre_grado: 'Archivado', estado: 'INACTIVO' },
+        ]);
+      }
+      if (url.includes('/sedes/11/configuracion/')) {
+        return of({
+          sede: sedes[0],
+          cupos_totales: 40,
+          jornadas: [{
+            id_jornada: 2,
+            nombre_jornada: 'Mañana',
+            cupos: 40,
+            habilitada: true,
+            secciones: [],
+            grados: [{ id_grado: 1, nombre_grado: 'Primero', cupos: 40 }],
+          }],
+        });
+      }
+      return of(sedes);
+    });
+
+    component.ngOnInit();
+    component.seleccionarSede(sedes[0]);
+    expect(component.gradosDisponibles.map(g => g.id_grado)).toEqual([1, 2]);
+    expect(component.configuracion?.jornadas[0].grados.map(g => g.id_grado)).toEqual([1, 2]);
+
+    component.guardarConfiguracion();
+
+    expect(post).toHaveBeenCalledWith(
+      `${environment.apiUrl}/sedes/11/configuracion/`,
+      expect.objectContaining({
+        id_sede: 11,
+        jornadas: [
+          expect.objectContaining({
+            id_jornada: 2,
+            cupos: 40,
+            grados: [{ id_grado: 1, nombre_grado: 'Primero', cupos: 40 }],
+          }),
+        ],
+      }),
+    );
+    expect(component.mensajeGuardado).toContain('Configuración guardada correctamente');
   });
 });
