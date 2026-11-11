@@ -285,11 +285,11 @@
           </div>
         </a>
 
-        <!-- PLANTILLAS, PLANILLAS Y REPORTES -->
-        <a routerLink="/reportes-consumo" routerLinkActive="active" class="superadmin-nav-item" title="Plantillas, Planillas y Reportes PAE">
+        <!-- REPORTES -->
+        <a routerLink="/reportes-consumo" routerLinkActive="active" class="superadmin-nav-item" title="Reportes PAE">
           <div class="superadmin-nav-item-left">
-            <span class="material-symbols-outlined superadmin-nav-icon">description</span>
-            <span class="superadmin-nav-text">Reportes y Plantillas</span>
+            <span class="material-symbols-outlined superadmin-nav-icon">monitoring</span>
+            <span class="superadmin-nav-text">Reportes</span>
           </div>
         </a>
       </div>
@@ -297,6 +297,14 @@
       <!-- SECCIÓN 3: CONFIGURACIÓN Y MAESTROS -->
       <div class="superadmin-nav-group">
         <span class="superadmin-group-label">Administración</span>
+
+        <!-- PLANTILLAS -->
+        <a routerLink="/plantillas-maestras" routerLinkActive="active" class="superadmin-nav-item" title="Plantillas Maestras PAE">
+          <div class="superadmin-nav-item-left">
+            <span class="material-symbols-outlined superadmin-nav-icon">design_services</span>
+            <span class="superadmin-nav-text">Plantillas</span>
+          </div>
+        </a>
 
         <!-- BANCO DE DATOS -->
         <a routerLink="banco-datos" routerLinkActive="active" class="superadmin-nav-item" title="Banco de Datos">
@@ -563,9 +571,9 @@
 
       <!-- PLANILLAS Y REPORTES PAE (SIR-171..173) -->
       <a *ngIf="esAdministrador || esJefa" routerLink="/reportes-consumo" routerLinkActive="active"
-         class="modern-nav-item" title="Planillas y Reportes PAE">
+         class="modern-nav-item" [title]="esJefa ? 'Planillas de Comedor Escolar' : 'Planillas y Reportes PAE'">
         <span class="material-symbols-outlined modern-nav-icon" aria-hidden="true">description</span>
-        <span class="modern-nav-text">Planillas y Reportes</span>
+        <span class="modern-nav-text">{{ esJefa ? 'Planillas' : 'Planillas y Reportes' }}</span>
       </a>
 
       <!-- MENSAJERÍA -->
