@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, forkJoin, of } from 'rxjs';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { Observable, forkJoin, of, throwError } from 'rxjs';
 import { map, tap, catchError, timeout } from 'rxjs/operators';
 import { environment } from '@env/environment';
 import { AuthService } from '@core/auth';
@@ -13,6 +13,13 @@ export interface Entrega {
   institucionNombre?: string;
   idSede?: number;
   sedeNombre?: string;
+  idContrato?: number;
+  idCalculoEntrega?: number;
+  documentoEntrega?: string;
+  cantidadRequeridaCalculo?: number | null;
+  superaCalculo?: boolean;
+  autorizadoPor?: string;
+  justificacionExceso?: string;
   ingrediente: string;
   tipoMercado: string;
   frecuencia: string;
@@ -53,6 +60,161 @@ export interface EntregaPayload {
   destino?: string;
   responsable?: string;
   id_usuario_supervisor?: number;
+  autorizacion_exceso?: boolean;
+  autorizado_por?: string;
+  justificacion_exceso?: string;
+}
+
+export interface FaltanteConfiguracion {
+  tipo: string;
+  severidad?: 'ERROR' | 'ADVERTENCIA' | string;
+  mensaje: string;
+  ingrediente?: string;
+  grado?: string;
+  jornada?: string;
+}
+
+export interface DetallePorGradoItem {
+  id_ingrediente?: number;
+  nombre_ingrediente?: string;
+  id_jornada?: number;
+  jornada_nombre?: string;
+  id_grado?: number | null;
+  grado_nombre?: string;
+  nivel_educativo?: string;
+  grupo_gramaje?: string;
+  cupos?: number;
+  porcion_original?: number;
+  unidad_gramaje?: string;
+  porcion_convertida?: number;
+  unidad_destino?: string;
+  dias_periodo?: number;
+  cantidad_requerida?: number;
+  estado?: 'CALCULADO' | 'SIN_GRAMAJE' | 'ERROR_CONVERSION' | string;
+  mensaje?: string;
+}
+
+export interface ProductoCalculado {
+  id_ingrediente: number;
+  nombre_ingrediente: string;
+  id_tipo_mercado?: number | null;
+  tipo_conservacion?: string;
+  es_perecedero?: boolean;
+  clasificacion_tipo?: string;
+  periodicidad_aplicada?: string;
+  dias_periodo?: number;
+  unidad_medida: string;
+  unidad_abreviatura?: string;
+  cupos_totales_utilizados?: number;
+  porcion_gramaje?: number;
+  porcion_gramaje_convertida?: number;
+  consumo_teorico_periodo?: number;
+  cantidad_total_requerida: number;
+  presentacion_consumo?: string;
+  presentacion_requerida?: string;
+  stock_actual_sede?: number;
+  cantidad_sugerida_despacho: number;
+  necesidad_neta_sede?: number;
+  presentacion_sugerida?: string;
+  stock_bodega_central?: number;
+  estado_bodega_central?: 'SUFICIENTE' | 'INSUFICIENTE' | 'ERROR_CONVERSION' | string;
+  pendiente_abastecer?: number;
+  faltante_bodega_central?: number;
+  error_conversion?: boolean;
+  alerta_conversion?: string | null;
+  tiene_gramajes_faltantes?: boolean;
+  grados_sin_gramaje?: string[];
+  platos_relacionados?: string[];
+  detalle_por_grado?: DetallePorGradoItem[];
+}
+
+export interface CalculoAbastecimientoResponse {
+  id_institucion?: number;
+  id_sede: number;
+  nombre_sede?: string;
+  institucion?: any;
+  contrato?: any;
+  periodicidad?: {
+    periodicidad_perecederos?: string;
+    dias_perecederos?: number;
+    periodicidad_no_perecederos?: string;
+    dias_no_perecederos?: number;
+  };
+  total_cupos?: number;
+  jornadas?: any[];
+  cupos_por_grado?: any[];
+  dias_calculados?: number;
+  origen_productos?: string;
+  total_menus_programados?: number;
+  resumen_tipos?: any;
+  impacta_inventario?: boolean;
+  fecha_calculo?: string;
+  alertas_conversion?: string[];
+  faltantes_configuracion?: FaltanteConfiguracion[];
+  productos_sugeridos?: ProductoCalculado[];
+  detalle_por_grado_global?: DetallePorGradoItem[];
+}
+
+export interface DespachoLoteItemPayload {
+  id_ingrediente: number;
+  cantidad: number;
+  unidad: string;
+  id_tipo_mercado?: number;
+  fecha_vencimiento?: string;
+}
+
+export interface DespachoLotePayload {
+  id_sede: number;
+  fecha_entrega: string;
+  fecha_vencimiento?: string;
+  id_tipo_mercado?: number;
+  id_jornada?: number;
+  id_contrato?: number;
+  dias?: number;
+  dias_perecederos?: number;
+  dias_no_perecederos?: number;
+  observaciones?: string;
+  frecuencia?: string;
+  autorizacion_exceso?: boolean;
+  autorizado_por?: string;
+  justificacion_exceso?: string;
+  incluir_todos_gramajes?: boolean;
+  validar_contra_calculo?: boolean;
+  items: DespachoLoteItemPayload[];
+}
+
+export interface DespachoLoteResponse {
+  mensaje: string;
+  codigo_documento: string;
+  id_calculo_entrega: number;
+  total_items: number;
+  calculo_soporte?: CalculoEntregaSoporte;
+  despachos?: any[];
+}
+
+export interface CalculoEntregaSoporte {
+  id_calculo_entrega?: number;
+  codigo_documento: string;
+  id_institucion?: number;
+  institucion_nombre?: string;
+  id_sede?: number;
+  sede_nombre?: string;
+  id_contrato?: number | null;
+  contrato_numero?: string | null;
+  id_jornada?: number | null;
+  jornada_nombre?: string | null;
+  periodo_descripcion?: string;
+  dias_perecederos?: number;
+  dias_no_perecederos?: number;
+  total_cupos?: number;
+  autorizacion_exceso?: boolean;
+  autorizado_por?: string;
+  justificacion_exceso?: string;
+  parametros_snapshot?: any;
+  consolidado_snapshot?: ProductoCalculado[];
+  detalle_grados_snapshot?: DetallePorGradoItem[];
+  alertas_snapshot?: any;
+  fecha_creacion?: string;
 }
 
 /**
@@ -103,14 +265,14 @@ export class EntregasService {
   }
 
   // ---------- Cargar desde el backend ----------
-  cargar(): Observable<Entrega[]> {
+  cargar(propagarError = false): Observable<Entrega[]> {
     return this.http.get<any>(this.apiUrl, this.getHeaders()).pipe(
       timeout(10000),
       map(data => this.listaDe(data).map(item => this.normalizar(item))),
       tap(lista => (this.entregas = lista)),
       catchError(err => {
         console.warn('Error o timeout al cargar entregas desde servidor:', err);
-        return of(this.entregas || []);
+        return propagarError ? throwError(() => err) : of(this.entregas || []);
       })
     );
   }
@@ -152,6 +314,55 @@ export class EntregasService {
     motivo_rechazo?: string;
   }): Observable<any> {
     return this.http.post<any>(`${this.apiUrl}${id}/confirmar-recepcion/`, payload, this.getHeaders());
+  }
+
+  // HU 5: Calcular automáticamente cantidades requeridas por sede, jornada, grado, gramaje y menú
+  calcularMercado(params: {
+    id_sede: number;
+    id_institucion?: number | null;
+    id_jornada?: number | null;
+    id_contrato?: number | null;
+    dias?: number | null;
+    dias_perecederos?: number | null;
+    dias_no_perecederos?: number | null;
+    id_grado?: number | null;
+    id_grupo_gramaje?: number | null;
+    incluir_todos_gramajes?: boolean;
+  }): Observable<CalculoAbastecimientoResponse> {
+    let httpParams = new HttpParams().set('id_sede', String(params.id_sede));
+    if (params.id_institucion != null) httpParams = httpParams.set('id_institucion', String(params.id_institucion));
+    if (params.id_jornada != null) httpParams = httpParams.set('id_jornada', String(params.id_jornada));
+    if (params.id_contrato != null) httpParams = httpParams.set('id_contrato', String(params.id_contrato));
+    if (params.dias != null) httpParams = httpParams.set('dias', String(params.dias));
+    if (params.dias_perecederos != null) httpParams = httpParams.set('dias_perecederos', String(params.dias_perecederos));
+    if (params.dias_no_perecederos != null) httpParams = httpParams.set('dias_no_perecederos', String(params.dias_no_perecederos));
+    if (params.id_grado != null) httpParams = httpParams.set('id_grado', String(params.id_grado));
+    if (params.id_grupo_gramaje != null) httpParams = httpParams.set('id_grupo_gramaje', String(params.id_grupo_gramaje));
+    if (params.incluir_todos_gramajes) httpParams = httpParams.set('incluir_todos_gramajes', 'true');
+
+    return this.http.get<CalculoAbastecimientoResponse>(`${this.apiUrl}calcular-mercado/`, {
+      ...this.getHeaders(),
+      params: httpParams,
+    });
+  }
+
+  // HU 5: Confirmar despacho en lote validado y guardar soporte auditable CalculoEntrega
+  despachoLote(payload: DespachoLotePayload): Observable<DespachoLoteResponse> {
+    return this.http.post<DespachoLoteResponse>(`${this.apiUrl}despacho-lote/`, payload, this.getHeaders());
+  }
+
+  // HU 5: Consultar snapshots auditables de cálculos de entregas
+  obtenerSoportesCalculo(idSede?: number): Observable<CalculoEntregaSoporte[]> {
+    let httpParams = new HttpParams();
+    if (idSede != null) httpParams = httpParams.set('id_sede', String(idSede));
+    return this.http.get<any>(`${this.apiUrl}soportes-calculo/`, {
+      ...this.getHeaders(),
+      params: httpParams,
+    }).pipe(map(data => this.listaDe(data)));
+  }
+
+  obtenerSoporteCalculoPorEntrega(idEntrega: number): Observable<CalculoEntregaSoporte> {
+    return this.http.get<CalculoEntregaSoporte>(`${this.apiUrl}${idEntrega}/soporte-calculo/`, this.getHeaders());
   }
   // ------------------------------------------------------------------------------
 
@@ -196,6 +407,14 @@ export class EntregasService {
       institucionNombre: String(item.institucion_nombre ?? item.institucion?.nombre_institucion ?? ''),
       idSede: item.id_sede ? Number(item.id_sede) : undefined,
       sedeNombre: String(item.sede_nombre ?? item.sede?.nombre_sede ?? ''),
+      idContrato: item.id_contrato ? Number(item.id_contrato) : undefined,
+      idCalculoEntrega: item.id_calculo_entrega ? Number(item.id_calculo_entrega) : undefined,
+      documentoEntrega: item.documento_entrega || '',
+      cantidadRequeridaCalculo:
+        item.cantidad_requerida_calculo != null ? Number(item.cantidad_requerida_calculo) : null,
+      superaCalculo: Boolean(item.supera_calculo),
+      autorizadoPor: item.autorizado_por || '',
+      justificacionExceso: item.justificacion_exceso || '',
       ingrediente: ingNombre,
       tipoMercado: this.normalizarMercado(
         tipoMercadoNombre || (idTipo === 1 ? 'Perecederos' : 'Granos')

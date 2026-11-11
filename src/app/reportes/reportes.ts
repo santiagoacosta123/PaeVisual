@@ -180,13 +180,11 @@ export class Reportes implements OnInit, OnDestroy {
         this.paginaActual = 1;
       }
       this.cargar();
-      this.cargarPlanillas();
     });
 
     this.actualizacionAutomatica = setInterval(() => {
       if (this.institucionActiva) {
         this.cargar();
-        this.cargarPlanillas(false);
       }
     }, 60000);
   }
@@ -211,6 +209,9 @@ export class Reportes implements OnInit, OnDestroy {
 
     if (!idInstitucion) {
       this.cargando = false;
+      this.planillaRemision = null;
+      this.planillaKardex = null;
+      this.minutaPatron = [];
       this.sedesBase = [];
       this.entregas = [];
       this.versionDatos++;
@@ -230,6 +231,7 @@ export class Reportes implements OnInit, OnDestroy {
       entregas: this.entregasService.cargar().pipe(take(1), timeout(TIEMPO_MAXIMO_MS), opcional<Entrega[]>('las entregas')),
     }).subscribe(({ sedes, contratos, entregas }) => {
       this.armarReporteSedes(sedes, contratos, entregas, fallos);
+      this.cargarPlanillas();
       this.cargando = false;
       this.cdr.markForCheck();
     });
@@ -239,7 +241,7 @@ export class Reportes implements OnInit, OnDestroy {
   //  CARGA Y GESTIÓN DE PLANILLAS OFICIALES PAE
   // =====================================================
 
-  cargarPlanillas(mostrarCargando = true): void {
+  cargarPlanillas(mostrarCargando = true, confirmarSincronizacion = false): void {
     if (!this.institucionActiva) {
       this.planillaRemision = null;
       this.planillaKardex = null;
@@ -251,9 +253,14 @@ export class Reportes implements OnInit, OnDestroy {
 
     const idInstitucion = this.institucionActiva.id_institucion;
     const nombreInstitucion = this.institucionActiva.nombre_institucion;
-    const idSede = this.sedeActiva?.id_sede ?? (typeof this.sedeFiltro === 'number' ? this.sedeFiltro : 0);
-    const nombreSede = this.sedeActiva?.nombre_sede ?? (this.sedesBase.find(s => s.id === idSede)?.nombre || 'Sede Principal');
-    const cuposSede = this.sedesBase.find(s => s.id === idSede)?.cupos || 227;
+    const idSede = this.idSedeSeleccionada;
+    const sedeSeleccionada = this.sedesBase.find(s => s.id === idSede);
+    const nombreSede = idSede
+      ? sedeSeleccionada?.nombre || this.sedeActiva?.nombre_sede || 'Sede Principal'
+      : 'Todas las sedes';
+    const cuposSede = idSede
+      ? sedeSeleccionada?.cupos
+      : this.sedesBase.reduce((total, sede) => total + sede.cupos, 0) || undefined;
 
     forkJoin({
       remision: this.planillasPaeService.obtenerPlanillaRemision({
@@ -261,6 +268,7 @@ export class Reportes implements OnInit, OnDestroy {
         institucionNombre: nombreInstitucion,
         sedeId: idSede,
         sedeNombre: nombreSede,
+        sedeIds: this.sedesBase.map(sede => sede.id),
         periodo: this.periodoSeleccionado,
         fechaInicio: this.fechaInicioPlanilla,
         fechaFin: this.fechaFinPlanilla,
@@ -282,11 +290,20 @@ export class Reportes implements OnInit, OnDestroy {
         this.minutaPatron = this.planillasPaeService.obtenerMinutaPatron(remision.cupos, remision.diasAtender);
         this.cargandoPlanillas = false;
         this.cdr.markForCheck();
+        if (confirmarSincronizacion) {
+          void this.alertas.success(
+            'Consulta completada',
+            'Si no aparecen cantidades recibidas, verifica que las entregas estén confirmadas y asignadas a esta institución y sede.'
+          );
+        }
       },
       error: (err) => {
         console.error('Error al cargar planillas PAE:', err);
         this.cargandoPlanillas = false;
         this.cdr.markForCheck();
+        if (confirmarSincronizacion) {
+          void this.alertas.error('No se pudieron sincronizar las planillas', 'Verifica la conexión y vuelve a intentarlo.');
+        }
       }
     });
   }
@@ -299,21 +316,17 @@ export class Reportes implements OnInit, OnDestroy {
     // Limpiar claves temporales para regenerar con los datos más recientes del backend
     if (!this.institucionActiva) return;
     const idInst = this.institucionActiva.id_institucion;
-    const idSede = this.sedeActiva?.id_sede ?? 0;
+    const idSede = this.idSedeSeleccionada;
     localStorage.removeItem(`pae_remision_${idInst}_${idSede}_${this.periodoSeleccionado}_${this.fechaInicioPlanilla}`);
     localStorage.removeItem(`pae_kardex_${idInst}_${idSede}_${this.periodoSeleccionado}_${this.fechaInicioPlanilla}`);
 
-    this.cargarPlanillas(true);
-    void this.alertas.success(
-      'Datos Sincronizados',
-      'Las planillas se han autocompletado con las entregas y las asistencias registradas por las jefas de manipuladoras.'
-    );
+    this.cargarPlanillas(true, true);
   }
 
   guardarPlanillas(): void {
     if (!this.institucionActiva || !this.planillaRemision || !this.planillaKardex) return;
     const idInst = this.institucionActiva.id_institucion;
-    const idSede = this.sedeActiva?.id_sede ?? 0;
+    const idSede = this.idSedeSeleccionada;
     const claveRemision = `pae_remision_${idInst}_${idSede}_${this.periodoSeleccionado}_${this.fechaInicioPlanilla}`;
     const claveKardex = `pae_kardex_${idInst}_${idSede}_${this.periodoSeleccionado}_${this.fechaInicioPlanilla}`;
 
@@ -440,6 +453,10 @@ export class Reportes implements OnInit, OnDestroy {
 
   get sedesDisponibles(): SedeBase[] {
     return [...this.sedesBase].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+  }
+
+  private get idSedeSeleccionada(): number {
+    return typeof this.sedeFiltro === 'number' ? this.sedeFiltro : 0;
   }
 
   private get entregasEnFechas(): EntregaSede[] {

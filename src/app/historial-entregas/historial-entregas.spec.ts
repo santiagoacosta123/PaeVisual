@@ -65,18 +65,118 @@ describe('HistorialEntregas', () => {
     expect(component).toBeTruthy();
     expect(component.entregas).toHaveLength(1);
     expect(fixture.nativeElement.textContent).toContain('Historial de Entregas');
+    expect(fixture.nativeElement.textContent).not.toContain('Arroz');
+    const grupoDia = fixture.nativeElement.querySelector('.he-day-group-toggle') as HTMLButtonElement;
+    grupoDia.click();
+    fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('Arroz');
     expect(fixture.nativeElement.textContent).not.toContain('Guardar entrega');
   });
 
-  it('filters history by market and search text', () => {
-    component.filtroMercado = 'Granos';
+  it('filters history by search text without category filters', () => {
     component.filtroTexto = 'arroz';
 
     expect(component.entregasFiltradas).toHaveLength(1);
+    expect(fixture.nativeElement.textContent).not.toContain('Perecederos');
 
     component.filtroTexto = 'leche';
     expect(component.entregasFiltradas).toHaveLength(0);
+  });
+
+  it('groups deliveries by date and expands the selected day', () => {
+    component.entregas = [
+      ...component.entregas,
+      { ...component.entregas[0], id: 2, ingrediente: 'Lentejas', estado: 'RECIBIDA' },
+      { ...component.entregas[0], id: 3, ingrediente: 'Fríjol', estado: 'CON_NOVEDAD' },
+      { ...component.entregas[0], id: 4, ingrediente: 'Leche', fechaRecepcion: '2026-10-11' },
+    ];
+
+    expect(component.gruposPorFecha).toHaveLength(2);
+    const grupoDia = component.gruposPorFecha.find(grupo => grupo.fecha === '2026-10-10');
+    expect(grupoDia?.entregas).toHaveLength(3);
+    expect(grupoDia?.pendientes).toBe(1);
+    expect(grupoDia?.recibidas).toBe(1);
+    expect(grupoDia?.novedades).toBe(1);
+
+    component.alternarGrupoFecha('2026-10-10');
+    fixture.detectChanges();
+
+    expect(component.grupoEstaExpandido('2026-10-10')).toBe(true);
+    expect(fixture.nativeElement.textContent).toContain('Arroz');
+    expect(fixture.nativeElement.textContent).toContain('Lentejas');
+    expect(fixture.nativeElement.textContent).toContain('Fríjol');
+  });
+
+  it('expands and collapses all visible date groups', () => {
+    component.entregas = [
+      ...component.entregas,
+      { ...component.entregas[0], id: 2, fechaRecepcion: '2026-10-11' },
+    ];
+    fixture.detectChanges();
+
+    component.expandirGrupos();
+    expect(component.grupoEstaExpandido('2026-10-10')).toBe(true);
+    expect(component.grupoEstaExpandido('2026-10-11')).toBe(true);
+
+    component.contraerGrupos();
+    expect(component.grupoEstaExpandido('2026-10-10')).toBe(false);
+    expect(component.grupoEstaExpandido('2026-10-11')).toBe(false);
+  });
+
+  it('formats calendar dates without shifting them to another day', () => {
+    expect(component.formatoFecha('2026-10-10')).toBe('10/10/2026');
+    expect(component.formatoFecha('not-a-date')).toBe('Fecha no disponible');
+  });
+
+  it('prepares the selected delivery for a full rejection', () => {
+    component.abrirModalRechazo(component.entregas[0]);
+
+    expect(component.modalRecepcionAbierto).toBe(true);
+    expect(component.modoRechazoDirecto).toBe(true);
+    expect(component.formRecepcion.cantidadRecibida).toBe(0);
+    expect(component.formRecepcion.cantidadRechazada).toBe(12.5);
+  });
+
+  it('records a rejection only for the selected delivery after the server confirms it', () => {
+    localStorage.setItem('sirae_entradas_extra', JSON.stringify({
+      'id:1': { destino: 'Sede A' },
+      '4|2026-10-10|12.5': { destino: 'Sede B' },
+    }));
+    component.abrirModalRechazo(component.entregas[0]);
+    component.formRecepcion.motivoRechazo = 'Producto averiado';
+    component.confirmarRecepcion();
+
+    const request = httpTestingController.expectOne(
+      request => request.url.endsWith('/entregas/1/confirmar-recepcion/') && request.method === 'POST',
+    );
+    expect(request.request.body).toEqual({
+      cantidad_recibida: 0,
+      cantidad_rechazada: 12.5,
+      motivo_rechazo: 'Producto averiado',
+    });
+    request.flush({});
+    httpTestingController.expectOne(request => request.url.endsWith('/entregas/')).flush([]);
+
+    const extras = JSON.parse(localStorage.getItem('sirae_entradas_extra') || '{}');
+    expect(extras['id:1'].estadoAprobacion).toBe('RECHAZADA');
+    expect(extras['4|2026-10-10|12.5'].estadoAprobacion).toBeUndefined();
+  });
+
+  it('keeps the rejection form open when the server does not confirm it', () => {
+    component.abrirModalRechazo(component.entregas[0]);
+    component.formRecepcion.motivoRechazo = 'Producto averiado';
+    component.confirmarRecepcion();
+
+    httpTestingController.expectOne(
+      request => request.url.endsWith('/entregas/1/confirmar-recepcion/'),
+    ).flush({}, { status: 500, statusText: 'Server Error' });
+
+    expect(component.modalRecepcionAbierto).toBe(true);
+    expect(alertas.error).toHaveBeenCalledWith(
+      'No se pudo confirmar la entrega',
+      'El servidor no registró la recepción. Revisa la conexión e inténtalo nuevamente.',
+    );
+    expect(alertas.success).not.toHaveBeenCalled();
   });
 
   it('opens the CRUD panel and creates a delivery with a success alert', () => {

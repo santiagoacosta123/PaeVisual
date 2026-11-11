@@ -126,20 +126,37 @@
         </div>
       </div>
 
-      <!-- CONDICIONAL 3: Administrador asigna Sede a la Manipuladora -->
-      <div *ngIf="esAdmin" class="bg-emerald-50/50 border border-emerald-200 rounded-xl p-4">
-        <label class="block font-semibold text-slate-800 mb-1.5">
-          <span class="material-symbols-outlined text-sm align-middle text-emerald-600">kitchen</span>
-          Sede Escolar donde Cocinará *
-        </label>
-        <select [(ngModel)]="form.id_sede"
-          class="w-full px-3.5 py-2.5 bg-white border border-emerald-300 rounded-xl text-xs text-slate-900 outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 transition cursor-pointer">
-          <option [ngValue]="null" disabled selected>Selecciona la sede escolar...</option>
-          <option *ngFor="let sede of sedesDisponibles" [value]="sede.id_sede || sede.id">
-            {{ sede.nombre_sede || sede.nombre }} - {{ sede.direccion || 'Sede institucional' }}
-          </option>
-        </select>
-        <p class="text-[11px] text-slate-500 m-0 mt-1.5">Esta manipuladora registrará asistencia y menús de esta sede específica.</p>
+      <!-- CONDICIONAL 3: Administrador asigna Sede y Jornada a la Manipuladora / Jefa -->
+      <div *ngIf="esAdmin" class="bg-emerald-50/50 border border-emerald-200 rounded-xl p-4 space-y-3">
+        <div>
+          <label class="block font-semibold text-slate-800 mb-1.5">
+            <span class="material-symbols-outlined text-sm align-middle text-emerald-600">kitchen</span>
+            Sede Escolar donde Cocinará *
+          </label>
+          <select [(ngModel)]="form.id_sede"
+            class="w-full px-3.5 py-2.5 bg-white border border-emerald-300 rounded-xl text-xs text-slate-900 outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 transition cursor-pointer">
+            <option [ngValue]="null" disabled selected>Selecciona la sede escolar...</option>
+            <option *ngFor="let sede of sedesDisponibles" [value]="sede.id_sede || sede.id">
+              {{ sede.nombre_sede || sede.nombre }} - {{ sede.direccion || 'Sede institucional' }}
+            </option>
+          </select>
+          <p class="text-[11px] text-slate-500 m-0 mt-1.5">Esta manipuladora registrará asistencia y menús de esta sede específica.</p>
+        </div>
+
+        <div *ngIf="esRolJefa()">
+          <label class="block font-semibold text-slate-800 mb-1.5">
+            <span class="material-symbols-outlined text-sm align-middle text-emerald-600">schedule</span>
+            Jornada Asignada a la Jefa de manipuladoras *
+          </label>
+          <select [(ngModel)]="form.id_jornada"
+            class="w-full px-3.5 py-2.5 bg-white border border-emerald-300 rounded-xl text-xs text-slate-900 outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 transition cursor-pointer">
+            <option [ngValue]="null" disabled selected>Selecciona la jornada escolar...</option>
+            <option *ngFor="let j of jornadasDisponibles" [value]="j.id_jornada || j.id">
+              {{ j.nombre_jornada || j.nombre }}
+            </option>
+          </select>
+          <p class="text-[11px] text-slate-500 m-0 mt-1.5">Limita la consulta de gramajes y menús de la Jefa a esta sede y jornada.</p>
+        </div>
       </div>
 
       <!-- Fila 4: Contraseña Temporal -->

@@ -5,6 +5,12 @@ import { AuthService } from './auth.service';
 export const roleGuard: CanActivateFn = (route) => {
   const authService = inject(AuthService);
   const router = inject(Router);
+
+  if (typeof authService.estaAutenticado === 'function' && !authService.estaAutenticado()) {
+    authService.limpiarSesion?.();
+    return router.createUrlTree(['/login']);
+  }
+
   const usuario = authService.obtenerUsuario();
   const rol = authService.normalizarRol(usuario?.rol);
   const rolesPermitidos = (route.data?.['roles'] as string[] | undefined) || [];

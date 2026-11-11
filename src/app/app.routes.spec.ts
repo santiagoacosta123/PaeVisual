@@ -23,6 +23,8 @@ describe('delivery routes', () => {
       'super administrador',
       'super admin',
       'supervisor',
+      'coordinador',
+      'coordinador pae',
     ]);
   });
 

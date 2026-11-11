@@ -130,20 +130,8 @@
         </button>
       </div>
 
-      <!-- Segmentado de Tipo + Buscador -->
+      <!-- Buscador -->
       <div class="he-controls-right">
-        <div class="he-type-segmented">
-          <button type="button" class="he-type-btn" [class.active]="filtroMercado === 'Todas'" (click)="filtroMercado = 'Todas'">
-            Todas
-          </button>
-          <button type="button" class="he-type-btn" [class.active]="filtroMercado === 'Perecederos'" (click)="filtroMercado = 'Perecederos'">
-            Perecederos
-          </button>
-          <button type="button" class="he-type-btn" [class.active]="filtroMercado === 'Granos'" (click)="filtroMercado = 'Granos'">
-            Granos
-          </button>
-        </div>
-
         <div class="he-search-box">
           <span class="material-symbols-outlined he-search-icon" aria-hidden="true">search</span>
           <input
@@ -164,6 +152,17 @@
         </div>
       </div>
 
+    </div>
+
+    <div *ngIf="gruposPorFecha.length > 1" class="he-groups-controls">
+      <span class="he-groups-caption">
+        <span class="material-symbols-outlined" aria-hidden="true">calendar_month</span>
+        Entregas agrupadas por día
+      </span>
+      <div class="he-groups-control-actions">
+        <button type="button" (click)="expandirGrupos()">Expandir todos</button>
+        <button type="button" (click)="contraerGrupos()">Contraer todos</button>
+      </div>
     </div>
 
     <!-- Tabla de Entregas -->
@@ -202,100 +201,132 @@
             </td>
           </tr>
 
-          <!-- Filas de datos -->
-          <tr *ngFor="let entrega of entregasFiltradas">
-            <!-- Fecha -->
-            <td style="font-weight: 600; color: #0f172a; white-space: nowrap;">
-              {{ entrega.fechaRecepcion | date:'dd/MM/yyyy' }}
-            </td>
-
-            <!-- Insumo -->
-            <td>
-              <div class="he-primary-name">{{ entrega.ingrediente }}</div>
-              <div *ngIf="entrega.observaciones" class="he-sub-name" [title]="entrega.observaciones">
-                {{ entrega.observaciones }}
-              </div>
-            </td>
-
-            <!-- Destino -->
-            <td>
-              <span style="font-weight: 600; color: #334155;">{{ entrega.institucionNombre || institucionNombreUsuario || 'Institución asignada' }}</span>
-              <span *ngIf="tieneSedes && entrega.sedeNombre" style="display:block; font-size:11.5px; color:#b45309;">
-                {{ entrega.sedeNombre }}
-              </span>
-            </td>
-
-            <!-- Tipo -->
-            <td style="text-align: center;">
-              <span class="he-tag-market" [ngClass]="entrega.tipoMercado === 'Granos' ? 'grano' : 'perecedero'">
-                {{ entrega.tipoMercado }}
-              </span>
-            </td>
-
-            <!-- Cantidad -->
-            <td style="text-align: center; white-space: nowrap;">
-              <strong style="color: #0f172a; font-weight: 800;">{{ entrega.cantidad }}</strong>
-              <span style="font-size: 11.5px; color: #64748b; margin-left: 3px;">{{ entrega.unidad || 'Kg' }}</span>
-            </td>
-
-            <!-- Estado -->
-            <td style="text-align: center;">
-              <span *ngIf="(entrega.estado || 'EN_TRANSITO').toUpperCase() === 'EN_TRANSITO'" class="he-status-badge transito">
-                <span class="he-status-dot"></span>
-                <span>En tránsito</span>
-              </span>
-
-              <span *ngIf="(entrega.estado || '').toUpperCase() === 'RECIBIDA'" class="he-status-badge recibida">
-                <span class="he-status-dot"></span>
-                <span>Recibida OK</span>
-              </span>
-
-              <span *ngIf="(entrega.estado || '').toUpperCase() === 'CON_NOVEDAD' || (entrega.estado || '').toUpperCase() === 'RECHAZADA'" class="he-status-badge novedad">
-                <span class="he-status-dot"></span>
-                <span>{{ (entrega.estado || '').toUpperCase() === 'RECHAZADA' ? 'Rechazada' : 'Con Novedad' }}</span>
-              </span>
-            </td>
-
-            <!-- Acciones -->
-            <td style="text-align: right; white-space: nowrap;">
-              <!-- Botón Recibir para Administrador cuando la entrega está en tránsito -->
-              <button
-                *ngIf="esAdministrador && (entrega.estado || 'EN_TRANSITO').toUpperCase() === 'EN_TRANSITO'"
-                type="button"
-                class="he-btn-receive"
-                (click)="abrirModalRecepcion(entrega)"
-                title="Inspeccionar y confirmar recepción"
-              >
-                <span>Recibir</span>
-              </button>
-
-              <!-- Indicador para entregas ya recibidas -->
-              <span *ngIf="(entrega.estado || '').toUpperCase() === 'RECIBIDA'" class="he-text-accredited">
-                <span class="material-symbols-outlined" style="font-size: 15px;">check_circle</span>
-                <span>Acreditada</span>
-              </span>
-
-              <!-- Botón detalle para novedades -->
-              <button
-                *ngIf="(entrega.estado || '').toUpperCase() === 'CON_NOVEDAD' || (entrega.estado || '').toUpperCase() === 'RECHAZADA'"
-                type="button"
-                class="he-btn-view-detail"
-                (click)="verDetalleNovedad(entrega)"
-              >
-                Ver novedad
-              </button>
-
-              <!-- Opciones de edición / eliminación si es Super Admin -->
-              <div *ngIf="esSuperAdmin" style="display:inline-flex; align-items:center; gap:6px; margin-left:8px;">
-                <button type="button" (click)="editar(entrega)" title="Editar entrega" style="background:none; border:none; cursor:pointer; color:#64748b; padding:2px;">
-                  <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+          <ng-container *ngFor="let grupo of gruposPorFecha">
+            <tr class="he-day-group-row">
+              <td colspan="7">
+                <button
+                  type="button"
+                  class="he-day-group-toggle"
+                  [attr.aria-expanded]="grupoEstaExpandido(grupo.fecha)"
+                  (click)="alternarGrupoFecha(grupo.fecha)"
+                >
+                  <span class="material-symbols-outlined he-day-group-chevron" aria-hidden="true">
+                    {{ grupoEstaExpandido(grupo.fecha) ? 'expand_less' : 'expand_more' }}
+                  </span>
+                  <span class="he-day-group-date">{{ formatoFecha(grupo.fecha) }}</span>
+                  <span class="he-day-group-count">
+                    {{ grupo.entregas.length }} {{ grupo.entregas.length === 1 ? 'entrega' : 'entregas' }}
+                  </span>
+                  <span *ngIf="grupo.pendientes > 0" class="he-day-group-pending">
+                    <span class="material-symbols-outlined" aria-hidden="true">schedule</span>
+                    {{ grupo.pendientes }} por recibir
+                  </span>
+                  <span *ngIf="grupo.recibidas > 0" class="he-day-group-received">
+                    <span class="material-symbols-outlined" aria-hidden="true">check_circle</span>
+                    {{ grupo.recibidas }} recibidas
+                  </span>
+                  <span *ngIf="grupo.novedades > 0" class="he-day-group-issues">
+                    <span class="material-symbols-outlined" aria-hidden="true">warning</span>
+                    {{ grupo.novedades }} con novedad
+                  </span>
                 </button>
-                <button type="button" (click)="eliminar(entrega)" title="Eliminar entrega" style="background:none; border:none; cursor:pointer; color:#ef4444; padding:2px;">
-                  <span class="material-symbols-outlined" style="font-size:17px;">delete</span>
-                </button>
-              </div>
-            </td>
-          </tr>
+              </td>
+            </tr>
+
+            <ng-container *ngIf="grupoEstaExpandido(grupo.fecha)">
+              <tr *ngFor="let entrega of grupo.entregas">
+                <td style="font-weight: 600; color: #0f172a; white-space: nowrap;">
+                  {{ formatoFecha(entrega.fechaRecepcion) }}
+                </td>
+
+                <td>
+                  <div class="he-primary-name">{{ entrega.ingrediente }}</div>
+                  <div *ngIf="entrega.observaciones" class="he-sub-name" [title]="entrega.observaciones">
+                    {{ entrega.observaciones }}
+                  </div>
+                </td>
+
+                <td>
+                  <span style="font-weight: 600; color: #334155;">{{ entrega.institucionNombre || institucionNombreUsuario || 'Institución asignada' }}</span>
+                  <span *ngIf="tieneSedes && entrega.sedeNombre" style="display:block; font-size:11.5px; color:#b45309;">
+                    {{ entrega.sedeNombre }}
+                  </span>
+                </td>
+
+                <td style="text-align: center;">
+                  <span class="he-tag-market" [ngClass]="entrega.tipoMercado === 'Granos' ? 'grano' : 'perecedero'">
+                    {{ entrega.tipoMercado }}
+                  </span>
+                </td>
+
+                <td style="text-align: center; white-space: nowrap;">
+                  <strong style="color: #0f172a; font-weight: 800;">{{ entrega.cantidad }}</strong>
+                  <span style="font-size: 11.5px; color: #64748b; margin-left: 3px;">{{ entrega.unidad || 'Kg' }}</span>
+                </td>
+
+                <td style="text-align: center;">
+                  <span *ngIf="['EN_TRANSITO', 'PENDIENTE', 'EN_PROCESO'].includes((entrega.estado || 'EN_TRANSITO').toUpperCase())" class="he-status-badge transito">
+                    <span class="he-status-dot"></span>
+                    <span>En tránsito</span>
+                  </span>
+
+                  <span *ngIf="(entrega.estado || '').toUpperCase() === 'RECIBIDA'" class="he-status-badge recibida">
+                    <span class="he-status-dot"></span>
+                    <span>Recibida OK</span>
+                  </span>
+
+                  <span *ngIf="(entrega.estado || '').toUpperCase() === 'CON_NOVEDAD' || (entrega.estado || '').toUpperCase() === 'RECHAZADA'" class="he-status-badge novedad">
+                    <span class="he-status-dot"></span>
+                    <span>{{ (entrega.estado || '').toUpperCase() === 'RECHAZADA' ? 'Rechazada' : 'Con Novedad' }}</span>
+                  </span>
+                </td>
+
+                <td style="text-align: right; white-space: nowrap;">
+                  <div *ngIf="esAdministrador && ['EN_TRANSITO', 'PENDIENTE', 'EN_PROCESO'].includes((entrega.estado || 'EN_TRANSITO').toUpperCase())" class="he-delivery-actions">
+                    <button
+                      type="button"
+                      class="he-btn-receive"
+                      (click)="abrirModalRecepcion(entrega)"
+                      title="Inspeccionar y confirmar recepción"
+                    >
+                      <span>Recibir</span>
+                    </button>
+                    <button
+                      type="button"
+                      class="he-btn-reject"
+                      (click)="abrirModalRechazo(entrega)"
+                      title="Rechazar toda la entrega"
+                    >
+                      <span>Rechazar</span>
+                    </button>
+                  </div>
+
+                  <span *ngIf="(entrega.estado || '').toUpperCase() === 'RECIBIDA'" class="he-text-accredited">
+                    <span class="material-symbols-outlined" style="font-size: 15px;">check_circle</span>
+                    <span>Acreditada</span>
+                  </span>
+
+                  <button
+                    *ngIf="(entrega.estado || '').toUpperCase() === 'CON_NOVEDAD' || (entrega.estado || '').toUpperCase() === 'RECHAZADA'"
+                    type="button"
+                    class="he-btn-view-detail"
+                    (click)="verDetalleNovedad(entrega)"
+                  >
+                    Ver novedad
+                  </button>
+
+                  <div *ngIf="esSuperAdmin" style="display:inline-flex; align-items:center; gap:6px; margin-left:8px;">
+                    <button type="button" (click)="editar(entrega)" title="Editar entrega" style="background:none; border:none; cursor:pointer; color:#64748b; padding:2px;">
+                      <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+                    </button>
+                    <button type="button" (click)="eliminar(entrega)" title="Eliminar entrega" style="background:none; border:none; cursor:pointer; color:#ef4444; padding:2px;">
+                      <span class="material-symbols-outlined" style="font-size:17px;">delete</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </ng-container>
+          </ng-container>
         </tbody>
       </table>
     </div>
@@ -319,8 +350,10 @@
             <span class="material-symbols-outlined" style="font-size: 20px;">task_alt</span>
           </div>
           <div>
-            <h3 class="he-modal-title">Control de Calidad y Recepción</h3>
-            <p class="he-modal-sub">Inspecciona el estado físico del insumo antes de acreditarlo.</p>
+            <h3 class="he-modal-title">{{ modoRechazoDirecto ? 'Rechazar entrega' : 'Control de Calidad y Recepción' }}</h3>
+            <p class="he-modal-sub">
+              {{ modoRechazoDirecto ? 'Confirma el rechazo total e indica el motivo.' : 'Inspecciona el estado físico del insumo antes de acreditarlo.' }}
+            </p>
           </div>
         </div>
         <button type="button" class="he-modal-close" (click)="cerrarModalRecepcion()" title="Cerrar">
@@ -347,6 +380,7 @@
               type="number"
               [(ngModel)]="formRecepcion.cantidadRecibida"
               (input)="onCambioCantidades('recibida')"
+              [readonly]="modoRechazoDirecto"
               min="0"
               [max]="entregaSeleccionada.cantidad || 0"
               step="0.01"
@@ -360,6 +394,7 @@
               type="number"
               [(ngModel)]="formRecepcion.cantidadRechazada"
               (input)="onCambioCantidades('rechazada')"
+              [readonly]="modoRechazoDirecto"
               min="0"
               [max]="entregaSeleccionada.cantidad || 0"
               step="0.01"
@@ -386,7 +421,7 @@
         </button>
         <button type="button" class="he-btn-confirm" (click)="confirmarRecepcion()" [disabled]="procesandoRecepcion">
           <span *ngIf="procesandoRecepcion" class="material-symbols-outlined animate-spin" style="font-size: 16px;">progress_activity</span>
-          <span>{{ procesandoRecepcion ? 'Procesando...' : 'Confirmar e Ingresar' }}</span>
+          <span>{{ procesandoRecepcion ? 'Procesando...' : (modoRechazoDirecto ? 'Confirmar rechazo' : 'Confirmar e ingresar') }}</span>
         </button>
       </div>
     </div>

@@ -10,7 +10,14 @@ import { SweetAlertService } from '../sweet-alert.service';
 import { EntregasService } from '../services/entregas.service';
 import { AuthService, InstitucionAsignada } from '../core/auth/auth.service';
 import { FacturasCompraService, InventarioCentralItem } from '../services/facturas-compra.service';
-import type { TipoMercadoOpcion } from '../features/entregas/services/entregas.service';
+import type {
+  TipoMercadoOpcion,
+  CalculoAbastecimientoResponse,
+  ProductoCalculado,
+  DetallePorGradoItem,
+  CalculoEntregaSoporte,
+  DespachoLotePayload,
+} from '../features/entregas/services/entregas.service';
 
 // ===================== TIPOS =====================
 interface Opcion { id: number; nombre: string; }
@@ -27,6 +34,10 @@ interface FilaEntrega {
   cantidadRechazada?: number | null;
   motivoRechazo?: string;
   usuarioReceptorNombre?: string;
+  idCalculoEntrega?: number;
+  documentoEntrega?: string;
+  cantidadRequeridaCalculo?: number | null;
+  superaCalculo?: boolean;
 }
 
 interface ProductoCatalogo {
@@ -67,6 +78,9 @@ interface GrupoEntrada {
   responsable: string; items: FilaEntrega[]; productos: ResumenEntradaProducto[];
   estadoAprobacion?: 'ACEPTADA' | 'RECHAZADA' | 'CON_NOVEDAD' | 'EN_PROCESO';
   motivoRechazo?: string;
+  documentoEntrega?: string;
+  idCalculoEntrega?: number;
+  primerIdEntrega?: number;
 }
 interface GrupoEnvio { clave: string; destino: string; fechaSalida: string; fechaEntrega: string; responsable: string; items: EnvioRegistro[]; }
 
@@ -168,7 +182,10 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       const anterior = this.idInstitucion;
       this.institucionActiva = institucion;
       this.idInstitucion = institucion?.id_institucion ?? this.authService.obtenerUsuario()?.id_institucion ?? null;
-      if (anterior !== this.idInstitucion) this.cargarHistorial();
+      if (anterior !== this.idInstitucion) {
+        this.cargarHistorial();
+        if (this.idSede != null) this.calcularAbastecimiento(true);
+      }
       this.cdr.markForCheck();
     });
 
@@ -177,14 +194,23 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       if (nuevaSede !== this.idSede) {
         this.idSede = nuevaSede;
         this.cargarHistorial();
+        if (this.idSede != null) this.calcularAbastecimiento(true);
+        else this.calculoAbastecimiento = null;
         this.cdr.markForCheck();
       }
     });
 
     this.subRuta = this.route.queryParamMap.subscribe(params => {
-      const sede = Number(params.get('sede'));
-      const idSede = Number.isInteger(sede) && sede > 0 ? sede : null;
-      if (idSede !== this.idSede) { this.idSede = idSede; this.cargarHistorial(); }
+      if (params.has('sede')) {
+        const sede = Number(params.get('sede'));
+        const idSede = Number.isInteger(sede) && sede > 0 ? sede : null;
+        if (idSede !== this.idSede) {
+          this.idSede = idSede;
+          this.cargarHistorial();
+          if (this.idSede != null) this.calcularAbastecimiento(true);
+          else this.calculoAbastecimiento = null;
+        }
+      }
       const reponer = params.get('reponer');
       if (reponer) { this.textoFiltro = reponer; }
       this.cdr.markForCheck();
@@ -231,7 +257,8 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
 
   @HostListener('document:keydown.escape')
   alPresionarEsc(): void {
-    if (this.detalleEntrada) this.cerrarDetalleEntrada();
+    if (this.mostrarModalSoporte) this.mostrarModalSoporte = false;
+    else if (this.detalleEntrada) this.cerrarDetalleEntrada();
     else if (this.mostrarModalInventario) this.mostrarModalInventario = false;
     else if (this.mostrarModalEntrada && !this.guardandoEntrada) this.mostrarModalEntrada = false;
     else this.modalDiaAbierto = false;
@@ -506,7 +533,10 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
   private reconstruirHistorial(): void {
     this.historial = this.entregasRaw.map(i => this.aFila(i));
     this.seleccionados = this.seleccionados
-      .map(s => this.ultimaEntradaDe(s.idIngrediente))
+      .map(s => {
+        const latest = this.ultimaEntradaDe(s.idIngrediente);
+        return latest ? { ...s, ...latest, idTipoMercado: s.idTipoMercado ?? latest.idTipoMercado, unidad: s.unidad || latest.unidad } : s;
+      })
       .filter((e): e is FilaEntrega => !!e);
 
     if (this.detalleEntrada) {
@@ -666,6 +696,11 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       cantidadRechazada: cantRech,
       motivoRechazo: motRech,
       usuarioReceptorNombre: receptorNombre,
+      idCalculoEntrega: item.id_calculo_entrega ? Number(item.id_calculo_entrega) : undefined,
+      documentoEntrega: item.documento_entrega || '',
+      cantidadRequeridaCalculo:
+        item.cantidad_requerida_calculo != null ? Number(item.cantidad_requerida_calculo) : null,
+      superaCalculo: Boolean(item.supera_calculo),
     };
   }
 
@@ -727,6 +762,9 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       }
       g.responsable ||= e.responsable || '';
       g.hora ||= e.hora || '';
+      g.documentoEntrega ||= e.documentoEntrega || '';
+      g.idCalculoEntrega ||= e.idCalculoEntrega;
+      if (!g.primerIdEntrega && e.id) g.primerIdEntrega = e.id;
       g.items.push(e);
     }
 
@@ -1306,13 +1344,229 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
 
   cancelarDeslizar(): void { this.swipeInicio = null; this.swipeId = null; this.swipeDx = 0; }
 
+  // ===================== CÁLCULO AUTOMÁTICO POR SEDE Y GRAMAJES (HU 5) =====================
+  calculoAbastecimiento: CalculoAbastecimientoResponse | null = null;
+  cargandoCalculo = false;
+  errorCalculo = '';
+  idJornadaCalculo: number | null = null;
+  diasPerecederosFiltro: number | null = null;
+  diasNoPerecederosFiltro: number | null = null;
+  incluirTodosGramajes = false;
+  filtroTipoCalculo: 'Todos' | 'Perecedero' | 'No perecedero' = 'Todos';
+  ingredienteExpandidoId: number | null = null;
+  mostrarCalculoPanel = true;
+
+  // Autorización de excedentes y auditoría de soporte de cálculo
+  autorizacionExceso = false;
+  autorizadoPor = '';
+  justificacionExceso = '';
+  ultimoDocumentoCalculo = '';
+  mostrarModalSoporte = false;
+  cargandoSoporte = false;
+  soporteSeleccionado: CalculoEntregaSoporte | null = null;
+
+  get sedesDisponibles(): any[] {
+    return this.institucionActiva?.sedes ?? [];
+  }
+
+  get productosCalculoFiltrados(): ProductoCalculado[] {
+    const lista = this.calculoAbastecimiento?.productos_sugeridos ?? [];
+    const q = this.textoFiltro.trim().toLowerCase();
+    return lista.filter(p => {
+      if (this.filtroTipoCalculo === 'Perecedero' && !p.es_perecedero) return false;
+      if (this.filtroTipoCalculo === 'No perecedero' && p.es_perecedero) return false;
+      if (q && !p.nombre_ingrediente.toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }
+
+  alSeleccionarSede(nuevaSede: number | null): void {
+    const idNorm = nuevaSede != null ? Number(nuevaSede) : null;
+    if (idNorm === this.idSede && this.calculoAbastecimiento) return;
+    this.idSede = idNorm;
+    this.idJornadaCalculo = null;
+    this.diasPerecederosFiltro = null;
+    this.diasNoPerecederosFiltro = null;
+    this.ingredienteExpandidoId = null;
+    this.cargarHistorial();
+    if (this.idSede != null) {
+      this.calcularAbastecimiento(true);
+    } else {
+      this.calculoAbastecimiento = null;
+      this.errorCalculo = '';
+    }
+    this.cdr.markForCheck();
+  }
+
+  calcularAbastecimiento(sincronizarDiasDesdeContrato = false): void {
+    if (this.idSede == null) {
+      this.calculoAbastecimiento = null;
+      return;
+    }
+    const sedeSolicitada = this.idSede;
+    this.cargandoCalculo = true;
+    this.errorCalculo = '';
+
+    this.entregasService.calcularMercado({
+      id_sede: sedeSolicitada,
+      id_institucion: this.idInstitucion,
+      id_jornada: this.idJornadaCalculo,
+      dias_perecederos: sincronizarDiasDesdeContrato ? null : this.diasPerecederosFiltro,
+      dias_no_perecederos: sincronizarDiasDesdeContrato ? null : this.diasNoPerecederosFiltro,
+      incluir_todos_gramajes: this.incluirTodosGramajes,
+    }).subscribe({
+      next: resp => {
+        if (this.idSede !== sedeSolicitada) return;
+        this.calculoAbastecimiento = resp;
+        if (sincronizarDiasDesdeContrato || this.diasPerecederosFiltro == null) {
+          this.diasPerecederosFiltro = resp.periodicidad?.dias_perecederos ?? this.diasPerecederosFiltro;
+        }
+        if (sincronizarDiasDesdeContrato || this.diasNoPerecederosFiltro == null) {
+          this.diasNoPerecederosFiltro = resp.periodicidad?.dias_no_perecederos ?? this.diasNoPerecederosFiltro;
+        }
+        this.cargandoCalculo = false;
+        this.cdr.markForCheck();
+      },
+      error: err => {
+        if (this.idSede !== sedeSolicitada) return;
+        this.cargandoCalculo = false;
+        this.calculoAbastecimiento = null;
+        this.errorCalculo = this.describirError(err);
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  toggleDetalleGrado(idIngrediente: number): void {
+    this.ingredienteExpandidoId = this.ingredienteExpandidoId === idIngrediente ? null : idIngrediente;
+  }
+
+  calculadoDe(sel: FilaEntrega): ProductoCalculado | null {
+    return this.calculoAbastecimiento?.productos_sugeridos?.find(p => p.id_ingrediente === sel.idIngrediente) ?? null;
+  }
+
+  get itemsConExcesoCalculo(): Array<{ sel: FilaEntrega; enviado: number; requerido: number }> {
+    if (!this.calculoAbastecimiento) return [];
+    const salida: Array<{ sel: FilaEntrega; enviado: number; requerido: number }> = [];
+    for (const sel of this.productosParaEnviar) {
+      const enviado = this.cantidadEnviarDe(sel);
+      const calc = this.calculadoDe(sel);
+      const requerido = calc ? Number(calc.cantidad_sugerida_despacho ?? 0) : 0;
+      if (enviado > requerido + 0.0001) {
+        salida.push({ sel, enviado, requerido });
+      }
+    }
+    return salida;
+  }
+
+  private asegurarSeleccionDesdeCalculo(prod: ProductoCalculado): FilaEntrega {
+    let fila = this.seleccionados.find(s => s.idIngrediente === prod.id_ingrediente);
+    if (fila) return fila;
+    const catProd = this.catalogoMenu.find(c => c.id === prod.id_ingrediente);
+    const ultima = this.ultimaEntradaDe(prod.id_ingrediente);
+    const fechaHoy = this.fechaHoy();
+    const esPer = Boolean(prod.es_perecedero);
+    fila = {
+      ...ultima,
+      idIngrediente: prod.id_ingrediente,
+      idTipoMercado: prod.id_tipo_mercado ?? catProd?.idTipoMercado ?? this.idTipoMercadoDe(esPer),
+      ingrediente: prod.nombre_ingrediente,
+      tipoMercado: esPer ? 'Perecedero' : 'No perecedero',
+      categoria: esPer ? 'Perecederos' : 'Granos',
+      frecuencia: prod.periodicidad_aplicada || (esPer ? 'Semanal' : 'Mensual'),
+      cantidad: prod.cantidad_sugerida_despacho,
+      unidad: this.normalizarUnidad(prod.unidad_abreviatura || prod.unidad_medida) || prod.unidad_abreviatura || 'Kg',
+      fechaRecepcion: ultima?.fechaRecepcion || fechaHoy,
+      fechaVencimiento: catProd
+        ? this.fechaVencimientoParaEnvio(catProd, ultima?.fechaVencimiento)
+        : this.sumarDiasISO(fechaHoy, esPer ? 7 : 90),
+    };
+    this.seleccionados.push(fila);
+    return fila;
+  }
+
+  cargarProductoCalculo(prod: ProductoCalculado): void {
+    if (prod.error_conversion) {
+      void this.alertas.warning(
+        'Conversión incompatible',
+        prod.alerta_conversion || `Revisa la equivalencia de unidades para ${prod.nombre_ingrediente}.`,
+      );
+      return;
+    }
+    const sugerido = Math.round(Number(prod.cantidad_sugerida_despacho ?? 0) * 100) / 100;
+    if (sugerido <= 0) {
+      void this.alertas.info(
+        'Stock suficiente en sede',
+        `${prod.nombre_ingrediente} ya cubre el requerimiento con el inventario actual de la sede.`,
+      );
+      return;
+    }
+    const fila = this.asegurarSeleccionDesdeCalculo(prod);
+    this.fijarCantidadEnviar(fila, sugerido);
+    this.mostrarHistorialEnvios = false;
+    this.cdr.markForCheck();
+  }
+
+  cargarTodosSugeridos(): void {
+    const elegibles = this.productosCalculoFiltrados.filter(
+      p => !p.error_conversion && Number(p.cantidad_sugerida_despacho ?? 0) > 0,
+    );
+    if (!elegibles.length) {
+      void this.alertas.info('Sin cantidades pendientes', 'No hay productos con cantidad neta sugerida positiva para cargar.');
+      return;
+    }
+    elegibles.forEach(p => {
+      const fila = this.asegurarSeleccionDesdeCalculo(p);
+      this.fijarCantidadEnviar(fila, Math.round(Number(p.cantidad_sugerida_despacho) * 100) / 100);
+    });
+    this.mostrarHistorialEnvios = false;
+    this.cdr.markForCheck();
+  }
+
+  verSoporteCalculoPorEntrega(idEntrega?: number): void {
+    if (!idEntrega) return;
+    this.cargandoSoporte = true;
+    this.mostrarModalSoporte = true;
+    this.soporteSeleccionado = null;
+    this.entregasService.obtenerSoporteCalculoPorEntrega(idEntrega).subscribe({
+      next: soporte => {
+        this.soporteSeleccionado = soporte;
+        this.cargandoSoporte = false;
+        this.cdr.markForCheck();
+      },
+      error: err => {
+        this.cargandoSoporte = false;
+        this.mostrarModalSoporte = false;
+        void this.alertas.error('Soporte no disponible', this.describirError(err));
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
   // ===================== ENVÍO DESDE EL PANEL (un botón para uno o varios productos) =====================
   private cantidadesEnviar: Record<number, number | null> = {};
   errorEnvioPanel = '';
   guardandoEnvio = false;
 
   // La fecha del envío es siempre la de hoy y se pone sola; el responsable es el usuario con sesión iniciada
-  get envioFecha(): string { return this.fechaHoy(); }
+  private _envioFechaOverride: string | null = null;
+  private _envioResponsableOverride: string | null = null;
+  get envioFecha(): string {
+    return this._envioFechaOverride !== null ? this._envioFechaOverride : this.fechaHoy();
+  }
+  set envioFecha(valor: string) {
+    this._envioFechaOverride = valor;
+  }
+  get envioResponsable(): string {
+    if (this._envioResponsableOverride !== null) {
+      return this._envioResponsableOverride;
+    }
+    const usuario: any = this.authService.obtenerUsuario();
+    return usuario?.nombre ?? usuario?.username ?? usuario?.first_name ?? 'Sistema';
+  }
+  set envioResponsable(valor: string) {
+    this._envioResponsableOverride = valor;
+  }
 
   disponibleDe(sel: FilaEntrega): number {
     return sel.idIngrediente == null ? 0 : this.saldosInventario.get(sel.idIngrediente) ?? 0;
@@ -1343,7 +1597,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       if (!producto) return sel;
       return {
         ...sel,
-        idTipoMercado: this.idTipoMercadoDeProducto(producto),
+        idTipoMercado: sel.idTipoMercado ?? this.idTipoMercadoDeProducto(producto),
         fechaVencimiento: this.fechaVencimientoParaEnvio(producto, sel.fechaVencimiento),
       };
     });
@@ -1351,8 +1605,21 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     this.errorEnvioPanel = '';
 
     if (!items.length) return fallo('Escribe la cantidad a enviar de al menos un producto.');
-    const excedidos = items.filter(s => this.cantidadEnviarDe(s) > this.disponibleDe(s));
-    if (excedidos.length) return fallo(`No puedes enviar más de lo disponible: ${excedidos.map(s => s.ingrediente).join(', ')}.`);
+    const excedidosStock = items.filter(s => this.cantidadEnviarDe(s) > this.disponibleDe(s));
+    if (excedidosStock.length) return fallo(`No puedes enviar más de lo disponible en bodega: ${excedidosStock.map(s => s.ingrediente).join(', ')}.`);
+
+    const excesosCalculo = this.itemsConExcesoCalculo;
+    if (excesosCalculo.length > 0) {
+      if (!this.autorizacionExceso) {
+        return fallo(
+          `Las cantidades de ${excesosCalculo.map(x => x.sel.ingrediente).join(', ')} superan el cálculo nutricional. Marca la autorización e ingresa responsable y justificación.`,
+        );
+      }
+      if (!this.autorizadoPor.trim() || this.justificacionExceso.trim().length < 5) {
+        return fallo('Ingresa quién autoriza el excedente y una justificación técnica de al menos 5 caracteres.');
+      }
+    }
+
     const incompletos = items.flatMap(s => {
       const producto = this.catalogoMenu.find(p => p.id === s.idIngrediente);
       const mercadoEsperado = producto
@@ -1376,8 +1643,87 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     const hoy = this.envioFecha;                       // siempre la fecha de hoy
     // El responsable es el usuario que inició sesión (ya no se escribe a mano)
     const usuario: any = this.authService.obtenerUsuario();
-    const responsable: string = usuario?.nombre ?? usuario?.username ?? usuario?.first_name ?? 'Sistema';
+    const responsable: string = (this.envioResponsable || '').trim();
+    if (!hoy.trim()) return fallo('Indica la fecha de envío.');
+    if (!responsable) return fallo('Indica el responsable del envío.');
     this.guardandoEnvio = true;
+
+    // Flujo HU 5 cuando hay una sede específica seleccionada: despacho-lote atómico + snapshot auditable
+    if (this.idSede != null) {
+      const payloadLote: DespachoLotePayload = {
+        id_sede: this.idSede,
+        fecha_entrega: hoy,
+        id_jornada: this.idJornadaCalculo ?? undefined,
+        id_contrato: this.calculoAbastecimiento?.contrato?.id_contrato ?? undefined,
+        dias_perecederos: this.diasPerecederosFiltro ?? undefined,
+        dias_no_perecederos: this.diasNoPerecederosFiltro ?? undefined,
+        incluir_todos_gramajes: this.incluirTodosGramajes,
+        validar_contra_calculo: this.calculoAbastecimiento != null,
+        autorizacion_exceso: this.autorizacionExceso,
+        autorizado_por: this.autorizacionExceso ? this.autorizadoPor.trim() : '',
+        justificacion_exceso: this.autorizacionExceso ? this.justificacionExceso.trim() : '',
+        observaciones: `Responsable: ${responsable}`,
+        frecuencia: items[0]?.frecuencia || 'Semanal',
+        items: items.map(sel => ({
+          id_ingrediente: sel.idIngrediente!,
+          cantidad: this.cantidadEnviarDe(sel),
+          unidad: this.normalizarUnidad(sel.unidad) || 'Kg',
+          id_tipo_mercado: sel.idTipoMercado!,
+          fecha_vencimiento: sel.fechaVencimiento,
+        })),
+      };
+
+      this.entregasService.despachoLote(payloadLote).subscribe({
+        next: resp => {
+          this.guardandoEnvio = false;
+          this.ultimoDocumentoCalculo = resp.codigo_documento;
+          if (resp.calculo_soporte) {
+            this.soporteSeleccionado = resp.calculo_soporte;
+          }
+          const despachos = resp.despachos ?? [];
+          const ahoraISO = new Date().toISOString();
+          const hora = this.horaDe(ahoraISO), lote = resp.codigo_documento || String(Date.now());
+          const registros: EnvioRegistro[] = items.map((sel, i) => ({
+            id: Number(despachos[i]?.id_entrega ?? Date.now() + i),
+            idInstitucion: datos.id_institucion ?? null,
+            ingrediente: sel.ingrediente,
+            cantidad: this.cantidadEnviarDe(sel),
+            unidad: this.normalizarUnidad(sel.unidad) || 'Kg',
+            destino, fechaSalida: hoy, fechaEntrega: hoy, enviadoEl: hoy, responsable,
+          }));
+
+          items.forEach((sel, i) => {
+            const idResp = despachos[i]?.id_entrega;
+            const cant = this.cantidadEnviarDe(sel);
+            const uni = this.normalizarUnidad(sel.unidad) || 'Kg';
+            this.recordarIdEnvio(idResp);
+            this.guardarExtra(idResp, { idIngrediente: sel.idIngrediente, cantidad: cant, unidad: uni, perecedero: this.esPerecedero(sel as any) }, { destino, responsable, hora, fechaRegistro: hoy, loteRegistro: lote });
+            this.fijarCantidadEnviar(sel, null);
+          });
+
+          this.autorizacionExceso = false;
+          this.autorizadoPor = '';
+          this.justificacionExceso = '';
+          this.historialEnvios = [...registros, ...this.historialEnvios];
+          this.cargarHistorial();
+          this.cargarCatalogos();
+          this.calcularAbastecimiento(false);
+          void this.alertas.success(
+            'Despacho registrado con soporte auditable',
+            `${items.length} producto(s) despachados a ${destino}. Documento: ${resp.codigo_documento}.`,
+          );
+          this.cdr.markForCheck();
+        },
+        error: err => {
+          this.guardandoEnvio = false;
+          const msg = err?.error?.error || this.describirError(err);
+          this.errorEnvioPanel = msg;
+          void this.alertas.error('No se pudo confirmar el despacho', msg);
+          this.cdr.markForCheck();
+        },
+      });
+      return;
+    }
 
     const peticiones = items.map(sel => {
       const cantidad = this.cantidadEnviarDe(sel);

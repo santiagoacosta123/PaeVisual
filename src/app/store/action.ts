@@ -7,7 +7,6 @@ export const login = createAction(
     token: string;
     rol: string;
     nombre?: string;
-    password?: string;
     mensaje?: string;
     id_usuario?: number;
     institucion?: string;

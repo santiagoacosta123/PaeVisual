@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { Observable, forkJoin, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { EntregasService, Entrega } from '../features/entregas/services/entregas.service';
-import { AsistenciaDiariaService, AsistenciaDiaria } from './asistencia-diaria.service';
+import { AsistenciaDiariaService } from './asistencia-diaria.service';
 import { SiraeService } from '../features/contratos/services/contratos_pae.service';
 
 export interface GramajeNivel {
@@ -271,6 +271,7 @@ export class PlanillasPaeService {
     institucionNombre: string;
     sedeId: number;
     sedeNombre: string;
+    sedeIds?: number[];
     periodo: string;
     fechaInicio: string;
     fechaFin: string;
@@ -280,7 +281,7 @@ export class PlanillasPaeService {
     const guardada = localStorage.getItem(cacheKey);
 
     return forkJoin({
-      entregas: this.entregasService.cargar().pipe(catchError(() => of([] as Entrega[]))),
+      entregas: this.entregasService.cargar(true),
       contratos: this.siraeService.getContratos().pipe(catchError(() => of([])))
     }).pipe(
       map(({ entregas, contratos }) => {
@@ -293,11 +294,19 @@ export class PlanillasPaeService {
         }
 
         // Buscar contrato de la sede
-        const contratoSede = contratos.find((c: any) =>
-          Number(c.id_sede) === params.sedeId || Number(c.id_institucion) === params.institucionId
+        const contratosInstitucion = contratos.filter((c: any) =>
+          Number(c.id_institucion) === params.institucionId
         );
+        const contratoSede = params.sedeId
+          ? contratos.find((c: any) =>
+            Number(c.id_sede) === params.sedeId && Number(c.id_institucion) === params.institucionId
+          )
+          : undefined;
 
-        const cupoTotal = params.cuposBase || Number(contratoSede?.cupos) || 227;
+        const cupoTotal = params.cuposBase
+          || Number(contratoSede?.cupos)
+          || contratosInstitucion.reduce((total: number, contrato: any) => total + (Number(contrato.cupos) || 0), 0)
+          || 227;
 
         // Distribución estándar oficial observada en la planilla de muestra:
         // Preescolar (25), Primaria 1-3 y 4-5 (99), Secundaria (67), Media y Ciclo (36) => Total: 227
@@ -313,10 +322,19 @@ export class PlanillasPaeService {
         };
 
         // Filtro de entregas registradas por el operador/manipuladora para esta sede
-        const entregasSede = entregas.filter(e =>
-          (!e.idSede || e.idSede === params.sedeId) &&
-          (!e.idInstitucion || e.idInstitucion === params.institucionId)
-        );
+        const sedesInstitucion = new Set([
+          ...(params.sedeIds ?? []),
+          ...contratosInstitucion.map((contrato: any) => Number(contrato.id_sede))
+        ]);
+        const entregasSede = entregas.filter(e => {
+          const idSede = Number(e.idSede);
+          const perteneceInstitucion = Number(e.idInstitucion) === params.institucionId
+            || (Number.isFinite(idSede) && sedesInstitucion.has(idSede));
+          const perteneceSedeSeleccionada = !params.sedeId || idSede === params.sedeId;
+          const recepcionConfirmada = e.estado === 'RECIBIDA' || e.estado === 'CON_NOVEDAD';
+
+          return perteneceInstitucion && perteneceSedeSeleccionada && recepcionConfirmada;
+        });
 
         // Mapear NO PERECEDEROS
         const noPerecederos: FilaNoPerecedero[] = this.NO_PERECEDEROS_BASE.map((item, idx) => {
@@ -431,8 +449,8 @@ export class PlanillasPaeService {
     const guardada = localStorage.getItem(cacheKey);
 
     return forkJoin({
-      asistencias: this.asistenciaService.getAsistencias().pipe(catchError(() => of([] as AsistenciaDiaria[]))),
-      entregas: this.entregasService.cargar().pipe(catchError(() => of([] as Entrega[])))
+      asistencias: this.asistenciaService.getAsistencias(),
+      entregas: this.entregasService.cargar(true)
     }).pipe(
       map(({ asistencias, entregas }) => {
         if (guardada) {

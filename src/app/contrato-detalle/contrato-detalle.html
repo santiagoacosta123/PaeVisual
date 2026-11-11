@@ -1049,4 +1049,482 @@
     </div>
   </div>
 
+  <!-- ======================================================== -->
+  <!-- MODAL DE PRÓRROGA O RENOVACIÓN CONTRACTUAL              -->
+  <!-- ======================================================== -->
+  <div *ngIf="modalProrrogaAbierto"
+       style="position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(4px); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: #ffffff; border-radius: 16px; width: 100%; max-width: 650px; max-height: 90vh; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3); display: flex; flex-direction: column; overflow: hidden; animation: fadeIn 0.2s ease-out;">
+
+      <!-- Encabezado del modal -->
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 18px 24px; border-bottom: 1px solid #f1f5f9; background: #fafafa;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 40px; height: 40px; border-radius: 10px; background: #fef3c7; color: #b45309; display: flex; align-items: center; justify-content: center;">
+            <svg style="width: 22px; height: 22px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div>
+            <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #0f172a;">
+              Registrar Prórroga o Renovación de Contrato
+            </h3>
+            <p style="margin: 2px 0 0 0; font-size: 12px; color: #64748b;">
+              Contrato: <strong>{{ contrato.codigo }}</strong> — {{ contrato.institucion }}
+            </p>
+          </div>
+        </div>
+        <button type="button" (click)="cerrarModalProrroga()"
+                title="Cerrar modal"
+                style="background: transparent; border: none; font-size: 20px; color: #94a3b8; cursor: pointer; padding: 4px 8px; border-radius: 6px; line-height: 1;"
+                onmouseover="this.style.color='#0f172a'; this.style.backgroundColor='#f1f5f9';"
+                onmouseout="this.style.color='#94a3b8'; this.style.backgroundColor='transparent';">
+          ✕
+        </button>
+      </div>
+
+      <!-- Selector de tipo de operación -->
+      <div style="padding: 16px 24px 8px 24px; background: #ffffff;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: #f1f5f9; padding: 4px; border-radius: 10px;">
+          <button type="button"
+                  (click)="cambiarTipoOperacion('PRORROGA')"
+                  [style.background]="tipoOperacionVigencia === 'PRORROGA' ? '#ffffff' : 'transparent'"
+                  [style.color]="tipoOperacionVigencia === 'PRORROGA' ? '#0f172a' : '#64748b'"
+                  [style.font-weight]="tipoOperacionVigencia === 'PRORROGA' ? '700' : '500'"
+                  [style.box-shadow]="tipoOperacionVigencia === 'PRORROGA' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'"
+                  style="border: none; padding: 8px 12px; border-radius: 8px; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.15s;">
+            <svg style="width: 15px; height: 15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+            </svg>
+            Prórroga (Extensión de término)
+          </button>
+
+          <button type="button"
+                  (click)="cambiarTipoOperacion('RENOVACION')"
+                  [style.background]="tipoOperacionVigencia === 'RENOVACION' ? '#ffffff' : 'transparent'"
+                  [style.color]="tipoOperacionVigencia === 'RENOVACION' ? '#0f172a' : '#64748b'"
+                  [style.font-weight]="tipoOperacionVigencia === 'RENOVACION' ? '700' : '500'"
+                  [style.box-shadow]="tipoOperacionVigencia === 'RENOVACION' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'"
+                  style="border: none; padding: 8px 12px; border-radius: 8px; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.15s;">
+            <svg style="width: 15px; height: 15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+            Renovación (Nuevo periodo)
+          </button>
+        </div>
+      </div>
+
+      <!-- Contenido del modal scrollable -->
+      <div style="flex: 1; overflow-y: auto; padding: 12px 24px 20px 24px; display: flex; flex-direction: column; gap: 14px;">
+
+        <!-- Recuadro: Información del contrato actual / anterior conservada -->
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 16px;">
+          <div style="font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
+            Datos del contrato anterior (a conservar en auditoría)
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; font-size: 12px;">
+            <div>
+              <span style="color: #64748b; display: block; font-size: 11px;">Vigencia actual:</span>
+              <span style="font-weight: 600; color: #0f172a;">{{ contrato.fecha_inicio }} → {{ contrato.fecha_fin }}</span>
+            </div>
+            <div>
+              <span style="color: #64748b; display: block; font-size: 11px;">Cupos autorizados:</span>
+              <span style="font-weight: 600; color: #0f172a;">{{ contrato.cupos || 0 }} cupos</span>
+            </div>
+            <div>
+              <span style="color: #64748b; display: block; font-size: 11px;">Estado actual:</span>
+              <span [style.color]="obtenerEstiloEstado(contrato.estado).color" style="font-weight: 700;">
+                ● {{ contrato.estado }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Formulario de nuevas fechas autorizadas -->
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+
+            <!-- Fecha Inicio -->
+            <div>
+              <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px;">
+                Fecha de inicio {{ tipoOperacionVigencia === 'PRORROGA' ? '(mantiene inicio original)' : 'del nuevo periodo *' }}
+              </label>
+              <input type="date"
+                     [(ngModel)]="datosProrroga.nuevaFechaInicio"
+                     [disabled]="tipoOperacionVigencia === 'PRORROGA'"
+                     [style.background]="tipoOperacionVigencia === 'PRORROGA' ? '#f1f5f9' : '#ffffff'"
+                     [style.cursor]="tipoOperacionVigencia === 'PRORROGA' ? 'not-allowed' : 'text'"
+                     style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 12px; color: #0f172a; outline: none; box-sizing: border-box;" />
+              <span *ngIf="tipoOperacionVigencia === 'PRORROGA'" style="font-size: 10px; color: #64748b; margin-top: 2px; display: block;">
+                La prórroga conserva la fecha de inicio del contrato original.
+              </span>
+            </div>
+
+            <!-- Fecha Fin -->
+            <div>
+              <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px;">
+                Nueva fecha de finalización autorizada *
+              </label>
+              <input type="date"
+                     [(ngModel)]="datosProrroga.nuevaFechaFin"
+                     [min]="contrato.fecha_fin"
+                     style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 12px; color: #0f172a; outline: none; box-sizing: border-box;" />
+              <span style="font-size: 10px; color: #0369a1; margin-top: 2px; display: block;">
+                Debe ser posterior a la fecha fin actual ({{ contrato.fecha_fin }}).
+              </span>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+            <!-- Cupos autorizados -->
+            <div>
+              <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px;">
+                Cupos autorizados
+              </label>
+              <input type="number"
+                     min="1"
+                     [(ngModel)]="datosProrroga.nuevosCupos"
+                     placeholder="Ej: 590"
+                     style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 12px; color: #0f172a; outline: none; box-sizing: border-box;" />
+            </div>
+
+            <!-- Número de acto o resolución -->
+            <div>
+              <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px;">
+                Acto administrativo / Resolución de autorización *
+              </label>
+              <input type="text"
+                     [(ngModel)]="datosProrroga.numeroAutorizacion"
+                     placeholder="Ej: Resolución 1420-2026 / Otrosí N° 1"
+                     style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 12px; color: #0f172a; outline: none; box-sizing: border-box;" />
+            </div>
+          </div>
+
+          <!-- Motivo o justificación -->
+          <div>
+            <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px;">
+              Motivo o justificación técnica / jurídica *
+            </label>
+            <textarea rows="2"
+                      [(ngModel)]="datosProrroga.motivo"
+                      placeholder="Indique la justificación para extender o renovar el contrato PAE asegurando la continuidad del servicio..."
+                      style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 12px; color: #0f172a; outline: none; box-sizing: border-box; resize: vertical;"></textarea>
+          </div>
+        </div>
+
+        <!-- Trazabilidad / Auditoría preview -->
+        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 10px 14px; font-size: 11px; color: #166534; display: flex; align-items: center; gap: 8px;">
+          <svg style="width: 16px; height: 16px; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+          </svg>
+          <div>
+            <strong>Registro de auditoría obligatorio:</strong> La operación quedará firmada a nombre de <strong>{{ nombreUsuarioResponsableActual }}</strong> con fecha y hora actual, y actualizará la vigencia a <strong>Activo</strong>.
+          </div>
+        </div>
+
+        <!-- Banner de error si la validación falla -->
+        <div *ngIf="datosProrroga.errorValidacion"
+             style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 10px 14px; font-size: 12px; color: #991b1b; display: flex; align-items: flex-start; gap: 8px;">
+          <svg style="width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+          </svg>
+          <div>{{ datosProrroga.errorValidacion }}</div>
+        </div>
+      </div>
+
+      <!-- Pie del modal -->
+      <div style="display: flex; justify-content: flex-end; align-items: center; gap: 10px; border-top: 1px solid #f1f5f9; padding: 14px 24px; background: #fafafa;">
+        <button type="button"
+                (click)="cerrarModalProrroga()"
+                [disabled]="guardandoProrroga"
+                style="background: #ffffff; border: 1px solid #cbd5e1; color: #334155; padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer;">
+          Cancelar
+        </button>
+        <button type="button"
+                (click)="guardarProrrogaORenovacion()"
+                [disabled]="guardandoProrroga"
+                style="background: #fac94b; border: none; color: #000000; font-weight: 700; padding: 8px 20px; border-radius: 8px; font-size: 12px; cursor: pointer; box-shadow: 0 1px 3px rgba(250, 201, 75, 0.4); display: flex; align-items: center; gap: 6px;"
+                [style.opacity]="guardandoProrroga ? '0.7' : '1'">
+          <span *ngIf="guardandoProrroga" style="display: inline-block; width: 14px; height: 14px; border: 2px solid #000; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite;"></span>
+          {{ tipoOperacionVigencia === 'PRORROGA' ? 'Confirmar Prórroga' : 'Confirmar Renovación' }}
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL DE EDICIÓN DE INFORMACIÓN Y ESTADOS DEL CONTRATO   -->
+  <!-- ======================================================== -->
+  <div *ngIf="modalEdicionAbierto"
+       style="position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(4px); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: #ffffff; border-radius: 16px; width: 100%; max-width: 660px; max-height: 90vh; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3); display: flex; flex-direction: column; overflow: hidden; animation: fadeIn 0.2s ease-out;">
+
+      <!-- Encabezado del modal de edición -->
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 18px 24px; border-bottom: 1px solid #f1f5f9; background: #fafafa;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 40px; height: 40px; border-radius: 10px; background: #fef3c7; color: #b45309; display: flex; align-items: center; justify-content: center;">
+            <svg style="width: 22px; height: 22px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+          </div>
+          <div>
+            <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #0f172a;">
+              Editar Información Autorizada del Contrato
+            </h3>
+            <p style="margin: 2px 0 0 0; font-size: 12px; color: #64748b;">
+              Contrato: <strong>{{ contrato.codigo }}</strong> — {{ contrato.institucion }}
+            </p>
+          </div>
+        </div>
+        <button type="button" (click)="cerrarModalEdicion()"
+                title="Cerrar modal"
+                style="background: transparent; border: none; font-size: 20px; color: #94a3b8; cursor: pointer; padding: 4px 8px; border-radius: 6px; line-height: 1;"
+                onmouseover="this.style.color='#0f172a'; this.style.backgroundColor='#f1f5f9';"
+                onmouseout="this.style.color='#94a3b8'; this.style.backgroundColor='transparent';">
+          ✕
+        </button>
+      </div>
+
+      <!-- Cuerpo del modal de edición scrollable -->
+      <div style="flex: 1; overflow-y: auto; padding: 18px 24px; display: flex; flex-direction: column; gap: 16px;">
+
+        <!-- 1. SELECTOR DE ESTADOS (Activo, Inactivo, Finalizado) -->
+        <div>
+          <label style="display: block; font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 8px;">
+            Estado del contrato (Selecciona para cambiar entre sí) *
+          </label>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+
+            <!-- Opción Activo -->
+            <button type="button"
+                    (click)="seleccionarEstadoEdicion('Activo')"
+                    style="border-radius: 10px; padding: 12px; cursor: pointer; text-align: left; display: flex; flex-direction: column; gap: 4px; transition: all 0.15s; background: #ffffff;"
+                    [style.border]="datosEdicion.estado === 'Activo' ? '2px solid #10b981' : '1px solid #cbd5e1'"
+                    [style.background]="datosEdicion.estado === 'Activo' ? '#ecfdf5' : '#ffffff'">
+              <div style="display: flex; align-items: center; justify-content: space-between;">
+                <span style="font-size: 12px; font-weight: 800; color: #166534; display: inline-flex; align-items: center; gap: 6px;">
+                  <span style="width: 8px; height: 8px; border-radius: 50%; background: #10b981;"></span>
+                  Activo
+                </span>
+                <span *ngIf="datosEdicion.estado === 'Activo'" style="color: #10b981; font-weight: 800; font-size: 14px;">✓</span>
+              </div>
+              <span style="font-size: 11px; color: #047857;">Vigente para operación</span>
+            </button>
+
+            <!-- Opción Inactivo -->
+            <button type="button"
+                    (click)="seleccionarEstadoEdicion('Inactivo')"
+                    style="border-radius: 10px; padding: 12px; cursor: pointer; text-align: left; display: flex; flex-direction: column; gap: 4px; transition: all 0.15s; background: #ffffff;"
+                    [style.border]="datosEdicion.estado === 'Inactivo' ? '2px solid #ef4444' : '1px solid #cbd5e1'"
+                    [style.background]="datosEdicion.estado === 'Inactivo' ? '#fef2f2' : '#ffffff'">
+              <div style="display: flex; align-items: center; justify-content: space-between;">
+                <span style="font-size: 12px; font-weight: 800; color: #991b1b; display: inline-flex; align-items: center; gap: 6px;">
+                  <span style="width: 8px; height: 8px; border-radius: 50%; background: #ef4444;"></span>
+                  Inactivo
+                </span>
+                <span *ngIf="datosEdicion.estado === 'Inactivo'" style="color: #ef4444; font-weight: 800; font-size: 14px;">✓</span>
+              </div>
+              <span style="font-size: 11px; color: #b91c1c;">Operación pausada</span>
+            </button>
+
+            <!-- Opción Finalizado -->
+            <button type="button"
+                    (click)="seleccionarEstadoEdicion('Finalizado')"
+                    style="border-radius: 10px; padding: 12px; cursor: pointer; text-align: left; display: flex; flex-direction: column; gap: 4px; transition: all 0.15s; background: #ffffff;"
+                    [style.border]="datosEdicion.estado === 'Finalizado' ? '2px solid #64748b' : '1px solid #cbd5e1'"
+                    [style.background]="datosEdicion.estado === 'Finalizado' ? '#f1f5f9' : '#ffffff'">
+              <div style="display: flex; align-items: center; justify-content: space-between;">
+                <span style="font-size: 12px; font-weight: 800; color: #334155; display: inline-flex; align-items: center; gap: 6px;">
+                  <span style="width: 8px; height: 8px; border-radius: 50%; background: #94a3b8;"></span>
+                  Finalizado
+                </span>
+                <span *ngIf="datosEdicion.estado === 'Finalizado'" style="color: #64748b; font-weight: 800; font-size: 14px;">✓</span>
+              </div>
+              <span style="font-size: 11px; color: #64748b;">Periodo concluido</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 2. CUPOS AUTORIZADOS Y SUPERVISOR ENCARGADO -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+          <!-- Cupos Autorizados -->
+          <div>
+            <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px;">
+              Cupos autorizados *
+            </label>
+            <input type="number"
+                   min="1"
+                   [(ngModel)]="datosEdicion.cupos"
+                   placeholder="Ej: 590"
+                   style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 12px; color: #0f172a; outline: none; box-sizing: border-box;"
+                   [style.border-color]="datosEdicion.cupos < totalCuposAsignadosSedes ? '#ef4444' : '#cbd5e1'" />
+            <div style="font-size: 11px; margin-top: 3px;"
+                 [style.color]="datosEdicion.cupos < totalCuposAsignadosSedes ? '#dc2626' : '#64748b'">
+              <span *ngIf="datosEdicion.cupos >= totalCuposAsignadosSedes">
+                Cupos distribuidos en sedes: <strong>{{ totalCuposAsignadosSedes }} cupos</strong> (Mínimo requerido).
+              </span>
+              <span *ngIf="datosEdicion.cupos < totalCuposAsignadosSedes" style="font-weight: 700;">
+                ⚠️ No puede ser inferior a los {{ totalCuposAsignadosSedes }} cupos ya distribuidos entre las sedes.
+              </span>
+            </div>
+          </div>
+
+          <!-- Supervisor Encargado -->
+          <div>
+            <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px;">
+              Supervisor encargado
+            </label>
+            <select [(ngModel)]="datosEdicion.id_usuario_supervisor"
+                    style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 12px; color: #0f172a; outline: none; box-sizing: border-box; background: #ffffff;">
+              <option [ngValue]="null">Sin asignar (Sin supervisor)</option>
+              <option *ngFor="let s of supervisores" [ngValue]="s.id_usuario">
+                {{ s.nombre_completo }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 3. FECHAS DE VIGENCIA Y ZONA -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px;">
+          <!-- Zona -->
+          <div>
+            <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px;">
+              Zona geográfica
+            </label>
+            <select [(ngModel)]="datosEdicion.zona"
+                    style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 12px; color: #0f172a; outline: none; box-sizing: border-box; background: #ffffff;">
+              <option value="Norte">Norte</option>
+              <option value="Sur">Sur</option>
+              <option value="Centro">Centro</option>
+              <option value="Oriente">Oriente</option>
+              <option value="Occidente">Occidente</option>
+              <option value="Rural">Rural</option>
+              <option value="Urbana">Urbana</option>
+            </select>
+          </div>
+
+          <!-- Fecha Inicio -->
+          <div>
+            <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px;">
+              Fecha de inicio *
+            </label>
+            <input type="date"
+                   [(ngModel)]="datosEdicion.fecha_inicio"
+                   style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 12px; color: #0f172a; outline: none; box-sizing: border-box;" />
+          </div>
+
+          <!-- Fecha Fin -->
+          <div>
+            <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px;">
+              Fecha de finalización *
+            </label>
+            <input type="date"
+                   [(ngModel)]="datosEdicion.fecha_fin"
+                   [min]="datosEdicion.fecha_inicio"
+                   style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 12px; color: #0f172a; outline: none; box-sizing: border-box;" />
+          </div>
+        </div>
+
+        <!-- 4. PERIODICIDAD DE ABASTECIMIENTO POR TIPO DE ALIMENTO (HU 5) -->
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px;">
+          <div style="font-size: 12px; font-weight: 700; color: #1e293b; margin-bottom: 8px;">
+            Periodicidad de abastecimiento y días de cobertura (cálculo de entregas)
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 110px 1fr 110px; gap: 10px; align-items: end;">
+            <div>
+              <label style="display: block; font-size: 11px; font-weight: 600; color: #334155; margin-bottom: 4px;">
+                Periodicidad perecederos
+              </label>
+              <select [(ngModel)]="datosEdicion.periodicidad_perecederos"
+                      (ngModelChange)="alCambiarPeriodicidad('perecederos')"
+                      style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 12px; color: #0f172a; background: #ffffff; box-sizing: border-box;">
+                <option *ngFor="let op of periodicidadOpciones" [value]="op.value">{{ op.label }}</option>
+              </select>
+            </div>
+            <div>
+              <label style="display: block; font-size: 11px; font-weight: 600; color: #334155; margin-bottom: 4px;">
+                Días per. *
+              </label>
+              <input type="number"
+                     min="1"
+                     [(ngModel)]="datosEdicion.dias_cobertura_perecederos"
+                     style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 12px; color: #0f172a; box-sizing: border-box;" />
+            </div>
+            <div>
+              <label style="display: block; font-size: 11px; font-weight: 600; color: #334155; margin-bottom: 4px;">
+                Periodicidad no perecederos
+              </label>
+              <select [(ngModel)]="datosEdicion.periodicidad_no_perecederos"
+                      (ngModelChange)="alCambiarPeriodicidad('no_perecederos')"
+                      style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 12px; color: #0f172a; background: #ffffff; box-sizing: border-box;">
+                <option *ngFor="let op of periodicidadOpciones" [value]="op.value">{{ op.label }}</option>
+              </select>
+            </div>
+            <div>
+              <label style="display: block; font-size: 11px; font-weight: 600; color: #334155; margin-bottom: 4px;">
+                Días no per. *
+              </label>
+              <input type="number"
+                     min="1"
+                     [(ngModel)]="datosEdicion.dias_cobertura_no_perecederos"
+                     style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 12px; color: #0f172a; box-sizing: border-box;" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Alertas informativas según el estado seleccionado -->
+        <div *ngIf="datosEdicion.estado === 'Inactivo'"
+             style="background: #fef2f2; border: 1px solid #fecaca; border-left: 4px solid #ef4444; border-radius: 8px; padding: 10px 14px; font-size: 11px; color: #991b1b; display: flex; align-items: flex-start; gap: 8px;">
+          <span class="material-symbols-outlined" style="font-size: 18px; color: #dc2626; flex-shrink: 0;">warning</span>
+          <div>
+            <strong>Afectación por inactivación:</strong> Al inactivar el contrato se suspenderán los procesos operativos y no se permitirán nuevas entregas de raciones ni asociaciones de menús. Se preservará la distribución de cupos y el histórico.
+          </div>
+        </div>
+
+        <div *ngIf="datosEdicion.estado === 'Finalizado'"
+             style="background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #64748b; border-radius: 8px; padding: 10px 14px; font-size: 11px; color: #475569; display: flex; align-items: flex-start; gap: 8px;">
+          <span class="material-symbols-outlined" style="font-size: 18px; color: #64748b; flex-shrink: 0;">history</span>
+          <div>
+            <strong>Aviso de finalización:</strong> Al marcar como Finalizado, el contrato concluye formalmente su vigencia. Se conservarán íntegros todos los registros históricos pero no se permitirán operaciones activas.
+          </div>
+        </div>
+
+        <!-- Banner de error si la validación falla -->
+        <div *ngIf="datosEdicion.errorValidacion"
+             style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 10px 14px; font-size: 12px; color: #991b1b; display: flex; align-items: flex-start; gap: 8px;">
+          <span class="material-symbols-outlined" style="font-size: 18px; color: #dc2626; flex-shrink: 0;">error</span>
+          <div>{{ datosEdicion.errorValidacion }}</div>
+        </div>
+
+        <!-- Preview de auditoría de solo lectura -->
+        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 8px 12px; font-size: 11px; color: #166534; display: flex; align-items: center; gap: 8px;">
+          <span class="material-symbols-outlined" style="font-size: 16px; color: #16a34a;">verified_user</span>
+          <div>
+            Las modificaciones quedarán registradas en la bitácora histórica a nombre de <strong>{{ nombreUsuarioResponsableActual }}</strong>.
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Pie del modal de edición -->
+      <div style="display: flex; justify-content: flex-end; align-items: center; gap: 10px; border-top: 1px solid #f1f5f9; padding: 14px 24px; background: #fafafa;">
+        <button type="button"
+                (click)="cerrarModalEdicion()"
+                [disabled]="guardandoEdicion"
+                style="background: #ffffff; border: 1px solid #cbd5e1; color: #334155; padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer;">
+          Cancelar
+        </button>
+        <button type="button"
+                (click)="guardarEdicionContrato()"
+                [disabled]="guardandoEdicion"
+                style="background: #fac94b; border: none; color: #000000; font-weight: 700; padding: 8px 20px; border-radius: 8px; font-size: 12px; cursor: pointer; box-shadow: 0 1px 3px rgba(250, 201, 75, 0.4); display: flex; align-items: center; gap: 6px;"
+                [style.opacity]="guardandoEdicion ? '0.7' : '1'">
+          <span *ngIf="guardandoEdicion" style="display: inline-block; width: 14px; height: 14px; border: 2px solid #000; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite;"></span>
+          Guardar modificaciones
+        </button>
+      </div>
+
+    </div>
+  </div>
+
 </div>
