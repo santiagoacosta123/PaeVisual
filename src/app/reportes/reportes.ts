@@ -1,23 +1,28 @@
-import { ChangeDetectorRef, Component, HostListener, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, HostListener, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Observable, Subscription, combineLatest, forkJoin, of } from 'rxjs';
 import { catchError, debounceTime, take, timeout } from 'rxjs/operators';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService, InstitucionAsignada, SedeActiva } from '@core/auth';
 import { SweetAlertService } from '../sweet-alert.service';
 import { Entrega, EntregasService } from '../features/entregas/services/entregas.service';
 import { SiraeService } from '../features/contratos/services/contratos_pae.service';
 import {
+  AlcanceReportes,
+  MetadatosPlantillas,
+  PlanillaGeneradaItem,
   PlanillasPaeService,
-  PlanillaRemisionData,
-  PlanillaKardexData,
-  ItemMinutaPatron,
-  FilaNoPerecedero,
-  FilaPerecedero,
-  FilaAseo,
-  FilaKardex
+  PlantillaOficial,
+  ReporteConsolidadoResponse,
 } from '../services/planillas-pae.service';
+import {
+  PlantillaFormulario,
+  clonarEsquemaParaEdicion,
+  crearPlantillaFormularioVacio,
+  etiquetaColumnaLegible,
+  guardarBlobArchivo,
+} from './reportes-helpers';
 
 /** Una sede de la institución con los cupos de sus contratos vigentes */
 interface SedeBase {
@@ -97,30 +102,65 @@ const ETIQUETAS_ESTADO: Record<string, string> = {
   styleUrls: ['./reportes.css']
 })
 export class Reportes implements OnInit, OnDestroy {
-  // ===================== PESTAÑAS Y MODOS =====================
-  pestanaActiva: 'remision' | 'kardex' | 'minuta' | 'historial' = 'remision';
-  subFiltroRemision: 'todas' | 'no-perecederos' | 'perecederos' | 'aseo' = 'todas';
-  modoEdicion = false;
-  imprimiendoPdf = false;
-  formatoImpresion: 'remision' | 'kardex' | 'minuta' = 'remision';
+  private readonly route = inject(ActivatedRoute, { optional: true });
 
-  // ===================== FILTROS Y ESTADO DE FECHAS =====================
-  cargando = true;
-  cargandoPlanillas = false;
+  // ===================== PESTAÑAS Y ROL =====================
+  pestanaActiva: 'consolidados' | 'planillas' | 'plantillas' | 'historial' = 'consolidados';
+  esSuperAdmin = false;
+  esSupervisor = false;
+  esAdministrador = false;
+  esJefa = false;
+  rolActual = '';
+
+  // ===================== ALCANCE Y CONSOLIDADO REAL (SIR-173) =====================
+  alcance: AlcanceReportes | null = null;
+  consolidado: ReporteConsolidadoResponse | null = null;
+  cargandoConsolidado = false;
+  errorConsolidado = '';
+  tipoReporteFiltro = 'RESUMEN_GENERAL';
+  filtroInstId: number | null = null;
+  filtroSedeId: number | null = null;
+  filtroJornadaId: number | null = null;
+  filtroContratoId: number | null = null;
   fechaDesde = '';
   fechaHasta = '';
 
-  // Selector de Periodos y Fechas de las Planillas
-  periodoSeleccionado = 'PRIMERA';
-  periodosDisponibles: string[] = ['PRIMERA', 'SEGUNDA', 'TERCERA', 'CUARTA', 'QUINTA', 'SEXTA'];
-  fechaInicioPlanilla = '2025-01-27';
-  fechaFinPlanilla = '2025-02-21';
-  diasAtenderPlanilla = 20;
+  // ===================== PLANILLAS GENERADAS Y VISOR (SIR-171 & SIR-172) =====================
+  cargando = true;
+  cargandoPlanillas = false;
+  generandoPlanilla = false;
+  guardandoPlanilla = false;
+  imprimiendoPdf = false;
+  planillas: PlanillaGeneradaItem[] = [];
+  planillaActiva: PlanillaGeneradaItem | null = null;
+  busquedaPlanilla = '';
+  filtroProcesoPlanilla = '';
+  filtroEstadoPlanilla = '';
+  filtroPeriodoPlanilla = '';
 
-  // ===================== PLANILLAS OFICIALES PAE =====================
-  planillaRemision: PlanillaRemisionData | null = null;
-  planillaKardex: PlanillaKardexData | null = null;
-  minutaPatron: ItemMinutaPatron[] = [];
+  genPlantillaId: number | null = null;
+  genProceso = 'REMISION';
+  genInstId: number | null = null;
+  genSedeId: number | null = null;
+  genContratoId: number | null = null;
+  genJornadaId: number | null = null;
+  genPeriodo = '';
+  genFechaInicio = '';
+  genFechaFin = '';
+  genObservaciones = '';
+
+  manualesEdit: Record<string, any> = {};
+  observacionEdit = '';
+
+  // ===================== PLANTILLAS OFICIALES Y VERSIONADO (SIR-170) =====================
+  metadatosPlantillas: MetadatosPlantillas | null = null;
+  plantillas: PlantillaOficial[] = [];
+  cargandoPlantillas = false;
+  guardandoPlantilla = false;
+  previsualizando = false;
+  plantillaForm: PlantillaFormulario = crearPlantillaFormularioVacio();
+  previewPlantilla: any = null;
+  previewSedeId: number | null = null;
 
   // ===================== REPORTE DE SEDES Y ENTREGAS =====================
   institucionActiva: InstitucionAsignada | null = null;
@@ -161,7 +201,10 @@ export class Reportes implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    // Coordinar institución activa y sede activa
+    this.detectarRolUsuario();
+    this.leerParametrosIniciales();
+
+    // Coordinar institución activa y sede activa (flujo Supervisor / reportes.spec)
     this.suscripcion = combineLatest([
       this.auth.institucionActiva$,
       this.auth.sedeActiva$
@@ -175,18 +218,63 @@ export class Reportes implements OnInit, OnDestroy {
         this.sedeFiltro = sede?.id_sede ?? 'Todas';
         this.sedeDetalle = null;
         this.paginaActual = 1;
+        if (institucion?.id_institucion && !this.filtroInstId) {
+          this.filtroInstId = institucion.id_institucion;
+          this.genInstId = institucion.id_institucion;
+        }
       } else if (sede && this.sedeFiltro === 'Todas') {
         this.sedeFiltro = sede.id_sede;
         this.paginaActual = 1;
       }
+      if (sede?.id_sede && !this.filtroSedeId) {
+        this.filtroSedeId = sede.id_sede;
+        this.genSedeId = sede.id_sede;
+      }
       this.cargar();
     });
 
-    this.actualizacionAutomatica = setInterval(() => {
-      if (this.institucionActiva) {
-        this.cargar();
+    this.cargarModuloReportesInicial();
+  }
+
+  private detectarRolUsuario(): void {
+    const authAny: any = this.auth;
+    const usuario = typeof authAny?.obtenerUsuario === 'function' ? authAny.obtenerUsuario() : null;
+    const rol = usuario?.rol ?? null;
+    this.rolActual = String(rol || '');
+    this.esSuperAdmin = typeof authAny?.esSuperAdministrador === 'function' ? authAny.esSuperAdministrador(rol) : false;
+    this.esSupervisor = typeof authAny?.esSupervisor === 'function' ? authAny.esSupervisor(rol) : false;
+    this.esAdministrador = typeof authAny?.esAdministrador === 'function' ? authAny.esAdministrador(rol) : false;
+    this.esJefa = typeof authAny?.esJefa === 'function' ? authAny.esJefa(rol) : false;
+    if (this.esJefa) {
+      this.pestanaActiva = 'planillas';
+    }
+  }
+
+  private leerParametrosIniciales(): void {
+    const qp = this.route?.snapshot?.queryParams;
+    if (!qp) return;
+    if (qp['tipo']) this.tipoReporteFiltro = String(qp['tipo']);
+    if (qp['institucion']) {
+      const id = Number(qp['institucion']);
+      if (Number.isFinite(id) && id > 0) {
+        this.filtroInstId = id;
+        this.genInstId = id;
       }
-    }, 60000);
+    }
+    if (qp['tab'] && ['consolidados', 'planillas', 'plantillas', 'historial'].includes(String(qp['tab']))) {
+      this.pestanaActiva = qp['tab'];
+    }
+  }
+
+  private cargarModuloReportesInicial(): void {
+    const authAny: any = this.auth;
+    if (typeof authAny?.obtenerUsuario !== 'function') {
+      return;
+    }
+    this.cargarAlcance();
+    this.cargarMetadatosYPlantillas();
+    this.cargarConsolidado();
+    this.cargarPlanillasGeneradas();
   }
 
   ngOnDestroy(): void {
@@ -200,6 +288,7 @@ export class Reportes implements OnInit, OnDestroy {
   alPresionarEsc(): void {
     if (this.sedeDetalle) this.cerrarSede();
     if (this.entregaDetalle) this.cerrarEntrega();
+    if (this.planillaActiva) this.cerrarPlanillaDetalle();
   }
 
   cargar(): void {
@@ -209,9 +298,6 @@ export class Reportes implements OnInit, OnDestroy {
 
     if (!idInstitucion) {
       this.cargando = false;
-      this.planillaRemision = null;
-      this.planillaKardex = null;
-      this.minutaPatron = [];
       this.sedesBase = [];
       this.entregas = [];
       this.versionDatos++;
@@ -231,139 +317,586 @@ export class Reportes implements OnInit, OnDestroy {
       entregas: this.entregasService.cargar().pipe(take(1), timeout(TIEMPO_MAXIMO_MS), opcional<Entrega[]>('las entregas')),
     }).subscribe(({ sedes, contratos, entregas }) => {
       this.armarReporteSedes(sedes, contratos, entregas, fallos);
-      this.cargarPlanillas();
       this.cargando = false;
       this.cdr.markForCheck();
     });
   }
 
+  cambiarPestanaPrincipal(tab: 'consolidados' | 'planillas' | 'plantillas' | 'historial'): void {
+    this.pestanaActiva = tab;
+    if (tab === 'consolidados' && !this.consolidado) this.cargarConsolidado();
+    if (tab === 'planillas' && this.planillas.length === 0) this.cargarPlanillasGeneradas();
+    if (tab === 'plantillas' && this.plantillas.length === 0) this.cargarMetadatosYPlantillas();
+  }
+
   // =====================================================
-  //  CARGA Y GESTIÓN DE PLANILLAS OFICIALES PAE
+  //  SIR-173: REPORTES OPERATIVOS CONSOLIDADOS REALES
   // =====================================================
 
-  cargarPlanillas(mostrarCargando = true, confirmarSincronizacion = false): void {
-    if (!this.institucionActiva) {
-      this.planillaRemision = null;
-      this.planillaKardex = null;
-      this.minutaPatron = [];
-      return;
-    }
-
-    if (mostrarCargando) this.cargandoPlanillas = true;
-
-    const idInstitucion = this.institucionActiva.id_institucion;
-    const nombreInstitucion = this.institucionActiva.nombre_institucion;
-    const idSede = this.idSedeSeleccionada;
-    const sedeSeleccionada = this.sedesBase.find(s => s.id === idSede);
-    const nombreSede = idSede
-      ? sedeSeleccionada?.nombre || this.sedeActiva?.nombre_sede || 'Sede Principal'
-      : 'Todas las sedes';
-    const cuposSede = idSede
-      ? sedeSeleccionada?.cupos
-      : this.sedesBase.reduce((total, sede) => total + sede.cupos, 0) || undefined;
-
-    forkJoin({
-      remision: this.planillasPaeService.obtenerPlanillaRemision({
-        institucionId: idInstitucion,
-        institucionNombre: nombreInstitucion,
-        sedeId: idSede,
-        sedeNombre: nombreSede,
-        sedeIds: this.sedesBase.map(sede => sede.id),
-        periodo: this.periodoSeleccionado,
-        fechaInicio: this.fechaInicioPlanilla,
-        fechaFin: this.fechaFinPlanilla,
-        cuposBase: cuposSede
-      }),
-      kardex: this.planillasPaeService.obtenerPlanillaKardex({
-        institucionId: idInstitucion,
-        institucionNombre: nombreInstitucion,
-        sedeId: idSede,
-        sedeNombre: nombreSede,
-        periodo: this.periodoSeleccionado,
-        fechaInicio: this.fechaInicioPlanilla,
-        fechaFin: this.fechaFinPlanilla
-      })
-    }).subscribe({
-      next: ({ remision, kardex }) => {
-        this.planillaRemision = remision;
-        this.planillaKardex = kardex;
-        this.minutaPatron = this.planillasPaeService.obtenerMinutaPatron(remision.cupos, remision.diasAtender);
-        this.cargandoPlanillas = false;
-        this.cdr.markForCheck();
-        if (confirmarSincronizacion) {
-          void this.alertas.success(
-            'Consulta completada',
-            'Si no aparecen cantidades recibidas, verifica que las entregas estén confirmadas y asignadas a esta institución y sede.'
-          );
+  cargarAlcance(): void {
+    this.planillasPaeService.obtenerAlcance().subscribe({
+      next: (alc) => {
+        this.alcance = alc;
+        if (alc.instituciones.length === 1 && !this.filtroInstId) {
+          this.filtroInstId = alc.instituciones[0].id_institucion;
+          this.genInstId = alc.instituciones[0].id_institucion;
         }
+        if (alc.sedes.length === 1 && !this.filtroSedeId) {
+          this.filtroSedeId = alc.sedes[0].id_sede;
+          this.genSedeId = alc.sedes[0].id_sede;
+        }
+        this.cdr.markForCheck();
+      },
+      error: () => {}
+    });
+  }
+
+  sedesPorInstitucion(idInst: number | null) {
+    const todas = this.alcance?.sedes || [];
+    if (!idInst) return todas;
+    return todas.filter(s => Number(s.id_institucion) === Number(idInst));
+  }
+
+  contratosPorAlcance(idInst: number | null, idSede: number | null) {
+    const todos = this.alcance?.contratos || [];
+    return todos.filter(c => {
+      if (idSede && c.id_sede && Number(c.id_sede) !== Number(idSede)) return false;
+      if (idInst && c.id_institucion && Number(c.id_institucion) !== Number(idInst)) return false;
+      return true;
+    });
+  }
+
+  cargarConsolidado(): void {
+    this.cargandoConsolidado = true;
+    this.errorConsolidado = '';
+    this.planillasPaeService.consultarReporteConsolidado({
+      tipo_reporte: this.tipoReporteFiltro,
+      id_institucion: this.filtroInstId,
+      id_sede: this.filtroSedeId,
+      id_jornada: this.filtroJornadaId,
+      id_contrato: this.filtroContratoId,
+      fecha_desde: this.fechaDesde,
+      fecha_hasta: this.fechaHasta,
+    }).subscribe({
+      next: (resp) => {
+        this.consolidado = resp;
+        this.cargandoConsolidado = false;
+        this.cdr.markForCheck();
       },
       error: (err) => {
-        console.error('Error al cargar planillas PAE:', err);
-        this.cargandoPlanillas = false;
+        this.cargandoConsolidado = false;
+        this.errorConsolidado = err?.error?.detail || 'No se pudo consultar el reporte consolidado desde el servidor.';
         this.cdr.markForCheck();
-        if (confirmarSincronizacion) {
-          void this.alertas.error('No se pudieron sincronizar las planillas', 'Verifica la conexión y vuelve a intentarlo.');
-        }
       }
     });
   }
 
-  alCambiarPeriodoOFecha(): void {
-    this.cargarPlanillas(true);
-  }
-
-  sincronizarConManipuladoras(): void {
-    // Limpiar claves temporales para regenerar con los datos más recientes del backend
-    if (!this.institucionActiva) return;
-    const idInst = this.institucionActiva.id_institucion;
-    const idSede = this.idSedeSeleccionada;
-    localStorage.removeItem(`pae_remision_${idInst}_${idSede}_${this.periodoSeleccionado}_${this.fechaInicioPlanilla}`);
-    localStorage.removeItem(`pae_kardex_${idInst}_${idSede}_${this.periodoSeleccionado}_${this.fechaInicioPlanilla}`);
-
-    this.cargarPlanillas(true, true);
-  }
-
-  guardarPlanillas(): void {
-    if (!this.institucionActiva || !this.planillaRemision || !this.planillaKardex) return;
-    const idInst = this.institucionActiva.id_institucion;
-    const idSede = this.idSedeSeleccionada;
-    const claveRemision = `pae_remision_${idInst}_${idSede}_${this.periodoSeleccionado}_${this.fechaInicioPlanilla}`;
-    const claveKardex = `pae_kardex_${idInst}_${idSede}_${this.periodoSeleccionado}_${this.fechaInicioPlanilla}`;
-
-    this.planillasPaeService.guardarPlanillaRemision(claveRemision, this.planillaRemision);
-    this.planillasPaeService.guardarPlanillaKardex(claveKardex, this.planillaKardex);
-    this.modoEdicion = false;
-
-    void this.alertas.success('Planillas Guardadas', 'Los cambios en las planillas se han guardado satisfactoriamente.');
-  }
-
-  recalcularPerecedero(p: FilaPerecedero): void {
-    const e = p.entregas;
-    p.totalEntregado = Math.round((Number(e[0].aEntregar || 0) + Number(e[1].aEntregar || 0) + Number(e[2].aEntregar || 0) + Number(e[3].aEntregar || 0)) * 100) / 100;
-    p.totalRecibido = Math.round((Number(e[0].recibida || 0) + Number(e[1].recibida || 0) + Number(e[2].recibida || 0) + Number(e[3].recibida || 0)) * 100) / 100;
-  }
-
-  recalcularKardexFila(fila: FilaKardex): void {
-    let suma = 0;
-    for (const sem of fila.semanas) {
-      for (const d of sem.dias) {
-        suma += Number(d.cantidad) || 0;
+  descargarConsolidadoCsv(): void {
+    this.planillasPaeService.descargarReporteConsolidadoCsv({
+      tipo_reporte: this.tipoReporteFiltro,
+      id_institucion: this.filtroInstId,
+      id_sede: this.filtroSedeId,
+      id_jornada: this.filtroJornadaId,
+      id_contrato: this.filtroContratoId,
+      fecha_desde: this.fechaDesde,
+      fecha_hasta: this.fechaHasta,
+    }).subscribe({
+      next: (blob) => {
+        guardarBlobArchivo(blob, `reporte_pae_${this.tipoReporteFiltro.toLowerCase()}_${this.hoyISO()}.csv`);
+        void this.alertas.success('Reporte descargado', 'El archivo CSV consolidado se generó con los datos reales vigentes.');
+      },
+      error: (err) => {
+        void this.alertas.error('Error al exportar', err?.error?.detail || 'No se pudo generar el CSV consolidado.');
       }
-    }
-    fila.totalSalidas = Math.round(suma * 10) / 10;
-    fila.saldoMes = Math.max(0, Math.round(((Number(fila.cantidadEntrada) || 0) - fila.totalSalidas) * 10) / 10);
+    });
   }
 
-  exportarPdf(formato: 'remision' | 'kardex' | 'minuta'): void {
-    this.formatoImpresion = formato;
-    this.imprimiendoPdf = true;
+  get columnasDetalleConsolidado(): string[] {
+    const rows = this.consolidado?.detalle || [];
+    if (rows.length === 0) return [];
+    const ocultar = new Set(['id_sede', 'id_ingrediente', 'id_entrega', 'id_contrato', 'id_inventario', 'id_movimiento', 'id_gramaje', 'id_grado', 'id_asistencia', 'id_preparacion_asignada']);
+    return Object.keys(rows[0]).filter(k => !ocultar.has(k));
+  }
 
-    // Disparar ventana de impresión del navegador formateada con @media print optimizado
+  etiquetaCol(clave: string): string {
+    return etiquetaColumnaLegible(clave);
+  }
+
+  // =====================================================
+  //  SIR-171 & SIR-172: PLANILLAS AUTO-DILIGENCIADAS
+  // =====================================================
+
+  cargarPlanillasGeneradas(): void {
+    this.cargandoPlanillas = true;
+    this.planillasPaeService.listarPlanillas({
+      id_institucion: this.filtroInstId,
+      id_sede: this.filtroSedeId,
+      id_jornada: this.filtroJornadaId,
+      id_contrato: this.filtroContratoId,
+      categoria_proceso: this.filtroProcesoPlanilla,
+      estado: this.filtroEstadoPlanilla,
+      periodo: this.filtroPeriodoPlanilla,
+      fecha_desde: this.fechaDesde,
+      fecha_hasta: this.fechaHasta,
+      search: this.busquedaPlanilla,
+    }).subscribe({
+      next: (lista) => {
+        this.planillas = lista;
+        this.cargandoPlanillas = false;
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.cargandoPlanillas = false;
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  generarNuevaPlanilla(regenerar = false): void {
+    this.generandoPlanilla = true;
+    this.planillasPaeService.generarPlanilla({
+      ...(this.genPlantillaId ? { id_plantilla: this.genPlantillaId } : { categoria_proceso: this.genProceso }),
+      id_institucion: this.genInstId || this.filtroInstId,
+      id_sede: this.genSedeId || this.filtroSedeId,
+      id_contrato: this.genContratoId || this.filtroContratoId,
+      id_jornada: this.genJornadaId || this.filtroJornadaId,
+      periodo: this.genPeriodo.trim(),
+      fecha_inicio: this.genFechaInicio,
+      fecha_fin: this.genFechaFin,
+      observaciones: this.genObservaciones.trim(),
+      regenerar,
+    }).subscribe({
+      next: (resp) => {
+        this.generandoPlanilla = false;
+        this.cargarPlanillasGeneradas();
+        this.abrirPlanillaDesdeObjeto(resp.planilla);
+        void this.alertas.success('Planilla generada', resp.mensaje);
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.generandoPlanilla = false;
+        void this.alertas.warning('No se pudo generar', err?.error?.detail || 'Verifica que la plantilla esté publicada y los filtros sean válidos.');
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  abrirPlanillaDetalle(idPlanilla: number): void {
+    this.cargandoPlanillas = true;
+    this.planillasPaeService.obtenerPlanilla(idPlanilla).subscribe({
+      next: (det) => {
+        this.cargandoPlanillas = false;
+        this.abrirPlanillaDesdeObjeto(det);
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.cargandoPlanillas = false;
+        void this.alertas.error('Error al abrir planilla', err?.error?.detail || 'No tienes autorización o la planilla no existe.');
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  private abrirPlanillaDesdeObjeto(det: PlanillaGeneradaItem): void {
+    this.planillaActiva = det;
+    this.manualesEdit = JSON.parse(JSON.stringify(det.valores_manuales || {}));
+    this.observacionEdit = det.observaciones || '';
+  }
+
+  valorManualTabla(codTabla: string, rowIdx: number, codCol: string, valorActual: unknown): string {
+    const valGuardado = this.manualesEdit?.['__tablas__']?.[codTabla]?.[String(rowIdx)]?.[codCol];
+    if (valGuardado !== undefined && valGuardado !== null && valGuardado !== '') {
+      return String(valGuardado);
+    }
+    return valorActual === 'PENDIENTE' || valorActual === null || valorActual === undefined ? '' : String(valorActual);
+  }
+
+  actualizarManualTabla(codTabla: string, rowIdx: number, codCol: string, valor: unknown): void {
+    const tablas = { ...(this.manualesEdit['__tablas__'] || {}) };
+    const tablaActual = { ...(tablas[codTabla] || {}) };
+    const filaActual = { ...(tablaActual[String(rowIdx)] || {}) };
+    filaActual[codCol] = valor;
+    tablaActual[String(rowIdx)] = filaActual;
+    tablas[codTabla] = tablaActual;
+    this.manualesEdit['__tablas__'] = tablas;
+  }
+
+  clavesDe(obj: Record<string, unknown> | null | undefined): string[] {
+    return obj && typeof obj === 'object' ? Object.keys(obj) : [];
+  }
+
+  cerrarPlanillaDetalle(): void {
+    this.planillaActiva = null;
+  }
+
+  guardarManualesPlanilla(estadoNuevo?: string): void {
+    if (!this.planillaActiva) return;
+    this.guardandoPlanilla = true;
+    this.planillasPaeService.actualizarPlanilla(this.planillaActiva.id_planilla, {
+      valores_manuales: this.manualesEdit,
+      observaciones: this.observacionEdit,
+      ...(estadoNuevo ? { estado: estadoNuevo } : {}),
+    }).subscribe({
+      next: (actualizada) => {
+        this.guardandoPlanilla = false;
+        this.abrirPlanillaDesdeObjeto(actualizada);
+        this.cargarPlanillasGeneradas();
+        void this.alertas.success('Planilla actualizada', 'Los cambios y cálculos de la planilla se guardaron correctamente.');
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.guardandoPlanilla = false;
+        void this.alertas.error('No se pudo actualizar', err?.error?.detail || 'Verifica el estado del documento.');
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  regenerarPlanillaActiva(): void {
+    if (!this.planillaActiva) return;
+    this.generandoPlanilla = true;
+    this.planillasPaeService.generarPlanilla({
+      id_plantilla: this.planillaActiva.plantilla_id,
+      id_institucion: this.planillaActiva.id_institucion,
+      id_sede: this.planillaActiva.id_sede ?? null,
+      id_contrato: this.planillaActiva.id_contrato ?? null,
+      id_jornada: this.planillaActiva.id_jornada ?? null,
+      periodo: this.planillaActiva.periodo,
+      fecha_inicio: this.planillaActiva.fecha_inicio || '',
+      fecha_fin: this.planillaActiva.fecha_fin || '',
+      observaciones: this.observacionEdit,
+      valores_manuales: this.manualesEdit,
+      regenerar: true,
+    }).subscribe({
+      next: (resp) => {
+        this.generandoPlanilla = false;
+        this.abrirPlanillaDesdeObjeto(resp.planilla);
+        this.cargarPlanillasGeneradas();
+        void this.alertas.success('Planilla sincronizada', 'La planilla fue recalculada con los datos más recientes de SIRAE.');
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.generandoPlanilla = false;
+        void this.alertas.warning('No se pudo regenerar', err?.error?.detail || 'No se pudo regenerar el documento.');
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  descargarPlanillaCsv(idPlanilla: number, codigoDoc = 'planilla'): void {
+    this.planillasPaeService.descargarPlanillaCsv(idPlanilla).subscribe({
+      next: (blob) => {
+        guardarBlobArchivo(blob, `${codigoDoc}.csv`);
+        void this.alertas.success('Documento descargado', `Se descargó ${codigoDoc}.csv`);
+      },
+      error: () => {
+        void this.alertas.error('Error al descargar', 'No se pudo descargar la planilla.');
+      }
+    });
+  }
+
+  imprimirDocumentoOficial(): void {
+    this.imprimiendoPdf = true;
     setTimeout(() => {
       window.print();
       this.imprimiendoPdf = false;
       this.cdr.markForCheck();
-    }, 200);
+    }, 150);
+  }
+
+  etiquetaEstadoPlanilla(estado: string): string {
+    const m: Record<string, string> = {
+      BORRADOR: 'Borrador',
+      PENDIENTE: 'Pendiente',
+      OBSERVADO: 'Observado',
+      VALIDADO: 'Validado',
+      CERRADO: 'Cerrado',
+    };
+    return m[estado] || estado;
+  }
+
+  claseEstadoPlanilla(estado: string): string {
+    switch (estado) {
+      case 'VALIDADO': return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+      case 'CERRADO': return 'bg-slate-200 text-slate-800 border-slate-300';
+      case 'OBSERVADO': return 'bg-rose-100 text-rose-800 border-rose-200';
+      case 'PENDIENTE': return 'bg-amber-100 text-amber-800 border-amber-200';
+      default: return 'bg-sky-100 text-sky-800 border-sky-200';
+    }
+  }
+
+  get clavesCuposNivel(): string[] {
+    const obj = this.planillaActiva?.contenido_snapshot?.cupos?.por_nivel;
+    return obj && typeof obj === 'object' ? Object.keys(obj) : [];
+  }
+
+  // =====================================================
+  //  SIR-170: PLANTILLAS OFICIALES Y VERSIONADO
+  // =====================================================
+
+  cargarMetadatosYPlantillas(): void {
+    this.cargandoPlantillas = true;
+    forkJoin({
+      meta: this.planillasPaeService.obtenerMetadatosPlantillas().pipe(catchError(() => of(null))),
+      lista: this.planillasPaeService.listarPlantillas().pipe(catchError(() => of([]))),
+    }).subscribe(({ meta, lista }) => {
+      if (meta) this.metadatosPlantillas = meta;
+      this.plantillas = lista;
+      if (!this.plantillaForm.id_plantilla && lista.length > 0 && this.esSuperAdmin) {
+        this.seleccionarPlantilla(lista[0]);
+      }
+      this.cargandoPlantillas = false;
+      this.cdr.markForCheck();
+    });
+  }
+
+  iniciarNuevaPlantilla(): void {
+    this.previewPlantilla = null;
+    this.plantillaForm = crearPlantillaFormularioVacio();
+  }
+
+  seleccionarPlantilla(tpl: PlantillaOficial): void {
+    this.previewPlantilla = null;
+    const versionEditable = tpl.version_borrador || tpl.version_publicada || tpl.versiones?.[0];
+    this.plantillaForm = {
+      id_plantilla: tpl.id_plantilla,
+      id_version: versionEditable?.id_version ?? null,
+      codigo: tpl.codigo,
+      nombre: tpl.nombre,
+      descripcion: tpl.descripcion || '',
+      categoria_proceso: tpl.categoria_proceso,
+      finalidad: tpl.finalidad || '',
+      roles_autorizados: [...(tpl.roles_autorizados || [])],
+      activa: tpl.activa,
+      notas_version: versionEditable?.notas_version || '',
+      es_inmutable: Boolean(versionEditable?.es_inmutable),
+      estado_version: versionEditable?.estado || 'BORRADOR',
+      numero_version: versionEditable?.numero_version || 1,
+      esquema: clonarEsquemaParaEdicion(versionEditable?.esquema),
+    };
+  }
+
+  tieneRolAutorizado(codRol: string): boolean {
+    return this.plantillaForm.roles_autorizados.includes(codRol);
+  }
+
+  toggleRolAutorizado(codRol: string): void {
+    if (this.tieneRolAutorizado(codRol)) {
+      this.plantillaForm.roles_autorizados = this.plantillaForm.roles_autorizados.filter(r => r !== codRol);
+    } else {
+      this.plantillaForm.roles_autorizados = [...this.plantillaForm.roles_autorizados, codRol];
+    }
+  }
+
+  camposDeFuente(fuenteCod: string): string[] {
+    const f = (this.metadatosPlantillas?.fuentes_sirae || []).find(item => item.codigo === fuenteCod);
+    return f?.campos || [];
+  }
+
+  agregarSeccion(): void {
+    const idx = this.plantillaForm.esquema.secciones.length + 1;
+    this.plantillaForm.esquema.secciones.push({
+      codigo: `SEC_${idx}`,
+      titulo: `Nueva Sección ${idx}`,
+      orden: idx,
+      origen: 'AUTOMATICO',
+      fuente_sirae: 'CONTRATO',
+      visible_en_impresion: true,
+    });
+  }
+
+  eliminarSeccion(idx: number): void {
+    this.plantillaForm.esquema.secciones.splice(idx, 1);
+  }
+
+  agregarCampo(): void {
+    const secCod = this.plantillaForm.esquema.secciones[0]?.codigo || 'SEC_1';
+    const idx = this.plantillaForm.esquema.campos.length + 1;
+    this.plantillaForm.esquema.campos.push({
+      codigo: `campo_${idx}`,
+      etiqueta: `Nuevo Campo ${idx}`,
+      seccion: secCod,
+      tipo: 'TEXTO',
+      origen: 'MANUAL',
+      fuente_sirae: '',
+      campo_fuente: '',
+      requerido: false,
+    });
+  }
+
+  eliminarCampo(idx: number): void {
+    this.plantillaForm.esquema.campos.splice(idx, 1);
+  }
+
+  agregarTabla(): void {
+    const secCod = this.plantillaForm.esquema.secciones[0]?.codigo || 'SEC_1';
+    const idx = this.plantillaForm.esquema.tablas.length + 1;
+    this.plantillaForm.esquema.tablas.push({
+      codigo: `TABLA_${idx}`,
+      titulo: `Tabla Operativa ${idx}`,
+      seccion: secCod,
+      fuente_sirae: 'CONSUMO',
+      columnas: [
+        { codigo: 'nombre_ingrediente', etiqueta: 'Producto', tipo: 'TEXTO', origen: 'AUTOMATICO' },
+        { codigo: 'unidad', etiqueta: 'Unidad', tipo: 'TEXTO', origen: 'AUTOMATICO' },
+        { codigo: 'cantidad_programada', etiqueta: 'Programado', tipo: 'NUMERO', origen: 'AUTOMATICO', calcular_total: true },
+      ],
+      formulas: [],
+      conversiones_unidad: [],
+    });
+  }
+
+  eliminarTabla(idx: number): void {
+    this.plantillaForm.esquema.tablas.splice(idx, 1);
+  }
+
+  agregarColumna(tblIdx: number): void {
+    const tbl = this.plantillaForm.esquema.tablas[tblIdx];
+    if (!tbl) return;
+    const idx = tbl.columnas.length + 1;
+    tbl.columnas.push({
+      codigo: `col_${idx}`,
+      etiqueta: `Columna ${idx}`,
+      tipo: 'NUMERO',
+      origen: 'AUTOMATICO',
+      formula: '',
+      unidad_destino: '',
+      calcular_total: false,
+    });
+  }
+
+  eliminarColumna(tblIdx: number, colIdx: number): void {
+    this.plantillaForm.esquema.tablas[tblIdx]?.columnas.splice(colIdx, 1);
+  }
+
+  agregarConversion(tblIdx: number): void {
+    const tbl = this.plantillaForm.esquema.tablas[tblIdx];
+    if (!tbl) return;
+    if (!tbl.conversiones_unidad) tbl.conversiones_unidad = [];
+    tbl.conversiones_unidad.push({
+      codigo: `CONV_${tbl.conversiones_unidad.length + 1}`,
+      nombre: 'Conversión de unidad',
+      columna_origen: tbl.columnas[0]?.codigo || 'cantidad_programada',
+      columna_destino: tbl.columnas[0]?.codigo || 'cantidad_programada',
+      unidad_origen_abrev: 'g',
+      unidad_destino_abrev: 'kg',
+      aplicar_automaticamente: true,
+    });
+  }
+
+  eliminarConversion(tblIdx: number, convIdx: number): void {
+    this.plantillaForm.esquema.tablas[tblIdx]?.conversiones_unidad?.splice(convIdx, 1);
+  }
+
+  guardarPlantilla(): void {
+    if (!this.esSuperAdmin) return;
+    this.guardandoPlantilla = true;
+    const f = this.plantillaForm;
+    f.esquema.encabezado.titulo = f.esquema.encabezado.titulo || f.nombre.toUpperCase();
+    f.esquema.encabezado.codigo_formato = f.codigo.trim().toUpperCase();
+
+    const obs$ = f.id_plantilla
+      ? this.planillasPaeService.actualizarPlantilla(f.id_plantilla, {
+          id_version: f.id_version,
+          nombre: f.nombre,
+          descripcion: f.descripcion,
+          categoria_proceso: f.categoria_proceso,
+          finalidad: f.finalidad,
+          roles_autorizados: f.roles_autorizados,
+          activa: f.activa,
+          notas_version: f.notas_version,
+          esquema: f.esquema,
+        })
+      : this.planillasPaeService.crearPlantilla({
+          codigo: f.codigo,
+          nombre: f.nombre,
+          descripcion: f.descripcion,
+          categoria_proceso: f.categoria_proceso,
+          finalidad: f.finalidad,
+          roles_autorizados: f.roles_autorizados,
+          activa: f.activa,
+          notas_version: f.notas_version,
+          esquema: f.esquema,
+        });
+
+    obs$.subscribe({
+      next: (guardada) => {
+        this.guardandoPlantilla = false;
+        this.cargarMetadatosYPlantillas();
+        this.seleccionarPlantilla(guardada);
+        void this.alertas.success('Plantilla guardada', `La plantilla ${guardada.codigo} se guardó correctamente.`);
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.guardandoPlantilla = false;
+        void this.alertas.warning('No se pudo guardar', err?.error?.detail || 'Revisa los campos o crea una nueva versión en borrador.');
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  previsualizarPlantilla(): void {
+    const idP = this.plantillaForm.id_plantilla;
+    if (!idP) {
+      void this.alertas.warning('Guarda primero', 'Guarda el borrador de la plantilla para previsualizarla.');
+      return;
+    }
+    this.previsualizando = true;
+    this.planillasPaeService.previsualizarPlantilla(idP, {
+      ...(this.plantillaForm.id_version ? { id_version: this.plantillaForm.id_version } : {}),
+      ...(this.previewSedeId ? { id_sede: this.previewSedeId } : {}),
+    }).subscribe({
+      next: (prev) => {
+        this.previewPlantilla = prev;
+        this.previsualizando = false;
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.previsualizando = false;
+        void this.alertas.error('Error al previsualizar', err?.error?.detail || 'No se pudo generar la previsualización.');
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  publicarPlantilla(): void {
+    const idP = this.plantillaForm.id_plantilla;
+    if (!idP) return;
+    this.guardandoPlantilla = true;
+    this.planillasPaeService.publicarPlantilla(idP, this.plantillaForm.id_version || undefined, this.plantillaForm.notas_version).subscribe({
+      next: (resp) => {
+        this.guardandoPlantilla = false;
+        this.cargarMetadatosYPlantillas();
+        if (resp?.plantilla) this.seleccionarPlantilla(resp.plantilla);
+        void this.alertas.success('Plantilla publicada', resp?.mensaje || 'La versión quedó publicada para uso oficial.');
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.guardandoPlantilla = false;
+        void this.alertas.warning('No se pudo publicar', err?.error?.detail || 'Verifica el esquema de la versión.');
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  crearNuevaVersion(): void {
+    const idP = this.plantillaForm.id_plantilla;
+    if (!idP) return;
+    this.guardandoPlantilla = true;
+    this.planillasPaeService.crearNuevaVersionPlantilla(idP, this.plantillaForm.id_version || undefined).subscribe({
+      next: (resp) => {
+        this.guardandoPlantilla = false;
+        this.cargarMetadatosYPlantillas();
+        if (resp?.plantilla) this.seleccionarPlantilla(resp.plantilla);
+        void this.alertas.success('Nueva versión en borrador', resp?.mensaje || 'Ya puedes editar la nueva versión sin alterar las anteriores.');
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.guardandoPlantilla = false;
+        void this.alertas.error('Error al versionar', err?.error?.detail || 'No se pudo crear una nueva versión.');
+        this.cdr.markForCheck();
+      }
+    });
   }
 
   // =====================================================

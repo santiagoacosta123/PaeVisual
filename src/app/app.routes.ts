@@ -87,7 +87,22 @@ export const routes: Routes = [
         path: 'reportes-consumo',
         component: Reportes,
         canActivate: [roleGuard],
-        data: { roles: ['superadministrador', 'super administrador', 'supervisor', 'coordinador', 'coordinador pae'] }
+        data: {
+          roles: [
+            'superadministrador',
+            'super administrador',
+            'super admin',
+            'supervisor',
+            'coordinador',
+            'coordinador pae',
+            'administrador',
+            'admin',
+            'administrador institucional',
+            'jefa de manipuladoras',
+            'jefa manipuladoras',
+            'jefamanipuladoras',
+          ]
+        }
       },
 
       /* RUTAS MÓDULOS DE SUPERVISIÓN */

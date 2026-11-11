@@ -2,7 +2,7 @@ import { Component, AfterViewInit, OnDestroy, OnInit, ViewChild, ElementRef, NgZ
 import { CommonModule } from '@angular/common';
 import { SweetAlertService } from '../sweet-alert.service';
 import Chart from 'chart.js/auto';
-import { forkJoin } from 'rxjs';
+import { catchError, forkJoin, of } from 'rxjs';
 import { InventarioOperativoService } from '../services/inventario-operativo.service';
 
 export interface ProductoInventario {
@@ -83,21 +83,33 @@ export class ReporteInventario implements OnInit, AfterViewInit, OnDestroy {
   cargarReporte(): void {
     this.cargando = true;
     this.errorMensaje = '';
+    const invSvc: any = this.inventarioService;
+    const categorias$ = typeof invSvc.cargarCategorias === 'function'
+      ? invSvc.cargarCategorias().pipe(catchError(() => of([])))
+      : of([]);
+
     forkJoin({
       saldos: this.inventarioService.cargarSaldos(),
       ingredientes: this.inventarioService.cargarIngredientes(),
+      categorias: categorias$,
     }).subscribe({
-      next: ({ saldos, ingredientes }) => {
-        this.productos = saldos.map(saldo => {
-          const ingrediente = ingredientes.find(item => item.id === saldo.ingredienteId);
+      next: ({ saldos, ingredientes, categorias }: any) => {
+        const mapaCategorias = new Map<number, string>(
+          (Array.isArray(categorias) ? categorias : []).map((c: any) => [Number(c.id), String(c.nombre || '').trim()])
+        );
+        this.productos = saldos.map((saldo: any) => {
+          const ingrediente = ingredientes.find((item: any) => item.id === saldo.ingredienteId);
           const estado = saldo.cantidad <= saldo.stockMinimo
             ? 'Poco stock'
             : saldo.cantidad <= saldo.stockMinimo * 2
               ? 'Disponible'
               : 'Suficiente';
+          const nombreCat = ingrediente?.categoriaId != null
+            ? (mapaCategorias.get(Number(ingrediente.categoriaId)) || 'Sin categoría')
+            : 'Sin categoría';
           return {
-            nombre: ingrediente?.nombre || `Ingrediente ${saldo.ingredienteId}`,
-            categoria: ingrediente?.categoriaId == null ? 'Sin categoría' : `Categoría ${ingrediente.categoriaId}`,
+            nombre: ingrediente?.nombre || `Ingrediente #${saldo.ingredienteId}`,
+            categoria: nombreCat,
             stock: saldo.cantidad,
             stockMinimo: saldo.stockMinimo,
             estado,
@@ -150,6 +162,7 @@ export class ReporteInventario implements OnInit, AfterViewInit, OnDestroy {
 
   private crearGrafico(): void {
     if (!this.chartCanvas) return;
+    if (!this.chartCanvas.nativeElement.getContext?.('2d')) return;
 
     const dataCounts = this.estadosDisponibles.map(estado => this.getCantidadPorEstado(estado));
     const bgColors = this.estadosDisponibles.map(estado => this.coloresPorEstado[estado].bg);

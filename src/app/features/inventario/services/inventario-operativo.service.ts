@@ -17,6 +17,11 @@ export interface UnidadInventario {
   abreviatura: string;
 }
 
+export interface CategoriaInventarioCatalogo {
+  id: number;
+  nombre: string;
+}
+
 export interface SaldoInventario {
   id: number;
   ingredienteId: number;
@@ -78,6 +83,7 @@ export class InventarioOperativoService {
 
   private cacheIngredientes: IngredienteInventario[] | null = null;
   private cacheUnidades: UnidadInventario[] | null = null;
+  private cacheCategorias: CategoriaInventarioCatalogo[] | null = null;
 
   constructor(private http: HttpClient) {}
 
@@ -107,6 +113,19 @@ export class InventarioOperativoService {
         abreviatura: String(item.abreviatura ?? item.simbolo ?? ''),
       }))),
       tap(lista => this.cacheUnidades = lista)
+    );
+  }
+
+  cargarCategorias(forzarRecarga = false): Observable<CategoriaInventarioCatalogo[]> {
+    if (!forzarRecarga && this.cacheCategorias) {
+      return of(this.cacheCategorias);
+    }
+    return this.http.get<unknown>(`${this.baseUrl}/categorias_inventario/`).pipe(
+      map(data => this.listaDe(data).map(item => ({
+        id: Number(item['id_categoria_inventario'] ?? item.id),
+        nombre: String(item['nombre_categoria'] ?? item.nombre ?? '').trim() || 'Sin categoría',
+      }))),
+      tap(lista => this.cacheCategorias = lista)
     );
   }
 

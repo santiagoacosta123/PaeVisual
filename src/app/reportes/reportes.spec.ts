@@ -139,3 +139,230 @@ describe('Reportes', () => {
     expect(component.resumenSedes).toHaveLength(0);
   });
 });
+
+import { HttpClient, provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { PlanillasPaeService } from '../services/planillas-pae.service';
+import { environment } from '@env/environment';
+
+describe('PlanillasPaeService y flujo SIR-170 a SIR-173 (sin datos quemados)', () => {
+  beforeEach(() => {
+    TestBed.resetTestingModule();
+  });
+
+  afterEach(() => {
+    TestBed.resetTestingModule();
+  });
+
+  it('sin HttpClient retorna estructuras vacías sin datos quemados', () => {
+    TestBed.configureTestingModule({
+      providers: [PlanillasPaeService, { provide: HttpClient, useValue: null }],
+    });
+    const svc = TestBed.inject(PlanillasPaeService);
+
+    let consolidadoResp: any;
+    svc.consultarReporteConsolidado().subscribe(r => { consolidadoResp = r; });
+
+    let plantillasResp: any;
+    svc.listarPlantillas().subscribe(r => { plantillasResp = r; });
+
+    let planillasResp: any;
+    svc.listarPlanillas().subscribe(r => { planillasResp = r; });
+
+    expect(plantillasResp).toEqual([]);
+    expect(planillasResp).toEqual([]);
+    expect(consolidadoResp.comparativo_productos).toEqual([]);
+    expect(consolidadoResp.consolidado_sedes).toEqual([]);
+    expect(consolidadoResp.detalle).toEqual([]);
+  });
+
+  it('consulta reporte consolidado y planillas con los filtros reales hacia el API', () => {
+    TestBed.configureTestingModule({
+      providers: [PlanillasPaeService, provideHttpClient(), provideHttpClientTesting()],
+    });
+    const svc = TestBed.inject(PlanillasPaeService);
+    const http = TestBed.inject(HttpTestingController);
+
+    let respuesta: any;
+    svc.consultarReporteConsolidado({
+      tipo_reporte: 'RECEPCIONES_DIFERENCIAS',
+      id_institucion: 12,
+      id_sede: 34,
+    }).subscribe(r => { respuesta = r; });
+
+    const req = http.expectOne(r =>
+      r.url === `${environment.apiUrl}/reportes/consolidados/` &&
+      r.params.get('tipo_reporte') === 'RECEPCIONES_DIFERENCIAS' &&
+      r.params.get('id_institucion') === '12' &&
+      r.params.get('id_sede') === '34'
+    );
+    expect(req.request.method).toBe('GET');
+    req.flush({
+      tipo_reporte: 'RECEPCIONES_DIFERENCIAS',
+      tipos_disponibles: [{ codigo: 'RECEPCIONES_DIFERENCIAS', nombre: 'Recepciones' }],
+      filtros_aplicados: { id_institucion: 12, id_sede: 34 },
+      permisos_usuario: { rol: 'supervisor', alcance: null },
+      fecha_actualizacion: '2026-11-11',
+      resumen_ejecutivo: { sedes_autorizadas: 1, total_entregas: 3 },
+      comparativo_productos: [],
+      consolidado_sedes: [{ id_sede: 34, nombre: 'Sede Real 34' }],
+      desagregado_grados: [],
+      detalle: [],
+      responsables: {},
+      registros_origen: { sede_ids: [34] },
+    });
+
+    expect(respuesta.consolidado_sedes[0].nombre).toBe('Sede Real 34');
+
+    // Listar plantillas paginadas DRF ({ results: [...] })
+    let listTpl: any[] = [];
+    svc.listarPlantillas({ categoria_proceso: 'REMISION' }).subscribe(r => { listTpl = r; });
+    const reqTpl = http.expectOne(r => r.url === `${environment.apiUrl}/reportes/plantillas/`);
+    reqTpl.flush({ count: 1, results: [{ id_plantilla: 1, codigo: 'PAE-REM-OFICIAL', nombre: 'Remisión Oficial' }] });
+    expect(listTpl).toHaveLength(1);
+    expect(listTpl[0].codigo).toBe('PAE-REM-OFICIAL');
+
+    http.verify();
+  });
+
+  it('en Reportes coordina generación automática, edición manual de tabla, validación y Jefa de manipuladoras', async () => {
+    const planillasSvcMock = {
+      obtenerAlcance: vi.fn().mockReturnValue(of({
+        rol: 'Jefa de manipuladoras',
+        alcance: null,
+        instituciones: [{ id_institucion: 10, nombre_institucion: 'IE Real', nit: '9001', estado: 'ACTIVA' }],
+        sedes: [{ id_sede: 20, nombre_sede: 'Sede Central Real', codigo_dane: '123', id_institucion: 10, nombre_institucion: 'IE Real', estado: 'ACTIVA' }],
+        contratos: [],
+        jornadas: [],
+      })),
+      obtenerMetadatosPlantillas: vi.fn().mockReturnValue(of({
+        procesos_pae: [{ codigo: 'REMISION', nombre: 'Remisión', descripcion: '' }],
+        roles_disponibles: [{ codigo: 'Jefa de manipuladoras', nombre: 'Jefa' }],
+        fuentes_sirae: [{ codigo: 'CONSUMO', nombre: 'Consumo', campos: ['cantidad_programada'] }],
+        unidades_medida: [],
+      })),
+      listarPlantillas: vi.fn().mockReturnValue(of([])),
+      consultarReporteConsolidado: vi.fn().mockReturnValue(of({
+        tipo_reporte: 'RESUMEN_GENERAL',
+        tipos_disponibles: [{ codigo: 'RESUMEN_GENERAL', nombre: 'Resumen General' }],
+        filtros_aplicados: {},
+        permisos_usuario: { rol: 'Jefa de manipuladoras', alcance: null },
+        fecha_actualizacion: '2026-11-11',
+        resumen_ejecutivo: {},
+        comparativo_productos: [],
+        consolidado_sedes: [],
+        desagregado_grados: [],
+        detalle: [],
+        responsables: {},
+        registros_origen: {},
+      })),
+      listarPlanillas: vi.fn().mockReturnValue(of([])),
+      generarPlanilla: vi.fn().mockReturnValue(of({
+        mensaje: 'Generada correctamente',
+        creada: true,
+        planilla: {
+          id_planilla: 99,
+          codigo_documento: 'PLN-REMI-20-001',
+          nombre_documento: 'Remisión Real',
+          categoria_proceso: 'REMISION',
+          estado: 'BORRADOR',
+          periodo: '2026-11',
+          id_institucion: 10,
+          institucion_nombre: 'IE Real',
+          id_sede: 20,
+          sede_nombre: 'Sede Central Real',
+          contrato_numero: 'C-01',
+          jornada_nombre: 'Única',
+          id_plantilla_version: 1,
+          plantilla_id: 1,
+          plantilla_codigo: 'PAE-REM-OFICIAL',
+          plantilla_nombre: 'Remisión',
+          version_numero: 1,
+          evento_origen: 'GENERACION_MANUAL_UI',
+          responsable_nombre: 'Usuario Prueba',
+          fecha_generacion: '2026-11-11T15:00:00Z',
+          total_pendientes: 1,
+          observaciones: '',
+          valores_manuales: {},
+          campos_pendientes: [{ tipo: 'CAMPO', codigo: 'obs_rec', etiqueta: 'Obs', origen: 'MANUAL', motivo: 'Pendiente' }],
+          contenido_snapshot: {
+            encabezado: { titulo: 'Remisión Real', institucion: { nombre: 'IE Real' }, sede: { nombre: 'Sede Central Real' } },
+            campos: [{ codigo: 'obs_rec', etiqueta: 'Obs', origen: 'MANUAL', valor: 'PENDIENTE', pendiente: true }],
+            tablas: [],
+          },
+        },
+      })),
+      actualizarPlanilla: vi.fn().mockImplementation((_id, payload) => of({
+        id_planilla: 99,
+        codigo_documento: 'PLN-REMI-20-001',
+        nombre_documento: 'Remisión Real',
+        categoria_proceso: 'REMISION',
+        estado: payload.estado || 'PENDIENTE',
+        periodo: '2026-11',
+        id_institucion: 10,
+        institucion_nombre: 'IE Real',
+        id_sede: 20,
+        sede_nombre: 'Sede Central Real',
+        contrato_numero: 'C-01',
+        jornada_nombre: 'Única',
+        id_plantilla_version: 1,
+        plantilla_id: 1,
+        plantilla_codigo: 'PAE-REM-OFICIAL',
+        plantilla_nombre: 'Remisión',
+        version_numero: 1,
+        evento_origen: 'GENERACION_MANUAL_UI',
+        responsable_nombre: 'Usuario Prueba',
+        fecha_generacion: '2026-11-11T15:00:00Z',
+        total_pendientes: 0,
+        observaciones: payload.observaciones || '',
+        valores_manuales: payload.valores_manuales || {},
+        campos_pendientes: [],
+        contenido_snapshot: { encabezado: {}, campos: [], tablas: [] },
+      })),
+    };
+
+    const authFullMock = {
+      institucionActiva$: of(null),
+      sedeActiva$: of(null),
+      obtenerUsuario: () => ({ rol: 'Jefa de manipuladoras' }),
+      esSuperAdministrador: () => false,
+      esSupervisor: () => false,
+      esAdministrador: () => false,
+      esJefa: () => true,
+    };
+
+    await TestBed.configureTestingModule({
+      imports: [Reportes],
+      providers: [
+        { provide: EntregasService, useValue: { cargar: () => of([]) } },
+        { provide: SiraeService, useValue: { getSedes: () => of([]), getContratos: () => of([]) } },
+        { provide: AuthService, useValue: authFullMock },
+        { provide: SweetAlertService, useValue: { error: vi.fn(), warning: vi.fn(), success: vi.fn() } },
+        { provide: PlanillasPaeService, useValue: planillasSvcMock },
+      ],
+    }).compileComponents();
+
+    const fx = TestBed.createComponent(Reportes);
+    const cmp = fx.componentInstance;
+    await fx.whenStable();
+
+    // Para Jefa inicia automáticamente en 'planillas'
+    expect(cmp.esJefa).toBe(true);
+    expect(cmp.pestanaActiva).toBe('planillas');
+
+    cmp.genPeriodo = '2026-11';
+    cmp.generarNuevaPlanilla(false);
+    expect(planillasSvcMock.generarPlanilla).toHaveBeenCalled();
+    expect(cmp.planillaActiva?.codigo_documento).toBe('PLN-REMI-20-001');
+
+    cmp.actualizarManualTabla('TABLA_1', 0, 'lote', 'LOTE-2026');
+    cmp.guardarManualesPlanilla('VALIDADO');
+    expect(planillasSvcMock.actualizarPlanilla).toHaveBeenCalledWith(99, expect.objectContaining({
+      estado: 'VALIDADO',
+      valores_manuales: expect.objectContaining({
+        __tablas__: { TABLA_1: { '0': { lote: 'LOTE-2026' } } },
+      }),
+    }));
+    expect(cmp.planillaActiva?.estado).toBe('VALIDADO');
+  });
+});

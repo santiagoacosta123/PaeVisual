@@ -2,9 +2,11 @@ import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '@env/environment';
+import { PlanillasPaeService } from '../../services/planillas-pae.service';
 
 type EstadoInventario = 'Ok' | 'Bajo' | 'Crítico';
 type FiltroEstado = 'Todos' | EstadoInventario;
@@ -73,8 +75,8 @@ interface MenuDia {
   platos: string[];
 }
 
-// Reporte disponible (datos de ejemplo)
 interface ReporteItem {
+  tipoReporte: string;
   nombre: string;
   detalle: string;
   fecha: string;
@@ -189,6 +191,8 @@ function normalizar(s: string): string {
 export class InstitucionesComponent implements OnInit, OnDestroy {
 
   private http = inject(HttpClient);
+  private router = inject(Router, { optional: true });
+  private planillasPae = inject(PlanillasPaeService, { optional: true });
 
   // Ruta de las instituciones asignadas al supervisor que inició sesión (el backend filtra por el usuario)
   private readonly urlInstituciones = `${environment.apiUrl}/instituciones/`;
@@ -370,7 +374,7 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
     this.inventario = this.inventarioDe(institucion);
     this.consumo = this.consumoDe(institucion);
     this.menus = this.menusDe(institucion);
-    this.reportes = this.reportesDe();
+    this.reportes = [];
 
     this.cargarEntregas(institucion);
   }
@@ -383,6 +387,9 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
 
   cambiarPestana(p: Pestana): void {
     this.pestana = p;
+    if (p === 'reportes' && this.seleccionada) {
+      this.cargarReportesReales(this.seleccionada);
+    }
   }
 
   // Porcentaje de la barra de cobertura (30 días = barra llena)
@@ -606,18 +613,83 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
     }));
   }
 
-  private reportesDe(): ReporteItem[] {
-    const hoy = this.hoy();
-    return [
-      { nombre: 'Inventario mensual', detalle: 'Existencias y vencimientos del mes',   fecha: hoy,                     icono: 'inventory_2' },
-      { nombre: 'Consumo semanal',    detalle: 'Raciones servidas y kilos consumidos', fecha: this.sumarDias(hoy, -4), icono: 'monitoring' },
-      { nombre: 'Entregas del mes',   detalle: 'Productos recibidos por proveedor',    fecha: this.sumarDias(hoy, -1), icono: 'local_shipping' },
-      { nombre: 'Asistencia diaria',  detalle: 'Niños atendidos por jornada',          fecha: hoy,                     icono: 'fact_check' },
-    ];
+  private cargarReportesReales(institucion: Institucion): void {
+    if (!this.planillasPae || typeof institucion.id === 'string' && institucion.id.startsWith('ej-')) {
+      this.reportes = [];
+      return;
+    }
+    this.planillasPae.consultarReporteConsolidado({
+      tipo_reporte: 'RESUMEN_GENERAL',
+      id_institucion: institucion.id,
+    }).subscribe({
+      next: (resp) => {
+        const res = resp.resumen_ejecutivo || {};
+        const fechaAct = (resp.fecha_actualizacion || this.hoy()).slice(0, 10);
+        this.reportes = [
+          {
+            tipoReporte: 'INVENTARIO_CONSOLIDADO',
+            nombre: 'Inventario consolidado por sede',
+            detalle: `${res['sedes_autorizadas'] ?? 0} sede(s) · ${res['productos_bajo_minimo'] ?? 0} alerta(s) bajo stock mínimo`,
+            fecha: fechaAct,
+            icono: 'inventory_2',
+          },
+          {
+            tipoReporte: 'CONSUMO_ALIMENTOS',
+            nombre: 'Balance de consumo y ejecución',
+            detalle: `Programado: ${res['productos_programados'] ?? 0} · Recibido: ${res['productos_recibidos'] ?? 0} · Consumido: ${res['productos_consumidos'] ?? 0}`,
+            fecha: fechaAct,
+            icono: 'monitoring',
+          },
+          {
+            tipoReporte: 'RECEPCIONES_DIFERENCIAS',
+            nombre: 'Entregas, recepciones y diferencias',
+            detalle: `${res['total_entregas'] ?? 0} entrega(s) (${res['entregas_recibidas'] ?? 0} recibidas, ${res['entregas_con_novedad'] ?? 0} novedades)`,
+            fecha: fechaAct,
+            icono: 'local_shipping',
+          },
+          {
+            tipoReporte: 'ASISTENCIA_GRADOS',
+            nombre: 'Asistencia diaria por grados',
+            detalle: `${res['asistencia_acumulada'] ?? 0} asistencia(s) registradas · Cobertura promedio ${res['cobertura_asistencia_promedio'] ?? 0}%`,
+            fecha: fechaAct,
+            icono: 'fact_check',
+          },
+        ];
+      },
+      error: () => {
+        this.reportes = [];
+      },
+    });
   }
 
   descargar(r: ReporteItem): void {
-    alert(`Ejemplo: aquí se abriría el reporte "${r.nombre}".`);
+    if (!this.seleccionada) return;
+    if (this.planillasPae && !(typeof this.seleccionada.id === 'string' && this.seleccionada.id.startsWith('ej-'))) {
+      this.planillasPae.descargarReporteConsolidadoCsv({
+        tipo_reporte: r.tipoReporte,
+        id_institucion: this.seleccionada.id,
+      }).subscribe({
+        next: (blob) => {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `reporte_${r.tipoReporte.toLowerCase()}_${this.seleccionada?.id}.csv`;
+          a.click();
+          setTimeout(() => URL.revokeObjectURL(url), 0);
+        },
+        error: () => {
+          if (this.router) {
+            void this.router.navigate(['/reportes-consumo'], {
+              queryParams: { tipo: r.tipoReporte, institucion: this.seleccionada?.id },
+            });
+          }
+        },
+      });
+      return;
+    }
+    if (this.router) {
+      void this.router.navigate(['/reportes-consumo']);
+    }
   }
 
   // =====================================================
