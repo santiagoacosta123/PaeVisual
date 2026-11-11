@@ -15,6 +15,7 @@ import {
   PlanillasPaeService,
   PlantillaOficial,
   ReporteConsolidadoResponse,
+  TipoReporteConsolidadoItem,
 } from '../services/planillas-pae.service';
 import {
   PlantillaFormulario,
@@ -105,6 +106,7 @@ export class Reportes implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute, { optional: true });
 
   // ===================== PESTAÑAS Y ROL =====================
+  modoModulo: 'auto' | 'plantillas' | 'reportes' = 'auto';
   pestanaActiva: 'consolidados' | 'planillas' | 'plantillas' | 'historial' = 'consolidados';
   esSuperAdmin = false;
   esSupervisor = false;
@@ -158,6 +160,7 @@ export class Reportes implements OnInit, OnDestroy {
   cargandoPlantillas = false;
   guardandoPlantilla = false;
   previsualizando = false;
+  mostrarEditorAvanzadoPlantilla = false;
   plantillaForm: PlantillaFormulario = crearPlantillaFormularioVacio();
   previewPlantilla: any = null;
   previewSedeId: number | null = null;
@@ -201,6 +204,8 @@ export class Reportes implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    const modoRuta = this.route?.snapshot?.data?.['modoModulo'];
+    this.modoModulo = (modoRuta === 'plantillas' || modoRuta === 'reportes') ? modoRuta : 'auto';
     this.detectarRolUsuario();
     this.leerParametrosIniciales();
 
@@ -211,22 +216,32 @@ export class Reportes implements OnInit, OnDestroy {
     ]).pipe(
       debounceTime(25)
     ).subscribe(([institucion, sede]) => {
+      const teniaInstitucion = Boolean(this.institucionActiva?.id_institucion);
       const cambioInstitucion = institucion?.id_institucion !== this.institucionActiva?.id_institucion;
+      const cambioSede = sede?.id_sede !== this.sedeActiva?.id_sede;
       this.institucionActiva = institucion;
       this.sedeActiva = sede;
       if (cambioInstitucion) {
         this.sedeFiltro = sede?.id_sede ?? 'Todas';
         this.sedeDetalle = null;
         this.paginaActual = 1;
-        if (institucion?.id_institucion && !this.filtroInstId) {
+        if (institucion?.id_institucion && (teniaInstitucion || !this.filtroInstId)) {
           this.filtroInstId = institucion.id_institucion;
           this.genInstId = institucion.id_institucion;
+          this.filtroSedeId = sede?.id_sede ?? null;
+          this.genSedeId = sede?.id_sede ?? null;
+          if (teniaInstitucion && this.modoModulo !== 'plantillas') {
+            this.cargarPlanillasGeneradas();
+            if (this.puedeVerTabConsolidados) {
+              this.cargarConsolidado();
+            }
+          }
         }
       } else if (sede && this.sedeFiltro === 'Todas') {
         this.sedeFiltro = sede.id_sede;
         this.paginaActual = 1;
       }
-      if (sede?.id_sede && !this.filtroSedeId) {
+      if (cambioSede && sede?.id_sede && (!this.filtroSedeId || teniaInstitucion)) {
         this.filtroSedeId = sede.id_sede;
         this.genSedeId = sede.id_sede;
       }
@@ -245,8 +260,16 @@ export class Reportes implements OnInit, OnDestroy {
     this.esSupervisor = typeof authAny?.esSupervisor === 'function' ? authAny.esSupervisor(rol) : false;
     this.esAdministrador = typeof authAny?.esAdministrador === 'function' ? authAny.esAdministrador(rol) : false;
     this.esJefa = typeof authAny?.esJefa === 'function' ? authAny.esJefa(rol) : false;
-    if (this.esJefa) {
+
+    if (this.esSuperAdmin && this.modoModulo === 'reportes') {
+      this.pestanaActiva = 'consolidados';
+    } else if (this.esSuperAdmin) {
+      this.pestanaActiva = 'plantillas';
+    } else {
       this.pestanaActiva = 'planillas';
+    }
+    if (this.esJefa) {
+      this.genProceso = 'INVENTARIO';
     }
   }
 
@@ -261,8 +284,12 @@ export class Reportes implements OnInit, OnDestroy {
         this.genInstId = id;
       }
     }
-    if (qp['tab'] && ['consolidados', 'planillas', 'plantillas', 'historial'].includes(String(qp['tab']))) {
-      this.pestanaActiva = qp['tab'];
+    const tabParam = String(qp['tab'] || '');
+    if (
+      (tabParam === 'consolidados' || tabParam === 'planillas' || tabParam === 'plantillas' || tabParam === 'historial') &&
+      this.puedeVerPestana(tabParam)
+    ) {
+      this.pestanaActiva = tabParam;
     }
   }
 
@@ -273,8 +300,12 @@ export class Reportes implements OnInit, OnDestroy {
     }
     this.cargarAlcance();
     this.cargarMetadatosYPlantillas();
-    this.cargarConsolidado();
-    this.cargarPlanillasGeneradas();
+    if (this.puedeVerTabConsolidados) {
+      this.cargarConsolidado();
+    }
+    if (this.puedeVerTabPlanillas) {
+      this.cargarPlanillasGeneradas();
+    }
   }
 
   ngOnDestroy(): void {
@@ -322,9 +353,141 @@ export class Reportes implements OnInit, OnDestroy {
     });
   }
 
+  get puedeVerTabPlantillas(): boolean {
+    return this.esSuperAdmin && this.modoModulo !== 'reportes';
+  }
+
+  get puedeVerTabPlanillas(): boolean {
+    return this.modoModulo !== 'plantillas' && !(this.esSuperAdmin && this.modoModulo === 'reportes');
+  }
+
+  get puedeVerTabConsolidados(): boolean {
+    return this.modoModulo !== 'plantillas' && (this.esSuperAdmin || this.esSupervisor || this.esAdministrador);
+  }
+
+  get puedeVerTabHistorial(): boolean {
+    return this.modoModulo !== 'plantillas' && this.esSupervisor;
+  }
+
+  get mostrarBarraPestanas(): boolean {
+    return [
+      this.puedeVerTabPlantillas,
+      this.puedeVerTabPlanillas,
+      this.puedeVerTabConsolidados,
+      this.puedeVerTabHistorial,
+    ].filter(Boolean).length > 1;
+  }
+
+  puedeVerPestana(tab: 'consolidados' | 'planillas' | 'plantillas' | 'historial'): boolean {
+    if (tab === 'planillas') return this.puedeVerTabPlanillas;
+    if (tab === 'plantillas') return this.puedeVerTabPlantillas;
+    if (tab === 'consolidados') return this.puedeVerTabConsolidados;
+    if (tab === 'historial') return this.puedeVerTabHistorial;
+    return false;
+  }
+
+  get tituloModuloPorRol(): string {
+    if (this.esSuperAdmin && this.modoModulo === 'plantillas') return 'Plantillas Maestras Oficiales PAE';
+    if (this.esSuperAdmin) return 'Reportes PAE';
+    if (this.esSupervisor) return 'Mis Planillas y Reportes de Supervisor PAE';
+    if (this.esAdministrador) return 'Planillas y Reportes de mi Institución';
+    if (this.esJefa) return 'Mis Planillas de Comedor Escolar';
+    return 'Planillas y Reportes PAE';
+  }
+
+  get subtituloModuloPorRol(): string {
+    if (this.esSuperAdmin && this.modoModulo === 'plantillas') {
+      return 'Administra únicamente los formatos maestros oficiales (Remisión de Víveres y Control de Entrada y Salida) sin mezclarlos con reportes.';
+    }
+    if (this.esSuperAdmin) {
+      return 'Consulta los reportes consolidados reales de todo el sistema por institución, sede, contrato y periodo.';
+    }
+    if (this.esSupervisor) {
+      return 'Genera tu Remisión de Víveres y Control de Inventario para la institución y sede a tu cargo, y consulta sus reportes.';
+    }
+    if (this.esAdministrador) {
+      return 'Consulta y genera las planillas y reportes autorizados para tu institución.';
+    }
+    if (this.esJefa) {
+      return 'Aquí ves únicamente tu planilla oficial de comedor escolar: Control de Entrada y Salida de Alimentos.';
+    }
+    return 'Consulta y diligencia las planillas y reportes autorizados para tu rol.';
+  }
+
+  get etiquetaTabPlanillas(): string {
+    if (this.esSuperAdmin) return 'Planillas Generadas';
+    if (this.esSupervisor) return 'Mis Planillas de Supervisor';
+    if (this.esAdministrador) return 'Planillas de mi Institución';
+    if (this.esJefa) return 'Mis Planillas de Comedor';
+    return 'Planillas';
+  }
+
+  get etiquetaTabConsolidados(): string {
+    if (this.esSuperAdmin) return 'Reportes Maestros';
+    if (this.esSupervisor) return 'Reportes de mis Instituciones';
+    if (this.esAdministrador) return 'Reportes de mi Institución';
+    return 'Reportes';
+  }
+
+  get plantillasDisponiblesParaUsuario(): PlantillaOficial[] {
+    return (this.plantillas || []).filter(t => t.activa && Boolean(t.version_publicada));
+  }
+
+  get plantillaSeleccionadaGenerar(): PlantillaOficial | null {
+    return this.plantillasDisponiblesParaUsuario.find(t => t.id_plantilla === this.genPlantillaId) || null;
+  }
+
+  get procesosFiltradosParaUsuario(): { codigo: string; nombre: string; descripcion: string }[] {
+    const todos = this.metadatosPlantillas?.procesos_pae || [];
+    if (this.esSuperAdmin || this.plantillasDisponiblesParaUsuario.length === 0) {
+      return todos;
+    }
+    const permitidos = new Set(this.plantillasDisponiblesParaUsuario.map(t => t.categoria_proceso));
+    return todos.filter(p => permitidos.has(p.codigo));
+  }
+
+  get reporteSeleccionadoInfo(): TipoReporteConsolidadoItem | null {
+    const tipos = this.consolidado?.tipos_disponibles || [];
+    return tipos.find(t => t.codigo === this.tipoReporteFiltro) || null;
+  }
+
+  seleccionarPlantillaParaGenerar(tpl: PlantillaOficial): void {
+    this.genPlantillaId = tpl.id_plantilla;
+    this.genProceso = tpl.categoria_proceso;
+  }
+
+  seleccionarTipoReporte(codigo: string): void {
+    this.tipoReporteFiltro = codigo;
+    this.cargarConsolidado();
+  }
+
+  etiquetaRolCorto(codigoRol: string): string {
+    const mapa: Record<string, string> = {
+      SuperAdministrador: 'SuperAdmin',
+      supervisor: 'Supervisor',
+      Administrador: 'Administrador',
+      JefaManipuladoras: 'Jefa de Manipuladoras',
+      Manipuladora: 'Manipuladora',
+    };
+    return mapa[codigoRol] || codigoRol;
+  }
+
+  etiquetaDuenoPlantilla(tpl: PlantillaOficial): string {
+    const roles = (tpl.roles_autorizados || []).filter(r => r !== 'SuperAdministrador');
+    if (roles.length === 0) return 'Solo SuperAdmin';
+    if (roles.length === 1) return `Uso: ${this.etiquetaRolCorto(roles[0])}`;
+    return roles.map(r => this.etiquetaRolCorto(r)).join(' · ');
+  }
+
   cambiarPestanaPrincipal(tab: 'consolidados' | 'planillas' | 'plantillas' | 'historial'): void {
+    if (!this.puedeVerPestana(tab)) {
+      this.pestanaActiva = this.puedeVerTabPlantillas
+        ? 'plantillas'
+        : (this.esSuperAdmin && this.puedeVerTabConsolidados ? 'consolidados' : 'planillas');
+      return;
+    }
     this.pestanaActiva = tab;
-    if (tab === 'consolidados' && !this.consolidado) this.cargarConsolidado();
+    if (tab === 'consolidados' && !this.consolidado && this.puedeVerTabConsolidados) this.cargarConsolidado();
     if (tab === 'planillas' && this.planillas.length === 0) this.cargarPlanillasGeneradas();
     if (tab === 'plantillas' && this.plantillas.length === 0) this.cargarMetadatosYPlantillas();
   }
@@ -367,6 +530,11 @@ export class Reportes implements OnInit, OnDestroy {
   }
 
   cargarConsolidado(): void {
+    if (!this.puedeVerTabConsolidados) {
+      this.cargandoConsolidado = false;
+      this.consolidado = null;
+      return;
+    }
     this.cargandoConsolidado = true;
     this.errorConsolidado = '';
     this.planillasPaeService.consultarReporteConsolidado({
@@ -380,6 +548,9 @@ export class Reportes implements OnInit, OnDestroy {
     }).subscribe({
       next: (resp) => {
         this.consolidado = resp;
+        if (resp?.tipo_reporte) {
+          this.tipoReporteFiltro = resp.tipo_reporte;
+        }
         this.cargandoConsolidado = false;
         this.cdr.markForCheck();
       },
@@ -642,6 +813,18 @@ export class Reportes implements OnInit, OnDestroy {
     }).subscribe(({ meta, lista }) => {
       if (meta) this.metadatosPlantillas = meta;
       this.plantillas = lista;
+      const disponibles = lista.filter(t => t.activa && Boolean(t.version_publicada));
+      if (disponibles.length > 0) {
+        const sigueValida = disponibles.some(t => t.id_plantilla === this.genPlantillaId);
+        if (!this.genPlantillaId || !sigueValida) {
+          this.seleccionarPlantillaParaGenerar(disponibles[0]);
+        }
+      } else {
+        this.genPlantillaId = null;
+        if (this.esJefa) {
+          this.genProceso = 'INVENTARIO';
+        }
+      }
       if (!this.plantillaForm.id_plantilla && lista.length > 0 && this.esSuperAdmin) {
         this.seleccionarPlantilla(lista[0]);
       }
@@ -652,11 +835,13 @@ export class Reportes implements OnInit, OnDestroy {
 
   iniciarNuevaPlantilla(): void {
     this.previewPlantilla = null;
+    this.mostrarEditorAvanzadoPlantilla = true;
     this.plantillaForm = crearPlantillaFormularioVacio();
   }
 
   seleccionarPlantilla(tpl: PlantillaOficial): void {
     this.previewPlantilla = null;
+    this.mostrarEditorAvanzadoPlantilla = false;
     const versionEditable = tpl.version_borrador || tpl.version_publicada || tpl.versiones?.[0];
     this.plantillaForm = {
       id_plantilla: tpl.id_plantilla,
@@ -888,6 +1073,7 @@ export class Reportes implements OnInit, OnDestroy {
         this.guardandoPlantilla = false;
         this.cargarMetadatosYPlantillas();
         if (resp?.plantilla) this.seleccionarPlantilla(resp.plantilla);
+        this.mostrarEditorAvanzadoPlantilla = true;
         void this.alertas.success('Nueva versión en borrador', resp?.mensaje || 'Ya puedes editar la nueva versión sin alterar las anteriores.');
         this.cdr.markForCheck();
       },

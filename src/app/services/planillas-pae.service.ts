@@ -147,9 +147,16 @@ export interface AlcanceReportes {
   jornadas: { id_jornada: number; nombre_jornada: string }[];
 }
 
+export interface TipoReporteConsolidadoItem {
+  codigo: string;
+  nombre: string;
+  descripcion?: string;
+  roles_autorizados?: string[];
+}
+
 export interface ReporteConsolidadoResponse {
   tipo_reporte: string;
-  tipos_disponibles: { codigo: string; nombre: string }[];
+  tipos_disponibles: TipoReporteConsolidadoItem[];
   filtros_aplicados: Record<string, any>;
   permisos_usuario: { rol: string; alcance: any };
   fecha_actualizacion: string;

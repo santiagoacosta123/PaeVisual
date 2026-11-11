@@ -84,10 +84,24 @@ export const routes: Routes = [
       },
 
       {
+        path: 'plantillas-maestras',
+        component: Reportes,
+        canActivate: [roleGuard],
+        data: {
+          modoModulo: 'plantillas',
+          roles: [
+            'superadministrador',
+            'super administrador',
+            'super admin',
+          ]
+        }
+      },
+      {
         path: 'reportes-consumo',
         component: Reportes,
         canActivate: [roleGuard],
         data: {
+          modoModulo: 'reportes',
           roles: [
             'superadministrador',
             'super administrador',

@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { of, throwError } from 'rxjs';
+import { ActivatedRoute } from '@angular/router';
+import { BehaviorSubject, of, throwError } from 'rxjs';
 import { AuthService } from '@core/auth';
 import { Reportes } from './reportes';
 import { SweetAlertService } from '../sweet-alert.service';
@@ -346,9 +347,13 @@ describe('PlanillasPaeService y flujo SIR-170 a SIR-173 (sin datos quemados)', (
     const cmp = fx.componentInstance;
     await fx.whenStable();
 
-    // Para Jefa inicia automáticamente en 'planillas'
+    // Para Jefa inicia automáticamente en 'planillas' y no consulta reportes consolidados ni constructor
     expect(cmp.esJefa).toBe(true);
     expect(cmp.pestanaActiva).toBe('planillas');
+    expect(cmp.puedeVerTabPlantillas).toBe(false);
+    expect(cmp.puedeVerTabConsolidados).toBe(false);
+    expect(cmp.puedeVerTabHistorial).toBe(false);
+    expect(planillasSvcMock.consultarReporteConsolidado).not.toHaveBeenCalled();
 
     cmp.genPeriodo = '2026-11';
     cmp.generarNuevaPlanilla(false);
@@ -364,5 +369,308 @@ describe('PlanillasPaeService y flujo SIR-170 a SIR-173 (sin datos quemados)', (
       }),
     }));
     expect(cmp.planillaActiva?.estado).toBe('VALIDADO');
+  });
+
+  it('muestra únicamente las pestañas y plantillas que corresponden a cada rol PAE', async () => {
+    const casos = [
+      {
+        rol: 'SuperAdministrador',
+        flags: { sa: true, sup: false, adm: false, jefa: false },
+        tabInicial: 'plantillas' as const,
+        tabsEsperadas: { plantillas: true, planillas: true, consolidados: true, historial: false },
+      },
+      {
+        rol: 'supervisor',
+        flags: { sa: false, sup: true, adm: false, jefa: false },
+        tabInicial: 'planillas' as const,
+        tabsEsperadas: { plantillas: false, planillas: true, consolidados: true, historial: true },
+      },
+      {
+        rol: 'Administrador',
+        flags: { sa: false, sup: false, adm: true, jefa: false },
+        tabInicial: 'planillas' as const,
+        tabsEsperadas: { plantillas: false, planillas: true, consolidados: true, historial: false },
+      },
+      {
+        rol: 'JefaManipuladoras',
+        flags: { sa: false, sup: false, adm: false, jefa: true },
+        tabInicial: 'planillas' as const,
+        tabsEsperadas: { plantillas: false, planillas: true, consolidados: false, historial: false },
+      },
+    ];
+
+    for (const c of casos) {
+      TestBed.resetTestingModule();
+      const planillasSvcMock = {
+        obtenerAlcance: vi.fn().mockReturnValue(of({ rol: c.rol, alcance: null, instituciones: [], sedes: [], contratos: [], jornadas: [] })),
+        obtenerMetadatosPlantillas: vi.fn().mockReturnValue(of({ procesos_pae: [], roles_disponibles: [], fuentes_sirae: [], unidades_medida: [] })),
+        listarPlantillas: vi.fn().mockReturnValue(of([
+          {
+            id_plantilla: 7,
+            codigo: 'PAE-FMT-INVENTARIO',
+            nombre: 'Control de Entrada y Salida (Kárdex)',
+            descripcion: 'Control de bodega',
+            categoria_proceso: 'INVENTARIO',
+            finalidad: 'Controlar existencias',
+            roles_autorizados: ['SuperAdministrador', 'supervisor', 'Administrador', 'JefaManipuladoras'],
+            activa: true,
+            version_publicada: { id_version: 1, numero_version: 1, estado: 'PUBLICADA', es_inmutable: true, esquema: { encabezado: {}, secciones: [], campos: [], tablas: [] }, fecha_creacion: '2026-11-11' },
+            versiones: [],
+          },
+        ])),
+        consultarReporteConsolidado: vi.fn().mockReturnValue(of({
+          tipo_reporte: 'RESUMEN_GENERAL',
+          tipos_disponibles: [{ codigo: 'RESUMEN_GENERAL', nombre: 'Resumen general' }],
+          filtros_aplicados: {},
+          permisos_usuario: { rol: c.rol, alcance: null },
+          fecha_actualizacion: '2026-11-11',
+          resumen_ejecutivo: {},
+          comparativo_productos: [],
+          consolidado_sedes: [],
+          desagregado_grados: [],
+          detalle: [],
+          responsables: {},
+          registros_origen: {},
+        })),
+        listarPlanillas: vi.fn().mockReturnValue(of([])),
+      };
+
+      await TestBed.configureTestingModule({
+        imports: [Reportes],
+        providers: [
+          { provide: EntregasService, useValue: { cargar: () => of([]) } },
+          { provide: SiraeService, useValue: { getSedes: () => of([]), getContratos: () => of([]) } },
+          {
+            provide: AuthService,
+            useValue: {
+              institucionActiva$: of(null),
+              sedeActiva$: of(null),
+              obtenerUsuario: () => ({ rol: c.rol }),
+              esSuperAdministrador: () => c.flags.sa,
+              esSupervisor: () => c.flags.sup,
+              esAdministrador: () => c.flags.adm,
+              esJefa: () => c.flags.jefa,
+            },
+          },
+          { provide: SweetAlertService, useValue: { error: vi.fn(), warning: vi.fn(), success: vi.fn() } },
+          { provide: PlanillasPaeService, useValue: planillasSvcMock },
+        ],
+      }).compileComponents();
+
+      const fx = TestBed.createComponent(Reportes);
+      const cmp = fx.componentInstance;
+      await fx.whenStable();
+
+      expect(cmp.pestanaActiva).toBe(c.tabInicial);
+      expect(cmp.puedeVerTabPlantillas).toBe(c.tabsEsperadas.plantillas);
+      expect(cmp.puedeVerTabConsolidados).toBe(c.tabsEsperadas.consolidados);
+      expect(cmp.puedeVerTabHistorial).toBe(c.tabsEsperadas.historial);
+      expect(cmp.plantillasDisponiblesParaUsuario).toHaveLength(1);
+      expect(cmp.genPlantillaId).toBe(7);
+
+      if (!c.tabsEsperadas.plantillas) {
+        cmp.cambiarPestanaPrincipal('plantillas');
+        expect(cmp.pestanaActiva).toBe('planillas');
+      }
+      if (!c.tabsEsperadas.consolidados) {
+        expect(planillasSvcMock.consultarReporteConsolidado).not.toHaveBeenCalled();
+      } else {
+        expect(planillasSvcMock.consultarReporteConsolidado).toHaveBeenCalled();
+      }
+    }
+  });
+
+  it('separa Plantillas Maestras (modoModulo=plantillas) de Reportes (modoModulo=reportes) para SuperAdmin y alterna editor simple/avanzado', async () => {
+    const mockPlantillas = [
+      {
+        id_plantilla: 1,
+        codigo: 'PAE-FMT-REMISION',
+        nombre: 'Remisión de Víveres e Insumos por Comedor Escolar',
+        descripcion: 'Formato oficial supervisor',
+        categoria_proceso: 'REMISION',
+        finalidad: 'Autorizar remisiones',
+        roles_autorizados: ['SuperAdministrador', 'supervisor'],
+        activa: true,
+        version_publicada: { id_version: 1, numero_version: 1, estado: 'PUBLICADA', es_inmutable: true, esquema: { encabezado: {}, secciones: [], campos: [], tablas: [] }, fecha_creacion: '2026-11-11' },
+        versiones: [],
+      },
+      {
+        id_plantilla: 2,
+        codigo: 'PAE-FMT-INVENTARIO',
+        nombre: 'Control de Entrada y Salida de Alimentos',
+        descripcion: 'Formato oficial comedor y supervisor',
+        categoria_proceso: 'INVENTARIO',
+        finalidad: 'Control diario',
+        roles_autorizados: ['SuperAdministrador', 'supervisor', 'Administrador', 'JefaManipuladoras', 'Manipuladora'],
+        activa: true,
+        version_publicada: { id_version: 2, numero_version: 1, estado: 'PUBLICADA', es_inmutable: true, esquema: { encabezado: {}, secciones: [], campos: [], tablas: [] }, fecha_creacion: '2026-11-11' },
+        versiones: [],
+      },
+    ];
+
+    const crearSvc = () => ({
+      obtenerAlcance: vi.fn().mockReturnValue(of({ rol: 'SuperAdministrador', alcance: null, instituciones: [], sedes: [], contratos: [], jornadas: [] })),
+      obtenerMetadatosPlantillas: vi.fn().mockReturnValue(of({ procesos_pae: [], roles_disponibles: [], fuentes_sirae: [], unidades_medida: [] })),
+      listarPlantillas: vi.fn().mockReturnValue(of(mockPlantillas)),
+      consultarReporteConsolidado: vi.fn().mockReturnValue(of({
+        tipo_reporte: 'RESUMEN_GENERAL',
+        tipos_disponibles: [{ codigo: 'RESUMEN_GENERAL', nombre: 'Resumen general' }],
+        filtros_aplicados: {},
+        permisos_usuario: { rol: 'SuperAdministrador', alcance: null },
+        fecha_actualizacion: '2026-11-11',
+        resumen_ejecutivo: {},
+        comparativo_productos: [],
+        consolidado_sedes: [],
+        desagregado_grados: [],
+        detalle: [],
+        responsables: {},
+        registros_origen: {},
+      })),
+      listarPlanillas: vi.fn().mockReturnValue(of([])),
+    });
+
+    // 1) Módulo separado Plantillas Maestras: NO muestra Reportes ni Planillas Generadas
+    TestBed.resetTestingModule();
+    const svcPlantillas = crearSvc();
+    await TestBed.configureTestingModule({
+      imports: [Reportes],
+      providers: [
+        { provide: ActivatedRoute, useValue: { snapshot: { data: { modoModulo: 'plantillas' }, queryParams: {} } } },
+        { provide: EntregasService, useValue: { cargar: () => of([]) } },
+        { provide: SiraeService, useValue: { getSedes: () => of([]), getContratos: () => of([]) } },
+        {
+          provide: AuthService,
+          useValue: {
+            institucionActiva$: of(null),
+            sedeActiva$: of(null),
+            obtenerUsuario: () => ({ rol: 'SuperAdministrador' }),
+            esSuperAdministrador: () => true,
+            esSupervisor: () => false,
+            esAdministrador: () => false,
+            esJefa: () => false,
+          },
+        },
+        { provide: SweetAlertService, useValue: { error: vi.fn(), warning: vi.fn(), success: vi.fn() } },
+        { provide: PlanillasPaeService, useValue: svcPlantillas },
+      ],
+    }).compileComponents();
+
+    const fxTpl = TestBed.createComponent(Reportes);
+    const cmpTpl = fxTpl.componentInstance;
+    await fxTpl.whenStable();
+
+    expect(cmpTpl.pestanaActiva).toBe('plantillas');
+    expect(cmpTpl.puedeVerTabPlantillas).toBe(true);
+    expect(cmpTpl.puedeVerTabPlanillas).toBe(false);
+    expect(cmpTpl.puedeVerTabConsolidados).toBe(false);
+    expect(cmpTpl.mostrarBarraPestanas).toBe(false);
+    expect(cmpTpl.mostrarEditorAvanzadoPlantilla).toBe(false);
+    expect(svcPlantillas.listarPlanillas).not.toHaveBeenCalled();
+
+    cmpTpl.iniciarNuevaPlantilla();
+    expect(cmpTpl.mostrarEditorAvanzadoPlantilla).toBe(true);
+    cmpTpl.seleccionarPlantilla(mockPlantillas[1] as any);
+    expect(cmpTpl.mostrarEditorAvanzadoPlantilla).toBe(false);
+
+    // 2) Módulo separado Reportes y Planillas: NO muestra Plantillas Maestras
+    TestBed.resetTestingModule();
+    const svcReportes = crearSvc();
+    await TestBed.configureTestingModule({
+      imports: [Reportes],
+      providers: [
+        { provide: ActivatedRoute, useValue: { snapshot: { data: { modoModulo: 'reportes' }, queryParams: { tab: 'plantillas' } } } },
+        { provide: EntregasService, useValue: { cargar: () => of([]) } },
+        { provide: SiraeService, useValue: { getSedes: () => of([]), getContratos: () => of([]) } },
+        {
+          provide: AuthService,
+          useValue: {
+            institucionActiva$: of(null),
+            sedeActiva$: of(null),
+            obtenerUsuario: () => ({ rol: 'SuperAdministrador' }),
+            esSuperAdministrador: () => true,
+            esSupervisor: () => false,
+            esAdministrador: () => false,
+            esJefa: () => false,
+          },
+        },
+        { provide: SweetAlertService, useValue: { error: vi.fn(), warning: vi.fn(), success: vi.fn() } },
+        { provide: PlanillasPaeService, useValue: svcReportes },
+      ],
+    }).compileComponents();
+
+    const fxRep = TestBed.createComponent(Reportes);
+    const cmpRep = fxRep.componentInstance;
+    await fxRep.whenStable();
+
+    expect(cmpRep.pestanaActiva).toBe('consolidados');
+    expect(cmpRep.puedeVerTabPlantillas).toBe(false);
+    expect(cmpRep.puedeVerTabPlanillas).toBe(false);
+    expect(cmpRep.puedeVerTabConsolidados).toBe(true);
+    expect(cmpRep.mostrarBarraPestanas).toBe(false);
+    expect(svcReportes.listarPlanillas).not.toHaveBeenCalled();
+  });
+
+  it('sincroniza genInstId y filtroInstId cuando el Supervisor cambia su institución activa', async () => {
+    TestBed.resetTestingModule();
+    const instSubject = new BehaviorSubject<any>({ id_institucion: 10, nombre_institucion: 'IE Uno' });
+    const sedeSubject = new BehaviorSubject<any>({ id_sede: 101, nombre_sede: 'Sede Uno', id_institucion: 10 });
+    const svcMock = {
+      obtenerAlcance: vi.fn().mockReturnValue(of({ rol: 'supervisor', alcance: null, instituciones: [], sedes: [], contratos: [], jornadas: [] })),
+      obtenerMetadatosPlantillas: vi.fn().mockReturnValue(of({ procesos_pae: [], roles_disponibles: [], fuentes_sirae: [], unidades_medida: [] })),
+      listarPlantillas: vi.fn().mockReturnValue(of([])),
+      consultarReporteConsolidado: vi.fn().mockReturnValue(of({
+        tipo_reporte: 'RESUMEN_GENERAL',
+        tipos_disponibles: [{ codigo: 'RESUMEN_GENERAL', nombre: 'Resumen general' }],
+        filtros_aplicados: {},
+        permisos_usuario: { rol: 'supervisor', alcance: null },
+        fecha_actualizacion: '2026-11-11',
+        resumen_ejecutivo: {},
+        comparativo_productos: [],
+        consolidado_sedes: [],
+        desagregado_grados: [],
+        detalle: [],
+        responsables: {},
+        registros_origen: {},
+      })),
+      listarPlanillas: vi.fn().mockReturnValue(of([])),
+    };
+
+    await TestBed.configureTestingModule({
+      imports: [Reportes],
+      providers: [
+        { provide: ActivatedRoute, useValue: { snapshot: { data: { modoModulo: 'reportes' }, queryParams: {} } } },
+        { provide: EntregasService, useValue: { cargar: () => of([]) } },
+        { provide: SiraeService, useValue: { getSedes: () => of([]), getContratos: () => of([]) } },
+        {
+          provide: AuthService,
+          useValue: {
+            institucionActiva$: instSubject.asObservable(),
+            sedeActiva$: sedeSubject.asObservable(),
+            obtenerUsuario: () => ({ rol: 'supervisor' }),
+            esSuperAdministrador: () => false,
+            esSupervisor: () => true,
+            esAdministrador: () => false,
+            esJefa: () => false,
+          },
+        },
+        { provide: SweetAlertService, useValue: { error: vi.fn(), warning: vi.fn(), success: vi.fn() } },
+        { provide: PlanillasPaeService, useValue: svcMock },
+      ],
+    }).compileComponents();
+
+    const fx = TestBed.createComponent(Reportes);
+    const cmp = fx.componentInstance;
+    await fx.whenStable();
+    await new Promise(resolve => setTimeout(resolve, 40));
+
+    expect(cmp.genInstId).toBe(10);
+    expect(cmp.filtroInstId).toBe(10);
+
+    sedeSubject.next(null);
+    instSubject.next({ id_institucion: 25, nombre_institucion: 'IE Dos' });
+    await new Promise(resolve => setTimeout(resolve, 40));
+
+    expect(cmp.genInstId).toBe(25);
+    expect(cmp.filtroInstId).toBe(25);
   });
 });
