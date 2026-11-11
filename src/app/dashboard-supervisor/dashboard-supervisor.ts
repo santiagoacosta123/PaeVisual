@@ -723,17 +723,8 @@ export class DashboardSupervisor implements OnInit, AfterViewInit, OnDestroy {
       }
 
       const lista = Array.isArray(resp) ? resp : (resp?.results ?? []);
-      const institucionesServidor = lista.map((item: any) => ({
-        id_institucion: item.id_institucion ?? item.id,
-        nombre_institucion: item.nombre_institucion ?? item.nombre,
-        nit: item.nit ?? '',
-        sedes: Array.isArray(item.sedes) ? item.sedes : [],
-        representante_legal: item.representante_legal,
-        telefono: item.telefono,
-        correo_contacto: item.correo_contacto,
-        estado: item.estado ?? 'ACTIVO',
-        administrador_asignado: item.administrador_asignado,
-      }));
+      const institucionesServidor = lista.map((item: any) => this.normalizarInstitucion(item));
+      
 
       const asignadasUsuario = usuario?.instituciones_supervisor;
       const asignadasIds = new Set(
@@ -766,12 +757,16 @@ export class DashboardSupervisor implements OnInit, AfterViewInit, OnDestroy {
         const encontrada = this.instituciones.find(i => i.id_institucion === activaGuardada.id_institucion);
         if (encontrada) {
           this.institucionActiva = encontrada;
+          this.authService.actualizarInstitucionActiva(encontrada);
         } else {
           this.deseleccionarInstitucion();
         }
       }
       this.cdr.detectChanges();
     });
+  }
+  normalizarInstitucion(item: any) {
+    throw new Error('Method not implemented.');
   }
 
   private cargarInstitucionesDesdePerfil(idUsuario?: number): void {
@@ -801,30 +796,19 @@ export class DashboardSupervisor implements OnInit, AfterViewInit, OnDestroy {
         ?? usuario?.usuario?.instituciones_supervisor
         ?? usuario?.results?.instituciones_supervisor;
 
-      if (Array.isArray(asignadas) && asignadas.length > 0) {
-        this.instituciones = asignadas.map((item: any) => ({
-          id_institucion: item.id_institucion ?? item.id,
-          nombre_institucion: item.nombre_institucion ?? item.nombre,
-          nit: item.nit ?? '',
-          sedes: Array.isArray(item.sedes) ? item.sedes : [],
-        }));
-        this.guardarEnCache(this.instituciones);
-        this.errorMensaje = '';
-      } else if (this.instituciones.length === 0) {
-        const enCache = this.obtenerInstitucionesEnCache();
-        if (enCache.length > 0) {
-          this.instituciones = enCache;
-        } else {
-          this.errorMensaje = 'No se encontraron instituciones asignadas a tu cuenta.';
-        }
-      }
-      this.cargando = false;
-      this.cdr.detectChanges();
+      this.instituciones = asignadas.map((item: any) => ({
+        id_institucion: item.id_institucion ?? item.id,
+        nombre_institucion: item.nombre_institucion ?? item.nombre,
+        nit: item.nit ?? '',
+        sedes: Array.isArray(item.sedes) ? item.sedes : [],
+      }));
+      this.errorMensaje = '';
     });
   }
 
   trackInstitucion = (_: number, inst: InstitucionAsignada) => inst.id_institucion;
 
+  // Fotos de las tarjetas (vienen en imagenes-instituciones.ts). Si hay más instituciones que fotos, se repiten en orden.
   imagenDe(indice: number): string {
     return IMAGENES_INSTITUCION[indice % IMAGENES_INSTITUCION.length];
   }
@@ -833,6 +817,29 @@ export class DashboardSupervisor implements OnInit, AfterViewInit, OnDestroy {
     const id = this.institucionActiva?.id_institucion;
     const i = this.instituciones.findIndex(x => x.id_institucion === id);
     return this.imagenDe(i >= 0 ? i : 0);
+  }
+
+  nombresSedes(institucion: InstitucionAsignada): string[] {
+    return (institucion.sedes ?? [])
+      .map((sede: any) => typeof sede === 'string'
+        ? sede.trim()
+        : String(sede?.nombre_sede ?? sede?.nombre ?? '').trim())
+      .filter((nombre: string) => nombre.length > 0);
+  }
+
+  nombreAdministrador(institucion: InstitucionAsignada): string {
+    const administrador = institucion.administrador_asignado;
+    if (typeof administrador === 'string') {
+      return administrador.trim() || 'Sin asignar';
+    }
+    if (!administrador || typeof administrador !== 'object') {
+      return 'Sin asignar';
+    }
+
+    const nombreCompleto = String(administrador.nombre_completo ?? '').trim();
+    const nombre = String(administrador.nombre ?? '').trim();
+    const apellido = String(administrador.apellido ?? '').trim();
+    return nombreCompleto || [nombre, apellido].filter(Boolean).join(' ') || 'Sin asignar';
   }
 
   seleccionarInstitucion(inst: InstitucionAsignada): void {
@@ -879,9 +886,7 @@ export class DashboardSupervisor implements OnInit, AfterViewInit, OnDestroy {
   }
 
   get resumenSedes(): string {
-    if (!this.institucionActiva?.sedes || this.institucionActiva.sedes.length === 0) {
-      return 'Sin sedes registradas';
-    }
-    return this.institucionActiva.sedes.map((s: any) => s.nombre_sede).join(', ');
+    const nombres = this.institucionActiva ? this.nombresSedes(this.institucionActiva) : [];
+    return nombres.length > 0 ? nombres.join(', ') : 'Sin sedes registradas';
   }
 }

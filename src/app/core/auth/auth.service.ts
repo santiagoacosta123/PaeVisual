@@ -456,6 +456,14 @@ export class AuthService {
     this.limpiarSedeActiva();
   }
 
+  actualizarInstitucionActiva(institucion: InstitucionAsignada): void {
+    if (!this.estaDisponibleStorage() || !institucion) {
+      return;
+    }
+    localStorage.setItem(this.INSTITUCION_ACTIVA, JSON.stringify(institucion));
+    this.institucionActivaSubject.next(institucion);
+  }
+
   obtenerSedeActiva(): SedeActiva | null {
     if (!this.estaDisponibleStorage()) return null;
     try {

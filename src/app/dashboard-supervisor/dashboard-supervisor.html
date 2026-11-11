@@ -1571,6 +1571,37 @@
       </div>
     </div>
 
+    <div class="sx-panel__body">
+      <span class="sx-pill"><span class="material-symbols-outlined" style="font-size:14px">check_circle</span>Institución seleccionada</span>
+      <span class="sx-pill"><span class="sx-dot"></span>{{ inst.estado?.trim() || 'No registrado' }}</span>
+      <h2>{{ inst.nombre_institucion }}</h2>
+
+      <div class="sx-rows">
+        <div class="sx-row">
+          <span class="sx-row__icon"><span class="material-symbols-outlined">badge</span></span>
+          <div><small>NIT / Código</small><strong>{{ inst.nit?.trim() || 'No registrado' }}</strong></div>
+        </div>
+        <div *ngIf="inst.representante_legal?.trim()" class="sx-row">
+          <span class="sx-row__icon"><span class="material-symbols-outlined">person</span></span>
+          <div><small>Representante</small><strong>{{ inst.representante_legal }}</strong></div>
+        </div>
+        <div *ngIf="inst.telefono?.trim()" class="sx-row">
+          <span class="sx-row__icon"><span class="material-symbols-outlined">call</span></span>
+          <div><small>Teléfono</small><strong>{{ inst.telefono }}</strong></div>
+        </div>
+        <div class="sx-row">
+          <span class="sx-row__icon"><span class="material-symbols-outlined">admin_panel_settings</span></span>
+          <div><small>Administrador</small><strong>{{ nombreAdministrador(inst) }}</strong></div>
+        </div>
+      </div>
+
+      <div class="sx-sedes-head">Sedes <span>{{ nombresSedes(inst).length }}</span></div>
+      <p *ngIf="nombresSedes(inst).length === 0" class="sx-empty">Sin sedes registradas</p>
+      <div *ngIf="nombresSedes(inst).length > 0" class="sx-sedes">
+        <span *ngFor="let nombreSede of nombresSedes(inst)" class="sx-sede">{{ nombreSede }}</span>
+      </div>
+    </div>
+
     <!-- KPIS -->
     <div class="sg-kpis">
       <article class="sg-kpi">

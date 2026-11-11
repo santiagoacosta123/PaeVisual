@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef, HostListener, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, ChangeDetectorRef, HostListener, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   RouterOutlet,
@@ -7,17 +7,23 @@ import {
   Router,
   NavigationEnd
 } from '@angular/router';
-import { filter, timeout, catchError } from 'rxjs/operators';
-import { of } from 'rxjs';
+import { filter, timeout, catchError, expand, map, reduce } from 'rxjs/operators';
+import { EMPTY, interval, of, Subscription } from 'rxjs';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { NotificacionService } from '../notificaciones/notificacion.service';
 import { Notificacion } from '../notificaciones/notificacion.model';
-import { AuthService, InstitucionAsignada, SedeActiva } from '../services/auth.service';
+import { AuthService, InstitucionAsignada, SedeActiva } from '../core/auth/auth.service';
 import { SiraeService } from '../features/contratos/services/contratos_pae.service';
 import { FacturasCompraService } from '../services/facturas-compra.service';
 import { environment } from '../../environments/environment';
 import { SweetAlertService } from '../core/services/sweet-alert.service';
+import {
+  listaSedesDePagina,
+  normalizarInstitucionSupervisor,
+  sedesDeInstitucion,
+  urlSiguientePaginaSedes,
+} from './institucion-supervisor.utils';
 
 @Component({
   selector: 'app-layout',
@@ -33,7 +39,7 @@ import { SweetAlertService } from '../core/services/sweet-alert.service';
   templateUrl: './layout.html',
   styleUrls: ['./layout.css']
 })
-export class LayoutComponent implements OnInit {
+export class LayoutComponent implements OnInit, OnDestroy {
 
   // Declaración de pageTitle
   pageTitle: string = 'Panel de Control';
@@ -66,6 +72,13 @@ export class LayoutComponent implements OnInit {
   sedeActiva: SedeActiva | null = null;
   institucionesSupervisor: InstitucionAsignada[] = [];
   mostrarSelectorInstitucion = false;
+  errorSedesInstitucion = '';
+  private navegacionSubscription?: Subscription;
+  private institucionesSubscription?: Subscription;
+  private sedesSubscription?: Subscription;
+  private refrescoInstitucionesSubscription?: Subscription;
+  private sedesSupervisor: any[] = [];
+  private sedesSupervisorCargadas = false;
 
   // Estado del perfil
   mostrarPerfil = false;
@@ -116,10 +129,14 @@ export class LayoutComponent implements OnInit {
 
   ) {
     // Escuchar los cambios de ruta para actualizar el título automáticamente
-    this.router.events.pipe(
+    this.navegacionSubscription = this.router.events.pipe(
       filter((event): event is NavigationEnd => event instanceof NavigationEnd)
     ).subscribe((event: NavigationEnd) => {
       this.actualizarTitulo(event.urlAfterRedirects);
+      if (this.esSupervisor) {
+        this.cargarInstitucionesSupervisor();
+        this.cargarSedesSupervisor();
+      }
     });
   }
 
@@ -168,7 +185,11 @@ export class LayoutComponent implements OnInit {
       this.institucionesSupervisor = this.authService.obtenerInstitucionesSupervisor();
       this.institucionActiva = this.authService.obtenerInstitucionActiva();
       this.authService.institucionActiva$.subscribe((inst) => {
+        const idAnterior = this.institucionActiva?.id_institucion;
         this.institucionActiva = inst;
+        if (inst && Number(inst.id_institucion) !== Number(idAnterior)) {
+          this.cargarSedesSupervisor();
+        }
         this.cdr.detectChanges();
       });
       this.sedeActiva = this.authService.obtenerSedeActiva();
@@ -176,9 +197,7 @@ export class LayoutComponent implements OnInit {
         this.sedeActiva = sede;
         this.cdr.detectChanges();
       });
-      if (this.institucionesSupervisor.length === 0) {
-        this.cargarInstitucionesSupervisor();
-      }
+      this.iniciarActualizacionInstituciones();
     }
 
     if (this.esSuperAdministrador) {
@@ -205,6 +224,22 @@ export class LayoutComponent implements OnInit {
     }
   }
 
+  ngOnDestroy(): void {
+    this.navegacionSubscription?.unsubscribe();
+    this.institucionesSubscription?.unsubscribe();
+    this.sedesSubscription?.unsubscribe();
+    this.refrescoInstitucionesSubscription?.unsubscribe();
+  }
+
+  private iniciarActualizacionInstituciones(): void {
+    this.cargarInstitucionesSupervisor();
+    this.cargarSedesSupervisor();
+    this.refrescoInstitucionesSubscription = interval(60_000).subscribe(() => {
+      this.cargarInstitucionesSupervisor();
+      this.cargarSedesSupervisor();
+    });
+  }
+
   actualizarTitulo(url: string): void {
     const routeTitles: { [key: string]: string } = {
       '/inicio': 'Inicio',
@@ -221,6 +256,7 @@ export class LayoutComponent implements OnInit {
       '/historial-entregas': 'Entregas',
       '/entregas-tipo-mercado': 'Entregas por tipo de mercado',
       '/instituciones': 'Sedes',
+      '/sedes-institucion': 'Sedes',
       '/banco-datos': 'Banco de Datos',
       '/consulta-gramajes': 'Gramajes por Sede y Jornada',
       '/crear-usuario': 'Crear Usuario',
@@ -303,28 +339,32 @@ export class LayoutComponent implements OnInit {
   }
 
   cargarInstitucionesSupervisor(): void {
-    this.http.get<any>(`${environment.apiUrl}/instituciones/`).pipe(
+    this.institucionesSubscription?.unsubscribe();
+    this.institucionesSubscription = this.http.get<any>(`${environment.apiUrl}/instituciones/`).pipe(
       timeout(20000),
       catchError(() => of(null))
     ).subscribe({
       next: (resp) => {
         const lista = resp === null ? [] : (Array.isArray(resp) ? resp : (resp?.results ?? []));
         if (lista.length > 0) {
-          this.institucionesSupervisor = lista.map((item: any) => ({
-            id_institucion: item.id_institucion ?? item.id,
-            nombre_institucion: item.nombre_institucion ?? item.nombre,
-            nit: item.nit ?? '',
-            sedes: item.sedes ?? [],
-            administrador_asignado: item.administrador_asignado,
-          }));
+          this.institucionesSupervisor = lista.map((item: any) => {
+            const id = item.id_institucion ?? item.id;
+            const respaldo = this.institucionesSupervisor.find(
+              institucion => Number(institucion.id_institucion) === Number(id)
+            ) ?? (Number(this.institucionActiva?.id_institucion) === Number(id)
+              ? this.institucionActiva ?? undefined
+              : undefined);
+            return normalizarInstitucionSupervisor(
+              item,
+              respaldo,
+              this.sedesSupervisorCargadas,
+              this.sedesSupervisor,
+            );
+          });
           try {
             localStorage.setItem('sirae_instituciones_supervisor', JSON.stringify(this.institucionesSupervisor));
           } catch {}
-
-          const guardada = this.authService.obtenerInstitucionActiva();
-          if (guardada && this.institucionesSupervisor.some(i => i.id_institucion === guardada.id_institucion)) {
-            this.institucionActiva = this.institucionesSupervisor.find(i => i.id_institucion === guardada.id_institucion) || guardada;
-          }
+          this.sincronizarInstitucionActiva();
           this.cdr.detectChanges();
           return;
         }
@@ -333,6 +373,52 @@ export class LayoutComponent implements OnInit {
       },
       error: () => this.cargarInstitucionesDesdePerfil()
     });
+  }
+
+  private cargarSedesSupervisor(): void {
+    this.sedesSubscription?.unsubscribe();
+    this.sedesSubscription = this.http.get<unknown>(`${environment.apiUrl}/sedes/`).pipe(
+      timeout(20000),
+      expand((respuesta) => {
+        const siguiente = urlSiguientePaginaSedes(respuesta, environment.apiUrl);
+        return siguiente
+          ? this.http.get<unknown>(siguiente).pipe(timeout(20000))
+          : EMPTY;
+      }),
+      map(listaSedesDePagina),
+      reduce((sedes, pagina) => sedes.concat(pagina), [] as any[]),
+      catchError((error) => {
+        console.error('No se pudieron actualizar las sedes de la institución:', error);
+        this.errorSedesInstitucion = 'No se pudieron actualizar las sedes. Se conserva la última información disponible.';
+        this.cdr.detectChanges();
+        return of(null);
+      })
+    ).subscribe((sedes) => {
+      if (sedes === null) return;
+
+      this.errorSedesInstitucion = '';
+      this.sedesSupervisor = sedes;
+      this.sedesSupervisorCargadas = true;
+      this.institucionesSupervisor = this.institucionesSupervisor.map((institucion) => ({
+        ...institucion,
+        sedes: sedesDeInstitucion(this.sedesSupervisor, institucion.id_institucion),
+      }));
+      this.sincronizarInstitucionActiva();
+      this.cdr.detectChanges();
+    });
+  }
+
+  private sincronizarInstitucionActiva(): void {
+    const activa = this.authService.obtenerInstitucionActiva() ?? this.institucionActiva;
+    if (!activa) return;
+
+    const actualizada = this.institucionesSupervisor.find(
+      institucion => Number(institucion.id_institucion) === Number(activa.id_institucion)
+    );
+    if (!actualizada) return;
+
+    this.institucionActiva = actualizada;
+    this.authService.actualizarInstitucionActiva(actualizada);
   }
 
   private cargarInstitucionesDesdePerfil(): void {
@@ -350,26 +436,22 @@ export class LayoutComponent implements OnInit {
         return;
       }
 
-      this.institucionesSupervisor = asignadas.map((item: any) => ({
-        id_institucion: item.id_institucion ?? item.id,
-        nombre_institucion: item.nombre_institucion ?? item.nombre,
-        nit: item.nit ?? '',
-        sedes: Array.isArray(item.sedes) ? item.sedes : [],
-        administrador_asignado: item.administrador_asignado,
-      }));
+      this.institucionesSupervisor = asignadas.map((item: any) => {
+        const id = item.id_institucion ?? item.id;
+        const respaldo = this.institucionesSupervisor.find(
+          institucion => Number(institucion.id_institucion) === Number(id)
+        );
+        return normalizarInstitucionSupervisor(
+          item,
+          respaldo,
+          this.sedesSupervisorCargadas,
+          this.sedesSupervisor,
+        );
+      });
       try {
         localStorage.setItem('sirae_instituciones_supervisor', JSON.stringify(this.institucionesSupervisor));
       } catch {}
-
-      const activa = this.authService.obtenerInstitucionActiva();
-      if (!activa || !this.institucionesSupervisor.some(i => i.id_institucion === activa.id_institucion)) {
-        this.cdr.detectChanges();
-        return;
-      }
-
-      this.institucionActiva = this.institucionesSupervisor.find(
-        i => i.id_institucion === activa.id_institucion
-      ) ?? activa;
+      this.sincronizarInstitucionActiva();
       this.cdr.detectChanges();
     });
   }
@@ -537,5 +619,28 @@ export class LayoutComponent implements OnInit {
       return encontrada.sedes.length > 0;
     }
     return false;
+  }
+
+  get nombreAdministradorInstitucion(): string {
+    const administrador = this.institucionActiva?.administrador_asignado;
+    if (typeof administrador === 'string') {
+      return administrador.trim() || 'Sin asignar';
+    }
+    if (!administrador || typeof administrador !== 'object') {
+      return 'Sin asignar';
+    }
+
+    const nombreCompleto = String(administrador.nombre_completo ?? '').trim();
+    const nombre = String(administrador.nombre ?? '').trim();
+    const apellido = String(administrador.apellido ?? '').trim();
+    return nombreCompleto || [nombre, apellido].filter(Boolean).join(' ') || 'Sin asignar';
+  }
+
+  get nombresSedesInstitucion(): string[] {
+    return (this.institucionActiva?.sedes ?? [])
+      .map((sede: any) => typeof sede === 'string'
+        ? sede.trim()
+        : String(sede?.nombre_sede ?? sede?.nombre ?? '').trim())
+      .filter((nombre: string) => nombre.length > 0);
   }
 }

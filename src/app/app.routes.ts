@@ -31,6 +31,7 @@ import { InstitucionesComponent } from './instituciones/instituciones';
 import { FacturasCompraComponent } from './facturas-compra/facturas-compra';
 import { PerfilComponent } from './perfil/perfil';
 import { ConsultaGramajesComponent } from './consulta-gramajes/consulta-gramajes';
+import { SedesAdministradorComponent } from './sedes-administrador/sedes-administrador';
 
 // NUEVO: página de Instituciones
 
@@ -95,6 +96,12 @@ export const routes: Routes = [
         component: InstitucionesComponent,
         canActivate: [roleGuard],
         data: { roles: ['supervisor', 'coordinador', 'coordinador pae', 'superadministrador', 'super administrador', 'administrador', 'admin'] }
+      },
+      {
+        path: 'sedes-institucion',
+        component: SedesAdministradorComponent,
+        canActivate: [roleGuard],
+        data: { roles: ['administrador', 'admin', 'superadministrador', 'super administrador', 'super admin'] }
       },
       {
         path: 'registrar-entrega-alimentos',
