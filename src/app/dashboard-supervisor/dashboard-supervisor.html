@@ -1,12 +1,11 @@
-<style>
-/* =========================================================================
-   SIRAE · Dashboard del Supervisor — paleta amarillo y blanco
-   ========================================================================= */
-:host {
-  display: block;
-}
 
-.sg,
+
+<style>
+
+/* ---------- 1. Variables y base ---------- */
+:host { display: block; }
+
+.sd,
 .sg1 {
   --g900: #111827;
   --g800: #1f2937;
@@ -18,477 +17,268 @@
   --yellow: #ffd03a;
   --amber: #f5a300;
   --deep: #7a5200;
-  --teal: #b7791f;
   --ink: #1f2937;
   --mute: #6b7280;
   --line: #e9e7dd;
+  --card-shadow: 0 14px 30px -24px rgba(122, 82, 0, 0.28);
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   color: var(--ink);
   width: 100%;
 }
 
-.sg *,
-.sg1 * {
-  box-sizing: border-box;
+.sd *, .sg1 * { box-sizing: border-box; }
+.sd h1, .sd h2, .sd h3, .sd p,
+.sg1 h1, .sg1 h2, .sg1 h3, .sg1 p { margin: 0; }
+.sd ul, .sg1 ul { margin: 0; padding: 0; list-style: none; }
+
+.sd {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-.sg h1, .sg h2, .sg h3, .sg p,
-.sg1 h1, .sg1 h2, .sg1 h3, .sg1 p {
-  margin: 0;
-}
+.sd .material-symbols-outlined { line-height: 1; }
 
-.sg ul, .sg1 ul {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-/* ---------- Tonos reutilizables (círculos, iconos, badges) ---------- */
+/* ---------- 2. Tonos de estado ---------- */
 .t-ok     { background: #dcfce7; color: #15803d; }
 .t-warn   { background: #fef3c7; color: #b45309; }
 .t-info   { background: #dbeafe; color: #1d4ed8; }
 .t-danger { background: #fee2e2; color: #b91c1c; }
 
-/* ---------- Layout ---------- */
-.sg {
+/* ---------- 3. Encabezado ---------- */
+.sd-top {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 330px;
-  gap: 18px;
-  align-items: start;
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 0.9fr);
+  gap: 14px;
+  align-items: stretch;
 }
 
-.sg-main {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  min-width: 0;
-}
-
-.sg-side {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
-
-.sg-card {
-  background: #fff;
-  border: 1px solid var(--line);
-  border-radius: 20px;
-  padding: 20px;
-  box-shadow: 0 14px 30px -24px rgba(122, 82, 0, 0.22);
-}
-
-/* ---------- Encabezado ---------- */
-.sg-top {
+.sd-hero {
   position: relative;
   overflow: hidden;
-  display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: center;
-  gap: 16px;
-  padding: 26px 34px;
-  border-radius: 24px;
-  background: linear-gradient(120deg, #fff3c4 0%, #ffffff 70%);
-  color: var(--g800);
+  min-height: 170px;
+  border-radius: 22px;
   border: 1px solid var(--line);
+  background: linear-gradient(110deg, #fff3c4 0%, #fffbef 55%, #ffffff 100%);
 }
 
-.sg-top::before {
-  content: '';
+.sd-hero__photo {
   position: absolute;
-  width: 230px;
-  height: 230px;
-  right: -70px;
-  top: -110px;
-  border-radius: 50%;
-  background: rgba(255, 208, 58, 0.22);
-  pointer-events: none;
+  inset: 0 0 0 auto;
+  width: 52%;
+  background: url('/cocineras.jpg') center / cover no-repeat;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 38%);
+          mask-image: linear-gradient(90deg, transparent 0%, #000 38%);
 }
 
-.sg-top__text {
+.sd-hero__body {
   position: relative;
   z-index: 1;
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 8px;
+  max-width: 60%;
+  padding: 18px 24px;
 }
 
-.sg-hello {
-  align-self: flex-start;
+.sd-pill {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 5px 14px;
+  padding: 5px 12px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.92);
-  color: var(--g700);
-  font-size: 13px;
-  font-weight: 700;
+  background: var(--yellow);
+  color: var(--g800);
+  font-size: 12px;
+  font-weight: 800;
 }
 
-.sg-hello .material-symbols-outlined {
-  font-size: 16px;
-  color: var(--amber);
-}
+.sd-pill .material-symbols-outlined { font-size: 16px; }
 
-.sg-top h1 {
-  font-size: clamp(24px, 2.8vw, 34px);
+.sd-hero h1 {
+  font-size: clamp(21px, 2.2vw, 27px);
   font-weight: 900;
   line-height: 1.1;
   letter-spacing: -0.02em;
 }
 
-.sg-top p {
-  max-width: 540px;
-  font-size: 14.5px;
-  line-height: 1.5;
+.sd-hero h1 em { font-style: normal; color: var(--g500); }
+
+.sd-hero p {
+  font-size: 12.5px;
+  line-height: 1.45;
   color: #4b5563;
 }
 
-.sg-logo {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  place-items: center;
-  width: 118px;
-  height: 118px;
-  margin-right: 6px;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 0 0 6px rgba(255, 208, 58, 0.45), 0 14px 24px -14px rgba(0, 0, 0, 0.5);
-}
-
-.sg-logo img {
-  display: block;
-  width: 76%;
-  height: auto;
-}
-
-/* ---------- Funciones rápidas ---------- */
-.sg-quick {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.sg-q {
+.sd-hero__actions {
   display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 16px 18px;
-  text-align: left;
-  cursor: pointer;
-  font: inherit;
-  color: inherit;
-  background: #fff;
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.sg-q:hover {
-  transform: translateY(-2px);
-  border-color: var(--g500);
-  box-shadow: 0 16px 26px -20px rgba(245, 163, 0, 0.8);
-}
-
-.sg-q:focus-visible {
-  outline: 3px solid var(--g500);
-  outline-offset: 2px;
-}
-
-.sg-q__ic {
-  display: grid;
-  place-items: center;
-  width: 48px;
-  height: 48px;
-  flex-shrink: 0;
-  border-radius: 14px;
-  background: var(--yellow);
-  color: var(--g800);
-}
-
-.sg-q__ic .material-symbols-outlined {
-  font-size: 26px;
-}
-
-.sg-q__tx {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.sg-q__tx strong {
-  font-size: 15px;
-  font-weight: 800;
-}
-
-.sg-q__tx small {
-  font-size: 12px;
-  color: var(--mute);
-}
-
-.sg-q__go {
-  font-size: 20px;
-  color: var(--g600);
-  transition: transform 0.2s ease;
-}
-
-.sg-q:hover .sg-q__go {
-  transform: translateX(3px);
-}
-
-.sg-q__ic--blue  { background: #dbeafe; color: #1d4ed8; }
-.sg-q__ic--green { background: #dcfce7; color: #15803d; }
-
-/* ---------- Barra de filtros ---------- */
-.sg-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   flex-wrap: wrap;
-  gap: 14px;
-  padding: 14px 18px;
-  background: #fff;
-  border: 1px solid var(--line);
-  border-radius: 20px;
-}
-
-.sg-bar__l {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.sg-bar__ic {
-  display: grid;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  border-radius: 13px;
-  background: var(--g100);
-  color: var(--g600);
-}
-
-.sg-bar__l h2 {
-  font-size: 16px;
-  font-weight: 900;
-}
-
-.sg-bar__l p {
-  font-size: 12px;
-  color: var(--mute);
-}
-
-.sg-filters {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.sg-select {
-  display: flex;
-  align-items: center;
   gap: 8px;
-  padding: 6px 12px;
-  background: var(--g50);
-  border: 1px solid var(--line);
-  border-radius: 12px;
+  margin-top: 2px;
 }
 
-.sg-select label {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--g700);
-}
-
-.sg-select label .material-symbols-outlined {
-  font-size: 16px;
-}
-
-.sg-select select {
-  max-width: 200px;
-  border: none;
-  background: transparent;
-  outline: none;
-  cursor: pointer;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--ink);
-}
-
-.sg-pills {
+.sd-btn {
   display: inline-flex;
-  gap: 4px;
-  padding: 4px;
-  background: var(--g50);
-  border: 1px solid var(--line);
+  align-items: center;
+  gap: 6px;
+  padding: 7px 13px;
+  border: 1px solid var(--amber);
   border-radius: 12px;
-}
-
-.sg-pills button {
-  padding: 6px 12px;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
-  font: inherit;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--mute);
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.sg-pills button:hover {
-  color: var(--ink);
-}
-
-.sg-pills button.on {
   background: var(--yellow);
   color: var(--g800);
+  font: inherit;
+  font-size: 12px;
   font-weight: 800;
-  box-shadow: 0 4px 10px -4px rgba(245, 163, 0, 0.7);
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
 }
 
-/* ---------- KPIs ---------- */
-.sg-kpis {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
+.sd-btn:hover { background: var(--amber); transform: translateY(-1px); }
+.sd-btn .material-symbols-outlined { font-size: 16px; }
+
+.sd-btn--ghost {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: var(--line);
 }
 
-.sg-kpi {
+.sd-btn--ghost:hover { background: var(--g100); border-color: var(--amber); }
+
+.sd-btn:focus-visible,
+.sd-chip-btn:focus-visible { outline: 3px solid var(--g500); outline-offset: 2px; }
+
+/* Tarjeta de institución (datos, cambiar y sedes) */
+.sd-inst {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 16px 18px;
-  background: #fff;
+  padding: 14px 16px;
+  border-radius: 22px;
   border: 1px solid var(--line);
-  border-radius: 20px;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  background: linear-gradient(160deg, #fffbef 0%, #ffffff 100%);
+  box-shadow: var(--card-shadow);
 }
 
-.sg-kpi:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 22px -16px rgba(122, 82, 0, 0.22);
-}
-
-.sg-kpi__top {
+.sd-inst__head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  font-size: 12.5px;
-  font-weight: 700;
-  color: var(--mute);
 }
 
-.sg-kpi__ic {
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 11px;
-  flex-shrink: 0;
-}
-
-.sg-kpi__ic .material-symbols-outlined {
-  font-size: 21px;
-}
-
-.sg-kpi__v {
-  font-size: 28px;
-  font-weight: 900;
-  line-height: 1.1;
-  letter-spacing: -0.02em;
-  color: var(--g800);
-}
-
-.sg-kpi__h {
-  font-size: 11.5px;
-  font-weight: 500;
-  color: var(--mute);
-}
-
-/* ---------- Cabecera de tarjeta ---------- */
-.sg-row2 {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px;
-}
-
-.sg-ch {
-  display: flex;
+.sd-inst__tag {
+  display: inline-flex;
   align-items: center;
-  gap: 12px;
+  gap: 5px;
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  font-size: 11.5px;
+  font-weight: 800;
+  color: var(--g700);
 }
 
-.sg-ch__ic {
+.sd-inst__tag .material-symbols-outlined { font-size: 15px; color: var(--amber); }
+
+.sd-inst__name { display: flex; align-items: center; gap: 10px; }
+
+.sd-inst__ic {
   display: grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
   flex-shrink: 0;
-  border-radius: 12px;
+  border-radius: 11px;
   background: var(--yellow);
   color: var(--g800);
 }
 
-.sg-ch__ic .material-symbols-outlined {
-  font-size: 22px;
+.sd-inst__ic .material-symbols-outlined { font-size: 21px; }
+.sd-inst__name h2 { font-size: 15px; font-weight: 900; line-height: 1.2; }
+
+.sd-inst__data {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 14px;
 }
 
-.sg-ch__ic--amber {
-  background: #fef0c7;
-  color: #b7791f;
-}
+.sd-inst__data div { min-width: 0; }
 
-.sg-ch__t {
-  flex: 1;
-  min-width: 0;
-}
-
-.sg-ch__t h3 {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 15.5px;
-  font-weight: 800;
-  line-height: 1.2;
-}
-
-.sg-ch__t p {
-  margin-top: 2px;
-  font-size: 12px;
+.sd-inst__data small {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 700;
   color: var(--mute);
 }
 
-.sg-chip {
+.sd-inst__data strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12.5px;
+  font-weight: 800;
+}
+
+.sd-inst__sedes-h {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.sd-inst__n {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--g100);
+  color: var(--g700);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.sd-inst__list { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.sd-inst__list li {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
-  padding: 6px 8px 6px 12px;
-  border-radius: 999px;
-  background: var(--g50);
+  gap: 4px;
+  padding: 4px 10px;
   border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
   font-size: 12px;
   font-weight: 700;
-  color: var(--g700);
-  white-space: nowrap;
 }
 
-.sg-chip .material-symbols-outlined {
-  font-size: 18px;
+.sd-inst__list .material-symbols-outlined { font-size: 15px; color: var(--amber); }
+
+.sd-chip-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
 }
 
-.sg-link {
+.sd-chip-btn:hover { background: var(--g100); border-color: var(--amber); }
+.sd-chip-btn .material-symbols-outlined { font-size: 16px; }
+
+.sd-link {
   border: none;
   background: none;
   padding: 4px 6px;
@@ -501,35 +291,222 @@
   white-space: nowrap;
 }
 
-.sg-link:hover {
+.sd-link:hover { background: var(--g100); }
+
+/* ---------- 4. Filtros ---------- */
+.sd-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 18px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #fff;
+}
+
+.sd-bar__l { display: flex; align-items: center; gap: 12px; }
+
+.sd-bar__ic {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: var(--g100);
+  color: var(--g600);
+}
+
+.sd-bar__l h2 { font-size: 15px; font-weight: 900; }
+.sd-bar__l p { font-size: 12px; color: var(--mute); }
+
+.sd-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+
+.sd-select {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
   background: var(--g50);
 }
 
-.sg-ch__ic--green  { background: #dcfce7; color: #15803d; }
-.sg-ch__ic--blue   { background: #dbeafe; color: #1d4ed8; }
-.sg-ch__ic--orange { background: #ffedd5; color: #c2410c; }
-.sg-ch__ic--red    { background: #fee2e2; color: #b91c1c; }
+.sd-select label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--g700);
+}
 
-/* ---------- Donut y leyenda ---------- */
-.sg-quality {
+.sd-select label .material-symbols-outlined { font-size: 16px; }
+
+.sd-select select {
+  max-width: 200px;
+  border: none;
+  background: transparent;
+  outline: none;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.sd-pills {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--g50);
+}
+
+.sd-pills button {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--mute);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sd-pills button:hover { color: var(--ink); }
+
+.sd-pills button.on {
+  background: var(--yellow);
+  color: var(--g800);
+  font-weight: 800;
+  box-shadow: 0 4px 10px -4px rgba(245, 163, 0, 0.7);
+}
+
+/* ---------- 5. KPIs ---------- */
+.sd-kpis {
   display: grid;
-  grid-template-columns: 190px minmax(0, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.sd-kpi {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: var(--card-shadow);
+  transition: transform 0.2s ease;
+}
+
+.sd-kpi:hover { transform: translateY(-2px); }
+
+.sd-kpi__ic {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+
+.sd-kpi__ic .material-symbols-outlined { font-size: 26px; }
+.sd-kpi__tx { min-width: 0; }
+
+.sd-kpi__v {
+  font-size: 26px;
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--g800);
+}
+
+.sd-kpi__l { margin-top: 2px; font-size: 12.5px; font-weight: 700; color: var(--ink); }
+.sd-kpi__h { font-size: 11.5px; color: var(--mute); }
+
+/* ---------- 6. Tarjetas y gráficos ---------- */
+.sd-row3 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  align-items: stretch;
+}
+
+.sd-row2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  align-items: stretch;
+}
+
+.sd-card {
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: var(--card-shadow);
+}
+
+.sd-ch { display: flex; align-items: center; gap: 10px; }
+
+.sd-ch__ic {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 11px;
+  background: var(--yellow);
+  color: var(--g800);
+}
+
+.sd-ch__ic .material-symbols-outlined { font-size: 20px; }
+.sd-ch__t { flex: 1; min-width: 0; }
+
+.sd-ch__t h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.sd-ch__t p { margin-top: 2px; font-size: 11.5px; color: var(--mute); }
+
+.sd-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--g50);
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--g700);
+  white-space: nowrap;
+}
+
+.sd-quality {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
   align-items: center;
   gap: 18px;
   margin-top: 14px;
 }
 
-.sg-donut {
-  position: relative;
-  height: 190px;
-  width: 100%;
-}
+.sd-donut { position: relative; width: 100%; height: 180px; }
+.sd-donut--sm { width: 170px; height: 170px; flex-shrink: 0; }
 
-.sg-donut--sm {
-  width: 190px;
-}
-
-.sg-donut__c {
+.sd-donut__c {
   position: absolute;
   inset: 0;
   display: flex;
@@ -539,451 +516,81 @@
   pointer-events: none;
 }
 
-.sg-donut__c strong {
-  font-size: 30px;
-  font-weight: 900;
-  line-height: 1;
-  color: var(--g800);
-}
+.sd-donut__c strong { font-size: 24px; font-weight: 900; line-height: 1; color: var(--g800); }
+.sd-donut__c span { margin-top: 3px; font-size: 12px; font-weight: 600; color: var(--mute); }
 
-.sg-donut__c span {
-  margin-top: 4px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--mute);
-}
+.sd-legend { display: flex; flex-direction: column; gap: 10px; }
 
-.sg-legend {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
+.sd-legend li { display: flex; align-items: center; gap: 8px; font-size: 12.5px; }
+.sd-legend__t { flex: 1; color: #374151; font-weight: 500; }
+.sd-legend strong { font-weight: 800; }
+.sd-pct { font-size: 11.5px; font-weight: 600; color: var(--mute); }
 
-.sg-legend li {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 13.5px;
-}
+.sd-dot { width: 11px; height: 11px; flex-shrink: 0; border-radius: 50%; }
+.sd-dot--perecedero { background: #3b82f6; }
+.sd-dot--no-perecedero { background: #f59e0b; }
 
-.sg-dot {
-  width: 12px;
-  height: 12px;
-  flex-shrink: 0;
-  border-radius: 50%;
-}
+.sd-bars { position: relative; height: 200px; margin-top: 12px; }
 
-.sg-legend__t {
-  flex: 1;
-  color: #374151;
-  font-weight: 500;
-}
+/* ---------- 7. Últimas entregas ---------- */
+.sd-table-wrap { margin-top: 10px; overflow-x: auto; }
 
-.sg-legend strong {
-  font-weight: 800;
-  color: var(--ink);
-}
-
-.sg-pct {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--mute);
-}
-
-/* ---------- Barras ---------- */
-.sg-bars {
-  position: relative;
-  height: 250px;
-  margin-top: 14px;
-}
-
-/* ---------- Composición ---------- */
-.sg-comp {
-  display: flex;
-  align-items: center;
-  gap: 28px;
-  margin-top: 14px;
-}
-
-.sg-comp .sg-legend {
-  flex: 1;
-}
-
-/* ---------- Últimos registros ---------- */
-.sg-table-card {
-  padding: 0;
-  overflow: hidden;
-}
-
-.sg-thead {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 20px;
-  background: var(--g50);
-  border-bottom: 1px solid var(--line);
-  color: var(--g800);
-}
-
-.sg-thead__ic {
-  display: grid;
-  place-items: center;
-  width: 38px;
-  height: 38px;
-  flex-shrink: 0;
-  border-radius: 12px;
-  background: #fff1c2;
-  color: #b7791f;
-}
-
-.sg-thead__t {
-  flex: 1;
-  min-width: 0;
-}
-
-.sg-thead__t h3 {
-  font-size: 16px;
-  font-weight: 800;
-}
-
-.sg-thead__t p {
-  font-size: 12px;
-  color: var(--mute);
-}
-
-.sg-thead__btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  border: none;
-  border-radius: 12px;
-  background: var(--yellow);
-  color: var(--g800);
-  font: inherit;
-  font-size: 12.5px;
-  font-weight: 800;
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
-
-.sg-thead__btn:hover {
-  background: var(--amber);
-}
-
-.sg-thead__btn .material-symbols-outlined {
-  font-size: 16px;
-}
-
-.sg-table-wrap {
-  overflow-x: auto;
-  padding: 6px 20px 12px;
-}
-
-.sg-table {
+.sd-table {
   width: 100%;
-  min-width: 620px;
+  min-width: 560px;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: 12px;
   text-align: left;
 }
 
-.sg-table th {
-  padding: 12px 10px;
-  font-size: 12px;
+.sd-table th {
+  padding: 8px 6px;
+  font-size: 11px;
   font-weight: 800;
-  color: var(--ink);
+  color: var(--mute);
   border-bottom: 1px solid var(--line);
 }
 
-.sg-table td {
-  padding: 12px 10px;
+.sd-table td {
+  padding: 9px 6px;
   border-bottom: 1px solid #f3efe0;
   vertical-align: middle;
 }
 
-.sg-table tbody tr:last-child td {
-  border-bottom: none;
-}
+.sd-table tbody tr:last-child td { border-bottom: none; }
+.sd-table tbody tr:hover { background: var(--g50); }
 
-.sg-table tbody tr:hover {
-  background: #fffbef;
-}
+.sd-cell { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; }
 
-.sg-fecha,
-.sg-accion,
-.sg-user {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  font-weight: 600;
-}
-
-.sg-circ {
+.sd-circ {
   display: grid;
   place-items: center;
-  width: 30px;
-  height: 30px;
+  width: 26px;
+  height: 26px;
   flex-shrink: 0;
   border-radius: 50%;
 }
 
-.sg-circ .material-symbols-outlined {
-  font-size: 18px;
-}
+.sd-circ .material-symbols-outlined { font-size: 16px; }
 
-.sg-sq {
+.sd-avatar {
   display: grid;
   place-items: center;
-  width: 28px;
-  height: 28px;
-  flex-shrink: 0;
-  border-radius: 8px;
-}
-
-.sg-sq .material-symbols-outlined {
-  font-size: 17px;
-}
-
-.sg-avatar {
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   flex-shrink: 0;
   border-radius: 50%;
   background: var(--g100);
   color: var(--g700);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 800;
 }
 
-.sg-detalle {
-  color: #374151;
-}
+.sd-detalle { color: #374151; }
+.sd-empty-row { padding: 24px 8px !important; text-align: center; color: var(--mute); }
 
-.sg-empty-row {
-  padding: 28px 10px !important;
-  text-align: center;
-  color: var(--mute);
-}
-
-/* ---------- Tarjeta de institución ---------- */
-.sg-inst {
-  padding: 0;
-  overflow: hidden;
-}
-
-.sg-inst__art {
-  position: relative;
-  height: 160px;
-  background: var(--g50);
-}
-
-.sg-inst__art img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.sg-inst__badge {
-  position: absolute;
-  top: 12px;
-  left: 12px;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 6px 12px 6px 8px;
-  border-radius: 999px;
-  background: var(--yellow);
-  color: var(--g800);
-  font-size: 12px;
-  font-weight: 800;
-  box-shadow: 0 8px 16px -10px rgba(0, 0, 0, 0.6);
-}
-
-.sg-inst__badge .material-symbols-outlined {
-  font-size: 17px;
-}
-
-.sg-inst__change {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 6px 11px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.95);
-  color: var(--ink);
-  font: inherit;
-  font-size: 12px;
-  font-weight: 800;
-  cursor: pointer;
-  box-shadow: 0 8px 16px -10px rgba(0, 0, 0, 0.5);
-  transition: background 0.2s ease;
-}
-
-.sg-inst__change:hover {
-  background: var(--g100);
-}
-
-.sg-inst__change .material-symbols-outlined {
-  font-size: 16px;
-}
-
-.sg-inst__body {
-  padding: 16px 18px 18px;
-}
-
-.sg-inst__name {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.sg-inst__bic {
-  display: grid;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  flex-shrink: 0;
-  border-radius: 12px;
-  background: #fef0c7;
-  color: #b7791f;
-}
-
-.sg-inst__name h2 {
-  font-size: 16px;
-  font-weight: 900;
-  line-height: 1.2;
-}
-
-.sg-boxes {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 10px;
-  margin-top: 16px;
-}
-
-.sg-box {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-  padding: 10px 12px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: #fffdf6;
-}
-
-.sg-box > div {
-  min-width: 0;
-}
-
-.sg-box__ic {
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  flex-shrink: 0;
-  border-radius: 9px;
-  background: var(--g100);
-  color: var(--amber);
-}
-
-.sg-box__ic .material-symbols-outlined {
-  font-size: 17px;
-}
-
-.sg-box small {
-  display: block;
-  font-size: 10.5px;
-  font-weight: 700;
-  color: var(--mute);
-}
-
-.sg-box strong {
-  display: block;
-  font-size: 13px;
-  font-weight: 800;
-  word-break: break-word;
-}
-
-.sg-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-top: 12px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #374151;
-}
-
-.sg-meta span {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.sg-meta .material-symbols-outlined {
-  font-size: 16px;
-  color: var(--amber);
-}
-
-.sg-sedes-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin: 16px 0 10px;
-  padding-top: 14px;
-  border-top: 1px dashed var(--line);
-}
-
-.sg-sedes-head h3 {
-  font-size: 14px;
-  font-weight: 800;
-}
-
-.sg-sedes {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.sg-sedes li {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 9px 12px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.sg-sedes li .material-symbols-outlined {
-  font-size: 19px;
-  color: var(--amber);
-}
-
-.sg-sedes .sg-sedes__more {
-  justify-content: center;
-  border-style: dashed;
-  font-size: 12px;
-  color: var(--mute);
-}
-
-.sg-empty {
-  font-size: 12px;
-  color: var(--mute);
-}
-
-/* ---------- Entregas por atender ---------- */
-.sg-count {
+/* ---------- 8. Alertas ---------- */
+.sd-count {
   display: inline-grid;
   place-items: center;
   min-width: 22px;
@@ -996,90 +603,36 @@
   font-weight: 800;
 }
 
-.sg-pend__sum {
+.sd-card--alert { background: linear-gradient(160deg, #fffbef 0%, #ffffff 80%); }
+
+.sd-alerts { display: flex; flex-direction: column; margin-top: 8px; }
+
+.sd-alerts li {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-  margin-top: 14px;
-}
-
-.sg-pend__sum div {
-  padding: 10px 6px;
-  text-align: center;
-  border-radius: 14px;
-  background: var(--g50);
-  border: 1px solid var(--line);
-}
-
-.sg-pend__sum strong {
-  display: block;
-  font-size: 22px;
-  font-weight: 900;
-  line-height: 1.1;
-  color: var(--g800);
-}
-
-.sg-pend__sum small {
-  display: block;
-  margin-top: 2px;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--mute);
-}
-
-.sg-plist {
-  display: flex;
-  flex-direction: column;
-  margin-top: 10px;
-}
-
-.sg-plist li {
-  display: grid;
-  grid-template-columns: 34px minmax(0, 1fr) auto;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
-  padding: 10px 0;
+  padding: 9px 0;
   border-bottom: 1px solid #f3efe0;
 }
 
-.sg-plist li:last-child {
-  border-bottom: none;
-}
+.sd-alerts li:last-child { border-bottom: none; }
+.sd-alerts li.sd-empty { display: block; padding: 18px 0; text-align: center; }
 
-.sg-plist li.sg-empty {
-  display: block;
-  padding: 18px 0;
-  text-align: center;
-}
+.sd-alerts__tx { min-width: 0; }
 
-.sg-plist .sg-circ {
-  width: 34px;
-  height: 34px;
-}
-
-.sg-plist__tx {
-  min-width: 0;
-}
-
-.sg-plist__tx strong {
+.sd-alerts__tx strong,
+.sd-alerts__tx small {
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 12.5px;
-  font-weight: 800;
 }
 
-.sg-plist__tx small {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 11.5px;
-  color: var(--mute);
-}
+.sd-alerts__tx strong { font-size: 12.5px; font-weight: 800; }
+.sd-alerts__tx small { font-size: 11.5px; color: var(--mute); }
 
-.sg-state {
+.sd-state {
   padding: 3px 9px;
   border-radius: 999px;
   font-size: 10.5px;
@@ -1087,33 +640,13 @@
   white-space: nowrap;
 }
 
-.sg-pend__btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  width: 100%;
-  margin-top: 12px;
-  padding: 11px 14px;
-  border: 1px solid var(--amber);
-  border-radius: 14px;
-  background: var(--yellow);
-  color: var(--g800);
-  font: inherit;
-  font-size: 13px;
-  font-weight: 800;
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
+.sd-empty { font-size: 12px; color: var(--mute); }
 
-.sg-pend__btn:hover {
-  background: var(--amber);
-}
+/* ---------- 9. Composición de alimentos (dentro de la fila de alertas) ---------- */
+.sd-comp { display: flex; align-items: center; gap: 28px; margin-top: 12px; }
+.sd-comp .sd-legend { flex: 1; }
 
-.sg-pend__btn .material-symbols-outlined {
-  font-size: 18px;
-}
-
+/* ---------- 10. Paso 1: elegir institución ---------- */
 /* =========================================================================
    PASO 1: ELEGIR INSTITUCIÓN
    ========================================================================= */
@@ -1348,116 +881,80 @@
   to { transform: rotate(360deg); }
 }
 
-/* =========================================================================
-   RESPONSIVE
-   ========================================================================= */
+/* ---------- Utilidades de estado (antes eran estilos en línea) ---------- */
+.sg1-state__icon        { font-size: 34px; color: var(--amber); }
+.sg1-state__icon--lg    { font-size: 40px; color: var(--deep); }
+.sg1-btn--auto          { width: auto; }
+.sg1-btn .material-symbols-outlined { font-size: 18px; }
+
+
+
+/* ---------- 11. Responsive ---------- */
 @media (max-width: 1180px) {
-  .sg {
-    grid-template-columns: 1fr;
-  }
-  .sg-side {
-    position: static;
-    max-height: none;
-    overflow: visible;
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    align-items: start;
-  }
 }
 
-@media (max-width: 960px) {
-  .sg-kpis {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .sg-row2 {
-    grid-template-columns: 1fr;
-  }
+@media (max-width: 1000px) {
+  .sd-row3 { grid-template-columns: 1fr; }
+  .sd-top { grid-template-columns: 1fr; }
+  .sd-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sd-row2 { grid-template-columns: 1fr; }
 }
 
-@media (max-width: 760px) {
-  .sg-quick {
-    grid-template-columns: 1fr;
-  }
-  .sg-side {
-    grid-template-columns: 1fr;
-  }
+@media (max-width: 720px) {
+  .sd-hero { min-height: 0; }
+  .sd-hero__photo { display: none; }
+  .sd-hero__body { max-width: 100%; padding: 20px; }
+  .sd-quality { grid-template-columns: 1fr; }
+  .sd-comp { flex-direction: column; align-items: stretch; }
+  .sd-bar { flex-direction: column; align-items: stretch; }
+  .sd-filters { flex-direction: column; align-items: stretch; }
+  .sd-pills { justify-content: center; }
 }
 
-@media (max-width: 620px) {
-  .sg-top {
-    grid-template-columns: 1fr;
-    padding: 18px;
-  }
-  .sg-logo {
-    order: -1;
-    width: 80px;
-    height: 80px;
-  }
-  .sg-kpis {
-    grid-template-columns: 1fr;
-  }
-  .sg-quality {
-    grid-template-columns: 1fr;
-  }
-  .sg-comp {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  .sg-bar {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  .sg-filters {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  .sg-pills {
-    justify-content: center;
-  }
-  .sg1-hero {
-    padding: 16px 20px;
-    gap: 14px;
-  }
-  .sg1-logo {
-    width: 68px;
-    height: 68px;
-  }
+@media (max-width: 520px) {
+  .sd-kpis { grid-template-columns: 1fr; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sg-q, .sg-q__go, .sg-kpi, .sg1-card, .sg1-spin {
-    transition: none;
-    animation: none;
-  }
+  .sd-btn, .sd-kpi, .sg1-card, .sg1-spin { transition: none; animation: none; }
+}
+
+@media (max-width: 620px) {
+  .sg1-hero { padding: 16px 20px; gap: 14px; }
+  .sg1-logo { width: 68px; height: 68px; }
 }
 </style>
 
+
 <!-- ======================================================================= -->
-<!-- PASO 1: ELEGIR INSTITUCIÓN (cuando todavía no hay una seleccionada)      -->
+<!-- A. PASO 1 · ELEGIR INSTITUCIÓN                                          -->
 <!-- ======================================================================= -->
 <section *ngIf="!institucionActiva" class="sg1">
 
+  <!-- Encabezado -->
   <header class="sg1-hero">
     <div class="sg1-hero__text">
       <h1>Elige tu institución</h1>
       <p>Selecciona la institución educativa con la que vas a trabajar para ver todas sus funciones.</p>
     </div>
-    <div class="sg1-logo"><div><img src="/sirae-logo-dark.png" alt="Logo SIRAE" /></div></div>
+    <div class="sg1-logo">
+      <div><img src="/sirae-logo-dark.png" alt="Logo SIRAE" /></div>
+    </div>
   </header>
 
-  <!-- Cargando -->
+  <!-- Estado: cargando -->
   <div *ngIf="cargando && instituciones.length === 0" class="sg1-state sg1-state--solid">
-    <span class="material-symbols-outlined sg1-spin" style="font-size:34px;color:#F5A300">progress_activity</span>
+    <span class="material-symbols-outlined sg1-spin sg1-state__icon">progress_activity</span>
     <p>Cargando tus instituciones...</p>
   </div>
 
-  <!-- Error -->
+  <!-- Estado: error -->
   <div *ngIf="errorMensaje" role="alert" class="sg1-error">
     {{ errorMensaje }}
     <button type="button" (click)="cargarInstitucionesServidor()">Reintentar</button>
   </div>
 
-  <!-- Tarjetas -->
+  <!-- Listado de instituciones -->
   <div *ngIf="instituciones.length > 0" class="sg1-wrap">
     <div class="sg1-head">
       <h2>Tus instituciones ({{ instituciones.length }})</h2>
@@ -1465,13 +962,19 @@
     </div>
 
     <div class="sg1-grid">
-      <article *ngFor="let inst of instituciones; let i = index; trackBy: trackInstitucion"
-        class="sg1-card" tabindex="0" (click)="seleccionarInstitucion(inst)" (keydown.enter)="seleccionarInstitucion(inst)">
-        <img [src]="imagenDe(i)" [alt]="'Fachada de ' + inst.nombre_institucion" loading="lazy" />
+      <article
+        *ngFor="let inst of instituciones; let i = index; trackBy: trackInstitucion"
+        class="sg1-card"
+        tabindex="0"
+        (click)="seleccionarInstitucion(inst)"
+        (keydown.enter)="seleccionarInstitucion(inst)">
+
+        <img [src]="imagenDe(i)" [alt]="'Fachada de ' + inst.nombre_institucion" loading="lazy" width="300" height="160" style="width:100%; height:160px; object-fit:cover;" />
+
         <div class="sg1-card__body">
           <h3>{{ inst.nombre_institucion }}</h3>
           <button type="button" class="sg1-btn" (click)="seleccionarInstitucion(inst); $event.stopPropagation()">
-            <span class="material-symbols-outlined" style="font-size:18px">check_circle</span>
+            <span class="material-symbols-outlined">check_circle</span>
             Seleccionar institución
           </button>
         </div>
@@ -1479,405 +982,354 @@
     </div>
   </div>
 
-  <!-- Sin instituciones -->
+  <!-- Estado: sin instituciones asignadas -->
   <div *ngIf="!cargando && instituciones.length === 0 && !errorMensaje" class="sg1-state">
-    <span class="material-symbols-outlined" style="font-size:40px;color:#7A5200">domain_disabled</span>
+    <span class="material-symbols-outlined sg1-state__icon--lg">domain_disabled</span>
     <h3>No tienes instituciones educativas asignadas</h3>
     <p>Comunícate con el Super Administrador para que asigne las instituciones correspondientes a tu cuenta de supervisor.</p>
-    <button type="button" class="sg1-btn" style="width:auto" (click)="cargarInstitucionesServidor()">
-      <span class="material-symbols-outlined" style="font-size:18px">refresh</span>
+    <button type="button" class="sg1-btn sg1-btn--auto" (click)="cargarInstitucionesServidor()">
+      <span class="material-symbols-outlined">refresh</span>
       Verificar de nuevo
     </button>
   </div>
 
 </section>
 
-<!-- ======================================================================= -->
-<!-- SIRAE · INICIO DEL SUPERVISOR (institución ya seleccionada)              -->
-<!-- ======================================================================= -->
-<section *ngIf="institucionActiva as inst" class="sg">
 
-  <div class="sg-main">
+<!-- ======================================================================= -->
+<!-- B. PASO 2 · INICIO DEL SUPERVISOR (institución ya seleccionada)         -->
+<!-- ======================================================================= -->
+<section *ngIf="institucionActiva as inst" class="sd">
 
-    <!-- ENCABEZADO -->
-    <header class="sg-top">
-      <div class="sg-top__text">
-        <span class="sg-hello">
+  <!-- ===================================================================== -->
+  <!-- 1. ENCABEZADO: banner + institución activa                            -->
+  <!-- ===================================================================== -->
+  <div class="sd-top">
+
+    <!-- Banner -->
+    <header class="sd-hero">
+      <div class="sd-hero__photo" aria-hidden="true"></div>
+
+      <div class="sd-hero__body">
+        <span class="sd-pill">
           <span class="material-symbols-outlined">waving_hand</span>
           Hola, {{ nombreSupervisor }}
         </span>
-        <h1>Alimentación escolar bajo control</h1>
-        <p>Todo lo que necesitas para acompañar la alimentación de tus estudiantes, en un solo lugar.</p>
+
+        <h1>Control y seguimiento del <em>PAE</em></h1>
+        <p>Consulta el estado de las entregas, el inventario y la distribución por sedes en tiempo real.</p>
+
+        <div class="sd-hero__actions">
+          <button type="button" class="sd-btn" (click)="irA('reportes')">
+            Ver reportes <span class="material-symbols-outlined">arrow_forward</span>
+          </button>
+          <button type="button" class="sd-btn sd-btn--ghost" (click)="irA('entregas')">
+            <span class="material-symbols-outlined">local_shipping</span> Registrar entrega
+          </button>
+          <button type="button" class="sd-btn sd-btn--ghost" (click)="irA('sedes')">
+            <span class="material-symbols-outlined">inventory_2</span> Revisar inventario
+          </button>
+        </div>
       </div>
-      <div class="sg-logo"><img src="/sirae-logo-dark.png" alt="Logo SIRAE" /></div>
     </header>
 
-    <!-- FUNCIONES RÁPIDAS -->
-    <div class="sg-quick">
-      <button type="button" class="sg-q" (click)="irA('entregas')">
-        <span class="sg-q__ic"><span class="material-symbols-outlined">local_shipping</span></span>
-        <span class="sg-q__tx">
-          <strong>Registrar una entrega</strong>
-          <small>Lotes, cantidades y vencimientos</small>
+    <!-- Institución activa: datos, cambiar y sedes -->
+    <aside class="sd-inst" aria-label="Institución seleccionada">
+
+      <div class="sd-inst__head">
+        <span class="sd-inst__tag">
+          <span class="material-symbols-outlined">check_circle</span>
+          Institución seleccionada
         </span>
-        <span class="material-symbols-outlined sg-q__go">arrow_forward</span>
-      </button>
-
-      <button type="button" class="sg-q" (click)="irA('sedes')">
-        <span class="sg-q__ic sg-q__ic--blue"><span class="material-symbols-outlined">inventory_2</span></span>
-        <span class="sg-q__tx">
-          <strong>Revisar el inventario</strong>
-          <small>Stock y saldo en cada sede</small>
-        </span>
-        <span class="material-symbols-outlined sg-q__go">arrow_forward</span>
-      </button>
-
-      <button type="button" class="sg-q" (click)="irA('reportes')">
-        <span class="sg-q__ic sg-q__ic--green"><span class="material-symbols-outlined">analytics</span></span>
-        <span class="sg-q__tx">
-          <strong>Consultar reportes</strong>
-          <small>Cupos, entregas y novedades</small>
-        </span>
-        <span class="material-symbols-outlined sg-q__go">arrow_forward</span>
-      </button>
-    </div>
-
-    <!-- BARRA DE FILTROS -->
-    <div class="sg-bar">
-      <div class="sg-bar__l">
-        <span class="sg-bar__ic"><span class="material-symbols-outlined">monitoring</span></span>
-        <div>
-          <h2>Supervisión y Flujo PAE</h2>
-          <p>Métricas de recepción, calidad y cobertura de alimentos</p>
-        </div>
-      </div>
-
-      <div class="sg-filters">
-        <div class="sg-select">
-          <label for="filtroSedeSupervisor">
-            <span class="material-symbols-outlined">store</span> Sede:
-          </label>
-          <select id="filtroSedeSupervisor" [(ngModel)]="filtroSedeSeleccionada" (change)="alCambiarFiltroSede()">
-            <option value="TODAS">Todas las sedes ({{ inst.sedes?.length || 0 }})</option>
-            <option *ngFor="let s of inst.sedes" [value]="s.id_sede">{{ s.nombre_sede }}</option>
-          </select>
-        </div>
-
-        <div class="sg-pills" role="group" aria-label="Filtro de período">
-          <button type="button" [class.on]="filtroPeriodo === '30'" (click)="alCambiarFiltroPeriodo('30')">30 días</button>
-          <button type="button" [class.on]="filtroPeriodo === '90'" (click)="alCambiarFiltroPeriodo('90')">90 días</button>
-          <button type="button" [class.on]="filtroPeriodo === 'TOTAL'" (click)="alCambiarFiltroPeriodo('TOTAL')">Histórico</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="sx-panel__body">
-      <span class="sx-pill"><span class="material-symbols-outlined" style="font-size:14px">check_circle</span>Institución seleccionada</span>
-      <span class="sx-pill"><span class="sx-dot"></span>{{ inst.estado?.trim() || 'No registrado' }}</span>
-      <h2>{{ inst.nombre_institucion }}</h2>
-
-      <div class="sx-rows">
-        <div class="sx-row">
-          <span class="sx-row__icon"><span class="material-symbols-outlined">badge</span></span>
-          <div><small>NIT / Código</small><strong>{{ inst.nit?.trim() || 'No registrado' }}</strong></div>
-        </div>
-        <div *ngIf="inst.representante_legal?.trim()" class="sx-row">
-          <span class="sx-row__icon"><span class="material-symbols-outlined">person</span></span>
-          <div><small>Representante</small><strong>{{ inst.representante_legal }}</strong></div>
-        </div>
-        <div *ngIf="inst.telefono?.trim()" class="sx-row">
-          <span class="sx-row__icon"><span class="material-symbols-outlined">call</span></span>
-          <div><small>Teléfono</small><strong>{{ inst.telefono }}</strong></div>
-        </div>
-        <div class="sx-row">
-          <span class="sx-row__icon"><span class="material-symbols-outlined">admin_panel_settings</span></span>
-          <div><small>Administrador</small><strong>{{ nombreAdministrador(inst) }}</strong></div>
-        </div>
-      </div>
-
-      <div class="sx-sedes-head">Sedes <span>{{ nombresSedes(inst).length }}</span></div>
-      <p *ngIf="nombresSedes(inst).length === 0" class="sx-empty">Sin sedes registradas</p>
-      <div *ngIf="nombresSedes(inst).length > 0" class="sx-sedes">
-        <span *ngFor="let nombreSede of nombresSedes(inst)" class="sx-sede">{{ nombreSede }}</span>
-      </div>
-    </div>
-
-    <!-- KPIS -->
-    <div class="sg-kpis">
-      <article class="sg-kpi">
-        <div class="sg-kpi__top">
-          <span>Cumplimiento PAE</span>
-          <span class="sg-kpi__ic t-ok"><span class="material-symbols-outlined">verified</span></span>
-        </div>
-        <div class="sg-kpi__v">{{ tasaCumplimiento }}%</div>
-        <div class="sg-kpi__h">{{ recibidasConformes }} entregas conformes</div>
-      </article>
-
-      <article class="sg-kpi">
-        <div class="sg-kpi__top">
-          <span>Despachos registrados</span>
-          <span class="sg-kpi__ic t-warn"><span class="material-symbols-outlined">local_shipping</span></span>
-        </div>
-        <div class="sg-kpi__v">{{ totalEntregas }}</div>
-        <div class="sg-kpi__h">{{ enTransito }} en camino a sedes</div>
-      </article>
-
-      <article class="sg-kpi">
-        <div class="sg-kpi__top">
-          <span>Volumen de alimentos</span>
-          <span class="sg-kpi__ic t-info"><span class="material-symbols-outlined">inventory</span></span>
-        </div>
-        <div class="sg-kpi__v">{{ totalKilosLitros | number:'1.0-0' }}</div>
-        <div class="sg-kpi__h">Kg / Litros / Unidades</div>
-      </article>
-
-      <article class="sg-kpi">
-        <div class="sg-kpi__top">
-          <span>Novedades y rechazos</span>
-          <span class="sg-kpi__ic" [ngClass]="novedadesRechazos > 0 ? 't-danger' : 't-ok'">
-            <span class="material-symbols-outlined">{{ novedadesRechazos > 0 ? 'warning' : 'task_alt' }}</span>
-          </span>
-        </div>
-        <div class="sg-kpi__v">{{ novedadesRechazos }}</div>
-        <div class="sg-kpi__h">{{ conNovedad }} con novedad · {{ rechazadas }} rechazos</div>
-      </article>
-    </div>
-
-    <!-- GRÁFICOS PRINCIPALES -->
-    <div class="sg-row2">
-
-      <!-- Calidad y estado de recepción -->
-      <article class="sg-card">
-        <div class="sg-ch">
-          <span class="sg-ch__ic sg-ch__ic--green"><span class="material-symbols-outlined">bar_chart</span></span>
-          <div class="sg-ch__t">
-            <h3>Calidad y Estado de Recepción</h3>
-            <p>Distribución según verificación física en sedes</p>
-          </div>
-          <span class="sg-chip">{{ etiquetaPeriodo }}<span class="material-symbols-outlined">expand_more</span></span>
-        </div>
-
-        <div class="sg-quality">
-          <div class="sg-donut">
-            <canvas #chartEstadosCanvas></canvas>
-            <div class="sg-donut__c">
-              <strong>{{ tasaCumplimiento }}%</strong>
-              <span>Aprobado</span>
-            </div>
-          </div>
-
-          <ul class="sg-legend">
-            <li *ngFor="let l of leyendaEstados">
-              <span class="sg-dot" [style.background]="l.color"></span>
-              <span class="sg-legend__t">{{ l.label }}</span>
-              <strong>{{ l.pct }}%</strong>
-            </li>
-          </ul>
-        </div>
-      </article>
-
-      <!-- Distribución por sedes -->
-      <article class="sg-card">
-        <div class="sg-ch">
-          <span class="sg-ch__ic sg-ch__ic--blue"><span class="material-symbols-outlined">pie_chart</span></span>
-          <div class="sg-ch__t">
-            <h3>Distribución por Sedes</h3>
-            <p>Frecuencia y volumen de entregas en cada sede</p>
-          </div>
-          <span class="sg-chip">{{ etiquetaPeriodo }}<span class="material-symbols-outlined">expand_more</span></span>
-        </div>
-
-        <div class="sg-bars">
-          <canvas #chartSedesCanvas></canvas>
-        </div>
-      </article>
-    </div>
-
-    <!-- ÚLTIMOS REGISTROS -->
-    <article class="sg-card sg-table-card">
-      <div class="sg-thead">
-        <span class="sg-thead__ic"><span class="material-symbols-outlined">history</span></span>
-        <div class="sg-thead__t">
-          <h3>Últimos Registros</h3>
-          <p>Actividad reciente de la institución</p>
-        </div>
-        <button type="button" class="sg-thead__btn" (click)="irA('entregas')">
-          Ver todos <span class="material-symbols-outlined">arrow_forward</span>
+        <button type="button" class="sd-chip-btn" (click)="deseleccionarInstitucion()" title="Cambiar institución">
+          <span class="material-symbols-outlined">sync_alt</span> Cambiar
         </button>
       </div>
 
-      <div class="sg-table-wrap">
-        <table class="sg-table">
-          <thead>
-            <tr>
-              <th>Fecha</th>
-              <th>Acción</th>
-              <th>Usuario</th>
-              <th>Detalle</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let e of ultimasEntregas">
-              <td>
-                <span class="sg-fecha">
-                  <span class="sg-circ" [ngClass]="tonoEstado(e.estado)">
-                    <span class="material-symbols-outlined">{{ iconoEstado(e.estado) }}</span>
-                  </span>
-                  {{ (e.fechaRecepcion | date:'dd/MM/yyyy') || 'Hoy' }}
-                </span>
-              </td>
-              <td>
-                <span class="sg-accion">
-                  <span class="sg-sq" [ngClass]="tonoEstado(e.estado)">
-                    <span class="material-symbols-outlined">{{ iconoAccion(e.estado) }}</span>
-                  </span>
-                  {{ accionEstado(e.estado) }}
-                </span>
-              </td>
-              <td>
-                <span class="sg-user">
-                  <span class="sg-avatar">{{ iniciales(usuarioDe(e)) }}</span>
-                  {{ usuarioDe(e) }}
-                </span>
-              </td>
-              <td class="sg-detalle">
-                {{ e.ingrediente }} · {{ e.cantidad }} {{ e.unidad }} en {{ e.sedeNombre || 'Sede Principal' }}
-              </td>
-            </tr>
-            <tr *ngIf="ultimasEntregas.length === 0">
-              <td colspan="4" class="sg-empty-row">No hay despachos registrados para este filtro.</td>
-            </tr>
-          </tbody>
-        </table>
+      <div class="sd-inst__name">
+        <span class="sd-inst__ic"><span class="material-symbols-outlined">account_balance</span></span>
+        <h2>{{ inst.nombre_institucion }}</h2>
+      </div>
+
+      <div class="sd-inst__data">
+        <div><small>Estado</small><strong>{{ inst.estado?.trim() || 'No registrado' }}</strong></div>
+        <div><small>NIT / Código</small><strong>{{ inst.nit?.trim() || 'No registrado' }}</strong></div>
+        <div><small>Administrador</small><strong>{{ inst.administrador_asignado?.nombre_completo || 'Sin asignar' }}</strong></div>
+        <div><small>Representante legal</small><strong>{{ inst.representante_legal?.trim() || 'No registrado' }}</strong></div>
+        <div><small>Teléfono</small><strong>{{ inst.telefono?.trim() || 'No registrado' }}</strong></div>
+      </div>
+
+      <div class="sd-inst__sedes">
+        <div class="sd-inst__sedes-h">
+          Sedes disponibles <span class="sd-inst__n">{{ inst.sedes?.length || 0 }}</span>
+        </div>
+
+        <p *ngIf="!inst.sedes || inst.sedes.length === 0" class="sd-empty">Sin sedes registradas</p>
+
+        <ul *ngIf="inst.sedes && inst.sedes.length > 0" class="sd-inst__list">
+          <li *ngFor="let s of inst.sedes">
+            <span class="material-symbols-outlined">location_on</span>
+            {{ s.nombre_sede }}
+          </li>
+        </ul>
+      </div>
+
+    </aside>
+
+  </div>
+
+
+  <!-- ===================================================================== -->
+  <!-- 2. FILTROS (sede y período)                                           -->
+  <!-- ===================================================================== -->
+  <div class="sd-bar">
+    <div class="sd-bar__l">
+      <span class="sd-bar__ic"><span class="material-symbols-outlined">monitoring</span></span>
+      <div>
+        <h2>Supervisión y Flujo PAE</h2>
+        <p>Métricas de recepción, calidad y cobertura de alimentos</p>
+      </div>
+    </div>
+
+    <div class="sd-filters">
+      <div class="sd-select">
+        <label for="filtroSedeSupervisor">
+          <span class="material-symbols-outlined">store</span> Sede:
+        </label>
+        <select id="filtroSedeSupervisor" [(ngModel)]="filtroSedeSeleccionada" (change)="alCambiarFiltroSede()">
+          <option value="TODAS">Todas las sedes ({{ inst.sedes?.length || 0 }})</option>
+          <option *ngFor="let s of inst.sedes" [value]="s.id_sede">{{ s.nombre_sede }}</option>
+        </select>
+      </div>
+
+      <div class="sd-pills" role="group" aria-label="Filtro de período">
+        <button type="button" [class.on]="filtroPeriodo === '30'" (click)="alCambiarFiltroPeriodo('30')">30 días</button>
+        <button type="button" [class.on]="filtroPeriodo === '90'" (click)="alCambiarFiltroPeriodo('90')">90 días</button>
+        <button type="button" [class.on]="filtroPeriodo === 'TOTAL'" (click)="alCambiarFiltroPeriodo('TOTAL')">Histórico</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ===================================================================== -->
+  <!-- 3. KPIs                                                               -->
+  <!-- ===================================================================== -->
+  <div class="sd-kpis">
+
+    <article class="sd-kpi">
+      <span class="sd-kpi__ic t-ok"><span class="material-symbols-outlined">verified</span></span>
+      <div class="sd-kpi__tx">
+        <div class="sd-kpi__v">{{ tasaCumplimiento }}%</div>
+        <div class="sd-kpi__l">Cumplimiento PAE</div>
+        <div class="sd-kpi__h">{{ recibidasConformes }} entregas conformes</div>
       </div>
     </article>
 
-    <!-- COMPOSICIÓN DE ALIMENTOS -->
-    <article class="sg-card">
-      <div class="sg-ch">
-        <span class="sg-ch__ic sg-ch__ic--orange"><span class="material-symbols-outlined">nutrition</span></span>
-        <div class="sg-ch__t">
+    <article class="sd-kpi">
+      <span class="sd-kpi__ic t-warn"><span class="material-symbols-outlined">local_shipping</span></span>
+      <div class="sd-kpi__tx">
+        <div class="sd-kpi__v">{{ totalEntregas }}</div>
+        <div class="sd-kpi__l">Despachos registrados</div>
+        <div class="sd-kpi__h">{{ enTransito }} en camino a sedes</div>
+      </div>
+    </article>
+
+    <article class="sd-kpi">
+      <span class="sd-kpi__ic t-info"><span class="material-symbols-outlined">inventory</span></span>
+      <div class="sd-kpi__tx">
+        <div class="sd-kpi__v">{{ totalKilosLitros | number:'1.0-0' }}</div>
+        <div class="sd-kpi__l">Volumen de alimentos</div>
+        <div class="sd-kpi__h">Kg / Litros / Unidades</div>
+      </div>
+    </article>
+
+    <article class="sd-kpi">
+      <span class="sd-kpi__ic" [ngClass]="novedadesRechazos > 0 ? 't-danger' : 't-ok'">
+        <span class="material-symbols-outlined">{{ novedadesRechazos > 0 ? 'warning' : 'task_alt' }}</span>
+      </span>
+      <div class="sd-kpi__tx">
+        <div class="sd-kpi__v">{{ novedadesRechazos }}</div>
+        <div class="sd-kpi__l">Novedades y rechazos</div>
+        <div class="sd-kpi__h">{{ conNovedad }} con novedad · {{ rechazadas }} rechazos</div>
+      </div>
+    </article>
+
+  </div>
+
+
+  <!-- ===================================================================== -->
+  <!-- 4. CALIDAD · DISTRIBUCIÓN POR SEDES · ÚLTIMAS ENTREGAS                -->
+  <!-- ===================================================================== -->
+  <div class="sd-row3">
+
+    <!-- Calidad y estado de recepción -->
+    <article class="sd-card">
+      <div class="sd-ch">
+        <span class="sd-ch__ic"><span class="material-symbols-outlined">bar_chart</span></span>
+        <div class="sd-ch__t">
+          <h3>Calidad y Estado de Recepción</h3>
+        </div>
+        <span class="sd-tag">{{ etiquetaPeriodo }}</span>
+      </div>
+
+      <div class="sd-quality">
+        <div class="sd-donut">
+          <canvas #chartEstadosCanvas></canvas>
+          <div class="sd-donut__c">
+            <strong>{{ tasaCumplimiento }}%</strong>
+            <span>Aprobado</span>
+          </div>
+        </div>
+
+        <ul class="sd-legend">
+          <li *ngFor="let l of leyendaEstados">
+            <span class="sd-dot" [style.background]="l.color"></span>
+            <span class="sd-legend__t">{{ l.label }}</span>
+            <strong>{{ l.pct }}%</strong>
+          </li>
+        </ul>
+      </div>
+    </article>
+
+    <!-- Distribución por sedes -->
+    <article class="sd-card">
+      <div class="sd-ch">
+        <span class="sd-ch__ic"><span class="material-symbols-outlined">pie_chart</span></span>
+        <div class="sd-ch__t">
+          <h3>Distribución por Sedes</h3>
+        </div>
+        <span class="sd-tag">{{ etiquetaPeriodo }}</span>
+      </div>
+
+      <div class="sd-bars">
+        <canvas #chartSedesCanvas></canvas>
+      </div>
+    </article>
+
+  </div>
+
+
+  <!-- ===================================================================== -->
+  <!-- 4b. ÚLTIMAS ENTREGAS (ancho completo)                                 -->
+  <!-- ===================================================================== -->
+  <article class="sd-card">
+    <div class="sd-ch">
+      <span class="sd-ch__ic"><span class="material-symbols-outlined">local_shipping</span></span>
+      <div class="sd-ch__t">
+        <h3>Últimas Entregas</h3>
+      </div>
+      <button type="button" class="sd-link" (click)="irA('entregas')">Ver todas →</button>
+    </div>
+
+    <div class="sd-table-wrap">
+      <table class="sd-table">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Acción</th>
+            <th>Usuario</th>
+            <th>Detalle</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr *ngFor="let e of ultimasEntregas">
+            <td>
+              <span class="sd-cell">
+                <span class="sd-circ" [ngClass]="tonoEstado(e.estado)">
+                  <span class="material-symbols-outlined">{{ iconoEstado(e.estado) }}</span>
+                </span>
+                {{ (e.fechaRecepcion | date:'dd/MM/yyyy') || 'Hoy' }}
+              </span>
+            </td>
+            <td>
+              <span class="sd-cell">
+                <span class="material-symbols-outlined">{{ iconoAccion(e.estado) }}</span>
+                {{ accionEstado(e.estado) }}
+              </span>
+            </td>
+            <td>
+              <span class="sd-cell">
+                <span class="sd-avatar">{{ iniciales(usuarioDe(e)) }}</span>
+                {{ usuarioDe(e) }}
+              </span>
+            </td>
+            <td class="sd-detalle">
+              {{ e.ingrediente }} · {{ e.cantidad }} {{ e.unidad }} en {{ e.sedeNombre || 'Sede Principal' }}
+            </td>
+          </tr>
+
+          <tr *ngIf="ultimasEntregas.length === 0">
+            <td colspan="4" class="sd-empty-row">No hay despachos registrados para este filtro.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </article>
+
+
+  <!-- ===================================================================== -->
+  <!-- 5. ALERTAS Y NOTIFICACIONES · COMPOSICIÓN DE ALIMENTOS                -->
+  <!-- ===================================================================== -->
+  <div class="sd-row2">
+
+    <!-- Alertas y notificaciones -->
+    <article class="sd-card sd-card--alert">
+      <div class="sd-ch">
+        <span class="sd-ch__ic t-danger"><span class="material-symbols-outlined">notifications_active</span></span>
+        <div class="sd-ch__t">
+          <h3>Alertas y Notificaciones <span class="sd-count">{{ pendientes.length }}</span></h3>
+        </div>
+        <button type="button" class="sd-link" (click)="irA('entregas')">Ver todas →</button>
+      </div>
+
+      <ul class="sd-alerts">
+        <li *ngFor="let p of pendientes | slice:0:4">
+          <span class="sd-circ" [ngClass]="tonoEstado(p.estado)">
+            <span class="material-symbols-outlined">{{ iconoEstado(p.estado) }}</span>
+          </span>
+          <div class="sd-alerts__tx">
+            <strong>{{ p.ingrediente }}</strong>
+            <small>{{ p.sedeNombre || 'Sede Principal' }} · {{ p.cantidad }} {{ p.unidad }}</small>
+          </div>
+          <span class="sd-state" [ngClass]="tonoEstado(p.estado)">{{ etiquetaEstado(p.estado) }}</span>
+        </li>
+
+        <li *ngIf="pendientes.length === 0" class="sd-empty">No hay entregas pendientes. Todo al día.</li>
+      </ul>
+    </article>
+
+    <!-- Composición de alimentos -->
+    <article class="sd-card">
+      <div class="sd-ch">
+        <span class="sd-ch__ic"><span class="material-symbols-outlined">nutrition</span></span>
+        <div class="sd-ch__t">
           <h3>Composición de Alimentos</h3>
           <p>Perecederos (cadena de frío) vs no perecederos (abarrotes)</p>
         </div>
-        <span class="sg-chip">{{ etiquetaPeriodo }}<span class="material-symbols-outlined">expand_more</span></span>
+        <span class="sd-tag">{{ etiquetaPeriodo }}</span>
       </div>
 
-      <div class="sg-comp">
-        <div class="sg-donut sg-donut--sm">
+      <div class="sd-comp">
+        <div class="sd-donut sd-donut--sm">
           <canvas #chartCategoriasCanvas></canvas>
         </div>
 
-        <ul class="sg-legend">
+        <ul class="sd-legend">
           <li>
-            <span class="sg-dot" style="background:#3B82F6"></span>
-            <span class="sg-legend__t">Perecederos (lácteos, frutas, carnes)</span>
-            <strong>{{ totalPerecederos | number:'1.0-0' }} <span class="sg-pct">({{ pctPerecederos }}%)</span></strong>
+            <span class="sd-dot sd-dot--perecedero"></span>
+            <span class="sd-legend__t">Perecederos (lácteos, frutas, carnes)</span>
+            <strong>{{ totalPerecederos | number:'1.0-0' }} <span class="sd-pct">({{ pctPerecederos }}%)</span></strong>
           </li>
           <li>
-            <span class="sg-dot" style="background:#F59E0B"></span>
-            <span class="sg-legend__t">No perecederos (granos, abarrotes)</span>
-            <strong>{{ totalNoPerecederos | number:'1.0-0' }} <span class="sg-pct">({{ pctNoPerecederos }}%)</span></strong>
+            <span class="sd-dot sd-dot--no-perecedero"></span>
+            <span class="sd-legend__t">No perecederos (granos, abarrotes)</span>
+            <strong>{{ totalNoPerecederos | number:'1.0-0' }} <span class="sd-pct">({{ pctNoPerecederos }}%)</span></strong>
           </li>
         </ul>
       </div>
     </article>
 
   </div>
-
-  <!-- ===================================================================== -->
-  <!-- COLUMNA DERECHA: INSTITUCIÓN ACTIVA + ENTREGAS POR ATENDER                        -->
-  <!-- ===================================================================== -->
-  <aside class="sg-side">
-
-    <article class="sg-card sg-inst">
-      <div class="sg-inst__art">
-        <img [src]="imagenActiva" [alt]="'Fachada de ' + inst.nombre_institucion" />
-        <span class="sg-inst__badge">
-          <span class="material-symbols-outlined">check_circle</span>
-          Institución {{ (inst.estado || 'ACTIVA') === 'ACTIVO' ? 'Activa' : (inst.estado || 'Activa') }}
-        </span>
-        <button type="button" class="sg-inst__change" (click)="deseleccionarInstitucion()" title="Cambiar institución">
-          <span class="material-symbols-outlined">sync_alt</span>
-          Cambiar
-        </button>
-      </div>
-
-      <div class="sg-inst__body">
-        <div class="sg-inst__name">
-          <span class="sg-inst__bic"><span class="material-symbols-outlined">apartment</span></span>
-          <h2>{{ inst.nombre_institucion }}</h2>
-        </div>
-
-        <div class="sg-boxes">
-          <div class="sg-box">
-            <span class="sg-box__ic"><span class="material-symbols-outlined">badge</span></span>
-            <div><small>NIT</small><strong>{{ inst.nit || 'Sin NIT' }}</strong></div>
-          </div>
-          <div class="sg-box">
-            <span class="sg-box__ic"><span class="material-symbols-outlined">admin_panel_settings</span></span>
-            <div><small>Administrador</small><strong>{{ inst.administrador_asignado?.nombre_completo || 'Sin asignar' }}</strong></div>
-          </div>
-          <div class="sg-box" *ngIf="inst.representante_legal">
-            <span class="sg-box__ic"><span class="material-symbols-outlined">person</span></span>
-            <div><small>Representante legal</small><strong>{{ inst.representante_legal }}</strong></div>
-          </div>
-          <div class="sg-box" *ngIf="inst.telefono">
-            <span class="sg-box__ic"><span class="material-symbols-outlined">call</span></span>
-            <div><small>Teléfono</small><strong>{{ inst.telefono }}</strong></div>
-          </div>
-        </div>
-
-        <div class="sg-sedes-head">
-          <h3>Sedes ({{ inst.sedes?.length || 0 }})</h3>
-          <button type="button" class="sg-link" (click)="irA('sedes')">Ver todas →</button>
-        </div>
-
-        <p *ngIf="!inst.sedes || inst.sedes.length === 0" class="sg-empty">Sin sedes registradas</p>
-        <ul *ngIf="inst.sedes && inst.sedes.length > 0" class="sg-sedes">
-          <li *ngFor="let s of inst.sedes | slice:0:4">
-            <span class="material-symbols-outlined">location_on</span>
-            {{ s.nombre_sede }}
-          </li>
-          <li *ngIf="inst.sedes.length > 4" class="sg-sedes__more">+ {{ inst.sedes.length - 4 }} sedes más</li>
-        </ul>
-      </div>
-    </article>
-
-    <article class="sg-card sg-pend">
-      <div class="sg-ch">
-        <span class="sg-ch__ic sg-ch__ic--red"><span class="material-symbols-outlined">pending_actions</span></span>
-        <div class="sg-ch__t">
-          <h3>Entregas por atender <span class="sg-count">{{ pendientes.length }}</span></h3>
-          <p>Lo que necesita tu seguimiento</p>
-        </div>
-      </div>
-
-      <div class="sg-pend__sum">
-        <div><strong>{{ enTransito }}</strong><small>En camino</small></div>
-        <div><strong>{{ conNovedad }}</strong><small>Con novedad</small></div>
-        <div><strong>{{ rechazadas }}</strong><small>Rechazadas</small></div>
-      </div>
-
-      <ul class="sg-plist">
-        <li *ngFor="let p of pendientes">
-          <span class="sg-circ" [ngClass]="tonoEstado(p.estado)">
-            <span class="material-symbols-outlined">{{ iconoEstado(p.estado) }}</span>
-          </span>
-          <div class="sg-plist__tx">
-            <strong>{{ p.ingrediente }}</strong>
-            <small>{{ p.sedeNombre || 'Sede Principal' }} · {{ p.cantidad }} {{ p.unidad }}</small>
-          </div>
-          <span class="sg-state" [ngClass]="tonoEstado(p.estado)">{{ etiquetaEstado(p.estado) }}</span>
-        </li>
-        <li *ngIf="pendientes.length === 0" class="sg-empty">No hay entregas pendientes. Todo al día.</li>
-      </ul>
-
-      <button type="button" class="sg-pend__btn" (click)="irA('entregas')">
-        Ir a entregas <span class="material-symbols-outlined">arrow_forward</span>
-      </button>
-    </article>
-
-  </aside>
 
 </section>
