@@ -19,10 +19,10 @@ import { CustomSelectComponent } from '../shared/custom-select/custom-select';
 // TIPOS DE CONFIGURACIÓN
 // ============================================================
 
-type TipoCampo = 'text' | 'textarea' | 'number' | 'time' | 'select';
+type TipoCampo = 'text' | 'textarea' | 'number' | 'time' | 'select' | 'multiselect';
 
 /** Tablas que alimentan listas desplegables de otras tablas. */
-type FuenteRelacion = 'jornadas' | 'unidades_medida' | 'ingredientes' | 'categorias_inventario' | 'grados' | 'instituciones' | 'tipos_mercado' | 'sedes' | 'turnos';
+type FuenteRelacion = 'jornadas' | 'unidades_medida' | 'ingredientes' | 'categorias_inventario' | 'grados' | 'grupos_gramaje' | 'instituciones' | 'tipos_mercado' | 'sedes' | 'turnos';
 
 interface CampoConfig {
   name: string;
@@ -34,6 +34,10 @@ interface CampoConfig {
   source?: FuenteRelacion;
   options?: OpcionRelacion[];
   defaultValue?: any;
+  /** Solo se muestra como columna en la tabla (campo calculado / solo lectura). */
+  soloTabla?: boolean;
+  /** Solo se diligencia dentro del modal (oculta columna redundante en tabla). */
+  soloModal?: boolean;
 }
 
 interface TabConfig {
@@ -97,6 +101,13 @@ const FUENTES: Record<
   grados: {
     id: 'id_grado',
     etiqueta: r => r.nombre_grado ?? r.nombre ?? ''
+  },
+  grupos_gramaje: {
+    id: 'id_grupo_gramaje',
+    etiqueta: r => {
+      const nivel = r.nivel_educativo_display || r.nivel_educativo || '';
+      return r.nombre ? (nivel ? `${r.nombre} (${nivel})` : r.nombre) : '';
+    }
   },
   turnos: {
     id: 'id_turno',
@@ -237,7 +248,64 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       categoria: 'inventario',
       campos: [
         { name: 'nombre', label: 'Nombre', type: 'text', required: true, placeholder: 'Ej: Kilogramo' },
-        { name: 'abreviatura', label: 'Abreviatura', type: 'text', required: true, placeholder: 'Ej: kg' }
+        { name: 'abreviatura', label: 'Abreviatura', type: 'text', required: true, placeholder: 'Ej: kg' },
+        {
+          name: 'tipo_magnitud',
+          label: 'Magnitud',
+          type: 'select',
+          required: true,
+          defaultValue: 'MASA',
+          options: [
+            { id: 'MASA', label: 'Masa (g, kg, lb)' },
+            { id: 'VOLUMEN', label: 'Volumen (ml, L)' },
+            { id: 'UNIDAD', label: 'Unidad individual (und, pza)' }
+          ]
+        },
+        {
+          name: 'factor_conversion_base',
+          label: 'Factor base (g / ml / und)',
+          type: 'number',
+          required: true,
+          defaultValue: 1,
+          placeholder: 'Ej: 1000 para kg o L, 1 para g/ml/und'
+        },
+        {
+          name: 'estado',
+          label: 'Estado',
+          type: 'select',
+          required: true,
+          defaultValue: 'ACTIVO',
+          options: [
+            { id: 'ACTIVO', label: 'Activo' },
+            { id: 'INACTIVO', label: 'Inactivo' }
+          ]
+        }
+      ]
+    },
+    {
+      id: 'equivalencias_unidad',
+      nombre: 'Equivalencias técnicas',
+      singular: 'equivalencia de unidad',
+      icon: 'sync_alt',
+      idField: 'id_equivalencia',
+      categoria: 'inventario',
+      campos: [
+        { name: 'id_ingrediente', label: 'Producto / ingrediente', type: 'select', required: true, source: 'ingredientes' },
+        { name: 'id_unidad_origen', label: 'Unidad origen', type: 'select', required: true, source: 'unidades_medida' },
+        { name: 'id_unidad_destino', label: 'Unidad destino', type: 'select', required: true, source: 'unidades_medida' },
+        { name: 'factor_conversion', label: 'Equivalencia (1 origen = X destino)', type: 'number', required: true, placeholder: 'Ej: 55 (1 und = 55 g)' },
+        { name: 'observaciones', label: 'Especificación técnica', type: 'textarea', soloModal: true, placeholder: 'Justificación técnica de densidad o peso unitario' },
+        {
+          name: 'estado',
+          label: 'Estado',
+          type: 'select',
+          required: true,
+          defaultValue: 'ACTIVO',
+          options: [
+            { id: 'ACTIVO', label: 'Activo' },
+            { id: 'INACTIVO', label: 'Inactivo' }
+          ]
+        }
       ]
     },
     {
@@ -263,6 +331,44 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       ]
     },
     {
+      id: 'grupos_gramaje',
+      nombre: 'Grupos de gramajes',
+      singular: 'grupo de gramaje',
+      icon: 'groups',
+      idField: 'id_grupo_gramaje',
+      categoria: 'operacion',
+      campos: [
+        { name: 'nombre', label: 'Grupo de aplicación', type: 'text', required: true, placeholder: 'Ej: Grupo A - Preescolar' },
+        {
+          name: 'nivel_educativo',
+          label: 'Nivel educativo',
+          type: 'select',
+          required: true,
+          defaultValue: 'PRIMARIA',
+          options: [
+            { id: 'PREESCOLAR', label: 'Preescolar' },
+            { id: 'PRIMARIA', label: 'Primaria' },
+            { id: 'SECUNDARIA', label: 'Secundaria' },
+            { id: 'MEDIA', label: 'Media' },
+            { id: 'OTRO', label: 'Otro' }
+          ]
+        },
+        { name: 'grados_asociados_resumen', label: 'Grados asociados', type: 'text', soloTabla: true },
+        { name: 'descripcion', label: 'Descripción técnica', type: 'textarea', soloModal: true, placeholder: 'Criterios nutricionales o edades aplicables' },
+        {
+          name: 'estado',
+          label: 'Estado',
+          type: 'select',
+          required: true,
+          defaultValue: 'ACTIVO',
+          options: [
+            { id: 'ACTIVO', label: 'Activo' },
+            { id: 'INACTIVO', label: 'Inactivo' }
+          ]
+        }
+      ]
+    },
+    {
       id: 'grados',
       nombre: 'Grados',
       singular: 'grado',
@@ -270,7 +376,40 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       idField: 'id_grado',
       categoria: 'operacion',
       campos: [
-        { name: 'nombre_grado', label: 'Nombre del grado', type: 'text', required: true, placeholder: 'Ej: Primero' }
+        { name: 'nombre_grado', label: 'Grado escolar', type: 'text', required: true, placeholder: 'Ej: Primero' },
+        { name: 'id_grupo_gramaje', label: 'Grupo de gramaje', type: 'select', required: true, source: 'grupos_gramaje' },
+        {
+          name: 'nivel_educativo',
+          label: 'Nivel educativo',
+          type: 'select',
+          required: true,
+          defaultValue: 'PRIMARIA',
+          options: [
+            { id: 'PREESCOLAR', label: 'Preescolar' },
+            { id: 'PRIMARIA', label: 'Primaria' },
+            { id: 'SECUNDARIA', label: 'Secundaria' },
+            { id: 'MEDIA', label: 'Media' },
+            { id: 'OTRO', label: 'Otro' }
+          ]
+        },
+        {
+          name: 'estado',
+          label: 'Estado',
+          type: 'select',
+          required: true,
+          defaultValue: 'ACTIVO',
+          options: [
+            { id: 'ACTIVO', label: 'Activo' },
+            { id: 'INACTIVO', label: 'Inactivo' }
+          ]
+        },
+        {
+          name: 'motivo_cambio',
+          label: 'Motivo de reclasificación',
+          type: 'text',
+          soloModal: true,
+          placeholder: 'Ej: Ajuste de grupo para nuevo periodo (opcional)'
+        }
       ]
     },
     {
@@ -306,7 +445,9 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       campos: [
         { name: 'id_sede', label: 'Sede educativa', type: 'select', required: true, source: 'sedes' },
         { name: 'id_jornada', label: 'Jornada', type: 'select', required: true, source: 'jornadas' },
-        { name: 'cupos', label: 'Cupos asignados', type: 'number', required: true, placeholder: 'Ej: 150' }
+        { name: 'cupos', label: 'Cupos asignados', type: 'number', required: true, placeholder: 'Ej: 150' },
+        { name: 'grados_resumen', label: 'Grados atendidos', type: 'text', soloTabla: true },
+        { name: 'grados_ids', label: 'Grados atendidos en esta sede y jornada', type: 'multiselect', source: 'grados', soloModal: true }
       ]
     },
     {
@@ -342,11 +483,45 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       idField: 'id_gramaje',
       categoria: 'inventario',
       campos: [
-        { name: 'id_ingrediente', label: 'Ingrediente', type: 'select', required: true, source: 'ingredientes' },
-        { name: 'id_grado', label: 'Grado', type: 'select', required: true, source: 'grados' },
-        { name: 'cantidad_gramage', label: 'Cantidad por porción', type: 'number', required: true },
+        { name: 'id_ingrediente', label: 'Producto o ingrediente', type: 'select', required: true, source: 'ingredientes' },
+        { name: 'id_grado', label: 'Grado escolar', type: 'select', required: true, source: 'grados' },
+        { name: 'cantidad_gramaje', label: 'Cantidad de gramaje', type: 'number', required: true, placeholder: 'Ej: 120' },
         { name: 'id_unidad_medida', label: 'Unidad de medida', type: 'select', required: true, source: 'unidades_medida' },
-        { name: 'descripcion', label: 'Descripción', type: 'textarea' }
+        { name: 'tipo_alimento_display', label: 'Tipo de alimento', type: 'text', soloTabla: true },
+        {
+          name: 'contexto_aplicacion',
+          label: 'Contexto de aplicación',
+          type: 'select',
+          required: true,
+          defaultValue: 'GENERAL',
+          soloModal: true,
+          options: [
+            { id: 'GENERAL', label: 'General' },
+            { id: 'DESAYUNO', label: 'Desayuno' },
+            { id: 'ALMUERZO', label: 'Almuerzo' },
+            { id: 'REFRIGERIO', label: 'Refrigerio / Complemento' },
+            { id: 'RACION_PREPARADA', label: 'Ración preparada en sitio' },
+            { id: 'RACION_INDUSTRIALIZADA', label: 'Ración industrializada' }
+          ]
+        },
+        {
+          name: 'descripcion',
+          label: 'Observaciones / especificaciones técnicas',
+          type: 'textarea',
+          soloModal: true,
+          placeholder: 'Especificaciones nutricionales o notas técnicas por estudiante'
+        },
+        {
+          name: 'estado',
+          label: 'Estado',
+          type: 'select',
+          required: true,
+          defaultValue: 'ACTIVO',
+          options: [
+            { id: 'ACTIVO', label: 'Activo' },
+            { id: 'INACTIVO', label: 'Inactivo' }
+          ]
+        }
       ]
     }
   ];
@@ -494,12 +669,76 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
 
   opciones: Record<string, OpcionRelacion[]> = {
     instituciones: [],
+    sedes: [],
     jornadas: [],
     unidades_medida: [],
     ingredientes: [],
     categorias_inventario: [],
-    grados: []
+    tipos_mercado: [],
+    grados: [],
+    grupos_gramaje: [],
+    turnos: []
   };
+
+  gruposGramajeCompletos: any[] = [];
+
+  // Filtros específicos de Gramajes y Grados (HU 1 & HU 2)
+  filtroGradoGramaje: any = null;
+  filtroCategoriaGramaje: any = null;
+  filtroGrupoGrado: any = null;
+  filtroNivelGrado: string = '';
+
+  readonly opcionesNivelEducativo: any[] = [
+    { id: 'PREESCOLAR', label: 'Preescolar' },
+    { id: 'PRIMARIA', label: 'Primaria' },
+    { id: 'SECUNDARIA', label: 'Secundaria' },
+    { id: 'MEDIA', label: 'Media' },
+    { id: 'OTRO', label: 'Otro' }
+  ];
+
+  // Compatibilidad en tiempo real dentro de modal (HU 2 & HU 3)
+  compatibilidadUnidadesMap: Record<number, {
+    nombre?: string;
+    abreviatura?: string;
+    tipo_magnitud?: string;
+    es_compatible: boolean;
+    metodo_compatibilidad: string;
+    requiere_equivalencia: boolean;
+  }> = {};
+  unidadBaseProductoInfo: any = null;
+  alertaCompatibilidadModal: string = '';
+  alertaNivelGradoModal: string = '';
+
+  // Modal de historial (HU 1 & HU 2)
+  mostrarHistorialModal = false;
+  historialTipo: 'gramajes' | 'grados' = 'gramajes';
+  historialTitulo = '';
+  historialRegistros: any[] = [];
+  cargandoHistorial = false;
+
+  // Modal convertidor rápido de unidades (HU 3)
+  mostrarConvertidorModal = false;
+  convForm: {
+    cantidad: number;
+    id_unidad_origen: any;
+    id_unidad_destino: any;
+    id_ingrediente: any;
+  } = { cantidad: 1000, id_unidad_origen: null, id_unidad_destino: null, id_ingrediente: null };
+  convResultado: any = null;
+  convError = '';
+  convirtiendo = false;
+
+  // Modal simulador de porciones por grupo / grado (HU 2 & HU 3)
+  mostrarSimuladorModal = false;
+  simForm: {
+    id_grupo_gramaje: any;
+    id_grado: any;
+    estudiantes: number;
+    dias: number;
+    contexto_aplicacion: string;
+  } = { id_grupo_gramaje: null, id_grado: null, estudiantes: 100, dias: 5, contexto_aplicacion: '' };
+  simResultado: any = null;
+  simCargando = false;
 
   mostrarModal = false;
   modoEdicion = false;
@@ -548,6 +787,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       'ingredientes',
       'categorias_inventario',
       'tipos_mercado',
+      'grupos_gramaje',
       'grados',
       'turnos'
     ];
@@ -580,6 +820,15 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
 
   @HostListener('document:keydown.escape')
   onEscape(): void {
+    if (this.mostrarHistorialModal) {
+      this.cerrarHistorialModal();
+    }
+    if (this.mostrarConvertidorModal) {
+      this.cerrarConvertidorModal();
+    }
+    if (this.mostrarSimuladorModal) {
+      this.cerrarSimuladorModal();
+    }
     if (this.mostrarModal) {
       this.cerrarModal();
     }
@@ -601,6 +850,12 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
   get placeholderBusqueda(): string {
     if (this.tabActual === 'instituciones') {
       return 'Buscar por nombre, NIT o código...';
+    }
+    if (this.tabActual === 'gramajes') {
+      return 'Buscar por producto, grado o especificación técnica...';
+    }
+    if (this.tabActual === 'grados') {
+      return 'Buscar por grado escolar o grupo de aplicación...';
     }
     return `Buscar en ${this.tab.nombre.toLowerCase()}...`;
   }
@@ -661,6 +916,14 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
     return this.tabs.find(t => t.id === this.tabActual) ?? this.tabs[0];
   }
 
+  get camposTabla(): CampoConfig[] {
+    return this.tab.campos.filter(c => !c.soloModal);
+  }
+
+  get camposModal(): CampoConfig[] {
+    return this.tab.campos.filter(c => !c.soloTabla);
+  }
+
   get datosFiltrados(): any[] {
     return this._datosFiltradosCache;
   }
@@ -678,10 +941,36 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       });
     }
 
+    // Filtros específicos de Gramajes: por grado y por categoría
+    if (this.tabActual === 'gramajes') {
+      if (this.filtroGradoGramaje !== null && this.filtroGradoGramaje !== '' && this.filtroGradoGramaje !== undefined) {
+        resultado = resultado.filter(item => String(item.id_grado) === String(this.filtroGradoGramaje));
+      }
+      if (this.filtroCategoriaGramaje !== null && this.filtroCategoriaGramaje !== '' && this.filtroCategoriaGramaje !== undefined) {
+        resultado = resultado.filter(item => String(item.id_categoria_inventario) === String(this.filtroCategoriaGramaje));
+      }
+    }
+
+    // Filtros específicos de Grados: por grupo y por nivel educativo
+    if (this.tabActual === 'grados') {
+      if (this.filtroGrupoGrado !== null && this.filtroGrupoGrado !== '' && this.filtroGrupoGrado !== undefined) {
+        resultado = resultado.filter(item => String(item.id_grupo_gramaje) === String(this.filtroGrupoGrado));
+      }
+      if (this.filtroNivelGrado) {
+        resultado = resultado.filter(item => String(item.nivel_educativo || '').toUpperCase() === this.filtroNivelGrado);
+      }
+    }
+
     // Filtro por texto de búsqueda
     if (this.busquedaTexto && this.busquedaTexto.trim()) {
       const q = this.busquedaTexto.trim().toLowerCase();
       resultado = resultado.filter(item => {
+        if (this.tabActual === 'gramajes') {
+          const producto = String(item.nombre_ingrediente || '').toLowerCase();
+          const grado = String(item.nombre_grado || '').toLowerCase();
+          const desc = String(item.descripcion || '').toLowerCase();
+          return producto.includes(q) || grado.includes(q) || desc.includes(q);
+        }
         return Object.values(item).some(val => {
           if (val === null || val === undefined) return false;
           if (typeof val === 'object') {
@@ -793,6 +1082,10 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
     this.tabActual = tabId;
     this.busquedaTexto = '';
     this.filtroEstado = '';
+    this.filtroGradoGramaje = null;
+    this.filtroCategoriaGramaje = null;
+    this.filtroGrupoGrado = null;
+    this.filtroNivelGrado = '';
     this.ordenPor = 'recientes';
     this.paginaActual = 1;
     this.menuAccionAbiertoId = null;
@@ -856,6 +1149,9 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
         if (fuente === 'instituciones') {
           this.institucionesCompletas = items;
         }
+        if (fuente === 'grupos_gramaje') {
+          this.gruposGramajeCompletos = items;
+        }
         this.opciones[fuente] = items.map(r => ({
           id: r[cfg.id] ?? r.id,
           label: cfg.etiqueta(r)
@@ -878,10 +1174,15 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       this.tabActual === 'ingredientes' ||
       this.tabActual === 'categorias_inventario' ||
       this.tabActual === 'tipos_mercado' ||
+      this.tabActual === 'grupos_gramaje' ||
       this.tabActual === 'grados' ||
       this.tabActual === 'turnos'
     ) {
       this.cargarFuente(this.tabActual as FuenteRelacion);
+    }
+    if (['grupos_gramaje', 'grados', 'unidades_medida', 'ingredientes', 'equivalencias_unidad'].includes(this.tabActual)) {
+      this.bancoDatosService.limpiarCache('gramajes');
+      this.bancoDatosService.limpiarCache('grados');
     }
   }
 
@@ -905,10 +1206,41 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
     if (campo.options && campo.options.length > 0) {
       return campo.options;
     }
-    return campo.source ? this.opciones[campo.source] : [];
+    const base = campo.source ? (this.opciones[campo.source] || []) : [];
+
+    if (
+      this.tabActual === 'gramajes' &&
+      campo.name === 'id_unidad_medida' &&
+      this.itemForm?.id_ingrediente &&
+      Object.keys(this.compatibilidadUnidadesMap).length > 0
+    ) {
+      return base.map(op => {
+        const info = this.compatibilidadUnidadesMap[Number(op.id)];
+        if (!info) return op;
+        return {
+          ...op,
+          label: info.es_compatible
+            ? `${op.label} ✓ Compatible`
+            : `${op.label} ⚠ Incompatible`
+        };
+      });
+    }
+
+    return base;
   }
 
   valorCelda(item: any, campo: CampoConfig): string {
+    if (campo.name === 'grados_asociados_resumen') {
+      const lista = Array.isArray(item?.grados_asociados) ? item.grados_asociados : [];
+      if (lista.length === 0) return 'Sin grados asociados';
+      return lista.map((g: any) => g.nombre_grado).join(', ');
+    }
+    if (campo.name === 'grados_resumen') {
+      const lista = Array.isArray(item?.grados_atendidos) ? item.grados_atendidos : [];
+      if (lista.length === 0) return 'Sin grados asignados';
+      return lista.map((g: any) => g.nombre_grado).join(', ');
+    }
+
     const valor = item?.[campo.name];
 
     if (campo.type === 'select') {
@@ -936,6 +1268,30 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
         }
         if (!opcion && campo.name === 'id_turno' && (item?.nombre_turno || item?.turno_nombre)) {
           return item.nombre_turno || item.turno_nombre;
+        }
+        if (!opcion && campo.name === 'id_ingrediente' && (item?.nombre_ingrediente || item?.ingrediente_nombre)) {
+          return item.nombre_ingrediente || item.ingrediente_nombre;
+        }
+        if (!opcion && campo.name === 'id_grado' && item?.nombre_grado) {
+          return item.nombre_grado;
+        }
+        if (!opcion && campo.name === 'id_grupo_gramaje' && item?.nombre_grupo_gramaje) {
+          return item.nombre_grupo_gramaje;
+        }
+        if (!opcion && campo.name === 'id_unidad_medida' && item?.nombre_unidad_medida) {
+          return item.abreviatura_unidad_medida
+            ? `${item.nombre_unidad_medida} (${item.abreviatura_unidad_medida})`
+            : item.nombre_unidad_medida;
+        }
+        if (!opcion && campo.name === 'id_unidad_origen' && item?.unidad_origen_nombre) {
+          return item.unidad_origen_abreviatura
+            ? `${item.unidad_origen_nombre} (${item.unidad_origen_abreviatura})`
+            : item.unidad_origen_nombre;
+        }
+        if (!opcion && campo.name === 'id_unidad_destino' && item?.unidad_destino_nombre) {
+          return item.unidad_destino_abreviatura
+            ? `${item.unidad_destino_nombre} (${item.unidad_destino_abreviatura})`
+            : item.unidad_destino_nombre;
         }
         return opcion?.label || (valor ? String(valor) : '—');
       }
@@ -965,13 +1321,25 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
     this.modoEdicion = !!item;
     this.itemSeleccionadoId = item ? this.obtenerIdItem(item) : null;
     this.itemOriginal = item ? { ...item } : null;
+    this.alertaCompatibilidadModal = '';
+    this.alertaNivelGradoModal = '';
+    this.compatibilidadUnidadesMap = {};
+    this.unidadBaseProductoInfo = null;
 
     const form: any = {};
-    for (const campo of this.tab.campos) {
+    for (const campo of this.camposModal) {
       let valor = item ? item[campo.name] : null;
+      if (item && campo.name === 'cantidad_gramaje' && (valor === undefined || valor === null)) {
+        valor = item['cantidad_gramage'];
+      }
 
       if (campo.type === 'time' && valor) {
         valor = String(valor).slice(0, 5);
+      }
+
+      if (campo.type === 'multiselect') {
+        form[campo.name] = Array.isArray(valor) ? valor.map((v: any) => Number(v)) : [];
+        continue;
       }
 
       // Si el backend envió un objeto ForeignKey:
@@ -993,6 +1361,14 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
 
     this.itemForm = form;
     this.mostrarModal = true;
+
+    if (this.tabActual === 'gramajes' && this.itemForm.id_ingrediente) {
+      this.verificarCompatibilidadModal();
+    }
+    if (this.tabActual === 'grados') {
+      this.validarCompatibilidadNivelGrado();
+    }
+
     this.cdr.detectChanges();
   }
 
@@ -1003,6 +1379,112 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
     this.itemForm = {};
     this.itemSeleccionadoId = null;
     this.itemOriginal = null;
+    this.alertaCompatibilidadModal = '';
+    this.alertaNivelGradoModal = '';
+    this.compatibilidadUnidadesMap = {};
+    this.unidadBaseProductoInfo = null;
+  }
+
+  onModalCampoCambio(campoName: string, _valor: any): void {
+    if (this.tabActual === 'gramajes' && (campoName === 'id_ingrediente' || campoName === 'id_unidad_medida')) {
+      this.verificarCompatibilidadModal();
+    }
+    if (this.tabActual === 'grados') {
+      if (campoName === 'id_grupo_gramaje') {
+        const grupo = this.gruposGramajeCompletos.find(
+          (g: any) => String(g.id_grupo_gramaje) === String(this.itemForm.id_grupo_gramaje)
+        );
+        if (grupo?.nivel_educativo) {
+          this.itemForm.nivel_educativo = grupo.nivel_educativo;
+        }
+      }
+      if (campoName === 'id_grupo_gramaje' || campoName === 'nivel_educativo') {
+        this.validarCompatibilidadNivelGrado();
+      }
+    }
+  }
+
+  estaSeleccionadoMultiselect(campoName: string, id: any): boolean {
+    const lista = this.itemForm?.[campoName];
+    return Array.isArray(lista) && lista.some((v: any) => String(v) === String(id));
+  }
+
+  toggleMultiselect(campoName: string, id: any): void {
+    if (!Array.isArray(this.itemForm[campoName])) {
+      this.itemForm[campoName] = [];
+    }
+    const lista: any[] = this.itemForm[campoName];
+    const idx = lista.findIndex((v: any) => String(v) === String(id));
+    if (idx >= 0) {
+      lista.splice(idx, 1);
+    } else {
+      lista.push(Number(id));
+    }
+  }
+
+  private verificarCompatibilidadModal(): void {
+    const idIng = Number(this.itemForm?.id_ingrediente);
+    if (!idIng) {
+      this.compatibilidadUnidadesMap = {};
+      this.unidadBaseProductoInfo = null;
+      this.alertaCompatibilidadModal = '';
+      return;
+    }
+
+    this.bancoDatosService.obtenerUnidadesCompatibles(idIng).subscribe({
+      next: (res: any) => {
+        this.unidadBaseProductoInfo = res?.unidad_base || null;
+        const mapa: Record<number, any> = {};
+        for (const u of (res?.unidades || [])) {
+          mapa[Number(u.id_unidad_medida)] = u;
+        }
+        this.compatibilidadUnidadesMap = mapa;
+        this.evaluarUnidadSeleccionadaModal();
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.compatibilidadUnidadesMap = {};
+        this.alertaCompatibilidadModal = '';
+      }
+    });
+  }
+
+  private evaluarUnidadSeleccionadaModal(): void {
+    const idUnidad = Number(this.itemForm?.id_unidad_medida);
+    if (!idUnidad || !this.compatibilidadUnidadesMap[idUnidad]) {
+      this.alertaCompatibilidadModal = '';
+      return;
+    }
+    const info = this.compatibilidadUnidadesMap[idUnidad];
+    if (!info.es_compatible && this.unidadBaseProductoInfo) {
+      this.alertaCompatibilidadModal =
+        `Conversión incompatible: el producto opera en ${this.unidadBaseProductoInfo.nombre} ` +
+        `(${this.unidadBaseProductoInfo.abreviatura} — ${this.unidadBaseProductoInfo.tipo_magnitud}) y ` +
+        `seleccionaste ${info.nombre} (${info.tipo_magnitud}). Configura primero una equivalencia técnica ` +
+        `en "Equivalencias técnicas" antes de usar esta unidad.`;
+    } else {
+      this.alertaCompatibilidadModal = '';
+    }
+  }
+
+  private validarCompatibilidadNivelGrado(): void {
+    const grupo = this.gruposGramajeCompletos.find(
+      (g: any) => String(g.id_grupo_gramaje) === String(this.itemForm?.id_grupo_gramaje)
+    );
+    const nivel = this.itemForm?.nivel_educativo;
+    if (
+      grupo &&
+      nivel &&
+      grupo.nivel_educativo !== 'OTRO' &&
+      nivel !== 'OTRO' &&
+      grupo.nivel_educativo !== nivel
+    ) {
+      this.alertaNivelGradoModal =
+        `Conflicto de clasificación: el nivel "${nivel}" no coincide con el nivel del grupo ` +
+        `"${grupo.nombre}" (${grupo.nivel_educativo}). No se puede asociar a un grupo incompatible.`;
+    } else {
+      this.alertaNivelGradoModal = '';
+    }
   }
 
 
@@ -1011,8 +1493,29 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
   // ============================================================
 
   private validarFormulario(): boolean {
-    for (const campo of this.tab.campos) {
+    if (this.tabActual === 'gramajes' && this.alertaCompatibilidadModal) {
+      this.sweetAlert.warning('Unidad incompatible', this.alertaCompatibilidadModal);
+      return false;
+    }
+
+    if (this.tabActual === 'grados' && this.alertaNivelGradoModal) {
+      this.sweetAlert.warning('Clasificación incompatible', this.alertaNivelGradoModal);
+      return false;
+    }
+
+    for (const campo of this.camposModal) {
       const valor = this.itemForm[campo.name];
+      if (campo.type === 'multiselect') {
+        if (campo.required && (!Array.isArray(valor) || valor.length === 0)) {
+          this.sweetAlert.warning(
+            'Campos incompletos',
+            `Debes seleccionar al menos un elemento en "${campo.label}".`
+          );
+          return false;
+        }
+        continue;
+      }
+
       const vacio =
         valor === undefined ||
         valor === null ||
@@ -1037,14 +1540,16 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
     return true;
   }
 
-  /** Envía solo los campos de la tabla, con el tipo correcto. */
+  /** Envía solo los campos del formulario modal, con el tipo correcto. */
   private construirCuerpo(): any {
     const cuerpo: any = {};
 
-    for (const campo of this.tab.campos) {
+    for (const campo of this.camposModal) {
       const valor = this.itemForm[campo.name];
 
-      if (campo.type === 'number') {
+      if (campo.type === 'multiselect') {
+        cuerpo[campo.name] = Array.isArray(valor) ? valor.map((v: any) => Number(v)) : [];
+      } else if (campo.type === 'number') {
         cuerpo[campo.name] = (valor === '' || valor === null) ? null : Number(valor);
       } else if (campo.type === 'select') {
         if (valor === null || valor === '') {
@@ -1154,6 +1659,178 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
           }
         });
       });
+  }
+
+
+  limpiarFiltrosEspecificos(): void {
+    this.filtroGradoGramaje = null;
+    this.filtroCategoriaGramaje = null;
+    this.filtroGrupoGrado = null;
+    this.filtroNivelGrado = '';
+    this.onFiltroCambio();
+  }
+
+  cambiarEstadoRegistro(item: any): void {
+    const id = this.obtenerIdItem(item);
+    if (!id) return;
+
+    const esActivo = this.isEstadoActivo(item);
+    const accion = esActivo ? 'inactivar' : 'activar';
+    const titulo = esActivo ? '¿Inactivar configuración?' : '¿Activar configuración?';
+    const detalle = this.tabActual === 'gramajes'
+      ? `El registro pasará a estado ${esActivo ? 'INACTIVO' : 'ACTIVO'} conservando todo su historial.`
+      : `El registro cambiará a estado ${esActivo ? 'INACTIVO' : 'ACTIVO'}.`;
+
+    this.sweetAlert.confirm(titulo, detalle, `Sí, ${accion}`).then((res: any) => {
+      if (!res?.isConfirmed) return;
+
+      let req$;
+      if (this.tabActual === 'gramajes') {
+        req$ = this.bancoDatosService.cambiarEstadoGramaje(id);
+      } else if (this.tabActual === 'grados') {
+        req$ = this.bancoDatosService.cambiarEstadoGrado(id);
+      } else if (this.tabActual === 'grupos_gramaje') {
+        req$ = this.bancoDatosService.cambiarEstadoGrupoGramaje(id);
+      } else if (this.tabActual === 'unidades_medida') {
+        req$ = this.bancoDatosService.cambiarEstadoUnidadMedida(id);
+      } else {
+        return;
+      }
+
+      req$.subscribe({
+        next: () => {
+          this.sweetAlert.success(
+            esActivo ? 'Registro inactivado' : 'Registro activado',
+            `La configuración se actualizó a estado ${esActivo ? 'Inactivo' : 'Activo'} sin perder su historial.`
+          );
+          this.cargarDatos();
+          this.refrescarFuenteSiAplica();
+        },
+        error: (err: any) => {
+          this.sweetAlert.error('No se pudo cambiar el estado', this.mensajeError(err, 'Error al actualizar estado.'));
+        }
+      });
+    });
+  }
+
+  abrirModalHistorial(item: any): void {
+    const id = this.obtenerIdItem(item);
+    if (!id) return;
+
+    this.mostrarHistorialModal = true;
+    this.cargandoHistorial = true;
+    this.historialRegistros = [];
+
+    if (this.tabActual === 'gramajes') {
+      this.historialTipo = 'gramajes';
+      this.historialTitulo = `Historial de gramaje: ${item.nombre_ingrediente || ''} (${item.nombre_grado || ''})`;
+      this.bancoDatosService.obtenerHistorialGramaje(id).subscribe({
+        next: (rows: any[]) => {
+          this.historialRegistros = Array.isArray(rows) ? rows : [];
+          this.cargandoHistorial = false;
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          this.cargandoHistorial = false;
+          this.cdr.detectChanges();
+        }
+      });
+    } else if (this.tabActual === 'grados') {
+      this.historialTipo = 'grados';
+      this.historialTitulo = `Trazabilidad de clasificación: ${item.nombre_grado || ''}`;
+      this.bancoDatosService.obtenerHistorialGrado(id).subscribe({
+        next: (rows: any[]) => {
+          this.historialRegistros = Array.isArray(rows) ? rows : [];
+          this.cargandoHistorial = false;
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          this.cargandoHistorial = false;
+          this.cdr.detectChanges();
+        }
+      });
+    }
+  }
+
+  cerrarHistorialModal(): void {
+    this.mostrarHistorialModal = false;
+    this.historialRegistros = [];
+  }
+
+  abrirConvertidorModal(): void {
+    this.convResultado = null;
+    this.convError = '';
+    this.mostrarConvertidorModal = true;
+    this.cdr.detectChanges();
+  }
+
+  cerrarConvertidorModal(): void {
+    this.mostrarConvertidorModal = false;
+  }
+
+  ejecutarConversionPrueba(): void {
+    if (!this.convForm.cantidad || this.convForm.cantidad <= 0 || !this.convForm.id_unidad_origen || !this.convForm.id_unidad_destino) {
+      this.convError = 'Ingresa una cantidad mayor a 0 y selecciona unidad origen y destino.';
+      this.convResultado = null;
+      return;
+    }
+    this.convirtiendo = true;
+    this.convError = '';
+    this.convResultado = null;
+    this.bancoDatosService.convertirUnidad({
+      cantidad: Number(this.convForm.cantidad),
+      id_unidad_origen: Number(this.convForm.id_unidad_origen),
+      id_unidad_destino: Number(this.convForm.id_unidad_destino),
+      id_ingrediente: this.convForm.id_ingrediente ? Number(this.convForm.id_ingrediente) : null
+    }).subscribe({
+      next: (res: any) => {
+        this.convResultado = res;
+        this.convirtiendo = false;
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => {
+        this.convError = err?.error?.error || this.mensajeError(err, 'No existe una conversión válida entre estas unidades.');
+        this.convirtiendo = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  abrirSimuladorModal(): void {
+    this.simResultado = null;
+    this.mostrarSimuladorModal = true;
+    this.cdr.detectChanges();
+  }
+
+  cerrarSimuladorModal(): void {
+    this.mostrarSimuladorModal = false;
+  }
+
+  ejecutarSimulacionPorciones(): void {
+    if (!this.simForm.estudiantes || this.simForm.estudiantes <= 0 || !this.simForm.dias || this.simForm.dias <= 0) {
+      this.sweetAlert.warning('Parámetros inválidos', 'El número de estudiantes y días deben ser mayores a 0.');
+      return;
+    }
+    this.simCargando = true;
+    this.simResultado = null;
+    this.bancoDatosService.calcularPorcionesGramaje({
+      id_grupo_gramaje: this.simForm.id_grupo_gramaje || undefined,
+      id_grado: this.simForm.id_grado || undefined,
+      estudiantes: Number(this.simForm.estudiantes),
+      dias: Number(this.simForm.dias),
+      contexto_aplicacion: this.simForm.contexto_aplicacion || undefined
+    }).subscribe({
+      next: (res: any) => {
+        this.simResultado = res;
+        this.simCargando = false;
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => {
+        this.simCargando = false;
+        this.sweetAlert.error('Error al calcular', this.mensajeError(err, 'No se pudo ejecutar el cálculo de porciones.'));
+        this.cdr.detectChanges();
+      }
+    });
   }
 
 

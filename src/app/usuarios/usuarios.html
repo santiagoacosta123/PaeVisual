@@ -433,6 +433,20 @@
             ></app-custom-select>
           </div>
 
+          <!-- Selector de Jornada para personal de sede / Jefa de manipuladoras -->
+          <div class="bd-form-group" style="grid-column: 1 / -1" *ngIf="esRolJefa() || (esRolConSede() && usuarioForm.id_sede)">
+            <label>Jornada Asignada {{ esRolJefa() ? '(Jefa de manipuladoras)' : '(Opcional)' }}</label>
+            <app-custom-select
+              [options]="jornadas"
+              valueField="id_jornada"
+              labelField="nombre_jornada"
+              placeholder="Selecciona una jornada..."
+              name="id_jornada"
+              [allowClear]="!esRolJefa()"
+              [(ngModel)]="usuarioForm.id_jornada"
+            ></app-custom-select>
+          </div>
+
           <div class="bd-form-group" style="grid-column: 1 / -1; flex-direction: row; align-items: center; gap: 8px; margin-top: 5px;">
             <label style="position: relative; display: inline-flex; cursor: pointer; align-items: center; margin: 0;">
               <input

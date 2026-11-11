@@ -40,6 +40,7 @@ export class UsuariosComponent implements OnInit {
   todosLosRoles: any[] = []; // Diccionario completo para mapear nombres en la tabla
   instituciones: any[] = [];
   sedes: any[] = [];
+  jornadas: any[] = [];
 
   readonly tiposDocumento = [
     { value: 'CC', label: 'Cédula de Ciudadanía' },
@@ -285,6 +286,7 @@ export class UsuariosComponent implements OnInit {
     rol: '',
     id_institucion: null,
     id_sede: null,
+    id_jornada: null,
     password: '',
     is_active: true
   };
@@ -379,6 +381,14 @@ export class UsuariosComponent implements OnInit {
         this.cdr.detectChanges();
       },
       error: (err) => console.error('Error al cargar sedes en usuarios:', err)
+    });
+
+    this.bancoDatosService.obtenerDatos('jornadas').subscribe({
+      next: (datos: any) => {
+        this.jornadas = Array.isArray(datos) ? datos : (datos.results || datos.data || []);
+        this.cdr.detectChanges();
+      },
+      error: (err) => console.error('Error al cargar jornadas en usuarios:', err)
     });
   }
 
@@ -815,6 +825,12 @@ export class UsuariosComponent implements OnInit {
     return true;
   }
 
+  esRolJefa(): boolean {
+    if (!this.usuarioForm.rol) return false;
+    const nom = this.obtenerNombreRol(this.usuarioForm.rol).toLowerCase();
+    return nom.includes('jefa');
+  }
+
   get sedesDeInstitucionSeleccionada(): any[] {
     return this.obtenerSedesDeInstitucion(this.usuarioForm.id_institucion);
   }
@@ -1110,12 +1126,16 @@ export class UsuariosComponent implements OnInit {
       const sedeValor = typeof usuario.id_sede === 'object'
         ? (usuario.id_sede?.id_sede || usuario.id_sede?.id)
         : usuario.id_sede;
+      const jornadaValor = typeof usuario.id_jornada === 'object'
+        ? (usuario.id_jornada?.id_jornada || usuario.id_jornada?.id)
+        : usuario.id_jornada;
 
       this.usuarioForm = { 
         ...usuario, 
         rol: Number(rolValor) || '',
         id_institucion: instValor ? Number(instValor) : null,
         id_sede: sedeValor ? Number(sedeValor) : null,
+        id_jornada: jornadaValor ? Number(jornadaValor) : null,
         password: '' 
       };
       this.sincronizarFormularioReactivo();
@@ -1159,6 +1179,7 @@ export class UsuariosComponent implements OnInit {
       rol: '',
       id_institucion: miInstDefecto,
       id_sede: null,
+      id_jornada: null,
       password: '',
       is_active: true
     };
@@ -1367,6 +1388,7 @@ export class UsuariosComponent implements OnInit {
       rol: Number(rol),
       id_institucion: (!esSup && this.usuarioForm.id_institucion) ? Number(this.usuarioForm.id_institucion) : null,
       id_sede: (!esSup && this.usuarioForm.id_sede) ? Number(this.usuarioForm.id_sede) : null,
+      id_jornada: (!esSup && this.usuarioForm.id_jornada) ? Number(this.usuarioForm.id_jornada) : null,
       is_active: this.usuarioForm.is_active !== undefined ? Boolean(this.usuarioForm.is_active) : true
     };
 

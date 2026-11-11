@@ -222,6 +222,7 @@ export class LayoutComponent implements OnInit {
       '/entregas-tipo-mercado': 'Entregas por tipo de mercado',
       '/instituciones': 'Sedes',
       '/banco-datos': 'Banco de Datos',
+      '/consulta-gramajes': 'Gramajes por Sede y Jornada',
       '/crear-usuario': 'Crear Usuario',
       '/nuevo-producto': 'Nuevo Producto',
       '/reporte-inventario': 'Reporte Inventario',
