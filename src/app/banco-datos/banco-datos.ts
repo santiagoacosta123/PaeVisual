@@ -8,7 +8,8 @@ import {
 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Subscription } from 'rxjs';
+import { Subscription, forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 
 import { BancoDatosService } from '../services/banco-datos.service';
 import { SweetAlertService } from '../sweet-alert.service';
@@ -19,10 +20,52 @@ import { CustomSelectComponent } from '../shared/custom-select/custom-select';
 // TIPOS DE CONFIGURACIÓN
 // ============================================================
 
-type TipoCampo = 'text' | 'textarea' | 'number' | 'time' | 'select' | 'multiselect';
+type TipoCampo = 'text' | 'textarea' | 'number' | 'time' | 'select';
 
 /** Tablas que alimentan listas desplegables de otras tablas. */
-type FuenteRelacion = 'jornadas' | 'unidades_medida' | 'ingredientes' | 'categorias_inventario' | 'grados' | 'grupos_gramaje' | 'instituciones' | 'tipos_mercado' | 'sedes' | 'turnos';
+type FuenteRelacion = 'jornadas' | 'unidades_medida' | 'ingredientes' | 'categorias_inventario' | 'grados' | 'instituciones' | 'secciones_menu';
+
+export interface IngredienteComponenteReceta {
+  id_ingrediente: number;
+  nombre_ingrediente: string;
+  unidad?: string;
+  observacion?: string;
+}
+
+export interface PasoPreparacionReceta {
+  numero_paso: number;
+  descripcion_paso: string;
+}
+
+export interface ComponentePlatoReceta {
+  id_temporal: string;
+  tipo_componente: string;
+  nombre_componente: string;
+  ingredientes: IngredienteComponenteReceta[];
+  pasos: PasoPreparacionReceta[];
+  ingredienteTempId?: any;
+  observacionTemp?: string;
+}
+
+export interface RecetaMenuExtendida {
+  id_plato?: number;
+  nombre_plato: string;
+  semana: string;
+  numero_menu?: number | null;
+  secciones: string[]; // ['Desayuno', 'Almuerzo', 'Merienda']
+  imagen_url: string;
+  informacion_nutricional: string;
+  estado: string;
+  componentes: ComponentePlatoReceta[];
+}
+
+export interface PlantillaMenuPAE {
+  numero_menu: number;
+  semana: string;
+  nombre_plato: string;
+  secciones: string[];
+  componentes: { tipo_componente: string; nombre_componente: string }[];
+}
 
 interface CampoConfig {
   name: string;
@@ -34,10 +77,6 @@ interface CampoConfig {
   source?: FuenteRelacion;
   options?: OpcionRelacion[];
   defaultValue?: any;
-  /** Solo se muestra como columna en la tabla (campo calculado / solo lectura). */
-  soloTabla?: boolean;
-  /** Solo se diligencia dentro del modal (oculta columna redundante en tabla). */
-  soloModal?: boolean;
 }
 
 interface TabConfig {
@@ -71,10 +110,6 @@ const FUENTES: Record<
     id: 'id_institucion',
     etiqueta: r => r.nombre_institucion ?? r.nombre ?? ''
   },
-  sedes: {
-    id: 'id_sede',
-    etiqueta: r => r.nombre_sede ?? r.nombre ?? ''
-  },
   jornadas: {
     id: 'id_jornada',
     etiqueta: r => r.nombre_jornada ?? r.nombre ?? ''
@@ -94,24 +129,13 @@ const FUENTES: Record<
     id: 'id_categoria_inventario',
     etiqueta: r => r.nombre_categoria ?? r.nombre ?? ''
   },
-  tipos_mercado: {
-    id: 'id_tipo_mercado',
-    etiqueta: r => r.nombre_tipo ?? r.nombre ?? ''
-  },
   grados: {
     id: 'id_grado',
     etiqueta: r => r.nombre_grado ?? r.nombre ?? ''
   },
-  grupos_gramaje: {
-    id: 'id_grupo_gramaje',
-    etiqueta: r => {
-      const nivel = r.nivel_educativo_display || r.nivel_educativo || '';
-      return r.nombre ? (nivel ? `${r.nombre} (${nivel})` : r.nombre) : '';
-    }
-  },
-  turnos: {
-    id: 'id_turno',
-    etiqueta: r => r.nombre_turno ? `${r.nombre_turno} (${(r.hora_inicio || '').slice(0, 5)} - ${(r.hora_fin || '').slice(0, 5)})` : ''
+  secciones_menu: {
+    id: 'id_seccion',
+    etiqueta: r => r.nombre_seccion ?? r.nombre ?? ''
   }
 };
 
@@ -197,7 +221,6 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
         { name: 'id_categoria_inventario', label: 'Categoría', type: 'select', required: true, source: 'categorias_inventario' },
         { name: 'id_unidad_medida', label: 'Unidad de medida', type: 'select', required: true, source: 'unidades_medida' },
         { name: 'marca_ingrediente', label: 'Marca', type: 'text', required: false, placeholder: 'Ej: San Jorge' },
-        { name: 'id_tipo_mercado', label: 'Tipo de mercado', type: 'select', required: false, source: 'tipos_mercado' },
         {
           name: 'tipo_conservacion',
           label: 'Tipo de conservación',
@@ -248,64 +271,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       categoria: 'inventario',
       campos: [
         { name: 'nombre', label: 'Nombre', type: 'text', required: true, placeholder: 'Ej: Kilogramo' },
-        { name: 'abreviatura', label: 'Abreviatura', type: 'text', required: true, placeholder: 'Ej: kg' },
-        {
-          name: 'tipo_magnitud',
-          label: 'Magnitud',
-          type: 'select',
-          required: true,
-          defaultValue: 'MASA',
-          options: [
-            { id: 'MASA', label: 'Masa (g, kg, lb)' },
-            { id: 'VOLUMEN', label: 'Volumen (ml, L)' },
-            { id: 'UNIDAD', label: 'Unidad individual (und, pza)' }
-          ]
-        },
-        {
-          name: 'factor_conversion_base',
-          label: 'Factor base (g / ml / und)',
-          type: 'number',
-          required: true,
-          defaultValue: 1,
-          placeholder: 'Ej: 1000 para kg o L, 1 para g/ml/und'
-        },
-        {
-          name: 'estado',
-          label: 'Estado',
-          type: 'select',
-          required: true,
-          defaultValue: 'ACTIVO',
-          options: [
-            { id: 'ACTIVO', label: 'Activo' },
-            { id: 'INACTIVO', label: 'Inactivo' }
-          ]
-        }
-      ]
-    },
-    {
-      id: 'equivalencias_unidad',
-      nombre: 'Equivalencias técnicas',
-      singular: 'equivalencia de unidad',
-      icon: 'sync_alt',
-      idField: 'id_equivalencia',
-      categoria: 'inventario',
-      campos: [
-        { name: 'id_ingrediente', label: 'Producto / ingrediente', type: 'select', required: true, source: 'ingredientes' },
-        { name: 'id_unidad_origen', label: 'Unidad origen', type: 'select', required: true, source: 'unidades_medida' },
-        { name: 'id_unidad_destino', label: 'Unidad destino', type: 'select', required: true, source: 'unidades_medida' },
-        { name: 'factor_conversion', label: 'Equivalencia (1 origen = X destino)', type: 'number', required: true, placeholder: 'Ej: 55 (1 und = 55 g)' },
-        { name: 'observaciones', label: 'Especificación técnica', type: 'textarea', soloModal: true, placeholder: 'Justificación técnica de densidad o peso unitario' },
-        {
-          name: 'estado',
-          label: 'Estado',
-          type: 'select',
-          required: true,
-          defaultValue: 'ACTIVO',
-          options: [
-            { id: 'ACTIVO', label: 'Activo' },
-            { id: 'INACTIVO', label: 'Inactivo' }
-          ]
-        }
+        { name: 'abreviatura', label: 'Abreviatura', type: 'text', required: true, placeholder: 'Ej: kg' }
       ]
     },
     {
@@ -331,44 +297,6 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       ]
     },
     {
-      id: 'grupos_gramaje',
-      nombre: 'Grupos de gramajes',
-      singular: 'grupo de gramaje',
-      icon: 'groups',
-      idField: 'id_grupo_gramaje',
-      categoria: 'operacion',
-      campos: [
-        { name: 'nombre', label: 'Grupo de aplicación', type: 'text', required: true, placeholder: 'Ej: Grupo A - Preescolar' },
-        {
-          name: 'nivel_educativo',
-          label: 'Nivel educativo',
-          type: 'select',
-          required: true,
-          defaultValue: 'PRIMARIA',
-          options: [
-            { id: 'PREESCOLAR', label: 'Preescolar' },
-            { id: 'PRIMARIA', label: 'Primaria' },
-            { id: 'SECUNDARIA', label: 'Secundaria' },
-            { id: 'MEDIA', label: 'Media' },
-            { id: 'OTRO', label: 'Otro' }
-          ]
-        },
-        { name: 'grados_asociados_resumen', label: 'Grados asociados', type: 'text', soloTabla: true },
-        { name: 'descripcion', label: 'Descripción técnica', type: 'textarea', soloModal: true, placeholder: 'Criterios nutricionales o edades aplicables' },
-        {
-          name: 'estado',
-          label: 'Estado',
-          type: 'select',
-          required: true,
-          defaultValue: 'ACTIVO',
-          options: [
-            { id: 'ACTIVO', label: 'Activo' },
-            { id: 'INACTIVO', label: 'Inactivo' }
-          ]
-        }
-      ]
-    },
-    {
       id: 'grados',
       nombre: 'Grados',
       singular: 'grado',
@@ -376,40 +304,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       idField: 'id_grado',
       categoria: 'operacion',
       campos: [
-        { name: 'nombre_grado', label: 'Grado escolar', type: 'text', required: true, placeholder: 'Ej: Primero' },
-        { name: 'id_grupo_gramaje', label: 'Grupo de gramaje', type: 'select', required: true, source: 'grupos_gramaje' },
-        {
-          name: 'nivel_educativo',
-          label: 'Nivel educativo',
-          type: 'select',
-          required: true,
-          defaultValue: 'PRIMARIA',
-          options: [
-            { id: 'PREESCOLAR', label: 'Preescolar' },
-            { id: 'PRIMARIA', label: 'Primaria' },
-            { id: 'SECUNDARIA', label: 'Secundaria' },
-            { id: 'MEDIA', label: 'Media' },
-            { id: 'OTRO', label: 'Otro' }
-          ]
-        },
-        {
-          name: 'estado',
-          label: 'Estado',
-          type: 'select',
-          required: true,
-          defaultValue: 'ACTIVO',
-          options: [
-            { id: 'ACTIVO', label: 'Activo' },
-            { id: 'INACTIVO', label: 'Inactivo' }
-          ]
-        },
-        {
-          name: 'motivo_cambio',
-          label: 'Motivo de reclasificación',
-          type: 'text',
-          soloModal: true,
-          placeholder: 'Ej: Ajuste de grupo para nuevo periodo (opcional)'
-        }
+        { name: 'nombre_grado', label: 'Nombre del grado', type: 'text', required: true, placeholder: 'Ej: Primero' }
       ]
     },
     {
@@ -436,18 +331,16 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       ]
     },
     {
-      id: 'sede_jornadas',
-      nombre: 'Jornadas por Sede',
-      singular: 'jornada por sede',
-      icon: 'hub',
-      idField: 'id_sede_jornada',
+      id: 'menus',
+      nombre: 'Platos y Recetas',
+      singular: 'plato',
+      icon: 'restaurant_menu',
+      idField: 'id_plato',
       categoria: 'operacion',
       campos: [
-        { name: 'id_sede', label: 'Sede educativa', type: 'select', required: true, source: 'sedes' },
-        { name: 'id_jornada', label: 'Jornada', type: 'select', required: true, source: 'jornadas' },
-        { name: 'cupos', label: 'Cupos asignados', type: 'number', required: true, placeholder: 'Ej: 150' },
-        { name: 'grados_resumen', label: 'Grados atendidos', type: 'text', soloTabla: true },
-        { name: 'grados_ids', label: 'Grados atendidos en esta sede y jornada', type: 'multiselect', source: 'grados', soloModal: true }
+        { name: 'nombre_plato', label: 'Nombre del Plato', type: 'text', required: true, placeholder: 'Ej: Menú 1: Pericos con arroz' },
+        { name: 'componente', label: 'Componentes del plato', type: 'text', required: true },
+        { name: 'resumen_receta', label: 'Ingredientes y preparación', type: 'text' }
       ]
     },
     {
@@ -483,45 +376,11 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       idField: 'id_gramaje',
       categoria: 'inventario',
       campos: [
-        { name: 'id_ingrediente', label: 'Producto o ingrediente', type: 'select', required: true, source: 'ingredientes' },
-        { name: 'id_grado', label: 'Grado escolar', type: 'select', required: true, source: 'grados' },
-        { name: 'cantidad_gramaje', label: 'Cantidad de gramaje', type: 'number', required: true, placeholder: 'Ej: 120' },
+        { name: 'id_ingrediente', label: 'Ingrediente', type: 'select', required: true, source: 'ingredientes' },
+        { name: 'id_grado', label: 'Grado', type: 'select', required: true, source: 'grados' },
+        { name: 'cantidad_gramage', label: 'Cantidad por porción', type: 'number', required: true },
         { name: 'id_unidad_medida', label: 'Unidad de medida', type: 'select', required: true, source: 'unidades_medida' },
-        { name: 'tipo_alimento_display', label: 'Tipo de alimento', type: 'text', soloTabla: true },
-        {
-          name: 'contexto_aplicacion',
-          label: 'Contexto de aplicación',
-          type: 'select',
-          required: true,
-          defaultValue: 'GENERAL',
-          soloModal: true,
-          options: [
-            { id: 'GENERAL', label: 'General' },
-            { id: 'DESAYUNO', label: 'Desayuno' },
-            { id: 'ALMUERZO', label: 'Almuerzo' },
-            { id: 'REFRIGERIO', label: 'Refrigerio / Complemento' },
-            { id: 'RACION_PREPARADA', label: 'Ración preparada en sitio' },
-            { id: 'RACION_INDUSTRIALIZADA', label: 'Ración industrializada' }
-          ]
-        },
-        {
-          name: 'descripcion',
-          label: 'Observaciones / especificaciones técnicas',
-          type: 'textarea',
-          soloModal: true,
-          placeholder: 'Especificaciones nutricionales o notas técnicas por estudiante'
-        },
-        {
-          name: 'estado',
-          label: 'Estado',
-          type: 'select',
-          required: true,
-          defaultValue: 'ACTIVO',
-          options: [
-            { id: 'ACTIVO', label: 'Activo' },
-            { id: 'INACTIVO', label: 'Inactivo' }
-          ]
-        }
+        { name: 'descripcion', label: 'Descripción', type: 'textarea' }
       ]
     }
   ];
@@ -559,7 +418,6 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
   }
 
   datos: any[] = [];
-  private _datosFiltradosCache: any[] = [];
   cargando = false;
   /** Mensaje cuando la carga FALLA (distinto de "no hay registros"). */
   errorCarga: string | null = null;
@@ -617,13 +475,11 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
   confirmarSeleccionInstitucionSede(): void {
     this.filtroInstitucionSede = this.institucionTemporalId;
     this.modalSeleccionarInstitucionAbierto = false;
-    this.actualizarFiltros();
   }
 
   limpiarFiltroInstitucionSede(event?: Event): void {
     if (event) event.stopPropagation();
     this.filtroInstitucionSede = 'TODAS';
-    this.actualizarFiltros();
   }
 
   esInstitucionMarcada(item: any): boolean {
@@ -669,76 +525,293 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
 
   opciones: Record<string, OpcionRelacion[]> = {
     instituciones: [],
-    sedes: [],
     jornadas: [],
     unidades_medida: [],
     ingredientes: [],
     categorias_inventario: [],
-    tipos_mercado: [],
     grados: [],
-    grupos_gramaje: [],
-    turnos: []
+    secciones_menu: []
   };
 
-  gruposGramajeCompletos: any[] = [];
+  ingredientesCompletos: any[] = [];
+  unidadesMedidaCompletas: any[] = [];
 
-  // Filtros específicos de Gramajes y Grados (HU 1 & HU 2)
-  filtroGradoGramaje: any = null;
-  filtroCategoriaGramaje: any = null;
-  filtroGrupoGrado: any = null;
-  filtroNivelGrado: string = '';
+  // ============================================================
+  // ESTADO Y CATÁLOGO DE MENÚS / PLATOS (CICLO PAE 4 SEMANAS)
+  // ============================================================
+  private readonly STORAGE_RECETARIO_KEY = 'sirae_recetario_menus_v1';
+  private readonly STORAGE_COMP_CATALOGO_KEY = 'sirae_catalogo_componentes_pae_v1';
 
-  readonly opcionesNivelEducativo: any[] = [
-    { id: 'PREESCOLAR', label: 'Preescolar' },
-    { id: 'PRIMARIA', label: 'Primaria' },
-    { id: 'SECUNDARIA', label: 'Secundaria' },
-    { id: 'MEDIA', label: 'Media' },
-    { id: 'OTRO', label: 'Otro' }
+  filtroSemanaMenu: string = 'TODAS';
+  filtroSeccionMenu: string = 'TODAS';
+  plantillaMenuSeleccionada: any = '';
+  sincronizandoMinuta = false;
+
+  modalVerRecetaAbierto = false;
+  recetaDetalleSeleccionada: any = null;
+  archivoImagenPlatoSeleccionado: File | null = null;
+
+  readonly seccionesDisponiblesMenu: { id: string; label: string; icon: string }[] = [
+    { id: 'Desayuno', label: 'Desayuno', icon: 'wb_twilight' },
+    { id: 'Almuerzo', label: 'Almuerzo', icon: 'lunch_dining' },
+    { id: 'Merienda', label: 'Merienda', icon: 'bakery_dining' }
   ];
 
-  // Compatibilidad en tiempo real dentro de modal (HU 2 & HU 3)
-  compatibilidadUnidadesMap: Record<number, {
-    nombre?: string;
-    abreviatura?: string;
-    tipo_magnitud?: string;
-    es_compatible: boolean;
-    metodo_compatibilidad: string;
-    requiere_equivalencia: boolean;
-  }> = {};
-  unidadBaseProductoInfo: any = null;
-  alertaCompatibilidadModal: string = '';
-  alertaNivelGradoModal: string = '';
+  readonly semanasCicloOpciones: { id: string; label: string }[] = [
+    { id: 'Semana 1', label: 'Semana 1 (Menús 1 - 5)' },
+    { id: 'Semana 2', label: 'Semana 2 (Menús 6 - 10)' },
+    { id: 'Semana 3', label: 'Semana 3 (Menús 11 - 15)' },
+    { id: 'Semana 4', label: 'Semana 4 (Menús 16 - 20)' },
+    { id: 'General', label: 'General / Todas las semanas' }
+  ];
 
-  // Modal de historial (HU 1 & HU 2)
-  mostrarHistorialModal = false;
-  historialTipo: 'gramajes' | 'grados' = 'gramajes';
-  historialTitulo = '';
-  historialRegistros: any[] = [];
-  cargandoHistorial = false;
+  readonly tiposComponentePAE: { id: string; label: string }[] = [
+    { id: 'Bebida con leche', label: 'Bebida con leche' },
+    { id: 'Alimento proteico', label: 'Alimento proteico' },
+    { id: 'Cereal acompañante', label: 'Cereal acompañante' },
+    { id: 'Sopa / Principio', label: 'Sopa / Principio' },
+    { id: 'Fruta', label: 'Fruta' },
+    { id: 'Agua', label: 'Agua' }
+  ];
 
-  // Modal convertidor rápido de unidades (HU 3)
-  mostrarConvertidorModal = false;
-  convForm: {
-    cantidad: number;
-    id_unidad_origen: any;
-    id_unidad_destino: any;
-    id_ingrediente: any;
-  } = { cantidad: 1000, id_unidad_origen: null, id_unidad_destino: null, id_ingrediente: null };
-  convResultado: any = null;
-  convError = '';
-  convirtiendo = false;
+  readonly MINUTA_PAE_OFICIAL: PlantillaMenuPAE[] = [
+    // SEMANA 1
+    {
+      numero_menu: 1,
+      semana: 'Semana 1',
+      nombre_plato: 'Menú 1: Pericos con arroz',
+      secciones: ['Desayuno', 'Almuerzo', 'Merienda'],
+      componentes: [
+        { tipo_componente: 'Bebida con leche', nombre_componente: 'Refresco de avena' },
+        { tipo_componente: 'Alimento proteico', nombre_componente: 'Huevos pericos' },
+        { tipo_componente: 'Cereal acompañante', nombre_componente: 'Arroz blanco' },
+        { tipo_componente: 'Agua', nombre_componente: 'Agua potable' }
+      ]
+    },
+    {
+      numero_menu: 2,
+      semana: 'Semana 1',
+      nombre_plato: 'Menú 2: Pollo en salsa blanca con pasta',
+      secciones: ['Desayuno', 'Almuerzo', 'Merienda'],
+      componentes: [
+        { tipo_componente: 'Bebida con leche', nombre_componente: 'Jugo de fruta en leche' },
+        { tipo_componente: 'Alimento proteico', nombre_componente: 'Pollo en salsa blanca' },
+        { tipo_componente: 'Cereal acompañante', nombre_componente: 'Pasta' }
+      ]
+    },
+    {
+      numero_menu: 3,
+      semana: 'Semana 1',
+      nombre_plato: 'Menú 3: Arepa con chocolate',
+      secciones: ['Desayuno', 'Merienda'],
+      componentes: [
+        { tipo_componente: 'Bebida con leche', nombre_componente: 'Chocolate en leche' },
+        { tipo_componente: 'Cereal acompañante', nombre_componente: 'Arepa de maíz' },
+        { tipo_componente: 'Fruta', nombre_componente: 'Banano' }
+      ]
+    },
+    {
+      numero_menu: 4,
+      semana: 'Semana 1',
+      nombre_plato: 'Menú 4: Lentejas con arroz',
+      secciones: ['Almuerzo', 'Desayuno'],
+      componentes: [
+        { tipo_componente: 'Bebida con leche', nombre_componente: 'Jugo de fruta en leche' },
+        { tipo_componente: 'Alimento proteico', nombre_componente: 'Lentejas con papa guisada' },
+        { tipo_componente: 'Cereal acompañante', nombre_componente: 'Arroz blanco' }
+      ]
+    },
+    {
+      numero_menu: 5,
+      semana: 'Semana 1',
+      nombre_plato: 'Menú 5: Torta de huevo con arroz',
+      secciones: ['Desayuno', 'Almuerzo', 'Merienda'],
+      componentes: [
+        { tipo_componente: 'Bebida con leche', nombre_componente: 'Agua de panela en leche' },
+        { tipo_componente: 'Alimento proteico', nombre_componente: 'Torta de huevo' },
+        { tipo_componente: 'Cereal acompañante', nombre_componente: 'Arroz blanco' }
+      ]
+    },
+    // SEMANA 2
+    {
+      numero_menu: 6,
+      semana: 'Semana 2',
+      nombre_plato: 'Menú 6: Carne guisada con arroz',
+      secciones: ['Almuerzo', 'Desayuno'],
+      componentes: [
+        { tipo_componente: 'Bebida con leche', nombre_componente: 'Refresco de avena' },
+        { tipo_componente: 'Alimento proteico', nombre_componente: 'Carne de res guisada' },
+        { tipo_componente: 'Cereal acompañante', nombre_componente: 'Arroz blanco' }
+      ]
+    },
+    {
+      numero_menu: 7,
+      semana: 'Semana 2',
+      nombre_plato: 'Menú 7: Hojaldras con chocolate',
+      secciones: ['Desayuno', 'Merienda'],
+      componentes: [
+        { tipo_componente: 'Bebida con leche', nombre_componente: 'Chocolate en leche' },
+        { tipo_componente: 'Cereal acompañante', nombre_componente: 'Hojaldras' },
+        { tipo_componente: 'Fruta', nombre_componente: 'Papaya' },
+        { tipo_componente: 'Agua', nombre_componente: 'Agua potable' }
+      ]
+    },
+    {
+      numero_menu: 8,
+      semana: 'Semana 2',
+      nombre_plato: 'Menú 8: Frijoles guisados con arroz',
+      secciones: ['Almuerzo', 'Desayuno'],
+      componentes: [
+        { tipo_componente: 'Bebida con leche', nombre_componente: 'Agua de panela en leche' },
+        { tipo_componente: 'Alimento proteico', nombre_componente: 'Frijoles guisados con papa' },
+        { tipo_componente: 'Cereal acompañante', nombre_componente: 'Arroz con fideos' }
+      ]
+    },
+    {
+      numero_menu: 9,
+      semana: 'Semana 2',
+      nombre_plato: 'Menú 9: Galleta cuca con leche',
+      secciones: ['Desayuno', 'Merienda'],
+      componentes: [
+        { tipo_componente: 'Bebida con leche', nombre_componente: 'Leche' },
+        { tipo_componente: 'Alimento proteico', nombre_componente: 'Galleta / cuca' },
+        { tipo_componente: 'Cereal acompañante', nombre_componente: 'Maní salado' },
+        { tipo_componente: 'Fruta', nombre_componente: 'Mango' }
+      ]
+    },
+    {
+      numero_menu: 10,
+      semana: 'Semana 2',
+      nombre_plato: 'Menú 10: Huevos revueltos con arroz',
+      secciones: ['Desayuno', 'Almuerzo', 'Merienda'],
+      componentes: [
+        { tipo_componente: 'Bebida con leche', nombre_componente: 'Jugo de fruta en leche' },
+        { tipo_componente: 'Alimento proteico', nombre_componente: 'Huevos revueltos' },
+        { tipo_componente: 'Cereal acompañante', nombre_componente: 'Arroz blanco' }
+      ]
+    },
+    // SEMANA 3
+    {
+      numero_menu: 11,
+      semana: 'Semana 3',
+      nombre_plato: 'Menú 11: Pollo guisado con arroz',
+      secciones: ['Almuerzo', 'Desayuno'],
+      componentes: [
+        { tipo_componente: 'Bebida con leche', nombre_componente: 'Refresco de avena' },
+        { tipo_componente: 'Alimento proteico', nombre_componente: 'Pollo guisado' },
+        { tipo_componente: 'Cereal acompañante', nombre_componente: 'Arroz blanco' }
+      ]
+    },
+    {
+      numero_menu: 12,
+      semana: 'Semana 3',
+      nombre_plato: 'Menú 12: Lentejas guisadas con arroz',
+      secciones: ['Almuerzo', 'Desayuno'],
+      componentes: [
+        { tipo_componente: 'Bebida con leche', nombre_componente: 'Agua de panela en leche' },
+        { tipo_componente: 'Alimento proteico', nombre_componente: 'Lentejas guisadas con papa' },
+        { tipo_componente: 'Cereal acompañante', nombre_componente: 'Arroz blanco' },
+        { tipo_componente: 'Fruta', nombre_componente: 'Mango' }
+      ]
+    },
+    {
+      numero_menu: 13,
+      semana: 'Semana 3',
+      nombre_plato: 'Menú 13: Torta de huevo con quinua',
+      secciones: ['Desayuno', 'Almuerzo', 'Merienda'],
+      componentes: [
+        { tipo_componente: 'Bebida con leche', nombre_componente: 'Colada de quinua' },
+        { tipo_componente: 'Alimento proteico', nombre_componente: 'Torta de huevo' },
+        { tipo_componente: 'Cereal acompañante', nombre_componente: 'Arroz blanco' }
+      ]
+    },
+    {
+      numero_menu: 14,
+      semana: 'Semana 3',
+      nombre_plato: 'Menú 14: Torta pastel con yogurt',
+      secciones: ['Desayuno', 'Merienda'],
+      componentes: [
+        { tipo_componente: 'Bebida con leche', nombre_componente: 'Yogurt' },
+        { tipo_componente: 'Cereal acompañante', nombre_componente: 'Torta pastel' },
+        { tipo_componente: 'Fruta', nombre_componente: 'Manzana' }
+      ]
+    },
+    {
+      numero_menu: 15,
+      semana: 'Semana 3',
+      nombre_plato: 'Menú 15: Arroz con cerdo y verduras',
+      secciones: ['Almuerzo', 'Desayuno'],
+      componentes: [
+        { tipo_componente: 'Bebida con leche', nombre_componente: 'Jugo de fruta en leche' },
+        { tipo_componente: 'Alimento proteico', nombre_componente: 'Arroz con carne de cerdo y verduras' }
+      ]
+    },
+    // SEMANA 4
+    {
+      numero_menu: 16,
+      semana: 'Semana 4',
+      nombre_plato: 'Menú 16: Lentejas con colada de quinua',
+      secciones: ['Almuerzo', 'Desayuno'],
+      componentes: [
+        { tipo_componente: 'Bebida con leche', nombre_componente: 'Colada de quinua' },
+        { tipo_componente: 'Alimento proteico', nombre_componente: 'Lentejas guisadas con papa' },
+        { tipo_componente: 'Cereal acompañante', nombre_componente: 'Arroz blanco' }
+      ]
+    },
+    {
+      numero_menu: 17,
+      semana: 'Semana 4',
+      nombre_plato: 'Menú 17: Pericos con chocolate',
+      secciones: ['Desayuno', 'Almuerzo', 'Merienda'],
+      componentes: [
+        { tipo_componente: 'Bebida con leche', nombre_componente: 'Chocolate en leche' },
+        { tipo_componente: 'Alimento proteico', nombre_componente: 'Huevos pericos' },
+        { tipo_componente: 'Cereal acompañante', nombre_componente: 'Arroz blanco' }
+      ]
+    },
+    {
+      numero_menu: 18,
+      semana: 'Semana 4',
+      nombre_plato: 'Menú 18: Arroz con leche y galletas',
+      secciones: ['Desayuno', 'Merienda'],
+      componentes: [
+        { tipo_componente: 'Bebida con leche', nombre_componente: 'Arroz con leche y canela' },
+        { tipo_componente: 'Cereal acompañante', nombre_componente: 'Galleta tipo crackers' },
+        { tipo_componente: 'Fruta', nombre_componente: 'Mango, papaya, melón' }
+      ]
+    },
+    {
+      numero_menu: 19,
+      semana: 'Semana 4',
+      nombre_plato: 'Menú 19: Pollo con verduras y papas',
+      secciones: ['Almuerzo', 'Desayuno'],
+      componentes: [
+        { tipo_componente: 'Bebida con leche', nombre_componente: 'Refresco de avena' },
+        { tipo_componente: 'Alimento proteico', nombre_componente: 'Pollo en julianas con verduras' },
+        { tipo_componente: 'Cereal acompañante', nombre_componente: 'Papas en casco' }
+      ]
+    },
+    {
+      numero_menu: 20,
+      semana: 'Semana 4',
+      nombre_plato: 'Menú 20: Frijoles con arroz y fideos',
+      secciones: ['Almuerzo', 'Desayuno'],
+      componentes: [
+        { tipo_componente: 'Bebida con leche', nombre_componente: 'Agua de panela en leche' },
+        { tipo_componente: 'Alimento proteico', nombre_componente: 'Frijoles guisados con papa' },
+        { tipo_componente: 'Cereal acompañante', nombre_componente: 'Arroz con fideos' }
+      ]
+    }
+  ];
 
-  // Modal simulador de porciones por grupo / grado (HU 2 & HU 3)
-  mostrarSimuladorModal = false;
-  simForm: {
-    id_grupo_gramaje: any;
-    id_grado: any;
-    estudiantes: number;
-    dias: number;
-    contexto_aplicacion: string;
-  } = { id_grupo_gramaje: null, id_grado: null, estudiantes: 100, dias: 5, contexto_aplicacion: '' };
-  simResultado: any = null;
-  simCargando = false;
+  get plantillasMinutaOpciones(): OpcionRelacion[] {
+    return this.MINUTA_PAE_OFICIAL.map(m => ({
+      id: m.numero_menu,
+      label: `${m.semana} • ${m.nombre_plato}`
+    }));
+  }
+
+  menuRecetaForm: RecetaMenuExtendida = this.crearMenuRecetaVacio();
 
   mostrarModal = false;
   modoEdicion = false;
@@ -769,29 +842,14 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
   // ============================================================
 
   ngOnInit(): void {
-    // 1. Cargar primero la tabla visible con máxima prioridad
     this.cargarDatos();
-
-    // 2. Cargar las tablas maestras de apoyo tras pintar la tabla
-    setTimeout(() => {
-      this.cargarTodasLasFuentes();
-    }, 150);
-  }
-
-  private cargarTodasLasFuentes(): void {
-    const fuentes: FuenteRelacion[] = [
-      'instituciones',
-      'sedes',
-      'jornadas',
-      'unidades_medida',
-      'ingredientes',
-      'categorias_inventario',
-      'tipos_mercado',
-      'grupos_gramaje',
-      'grados',
-      'turnos'
-    ];
-    fuentes.forEach(f => this.cargarFuente(f));
+    this.cargarFuente('instituciones');
+    this.cargarFuente('jornadas');
+    this.cargarFuente('unidades_medida');
+    this.cargarFuente('ingredientes');
+    this.cargarFuente('categorias_inventario');
+    this.cargarFuente('grados');
+    this.cargarFuente('secciones_menu');
   }
 
   ngOnDestroy(): void {
@@ -820,14 +878,9 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
 
   @HostListener('document:keydown.escape')
   onEscape(): void {
-    if (this.mostrarHistorialModal) {
-      this.cerrarHistorialModal();
-    }
-    if (this.mostrarConvertidorModal) {
-      this.cerrarConvertidorModal();
-    }
-    if (this.mostrarSimuladorModal) {
-      this.cerrarSimuladorModal();
+    if (this.modalVerRecetaAbierto) {
+      this.cerrarModalVerReceta();
+      return;
     }
     if (this.mostrarModal) {
       this.cerrarModal();
@@ -851,13 +904,19 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
     if (this.tabActual === 'instituciones') {
       return 'Buscar por nombre, NIT o código...';
     }
-    if (this.tabActual === 'gramajes') {
-      return 'Buscar por producto, grado o especificación técnica...';
-    }
-    if (this.tabActual === 'grados') {
-      return 'Buscar por grado escolar o grupo de aplicación...';
+    if (this.tabActual === 'menus') {
+      return 'Ingresa el nombre del plato...';
     }
     return `Buscar en ${this.tab.nombre.toLowerCase()}...`;
+  }
+
+  obtenerTextoComponentesRestantes(componentes: any[]): string {
+    if (!Array.isArray(componentes) || componentes.length <= 3) return '';
+    return componentes
+      .slice(3)
+      .map(c => `${c.tipo_componente ? c.tipo_componente + ': ' : ''}${c.nombre_componente || ''}`.trim())
+      .filter(Boolean)
+      .join(', ');
   }
 
   toggleMenuAccion(id: any, event: Event): void {
@@ -876,7 +935,6 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
   onFiltroCambio(): void {
     this.paginaActual = 1;
     this.menuAccionAbiertoId = null;
-    this.actualizarFiltros();
   }
 
   cambiarElementosPorPagina(nuevoLimite: any): void {
@@ -894,7 +952,8 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
 
   obtenerNombrePrincipal(item: any): string {
     if (!item) return '';
-    return item.nombre_institucion ||
+    return item.nombre_plato ||
+           item.nombre_institucion ||
            item.nombre_sede ||
            item.nombre_ingrediente ||
            item.nombre_categoria ||
@@ -916,19 +975,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
     return this.tabs.find(t => t.id === this.tabActual) ?? this.tabs[0];
   }
 
-  get camposTabla(): CampoConfig[] {
-    return this.tab.campos.filter(c => !c.soloModal);
-  }
-
-  get camposModal(): CampoConfig[] {
-    return this.tab.campos.filter(c => !c.soloTabla);
-  }
-
   get datosFiltrados(): any[] {
-    return this._datosFiltradosCache;
-  }
-
-  actualizarFiltros(): void {
     let resultado = [...this.datos];
 
     // Filtro de sedes por institución
@@ -941,23 +988,16 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       });
     }
 
-    // Filtros específicos de Gramajes: por grado y por categoría
-    if (this.tabActual === 'gramajes') {
-      if (this.filtroGradoGramaje !== null && this.filtroGradoGramaje !== '' && this.filtroGradoGramaje !== undefined) {
-        resultado = resultado.filter(item => String(item.id_grado) === String(this.filtroGradoGramaje));
+    // Filtros específicos de Menús (Semana y Sección: Desayuno / Almuerzo / Merienda)
+    if (this.tabActual === 'menus') {
+      if (this.filtroSemanaMenu && this.filtroSemanaMenu !== 'TODAS') {
+        resultado = resultado.filter(item => (item?.semana || 'General') === this.filtroSemanaMenu);
       }
-      if (this.filtroCategoriaGramaje !== null && this.filtroCategoriaGramaje !== '' && this.filtroCategoriaGramaje !== undefined) {
-        resultado = resultado.filter(item => String(item.id_categoria_inventario) === String(this.filtroCategoriaGramaje));
-      }
-    }
-
-    // Filtros específicos de Grados: por grupo y por nivel educativo
-    if (this.tabActual === 'grados') {
-      if (this.filtroGrupoGrado !== null && this.filtroGrupoGrado !== '' && this.filtroGrupoGrado !== undefined) {
-        resultado = resultado.filter(item => String(item.id_grupo_gramaje) === String(this.filtroGrupoGrado));
-      }
-      if (this.filtroNivelGrado) {
-        resultado = resultado.filter(item => String(item.nivel_educativo || '').toUpperCase() === this.filtroNivelGrado);
+      if (this.filtroSeccionMenu && this.filtroSeccionMenu !== 'TODAS') {
+        resultado = resultado.filter(item => {
+          const secs: string[] = Array.isArray(item?.secciones) ? item.secciones : [];
+          return secs.some(s => s.toLowerCase() === this.filtroSeccionMenu.toLowerCase());
+        });
       }
     }
 
@@ -965,16 +1005,10 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
     if (this.busquedaTexto && this.busquedaTexto.trim()) {
       const q = this.busquedaTexto.trim().toLowerCase();
       resultado = resultado.filter(item => {
-        if (this.tabActual === 'gramajes') {
-          const producto = String(item.nombre_ingrediente || '').toLowerCase();
-          const grado = String(item.nombre_grado || '').toLowerCase();
-          const desc = String(item.descripcion || '').toLowerCase();
-          return producto.includes(q) || grado.includes(q) || desc.includes(q);
-        }
         return Object.values(item).some(val => {
           if (val === null || val === undefined) return false;
           if (typeof val === 'object') {
-            return Object.values(val).some(sub => sub && String(sub).toLowerCase().includes(q));
+            return JSON.stringify(val).toLowerCase().includes(q);
           }
           return String(val).toLowerCase().includes(q);
         });
@@ -1006,7 +1040,17 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
         const valB = String(this.obtenerNombrePrincipal(b)).toLowerCase();
         return valB.localeCompare(valA, 'es');
       });
+    } else if (this.tabActual === 'menus') {
+      resultado.sort((a, b) => {
+        const numA = a?.numero_menu ?? 999;
+        const numB = b?.numero_menu ?? 999;
+        if (numA !== numB) return numA - numB;
+        const idA = this.obtenerIdItem(a) || 0;
+        const idB = this.obtenerIdItem(b) || 0;
+        return idA - idB;
+      });
     } else {
+      // Más recientes: ordenar por ID descendente si existe
       resultado.sort((a, b) => {
         const idA = this.obtenerIdItem(a) || 0;
         const idB = this.obtenerIdItem(b) || 0;
@@ -1014,7 +1058,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       });
     }
 
-    this._datosFiltradosCache = resultado;
+    return resultado;
   }
 
   get totalRegistros(): number {
@@ -1082,10 +1126,6 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
     this.tabActual = tabId;
     this.busquedaTexto = '';
     this.filtroEstado = '';
-    this.filtroGradoGramaje = null;
-    this.filtroCategoriaGramaje = null;
-    this.filtroGrupoGrado = null;
-    this.filtroNivelGrado = '';
     this.ordenPor = 'recientes';
     this.paginaActual = 1;
     this.menuAccionAbiertoId = null;
@@ -1119,10 +1159,21 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       .obtenerDatos(this.tabActual)
       .subscribe({
         next: (res: any) => {
-          this.datos = this.normalizarRespuesta(res);
-          this.actualizarFiltros();
+          const crudos = this.normalizarRespuesta(res);
           if (this.tabActual === 'instituciones') {
-            this.institucionesCompletas = this.datos;
+            this.institucionesCompletas = crudos;
+          }
+          if (this.tabActual === 'menus') {
+            const requiereLimpiezaEjemplos = this.detectarPlatosEjemploAntiguos(crudos);
+            if (requiereLimpiezaEjemplos && !this.sincronizandoMinuta) {
+              this.reemplazarPlatosEjemploEnBackend(crudos);
+              return;
+            }
+            this.datos = this.ordenarPlatosPAE(
+              crudos.map(plato => this.enriquecerPlatoConReceta(plato))
+            );
+          } else {
+            this.datos = crudos;
           }
           this.cargando = false;
           this.cdr.detectChanges();
@@ -1149,13 +1200,19 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
         if (fuente === 'instituciones') {
           this.institucionesCompletas = items;
         }
-        if (fuente === 'grupos_gramaje') {
-          this.gruposGramajeCompletos = items;
+        if (fuente === 'ingredientes') {
+          this.ingredientesCompletos = items;
+        }
+        if (fuente === 'unidades_medida') {
+          this.unidadesMedidaCompletas = items;
         }
         this.opciones[fuente] = items.map(r => ({
           id: r[cfg.id] ?? r.id,
           label: cfg.etiqueta(r)
         }));
+        if (this.tabActual === 'menus' && this.datos.length > 0 && fuente === 'secciones_menu') {
+          this.datos = this.datos.map(plato => this.enriquecerPlatoConReceta(plato));
+        }
         this.cdr.detectChanges();
       },
       error: (err) => {
@@ -1168,21 +1225,14 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
   private refrescarFuenteSiAplica(): void {
     if (
       this.tabActual === 'instituciones' ||
-      this.tabActual === 'sedes' ||
       this.tabActual === 'jornadas' ||
       this.tabActual === 'unidades_medida' ||
       this.tabActual === 'ingredientes' ||
       this.tabActual === 'categorias_inventario' ||
-      this.tabActual === 'tipos_mercado' ||
-      this.tabActual === 'grupos_gramaje' ||
       this.tabActual === 'grados' ||
-      this.tabActual === 'turnos'
+      this.tabActual === 'secciones_menu'
     ) {
       this.cargarFuente(this.tabActual as FuenteRelacion);
-    }
-    if (['grupos_gramaje', 'grados', 'unidades_medida', 'ingredientes', 'equivalencias_unidad'].includes(this.tabActual)) {
-      this.bancoDatosService.limpiarCache('gramajes');
-      this.bancoDatosService.limpiarCache('grados');
     }
   }
 
@@ -1206,41 +1256,10 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
     if (campo.options && campo.options.length > 0) {
       return campo.options;
     }
-    const base = campo.source ? (this.opciones[campo.source] || []) : [];
-
-    if (
-      this.tabActual === 'gramajes' &&
-      campo.name === 'id_unidad_medida' &&
-      this.itemForm?.id_ingrediente &&
-      Object.keys(this.compatibilidadUnidadesMap).length > 0
-    ) {
-      return base.map(op => {
-        const info = this.compatibilidadUnidadesMap[Number(op.id)];
-        if (!info) return op;
-        return {
-          ...op,
-          label: info.es_compatible
-            ? `${op.label} ✓ Compatible`
-            : `${op.label} ⚠ Incompatible`
-        };
-      });
-    }
-
-    return base;
+    return campo.source ? this.opciones[campo.source] : [];
   }
 
   valorCelda(item: any, campo: CampoConfig): string {
-    if (campo.name === 'grados_asociados_resumen') {
-      const lista = Array.isArray(item?.grados_asociados) ? item.grados_asociados : [];
-      if (lista.length === 0) return 'Sin grados asociados';
-      return lista.map((g: any) => g.nombre_grado).join(', ');
-    }
-    if (campo.name === 'grados_resumen') {
-      const lista = Array.isArray(item?.grados_atendidos) ? item.grados_atendidos : [];
-      if (lista.length === 0) return 'Sin grados asignados';
-      return lista.map((g: any) => g.nombre_grado).join(', ');
-    }
-
     const valor = item?.[campo.name];
 
     if (campo.type === 'select') {
@@ -1253,45 +1272,9 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
         const opcion = this.opciones[campo.source]?.find(
           o => String(o.id) === String(valor)
         );
-        // Fallbacks para nombres serializados por Django
+        // Fallback para sedes: si Django serializó institucion_nombre directamente
         if (!opcion && campo.name === 'id_institucion' && item?.institucion_nombre) {
           return item.institucion_nombre;
-        }
-        if (!opcion && campo.name === 'id_sede' && (item?.nombre_sede || item?.sede_nombre)) {
-          return item.nombre_sede || item.sede_nombre;
-        }
-        if (!opcion && campo.name === 'id_jornada' && (item?.nombre_jornada || item?.jornada_nombre)) {
-          return item.nombre_jornada || item.jornada_nombre;
-        }
-        if (!opcion && campo.name === 'id_tipo_mercado' && (item?.nombre_tipo || item?.tipo_mercado_nombre)) {
-          return item.nombre_tipo || item.tipo_mercado_nombre;
-        }
-        if (!opcion && campo.name === 'id_turno' && (item?.nombre_turno || item?.turno_nombre)) {
-          return item.nombre_turno || item.turno_nombre;
-        }
-        if (!opcion && campo.name === 'id_ingrediente' && (item?.nombre_ingrediente || item?.ingrediente_nombre)) {
-          return item.nombre_ingrediente || item.ingrediente_nombre;
-        }
-        if (!opcion && campo.name === 'id_grado' && item?.nombre_grado) {
-          return item.nombre_grado;
-        }
-        if (!opcion && campo.name === 'id_grupo_gramaje' && item?.nombre_grupo_gramaje) {
-          return item.nombre_grupo_gramaje;
-        }
-        if (!opcion && campo.name === 'id_unidad_medida' && item?.nombre_unidad_medida) {
-          return item.abreviatura_unidad_medida
-            ? `${item.nombre_unidad_medida} (${item.abreviatura_unidad_medida})`
-            : item.nombre_unidad_medida;
-        }
-        if (!opcion && campo.name === 'id_unidad_origen' && item?.unidad_origen_nombre) {
-          return item.unidad_origen_abreviatura
-            ? `${item.unidad_origen_nombre} (${item.unidad_origen_abreviatura})`
-            : item.unidad_origen_nombre;
-        }
-        if (!opcion && campo.name === 'id_unidad_destino' && item?.unidad_destino_nombre) {
-          return item.unidad_destino_abreviatura
-            ? `${item.unidad_destino_nombre} (${item.unidad_destino_abreviatura})`
-            : item.unidad_destino_nombre;
         }
         return opcion?.label || (valor ? String(valor) : '—');
       }
@@ -1321,25 +1304,48 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
     this.modoEdicion = !!item;
     this.itemSeleccionadoId = item ? this.obtenerIdItem(item) : null;
     this.itemOriginal = item ? { ...item } : null;
-    this.alertaCompatibilidadModal = '';
-    this.alertaNivelGradoModal = '';
-    this.compatibilidadUnidadesMap = {};
-    this.unidadBaseProductoInfo = null;
+
+    if (this.tabActual === 'menus') {
+      this.plantillaMenuSeleccionada = '';
+      if (item) {
+        const enriquecido = this.enriquecerPlatoConReceta(item);
+        this.menuRecetaForm = {
+          id_plato: enriquecido.id_plato,
+          nombre_plato: enriquecido.nombre_plato || '',
+          semana: enriquecido.semana || 'Semana 1',
+          numero_menu: enriquecido.numero_menu ?? null,
+          secciones: Array.isArray(enriquecido.secciones) && enriquecido.secciones.length > 0
+            ? [...enriquecido.secciones]
+            : ['Desayuno', 'Almuerzo'],
+          imagen_url: enriquecido.imagen_url || '',
+          informacion_nutricional: enriquecido.informacion_nutricional || '',
+          estado: enriquecido.estado || 'ACTIVO',
+          componentes: Array.isArray(enriquecido.componentes) && enriquecido.componentes.length > 0
+            ? enriquecido.componentes.map((c: ComponentePlatoReceta) => ({
+                id_temporal: c.id_temporal || this.generarIdTemp(),
+                tipo_componente: c.tipo_componente || 'Alimento proteico',
+                nombre_componente: c.nombre_componente || '',
+                ingredientes: Array.isArray(c.ingredientes) ? c.ingredientes.map(i => ({ ...i })) : [],
+                pasos: Array.isArray(c.pasos) ? c.pasos.map((p, idx) => ({ numero_paso: idx + 1, descripcion_paso: p.descripcion_paso })) : [],
+                ingredienteTempId: null,
+                observacionTemp: ''
+              }))
+            : [this.crearComponenteVacio('Bebida con leche')]
+        };
+      } else {
+        this.menuRecetaForm = this.crearMenuRecetaVacio();
+      }
+      this.mostrarModal = true;
+      this.cdr.detectChanges();
+      return;
+    }
 
     const form: any = {};
-    for (const campo of this.camposModal) {
+    for (const campo of this.tab.campos) {
       let valor = item ? item[campo.name] : null;
-      if (item && campo.name === 'cantidad_gramaje' && (valor === undefined || valor === null)) {
-        valor = item['cantidad_gramage'];
-      }
 
       if (campo.type === 'time' && valor) {
         valor = String(valor).slice(0, 5);
-      }
-
-      if (campo.type === 'multiselect') {
-        form[campo.name] = Array.isArray(valor) ? valor.map((v: any) => Number(v)) : [];
-        continue;
       }
 
       // Si el backend envió un objeto ForeignKey:
@@ -1361,14 +1367,6 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
 
     this.itemForm = form;
     this.mostrarModal = true;
-
-    if (this.tabActual === 'gramajes' && this.itemForm.id_ingrediente) {
-      this.verificarCompatibilidadModal();
-    }
-    if (this.tabActual === 'grados') {
-      this.validarCompatibilidadNivelGrado();
-    }
-
     this.cdr.detectChanges();
   }
 
@@ -1379,112 +1377,627 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
     this.itemForm = {};
     this.itemSeleccionadoId = null;
     this.itemOriginal = null;
-    this.alertaCompatibilidadModal = '';
-    this.alertaNivelGradoModal = '';
-    this.compatibilidadUnidadesMap = {};
-    this.unidadBaseProductoInfo = null;
+    this.plantillaMenuSeleccionada = '';
+    this.archivoImagenPlatoSeleccionado = null;
   }
 
-  onModalCampoCambio(campoName: string, _valor: any): void {
-    if (this.tabActual === 'gramajes' && (campoName === 'id_ingrediente' || campoName === 'id_unidad_medida')) {
-      this.verificarCompatibilidadModal();
-    }
-    if (this.tabActual === 'grados') {
-      if (campoName === 'id_grupo_gramaje') {
-        const grupo = this.gruposGramajeCompletos.find(
-          (g: any) => String(g.id_grupo_gramaje) === String(this.itemForm.id_grupo_gramaje)
-        );
-        if (grupo?.nivel_educativo) {
-          this.itemForm.nivel_educativo = grupo.nivel_educativo;
-        }
-      }
-      if (campoName === 'id_grupo_gramaje' || campoName === 'nivel_educativo') {
-        this.validarCompatibilidadNivelGrado();
-      }
-    }
+
+  // ============================================================
+  // LÓGICA DE MENÚS, COMPONENTES, INGREDIENTES Y PREPARACIÓN
+  // ============================================================
+
+  private generarIdTemp(): string {
+    return 'comp_' + Math.random().toString(36).slice(2, 9) + '_' + Date.now();
   }
 
-  estaSeleccionadoMultiselect(campoName: string, id: any): boolean {
-    const lista = this.itemForm?.[campoName];
-    return Array.isArray(lista) && lista.some((v: any) => String(v) === String(id));
+  crearComponenteVacio(tipo: string = 'Alimento proteico', nombre: string = ''): ComponentePlatoReceta {
+    const guardado = nombre ? this.buscarComponenteEnCatalogo(nombre) : null;
+    return {
+      id_temporal: this.generarIdTemp(),
+      tipo_componente: guardado?.tipo_componente || tipo,
+      nombre_componente: nombre,
+      ingredientes: guardado?.ingredientes ? guardado.ingredientes.map(i => ({ ...i })) : [],
+      pasos: guardado?.pasos && guardado.pasos.length > 0
+        ? guardado.pasos.map((p, idx) => ({ numero_paso: idx + 1, descripcion_paso: p.descripcion_paso }))
+        : [{ numero_paso: 1, descripcion_paso: '' }],
+      ingredienteTempId: null,
+      observacionTemp: ''
+    };
   }
 
-  toggleMultiselect(campoName: string, id: any): void {
-    if (!Array.isArray(this.itemForm[campoName])) {
-      this.itemForm[campoName] = [];
-    }
-    const lista: any[] = this.itemForm[campoName];
-    const idx = lista.findIndex((v: any) => String(v) === String(id));
+  crearMenuRecetaVacio(): RecetaMenuExtendida {
+    return {
+      nombre_plato: '',
+      semana: this.filtroSemanaMenu !== 'TODAS' ? this.filtroSemanaMenu : 'Semana 1',
+      numero_menu: null,
+      secciones: ['Desayuno', 'Almuerzo', 'Merienda'],
+      imagen_url: '',
+      informacion_nutricional: '',
+      estado: 'ACTIVO',
+      componentes: [
+        this.crearComponenteVacio('Bebida con leche'),
+        this.crearComponenteVacio('Alimento proteico'),
+        this.crearComponenteVacio('Cereal acompañante')
+      ]
+    };
+  }
+
+  aplicarPlantillaMenuPAE(numeroMenu: any): void {
+    const num = Number(numeroMenu);
+    const plantilla = this.MINUTA_PAE_OFICIAL.find(m => m.numero_menu === num);
+    if (!plantilla) return;
+
+    this.menuRecetaForm.nombre_plato = plantilla.nombre_plato;
+    this.menuRecetaForm.semana = plantilla.semana;
+    this.menuRecetaForm.numero_menu = plantilla.numero_menu;
+    this.menuRecetaForm.secciones = [...plantilla.secciones];
+    this.menuRecetaForm.componentes = plantilla.componentes.map(c =>
+      this.crearComponenteVacio(c.tipo_componente, c.nombre_componente)
+    );
+    this.cdr.detectChanges();
+  }
+
+  toggleSeccionMenu(seccionId: string): void {
+    const idx = this.menuRecetaForm.secciones.indexOf(seccionId);
     if (idx >= 0) {
-      lista.splice(idx, 1);
+      if (this.menuRecetaForm.secciones.length > 1) {
+        this.menuRecetaForm.secciones.splice(idx, 1);
+      } else {
+        this.sweetAlert.warning('Sección requerida', 'El menú/plato debe aplicar al menos a una sección (Desayuno, Almuerzo o Merienda).');
+      }
     } else {
-      lista.push(Number(id));
+      this.menuRecetaForm.secciones.push(seccionId);
     }
   }
 
-  private verificarCompatibilidadModal(): void {
-    const idIng = Number(this.itemForm?.id_ingrediente);
+  esSeccionSeleccionada(seccionId: string): boolean {
+    return this.menuRecetaForm.secciones.includes(seccionId);
+  }
+
+  seleccionarTodasLasSecciones(): void {
+    this.menuRecetaForm.secciones = ['Desayuno', 'Almuerzo', 'Merienda'];
+  }
+
+  agregarComponenteAlPlato(): void {
+    this.menuRecetaForm.componentes.push(this.crearComponenteVacio('Alimento proteico'));
+  }
+
+  eliminarComponenteDelPlato(index: number): void {
+    if (this.menuRecetaForm.componentes.length <= 1) {
+      this.sweetAlert.warning('Mínimo un componente', 'El plato debe tener al menos un componente registrado.');
+      return;
+    }
+    this.menuRecetaForm.componentes.splice(index, 1);
+  }
+
+  onNombreComponenteChange(comp: ComponentePlatoReceta): void {
+    if (!comp.nombre_componente || comp.ingredientes.length > 0) return;
+    const guardado = this.buscarComponenteEnCatalogo(comp.nombre_componente);
+    if (guardado && (guardado.ingredientes.length > 0 || guardado.pasos.length > 0)) {
+      comp.ingredientes = guardado.ingredientes.map(i => ({ ...i }));
+      comp.pasos = guardado.pasos.map((p, idx) => ({
+        numero_paso: idx + 1,
+        descripcion_paso: p.descripcion_paso
+      }));
+      this.cdr.detectChanges();
+    }
+  }
+
+  reutilizarComponenteGuardado(comp: ComponentePlatoReceta, nombreCatalogo: string): void {
+    if (!nombreCatalogo) return;
+    const guardado = this.buscarComponenteEnCatalogo(nombreCatalogo);
+    if (!guardado) return;
+    comp.nombre_componente = guardado.nombre_componente;
+    comp.tipo_componente = guardado.tipo_componente || comp.tipo_componente;
+    comp.ingredientes = guardado.ingredientes.map(i => ({ ...i }));
+    comp.pasos = guardado.pasos.length > 0
+      ? guardado.pasos.map((p, idx) => ({ numero_paso: idx + 1, descripcion_paso: p.descripcion_paso }))
+      : [{ numero_paso: 1, descripcion_paso: '' }];
+    this.cdr.detectChanges();
+  }
+
+  get opcionesComponentesReutilizables(): OpcionRelacion[] {
+    const catalogo = this.obtenerCatalogoComponentesLocal();
+    return Object.values(catalogo).map(c => ({
+      id: c.nombre_componente,
+      label: `${c.nombre_componente} (${c.tipo_componente} • ${c.ingredientes.length} ingr.)`
+    }));
+  }
+
+  agregarIngredienteAComponente(comp: ComponentePlatoReceta): void {
+    const idIng = Number(comp.ingredienteTempId);
     if (!idIng) {
-      this.compatibilidadUnidadesMap = {};
-      this.unidadBaseProductoInfo = null;
-      this.alertaCompatibilidadModal = '';
+      this.sweetAlert.warning('Selecciona un ingrediente', 'Elige un ingrediente del inventario para agregarlo a este componente.');
+      return;
+    }
+    if (comp.ingredientes.some(i => Number(i.id_ingrediente) === idIng)) {
+      this.sweetAlert.warning('Ingrediente duplicado', 'Este ingrediente ya está incluido en este componente.');
       return;
     }
 
-    this.bancoDatosService.obtenerUnidadesCompatibles(idIng).subscribe({
-      next: (res: any) => {
-        this.unidadBaseProductoInfo = res?.unidad_base || null;
-        const mapa: Record<number, any> = {};
-        for (const u of (res?.unidades || [])) {
-          mapa[Number(u.id_unidad_medida)] = u;
-        }
-        this.compatibilidadUnidadesMap = mapa;
-        this.evaluarUnidadSeleccionadaModal();
+    const ingOp = this.opciones['ingredientes']?.find(o => Number(o.id) === idIng);
+    const ingCompleto = this.ingredientesCompletos.find(i => Number(i.id_ingrediente ?? i.id) === idIng);
+    let unidad = '';
+    if (ingCompleto?.id_unidad_medida) {
+      const um = this.unidadesMedidaCompletas.find(
+        u => Number(u.id_unidad_medida ?? u.id) === Number(ingCompleto.id_unidad_medida)
+      );
+      unidad = um?.abreviatura || um?.nombre || '';
+    }
+
+    comp.ingredientes.push({
+      id_ingrediente: idIng,
+      nombre_ingrediente: ingOp?.label || ingCompleto?.nombre_ingrediente || `Ingrediente #${idIng}`,
+      unidad,
+      observacion: (comp.observacionTemp || '').trim()
+    });
+
+    comp.ingredienteTempId = null;
+    comp.observacionTemp = '';
+    this.cdr.detectChanges();
+  }
+
+  quitarIngredienteDeComponente(comp: ComponentePlatoReceta, index: number): void {
+    comp.ingredientes.splice(index, 1);
+  }
+
+  agregarPasoAComponente(comp: ComponentePlatoReceta): void {
+    comp.pasos.push({
+      numero_paso: comp.pasos.length + 1,
+      descripcion_paso: ''
+    });
+  }
+
+  quitarPasoDeComponente(comp: ComponentePlatoReceta, index: number): void {
+    if (comp.pasos.length <= 1) {
+      comp.pasos[0].descripcion_paso = '';
+      return;
+    }
+    comp.pasos.splice(index, 1);
+    comp.pasos.forEach((p, idx) => (p.numero_paso = idx + 1));
+  }
+
+  moverPasoComponente(comp: ComponentePlatoReceta, index: number, direccion: -1 | 1): void {
+    const destino = index + direccion;
+    if (destino < 0 || destino >= comp.pasos.length) return;
+    const temp = comp.pasos[index];
+    comp.pasos[index] = comp.pasos[destino];
+    comp.pasos[destino] = temp;
+    comp.pasos.forEach((p, idx) => (p.numero_paso = idx + 1));
+  }
+
+  onImagenPlatoSeleccionada(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input?.files?.[0];
+    if (!file) return;
+    if (file.size > 2.5 * 1024 * 1024) {
+      this.sweetAlert.warning('Imagen muy pesada', 'Selecciona una imagen menor a 2.5 MB.');
+      return;
+    }
+    this.archivoImagenPlatoSeleccionado = file;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        this.menuRecetaForm.imagen_url = reader.result;
         this.cdr.detectChanges();
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+
+  abrirModalVerReceta(item: any): void {
+    this.recetaDetalleSeleccionada = this.enriquecerPlatoConReceta(item);
+    this.modalVerRecetaAbierto = true;
+    this.cdr.detectChanges();
+  }
+
+  cerrarModalVerReceta(): void {
+    this.modalVerRecetaAbierto = false;
+    this.recetaDetalleSeleccionada = null;
+  }
+
+  editarDesdeVistaReceta(): void {
+    const item = this.recetaDetalleSeleccionada;
+    this.cerrarModalVerReceta();
+    if (item) {
+      this.abrirModal(item);
+    }
+  }
+
+  private esPlatoOficialPAE(nombrePlato: string): boolean {
+    const limpio = String(nombrePlato || '').trim().toLowerCase();
+    if (!limpio) return false;
+    return this.MINUTA_PAE_OFICIAL.some(
+      m => m.nombre_plato.trim().toLowerCase() === limpio
+    );
+  }
+
+  private detectarPlatosEjemploAntiguos(crudos: any[]): boolean {
+    if (!Array.isArray(crudos) || crudos.length === 0) return true;
+    const tieneEjemplos = crudos.some(p => !this.esPlatoOficialPAE(p.nombre_plato));
+    const cantidadOficiales = crudos.filter(p => this.esPlatoOficialPAE(p.nombre_plato)).length;
+    return tieneEjemplos || cantidadOficiales < 20;
+  }
+
+  private ordenarPlatosPAE(lista: any[]): any[] {
+    return [...lista].sort((a, b) => {
+      const numA = a.numero_menu ?? this.extraerNumeroMenuDeNombre(a.nombre_plato) ?? 999;
+      const numB = b.numero_menu ?? this.extraerNumeroMenuDeNombre(b.nombre_plato) ?? 999;
+      if (numA !== numB) return numA - numB;
+      return String(a.nombre_plato || '').localeCompare(String(b.nombre_plato || ''));
+    });
+  }
+
+  private extraerNumeroMenuDeNombre(nombre: string): number | null {
+    const m = String(nombre || '').match(/men[uú]\s*(\d+)/i);
+    return m ? Number(m[1]) : null;
+  }
+
+  /**
+   * Elimina/reemplaza automáticamente los platos de ejemplo antiguos que estaban en la BD
+   * y deja únicamente los 20 platos oficiales del PAE (tanto para Banco de Datos como para la app móvil).
+   */
+  private reemplazarPlatosEjemploEnBackend(crudosActuales: any[], mostrarAlerta = false): void {
+    if (this.sincronizandoMinuta) return;
+    this.sincronizandoMinuta = true;
+
+    const oficialesMap = new Map<number, any>();
+    const ejemplosParaReemplazarOEliminar: any[] = [];
+
+    type OperacionSync =
+      | { tipo: 'update'; id: number; plantilla: PlantillaMenuPAE }
+      | { tipo: 'create'; plantilla: PlantillaMenuPAE }
+      | { tipo: 'delete'; id: number };
+
+    const operaciones: OperacionSync[] = [];
+
+    for (const item of crudosActuales) {
+      const num = this.extraerNumeroMenuDeNombre(item.nombre_plato);
+      const plantilla = num ? this.MINUTA_PAE_OFICIAL.find(m => m.numero_menu === num) : null;
+      if (plantilla && !oficialesMap.has(plantilla.numero_menu)) {
+        oficialesMap.set(plantilla.numero_menu, item);
+        // Si tiene el número de menú pero tenía el nombre largo anterior, actualizarlo al nombre corto:
+        if (String(item.nombre_plato || '').trim().toLowerCase() !== plantilla.nombre_plato.trim().toLowerCase()) {
+          const idItem = Number(item.id_plato ?? item.id);
+          if (idItem) {
+            operaciones.push({ tipo: 'update', id: idItem, plantilla });
+          }
+        }
+      } else {
+        ejemplosParaReemplazarOEliminar.push(item);
+      }
+    }
+
+    const faltantes = this.MINUTA_PAE_OFICIAL.filter(m => !oficialesMap.has(m.numero_menu));
+    let idxEjemplo = 0;
+
+    // 1. Reutilizar registros de ejemplo antiguos actualizándolos con los platos PAE faltantes (evita errores de FK en móvil/detalle_plato)
+    for (const plantilla of faltantes) {
+      if (idxEjemplo < ejemplosParaReemplazarOEliminar.length) {
+        const ej = ejemplosParaReemplazarOEliminar[idxEjemplo++];
+        const idEj = Number(ej.id_plato ?? ej.id);
+        if (idEj) {
+          operaciones.push({ tipo: 'update', id: idEj, plantilla });
+          continue;
+        }
+      }
+      operaciones.push({ tipo: 'create', plantilla });
+    }
+
+    // 2. Si sobraron platos de ejemplo antiguos, eliminarlos de la base de datos
+    while (idxEjemplo < ejemplosParaReemplazarOEliminar.length) {
+      const sobrante = ejemplosParaReemplazarOEliminar[idxEjemplo++];
+      const idSob = Number(sobrante.id_plato ?? sobrante.id);
+      if (idSob) {
+        operaciones.push({ tipo: 'delete', id: idSob });
+      }
+    }
+
+    if (operaciones.length === 0) {
+      this.sincronizandoMinuta = false;
+      this.datos = this.ordenarPlatosPAE(
+        crudosActuales.map(plato => this.enriquecerPlatoConReceta(plato))
+      );
+      this.cargando = false;
+      this.cdr.detectChanges();
+      return;
+    }
+
+    const idSeccionDefault = this.obtenerIdSeccionPrincipal(['Desayuno', 'Almuerzo']);
+
+    const ejecutarPaso = (idx: number) => {
+      if (idx >= operaciones.length) {
+        this.sincronizandoMinuta = false;
+        this.bancoDatosService.obtenerDatos('menus').subscribe({
+          next: (resFinal: any) => {
+            const listaFinal = this.normalizarRespuesta(resFinal);
+            // Filtrar cualquier plato ejemplo que no haya podido borrarse por FK
+            const soloOficiales = listaFinal.filter(p => this.esPlatoOficialPAE(p.nombre_plato));
+            this.datos = this.ordenarPlatosPAE(
+              (soloOficiales.length > 0 ? soloOficiales : listaFinal).map(plato =>
+                this.enriquecerPlatoConReceta(plato)
+              )
+            );
+            this.cargando = false;
+            this.cdr.detectChanges();
+            if (mostrarAlerta) {
+              this.sweetAlert.success(
+                '20 Platos Oficiales PAE listos',
+                'Se eliminaron los platos de ejemplo y quedaron registrados los 20 platos oficiales del PAE.'
+              );
+            }
+          },
+          error: () => {
+            this.cargando = false;
+            this.cdr.detectChanges();
+          }
+        });
+        return;
+      }
+
+      const op = operaciones[idx];
+      if (op.tipo === 'delete') {
+        this.bancoDatosService.eliminarDato('menus', op.id).subscribe({
+          next: () => ejecutarPaso(idx + 1),
+          error: () => ejecutarPaso(idx + 1)
+        });
+        return;
+      }
+
+      const plantilla = op.plantilla;
+      const resumenComponentes = plantilla.componentes.map(c => c.nombre_componente).join(', ');
+      const payloadBackend: any = {
+        nombre_plato: plantilla.nombre_plato.slice(0, 100),
+        id_seccion: idSeccionDefault,
+        componente: resumenComponentes.slice(0, 50)
+      };
+
+      const req$ = op.tipo === 'update'
+        ? this.bancoDatosService.actualizarDato('menus', op.id, payloadBackend)
+        : this.bancoDatosService.crearDato('menus', payloadBackend);
+
+      req$.subscribe({
+        next: (resp: any) => {
+          const idGuardado = op.tipo === 'update' ? op.id : (resp?.id_plato ?? resp?.id);
+          const recetaInicial: RecetaMenuExtendida = {
+            id_plato: idGuardado,
+            nombre_plato: plantilla.nombre_plato,
+            semana: plantilla.semana,
+            numero_menu: plantilla.numero_menu,
+            secciones: [...plantilla.secciones],
+            imagen_url: '',
+            informacion_nutricional: '',
+            estado: 'ACTIVO',
+            componentes: plantilla.componentes.map(c =>
+              this.crearComponenteVacio(c.tipo_componente, c.nombre_componente)
+            )
+          };
+          this.guardarRecetaExtendidaLocal(idGuardado, plantilla.nombre_plato, recetaInicial);
+          ejecutarPaso(idx + 1);
+        },
+        error: () => ejecutarPaso(idx + 1)
+      });
+    };
+
+    ejecutarPaso(0);
+  }
+
+  /** Sincroniza en la BD los 20 platos oficiales del PAE y elimina platos de ejemplo antiguos. */
+  sincronizarMinutaPAE(): void {
+    if (this.sincronizandoMinuta) return;
+    this.bancoDatosService.obtenerDatos('menus').subscribe({
+      next: (res: any) => {
+        const crudos = this.normalizarRespuesta(res);
+        this.reemplazarPlatosEjemploEnBackend(crudos, true);
       },
       error: () => {
-        this.compatibilidadUnidadesMap = {};
-        this.alertaCompatibilidadModal = '';
+        this.reemplazarPlatosEjemploEnBackend(this.datos || [], true);
       }
     });
   }
 
-  private evaluarUnidadSeleccionadaModal(): void {
-    const idUnidad = Number(this.itemForm?.id_unidad_medida);
-    if (!idUnidad || !this.compatibilidadUnidadesMap[idUnidad]) {
-      this.alertaCompatibilidadModal = '';
-      return;
+  private obtenerIdSeccionPrincipal(seccionesNombres: string[]): number | null {
+    const secsOpciones = this.opciones['secciones_menu'] || [];
+    for (const nombre of seccionesNombres) {
+      const encontrada = secsOpciones.find(
+        s => s.label.trim().toLowerCase() === nombre.trim().toLowerCase()
+      );
+      if (encontrada) return Number(encontrada.id);
     }
-    const info = this.compatibilidadUnidadesMap[idUnidad];
-    if (!info.es_compatible && this.unidadBaseProductoInfo) {
-      this.alertaCompatibilidadModal =
-        `Conversión incompatible: el producto opera en ${this.unidadBaseProductoInfo.nombre} ` +
-        `(${this.unidadBaseProductoInfo.abreviatura} — ${this.unidadBaseProductoInfo.tipo_magnitud}) y ` +
-        `seleccionaste ${info.nombre} (${info.tipo_magnitud}). Configura primero una equivalencia técnica ` +
-        `en "Equivalencias técnicas" antes de usar esta unidad.`;
-    } else {
-      this.alertaCompatibilidadModal = '';
+    return secsOpciones[0] ? Number(secsOpciones[0].id) : 1;
+  }
+
+  private obtenerRecetarioLocal(): Record<string, RecetaMenuExtendida> {
+    try {
+      const raw = localStorage.getItem(this.STORAGE_RECETARIO_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
     }
   }
 
-  private validarCompatibilidadNivelGrado(): void {
-    const grupo = this.gruposGramajeCompletos.find(
-      (g: any) => String(g.id_grupo_gramaje) === String(this.itemForm?.id_grupo_gramaje)
-    );
-    const nivel = this.itemForm?.nivel_educativo;
-    if (
-      grupo &&
-      nivel &&
-      grupo.nivel_educativo !== 'OTRO' &&
-      nivel !== 'OTRO' &&
-      grupo.nivel_educativo !== nivel
-    ) {
-      this.alertaNivelGradoModal =
-        `Conflicto de clasificación: el nivel "${nivel}" no coincide con el nivel del grupo ` +
-        `"${grupo.nombre}" (${grupo.nivel_educativo}). No se puede asociar a un grupo incompatible.`;
-    } else {
-      this.alertaNivelGradoModal = '';
+  private guardarRecetaExtendidaLocal(idPlato: any, nombrePlato: string, receta: RecetaMenuExtendida): void {
+    try {
+      const mapa = this.obtenerRecetarioLocal();
+      if (idPlato !== undefined && idPlato !== null) {
+        mapa[`id_${idPlato}`] = receta;
+      }
+      if (nombrePlato) {
+        mapa[`nombre_${nombrePlato.trim().toLowerCase()}`] = receta;
+      }
+      localStorage.setItem(this.STORAGE_RECETARIO_KEY, JSON.stringify(mapa));
+
+      // También actualizar el catálogo de componentes reutilizables
+      const catComp = this.obtenerCatalogoComponentesLocal();
+      for (const comp of receta.componentes || []) {
+        const claveComp = (comp.nombre_componente || '').trim().toLowerCase();
+        if (claveComp && (comp.ingredientes.length > 0 || comp.pasos.some(p => p.descripcion_paso.trim()))) {
+          catComp[claveComp] = {
+            id_temporal: comp.id_temporal,
+            tipo_componente: comp.tipo_componente,
+            nombre_componente: comp.nombre_componente.trim(),
+            ingredientes: comp.ingredientes.map(i => ({ ...i })),
+            pasos: comp.pasos.filter(p => p.descripcion_paso.trim()).map((p, idx) => ({
+              numero_paso: idx + 1,
+              descripcion_paso: p.descripcion_paso.trim()
+            }))
+          };
+        }
+      }
+      localStorage.setItem(this.STORAGE_COMP_CATALOGO_KEY, JSON.stringify(catComp));
+    } catch (e) {
+      console.warn('No se pudo guardar en localStorage:', e);
     }
+  }
+
+  private obtenerCatalogoComponentesLocal(): Record<string, ComponentePlatoReceta> {
+    try {
+      const raw = localStorage.getItem(this.STORAGE_COMP_CATALOGO_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  }
+
+  private buscarComponenteEnCatalogo(nombreComponente: string): ComponentePlatoReceta | null {
+    const clave = (nombreComponente || '').trim().toLowerCase();
+    if (!clave) return null;
+    const cat = this.obtenerCatalogoComponentesLocal();
+    return cat[clave] || null;
+  }
+
+  private enriquecerPlatoConReceta(plato: any): any {
+    const id = plato?.id_plato ?? plato?.id;
+    const nombre = String(plato?.nombre_plato ?? '').trim();
+    const mapa = this.obtenerRecetarioLocal();
+    const guardado = (id ? mapa[`id_${id}`] : null) || (nombre ? mapa[`nombre_${nombre.toLowerCase()}`] : null);
+
+    // Detectar si coincide con alguno de los 20 menús de la minuta oficial PAE
+    const plantillaCoincidente = this.MINUTA_PAE_OFICIAL.find(
+      m => m.nombre_plato.toLowerCase() === nombre.toLowerCase() ||
+           nombre.toLowerCase().startsWith(`menú ${m.numero_menu}:`) ||
+           nombre.toLowerCase().startsWith(`menu ${m.numero_menu}:`)
+    );
+
+    // Resolver nombre de sección desde id_seccion de la BD si no hay guardado
+    let secciones: string[] = [];
+    if (guardado?.secciones && guardado.secciones.length > 0) {
+      secciones = [...guardado.secciones];
+    } else if (plantillaCoincidente) {
+      secciones = [...plantillaCoincidente.secciones];
+    } else if (plato?.id_seccion) {
+      const secOp = this.opciones['secciones_menu']?.find(s => Number(s.id) === Number(plato.id_seccion));
+      const secNombre = secOp?.label || 'Almuerzo';
+      if (['Desayuno', 'Almuerzo', 'Merienda'].includes(secNombre)) {
+        secciones = [secNombre];
+      } else {
+        secciones = ['Desayuno', 'Almuerzo'];
+      }
+    } else {
+      secciones = ['Desayuno', 'Almuerzo'];
+    }
+
+    // Construir componentes
+    let componentes: ComponentePlatoReceta[] = [];
+    if (guardado?.componentes && guardado.componentes.length > 0) {
+      componentes = guardado.componentes.map(c => {
+        const delCatalogo = c.ingredientes.length === 0 ? this.buscarComponenteEnCatalogo(c.nombre_componente) : null;
+        return {
+          ...c,
+          ingredientes: c.ingredientes.length > 0 ? c.ingredientes : (delCatalogo?.ingredientes || []),
+          pasos: c.pasos && c.pasos.some(p => p.descripcion_paso?.trim())
+            ? c.pasos
+            : (delCatalogo?.pasos || c.pasos || [])
+        };
+      });
+    } else if (plantillaCoincidente) {
+      componentes = plantillaCoincidente.componentes.map(c =>
+        this.crearComponenteVacio(c.tipo_componente, c.nombre_componente)
+      );
+    } else if (plato?.componente) {
+      const partes = String(plato.componente).split(/\||,/).map(s => s.trim()).filter(Boolean);
+      componentes = partes.map(parte => {
+        const [posibleTipo, ...resto] = parte.split(':');
+        if (resto.length > 0) {
+          return this.crearComponenteVacio(posibleTipo.trim(), resto.join(':').trim());
+        }
+        return this.crearComponenteVacio('Alimento proteico', parte);
+      });
+    }
+
+    if (componentes.length === 0) {
+      componentes = [this.crearComponenteVacio('Alimento proteico', nombre || 'Componente principal')];
+    }
+
+    // Si el backend envió receta_componentes o pasos_preparacion anidados desde PostgreSQL
+    // y el componente aún no tiene ingredientes/pasos locales, los hidratamos desde el backend:
+    const tieneIngLocales = componentes.some(c => (c.ingredientes?.length || 0) > 0);
+    if (!tieneIngLocales && Array.isArray(plato?.receta_componentes) && plato.receta_componentes.length > 0) {
+      componentes[0].ingredientes = plato.receta_componentes.map((rc: any) => ({
+        id_ingrediente: Number(rc.id_ingrediente),
+        nombre_ingrediente: rc.nombre_ingrediente || `Ingrediente #${rc.id_ingrediente}`,
+        unidad: '',
+        observacion: ''
+      }));
+    }
+
+    const tienePasosLocales = componentes.some(
+      c => (c.pasos || []).some(p => p.descripcion_paso && p.descripcion_paso.trim() !== '')
+    );
+    if (!tienePasosLocales && Array.isArray(plato?.pasos_preparacion) && plato.pasos_preparacion.length > 0) {
+      for (const pasoBd of plato.pasos_preparacion) {
+        const descRaw = String(pasoBd.descripcion_paso || '').trim();
+        if (!descRaw) continue;
+        // Detectar si viene con prefijo "[NombreComponente] Descripción"
+        const matchComp = descRaw.match(/^\[([^\]]+)\]\s*(.+)$/);
+        if (matchComp) {
+          const nomComp = matchComp[1].trim().toLowerCase();
+          const textoPaso = matchComp[2].trim();
+          const compDestino = componentes.find(c => c.nombre_componente.trim().toLowerCase() === nomComp) || componentes[0];
+          compDestino.pasos = compDestino.pasos.filter(p => p.descripcion_paso.trim() !== '');
+          compDestino.pasos.push({
+            numero_paso: compDestino.pasos.length + 1,
+            descripcion_paso: textoPaso
+          });
+        } else {
+          componentes[0].pasos = componentes[0].pasos.filter(p => p.descripcion_paso.trim() !== '');
+          componentes[0].pasos.push({
+            numero_paso: Number(pasoBd.numero_paso) || (componentes[0].pasos.length + 1),
+            descripcion_paso: descRaw
+          });
+        }
+      }
+    }
+
+    const totalIngredientes = componentes.reduce((acc, c) => acc + (c.ingredientes?.length || 0), 0);
+    const totalPasos = componentes.reduce(
+      (acc, c) => acc + (c.pasos?.filter(p => p.descripcion_paso && p.descripcion_paso.trim()).length || 0),
+      0
+    );
+
+    const semana = guardado?.semana || plantillaCoincidente?.semana || 'Semana 1';
+    const numero_menu = guardado?.numero_menu ?? plantillaCoincidente?.numero_menu ?? null;
+    const estado = guardado?.estado || plato?.estado || 'ACTIVO';
+    const imagen_url = plato?.imagen_url || guardado?.imagen_url || '';
+    const informacion_nutricional = guardado?.informacion_nutricional || '';
+
+    return {
+      ...plato,
+      id_plato: id,
+      nombre_plato: nombre,
+      semana,
+      numero_menu,
+      secciones,
+      secciones_texto: secciones.join(', '),
+      componentes,
+      componente: componentes.map(c => `${c.tipo_componente}: ${c.nombre_componente}`).join(' | '),
+      totalIngredientes,
+      totalPasos,
+      resumen_receta: `${totalIngredientes} ingr. • ${totalPasos} pasos`,
+      imagen_url,
+      informacion_nutricional,
+      estado
+    };
   }
 
 
@@ -1493,29 +2006,8 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
   // ============================================================
 
   private validarFormulario(): boolean {
-    if (this.tabActual === 'gramajes' && this.alertaCompatibilidadModal) {
-      this.sweetAlert.warning('Unidad incompatible', this.alertaCompatibilidadModal);
-      return false;
-    }
-
-    if (this.tabActual === 'grados' && this.alertaNivelGradoModal) {
-      this.sweetAlert.warning('Clasificación incompatible', this.alertaNivelGradoModal);
-      return false;
-    }
-
-    for (const campo of this.camposModal) {
+    for (const campo of this.tab.campos) {
       const valor = this.itemForm[campo.name];
-      if (campo.type === 'multiselect') {
-        if (campo.required && (!Array.isArray(valor) || valor.length === 0)) {
-          this.sweetAlert.warning(
-            'Campos incompletos',
-            `Debes seleccionar al menos un elemento en "${campo.label}".`
-          );
-          return false;
-        }
-        continue;
-      }
-
       const vacio =
         valor === undefined ||
         valor === null ||
@@ -1540,16 +2032,14 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
     return true;
   }
 
-  /** Envía solo los campos del formulario modal, con el tipo correcto. */
+  /** Envía solo los campos de la tabla, con el tipo correcto. */
   private construirCuerpo(): any {
     const cuerpo: any = {};
 
-    for (const campo of this.camposModal) {
+    for (const campo of this.tab.campos) {
       const valor = this.itemForm[campo.name];
 
-      if (campo.type === 'multiselect') {
-        cuerpo[campo.name] = Array.isArray(valor) ? valor.map((v: any) => Number(v)) : [];
-      } else if (campo.type === 'number') {
+      if (campo.type === 'number') {
         cuerpo[campo.name] = (valor === '' || valor === null) ? null : Number(valor);
       } else if (campo.type === 'select') {
         if (valor === null || valor === '') {
@@ -1573,6 +2063,11 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
   // ============================================================
 
   guardar(): void {
+    if (this.tabActual === 'menus') {
+      this.guardarMenuReceta();
+      return;
+    }
+
     if (this.guardando || !this.validarFormulario()) {
       return;
     }
@@ -1610,6 +2105,217 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
           this.mensajeError(err, 'Hubo un problema al guardar el registro.')
         );
         this.cdr.detectChanges();
+      }
+    });
+  }
+
+  guardarMenuReceta(): void {
+    if (this.guardando) return;
+
+    const nombre = (this.menuRecetaForm.nombre_plato || '').trim();
+    if (!nombre) {
+      this.sweetAlert.warning('Nombre requerido', 'Ingresa el nombre del plato.');
+      return;
+    }
+
+    const componentesValidos = (this.menuRecetaForm.componentes || []).filter(
+      c => (c.nombre_componente || '').trim() !== ''
+    );
+
+    if (componentesValidos.length === 0) {
+      this.sweetAlert.warning('Componentes requeridos', 'Agrega al menos un componente con su nombre de preparación (ej. Huevos pericos, Arroz blanco).');
+      return;
+    }
+
+    const resumenComponentes = componentesValidos
+      .map(c => c.nombre_componente.trim())
+      .join(', ');
+
+    const payloadBackend: any = {
+      nombre_plato: nombre.slice(0, 100),
+      componente: resumenComponentes.slice(0, 50)
+    };
+
+    const editando = this.modoEdicion && this.itemSeleccionadoId !== null;
+    const archivoSubir = this.archivoImagenPlatoSeleccionado;
+    this.guardando = true;
+
+    const peticion$ = editando
+      ? this.bancoDatosService.actualizarDato('menus', this.itemSeleccionadoId as number, payloadBackend)
+      : this.bancoDatosService.crearDato('menus', payloadBackend);
+
+    peticion$.subscribe({
+      next: (resp: any) => {
+        const idFinal = Number(resp?.id_plato ?? resp?.id ?? this.itemSeleccionadoId);
+        const recetaAGuardar: RecetaMenuExtendida = {
+          ...this.menuRecetaForm,
+          id_plato: idFinal,
+          nombre_plato: nombre,
+          componentes: componentesValidos.map(c => ({
+            ...c,
+            nombre_componente: c.nombre_componente.trim(),
+            pasos: (c.pasos || [])
+              .filter(p => (p.descripcion_paso || '').trim() !== '')
+              .map((p, idx) => ({ numero_paso: idx + 1, descripcion_paso: p.descripcion_paso.trim() }))
+          }))
+        };
+
+        // Sincronizar ingredientes (receta_componente) y pasos (pasos_preparacion) en PostgreSQL
+        if (idFinal) {
+          this.sincronizarRecetaYPasosEnBackend(idFinal, recetaAGuardar);
+        }
+
+        const finalizarGuardado = (urlFinal?: string) => {
+          if (urlFinal) {
+            recetaAGuardar.imagen_url = urlFinal;
+          }
+          this.guardarRecetaExtendidaLocal(idFinal, nombre, recetaAGuardar);
+
+          this.sweetAlert.success(
+            editando ? 'Menú y receta actualizados' : 'Menú y receta registrados',
+            editando
+              ? 'Los componentes, ingredientes, pasos de preparación e imagen quedaron guardados.'
+              : 'El menú con sus componentes, ingredientes y pasos quedó registrado en el sistema.'
+          );
+          this.cerrarModal();
+          this.cargarDatos();
+        };
+
+        // Si seleccionó un archivo desde su computador, subirlo a Cloudinary vía /api/platos/<id>/subir-imagen/
+        if (idFinal && archivoSubir) {
+          this.bancoDatosService.subirImagenPlato(idFinal, archivoSubir).subscribe({
+            next: (imgResp: any) => {
+              finalizarGuardado(imgResp?.imagen_url);
+            },
+            error: () => {
+              finalizarGuardado();
+            }
+          });
+        } else {
+          finalizarGuardado(resp?.imagen_url);
+        }
+      },
+      error: (err: any) => {
+        console.error('Error al guardar menú/plato:', err);
+        this.guardando = false;
+        this.sweetAlert.error(
+          'No se pudo guardar el menú',
+          this.mensajeError(err, 'Verifica los datos e inténtalo nuevamente.')
+        );
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  /** Guarda los ingredientes y pasos del plato en las tablas receta_componente y pasos_preparacion de PostgreSQL. */
+  private sincronizarRecetaYPasosEnBackend(idPlato: number, receta: RecetaMenuExtendida): void {
+    // 1. Ingredientes únicos del plato hacia /api/receta_componente/
+    const idsIngredientesUnicos = new Set<number>();
+    for (const comp of receta.componentes || []) {
+      for (const ing of comp.ingredientes || []) {
+        if (ing.id_ingrediente) {
+          idsIngredientesUnicos.add(Number(ing.id_ingrediente));
+        }
+      }
+    }
+
+    // Registrar ingredientes en receta_componente sin duplicados
+    this.bancoDatosService.obtenerDatos('receta_componente').subscribe({
+      next: (resRc: any) => {
+        const todosRc = this.normalizarRespuesta(resRc);
+        const yaRegistrados = new Set<number>(
+          todosRc
+            .filter((rc: any) => {
+              const rcPlatoId = typeof rc.id_plato === 'object' ? (rc.id_plato?.id_plato || rc.id_plato?.id) : rc.id_plato;
+              return Number(rcPlatoId) === Number(idPlato);
+            })
+            .map((rc: any) => {
+              const ingId = typeof rc.id_ingrediente === 'object' ? (rc.id_ingrediente?.id_ingrediente || rc.id_ingrediente?.id) : rc.id_ingrediente;
+              return Number(ingId);
+            })
+        );
+
+        idsIngredientesUnicos.forEach(idIngrediente => {
+          if (!yaRegistrados.has(Number(idIngrediente))) {
+            this.bancoDatosService
+              .crearDato('receta_componente', {
+                id_plato: idPlato,
+                id_ingrediente: idIngrediente,
+                id_gramaje: null
+              })
+              .subscribe({ error: () => {} });
+          }
+        });
+      },
+      error: () => {
+        idsIngredientesUnicos.forEach(idIngrediente => {
+          this.bancoDatosService
+            .crearDato('receta_componente', {
+              id_plato: idPlato,
+              id_ingrediente: idIngrediente,
+              id_gramaje: null
+            })
+            .subscribe({ error: () => {} });
+        });
+      }
+    });
+
+    // 2. Limpiar pasos anteriores de este plato si existen para evitar duplicados en la móvil
+    this.bancoDatosService.obtenerDatos('pasos_preparacion').subscribe({
+      next: (resPasos: any) => {
+        const todosPasos = this.normalizarRespuesta(resPasos);
+        const viejos = todosPasos.filter((p: any) => {
+          const pPlatoId = typeof p.id_plato === 'object' ? (p.id_plato?.id_plato || p.id_plato?.id) : p.id_plato;
+          return Number(pPlatoId) === Number(idPlato);
+        });
+
+        const registrarNuevosPasos = () => {
+          let contadorGlobal = 1;
+          for (const comp of receta.componentes || []) {
+            for (const paso of comp.pasos || []) {
+              const texto = (paso.descripcion_paso || '').trim();
+              if (!texto) continue;
+              this.bancoDatosService
+                .crearDato('pasos_preparacion', {
+                  id_plato: idPlato,
+                  numero_paso: contadorGlobal++,
+                  descripcion_paso: `[${comp.nombre_componente}] ${texto}`
+                })
+                .subscribe({ error: () => {} });
+            }
+          }
+        };
+
+        if (viejos.length > 0) {
+          const borrarObservables = viejos.map((v: any) => {
+            const idPaso = v.id_paso_preparacion || v.id;
+            return this.bancoDatosService.eliminarDato('pasos_preparacion', idPaso).pipe(
+              catchError(() => of(null))
+            );
+          });
+          forkJoin(borrarObservables).subscribe({
+            next: () => registrarNuevosPasos(),
+            error: () => registrarNuevosPasos()
+          });
+        } else {
+          registrarNuevosPasos();
+        }
+      },
+      error: () => {
+        let contadorGlobal = 1;
+        for (const comp of receta.componentes || []) {
+          for (const paso of comp.pasos || []) {
+            const texto = (paso.descripcion_paso || '').trim();
+            if (!texto) continue;
+            this.bancoDatosService
+              .crearDato('pasos_preparacion', {
+                id_plato: idPlato,
+                numero_paso: contadorGlobal++,
+                descripcion_paso: `[${comp.nombre_componente}] ${texto}`
+              })
+              .subscribe({ error: () => {} });
+          }
+        }
       }
     });
   }
@@ -1659,178 +2365,6 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
           }
         });
       });
-  }
-
-
-  limpiarFiltrosEspecificos(): void {
-    this.filtroGradoGramaje = null;
-    this.filtroCategoriaGramaje = null;
-    this.filtroGrupoGrado = null;
-    this.filtroNivelGrado = '';
-    this.onFiltroCambio();
-  }
-
-  cambiarEstadoRegistro(item: any): void {
-    const id = this.obtenerIdItem(item);
-    if (!id) return;
-
-    const esActivo = this.isEstadoActivo(item);
-    const accion = esActivo ? 'inactivar' : 'activar';
-    const titulo = esActivo ? '¿Inactivar configuración?' : '¿Activar configuración?';
-    const detalle = this.tabActual === 'gramajes'
-      ? `El registro pasará a estado ${esActivo ? 'INACTIVO' : 'ACTIVO'} conservando todo su historial.`
-      : `El registro cambiará a estado ${esActivo ? 'INACTIVO' : 'ACTIVO'}.`;
-
-    this.sweetAlert.confirm(titulo, detalle, `Sí, ${accion}`).then((res: any) => {
-      if (!res?.isConfirmed) return;
-
-      let req$;
-      if (this.tabActual === 'gramajes') {
-        req$ = this.bancoDatosService.cambiarEstadoGramaje(id);
-      } else if (this.tabActual === 'grados') {
-        req$ = this.bancoDatosService.cambiarEstadoGrado(id);
-      } else if (this.tabActual === 'grupos_gramaje') {
-        req$ = this.bancoDatosService.cambiarEstadoGrupoGramaje(id);
-      } else if (this.tabActual === 'unidades_medida') {
-        req$ = this.bancoDatosService.cambiarEstadoUnidadMedida(id);
-      } else {
-        return;
-      }
-
-      req$.subscribe({
-        next: () => {
-          this.sweetAlert.success(
-            esActivo ? 'Registro inactivado' : 'Registro activado',
-            `La configuración se actualizó a estado ${esActivo ? 'Inactivo' : 'Activo'} sin perder su historial.`
-          );
-          this.cargarDatos();
-          this.refrescarFuenteSiAplica();
-        },
-        error: (err: any) => {
-          this.sweetAlert.error('No se pudo cambiar el estado', this.mensajeError(err, 'Error al actualizar estado.'));
-        }
-      });
-    });
-  }
-
-  abrirModalHistorial(item: any): void {
-    const id = this.obtenerIdItem(item);
-    if (!id) return;
-
-    this.mostrarHistorialModal = true;
-    this.cargandoHistorial = true;
-    this.historialRegistros = [];
-
-    if (this.tabActual === 'gramajes') {
-      this.historialTipo = 'gramajes';
-      this.historialTitulo = `Historial de gramaje: ${item.nombre_ingrediente || ''} (${item.nombre_grado || ''})`;
-      this.bancoDatosService.obtenerHistorialGramaje(id).subscribe({
-        next: (rows: any[]) => {
-          this.historialRegistros = Array.isArray(rows) ? rows : [];
-          this.cargandoHistorial = false;
-          this.cdr.detectChanges();
-        },
-        error: () => {
-          this.cargandoHistorial = false;
-          this.cdr.detectChanges();
-        }
-      });
-    } else if (this.tabActual === 'grados') {
-      this.historialTipo = 'grados';
-      this.historialTitulo = `Trazabilidad de clasificación: ${item.nombre_grado || ''}`;
-      this.bancoDatosService.obtenerHistorialGrado(id).subscribe({
-        next: (rows: any[]) => {
-          this.historialRegistros = Array.isArray(rows) ? rows : [];
-          this.cargandoHistorial = false;
-          this.cdr.detectChanges();
-        },
-        error: () => {
-          this.cargandoHistorial = false;
-          this.cdr.detectChanges();
-        }
-      });
-    }
-  }
-
-  cerrarHistorialModal(): void {
-    this.mostrarHistorialModal = false;
-    this.historialRegistros = [];
-  }
-
-  abrirConvertidorModal(): void {
-    this.convResultado = null;
-    this.convError = '';
-    this.mostrarConvertidorModal = true;
-    this.cdr.detectChanges();
-  }
-
-  cerrarConvertidorModal(): void {
-    this.mostrarConvertidorModal = false;
-  }
-
-  ejecutarConversionPrueba(): void {
-    if (!this.convForm.cantidad || this.convForm.cantidad <= 0 || !this.convForm.id_unidad_origen || !this.convForm.id_unidad_destino) {
-      this.convError = 'Ingresa una cantidad mayor a 0 y selecciona unidad origen y destino.';
-      this.convResultado = null;
-      return;
-    }
-    this.convirtiendo = true;
-    this.convError = '';
-    this.convResultado = null;
-    this.bancoDatosService.convertirUnidad({
-      cantidad: Number(this.convForm.cantidad),
-      id_unidad_origen: Number(this.convForm.id_unidad_origen),
-      id_unidad_destino: Number(this.convForm.id_unidad_destino),
-      id_ingrediente: this.convForm.id_ingrediente ? Number(this.convForm.id_ingrediente) : null
-    }).subscribe({
-      next: (res: any) => {
-        this.convResultado = res;
-        this.convirtiendo = false;
-        this.cdr.detectChanges();
-      },
-      error: (err: any) => {
-        this.convError = err?.error?.error || this.mensajeError(err, 'No existe una conversión válida entre estas unidades.');
-        this.convirtiendo = false;
-        this.cdr.detectChanges();
-      }
-    });
-  }
-
-  abrirSimuladorModal(): void {
-    this.simResultado = null;
-    this.mostrarSimuladorModal = true;
-    this.cdr.detectChanges();
-  }
-
-  cerrarSimuladorModal(): void {
-    this.mostrarSimuladorModal = false;
-  }
-
-  ejecutarSimulacionPorciones(): void {
-    if (!this.simForm.estudiantes || this.simForm.estudiantes <= 0 || !this.simForm.dias || this.simForm.dias <= 0) {
-      this.sweetAlert.warning('Parámetros inválidos', 'El número de estudiantes y días deben ser mayores a 0.');
-      return;
-    }
-    this.simCargando = true;
-    this.simResultado = null;
-    this.bancoDatosService.calcularPorcionesGramaje({
-      id_grupo_gramaje: this.simForm.id_grupo_gramaje || undefined,
-      id_grado: this.simForm.id_grado || undefined,
-      estudiantes: Number(this.simForm.estudiantes),
-      dias: Number(this.simForm.dias),
-      contexto_aplicacion: this.simForm.contexto_aplicacion || undefined
-    }).subscribe({
-      next: (res: any) => {
-        this.simResultado = res;
-        this.simCargando = false;
-        this.cdr.detectChanges();
-      },
-      error: (err: any) => {
-        this.simCargando = false;
-        this.sweetAlert.error('Error al calcular', this.mensajeError(err, 'No se pudo ejecutar el cálculo de porciones.'));
-        this.cdr.detectChanges();
-      }
-    });
   }
 
 
