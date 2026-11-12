@@ -146,6 +146,76 @@
   box-shadow: 0 8px 24px -12px rgba(0,0,0,.1);
 }
 
+/* Planilla PAE oficial - formato físico two-column layout */
+.planilla-pae-oficial {
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 12px;
+  font-family: 'Roboto', Arial, sans-serif;
+  font-size: 11px;
+  color: #000;
+}
+
+.planilla-pae-oficial table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 11px;
+}
+
+.planilla-pae-oficial table td,
+.planilla-pae-oficial table th {
+  border: 1px solid #000;
+  padding: 2px 4px;
+  vertical-align: top;
+  font-size: 11px;
+}
+
+.planilla-pae-oficial .tabla-membrete td,
+.planilla-pae-oficial .tabla-datos-sede td {
+  font-size: 10px;
+  vertical-align: middle;
+}
+
+/* Preservar colores en pantalla */
+.planilla-pae-oficial [style*="background:#1e293b"],
+.planilla-pae-oficial [style*="background:#374151"] {
+  background: #1e293b !important;
+  color: #fff !important;
+}
+.planilla-pae-oficial [style*="background:#f1f5f9"] {
+  background: #f1f5f9 !important;
+}
+.planilla-pae-oficial [style*="background:#ffd03a"] {
+  background: #ffd03a !important;
+}
+.planilla-pae-oficial [style*="background:#f5a300"] {
+  background: #f5a300 !important;
+}
+.planilla-pae-oficial [style*="background:#fff4d1"] {
+  background: #fff4d1 !important;
+}
+.planilla-pae-oficial [style*="background:#ffe3a3"] {
+  background: #ffe3a3 !important;
+}
+.planilla-pae-oficial [style*="background:#dbeafe"],
+.planilla-pae-oficial [style*="background:#e0f2fe"] {
+  background: #dbeafe !important;
+}
+.planilla-pae-oficial [style*="background:#dcfce7"] {
+  background: #dcfce7 !important;
+}
+.planilla-pae-oficial [style*="background:#f0f9ff"] {
+  background: #f0f9ff !important;
+}
+.planilla-pae-oficial [style*="background:#f0fdf4"] {
+  background: #f0fdf4 !important;
+}
+.planilla-pae-oficial [style*="background:#fef9c3"],
+.planilla-pae-oficial [style*="background:#fef3c7"] {
+  background: #fef9c3 !important;
+}
+
 .encabezado-membrete {
   border: 1.5px solid #000;
   padding: 10px 14px;
@@ -246,7 +316,8 @@
 /* ========================================================= */
 
 @media print {
-  /* Ocultar sidebar, nav, barras de herramientas, botones */
+
+  /* ── 1. Ocultar todo lo que no es la planilla ── */
   .no-print,
   app-plantillas-operativas > section > header,
   app-plantillas-operativas > section > section.fx-panel,
@@ -264,145 +335,13 @@
     display: none !important;
   }
 
-  /* ─────────────────────────────────────────────────────────────────
-     NUNCA saltar de página dentro de una sección; toda la planilla
-     debe entrar en 1 sola hoja oficio apaisada.
-     ───────────────────────────────────────────────────────────────── */
-  .seccion-perecederos,
-  .seccion-no-perecederos,
-  .seccion-aseo,
-  .bloque-firmas,
-  .grid-datos-sede,
-  .encabezado-membrete {
-    page-break-inside: auto !important;
-    break-inside: auto !important;
-    page-break-before: auto !important;
-    page-break-after: auto !important;
-  }
-
-  /* Tamaño de página: Oficio / Legal apaisado (355.6 × 215.9 mm) */
+  /* ── 2. Página: Oficio apaisado — 1 sola hoja ── */
   @page {
     size: legal landscape;
-    margin: 4mm 5mm;
+    margin: 5mm 6mm;
   }
 
-  /* ─── Tipografía ultra-compacta para imprimir ─── */
-  body {
-    font-size: 6pt !important;
-  }
-
-  .tabla-oficial {
-    font-size: 5.8pt !important;
-    border-collapse: collapse !important;
-    width: 100% !important;
-  }
-
-  .tabla-oficial th,
-  .tabla-oficial td {
-    border: 0.6pt solid #000 !important;
-    padding: 0.8pt 1.5pt !important;
-    color: #000 !important;
-    background: #fff !important;
-    font-size: 5.8pt !important;
-    line-height: 1.1 !important;
-  }
-
-  .tabla-kardex th,
-  .tabla-kardex td {
-    font-size: 5.4pt !important;
-    padding: 0.6pt 1pt !important;
-  }
-
-  /* Membrete compacto */
-  .encabezado-membrete {
-    border: 1pt solid #000 !important;
-    padding: 2pt 4pt !important;
-    margin-bottom: 2pt !important;
-    background: #fff !important;
-  }
-
-  .membrete-titulo h3 {
-    font-size: 8pt !important;
-    margin: 0 !important;
-  }
-
-  .membrete-titulo h4 {
-    font-size: 6.5pt !important;
-    margin: 1pt 0 0 !important;
-  }
-
-  .membrete-titulo div {
-    font-size: 6pt !important;
-    margin-top: 1pt !important;
-  }
-
-  .membrete-meta {
-    font-size: 5.5pt !important;
-    padding-top: 1.5pt !important;
-    margin-top: 2pt !important;
-  }
-
-  /* Grilla de datos de sede compacta */
-  .grid-datos-sede {
-    margin-bottom: 2pt !important;
-    font-size: 5.8pt !important;
-  }
-
-  .grid-datos-sede td,
-  .grid-datos-sede th {
-    padding: 1pt 2pt !important;
-    font-size: 5.8pt !important;
-  }
-
-  /* Encabezados de sección compactos */
-  .seccion-no-perecederos > div:first-child,
-  .seccion-perecederos > div:first-child,
-  .seccion-aseo > div:first-child {
-    padding: 1.5pt 4pt !important;
-    font-size: 6pt !important;
-  }
-
-  .seccion-no-perecederos,
-  .seccion-perecederos,
-  .seccion-aseo {
-    margin-bottom: 2pt !important;
-  }
-
-  /* Firmas compactas */
-  .bloque-firmas {
-    margin-top: 4pt !important;
-    gap: 4pt !important;
-  }
-
-  .caja-firma {
-    border: 0.6pt solid #000 !important;
-    font-size: 5.8pt !important;
-    min-height: 30pt !important;
-    padding: 2pt !important;
-  }
-
-  .linea-firma {
-    margin-top: 12pt !important;
-    border-top: 0.6pt solid #000 !important;
-    padding-top: 1pt !important;
-    font-size: 5.4pt !important;
-  }
-
-  /* Hoja y zona de impresión sin bordes de pantalla */
-  .hoja-oficial-preview {
-    border: none !important;
-    padding: 0 !important;
-    box-shadow: none !important;
-    border-radius: 0 !important;
-  }
-
-  .tabla-oficial-wrap {
-    border: none !important;
-    border-radius: 0 !important;
-    overflow: visible !important;
-  }
-
-  /* Forzar que todo el contenido de la planilla sea visible sin scroll */
+  /* ── 3. Contenedor raíz limpio ── */
   .zona-impresion-oficial {
     display: block !important;
     visibility: visible !important;
@@ -412,5 +351,154 @@
     padding: 0 !important;
     box-shadow: none !important;
     border: none !important;
+  }
+
+  .hoja-oficial-preview,
+  .planilla-pae-oficial {
+    border: none !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    background: #fff !important;
+  }
+
+  /* ── 4. Tipografía base compacta ── */
+  body {
+    font-size: 6pt !important;
+    color: #000 !important;
+    background: #fff !important;
+  }
+
+  /* ── 5. Tablas de la planilla oficial: sin bordes dobles ── */
+  .planilla-pae-oficial table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+    font-size: 5.8pt !important;
+  }
+
+  .planilla-pae-oficial table td,
+  .planilla-pae-oficial table th {
+    border: 0.5pt solid #000 !important;
+    padding: 1pt 2pt !important;
+    color: #000 !important;
+    font-size: 5.8pt !important;
+    line-height: 1.15 !important;
+    vertical-align: top !important;
+  }
+
+  /* ── Preservar backgrounds de colores de cabeceras y totales ── */
+  .planilla-pae-oficial table th,
+  .planilla-pae-oficial [style*="background:#1e293b"],
+  .planilla-pae-oficial [style*="background:#374151"],
+  .planilla-pae-oficial [style*="background:#f1f5f9"],
+  .planilla-pae-oficial [style*="background:#e2e8f0"],
+  .planilla-pae-oficial [style*="background:#ffd03a"],
+  .planilla-pae-oficial [style*="background:#f5a300"],
+  .planilla-pae-oficial [style*="background:#fff4d1"],
+  .planilla-pae-oficial [style*="background:#ffe3a3"],
+  .planilla-pae-oficial [style*="background:#dbeafe"],
+  .planilla-pae-oficial [style*="background:#dcfce7"],
+  .planilla-pae-oficial [style*="background:#f0f9ff"],
+  .planilla-pae-oficial [style*="background:#f0fdf4"],
+  .planilla-pae-oficial [style*="background:#fef9c3"] {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  /* ── 6. Encabezados de sección oscuros ── */
+  .planilla-pae-oficial [style*="background:#1e293b"],
+  .planilla-pae-oficial [style*="background:#374151"] {
+    background: #1e293b !important;
+    color: #fff !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* ── 7. Tabla de no perecederos + perecederos side-by-side ── */
+  .planilla-pae-oficial > table:nth-child(4) {
+    table-layout: fixed !important;
+  }
+
+  .planilla-pae-oficial > table:nth-child(4) > tbody > tr > td {
+    width: 50% !important;
+    vertical-align: top !important;
+    padding: 0 !important;
+  }
+
+  /* ── 8. Bloque de instrucciones compacto ── */
+  .planilla-pae-oficial [style*="background:#f8fafc"] {
+    font-size: 5pt !important;
+    line-height: 1.2 !important;
+    padding: 2pt 3pt !important;
+  }
+
+  /* ── 9. Sin saltos de página forzados entre secciones ── */
+  .planilla-pae-oficial > * {
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+    page-break-before: auto !important;
+    page-break-after: auto !important;
+  }
+
+  /* ── 10. Tabla de firmas compacta ── */
+  .planilla-pae-oficial > table:last-child td {
+    min-height: 28pt !important;
+    padding: 2pt 4pt !important;
+    font-size: 5.5pt !important;
+  }
+
+  /* ── 11. Número grande de días a atender ── */
+  .planilla-pae-oficial [style*="font-size:18px"] {
+    font-size: 12pt !important;
+  }
+
+  /* ── 12. Tabla oficial antigua (card en pantalla) ── */
+  .tabla-oficial {
+    font-size: 5.8pt !important;
+    border-collapse: collapse !important;
+    width: 100% !important;
+  }
+
+  .tabla-oficial th,
+  .tabla-oficial td {
+    border: 0.5pt solid #000 !important;
+    padding: 1pt 2pt !important;
+    color: #000 !important;
+    font-size: 5.8pt !important;
+    line-height: 1.1 !important;
+  }
+
+  .tabla-oficial-wrap {
+    border: none !important;
+    border-radius: 0 !important;
+    overflow: visible !important;
+  }
+
+  /* ── 13. Firmas antiguas (compatibilidad) ── */
+  .bloque-firmas {
+    margin-top: 3pt !important;
+    gap: 3pt !important;
+  }
+
+  .caja-firma {
+    border: 0.5pt solid #000 !important;
+    font-size: 5.5pt !important;
+    min-height: 28pt !important;
+    padding: 2pt !important;
+  }
+
+  .linea-firma {
+    margin-top: 10pt !important;
+    border-top: 0.5pt solid #000 !important;
+    padding-top: 1pt !important;
+    font-size: 5pt !important;
+  }
+
+  /* ── 14. Kardex ── */
+  .tabla-kardex th,
+  .tabla-kardex td {
+    font-size: 5.4pt !important;
+    padding: 0.5pt 1pt !important;
   }
 }

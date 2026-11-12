@@ -131,307 +131,286 @@
         </button>
       </div>
 
-      <article class="hoja-oficial-preview">
+      <!-- ════════════════════════════════════════════════════════════════
+           PLANTILLA OFICIAL FORMATO FÍSICO PAE
+           Diseñada para imprimir en 1 sola hoja oficio vertical
+           ════════════════════════════════════════════════════════════════ -->
+      <article class="hoja-oficial-preview planilla-pae-oficial">
 
-        <!-- MEMBRETE OFICIAL INSTITUCIONAL -->
-        <header class="encabezado-membrete">
-          <div class="membrete-titulo w-full text-center">
-            <h3>ALCALDÍA DE POPAYÁN</h3>
-            <h4>PROGRAMA DE ALIMENTACIÓN ESCOLAR - PAE</h4>
-            <div style="font-size: 13px; font-weight: 800; margin-top: 2px;">REMISIÓN DE VÍVERES E INSUMOS POR COMEDOR ESCOLAR</div>
-            <div class="membrete-meta">
-              <span><strong>PERIODO:</strong> {{ rem.periodo }}</span>
-              <span><strong>FECHA INICIO:</strong> {{ rem.fechaInicio }}</span>
-              <span><strong>FECHA TERMINACIÓN:</strong> {{ rem.fechaTerminacion }}</span>
-              <span><strong>CONTRATO Nº:</strong> {{ rem.contratoNumero }}</span>
-            </div>
-          </div>
-        </header>
+        <!-- ══ ENCABEZADO / MEMBRETE ══ -->
+        <table class="tabla-membrete" style="width:100%; border-collapse:collapse; border:1.5px solid #000;">
+          <tbody>
+            <tr>
+              <!-- Logos izquierda -->
+              <td style="width:14%; border-right:1px solid #000; padding:3px 6px; vertical-align:middle; text-align:center;">
+                <div style="font-size:7px; font-weight:900; line-height:1.2; color:#000;">ALCALDÍA<br>DE POPAYÁN</div>
+                <div style="font-size:6px; color:#555; margin-top:2px;">Colombia Potencia<br>de la Vida</div>
+              </td>
+              <!-- Título central -->
+              <td style="text-align:center; padding:4px 8px; vertical-align:middle; border-right:1px solid #000;">
+                <div style="font-size:10px; font-weight:900; letter-spacing:.03em; line-height:1.3;">ALCALDÍA DE POPAYÁN</div>
+                <div style="font-size:8px; font-weight:800; line-height:1.3;">PROGRAMA DE ALIMENTACIÓN ESCOLAR - PAE</div>
+                <div style="font-size:8px; font-weight:900; border-top:1px solid #000; margin-top:3px; padding-top:3px;">REMISIÓN DE VÍVERES E INSUMOS POR COMEDOR ESCOLAR</div>
+              </td>
+              <!-- Datos de periodo - derecha -->
+              <td style="width:30%; border-left:1px solid #000; padding:0; vertical-align:top;">
+                <table style="width:100%; border-collapse:collapse; font-size:7px;">
+                  <tr>
+                    <td style="background:#f1f5f9; font-weight:800; padding:2px 4px; border-bottom:1px solid #000; border-right:1px solid #000;">PERIODO DE ENTREGA</td>
+                    <td style="padding:2px 4px; border-bottom:1px solid #000; font-weight:700;">{{ rem.periodo }}</td>
+                  </tr>
+                  <tr>
+                    <td style="background:#f1f5f9; font-weight:800; padding:2px 4px; border-bottom:1px solid #000; border-right:1px solid #000;">FECHA INICIO</td>
+                    <td style="padding:2px 4px; border-bottom:1px solid #000;">{{ rem.fechaInicio }}</td>
+                  </tr>
+                  <tr>
+                    <td style="background:#f1f5f9; font-weight:800; padding:2px 4px; border-bottom:1px solid #000; border-right:1px solid #000;">FECHA TERMINACIÓN</td>
+                    <td style="padding:2px 4px; border-bottom:1px solid #000;">{{ rem.fechaTerminacion }}</td>
+                  </tr>
+                  <tr>
+                    <td style="background:#f1f5f9; font-weight:800; padding:2px 4px; border-right:1px solid #000;">CONTRATO Nº</td>
+                    <td style="padding:2px 4px; font-weight:700;">{{ rem.contratoNumero }}</td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </tbody>
+        </table>
 
-        <!-- GRILLA DE DATOS DEL COMEDOR Y CUPOS -->
-        <div class="grid-datos-sede">
-          <table>
-            <tbody>
-              <tr>
-                <td style="width: 15%; background: #f8fafc; font-weight: bold;">OPERADOR:</td>
-                <td colspan="3" style="font-weight: bold;">{{ rem.operador }}</td>
-              </tr>
-              <tr>
-                <td style="background: #f8fafc; font-weight: bold;">ESTABLECIMIENTO EDUCATIVO:</td>
-                <td style="font-weight: bold;">{{ rem.institucionEducativa }}</td>
-                <td style="background: #f8fafc; font-weight: bold; width: 12%;">SEDE:</td>
-                <td style="font-weight: bold;">{{ rem.sede }} (DANE: {{ rem.codigoDane }})</td>
-              </tr>
-              <tr>
-                <td style="background: #f8fafc; font-weight: bold;">MODALIDAD:</td>
-                <td>{{ rem.modalidad }}</td>
-                <td style="background: #f8fafc; font-weight: bold;">TIPO:</td>
-                <td>{{ rem.tipo }}</td>
-              </tr>
-              <tr>
-                <td style="background: #f8fafc; font-weight: bold;">Nº DÍAS A ATENDER:</td>
-                <td style="font-weight: 900; font-size: 13px; color: #b45309;">{{ rem.diasAtender }} DÍAS</td>
-                <td style="background: #f8fafc; font-weight: bold;">CICLOS DE MENÚS:</td>
-                <td>{{ rem.ciclosMenus }}</td>
-              </tr>
-            </tbody>
-          </table>
+        <!-- ══ DATOS DEL ESTABLECIMIENTO ══ -->
+        <table class="tabla-datos-sede" style="width:100%; border-collapse:collapse; border:1px solid #000; border-top:0; font-size:7px;">
+          <tbody>
+            <tr>
+              <td style="background:#f1f5f9; font-weight:800; border:1px solid #000; padding:2px 4px; width:12%;">OPERADOR:</td>
+              <td colspan="5" style="border:1px solid #000; padding:2px 4px; font-weight:700;">{{ rem.operador }}</td>
+            </tr>
+            <tr>
+              <td style="background:#f1f5f9; font-weight:800; border:1px solid #000; padding:2px 4px;">ESTABLECIMIENTO<br>EDUCATIVO:</td>
+              <td style="border:1px solid #000; padding:2px 4px; font-weight:700;">{{ rem.institucionEducativa }}</td>
+              <td style="background:#f1f5f9; font-weight:800; border:1px solid #000; padding:2px 4px; width:5%;">SEDE:</td>
+              <td style="border:1px solid #000; padding:2px 4px; font-weight:700; width:16%;">{{ rem.sede }}</td>
+              <td style="background:#f1f5f9; font-weight:800; border:1px solid #000; padding:2px 4px; width:9%;">CÓDIGO DANE<br>SEDE:</td>
+              <td style="border:1px solid #000; padding:2px 4px; font-weight:700; width:10%;">{{ rem.codigoDane }}</td>
+            </tr>
+            <tr>
+              <td style="background:#f1f5f9; font-weight:800; border:1px solid #000; padding:2px 4px;">MODALIDAD:</td>
+              <td style="border:1px solid #000; padding:2px 4px;">{{ rem.modalidad }}</td>
+              <td style="background:#f1f5f9; font-weight:800; border:1px solid #000; padding:2px 4px;">TIPO:</td>
+              <td colspan="3" style="border:1px solid #000; padding:2px 4px;">{{ rem.tipo }}</td>
+            </tr>
+            <tr>
+              <td rowspan="2" style="background:#f1f5f9; font-weight:800; border:1px solid #000; padding:2px 4px; text-align:center; vertical-align:middle;">
+                <div style="font-size:6px; font-weight:800;">Nº DÍAS<br>A ATENDER</div>
+                <div style="font-size:18px; font-weight:900; line-height:1; color:#000;">{{ rem.diasAtender }}</div>
+              </td>
+              <td style="background:#f1f5f9; font-weight:800; border:1px solid #000; padding:2px 4px; width:9%;">RACIÓN POR MINUTA:</td>
+              <td style="border:1px solid #000; padding:2px 4px;" colspan="4">{{ rem.tipo }}</td>
+            </tr>
+            <tr>
+              <td style="background:#f1f5f9; font-weight:800; border:1px solid #000; padding:2px 4px;">CICLOS DE MENÚS:</td>
+              <td colspan="4" style="border:1px solid #000; padding:2px 4px;">{{ rem.ciclosMenus }}</td>
+            </tr>
+          </tbody>
+        </table>
 
-          <!-- TABLA DE CUPOS POR NIVEL EDUCATIVO -->
-          <table style="border-top: 1.5px solid #000; text-align: center;">
-            <thead>
-              <tr style="background: #f1f5f9;">
-                <th rowspan="2" style="width: 20%;">CUPOS SEGÚN NIVEL</th>
-                <th>PREESCOLAR</th>
-                <th>PRIMARIA (1º, 2º Y 3º)</th>
-                <th>PRIMARIA (4º Y 5º)</th>
-                <th>SECUNDARIA</th>
-                <th>MEDIA Y CICLO</th>
-                <th style="background: #ffd03a; color: #000;">TOTAL CUPOS</th>
-                <th style="background: #f5a300; color: #000;">TOTAL RACIONES</th>
-              </tr>
-              <tr style="font-weight: 900;">
-                <td>{{ rem.cupos.preescolar }}</td>
-                <td>{{ rem.cupos.primaria13 }}</td>
-                <td>{{ rem.cupos.primaria45 }}</td>
-                <td>{{ rem.cupos.secundaria }}</td>
-                <td>{{ rem.cupos.media }}</td>
-                <td style="background: #fff4d1; font-weight: 900; font-size: 13px;">{{ rem.cupos.totalCupos }}</td>
-                <td style="background: #ffe3a3; font-weight: 900; font-size: 13px;">{{ rem.cupos.racionesTotales }}</td>
-              </tr>
-            </thead>
-          </table>
-        </div>
+        <!-- ══ CUPOS POR NIVEL + TOTALES ══ -->
+        <table style="width:100%; border-collapse:collapse; border:1px solid #000; border-top:0; font-size:7px; text-align:center;">
+          <thead>
+            <tr style="background:#e2e8f0;">
+              <th style="border:1px solid #000; padding:2px 3px; width:16%;">CUPOS SEGÚN NIVEL</th>
+              <th style="border:1px solid #000; padding:2px 3px;">PREESCOLAR</th>
+              <th style="border:1px solid #000; padding:2px 3px;">PRIMARIA (1º, 2º Y 3º)</th>
+              <th style="border:1px solid #000; padding:2px 3px;">PRIMARIA (4º Y 5º)</th>
+              <th style="border:1px solid #000; padding:2px 3px;">SECUNDARIA</th>
+              <th style="border:1px solid #000; padding:2px 3px;">MEDIA Y CICLO</th>
+              <th style="border:1px solid #000; padding:2px 3px; background:#ffd03a; font-weight:900;">TOTAL CUPOS</th>
+              <th style="border:1px solid #000; padding:2px 3px; background:#f5a300; font-weight:900;">TOTAL RACIONES</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="font-weight:900; font-size:8px;">
+              <td style="border:1px solid #000; padding:2px 3px; background:#f8fafc;"></td>
+              <td style="border:1px solid #000; padding:2px 3px;">{{ rem.cupos.preescolar }}</td>
+              <td style="border:1px solid #000; padding:2px 3px;">{{ rem.cupos.primaria13 }}</td>
+              <td style="border:1px solid #000; padding:2px 3px;">{{ rem.cupos.primaria45 }}</td>
+              <td style="border:1px solid #000; padding:2px 3px;">{{ rem.cupos.secundaria }}</td>
+              <td style="border:1px solid #000; padding:2px 3px;">{{ rem.cupos.media }}</td>
+              <td style="border:1px solid #000; padding:2px 3px; background:#fff4d1; font-size:9px;">{{ rem.cupos.totalCupos }}</td>
+              <td style="border:1px solid #000; padding:2px 3px; background:#ffe3a3; font-size:9px;">{{ rem.cupos.racionesTotales }}</td>
+            </tr>
+          </tbody>
+        </table>
 
-        <!-- 1. CLASIFICACIÓN: NO PERECEDEROS -->
-        <div *ngIf="subFiltroRemision === 'todas' || subFiltroRemision === 'no-perecederos'" class="seccion-no-perecederos mb-6">
-          <div style="background: #1e293b; color: #fff; padding: 5px 10px; font-weight: 900; font-size: 12px; display: flex; justify-content: space-between;">
-            <span>1. ALIMENTOS NO PERECEDEROS (VÍVERES SECOS)</span>
-            <span>TOTAL PRODUCTOS: {{ rem.noPerecederos.length }}</span>
-          </div>
+        <!-- ══ SECCIÓN PRINCIPAL: NO PERECEDEROS + PERECEDEROS ══ -->
+        <table style="width:100%; border-collapse:collapse; border:1px solid #000; border-top:0; font-size:6.5px;">
+          <tbody>
+            <tr>
+              <!-- COLUMNA IZQUIERDA: NO PERECEDEROS -->
+              <td style="vertical-align:top; border-right:1.5px solid #000; padding:0; width:50%;">
+                <!-- Encabezado sección -->
+                <div style="background:#1e293b; color:#fff; padding:2px 5px; font-weight:900; font-size:7px; display:flex; justify-content:space-between;">
+                  <span>1. ALIMENTOS NO PERECEDEROS (VÍVERES SECOS)</span>
+                  <span>TOTAL: {{ rem.noPerecederos.length }}</span>
+                </div>
+                <table style="width:100%; border-collapse:collapse; font-size:6px;">
+                  <thead>
+                    <tr style="background:#f1f5f9; text-align:center;">
+                      <th style="border:1px solid #000; padding:1.5px 2px; text-align:left; width:28%;">ALIMENTO</th>
+                      <th style="border:1px solid #000; padding:1.5px 2px;">PRE</th>
+                      <th style="border:1px solid #000; padding:1.5px 2px;">P1-3</th>
+                      <th style="border:1px solid #000; padding:1.5px 2px;">P4-5</th>
+                      <th style="border:1px solid #000; padding:1.5px 2px;">SEC</th>
+                      <th style="border:1px solid #000; padding:1.5px 2px;">MED</th>
+                      <th style="border:1px solid #000; padding:1.5px 2px;">UND</th>
+                      <th style="border:1px solid #000; padding:1.5px 2px; background:#dbeafe;">CANT.<br>ENTREGAR</th>
+                      <th style="border:1px solid #000; padding:1.5px 2px; background:#dcfce7;">CANT.<br>RECIBIDA</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let row of rem.noPerecederos">
+                      <td style="border:1px solid #000; padding:1px 2px; font-weight:700;">{{ row.alimento }}</td>
+                      <td style="border:1px solid #000; padding:1px 2px; text-align:center;">{{ row.gramajes.preescolar }}</td>
+                      <td style="border:1px solid #000; padding:1px 2px; text-align:center;">{{ row.gramajes.primaria13 }}</td>
+                      <td style="border:1px solid #000; padding:1px 2px; text-align:center;">{{ row.gramajes.primaria45 }}</td>
+                      <td style="border:1px solid #000; padding:1px 2px; text-align:center;">{{ row.gramajes.secundaria }}</td>
+                      <td style="border:1px solid #000; padding:1px 2px; text-align:center;">{{ row.gramajes.media }}</td>
+                      <td style="border:1px solid #000; padding:1px 2px; text-align:center;">{{ row.unidad }}</td>
+                      <td style="border:1px solid #000; padding:1px 2px; text-align:right; background:#f0f9ff; font-weight:700;">{{ row.cantidadEntregar }}</td>
+                      <td style="border:1px solid #000; padding:1px 2px; text-align:right; background:#f0fdf4; font-weight:900; color:#166534;">{{ row.cantidadRecibida }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </td>
 
-          <div class="tabla-oficial-wrap">
-            <table class="tabla-oficial">
-              <thead>
-                <tr>
-                  <th style="width: 25%;">ALIMENTO NO PERECEDERO</th>
-                  <th colspan="5" style="text-align: center; background: #e2e8f0;">GRAMAJE SEGÚN MINUTA POR NIVEL (g / ml)</th>
-                  <th style="text-align: center;">UND. MEDIDA</th>
-                  <th style="text-align: right; background: #e0f2fe;">CANT. A ENTREGAR</th>
-                  <th style="text-align: right; background: #dcfce7;">CANT. RECIBIDA</th>
-                </tr>
-                <tr style="font-size: 10px; text-align: center; background: #f8fafc;">
-                  <th></th>
-                  <th>Preesc.</th>
-                  <th>Prim 1-3</th>
-                  <th>Prim 4-5</th>
-                  <th>Secun.</th>
-                  <th>Media</th>
-                  <th></th>
-                  <th></th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let row of rem.noPerecederos">
-                  <td style="font-weight: 700;">{{ row.alimento }}</td>
-                  <td style="text-align: center;">{{ row.gramajes.preescolar }}</td>
-                  <td style="text-align: center;">{{ row.gramajes.primaria13 }}</td>
-                  <td style="text-align: center;">{{ row.gramajes.primaria45 }}</td>
-                  <td style="text-align: center;">{{ row.gramajes.secundaria }}</td>
-                  <td style="text-align: center;">{{ row.gramajes.media }}</td>
-                  <td style="text-align: center; font-weight: bold;">{{ row.unidad }}</td>
-                  <td style="text-align: right; font-weight: bold; background: #f0f9ff;">
-                    <span *ngIf="!modoEdicion">{{ row.cantidadEntregar }}</span>
-                    <input *ngIf="modoEdicion" type="number" [(ngModel)]="row.cantidadEntregar" class="input-tabla" />
-                  </td>
-                  <td style="text-align: right; font-weight: 900; background: #f0fdf4; color: #166534;">
-                    <span *ngIf="!modoEdicion">{{ row.cantidadRecibida }}</span>
-                    <input *ngIf="modoEdicion" type="number" [(ngModel)]="row.cantidadRecibida" class="input-tabla" />
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
+              <!-- COLUMNA DERECHA: INSTRUCCIONES + PERECEDEROS RESUMIDOS -->
+              <td style="vertical-align:top; padding:0; width:50%;">
+                <!-- Bloque instrucciones (simulado según planilla física) -->
+                <div style="background:#f8fafc; border-bottom:1px solid #000; padding:3px 5px; font-size:5.5px; line-height:1.3; text-align:justify;">
+                  <strong style="font-size:6px;">INSTRUCCIONES DE DILIGENCIAMIENTO:</strong> En la recepción de alimentos e insumos de aseo debe ser verificada y registrar la cantidad recibida por cada uno de sus productos y en la columna de la cédula y columna correspondiente conforme a las cantidades efectivamente entregadas por el operador tanto para alimentos como insumos de aseo y al final del periodo ser totalizadas.
+                </div>
+                <!-- Encabezado sección perecederos -->
+                <div style="background:#1e293b; color:#fff; padding:2px 5px; font-weight:900; font-size:7px;">
+                  2. ALIMENTOS PERECEDEROS - 4 ENTREGAS
+                </div>
+                <table style="width:100%; border-collapse:collapse; font-size:5.8px;">
+                  <thead>
+                    <tr style="background:#f1f5f9; text-align:center;">
+                      <th style="border:1px solid #000; padding:1px 2px; text-align:left; width:24%;">ALIMENTO</th>
+                      <th style="border:1px solid #000; padding:1px 2px;">PRE</th>
+                      <th style="border:1px solid #000; padding:1px 2px;">P1-3</th>
+                      <th style="border:1px solid #000; padding:1px 2px;">P4-5</th>
+                      <th style="border:1px solid #000; padding:1px 2px;">SEC</th>
+                      <th style="border:1px solid #000; padding:1px 2px;">MED</th>
+                      <th style="border:1px solid #000; padding:1px 2px;">UND</th>
+                      <th colspan="2" style="border:1px solid #000; padding:1px 2px; background:#fef9c3;">E1</th>
+                      <th colspan="2" style="border:1px solid #000; padding:1px 2px; background:#fef9c3;">E2</th>
+                      <th colspan="2" style="border:1px solid #000; padding:1px 2px; background:#fef9c3;">E3</th>
+                      <th colspan="2" style="border:1px solid #000; padding:1px 2px; background:#fef9c3;">E4</th>
+                    </tr>
+                    <tr style="background:#f8fafc; text-align:center; font-size:5.2px;">
+                      <th style="border:1px solid #000; padding:1px;"></th>
+                      <th style="border:1px solid #000; padding:1px;"></th>
+                      <th style="border:1px solid #000; padding:1px;"></th>
+                      <th style="border:1px solid #000; padding:1px;"></th>
+                      <th style="border:1px solid #000; padding:1px;"></th>
+                      <th style="border:1px solid #000; padding:1px;"></th>
+                      <th style="border:1px solid #000; padding:1px;"></th>
+                      <th style="border:1px solid #000; padding:1px;">ENT.</th>
+                      <th style="border:1px solid #000; padding:1px;">REC.</th>
+                      <th style="border:1px solid #000; padding:1px;">ENT.</th>
+                      <th style="border:1px solid #000; padding:1px;">REC.</th>
+                      <th style="border:1px solid #000; padding:1px;">ENT.</th>
+                      <th style="border:1px solid #000; padding:1px;">REC.</th>
+                      <th style="border:1px solid #000; padding:1px;">ENT.</th>
+                      <th style="border:1px solid #000; padding:1px;">REC.</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let row of rem.perecederos">
+                      <td style="border:1px solid #000; padding:1px 2px; font-weight:700;">{{ row.alimento }}</td>
+                      <td style="border:1px solid #000; padding:1px; text-align:center;">{{ row.gramajes.preescolar }}</td>
+                      <td style="border:1px solid #000; padding:1px; text-align:center;">{{ row.gramajes.primaria13 }}</td>
+                      <td style="border:1px solid #000; padding:1px; text-align:center;">{{ row.gramajes.primaria45 }}</td>
+                      <td style="border:1px solid #000; padding:1px; text-align:center;">{{ row.gramajes.secundaria }}</td>
+                      <td style="border:1px solid #000; padding:1px; text-align:center;">{{ row.gramajes.media }}</td>
+                      <td style="border:1px solid #000; padding:1px; text-align:center;">{{ row.unidad }}</td>
+                      <td style="border:1px solid #000; padding:1px; text-align:right;">{{ row.entregas[0].aEntregar }}</td>
+                      <td style="border:1px solid #000; padding:1px; text-align:right; font-weight:700;">{{ row.entregas[0].recibida }}</td>
+                      <td style="border:1px solid #000; padding:1px; text-align:right;">{{ row.entregas[1].aEntregar }}</td>
+                      <td style="border:1px solid #000; padding:1px; text-align:right; font-weight:700;">{{ row.entregas[1].recibida }}</td>
+                      <td style="border:1px solid #000; padding:1px; text-align:right;">{{ row.entregas[2].aEntregar }}</td>
+                      <td style="border:1px solid #000; padding:1px; text-align:right; font-weight:700;">{{ row.entregas[2].recibida }}</td>
+                      <td style="border:1px solid #000; padding:1px; text-align:right;">{{ row.entregas[3].aEntregar }}</td>
+                      <td style="border:1px solid #000; padding:1px; text-align:right; font-weight:700;">{{ row.entregas[3].recibida }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </td>
+            </tr>
+          </tbody>
+        </table>
 
-        <!-- 2. CLASIFICACIÓN: PERECEDEROS CON 4 ENTREGAS -->
-        <div *ngIf="subFiltroRemision === 'todas' || subFiltroRemision === 'perecederos'" class="seccion-perecederos mb-6">
-          <div style="background: #1e293b; color: #fff; padding: 5px 10px; font-weight: 900; font-size: 12px; display: flex; justify-content: space-between;">
-            <span>2. ALIMENTOS PERECEDEROS (CÁRNICOS, VERDURAS, FRUTAS, HUEVOS)</span>
-            <span>PROGRAMACIÓN DE 4 ENTREGAS SEMANALES</span>
-          </div>
+        <!-- ══ SECCIÓN ASEO ══ -->
+        <table style="width:100%; border-collapse:collapse; border:1px solid #000; border-top:0; font-size:6px;">
+          <thead>
+            <tr>
+              <th colspan="6" style="background:#374151; color:#fff; padding:2px 5px; text-align:left; font-size:7px; font-weight:900; border:1px solid #000;">
+                INSUMOS Y ELEMENTOS DE ASEO &nbsp;|&nbsp; Insumos de Aseo en Comedor Escolar (Mensual-20 días)
+              </th>
+            </tr>
+            <tr style="background:#f1f5f9; text-align:center; font-size:6px;">
+              <th style="border:1px solid #000; padding:1.5px 3px; text-align:left; width:35%;">INSUMO / ELEMENTO DE ASEO</th>
+              <th style="border:1px solid #000; padding:1.5px 3px; width:12%;">CANT. MEDIDA</th>
+              <th style="border:1px solid #000; padding:1.5px 3px; width:12%; background:#dbeafe;">CANT. ENTREGA</th>
+              <th style="border:1px solid #000; padding:1.5px 3px; width:12%; background:#dcfce7;">CANT. RECIBIDA</th>
+              <th colspan="2" style="border:1px solid #000; padding:1.5px 3px; background:#fef9c3;">OBSERVACIONES</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of rem.aseo">
+              <td style="border:1px solid #000; padding:1px 3px; font-weight:700;">{{ item.item }}</td>
+              <td style="border:1px solid #000; padding:1px 3px; text-align:center;">{{ item.unidad }}</td>
+              <td style="border:1px solid #000; padding:1px 3px; text-align:right; background:#f0f9ff; font-weight:700;">{{ item.cantidadEntregar > 0 ? item.cantidadEntregar : '' }}</td>
+              <td style="border:1px solid #000; padding:1px 3px; text-align:right; background:#f0fdf4; font-weight:900; color:#166534;">{{ item.cantidadRecibida > 0 ? item.cantidadRecibida : '' }}</td>
+              <td colspan="2" style="border:1px solid #000; padding:1px 3px; font-size:5.5px; color:#64748b;">{{ item.observaciones || '' }}</td>
+            </tr>
+          </tbody>
+        </table>
 
-          <div class="tabla-oficial-wrap">
-            <table class="tabla-oficial">
-              <thead>
-                <tr>
-                  <th rowspan="2" style="width: 22%;">ALIMENTO PERECEDERO</th>
-                  <th colspan="5" style="text-align: center; background: #e2e8f0;">GRAMAJE SEGÚN MINUTA</th>
-                  <th rowspan="2" style="text-align: center;">UND</th>
-                  <th colspan="2" style="text-align: center; background: #fef3c7;">ENTREGA 1</th>
-                  <th colspan="2" style="text-align: center; background: #fef3c7;">ENTREGA 2</th>
-                  <th colspan="2" style="text-align: center; background: #fef3c7;">ENTREGA 3</th>
-                  <th colspan="2" style="text-align: center; background: #fef3c7;">ENTREGA 4</th>
-                  <th rowspan="2" style="text-align: right; background: #e0f2fe;">TOTAL ENTREGADO</th>
-                  <th rowspan="2" style="text-align: right; background: #dcfce7;">TOTAL RECIBIDO</th>
-                </tr>
-                <tr style="font-size: 9.5px; text-align: center;">
-                  <th>Pre</th>
-                  <th>P1-3</th>
-                  <th>P4-5</th>
-                  <th>Sec</th>
-                  <th>Med</th>
-                  <th>A Entr.</th>
-                  <th>Recib.</th>
-                  <th>A Entr.</th>
-                  <th>Recib.</th>
-                  <th>A Entr.</th>
-                  <th>Recib.</th>
-                  <th>A Entr.</th>
-                  <th>Recib.</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let row of rem.perecederos">
-                  <td style="font-weight: 700;">{{ row.alimento }}</td>
-                  <td style="text-align: center;">{{ row.gramajes.preescolar }}</td>
-                  <td style="text-align: center;">{{ row.gramajes.primaria13 }}</td>
-                  <td style="text-align: center;">{{ row.gramajes.primaria45 }}</td>
-                  <td style="text-align: center;">{{ row.gramajes.secundaria }}</td>
-                  <td style="text-align: center;">{{ row.gramajes.media }}</td>
-                  <td style="text-align: center; font-weight: bold;">{{ row.unidad }}</td>
-
-                  <!-- Entrega 1 -->
-                  <td style="text-align: right;">
-                    <span *ngIf="!modoEdicion">{{ row.entregas[0].aEntregar }}</span>
-                    <input *ngIf="modoEdicion" type="number" [(ngModel)]="row.entregas[0].aEntregar" (ngModelChange)="recalcularPerecedero(row)" class="input-tabla" />
-                  </td>
-                  <td style="text-align: right; font-weight: bold;">
-                    <span *ngIf="!modoEdicion">{{ row.entregas[0].recibida }}</span>
-                    <input *ngIf="modoEdicion" type="number" [(ngModel)]="row.entregas[0].recibida" (ngModelChange)="recalcularPerecedero(row)" class="input-tabla" />
-                  </td>
-
-                  <!-- Entrega 2 -->
-                  <td style="text-align: right;">
-                    <span *ngIf="!modoEdicion">{{ row.entregas[1].aEntregar }}</span>
-                    <input *ngIf="modoEdicion" type="number" [(ngModel)]="row.entregas[1].aEntregar" (ngModelChange)="recalcularPerecedero(row)" class="input-tabla" />
-                  </td>
-                  <td style="text-align: right; font-weight: bold;">
-                    <span *ngIf="!modoEdicion">{{ row.entregas[1].recibida }}</span>
-                    <input *ngIf="modoEdicion" type="number" [(ngModel)]="row.entregas[1].recibida" (ngModelChange)="recalcularPerecedero(row)" class="input-tabla" />
-                  </td>
-
-                  <!-- Entrega 3 -->
-                  <td style="text-align: right;">
-                    <span *ngIf="!modoEdicion">{{ row.entregas[2].aEntregar }}</span>
-                    <input *ngIf="modoEdicion" type="number" [(ngModel)]="row.entregas[2].aEntregar" (ngModelChange)="recalcularPerecedero(row)" class="input-tabla" />
-                  </td>
-                  <td style="text-align: right; font-weight: bold;">
-                    <span *ngIf="!modoEdicion">{{ row.entregas[2].recibida }}</span>
-                    <input *ngIf="modoEdicion" type="number" [(ngModel)]="row.entregas[2].recibida" (ngModelChange)="recalcularPerecedero(row)" class="input-tabla" />
-                  </td>
-
-                  <!-- Entrega 4 -->
-                  <td style="text-align: right;">
-                    <span *ngIf="!modoEdicion">{{ row.entregas[3].aEntregar }}</span>
-                    <input *ngIf="modoEdicion" type="number" [(ngModel)]="row.entregas[3].aEntregar" (ngModelChange)="recalcularPerecedero(row)" class="input-tabla" />
-                  </td>
-                  <td style="text-align: right; font-weight: bold;">
-                    <span *ngIf="!modoEdicion">{{ row.entregas[3].recibida }}</span>
-                    <input *ngIf="modoEdicion" type="number" [(ngModel)]="row.entregas[3].recibida" (ngModelChange)="recalcularPerecedero(row)" class="input-tabla" />
-                  </td>
-
-                  <!-- Totales -->
-                  <td style="text-align: right; font-weight: bold; background: #f0f9ff;">{{ row.totalEntregado }}</td>
-                  <td style="text-align: right; font-weight: 900; background: #f0fdf4; color: #166534;">{{ row.totalRecibido }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- 3. CLASIFICACIÓN: INSUMOS Y ELEMENTOS DE ASEO -->
-        <div *ngIf="subFiltroRemision === 'todas' || subFiltroRemision === 'aseo'" class="seccion-aseo mb-6">
-          <div style="background: #1e293b; color: #fff; padding: 5px 10px; font-weight: 900; font-size: 12px; display: flex; justify-content: space-between;">
-            <span>3. INSUMOS Y ELEMENTOS DE ASEO MENSUAL (20 DÍAS)</span>
-            <span>COMEDOR ESCOLAR</span>
-          </div>
-
-          <div class="tabla-oficial-wrap">
-            <table class="tabla-oficial">
-              <thead>
-                <tr>
-                  <th style="width: 40%;">INSUMO O ELEMENTO DE ASEO</th>
-                  <th style="text-align: center; width: 15%;">UNIDAD DE MEDIDA</th>
-                  <th style="text-align: right; width: 15%; background: #e0f2fe;">CANTIDAD A ENTREGAR</th>
-                  <th style="text-align: right; width: 15%; background: #dcfce7;">CANTIDAD RECIBIDA</th>
-                  <th style="width: 15%;">OBSERVACIONES</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let item of rem.aseo">
-                  <td style="font-weight: 700;">{{ item.item }}</td>
-                  <td style="text-align: center; font-weight: bold;">{{ item.unidad }}</td>
-                  <td style="text-align: right; font-weight: bold; background: #f0f9ff;">
-                    <span *ngIf="!modoEdicion">{{ item.cantidadEntregar > 0 ? item.cantidadEntregar : '' }}</span>
-                    <input *ngIf="modoEdicion" type="number" [(ngModel)]="item.cantidadEntregar" class="input-tabla" />
-                  </td>
-                  <td style="text-align: right; font-weight: 900; background: #f0fdf4; color: #166534;">
-                    <span *ngIf="!modoEdicion">{{ item.cantidadRecibida > 0 ? item.cantidadRecibida : '' }}</span>
-                    <input *ngIf="modoEdicion" type="number" [(ngModel)]="item.cantidadRecibida" class="input-tabla" />
-                  </td>
-                  <td style="font-size: 10px; color: #64748b;">
-                    <span *ngIf="!modoEdicion">{{ item.observaciones || '' }}</span>
-                    <input *ngIf="modoEdicion" type="text" [(ngModel)]="item.observaciones" class="input-tabla text-left" />
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- BLOQUE REGLAMENTARIO DE FIRMAS -->
-        <div class="bloque-firmas">
-          <!-- Firma 1: Manipuladora -->
-          <div class="caja-firma">
-            <div>
-              <strong>MANIPULADORA DE ALIMENTOS</strong>
-              <p class="m-0 text-slate-500 text-[10px]">Verificación y recepción en comedor escolar</p>
-            </div>
-            <div class="linea-firma">
-              <div><strong>Nombre:</strong> {{ rem.firmas.manipuladoraNombre }}</div>
-              <div><strong>Cédula:</strong> {{ rem.firmas.manipuladoraCedula }}</div>
-              <div class="text-[9px] text-slate-400 mt-1">Firma digital o manual registrada</div>
-            </div>
-          </div>
-
-          <!-- Firma 2: Rector / Encargado -->
-          <div class="caja-firma">
-            <div>
-              <strong>RECTOR, DIRECTOR RURAL O ENCARGADO PAE</strong>
-              <p class="m-0 text-slate-500 text-[10px]">Validación institucional de la sede</p>
-            </div>
-            <div class="linea-firma">
-              <div><strong>Nombre:</strong> {{ rem.firmas.rectorNombre }}</div>
-              <div><strong>Cédula:</strong> {{ rem.firmas.rectorCedula }}</div>
-              <div><strong>Teléfono:</strong> {{ rem.firmas.rectorTelefono }}</div>
-            </div>
-          </div>
-
-          <!-- Firma 3: Operador / Coordinador -->
-          <div class="caja-firma">
-            <div>
-              <strong>REPRESENTANTE LEGAL CONTRATISTA O COORDINADOR</strong>
-              <p class="m-0 text-slate-500 text-[10px]">Entrega y logística del operador PAE</p>
-            </div>
-            <div class="linea-firma">
-              <div><strong>Nombre:</strong> {{ rem.firmas.operadorNombre }}</div>
-              <div><strong>Cédula:</strong> {{ rem.firmas.operadorCedula }}</div>
-              <div><strong>Teléfono:</strong> {{ rem.firmas.operadorTelefono }}</div>
-            </div>
-          </div>
-        </div>
+        <!-- ══ FIRMAS ══ -->
+        <table style="width:100%; border-collapse:collapse; border:1px solid #000; border-top:0; font-size:6.5px; margin-top:0;">
+          <tbody>
+            <tr>
+              <!-- Firma Manipuladora -->
+              <td style="border:1px solid #000; padding:4px 6px; vertical-align:top; width:33%;">
+                <div style="font-weight:900; font-size:6.5px; margin-bottom:2px;">MANIPULADORA DE ALIMENTOS</div>
+                <div style="border-top:1px solid #000; margin-top:22px; padding-top:3px;">
+                  <div>Nombre: {{ rem.firmas.manipuladoraNombre }}</div>
+                  <div>Cédula: {{ rem.firmas.manipuladoraCedula }}</div>
+                  <div style="font-size:5.5px; color:#64748b; margin-top:2px;">Firma: ___________________________</div>
+                </div>
+              </td>
+              <!-- Firma Rector -->
+              <td style="border:1px solid #000; padding:4px 6px; vertical-align:top; width:33%;">
+                <div style="font-weight:900; font-size:6.5px; margin-bottom:2px;">RECTOR, DIRECTOR RURAL O ENCARGADO PAE</div>
+                <div style="border-top:1px solid #000; margin-top:22px; padding-top:3px;">
+                  <div>Nombre: {{ rem.firmas.rectorNombre }}</div>
+                  <div>Cédula: {{ rem.firmas.rectorCedula }}</div>
+                  <div>Teléfono: {{ rem.firmas.rectorTelefono }}</div>
+                </div>
+              </td>
+              <!-- Firma Operador -->
+              <td style="border:1px solid #000; padding:4px 6px; vertical-align:top; width:34%;">
+                <div style="font-weight:900; font-size:6.5px; margin-bottom:2px;">REPRESENTANTE LEGAL CONTRATISTA O COORDINADOR OPERATIVO</div>
+                <div style="border-top:1px solid #000; margin-top:22px; padding-top:3px;">
+                  <div>Nombre: {{ rem.firmas.operadorNombre }}</div>
+                  <div>Cédula: {{ rem.firmas.operadorCedula }}</div>
+                  <div>Teléfono: {{ rem.firmas.operadorTelefono }}</div>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
 
       </article>
     </section>
