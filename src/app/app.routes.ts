@@ -100,10 +100,9 @@ export const routes: Routes = [
       },
       {
         path: 'reportes-consumo',
-        component: Reportes,
+        component: PlanillasOperativasComponent,
         canActivate: [roleGuard],
         data: {
-          modoModulo: 'reportes',
           roles: [
             'superadministrador',
             'super administrador',

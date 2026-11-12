@@ -41,11 +41,11 @@ describe('delivery routes', () => {
       expect(menus?.data?.['roles']).toContain('jefa de manipuladoras');
     });
 
-    it('provides the Supervisor with a real inventory movement report route', () => {
+    it('uses the operational templates as the main reports screen', () => {
       const report = children.find(route => route.path === 'reportes-consumo');
 
+      expect(report?.component).toBe(PlanillasOperativasComponent);
       expect(report?.data?.['roles']).toContain('supervisor');
-      expect(report?.data?.['modoModulo']).toBe('reportes');
     });
 
     it('separates master templates into a SuperAdmin-only route', () => {

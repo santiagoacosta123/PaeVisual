@@ -268,7 +268,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
       '/bodega-central': 'Bodega Central',
       '/plantillas-maestras': 'Plantillas Maestras PAE',
       '/plantillas-operativas': 'Mis Plantillas Operativas PAE',
-      '/reportes-consumo': 'Planillas y Reportes PAE',
+      '/reportes-consumo': 'Mis Plantillas Operativas PAE',
       '/notificaciones': 'Notificaciones'
     };
 
@@ -280,12 +280,6 @@ export class LayoutComponent implements OnInit, OnDestroy {
 
     if (url.includes('facturas-compra')) {
       this.pageTitle = 'Facturas de Compra';
-      this.cdr.detectChanges();
-      return;
-    }
-
-    if (this.esSuperAdministrador && url.includes('reportes-consumo')) {
-      this.pageTitle = 'Reportes PAE';
       this.cdr.detectChanges();
       return;
     }
