@@ -148,6 +148,13 @@
       </div>
     </section>
 
+    <!-- Indicador de carga de planillas -->
+    <div *ngIf="cargandoPlanillas" class="flex flex-col items-center justify-center p-12 text-center no-print">
+      <div class="h-10 w-10 animate-spin rounded-full border-4 border-[#faa911] border-t-transparent mb-3"></div>
+      <p class="text-sm font-bold text-slate-800">Cargando información en tiempo real de manipuladoras...</p>
+      <p class="text-xs text-slate-500">Sincronizando recepciones, entregas y reportes diarios de asistencia</p>
+    </div>
+
     <!-- ======================================================================= -->
     <!-- PESTAÑA 1: PLANTILLA DE REMISIÓN DE VÍVERES E INSUMOS POR COMEDOR       -->
     <!-- ======================================================================= -->
@@ -421,15 +428,15 @@
                   <td style="font-weight: 700;">{{ item.item }}</td>
                   <td style="text-align: center; font-weight: bold;">{{ item.unidad }}</td>
                   <td style="text-align: right; font-weight: bold; background: #f0f9ff;">
-                    <span *ngIf="!modoEdicion">{{ item.cantidadEntregar }}</span>
+                    <span *ngIf="!modoEdicion">{{ item.cantidadEntregar > 0 ? item.cantidadEntregar : '' }}</span>
                     <input *ngIf="modoEdicion" type="number" [(ngModel)]="item.cantidadEntregar" class="input-tabla" />
                   </td>
                   <td style="text-align: right; font-weight: 900; background: #f0fdf4; color: #166534;">
-                    <span *ngIf="!modoEdicion">{{ item.cantidadRecibida }}</span>
+                    <span *ngIf="!modoEdicion">{{ item.cantidadRecibida > 0 ? item.cantidadRecibida : '' }}</span>
                     <input *ngIf="modoEdicion" type="number" [(ngModel)]="item.cantidadRecibida" class="input-tabla" />
                   </td>
                   <td style="font-size: 10px; color: #64748b;">
-                    <span *ngIf="!modoEdicion">Conforme a ficha técnica</span>
+                    <span *ngIf="!modoEdicion">{{ item.observaciones || '' }}</span>
                     <input *ngIf="modoEdicion" type="text" [(ngModel)]="item.observaciones" class="input-tabla text-left" />
                   </td>
                 </tr>

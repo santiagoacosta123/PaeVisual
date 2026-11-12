@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable, forkJoin, of } from 'rxjs';
-import { map, catchError } from 'rxjs/operators';
+import { map, catchError, timeout } from 'rxjs/operators';
 import { EntregasService, Entrega } from '../features/entregas/services/entregas.service';
 import { AsistenciaDiariaService, AsistenciaDiaria } from './asistencia-diaria.service';
 import { SiraeService } from '../features/contratos/services/contratos_pae.service';
@@ -90,6 +90,7 @@ export interface PlanillaRemisionData {
   perecederos: FilaPerecedero[];
   aseo: FilaAseo[];
   firmas: FirmasPlanilla;
+  guardadoManual?: boolean;
 }
 
 export interface DiaSalida {
@@ -125,6 +126,7 @@ export interface PlanillaKardexData {
   fechaTerminacion: string;
   filas: FilaKardex[];
   firmas: FirmasPlanilla;
+  guardadoManual?: boolean;
 }
 
 export interface ItemMinutaPatron {
@@ -188,14 +190,15 @@ export class PlanillasOperativasService {
     { alimento: 'FRUTA (BANANO)', gramajes: { preescolar: 100, primaria13: 157, primaria45: 157, secundaria: 185, media: 200 }, unidad: 'UND', baseSemanal: [35.22, 0, 0, 0] }
   ];
 
+  // SECCIÓN ASEO: Base con 0 para dejarlos vacíos según solicitud
   private readonly ASEO_BASE: Array<{ item: string; unidad: string; baseMes: number }> = [
-    { item: 'Esponja plástica', unidad: 'Und', baseMes: 8 },
-    { item: 'Jabón industrial (pH neutro)', unidad: '1000 CC', baseMes: 12 },
-    { item: 'Esponja abrasiva (alambre)', unidad: 'Und', baseMes: 10 },
-    { item: 'Papel higiénico', unidad: 'Und', baseMes: 4 },
-    { item: 'Jabón líquido para manos', unidad: '250 CC', baseMes: 4 },
-    { item: 'Desinfectante bucidí', unidad: '1000 CC', baseMes: 8 },
-    { item: 'Bolsas plásticas biodegradables para residuos', unidad: 'Und', baseMes: 32 }
+    { item: 'Esponja plástica', unidad: 'Und', baseMes: 0 },
+    { item: 'Jabón industrial (pH neutro)', unidad: '1000 CC', baseMes: 0 },
+    { item: 'Esponja abrasiva (alambre)', unidad: 'Und', baseMes: 0 },
+    { item: 'Papel higiénico', unidad: 'Und', baseMes: 0 },
+    { item: 'Jabón líquido para manos', unidad: '250 CC', baseMes: 0 },
+    { item: 'Desinfectante bucidí', unidad: '1000 CC', baseMes: 0 },
+    { item: 'Bolsas plásticas biodegradables para residuos', unidad: 'Und', baseMes: 0 }
   ];
 
   private readonly KARDEX_ALIMENTOS_BASE: Array<{ alimento: string; unidad: string; entrada: number; menu: string }> = [
@@ -237,6 +240,18 @@ export class PlanillasOperativasService {
   ) {}
 
   /**
+   * Normaliza respuestas DRF paginadas { results: [...] } o arrays planos de forma segura
+   */
+  private safeArray<T = any>(datos: unknown): T[] {
+    if (Array.isArray(datos)) return datos;
+    if (datos && typeof datos === 'object') {
+      const res = (datos as any).results ?? (datos as any).data;
+      if (Array.isArray(res)) return res;
+    }
+    return [];
+  }
+
+  /**
    * Genera los 20 días hábiles (4 semanas de lunes a viernes) a partir de una fecha base
    */
   generarDiasHabiles(fechaInicioStr: string): string[] {
@@ -264,7 +279,7 @@ export class PlanillasOperativasService {
   }
 
   /**
-   * Carga o construye la Planilla de Remisión completa
+   * Carga o construye la Planilla de Remisión completa conectando datos reales de manipuladoras
    */
   obtenerPlanillaRemision(params: {
     institucionId: number;
@@ -275,32 +290,39 @@ export class PlanillasOperativasService {
     fechaInicio: string;
     fechaFin: string;
     cuposBase?: number;
+    forzarRecarga?: boolean;
+    nombreUsuario?: string;
   }): Observable<PlanillaRemisionData> {
     const cacheKey = `pae_remision_${params.institucionId}_${params.sedeId}_${params.periodo}_${params.fechaInicio}`;
     const guardada = localStorage.getItem(cacheKey);
 
     return forkJoin({
-      entregas: this.entregasService.cargar().pipe(catchError(() => of([] as Entrega[]))),
-      contratos: this.siraeService.getContratos().pipe(catchError(() => of([])))
+      entregasRaw: this.entregasService.cargar().pipe(timeout(4000), catchError(() => of([] as Entrega[]))),
+      contratosRaw: this.siraeService.getContratos().pipe(timeout(4000), catchError(() => of([])))
     }).pipe(
-      map(({ entregas, contratos }) => {
-        if (guardada) {
+      map(({ entregasRaw, contratosRaw }) => {
+        if (!params.forzarRecarga && guardada) {
           try {
-            return JSON.parse(guardada) as PlanillaRemisionData;
+            const parsed = JSON.parse(guardada);
+            if (parsed && parsed.guardadoManual) {
+              return parsed as PlanillaRemisionData;
+            }
           } catch (e) {
             console.warn('Error leyendo cache de remisión, regenerando...', e);
           }
         }
 
-        // Buscar contrato de la sede
+        const entregas = this.safeArray<Entrega>(entregasRaw);
+        const contratos = this.safeArray<any>(contratosRaw);
+
+        // Buscar contrato de la sede o institución de forma segura
         const contratoSede = contratos.find((c: any) =>
           Number(c.id_sede) === params.sedeId || Number(c.id_institucion) === params.institucionId
         );
 
         const cupoTotal = params.cuposBase || Number(contratoSede?.cupos) || 227;
 
-        // Distribución estándar oficial observada en la planilla de muestra:
-        // Preescolar (25), Primaria 1-3 y 4-5 (99), Secundaria (67), Media y Ciclo (36) => Total: 227
+        // Distribución oficial según cupos
         const factor = cupoTotal / 227;
         const cupos: CuposNivel = {
           preescolar: Math.round(25 * factor),
@@ -312,19 +334,31 @@ export class PlanillasOperativasService {
           racionesTotales: cupoTotal * 20
         };
 
-        // Filtro de entregas registradas por el operador/manipuladora para esta sede
-        const entregasSede = entregas.filter(e =>
-          (!e.idSede || e.idSede === params.sedeId) &&
-          (!e.idInstitucion || e.idInstitucion === params.institucionId)
-        );
+        // Filtro de entregas registradas/recibidas por las manipuladoras para esta institución y sede
+        const entregasSede = entregas.filter(e => {
+          const coincideSede = !params.sedeId || !e.idSede || e.idSede === params.sedeId;
+          const coincideInst = !params.institucionId || !e.idInstitucion || e.idInstitucion === params.institucionId;
+          return coincideSede && coincideInst;
+        });
 
-        // Mapear NO PERECEDEROS
+        const diasHabiles = this.generarDiasHabiles(params.fechaInicio || '2025-01-27');
+
+        // Mapear NO PERECEDEROS (Cero datos quemados: si la manipuladora no ha recibido, es 0)
         const noPerecederos: FilaNoPerecedero[] = this.NO_PERECEDEROS_BASE.map((item, idx) => {
+          const termino = item.alimento.toLowerCase().split(' ')[0];
           const entregasProd = entregasSede.filter(e =>
-            e.ingrediente && e.ingrediente.toLowerCase().includes(item.alimento.toLowerCase().split(' ')[0])
+            e.ingrediente && e.ingrediente.toLowerCase().includes(termino)
           );
-          const cantidadRecibidaAuto = entregasProd.reduce((sum, e) => sum + (Number(e.cantidadRecibida ?? e.cantidad) || 0), 0);
-          const cantidadFinal = cantidadRecibidaAuto > 0 ? cantidadRecibidaAuto : item.baseMes;
+
+          // Cantidad real recibida y firmada por la manipuladora
+          const cantidadRecibidaAuto = entregasProd.reduce((sum, e) => {
+            if (e.cantidadRecibida != null) return sum + Number(e.cantidadRecibida);
+            if (e.estado === 'RECIBIDA') return sum + Number(e.cantidad || 0);
+            return sum;
+          }, 0);
+
+          const conNovedad = entregasProd.find(e => e.motivoRechazo || e.observaciones || e.estado === 'CON_NOVEDAD');
+          const observaciones = conNovedad ? (conNovedad.motivoRechazo || conNovedad.observaciones || 'Con novedad') : '';
 
           return {
             id: idx + 1,
@@ -332,26 +366,45 @@ export class PlanillasOperativasService {
             gramajes: { ...item.gramajes },
             unidad: item.unidad,
             cantidadEntregar: item.baseMes,
-            cantidadRecibida: cantidadFinal
+            cantidadRecibida: Math.round(cantidadRecibidaAuto * 100) / 100,
+            observaciones
           };
         });
 
-        // Mapear PERECEDEROS con 4 entregas
+        // Mapear PERECEDEROS con 4 entregas semanales reales
         const perecederos: FilaPerecedero[] = this.PERECEDEROS_BASE.map((item, idx) => {
+          const termino = item.alimento.toLowerCase().split(' ')[0];
           const entregasProd = entregasSede.filter(e =>
-            e.ingrediente && e.ingrediente.toLowerCase().includes(item.alimento.toLowerCase().split(' ')[0])
+            e.ingrediente && e.ingrediente.toLowerCase().includes(termino)
           );
 
-          // Asignar entregas
           const e1 = item.baseSemanal[0] || 0;
           const e2 = item.baseSemanal[1] || 0;
           const e3 = item.baseSemanal[2] || 0;
           const e4 = item.baseSemanal[3] || 0;
           const totalEntregado = Math.round((e1 + e2 + e3 + e4) * 100) / 100;
 
-          // Si hay entregas reales registradas, tomarlas
-          const recibidaReal = entregasProd.reduce((sum, e) => sum + (Number(e.cantidadRecibida ?? e.cantidad) || 0), 0);
-          const totalRecibido = recibidaReal > 0 ? recibidaReal : totalEntregado;
+          // Cantidades reales recibidas por la manipuladora por cada semana
+          const calcularRecibidaSemana = (semIdx: number): number => {
+            const fechaIni = diasHabiles[semIdx * 5];
+            const fechaFin = diasHabiles[Math.min(semIdx * 5 + 4, diasHabiles.length - 1)];
+            const enSemana = entregasProd.filter(e => {
+              const f = e.fechaRecepcion;
+              return f && f >= fechaIni && f <= fechaFin;
+            });
+            if (enSemana.length === 0) return 0;
+            return enSemana.reduce((sum, e) => {
+              if (e.cantidadRecibida != null) return sum + Number(e.cantidadRecibida);
+              if (e.estado === 'RECIBIDA') return sum + Number(e.cantidad || 0);
+              return sum;
+            }, 0);
+          };
+
+          const r1 = Math.round(calcularRecibidaSemana(0) * 100) / 100;
+          const r2 = Math.round(calcularRecibidaSemana(1) * 100) / 100;
+          const r3 = Math.round(calcularRecibidaSemana(2) * 100) / 100;
+          const r4 = Math.round(calcularRecibidaSemana(3) * 100) / 100;
+          const totalRecibido = Math.round((r1 + r2 + r3 + r4) * 100) / 100;
 
           return {
             id: idx + 1,
@@ -359,24 +412,28 @@ export class PlanillasOperativasService {
             gramajes: { ...item.gramajes },
             unidad: item.unidad,
             entregas: [
-              { aEntregar: e1, recibida: e1 },
-              { aEntregar: e2, recibida: e2 },
-              { aEntregar: e3, recibida: e3 },
-              { aEntregar: e4, recibida: e4 }
+              { aEntregar: e1, recibida: r1 },
+              { aEntregar: e2, recibida: r2 },
+              { aEntregar: e3, recibida: r3 },
+              { aEntregar: e4, recibida: r4 }
             ],
             totalEntregado,
             totalRecibido
           };
         });
 
-        // Mapear ASEO
+        // Mapear ASEO: DEJAR VACÍOS POR SOLICITUD EXPLÍCITA DEL USUARIO
         const aseo: FilaAseo[] = this.ASEO_BASE.map((item, idx) => ({
           id: idx + 1,
           item: item.item,
           unidad: item.unidad,
-          cantidadEntregar: item.baseMes,
-          cantidadRecibida: item.baseMes
+          cantidadEntregar: 0,
+          cantidadRecibida: 0,
+          observaciones: ''
         }));
+
+        const manipuladoraEntrega = entregasSede.find(e => e.usuarioReceptorNombre)?.usuarioReceptorNombre;
+        const nombreManipuladoraReal = manipuladoraEntrega || params.nombreUsuario || 'MARÍA YOLANDA SOLANO (Manipuladora)';
 
         const nuevaPlanilla: PlanillaRemisionData = {
           municipio: 'POPAYÁN',
@@ -386,7 +443,7 @@ export class PlanillasOperativasService {
           contratoNumero: contratoSede?.numero_contrato || '20241800039887',
           operador: contratoSede?.operador || 'ASOCIACIÓN DE PADRES DE FAMILIA DE LOS RESTAURANTES ESCOLARES DEL MUNICIPIO DE EL TAMBO',
           institucionEducativa: params.institucionNombre || 'INSTITUCIÓN EDUCATIVA COMERCIAL DEL NORTE',
-          sede: params.sedeNombre || 'SEDE LA PAZ',
+          sede: params.sedeNombre || 'SEDE PRINCIPAL',
           codigoDane: contratoSede?.codigo_dane || '119001001483',
           modalidad: 'RACIÓN PREPARADA EN SITIO - RPS',
           tipo: 'COMPLEMENTO ALIMENTARIO ALMUERZO',
@@ -397,7 +454,7 @@ export class PlanillasOperativasService {
           perecederos,
           aseo,
           firmas: {
-            manipuladoraNombre: 'MARÍA YOLANDA SOLANO',
+            manipuladoraNombre: nombreManipuladoraReal,
             manipuladoraCedula: '34.567.890 DE POPAYÁN',
             rectorNombre: 'ARY MEDARDO SÁNCHEZ ROSERO',
             rectorCedula: '10.305.118 DE POPAYÁN',
@@ -411,12 +468,17 @@ export class PlanillasOperativasService {
         };
 
         return nuevaPlanilla;
+      }),
+      catchError(err => {
+        console.error('Error procesando remisión, usando fallback seguro:', err);
+        return of(this.crearPlanillaRemisionVacia(params));
       })
     );
   }
 
   /**
    * Carga o construye la Planilla de Control Diario de Salidas / Kardex Mensual por Semanas (1 a 4)
+   * conectando la asistencia diaria real reportada por la manipuladora
    */
   obtenerPlanillaKardex(params: {
     institucionId: number;
@@ -426,28 +488,53 @@ export class PlanillasOperativasService {
     periodo: string;
     fechaInicio: string;
     fechaFin: string;
+    forzarRecarga?: boolean;
+    nombreUsuario?: string;
   }): Observable<PlanillaKardexData> {
     const cacheKey = `pae_kardex_${params.institucionId}_${params.sedeId}_${params.periodo}_${params.fechaInicio}`;
     const guardada = localStorage.getItem(cacheKey);
 
     return forkJoin({
-      asistencias: this.asistenciaService.getAsistencias().pipe(catchError(() => of([] as AsistenciaDiaria[]))),
-      entregas: this.entregasService.cargar().pipe(catchError(() => of([] as Entrega[])))
+      asistenciasRaw: this.asistenciaService.getAsistencias().pipe(timeout(4000), catchError(() => of([] as AsistenciaDiaria[]))),
+      entregasRaw: this.entregasService.cargar().pipe(timeout(4000), catchError(() => of([] as Entrega[])))
     }).pipe(
-      map(({ asistencias, entregas }) => {
-        if (guardada) {
+      map(({ asistenciasRaw, entregasRaw }) => {
+        if (!params.forzarRecarga && guardada) {
           try {
-            return JSON.parse(guardada) as PlanillaKardexData;
+            const parsed = JSON.parse(guardada);
+            if (parsed && parsed.guardadoManual) {
+              return parsed as PlanillaKardexData;
+            }
           } catch (e) {
             console.warn('Error leyendo cache de kardex, regenerando...', e);
           }
         }
 
+        const asistencias = this.safeArray<AsistenciaDiaria>(asistenciasRaw);
+        const entregas = this.safeArray<Entrega>(entregasRaw);
+
         const diasHabiles = this.generarDiasHabiles(params.fechaInicio || '2025-01-27');
         const diasSemanaNombres: Array<'L' | 'M' | 'M' | 'J' | 'V'> = ['L', 'M', 'M', 'J', 'V'];
 
+        const entregasSede = entregas.filter(e => {
+          const coincideSede = !params.sedeId || !e.idSede || e.idSede === params.sedeId;
+          const coincideInst = !params.institucionId || !e.idInstitucion || e.idInstitucion === params.institucionId;
+          return coincideSede && coincideInst;
+        });
+
         const filas: FilaKardex[] = this.KARDEX_ALIMENTOS_BASE.map((base, idx) => {
-          // Crear las 4 semanas
+          // Entradas reales registradas en las entregas para este producto
+          const termino = base.alimento.toLowerCase().split(' ')[0];
+          const entregasProd = entregasSede.filter(e =>
+            e.ingrediente && e.ingrediente.toLowerCase().includes(termino)
+          );
+          const entradaReal = entregasProd.reduce((sum, e) => {
+            if (e.cantidadRecibida != null) return sum + Number(e.cantidadRecibida);
+            if (e.estado === 'RECIBIDA') return sum + Number(e.cantidad || 0);
+            return sum;
+          }, 0);
+          const cantidadEntradaFinal = entradaReal > 0 ? Math.round(entradaReal * 100) / 100 : base.entrada;
+
           const semanas: [SemanaSalida, SemanaSalida, SemanaSalida, SemanaSalida] = [
             { semanaNumero: 1, dias: [] },
             { semanaNumero: 2, dias: [] },
@@ -457,39 +544,22 @@ export class PlanillasOperativasService {
 
           let totalSalidas = 0;
 
-          // Repartir los 20 días
+          // Repartir los 20 días calculando según la asistencia real subida por la manipuladora
           for (let s = 0; s < 4; s++) {
             for (let d = 0; d < 5; d++) {
               const diaIdx = s * 5 + d;
               const fechaDia = diasHabiles[diaIdx] || '';
-              // Verificar asistencia registrada de la manipuladora para este día
-              const asistDia = asistencias.find(a => a.fecha === fechaDia);
-              const ninos = asistDia ? asistDia.ninos_presentes : 227;
+              // Asistencias subidas por la manipuladora para esta fecha
+              const asistenciasDia = asistencias.filter(a => a.fecha === fechaDia);
+              const ninosPresentes = asistenciasDia.reduce((sum, a) => sum + (Number(a.ninos_presentes) || 0), 0);
 
-              // Distribución de consumo según alimento y días asignados
               let cantidadSalida = 0;
-              // Salida por ración teórica según el gramaje promedio
-              if (base.alimento.includes('CARNE') || base.alimento.includes('HUEVOS')) {
-                // Se sirve en días específicos
-                if (s % 2 === 0 && d === 1) {
-                  cantidadSalida = Math.round((base.entrada / 4) * 10) / 10;
-                } else if (s % 2 === 1 && d === 3) {
-                  cantidadSalida = Math.round((base.entrada / 4) * 10) / 10;
-                }
-              } else if (base.alimento.includes('VERDURA') || base.alimento.includes('PAPA')) {
-                // Se consume 2 o 3 veces por semana
-                if (d === 0 || d === 2 || d === 4) {
-                  cantidadSalida = Math.round((base.entrada / 12) * 10) / 10;
-                }
-              } else if (base.alimento.includes('LECHE') || base.alimento.includes('FRUTA')) {
-                if (d === 1 || d === 3) {
-                  cantidadSalida = Math.round((base.entrada / 8) * 10) / 10;
-                }
-              } else {
-                // Condimentos y otros
-                if (d === 2) {
-                  cantidadSalida = Math.round((base.entrada / 4) * 10) / 10;
-                }
+
+              // CERO DATOS QUEMADOS: Si la manipuladora no registró asistencia ese día, la salida es 0
+              if (ninosPresentes > 0) {
+                const factorAsistencia = ninosPresentes / 227;
+                const rasionDiaria = cantidadEntradaFinal / 20;
+                cantidadSalida = Math.round(rasionDiaria * factorAsistencia * 10) / 10;
               }
 
               totalSalidas += cantidadSalida;
@@ -504,14 +574,14 @@ export class PlanillasOperativasService {
           }
 
           totalSalidas = Math.round(totalSalidas * 10) / 10;
-          const saldoMes = Math.max(0, Math.round((base.entrada - totalSalidas) * 10) / 10);
+          const saldoMes = Math.max(0, Math.round((cantidadEntradaFinal - totalSalidas) * 10) / 10);
 
           return {
             id: idx + 1,
             alimento: base.alimento,
             fechaEntrada: diasHabiles[0],
             menu: base.menu,
-            cantidadEntrada: base.entrada,
+            cantidadEntrada: cantidadEntradaFinal,
             unidad: base.unidad,
             semanas,
             totalSalidas,
@@ -519,16 +589,19 @@ export class PlanillasOperativasService {
           };
         });
 
+        const manipuladoraEntrega = entregasSede.find(e => e.usuarioReceptorNombre)?.usuarioReceptorNombre;
+        const nombreManipuladoraReal = manipuladoraEntrega || params.nombreUsuario || 'MARÍA YOLANDA SOLANO (Manipuladora)';
+
         const nuevaPlanilla: PlanillaKardexData = {
           municipio: 'POPAYÁN',
           institucionEducativa: params.institucionNombre || 'INSTITUCIÓN EDUCATIVA COMERCIAL DEL NORTE',
-          sede: params.sedeNombre || 'SEDE LA PAZ',
+          sede: params.sedeNombre || 'SEDE PRINCIPAL',
           periodo: params.periodo || 'PRIMERA',
           fechaInicio: params.fechaInicio || '2025-01-27',
           fechaTerminacion: params.fechaFin || '2025-02-21',
           filas,
           firmas: {
-            manipuladoraNombre: 'MARÍA YOLANDA SOLANO',
+            manipuladoraNombre: nombreManipuladoraReal,
             manipuladoraCedula: '34.567.890',
             rectorNombre: 'ARY MEDARDO SÁNCHEZ ROSERO',
             rectorCedula: '10.305.118',
@@ -542,8 +615,179 @@ export class PlanillasOperativasService {
         };
 
         return nuevaPlanilla;
+      }),
+      catchError(err => {
+        console.error('Error procesando kardex, usando fallback seguro:', err);
+        return of(this.crearPlanillaKardexVacia(params));
       })
     );
+  }
+
+  /**
+   * Crea una estructura base de remisión segura con 0 en recibidos y aseo vacío
+   */
+  crearPlanillaRemisionVacia(params: {
+    institucionNombre?: string;
+    sedeNombre?: string;
+    periodo?: string;
+    fechaInicio?: string;
+    fechaFin?: string;
+    cuposBase?: number;
+    nombreUsuario?: string;
+  }): PlanillaRemisionData {
+    const cupoTotal = params.cuposBase || 227;
+    const factor = cupoTotal / 227;
+    const cupos: CuposNivel = {
+      preescolar: Math.round(25 * factor),
+      primaria13: Math.round(50 * factor),
+      primaria45: Math.round(49 * factor),
+      secundaria: Math.round(67 * factor),
+      media: Math.round(36 * factor),
+      totalCupos: cupoTotal,
+      racionesTotales: cupoTotal * 20
+    };
+
+    const noPerecederos: FilaNoPerecedero[] = this.NO_PERECEDEROS_BASE.map((item, idx) => ({
+      id: idx + 1,
+      alimento: item.alimento,
+      gramajes: { ...item.gramajes },
+      unidad: item.unidad,
+      cantidadEntregar: item.baseMes,
+      cantidadRecibida: 0,
+      observaciones: ''
+    }));
+
+    const perecederos: FilaPerecedero[] = this.PERECEDEROS_BASE.map((item, idx) => {
+      const e1 = item.baseSemanal[0] || 0;
+      const e2 = item.baseSemanal[1] || 0;
+      const e3 = item.baseSemanal[2] || 0;
+      const e4 = item.baseSemanal[3] || 0;
+      return {
+        id: idx + 1,
+        alimento: item.alimento,
+        gramajes: { ...item.gramajes },
+        unidad: item.unidad,
+        entregas: [
+          { aEntregar: e1, recibida: 0 },
+          { aEntregar: e2, recibida: 0 },
+          { aEntregar: e3, recibida: 0 },
+          { aEntregar: e4, recibida: 0 }
+        ],
+        totalEntregado: Math.round((e1 + e2 + e3 + e4) * 100) / 100,
+        totalRecibido: 0
+      };
+    });
+
+    const aseo: FilaAseo[] = this.ASEO_BASE.map((item, idx) => ({
+      id: idx + 1,
+      item: item.item,
+      unidad: item.unidad,
+      cantidadEntregar: 0,
+      cantidadRecibida: 0,
+      observaciones: ''
+    }));
+
+    return {
+      municipio: 'POPAYÁN',
+      periodo: params.periodo || 'PRIMERA',
+      fechaInicio: params.fechaInicio || '2025-01-27',
+      fechaTerminacion: params.fechaFin || '2025-02-21',
+      contratoNumero: '20241800039887',
+      operador: 'ASOCIACIÓN DE PADRES DE FAMILIA DE LOS RESTAURANTES ESCOLARES DEL MUNICIPIO DE EL TAMBO',
+      institucionEducativa: params.institucionNombre || 'INSTITUCIÓN EDUCATIVA',
+      sede: params.sedeNombre || 'SEDE PRINCIPAL',
+      codigoDane: '119001001483',
+      modalidad: 'RACIÓN PREPARADA EN SITIO - RPS',
+      tipo: 'COMPLEMENTO ALIMENTARIO ALMUERZO',
+      diasAtender: 20,
+      cupos,
+      ciclosMenus: '1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20',
+      noPerecederos,
+      perecederos,
+      aseo,
+      firmas: {
+        manipuladoraNombre: params.nombreUsuario || 'MARÍA YOLANDA SOLANO',
+        manipuladoraCedula: '34.567.890',
+        rectorNombre: 'ARY MEDARDO SÁNCHEZ ROSERO',
+        rectorCedula: '10.305.118',
+        rectorTelefono: '3225029321',
+        rectorCargo: 'RECTOR / ENCARGADO PAE',
+        operadorNombre: 'ARY M. SÁNCHEZ R.',
+        operadorCedula: '10.305.118',
+        operadorTelefono: '3225029321',
+        operadorCargo: 'COORDINADOR OPERATIVO'
+      }
+    };
+  }
+
+  /**
+   * Crea una estructura base de Kardex segura con 0 en salidas
+   */
+  crearPlanillaKardexVacia(params: {
+    institucionNombre?: string;
+    sedeNombre?: string;
+    periodo?: string;
+    fechaInicio?: string;
+    fechaFin?: string;
+    nombreUsuario?: string;
+  }): PlanillaKardexData {
+    const diasHabiles = this.generarDiasHabiles(params.fechaInicio || '2025-01-27');
+    const diasSemanaNombres: Array<'L' | 'M' | 'M' | 'J' | 'V'> = ['L', 'M', 'M', 'J', 'V'];
+
+    const filas: FilaKardex[] = this.KARDEX_ALIMENTOS_BASE.map((base, idx) => {
+      const semanas: [SemanaSalida, SemanaSalida, SemanaSalida, SemanaSalida] = [
+        { semanaNumero: 1, dias: [] },
+        { semanaNumero: 2, dias: [] },
+        { semanaNumero: 3, dias: [] },
+        { semanaNumero: 4, dias: [] }
+      ];
+
+      for (let s = 0; s < 4; s++) {
+        for (let d = 0; d < 5; d++) {
+          const diaIdx = s * 5 + d;
+          semanas[s].dias.push({
+            diaSemana: diasSemanaNombres[d],
+            diaNumero: diaIdx + 1,
+            fecha: diasHabiles[diaIdx] || '',
+            cantidad: 0
+          });
+        }
+      }
+
+      return {
+        id: idx + 1,
+        alimento: base.alimento,
+        fechaEntrada: diasHabiles[0],
+        menu: base.menu,
+        cantidadEntrada: base.entrada,
+        unidad: base.unidad,
+        semanas,
+        totalSalidas: 0,
+        saldoMes: base.entrada
+      };
+    });
+
+    return {
+      municipio: 'POPAYÁN',
+      institucionEducativa: params.institucionNombre || 'INSTITUCIÓN EDUCATIVA',
+      sede: params.sedeNombre || 'SEDE PRINCIPAL',
+      periodo: params.periodo || 'PRIMERA',
+      fechaInicio: params.fechaInicio || '2025-01-27',
+      fechaTerminacion: params.fechaFin || '2025-02-21',
+      filas,
+      firmas: {
+        manipuladoraNombre: params.nombreUsuario || 'MARÍA YOLANDA SOLANO',
+        manipuladoraCedula: '34.567.890',
+        rectorNombre: 'ARY MEDARDO SÁNCHEZ ROSERO',
+        rectorCedula: '10.305.118',
+        rectorTelefono: '3225029321',
+        rectorCargo: 'SUPERVISOR PAE / RECTOR',
+        operadorNombre: 'ARY M. SÁNCHEZ R.',
+        operadorCedula: '10.305.118',
+        operadorTelefono: '3225029321',
+        operadorCargo: 'COORDINADOR OPERATIVO'
+      }
+    };
   }
 
   /**
@@ -593,13 +837,15 @@ export class PlanillasOperativasService {
   }
 
   /**
-   * Guarda cambios manuales en localStorage
+   * Guarda cambios manuales en localStorage marcados como guardadoManual
    */
   guardarPlanillaRemision(clave: string, data: PlanillaRemisionData): void {
-    localStorage.setItem(clave, JSON.stringify(data));
+    const conMarca = { ...data, guardadoManual: true };
+    localStorage.setItem(clave, JSON.stringify(conMarca));
   }
 
   guardarPlanillaKardex(clave: string, data: PlanillaKardexData): void {
-    localStorage.setItem(clave, JSON.stringify(data));
+    const conMarca = { ...data, guardadoManual: true };
+    localStorage.setItem(clave, JSON.stringify(conMarca));
   }
 }

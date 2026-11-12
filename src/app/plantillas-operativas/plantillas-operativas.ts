@@ -247,13 +247,20 @@ export class PlanillasOperativasComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (mostrarCargando) this.cargandoPlanillas = true;
+    if (mostrarCargando) {
+      this.cargandoPlanillas = true;
+      this.cdr.detectChanges();
+    }
 
     const idInstitucion = this.institucionActiva.id_institucion;
     const nombreInstitucion = this.institucionActiva.nombre_institucion;
     const idSede = this.sedeActiva?.id_sede ?? (typeof this.sedeFiltro === 'number' ? this.sedeFiltro : 0);
     const nombreSede = this.sedeActiva?.nombre_sede ?? (this.sedesBase.find(s => s.id === idSede)?.nombre || 'Sede Principal');
     const cuposSede = this.sedesBase.find(s => s.id === idSede)?.cupos || 227;
+    const usuarioActual = this.auth.obtenerUsuario();
+    const nombreUsuario = usuarioActual?.nombre
+      ? `${usuarioActual.nombre} ${usuarioActual.apellido || ''}`.trim()
+      : undefined;
 
     forkJoin({
       remision: this.planillasPaeService.obtenerPlanillaRemision({
@@ -264,7 +271,9 @@ export class PlanillasOperativasComponent implements OnInit, OnDestroy {
         periodo: this.periodoSeleccionado,
         fechaInicio: this.fechaInicioPlanilla,
         fechaFin: this.fechaFinPlanilla,
-        cuposBase: cuposSede
+        cuposBase: cuposSede,
+        forzarRecarga: !mostrarCargando,
+        nombreUsuario
       }),
       kardex: this.planillasPaeService.obtenerPlanillaKardex({
         institucionId: idInstitucion,
@@ -273,7 +282,9 @@ export class PlanillasOperativasComponent implements OnInit, OnDestroy {
         sedeNombre: nombreSede,
         periodo: this.periodoSeleccionado,
         fechaInicio: this.fechaInicioPlanilla,
-        fechaFin: this.fechaFinPlanilla
+        fechaFin: this.fechaFinPlanilla,
+        forzarRecarga: !mostrarCargando,
+        nombreUsuario
       })
     }).subscribe({
       next: ({ remision, kardex }) => {
@@ -281,12 +292,34 @@ export class PlanillasOperativasComponent implements OnInit, OnDestroy {
         this.planillaKardex = kardex;
         this.minutaPatron = this.planillasPaeService.obtenerMinutaPatron(remision.cupos, remision.diasAtender);
         this.cargandoPlanillas = false;
-        this.cdr.markForCheck();
+        this.cdr.detectChanges();
       },
       error: (err) => {
         console.error('Error al cargar planillas PAE:', err);
+        // Fallback seguro para que la interfaz nunca quede en blanco
+        if (!this.planillaRemision) {
+          this.planillaRemision = this.planillasPaeService.crearPlanillaRemisionVacia({
+            institucionNombre: nombreInstitucion,
+            sedeNombre: nombreSede,
+            periodo: this.periodoSeleccionado,
+            fechaInicio: this.fechaInicioPlanilla,
+            fechaFin: this.fechaFinPlanilla,
+            cuposBase: cuposSede,
+            nombreUsuario
+          });
+        }
+        if (!this.planillaKardex) {
+          this.planillaKardex = this.planillasPaeService.crearPlanillaKardexVacia({
+            institucionNombre: nombreInstitucion,
+            sedeNombre: nombreSede,
+            periodo: this.periodoSeleccionado,
+            fechaInicio: this.fechaInicioPlanilla,
+            fechaFin: this.fechaFinPlanilla,
+            nombreUsuario
+          });
+        }
         this.cargandoPlanillas = false;
-        this.cdr.markForCheck();
+        this.cdr.detectChanges();
       }
     });
   }
