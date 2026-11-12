@@ -339,6 +339,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       categoria: 'operacion',
       campos: [
         { name: 'nombre_plato', label: 'Nombre del Plato', type: 'text', required: true, placeholder: 'Ej: Menú 1: Pericos con arroz' },
+        { name: 'secciones_texto', label: 'Secciones / Momentos', type: 'text' },
         { name: 'componente', label: 'Componentes del plato', type: 'text', required: true },
         { name: 'resumen_receta', label: 'Ingredientes y preparación', type: 'text' }
       ]
@@ -1454,10 +1455,6 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
     return this.menuRecetaForm.secciones.includes(seccionId);
   }
 
-  seleccionarTodasLasSecciones(): void {
-    this.menuRecetaForm.secciones = ['Desayuno', 'Almuerzo', 'Merienda'];
-  }
-
   agregarComponenteAlPlato(): void {
     this.menuRecetaForm.componentes.push(this.crearComponenteVacio('Alimento proteico'));
   }
@@ -2131,9 +2128,11 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       .map(c => c.nombre_componente.trim())
       .join(', ');
 
+    const idSeccionPrincipal = this.obtenerIdSeccionPrincipal(this.menuRecetaForm.secciones || []);
     const payloadBackend: any = {
       nombre_plato: nombre.slice(0, 100),
-      componente: resumenComponentes.slice(0, 50)
+      componente: resumenComponentes.slice(0, 50),
+      id_seccion: idSeccionPrincipal
     };
 
     const editando = this.modoEdicion && this.itemSeleccionadoId !== null;

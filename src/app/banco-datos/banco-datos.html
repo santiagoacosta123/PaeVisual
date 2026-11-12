@@ -158,6 +158,22 @@
           </button>
         </div>
 
+        <!-- Filtro Rápido por Momento del Menú (Desayuno / Almuerzo / Merienda) -->
+        <div *ngIf="tabActual === 'menus'" class="flex items-center gap-1.5 flex-wrap">
+          <span class="text-xs font-bold text-slate-600 mr-1">Momento:</span>
+          <button
+            *ngFor="let sec of ['TODAS', 'Desayuno', 'Almuerzo', 'Merienda']"
+            type="button"
+            (click)="filtroSeccionMenu = sec; onFiltroCambio()"
+            [ngClass]="filtroSeccionMenu === sec
+              ? 'bg-amber-100 text-amber-950 border-amber-300 font-bold shadow-2xs'
+              : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200 font-medium'"
+            class="px-2.5 py-1 rounded-lg text-xs border transition cursor-pointer"
+          >
+            {{ sec === 'TODAS' ? 'Todos' : sec }}
+          </button>
+        </div>
+
         <!-- Selector Estado -->
         <div *ngIf="tabActual !== 'menus'" class="bd-filter-group" style="width: 140px;">
           <label class="bd-filter-label">Estado</label>
@@ -280,6 +296,19 @@
 
                 <!-- Celdas especiales de la tabla Platos y Recetas -->
                 <ng-container *ngIf="!primer && tabActual === 'menus' && !esCampoEstado(campo)">
+                  <!-- Columna: Secciones / Momentos del plato (Desayuno, Almuerzo, Merienda) -->
+                  <div *ngIf="campo.name === 'secciones_texto'" class="flex flex-wrap items-center gap-1">
+                    <span
+                      *ngFor="let sec of (item.secciones || ['Desayuno', 'Almuerzo'])"
+                      [ngClass]="sec === 'Desayuno'
+                        ? 'bg-sky-50 text-sky-800 border-sky-200'
+                        : (sec === 'Merienda' ? 'bg-amber-50 text-amber-900 border-amber-300' : 'bg-emerald-50 text-emerald-800 border-emerald-200')"
+                      class="px-2 py-0.5 rounded-full text-[10.5px] font-bold border"
+                    >
+                      {{ sec }}
+                    </span>
+                  </div>
+
                   <!-- Columna: Componentes del plato -->
                   <div *ngIf="campo.name === 'componente'" class="bd-menu-componentes-cell">
                     <span
@@ -596,6 +625,34 @@
                 placeholder="Ingresa el nombre del plato"
                 autocomplete="off"
               />
+            </div>
+
+            <!-- Secciones de menú aplicables (Desayuno, Almuerzo, Merienda) -->
+            <div class="bd-field-box" style="grid-column: 1 / -1;">
+              <label class="bd-field-label">
+                Secciones de menú aplicables <span class="bd-required-asterisk">*</span>
+                <span class="text-[11px] font-normal text-slate-500 ml-1.5">(Selecciona una o más secciones para este plato)</span>
+              </label>
+
+              <div class="flex flex-wrap gap-2 pt-1">
+                <button
+                  *ngFor="let sec of seccionesDisponiblesMenu"
+                  type="button"
+                  (click)="toggleSeccionMenu(sec.id)"
+                  [ngClass]="esSeccionSeleccionada(sec.id)
+                    ? 'bg-amber-100 text-amber-950 border-amber-400 font-bold shadow-2xs'
+                    : 'bg-white hover:bg-slate-50 text-slate-600 border-slate-200 font-medium'"
+                  class="px-3.5 py-1.5 rounded-xl text-xs border transition cursor-pointer inline-flex items-center gap-1.5"
+                >
+                  <span>{{ sec.label }}</span>
+                  <span
+                    *ngIf="esSeccionSeleccionada(sec.id)"
+                    class="w-4 h-4 rounded-full bg-amber-500 text-slate-950 text-[10px] inline-flex items-center justify-center font-black"
+                  >
+                    ✓
+                  </span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
