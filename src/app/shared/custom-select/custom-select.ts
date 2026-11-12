@@ -7,7 +7,8 @@ import {
   ElementRef,
   HostListener,
   ViewChild,
-  ChangeDetectorRef
+  ChangeDetectorRef,
+  inject
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR, FormsModule } from '@angular/forms';
@@ -55,10 +56,10 @@ export class CustomSelectComponent implements ControlValueAccessor {
   onChange: (value: any) => void = () => {};
   onTouched: () => void = () => {};
 
-  constructor(
-    private elementRef: ElementRef,
-    private cdr: ChangeDetectorRef
-  ) {}
+  private elementRef = inject(ElementRef);
+  private cdr = inject(ChangeDetectorRef);
+
+  constructor() {}
 
   // ControlValueAccessor methods
   writeValue(obj: any): void {
@@ -156,10 +157,17 @@ export class CustomSelectComponent implements ControlValueAccessor {
     this.cdr.markForCheck();
   }
 
+  isOptionDisabled(opt: any): boolean {
+    return !!(opt && typeof opt === 'object' && (opt.deshabilitado || opt.disabled));
+  }
+
   selectOption(opt: any, event?: MouseEvent): void {
     if (event) {
       event.preventDefault();
       event.stopPropagation();
+    }
+    if (this.isOptionDisabled(opt)) {
+      return;
     }
     const optValue = this.getOptionValue(opt);
     this.value = optValue;
@@ -237,7 +245,6 @@ export class CustomSelectComponent implements ControlValueAccessor {
       const modalRect = modalBody.getBoundingClientRect();
       const spaceBelowInModal = modalRect.bottom - rect.bottom;
       const spaceAboveInModal = rect.top - modalRect.top;
-      // Si quedan menos de 210px abajo dentro del cuerpo del modal y hay espacio arriba, abrir hacia arriba
       if (spaceBelowInModal < 210 && spaceAboveInModal > 130) {
         this.openUpwards = true;
         return;

@@ -1,127 +1,3 @@
-<style>
-  /* Barra lateral que se expande al acercar el mouse y EMPUJA el contenido
-     (el <main> ocupa el espacio que queda), así nunca tapa nada. */
-  .sv-slot {
-    position: relative; flex-shrink: 0; width: 84px; display: flex; flex-direction: column; z-index: 20;
-    transition: width .25s cubic-bezier(.2, .8, .2, 1);
-  }
-  .sv-slot:hover, .sv-slot:has(:focus-visible) { width: 200px; transition-delay: .12s; }
-
-  .sv-side {
-    flex: 1; min-height: 0; background: #fff; border-right: 1px solid #e0e0e0;
-    display: flex; flex-direction: column; align-items: stretch;
-    padding: 16px 8px; box-sizing: border-box; overflow: hidden;
-  }
-
-  .sv-logo { display: flex; align-items: center; justify-content: center; margin-bottom: 20px; padding: 4px; }
-  .sv-logo img { width: 100%; max-width: 68px; height: auto; object-fit: contain; }
-
-  .sv-nav { display: flex; flex-direction: column; gap: 8px; flex: 1; overflow-y: auto; overflow-x: hidden; }
-  .sv-nav::-webkit-scrollbar { display: none; }
-
-  /* El icono nunca se mueve; el nombre aparece al expandir */
-  .sv-link {
-    display: flex; align-items: center; gap: 12px;
-    width: 100%; height: 48px; padding: 0 22px; box-sizing: border-box;
-    border-radius: 14px; border: none; background: none; cursor: pointer;
-    text-decoration: none; color: #64748b; white-space: nowrap; overflow: hidden;
-    font-family: 'Roboto', sans-serif; font-size: 13px; font-weight: 600;
-    transition: background .2s ease, color .2s ease;
-  }
-  .sv-link:focus:not(:focus-visible) { outline: none; }
-  .sv-link:hover { background: #fff7e6; color: #e69a0c; }
-  .sv-link.sv-active { background: #fff1d0; color: #e69a0c; }
-  .sv-link .sv-icon { font-size: 24px; flex: none; }
-  .sv-label { opacity: 0; transition: opacity .2s ease; }
-  .sv-slot:hover .sv-label, .sv-slot:has(:focus-visible) .sv-label { opacity: 1; transition-delay: .15s; }
-
-  .sv-bottom { border-top: 1px solid #eeeeee; padding-top: 14px; margin-top: 10px; }
-  .sv-link.sv-logout { color: #e53935; }
-  .sv-link.sv-logout:hover { background: #fdecea; color: #c62828; }
-
-  /* ===== Encabezado del Supervisor (diseño nuevo) ===== */
-  .svh-bar {
-    background: #fff; border: 1px solid #f1f5f9; border-radius: 20px; padding: 10px 18px;
-    display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: nowrap;
-    box-shadow: 0 10px 30px -18px rgba(180, 120, 0, .35); flex-shrink: 0;
-  }
-  .svh-left { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1 1 auto; flex-wrap: nowrap; }
-  .svh-left > div:nth-child(2) { flex: none; }   /* bloque del título */
-  .svh-right { display: flex; align-items: center; gap: 12px; position: relative; flex: none; }
-  .svh-ico {
-    width: 40px; height: 40px; flex: none; border-radius: 12px; display: flex; align-items: center; justify-content: center;
-    background: linear-gradient(135deg, #ffcb4d, #f4b41f); color: #2b1d00; box-shadow: 0 8px 16px -10px rgba(244, 180, 31, .9);
-  }
-  .svh-ico .material-symbols-outlined { font-size: 22px; }
-  .svh-title { margin: 0; font-size: 17px; font-weight: 800; color: #1a1a1a; line-height: 1.15; white-space: nowrap; }
-  .svh-sub { display: block; margin-top: 1px; font-size: 10.5px; font-weight: 500; color: #64748b; white-space: nowrap; }
-  .svh-line { display: flex; gap: 3px; margin-top: 4px; }
-  .svh-line i { display: block; height: 4px; border-radius: 3px; }
-  .svh-line i:first-child { width: 30px; background: #fac94b; }
-  .svh-line i:last-child { width: 14px; background: #e69a0c; }
-  .svh-sep { width: 1px; align-self: stretch; background: #eee; margin: 0 4px; flex: none; }
-
-  .svh-inst {
-    display: flex; align-items: center; gap: 9px; min-width: 0; flex: 0 1 auto;
-    background: linear-gradient(135deg, #fffbe8, #fff3c9); border: 1px solid #f5d98a; border-radius: 16px; padding: 6px 10px 6px 8px;
-  }
-  .svh-inst-ico {
-    width: 34px; height: 34px; flex: none; border-radius: 10px; display: flex; align-items: center; justify-content: center;
-    background: linear-gradient(135deg, #ffcb4d, #f4b41f); color: #2b1d00;
-  }
-  .svh-inst-body { line-height: 1.2; min-width: 0; overflow: hidden; }
-  .svh-chip {
-    display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 9999px;
-    background: #fff; border: 1px solid #f5d98a; color: #8a5a00; font-size: 9.5px; font-weight: 700; white-space: nowrap;
-  }
-  .svh-chip .material-symbols-outlined { font-size: 11px; color: #e69a0c; }
-  .svh-inst-name { display: block; margin-top: 2px; font-size: 12.5px; font-weight: 800; color: #1a1a1a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .svh-inst-sede { display: flex; align-items: center; gap: 3px; margin-top: 1px; font-size: 10px; font-weight: 600; color: #64748b; }
-  .svh-inst-sede .material-symbols-outlined { font-size: 12px; color: #e69a0c; }
-  .svh-cambiar {
-    display: inline-flex; align-items: center; gap: 5px; border: 1.5px solid #e69a0c; border-radius: 9999px; background: #fff;
-    color: #8a5a00; cursor: pointer; padding: 6px 11px; font-size: 11.5px; font-weight: 800; font-family: inherit; white-space: nowrap;
-    transition: background .2s ease; flex: none;
-  }
-  .svh-cambiar:hover { background: #fff7e6; }
-  .svh-cambiar .material-symbols-outlined { font-size: 15px; }
-
-  .svh-badge {
-    position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; padding: 0 5px; box-sizing: border-box;
-    display: flex; align-items: center; justify-content: center; border-radius: 9999px;
-    background: #ef4444; color: #fff; font-size: 10px; font-weight: 800; border: 2px solid #fff;
-  }
-  .svh-avatar { position: relative; flex: none; }
-  .svh-avatar img { display: block; border-radius: 50%; object-fit: cover; border: 1px solid #e0e0e0; }
-  .svh-dot { position: absolute; right: 0; bottom: 0; width: 11px; height: 11px; border-radius: 50%; background: #22c55e; border: 2px solid #fff; box-sizing: border-box; }
-
-  /* Menú de perfil */
-  .svh-pop {
-    position: absolute; right: 0; top: 56px; z-index: 100; width: 320px; background: #fff; border: 1px solid #f1f5f9;
-    border-radius: 22px; padding: 18px; box-shadow: 0 24px 50px -20px rgba(15, 23, 42, .35);
-  }
-  .svh-pop-head { display: flex; align-items: center; gap: 14px; padding-bottom: 14px; border-bottom: 1px solid #f1f5f9; margin-bottom: 8px; }
-  .svh-pop-name { display: block; font-size: 16px; font-weight: 800; color: #0f172a; }
-  .svh-pop-mail { display: block; font-size: 12px; color: #64748b; margin-top: 1px; }
-  .svh-role {
-    display: inline-flex; align-items: center; gap: 5px; margin-top: 6px; padding: 3px 10px; border-radius: 9999px;
-    background: #fff4d6; color: #8a5a00; font-size: 11px; font-weight: 700;
-  }
-  .svh-role .material-symbols-outlined { font-size: 15px; color: #e69a0c; }
-  .svh-act {
-    display: flex; align-items: center; gap: 14px; width: 100%; border: none; background: none; cursor: pointer;
-    padding: 12px 10px; border-radius: 14px; color: #1a1a1a; font-family: inherit; font-size: 14px; font-weight: 600; text-align: left;
-    transition: background .2s ease;
-  }
-  .svh-act:hover { background: #fff7e6; }
-  .svh-act .svh-act-ico { font-size: 24px; color: #b87500; }
-  .svh-act .svh-act-go { margin-left: auto; font-size: 20px; color: #94a3b8; }
-  .svh-act.svh-out { background: #fde8e8; color: #c62828; font-weight: 800; margin-top: 8px; }
-  .svh-act.svh-out:hover { background: #fbd5d5; }
-  .svh-act.svh-out .svh-act-ico { color: #dc2626; }
-</style>
-
-
 <!-- ================================================================= -->
 <!-- CASO 1: SUPERVISOR                                                -->
 <!-- ================================================================= -->
@@ -133,7 +9,7 @@
 
       <!-- Logo / Imagen SIRAE -->
       <div class="sv-logo">
-        <img src="sirae-logo-dark.png" alt="Logo SIRAE" />
+        <img src="sirae-logo-dark.png" alt="Logo SIRAE" width="68" height="68" style="width:68px; max-width:68px; height:auto; object-fit:contain;" />
       </div>
 
       <!-- Navegación -->
@@ -150,16 +26,27 @@
           <span class="sv-label">Registrar entrega</span>
         </a>
 
-        <a *ngIf="institucionActiva && tieneSedes" routerLink="instituciones" routerLinkActive="sv-active" class="sv-link"
+        <a *ngIf="institucionActiva && tieneSedes" routerLink="/instituciones" routerLinkActive="sv-active" class="sv-link"
            aria-label="Sedes">
           <span class="material-symbols-outlined sv-icon">apartment</span>
           <span class="sv-label">Sedes</span>
         </a>
 
-        <a *ngIf="institucionActiva" routerLink="/reportes-consumo" routerLinkActive="sv-active" class="sv-link"
-           aria-label="Historial">
+        <a routerLink="/reportes-consumo" routerLinkActive="sv-active" class="sv-link"
+           aria-label="Reportes y Planillas">
           <span class="material-symbols-outlined sv-icon">analytics</span>
-          <span class="sv-label">Historial de entregas</span>
+          <span class="sv-label">Planillas y Reportes</span>
+        </a>
+
+        <a routerLink="/consulta-gramajes" routerLinkActive="sv-active" class="sv-link"
+           aria-label="Gramajes por sede y jornada">
+          <span class="material-symbols-outlined sv-icon">scale</span>
+          <span class="sv-label">Gramajes</span>
+        </a>
+
+        <a routerLink="/mensajeria" routerLinkActive="sv-active" class="sv-link" aria-label="Mensajería">
+          <span class="material-symbols-outlined sv-icon">chat</span>
+          <span class="sv-label">Mensajería</span>
         </a>
       </nav>
 
@@ -195,26 +82,20 @@
           <div class="svh-line"><i></i><i></i></div>
         </div>
 
-        <div *ngIf="institucionActiva && !enInicioSupervisor" class="svh-sep"></div>
+      </div>
 
-        <div *ngIf="institucionActiva && !enInicioSupervisor" class="svh-inst">
-          <div class="svh-inst-ico"><span class="material-symbols-outlined" style="font-size:20px;">account_balance</span></div>
-          <div class="svh-inst-body">
-            <span class="svh-chip"><span class="material-symbols-outlined">check_circle</span> Institución seleccionada</span>
-            <strong class="svh-inst-name">{{ institucionActiva.nombre_institucion }}</strong>
-            <span class="svh-inst-sede"><span class="material-symbols-outlined">location_on</span>{{ institucionActiva.sedes?.length ?? 0 }} {{ (institucionActiva.sedes?.length ?? 0) === 1 ? 'sede' : 'sedes' }}</span>
-          </div>
-          <button type="button" (click)="cambiarInstitucion()" class="svh-cambiar">
-            <span class="material-symbols-outlined">swap_horiz</span>
-            Cambiar
-          </button>
+      <!-- Centro: institución activa -->
+      <div class="svh-center">
+        <!-- Institución en la que está trabajando (solo el nombre) -->
+        <div *ngIf="institucionActiva as institucion" class="svh-inst-simple" [title]="institucion.nombre_institucion">
+          <span class="material-symbols-outlined">account_balance</span>
+          <span class="svh-inst-simple-name">{{ institucion.nombre_institucion }}</span>
         </div>
 
         <div *ngIf="!institucionActiva" style="display:flex; align-items:center; gap:6px; background:#f8fafc; border:1px dashed #cbd5e1; border-radius:10px; padding:6px 12px;">
           <span class="material-symbols-outlined" style="font-size:16px; color:#94a3b8;">touch_app</span>
           <span style="font-size:12px; font-weight:600; color:#64748b;">Selecciona una institución para comenzar</span>
         </div>
-
       </div>
 
       <div class="svh-right">
@@ -250,7 +131,7 @@
           <button type="button" (click)="togglePerfil()" class="user-pill-btn"
             style="background:#fffdf5; border:1px solid #f3e6c0; display:flex; align-items:center; gap:10px; cursor:pointer; padding:4px 12px 4px 5px; border-radius:9999px;">
             <span class="svh-avatar">
-              <img src="administrador.png" alt="Avatar" style="width:36px; height:36px;" />
+              <img src="administrador.png" alt="Avatar" width="36" height="36" style="width:36px; height:36px; border-radius:50%; object-fit:cover;" />
               <span class="svh-dot"></span>
             </span>
             <div style="text-align:left; display:flex; flex-direction:column;">
@@ -264,7 +145,7 @@
             <div *ngIf="vistaActual === 'perfil'">
               <div class="svh-pop-head">
                 <span class="svh-avatar">
-                  <img src="administrador.png" style="width:58px; height:58px;" alt="Foto" />
+                  <img src="administrador.png" style="width:58px; height:58px; border-radius:50%; object-fit:cover;" width="58" height="58" alt="Foto" />
                   <span class="svh-dot" style="width:13px; height:13px;"></span>
                 </span>
                 <div style="min-width:0;">
@@ -275,8 +156,12 @@
               </div>
 
               <div style="display:flex; flex-direction:column; gap:2px;">
+                <a routerLink="/perfil" (click)="cerrarPanel()" class="svh-act">
+                  <span class="material-symbols-outlined svh-act-ico">badge</span> Ver perfil completo
+                  <span class="material-symbols-outlined svh-act-go">chevron_right</span>
+                </a>
                 <button type="button" (click)="irA('editar')" class="svh-act">
-                  <span class="material-symbols-outlined svh-act-ico">person</span> Editar Perfil
+                  <span class="material-symbols-outlined svh-act-ico">person</span> Editar información personal
                   <span class="material-symbols-outlined svh-act-go">chevron_right</span>
                 </button>
                 <button type="button" (click)="irA('password')" class="svh-act">
@@ -291,30 +176,34 @@
 
             <!-- Vista Editar -->
             <div *ngIf="vistaActual === 'editar'" style="font-size:12px;">
-              <h4 style="margin:0 0 12px 0; font-size:14px; font-weight:700; color:#0f172a;">Editar Perfil</h4>
-              <div style="display:flex; flex-direction:column; gap:10px;">
+              <h4 style="margin:0 0 12px 0; font-size:14px; font-weight:700; color:#0f172a;">Editar información personal</h4>
+              <form [formGroup]="perfilForm" (ngSubmit)="guardarPerfil()" style="display:flex; flex-direction:column; gap:10px;">
                 <div>
                   <label style="display:block; margin-bottom:4px; font-weight:600; color:#475569;">Nombre</label>
-                  <input [(ngModel)]="editForm.nombre" type="text" style="width:100%; border:1px solid #cbd5e1; border-radius:8px; padding:6px 10px; box-sizing:border-box;" />
+                  <input formControlName="nombre" type="text" style="width:100%; border:1px solid #cbd5e1; border-radius:8px; padding:6px 10px; box-sizing:border-box;" />
                 </div>
                 <div>
-                  <label style="display:block; margin-bottom:4px; font-weight:600; color:#475569;">Correo</label>
-                  <input [(ngModel)]="editForm.correo" type="email" style="width:100%; border:1px solid #cbd5e1; border-radius:8px; padding:6px 10px; box-sizing:border-box;" />
+                  <label style="display:block; margin-bottom:4px; font-weight:600; color:#475569;">Apellido</label>
+                  <input formControlName="apellido" type="text" style="width:100%; border:1px solid #cbd5e1; border-radius:8px; padding:6px 10px; box-sizing:border-box;" />
+                </div>
+                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:6px 10px; display:flex; justify-content:space-between; align-items:center;">
+                  <span style="font-size:11px; color:#64748b; font-weight:600;">Correo (Protegido): {{ perfil.correo }}</span>
+                  <span class="material-symbols-outlined" style="font-size:14px; color:#94a3b8;">lock</span>
                 </div>
                 <div style="display:flex; gap:8px; margin-top:8px;">
-                  <button type="button" (click)="guardarPerfil()" style="flex:1; background:#fac94b; color:#000000; border:none; padding:8px; border-radius:8px; font-weight:700; cursor:pointer;">Guardar</button>
+                  <button type="submit" [disabled]="perfilForm.invalid" style="flex:1; background:#fac94b; color:#000000; border:none; padding:8px; border-radius:8px; font-weight:700; cursor:pointer;">Guardar</button>
                   <button type="button" (click)="irA('perfil')" style="flex:1; background:#f1f5f9; border:1px solid #cbd5e1; padding:8px; border-radius:8px; font-weight:600; cursor:pointer;">Cancelar</button>
                 </div>
-              </div>
+              </form>
             </div>
 
             <!-- Vista Cambiar Contraseña -->
             <div *ngIf="vistaActual === 'password'" style="font-size:12px;">
               <h4 style="margin:0 0 12px 0; font-size:14px; font-weight:700; color:#0f172a;">Cambiar Contraseña</h4>
               <div style="display:flex; flex-direction:column; gap:8px;">
-                <input [(ngModel)]="passwordForm.actual" type="password" placeholder="Contraseña actual" style="width:100%; border:1px solid #cbd5e1; border-radius:8px; padding:6px 10px; box-sizing:border-box;" />
-                <input [(ngModel)]="passwordForm.nueva" type="password" placeholder="Nueva contraseña" style="width:100%; border:1px solid #cbd5e1; border-radius:8px; padding:6px 10px; box-sizing:border-box;" />
-                <input [(ngModel)]="passwordForm.confirmar" type="password" placeholder="Confirmar nueva contraseña" style="width:100%; border:1px solid #cbd5e1; border-radius:8px; padding:6px 10px; box-sizing:border-box;" />
+                <input [(ngModel)]="passwordForm.actual" name="actual" type="password" placeholder="Contraseña actual" style="width:100%; border:1px solid #cbd5e1; border-radius:8px; padding:6px 10px; box-sizing:border-box;" />
+                <input [(ngModel)]="passwordForm.nueva" name="nueva" type="password" placeholder="Nueva contraseña" style="width:100%; border:1px solid #cbd5e1; border-radius:8px; padding:6px 10px; box-sizing:border-box;" />
+                <input [(ngModel)]="passwordForm.confirmar" name="confirmar" type="password" placeholder="Confirmar nueva contraseña" style="width:100%; border:1px solid #cbd5e1; border-radius:8px; padding:6px 10px; box-sizing:border-box;" />
                 <p *ngIf="passwordError" style="color:#dc2626; margin:4px 0 0 0; font-size:11px;">{{ passwordError }}</p>
                 <p *ngIf="passwordMensaje" style="color:#16a34a; margin:4px 0 0 0; font-size:11px;">{{ passwordMensaje }}</p>
                 <div style="display:flex; gap:8px; margin-top:8px;">
@@ -348,7 +237,7 @@
     <!-- Logo SIRAE Oficial Proporcionado y Estético -->
     <div class="modern-sidebar-logo">
       <a routerLink="inicio" class="modern-brand" title="SIRAE - Sistema de Información y Registro Alimentario Escolar">
-        <img src="sirae-logo-dark.png" alt="Logo SIRAE" class="modern-brand-img" />
+        <img src="sirae-logo-dark.png" alt="Logo SIRAE" class="modern-brand-img" width="190" height="48" style="max-width:190px; max-height:48px; object-fit:contain;" />
       </a>
     </div>
 
@@ -395,11 +284,27 @@
             <span class="superadmin-nav-text">Stock Global</span>
           </div>
         </a>
+
+        <!-- REPORTES -->
+        <a routerLink="/reportes-consumo" routerLinkActive="active" class="superadmin-nav-item" title="Reportes PAE">
+          <div class="superadmin-nav-item-left">
+            <span class="material-symbols-outlined superadmin-nav-icon">monitoring</span>
+            <span class="superadmin-nav-text">Reportes</span>
+          </div>
+        </a>
       </div>
 
       <!-- SECCIÓN 3: CONFIGURACIÓN Y MAESTROS -->
       <div class="superadmin-nav-group">
         <span class="superadmin-group-label">Administración</span>
+
+        <!-- PLANTILLAS -->
+        <a routerLink="/plantillas-maestras" routerLinkActive="active" class="superadmin-nav-item" title="Plantillas Maestras PAE">
+          <div class="superadmin-nav-item-left">
+            <span class="material-symbols-outlined superadmin-nav-icon">design_services</span>
+            <span class="superadmin-nav-text">Plantillas</span>
+          </div>
+        </a>
 
         <!-- BANCO DE DATOS -->
         <a routerLink="banco-datos" routerLinkActive="active" class="superadmin-nav-item" title="Banco de Datos">
@@ -409,11 +314,27 @@
           </div>
         </a>
 
+        <!-- CONSULTA DE GRAMAJES -->
+        <a routerLink="consulta-gramajes" routerLinkActive="active" class="superadmin-nav-item" title="Consulta de Gramajes por Sede y Jornada">
+          <div class="superadmin-nav-item-left">
+            <span class="material-symbols-outlined superadmin-nav-icon">scale</span>
+            <span class="superadmin-nav-text">Consulta Gramajes</span>
+          </div>
+        </a>
+
         <!-- USUARIOS -->
         <a routerLink="usuarios" routerLinkActive="active" class="superadmin-nav-item" title="Usuarios y Roles">
           <div class="superadmin-nav-item-left">
             <span class="material-symbols-outlined superadmin-nav-icon">manage_accounts</span>
             <span class="superadmin-nav-text">Usuarios</span>
+          </div>
+        </a>
+
+        <!-- MENSAJERÍA -->
+        <a routerLink="mensajeria" routerLinkActive="active" class="superadmin-nav-item" title="Mensajería y Chat">
+          <div class="superadmin-nav-item-left">
+            <span class="material-symbols-outlined superadmin-nav-icon">chat</span>
+            <span class="superadmin-nav-text">Mensajería</span>
           </div>
         </a>
       </div>
@@ -500,9 +421,13 @@
               </div>
 
               <div class="profile-actions-list">
+                <a routerLink="/perfil" (click)="cerrarPanel()" class="profile-action-btn">
+                  <span class="material-symbols-outlined" aria-hidden="true">badge</span>
+                  <span>Ver perfil completo</span>
+                </a>
                 <button type="button" class="profile-action-btn" (click)="irA('editar')">
                   <span class="material-symbols-outlined" aria-hidden="true">edit</span>
-                  <span>Editar Perfil</span>
+                  <span>Editar información personal</span>
                 </button>
                 <button type="button" class="profile-action-btn" (click)="irA('password')">
                   <span class="material-symbols-outlined" aria-hidden="true">lock</span>
@@ -518,23 +443,29 @@
             <!-- Vista Editar Perfil -->
             <div *ngIf="vistaActual === 'editar'" class="profile-edit-view">
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                <h4 class="popover-view-title" style="margin:0;">Editar Perfil</h4>
+                <h4 class="popover-view-title" style="margin:0;">Editar información personal</h4>
                 <button type="button" (click)="cerrarPanel()" style="background:none; border:none; color:#94a3b8; cursor:pointer; padding:2px;" title="Cerrar">
                   <span class="material-symbols-outlined" style="font-size:18px;">close</span>
                 </button>
               </div>
-              <div class="popover-form-group">
-                <label>Nombre</label>
-                <input [(ngModel)]="editForm.nombre" type="text" class="popover-input" />
-              </div>
-              <div class="popover-form-group">
-                <label>Correo</label>
-                <input [(ngModel)]="editForm.correo" type="email" class="popover-input" />
-              </div>
-              <div class="popover-btn-row">
-                <button type="button" class="btn-save-popover" (click)="guardarPerfil()">Guardar</button>
-                <button type="button" class="btn-cancel-popover" (click)="irA('perfil')">Volver</button>
-              </div>
+              <form [formGroup]="perfilForm" (ngSubmit)="guardarPerfil()">
+                <div class="popover-form-group">
+                  <label>Nombre</label>
+                  <input formControlName="nombre" type="text" class="popover-input" />
+                </div>
+                <div class="popover-form-group">
+                  <label>Apellido</label>
+                  <input formControlName="apellido" type="text" class="popover-input" />
+                </div>
+                <div class="popover-form-group" style="opacity:0.85;">
+                  <label>Correo Institucional (Protegido)</label>
+                  <input [value]="perfil.correo" type="text" disabled class="popover-input" style="background:#f1f5f9; cursor:not-allowed;" />
+                </div>
+                <div class="popover-btn-row">
+                  <button type="submit" [disabled]="perfilForm.invalid" class="btn-save-popover">Guardar</button>
+                  <button type="button" class="btn-cancel-popover" (click)="irA('perfil')">Volver</button>
+                </div>
+              </form>
             </div>
 
             <!-- Vista Cambiar Contraseña -->
@@ -546,13 +477,13 @@
                 </button>
               </div>
               <div class="popover-form-group">
-                <input [(ngModel)]="passwordForm.actual" type="password" placeholder="Contraseña actual" class="popover-input" />
+                <input [(ngModel)]="passwordForm.actual" name="superadmin_actual" type="password" placeholder="Contraseña actual" class="popover-input" />
               </div>
               <div class="popover-form-group">
-                <input [(ngModel)]="passwordForm.nueva" type="password" placeholder="Nueva contraseña" class="popover-input" />
+                <input [(ngModel)]="passwordForm.nueva" name="superadmin_nueva" type="password" placeholder="Nueva contraseña" class="popover-input" />
               </div>
               <div class="popover-form-group">
-                <input [(ngModel)]="passwordForm.confirmar" type="password" placeholder="Confirmar contraseña" class="popover-input" />
+                <input [(ngModel)]="passwordForm.confirmar" name="superadmin_confirmar" type="password" placeholder="Confirmar contraseña" class="popover-input" />
               </div>
               <p *ngIf="passwordError" class="popover-error">{{ passwordError }}</p>
               <p *ngIf="passwordMensaje" class="popover-success">{{ passwordMensaje }}</p>
@@ -592,7 +523,7 @@
     <!-- Logo SIRAE Oficial (versión de alto contraste para fondo claro) -->
     <div class="modern-sidebar-logo">
       <a routerLink="inicio" class="modern-brand" title="SIRAE - Sistema de Información y Registro Alimentario Escolar">
-        <img src="sirae-logo-dark.png" alt="Logo SIRAE" class="modern-brand-img" />
+        <img src="sirae-logo-dark.png" alt="Logo SIRAE" class="modern-brand-img" width="190" height="48" style="max-width:190px; max-height:48px; object-fit:contain;" />
       </a>
     </div>
 
@@ -615,11 +546,40 @@
         <span class="material-symbols-outlined modern-nav-icon" aria-hidden="true">inventory</span>
         <span class="modern-nav-text">Inventario</span>
       </a>
+      <a *ngIf="esAdministrador" routerLink="sedes-institucion" routerLinkActive="active" class="modern-nav-item" title="Consultar sedes">
+        <span class="material-symbols-outlined modern-nav-icon" aria-hidden="true">apartment</span>
+        <span class="modern-nav-text">Sedes</span>
+      </a>
+
+      <!-- CONSULTA GRAMAJES (Administrador institucional y Jefa de manipuladoras) -->
+      <a *ngIf="esAdministrador || esJefa" routerLink="consulta-gramajes" routerLinkActive="active" class="modern-nav-item" title="Gramajes por Sede y Jornada">
+        <span class="material-symbols-outlined modern-nav-icon" aria-hidden="true">scale</span>
+        <span class="modern-nav-text">Gramajes</span>
+      </a>
+
+      <!-- MINUTA POR SEDE (Administrador / Jefa de Manipuladoras) -->
+      <a routerLink="menus" routerLinkActive="active" class="modern-nav-item" title="Minuta">
+        <span class="material-symbols-outlined modern-nav-icon" aria-hidden="true">restaurant_menu</span>
+        <span class="modern-nav-text">Minuta</span>
+      </a>
 
       <!-- USUARIOS -->
       <a routerLink="usuarios" routerLinkActive="active" class="modern-nav-item" title="Usuarios">
         <span class="material-symbols-outlined modern-nav-icon" aria-hidden="true">group</span>
         <span class="modern-nav-text">Usuarios</span>
+      </a>
+
+      <!-- PLANILLAS Y REPORTES PAE (SIR-171..173) -->
+      <a *ngIf="esAdministrador || esJefa" routerLink="/reportes-consumo" routerLinkActive="active"
+         class="modern-nav-item" [title]="esJefa ? 'Planillas de Comedor Escolar' : 'Planillas y Reportes PAE'">
+        <span class="material-symbols-outlined modern-nav-icon" aria-hidden="true">description</span>
+        <span class="modern-nav-text">{{ esJefa ? 'Planillas' : 'Planillas y Reportes' }}</span>
+      </a>
+
+      <!-- MENSAJERÍA -->
+      <a routerLink="mensajeria" routerLinkActive="active" class="modern-nav-item" title="Mensajería">
+        <span class="material-symbols-outlined modern-nav-icon" aria-hidden="true">chat</span>
+        <span class="modern-nav-text">Mensajería</span>
       </a>
 
       <!-- El "Historial de entregas" (reportes-consumo) es exclusivo del Supervisor / Super Admin.
@@ -650,7 +610,7 @@
         <a routerLink="inicio" class="breadcrumb-item">Inicio</a>
         
         <ng-container *ngIf="pageTitle && pageTitle !== 'Inicio'">
-          <span class="breadcrumb-sep" aria-hidden="true">></span>
+          <span class="breadcrumb-sep" aria-hidden="true">&gt;</span>
           <span class="breadcrumb-current">{{ pageTitle }}</span>
         </ng-container>
 
@@ -698,7 +658,7 @@
         <!-- Botón Perfil de Usuario con Avatar -->
         <div class="dropdown-container">
           <button type="button" class="user-pill-btn" (click)="togglePerfil()" title="Mi cuenta" aria-label="Menú de perfil">
-            <img src="administrador.png" alt="Avatar" class="user-avatar" />
+            <img src="administrador.png" alt="Avatar" class="user-avatar" width="36" height="36" style="width:36px; height:36px; border-radius:50%; object-fit:cover;" />
             <div class="user-info-text">
               <span class="user-name">{{ perfil.nombre }}</span>
               <span class="user-role">{{ perfil.rol }}</span>
@@ -712,7 +672,7 @@
             <!-- Vista General -->
             <div *ngIf="vistaActual === 'perfil'">
               <div class="profile-popover-head" style="position:relative;">
-                <img src="administrador.png" class="profile-popover-avatar" alt="Foto de perfil" />
+                <img src="administrador.png" class="profile-popover-avatar" alt="Foto de perfil" width="42" height="42" style="width:42px; height:42px; border-radius:50%; object-fit:cover;" />
                 <div class="profile-meta-wrap">
                   <strong class="profile-popover-name">{{ perfil.nombre }}</strong>
                   <span class="profile-popover-email">{{ perfil.correo }}</span>
@@ -724,9 +684,13 @@
               </div>
 
               <div class="profile-actions-list">
+                <a routerLink="/perfil" (click)="cerrarPanel()" class="profile-action-btn">
+                  <span class="material-symbols-outlined" aria-hidden="true">badge</span>
+                  <span>Ver perfil completo</span>
+                </a>
                 <button type="button" class="profile-action-btn" (click)="irA('editar')">
                   <span class="material-symbols-outlined" aria-hidden="true">edit</span>
-                  <span>Editar Perfil</span>
+                  <span>Editar información personal</span>
                 </button>
                 <button type="button" class="profile-action-btn" (click)="irA('password')">
                   <span class="material-symbols-outlined" aria-hidden="true">lock</span>
@@ -742,23 +706,29 @@
             <!-- Vista Editar Perfil -->
             <div *ngIf="vistaActual === 'editar'" class="profile-edit-view">
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                <h4 class="popover-view-title" style="margin:0;">Editar Perfil</h4>
+                <h4 class="popover-view-title" style="margin:0;">Editar información personal</h4>
                 <button type="button" (click)="cerrarPanel()" style="background:none; border:none; color:#94a3b8; cursor:pointer; padding:2px;" title="Cerrar">
                   <span class="material-symbols-outlined" style="font-size:18px;">close</span>
                 </button>
               </div>
-              <div class="popover-form-group">
-                <label>Nombre</label>
-                <input [(ngModel)]="editForm.nombre" type="text" class="popover-input" />
-              </div>
-              <div class="popover-form-group">
-                <label>Correo</label>
-                <input [(ngModel)]="editForm.correo" type="email" class="popover-input" />
-              </div>
-              <div class="popover-btn-row">
-                <button type="button" class="btn-save-popover" (click)="guardarPerfil()">Guardar</button>
-                <button type="button" class="btn-cancel-popover" (click)="irA('perfil')">Volver</button>
-              </div>
+              <form [formGroup]="perfilForm" (ngSubmit)="guardarPerfil()">
+                <div class="popover-form-group">
+                  <label>Nombre</label>
+                  <input formControlName="nombre" type="text" class="popover-input" />
+                </div>
+                <div class="popover-form-group">
+                  <label>Apellido</label>
+                  <input formControlName="apellido" type="text" class="popover-input" />
+                </div>
+                <div class="popover-form-group" style="opacity:0.85;">
+                  <label>Correo Institucional (Protegido)</label>
+                  <input [value]="perfil.correo" type="text" disabled class="popover-input" style="background:#f1f5f9; cursor:not-allowed;" />
+                </div>
+                <div class="popover-btn-row">
+                  <button type="submit" [disabled]="perfilForm.invalid" class="btn-save-popover">Guardar</button>
+                  <button type="button" class="btn-cancel-popover" (click)="irA('perfil')">Volver</button>
+                </div>
+              </form>
             </div>
 
             <!-- Vista Cambiar Contraseña -->
@@ -770,13 +740,13 @@
                 </button>
               </div>
               <div class="popover-form-group">
-                <input [(ngModel)]="passwordForm.actual" type="password" placeholder="Contraseña actual" class="popover-input" />
+                <input [(ngModel)]="passwordForm.actual" name="superadmin_actual" type="password" placeholder="Contraseña actual" class="popover-input" />
               </div>
               <div class="popover-form-group">
-                <input [(ngModel)]="passwordForm.nueva" type="password" placeholder="Nueva contraseña" class="popover-input" />
+                <input [(ngModel)]="passwordForm.nueva" name="superadmin_nueva" type="password" placeholder="Nueva contraseña" class="popover-input" />
               </div>
               <div class="popover-form-group">
-                <input [(ngModel)]="passwordForm.confirmar" type="password" placeholder="Confirmar contraseña" class="popover-input" />
+                <input [(ngModel)]="passwordForm.confirmar" name="superadmin_confirmar" type="password" placeholder="Confirmar contraseña" class="popover-input" />
               </div>
               <p *ngIf="passwordError" class="popover-error">{{ passwordError }}</p>
               <p *ngIf="passwordMensaje" class="popover-success">{{ passwordMensaje }}</p>

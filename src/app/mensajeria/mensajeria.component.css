@@ -1,0 +1,5 @@
+/* Estilos específicos para la vista de mensajería SIRAE */
+:host {
+  display: block;
+  height: 100%;
+}

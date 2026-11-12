@@ -50,6 +50,20 @@ export class LoginComponent implements OnInit, OnDestroy {
 
     if (this.route.snapshot.queryParamMap.get('acceso') === 'denegado') {
       this.errorMensaje = 'Esta cuenta no tiene permiso para acceder a esta aplicación.';
+      return;
+    }
+
+    if (this.authService.estaAutenticado?.()) {
+      const usuarioActivo = this.authService.obtenerUsuario?.();
+      if (this.authService.rolPermitido(usuarioActivo?.rol)) {
+        if (this.authService.esSupervisor(usuarioActivo?.rol)) {
+          this.router.navigate(['/dashboard-supervisor']);
+        } else if (this.authService.esJefa(usuarioActivo?.rol)) {
+          this.router.navigate(['/asistencia-diaria']);
+        } else {
+          this.router.navigate(['/inicio']);
+        }
+      }
     }
   }
 
@@ -63,6 +77,7 @@ export class LoginComponent implements OnInit, OnDestroy {
 
   alternarClave(): void {
     this.mostrarClave = !this.mostrarClave;
+    this.cdr.detectChanges();
   }
 
   onSubmit(): void {
@@ -113,8 +128,8 @@ export class LoginComponent implements OnInit, OnDestroy {
         this.cdr.detectChanges();
 
         if (this.authService.esSupervisor(response.usuario?.rol)) {
-          this.authService.limpiarInstitucionActiva();
-          this.router.navigate(['/dashboard-supervisor'], { queryParams: { cambiar: 'true' } });
+          this.authService.limpiarInstitucionActiva?.();
+          this.router.navigate(['/dashboard-supervisor']);
         } else if (this.authService.esJefa(response.usuario?.rol)) {
           this.router.navigate(['/asistencia-diaria']);
         } else {

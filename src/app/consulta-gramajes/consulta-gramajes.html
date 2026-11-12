@@ -1,0 +1,273 @@
+<div class="cg-page">
+
+  <!-- ENCABEZADO -->
+  <div class="cg-header">
+    <div>
+      <span class="cg-eyebrow">PARAMETRIZACIÓN NUTRICIONAL · ALCANCE AUTORIZADO</span>
+      <h1 class="cg-title">Consulta de Gramajes por Sede y Jornada</h1>
+      <p class="cg-subtitle">
+        {{ etiquetaAlcanceRol }}
+      </p>
+    </div>
+
+    <div class="cg-header-actions">
+      <span *ngIf="esSoloLectura" class="cg-readonly-badge" title="Los usuarios de consulta no pueden editar gramajes generales">
+        <span class="material-symbols-outlined" aria-hidden="true">lock</span>
+        <span>Solo lectura (no editable)</span>
+      </span>
+
+      <a *ngIf="!esSoloLectura" routerLink="/banco-datos" class="cg-config-link">
+        <span class="material-symbols-outlined" aria-hidden="true">tune</span>
+        <span>Administrar en Banco de Datos</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- RESUMEN -->
+  <div class="cg-stats-grid">
+    <div class="cg-stat-card">
+      <span class="cg-stat-label">Sedes / Jornadas en alcance</span>
+      <strong class="cg-stat-value">{{ resumen.total_sede_jornadas }}</strong>
+    </div>
+    <div class="cg-stat-card">
+      <span class="cg-stat-label">Grados escolares atendidos</span>
+      <strong class="cg-stat-value">{{ resumen.total_grados_atendidos }}</strong>
+    </div>
+    <div class="cg-stat-card" [class.cg-stat-danger]="resumen.total_alertas > 0">
+      <span class="cg-stat-label">Alertas de configuración</span>
+      <strong class="cg-stat-value">{{ resumen.total_alertas }}</strong>
+    </div>
+  </div>
+
+  <!-- ALERTAS DE ASIGNACIÓN DE USUARIO -->
+  <div *ngIf="alertasAlcance.length > 0" class="cg-alert-banner cg-alert-warn">
+    <span class="material-symbols-outlined" aria-hidden="true">person_alert</span>
+    <div class="cg-alert-body">
+      <strong>Asignación de alcance incompleta</strong>
+      <div *ngFor="let al of alertasAlcance">{{ al.mensaje }}</div>
+    </div>
+  </div>
+
+  <!-- ALERTAS POR FALTA DE GRAMAJE EN PRODUCTOS REQUERIDOS -->
+  <div *ngIf="alertasFaltantes.length > 0" class="cg-alert-banner cg-alert-danger">
+    <span class="material-symbols-outlined" aria-hidden="true">warning</span>
+    <div class="cg-alert-body">
+      <strong>Alertas de gramajes faltantes ({{ alertasFaltantes.length }}) — No se asumen cantidades arbitrarias</strong>
+      <ul class="cg-alert-list">
+        <li *ngFor="let al of alertasFaltantes">
+          <span class="cg-alert-tag">{{ al.severidad }}</span>
+          <span>{{ al.mensaje }}</span>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- PANEL DE FILTROS -->
+  <div class="cg-filters-card">
+    <div class="cg-filters-grid">
+      <!-- Institución -->
+      <div class="cg-filter-box" *ngIf="alcance?.puede_filtrar_institucion">
+        <label class="cg-filter-label">Institución educativa</label>
+        <app-custom-select
+          [options]="institucionesOpciones"
+          valueField="id"
+          labelField="label"
+          placeholder="Todas las instituciones asignadas"
+          [allowClear]="true"
+          [(ngModel)]="filtros.id_institucion"
+          (ngModelChange)="onInstitucionChange()"
+        ></app-custom-select>
+      </div>
+
+      <!-- Sede -->
+      <div class="cg-filter-box" *ngIf="alcance?.puede_filtrar_sede">
+        <label class="cg-filter-label">Sede educativa</label>
+        <app-custom-select
+          [options]="sedesOpciones"
+          valueField="id"
+          labelField="label"
+          placeholder="Todas las sedes en alcance"
+          [allowClear]="true"
+          [(ngModel)]="filtros.id_sede"
+          (ngModelChange)="consultar()"
+        ></app-custom-select>
+      </div>
+
+      <!-- Jornada -->
+      <div class="cg-filter-box" *ngIf="alcance?.puede_filtrar_jornada">
+        <label class="cg-filter-label">Jornada</label>
+        <app-custom-select
+          [options]="jornadasOpciones"
+          valueField="id"
+          labelField="label"
+          placeholder="Todas las jornadas"
+          [allowClear]="true"
+          [(ngModel)]="filtros.id_jornada"
+          (ngModelChange)="consultar()"
+        ></app-custom-select>
+      </div>
+
+      <!-- Grado -->
+      <div class="cg-filter-box">
+        <label class="cg-filter-label">Grado escolar</label>
+        <app-custom-select
+          [options]="gradosCatalogo"
+          valueField="id"
+          labelField="label"
+          placeholder="Todos los grados"
+          [allowClear]="true"
+          [(ngModel)]="filtros.id_grado"
+          (ngModelChange)="consultar()"
+        ></app-custom-select>
+      </div>
+
+      <!-- Verificar producto requerido -->
+      <div class="cg-filter-box">
+        <label class="cg-filter-label">Verificar producto requerido</label>
+        <app-custom-select
+          [options]="ingredientesCatalogo"
+          valueField="id"
+          labelField="label"
+          placeholder="Todos los productos configurados"
+          [allowClear]="true"
+          [(ngModel)]="filtros.id_ingrediente"
+          (ngModelChange)="consultar()"
+        ></app-custom-select>
+      </div>
+    </div>
+
+    <div class="cg-filters-footer">
+      <button type="button" class="cg-btn-reset" (click)="limpiarFiltros()">
+        <span class="material-symbols-outlined" aria-hidden="true">filter_alt_off</span>
+        <span>Limpiar filtros</span>
+      </button>
+      <button type="button" class="cg-btn-refresh" (click)="consultar()" [disabled]="cargando">
+        <span class="material-symbols-outlined" aria-hidden="true">refresh</span>
+        <span>{{ cargando ? 'Consultando…' : 'Actualizar consulta' }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ERROR -->
+  <div *ngIf="errorCarga" class="cg-alert-banner cg-alert-danger">
+    <span class="material-symbols-outlined" aria-hidden="true">error</span>
+    <span>{{ errorCarga }}</span>
+  </div>
+
+  <!-- CARGANDO -->
+  <div *ngIf="cargando" class="cg-empty-state">
+    Consultando gramajes por institución, sede y jornada…
+  </div>
+
+  <!-- SIN RESULTADOS -->
+  <div *ngIf="!cargando && !errorCarga && sedeJornadas.length === 0" class="cg-empty-state">
+    No se encontraron jornadas por sede dentro de tu alcance con los filtros seleccionados.
+  </div>
+
+  <!-- RESULTADOS POR SEDE Y JORNADA -->
+  <div *ngIf="!cargando && sedeJornadas.length > 0" class="cg-sj-list">
+    <section *ngFor="let sj of sedeJornadas" class="cg-sj-card">
+      <header class="cg-sj-header">
+        <div>
+          <span class="cg-sj-inst">{{ sj.nombre_institucion }}</span>
+          <h2 class="cg-sj-title">
+            {{ sj.nombre_sede }} — Jornada {{ sj.nombre_jornada }}
+          </h2>
+        </div>
+
+        <div class="cg-sj-pills">
+          <span class="cg-pill cg-pill-neutral">Cupos jornada: {{ sj.cupos_jornada }}</span>
+          <span class="cg-pill cg-pill-info">{{ sj.total_grados }} grado(s) atendidos</span>
+          <span *ngIf="sj.total_alertas > 0" class="cg-pill cg-pill-danger">
+            {{ sj.total_alertas }} alerta(s)
+          </span>
+        </div>
+      </header>
+
+      <!-- Productos requeridos detectados para esta sede y jornada -->
+      <div *ngIf="sj.productos_requeridos?.length > 0" class="cg-required-bar">
+        <span class="cg-required-title">Productos requeridos por menú / consulta:</span>
+        <span *ngFor="let req of sj.productos_requeridos" class="cg-req-chip" [title]="req.origenes?.join(', ')">
+          {{ req.nombre_ingrediente }}
+        </span>
+      </div>
+
+      <!-- Sin grados configurados -->
+      <div *ngIf="!sj.grados_atendidos || sj.grados_atendidos.length === 0" class="cg-no-grades">
+        Esta sede y jornada aún no tiene grados escolares de atención configurados en el Banco de Datos.
+      </div>
+
+      <!-- Tarjetas por Grado Escolar atendido -->
+      <div *ngFor="let grado of sj.grados_atendidos" class="cg-grade-block">
+        <div class="cg-grade-head">
+          <div class="cg-grade-info">
+            <h3 class="cg-grade-name">{{ grado.nombre_grado }}</h3>
+            <span class="cg-pill cg-pill-level">{{ grado.nivel_educativo_display }}</span>
+            <span class="cg-pill cg-pill-neutral">Grupo: {{ grado.nombre_grupo_gramaje }}</span>
+          </div>
+          <span *ngIf="grado.tiene_alertas" class="cg-pill cg-pill-danger">
+            {{ grado.alertas.length }} alerta(s) en este grado
+          </span>
+        </div>
+
+        <!-- Alertas propias del grado -->
+        <div *ngIf="grado.alertas?.length > 0" class="cg-grade-alerts">
+          <div *ngFor="let al of grado.alertas" class="cg-grade-alert-item">
+            <span class="material-symbols-outlined" aria-hidden="true">error_outline</span>
+            <span>{{ al.mensaje }}</span>
+          </div>
+        </div>
+
+        <!-- Tabla de productos y gramajes configurados -->
+        <div *ngIf="grado.gramajes?.length > 0" class="cg-table-wrap">
+          <table class="cg-table">
+            <thead>
+              <tr>
+                <th>Producto / Ingrediente</th>
+                <th>Tipo de alimento</th>
+                <th>Cantidad por estudiante</th>
+                <th>Unidad de medida</th>
+                <th>Unidad base inventario</th>
+                <th>Contexto</th>
+                <th>Especificaciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let g of grado.gramajes">
+                <td>
+                  <strong>{{ g.nombre_ingrediente }}</strong>
+                  <div *ngIf="g.categoria" class="cg-cell-sub">{{ g.categoria }}</div>
+                </td>
+                <td>
+                  <span class="cg-pill" [ngClass]="g.tipo_conservacion === 'perecedero' ? 'cg-pill-warn' : 'cg-pill-ok'">
+                    {{ g.tipo_alimento }}
+                  </span>
+                </td>
+                <td>
+                  <strong class="cg-qty">{{ g.cantidad_gramaje }} {{ g.abreviatura_unidad_medida }}</strong>
+                </td>
+                <td>
+                  {{ g.nombre_unidad_medida }} ({{ g.abreviatura_unidad_medida }})
+                  <div *ngIf="g.tipo_magnitud_unidad" class="cg-cell-sub">{{ g.tipo_magnitud_unidad }}</div>
+                </td>
+                <td>
+                  <ng-container *ngIf="g.unidad_base_producto; else sinUnidadBase">
+                    {{ g.unidad_base_producto.nombre }} ({{ g.unidad_base_producto.abreviatura }})
+                  </ng-container>
+                  <ng-template #sinUnidadBase>—</ng-template>
+                </td>
+                <td>{{ g.contexto_aplicacion_display || g.contexto_aplicacion }}</td>
+                <td>{{ g.descripcion || '—' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div *ngIf="!grado.gramajes || grado.gramajes.length === 0" class="cg-no-gramajes">
+          No existen gramajes activos configurados para mostrar en este grado bajo los filtros actuales.
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+

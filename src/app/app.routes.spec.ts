@@ -23,6 +23,8 @@ describe('delivery routes', () => {
       'super administrador',
       'super admin',
       'supervisor',
+      'coordinador',
+      'coordinador pae',
     ]);
   });
 
@@ -42,6 +44,20 @@ describe('delivery routes', () => {
       const report = children.find(route => route.path === 'reportes-consumo');
 
       expect(report?.data?.['roles']).toContain('supervisor');
+      expect(report?.data?.['modoModulo']).toBe('reportes');
+    });
+
+    it('separates master templates into a SuperAdmin-only route', () => {
+      const plantillasRoute = children.find(route => route.path === 'plantillas-maestras');
+
+      expect(plantillasRoute).toBeTruthy();
+      expect(plantillasRoute?.data?.['modoModulo']).toBe('plantillas');
+      expect(plantillasRoute?.data?.['roles']).toEqual([
+        'superadministrador',
+        'super administrador',
+        'super admin',
+      ]);
+      expect(plantillasRoute?.data?.['roles']).not.toContain('supervisor');
     });
   });
 });

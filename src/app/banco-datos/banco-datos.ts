@@ -8,7 +8,8 @@ import {
 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Subscription } from 'rxjs';
+import { Subscription, forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 
 import { BancoDatosService } from '../services/banco-datos.service';
 import { SweetAlertService } from '../sweet-alert.service';
@@ -22,7 +23,49 @@ import { CustomSelectComponent } from '../shared/custom-select/custom-select';
 type TipoCampo = 'text' | 'textarea' | 'number' | 'time' | 'select';
 
 /** Tablas que alimentan listas desplegables de otras tablas. */
-type FuenteRelacion = 'jornadas' | 'unidades_medida' | 'ingredientes' | 'categorias_inventario' | 'grados' | 'instituciones' | 'tipos_mercado' | 'sedes' | 'turnos';
+type FuenteRelacion = 'jornadas' | 'unidades_medida' | 'ingredientes' | 'categorias_inventario' | 'grados' | 'instituciones' | 'secciones_menu';
+
+export interface IngredienteComponenteReceta {
+  id_ingrediente: number;
+  nombre_ingrediente: string;
+  unidad?: string;
+  observacion?: string;
+}
+
+export interface PasoPreparacionReceta {
+  numero_paso: number;
+  descripcion_paso: string;
+}
+
+export interface ComponentePlatoReceta {
+  id_temporal: string;
+  tipo_componente: string;
+  nombre_componente: string;
+  ingredientes: IngredienteComponenteReceta[];
+  pasos: PasoPreparacionReceta[];
+  ingredienteTempId?: any;
+  observacionTemp?: string;
+}
+
+export interface RecetaMenuExtendida {
+  id_plato?: number;
+  nombre_plato: string;
+  semana: string;
+  numero_menu?: number | null;
+  secciones: string[]; // ['Desayuno', 'Almuerzo', 'Merienda']
+  imagen_url: string;
+  informacion_nutricional: string;
+  estado: string;
+  componentes: ComponentePlatoReceta[];
+}
+
+export interface PlantillaMenuPAE {
+  numero_menu: number;
+  semana: string;
+  nombre_plato: string;
+  secciones: string[];
+  componentes: { tipo_componente: string; nombre_componente: string }[];
+}
 
 interface CampoConfig {
   name: string;
@@ -67,10 +110,6 @@ const FUENTES: Record<
     id: 'id_institucion',
     etiqueta: r => r.nombre_institucion ?? r.nombre ?? ''
   },
-  sedes: {
-    id: 'id_sede',
-    etiqueta: r => r.nombre_sede ?? r.nombre ?? ''
-  },
   jornadas: {
     id: 'id_jornada',
     etiqueta: r => r.nombre_jornada ?? r.nombre ?? ''
@@ -90,17 +129,13 @@ const FUENTES: Record<
     id: 'id_categoria_inventario',
     etiqueta: r => r.nombre_categoria ?? r.nombre ?? ''
   },
-  tipos_mercado: {
-    id: 'id_tipo_mercado',
-    etiqueta: r => r.nombre_tipo ?? r.nombre ?? ''
-  },
   grados: {
     id: 'id_grado',
     etiqueta: r => r.nombre_grado ?? r.nombre ?? ''
   },
-  turnos: {
-    id: 'id_turno',
-    etiqueta: r => r.nombre_turno ? `${r.nombre_turno} (${(r.hora_inicio || '').slice(0, 5)} - ${(r.hora_fin || '').slice(0, 5)})` : ''
+  secciones_menu: {
+    id: 'id_seccion',
+    etiqueta: r => r.nombre_seccion ?? r.nombre ?? ''
   }
 };
 
@@ -186,7 +221,6 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
         { name: 'id_categoria_inventario', label: 'Categoría', type: 'select', required: true, source: 'categorias_inventario' },
         { name: 'id_unidad_medida', label: 'Unidad de medida', type: 'select', required: true, source: 'unidades_medida' },
         { name: 'marca_ingrediente', label: 'Marca', type: 'text', required: false, placeholder: 'Ej: San Jorge' },
-        { name: 'id_tipo_mercado', label: 'Tipo de mercado', type: 'select', required: false, source: 'tipos_mercado' },
         {
           name: 'tipo_conservacion',
           label: 'Tipo de conservación',
@@ -297,16 +331,16 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       ]
     },
     {
-      id: 'sede_jornadas',
-      nombre: 'Jornadas por Sede',
-      singular: 'jornada por sede',
-      icon: 'hub',
-      idField: 'id_sede_jornada',
+      id: 'menus',
+      nombre: 'Platos y Recetas',
+      singular: 'plato',
+      icon: 'restaurant_menu',
+      idField: 'id_plato',
       categoria: 'operacion',
       campos: [
-        { name: 'id_sede', label: 'Sede educativa', type: 'select', required: true, source: 'sedes' },
-        { name: 'id_jornada', label: 'Jornada', type: 'select', required: true, source: 'jornadas' },
-        { name: 'cupos', label: 'Cupos asignados', type: 'number', required: true, placeholder: 'Ej: 150' }
+        { name: 'nombre_plato', label: 'Nombre del Plato', type: 'text', required: true, placeholder: 'Ej: Menú 1: Pericos con arroz' },
+        { name: 'componente', label: 'Componentes del plato', type: 'text', required: true },
+        { name: 'resumen_receta', label: 'Ingredientes y preparación', type: 'text' }
       ]
     },
     {
@@ -384,7 +418,6 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
   }
 
   datos: any[] = [];
-  private _datosFiltradosCache: any[] = [];
   cargando = false;
   /** Mensaje cuando la carga FALLA (distinto de "no hay registros"). */
   errorCarga: string | null = null;
@@ -442,13 +475,11 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
   confirmarSeleccionInstitucionSede(): void {
     this.filtroInstitucionSede = this.institucionTemporalId;
     this.modalSeleccionarInstitucionAbierto = false;
-    this.actualizarFiltros();
   }
 
   limpiarFiltroInstitucionSede(event?: Event): void {
     if (event) event.stopPropagation();
     this.filtroInstitucionSede = 'TODAS';
-    this.actualizarFiltros();
   }
 
   esInstitucionMarcada(item: any): boolean {
@@ -498,8 +529,289 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
     unidades_medida: [],
     ingredientes: [],
     categorias_inventario: [],
-    grados: []
+    grados: [],
+    secciones_menu: []
   };
+
+  ingredientesCompletos: any[] = [];
+  unidadesMedidaCompletas: any[] = [];
+
+  // ============================================================
+  // ESTADO Y CATÁLOGO DE MENÚS / PLATOS (CICLO PAE 4 SEMANAS)
+  // ============================================================
+  private readonly STORAGE_RECETARIO_KEY = 'sirae_recetario_menus_v1';
+  private readonly STORAGE_COMP_CATALOGO_KEY = 'sirae_catalogo_componentes_pae_v1';
+
+  filtroSemanaMenu: string = 'TODAS';
+  filtroSeccionMenu: string = 'TODAS';
+  plantillaMenuSeleccionada: any = '';
+  sincronizandoMinuta = false;
+
+  modalVerRecetaAbierto = false;
+  recetaDetalleSeleccionada: any = null;
+  archivoImagenPlatoSeleccionado: File | null = null;
+
+  readonly seccionesDisponiblesMenu: { id: string; label: string; icon: string }[] = [
+    { id: 'Desayuno', label: 'Desayuno', icon: 'wb_twilight' },
+    { id: 'Almuerzo', label: 'Almuerzo', icon: 'lunch_dining' },
+    { id: 'Merienda', label: 'Merienda', icon: 'bakery_dining' }
+  ];
+
+  readonly semanasCicloOpciones: { id: string; label: string }[] = [
+    { id: 'Semana 1', label: 'Semana 1 (Menús 1 - 5)' },
+    { id: 'Semana 2', label: 'Semana 2 (Menús 6 - 10)' },
+    { id: 'Semana 3', label: 'Semana 3 (Menús 11 - 15)' },
+    { id: 'Semana 4', label: 'Semana 4 (Menús 16 - 20)' },
+    { id: 'General', label: 'General / Todas las semanas' }
+  ];
+
+  readonly tiposComponentePAE: { id: string; label: string }[] = [
+    { id: 'Bebida con leche', label: 'Bebida con leche' },
+    { id: 'Alimento proteico', label: 'Alimento proteico' },
+    { id: 'Cereal acompañante', label: 'Cereal acompañante' },
+    { id: 'Sopa / Principio', label: 'Sopa / Principio' },
+    { id: 'Fruta', label: 'Fruta' },
+    { id: 'Agua', label: 'Agua' }
+  ];
+
+  readonly MINUTA_PAE_OFICIAL: PlantillaMenuPAE[] = [
+    // SEMANA 1
+    {
+      numero_menu: 1,
+      semana: 'Semana 1',
+      nombre_plato: 'Menú 1: Pericos con arroz',
+      secciones: ['Desayuno', 'Almuerzo', 'Merienda'],
+      componentes: [
+        { tipo_componente: 'Bebida con leche', nombre_componente: 'Refresco de avena' },
+        { tipo_componente: 'Alimento proteico', nombre_componente: 'Huevos pericos' },
+        { tipo_componente: 'Cereal acompañante', nombre_componente: 'Arroz blanco' },
+        { tipo_componente: 'Agua', nombre_componente: 'Agua potable' }
+      ]
+    },
+    {
+      numero_menu: 2,
+      semana: 'Semana 1',
+      nombre_plato: 'Menú 2: Pollo en salsa blanca con pasta',
+      secciones: ['Desayuno', 'Almuerzo', 'Merienda'],
+      componentes: [
+        { tipo_componente: 'Bebida con leche', nombre_componente: 'Jugo de fruta en leche' },
+        { tipo_componente: 'Alimento proteico', nombre_componente: 'Pollo en salsa blanca' },
+        { tipo_componente: 'Cereal acompañante', nombre_componente: 'Pasta' }
+      ]
+    },
+    {
+      numero_menu: 3,
+      semana: 'Semana 1',
+      nombre_plato: 'Menú 3: Arepa con chocolate',
+      secciones: ['Desayuno', 'Merienda'],
+      componentes: [
+        { tipo_componente: 'Bebida con leche', nombre_componente: 'Chocolate en leche' },
+        { tipo_componente: 'Cereal acompañante', nombre_componente: 'Arepa de maíz' },
+        { tipo_componente: 'Fruta', nombre_componente: 'Banano' }
+      ]
+    },
+    {
+      numero_menu: 4,
+      semana: 'Semana 1',
+      nombre_plato: 'Menú 4: Lentejas con arroz',
+      secciones: ['Almuerzo', 'Desayuno'],
+      componentes: [
+        { tipo_componente: 'Bebida con leche', nombre_componente: 'Jugo de fruta en leche' },
+        { tipo_componente: 'Alimento proteico', nombre_componente: 'Lentejas con papa guisada' },
+        { tipo_componente: 'Cereal acompañante', nombre_componente: 'Arroz blanco' }
+      ]
+    },
+    {
+      numero_menu: 5,
+      semana: 'Semana 1',
+      nombre_plato: 'Menú 5: Torta de huevo con arroz',
+      secciones: ['Desayuno', 'Almuerzo', 'Merienda'],
+      componentes: [
+        { tipo_componente: 'Bebida con leche', nombre_componente: 'Agua de panela en leche' },
+        { tipo_componente: 'Alimento proteico', nombre_componente: 'Torta de huevo' },
+        { tipo_componente: 'Cereal acompañante', nombre_componente: 'Arroz blanco' }
+      ]
+    },
+    // SEMANA 2
+    {
+      numero_menu: 6,
+      semana: 'Semana 2',
+      nombre_plato: 'Menú 6: Carne guisada con arroz',
+      secciones: ['Almuerzo', 'Desayuno'],
+      componentes: [
+        { tipo_componente: 'Bebida con leche', nombre_componente: 'Refresco de avena' },
+        { tipo_componente: 'Alimento proteico', nombre_componente: 'Carne de res guisada' },
+        { tipo_componente: 'Cereal acompañante', nombre_componente: 'Arroz blanco' }
+      ]
+    },
+    {
+      numero_menu: 7,
+      semana: 'Semana 2',
+      nombre_plato: 'Menú 7: Hojaldras con chocolate',
+      secciones: ['Desayuno', 'Merienda'],
+      componentes: [
+        { tipo_componente: 'Bebida con leche', nombre_componente: 'Chocolate en leche' },
+        { tipo_componente: 'Cereal acompañante', nombre_componente: 'Hojaldras' },
+        { tipo_componente: 'Fruta', nombre_componente: 'Papaya' },
+        { tipo_componente: 'Agua', nombre_componente: 'Agua potable' }
+      ]
+    },
+    {
+      numero_menu: 8,
+      semana: 'Semana 2',
+      nombre_plato: 'Menú 8: Frijoles guisados con arroz',
+      secciones: ['Almuerzo', 'Desayuno'],
+      componentes: [
+        { tipo_componente: 'Bebida con leche', nombre_componente: 'Agua de panela en leche' },
+        { tipo_componente: 'Alimento proteico', nombre_componente: 'Frijoles guisados con papa' },
+        { tipo_componente: 'Cereal acompañante', nombre_componente: 'Arroz con fideos' }
+      ]
+    },
+    {
+      numero_menu: 9,
+      semana: 'Semana 2',
+      nombre_plato: 'Menú 9: Galleta cuca con leche',
+      secciones: ['Desayuno', 'Merienda'],
+      componentes: [
+        { tipo_componente: 'Bebida con leche', nombre_componente: 'Leche' },
+        { tipo_componente: 'Alimento proteico', nombre_componente: 'Galleta / cuca' },
+        { tipo_componente: 'Cereal acompañante', nombre_componente: 'Maní salado' },
+        { tipo_componente: 'Fruta', nombre_componente: 'Mango' }
+      ]
+    },
+    {
+      numero_menu: 10,
+      semana: 'Semana 2',
+      nombre_plato: 'Menú 10: Huevos revueltos con arroz',
+      secciones: ['Desayuno', 'Almuerzo', 'Merienda'],
+      componentes: [
+        { tipo_componente: 'Bebida con leche', nombre_componente: 'Jugo de fruta en leche' },
+        { tipo_componente: 'Alimento proteico', nombre_componente: 'Huevos revueltos' },
+        { tipo_componente: 'Cereal acompañante', nombre_componente: 'Arroz blanco' }
+      ]
+    },
+    // SEMANA 3
+    {
+      numero_menu: 11,
+      semana: 'Semana 3',
+      nombre_plato: 'Menú 11: Pollo guisado con arroz',
+      secciones: ['Almuerzo', 'Desayuno'],
+      componentes: [
+        { tipo_componente: 'Bebida con leche', nombre_componente: 'Refresco de avena' },
+        { tipo_componente: 'Alimento proteico', nombre_componente: 'Pollo guisado' },
+        { tipo_componente: 'Cereal acompañante', nombre_componente: 'Arroz blanco' }
+      ]
+    },
+    {
+      numero_menu: 12,
+      semana: 'Semana 3',
+      nombre_plato: 'Menú 12: Lentejas guisadas con arroz',
+      secciones: ['Almuerzo', 'Desayuno'],
+      componentes: [
+        { tipo_componente: 'Bebida con leche', nombre_componente: 'Agua de panela en leche' },
+        { tipo_componente: 'Alimento proteico', nombre_componente: 'Lentejas guisadas con papa' },
+        { tipo_componente: 'Cereal acompañante', nombre_componente: 'Arroz blanco' },
+        { tipo_componente: 'Fruta', nombre_componente: 'Mango' }
+      ]
+    },
+    {
+      numero_menu: 13,
+      semana: 'Semana 3',
+      nombre_plato: 'Menú 13: Torta de huevo con quinua',
+      secciones: ['Desayuno', 'Almuerzo', 'Merienda'],
+      componentes: [
+        { tipo_componente: 'Bebida con leche', nombre_componente: 'Colada de quinua' },
+        { tipo_componente: 'Alimento proteico', nombre_componente: 'Torta de huevo' },
+        { tipo_componente: 'Cereal acompañante', nombre_componente: 'Arroz blanco' }
+      ]
+    },
+    {
+      numero_menu: 14,
+      semana: 'Semana 3',
+      nombre_plato: 'Menú 14: Torta pastel con yogurt',
+      secciones: ['Desayuno', 'Merienda'],
+      componentes: [
+        { tipo_componente: 'Bebida con leche', nombre_componente: 'Yogurt' },
+        { tipo_componente: 'Cereal acompañante', nombre_componente: 'Torta pastel' },
+        { tipo_componente: 'Fruta', nombre_componente: 'Manzana' }
+      ]
+    },
+    {
+      numero_menu: 15,
+      semana: 'Semana 3',
+      nombre_plato: 'Menú 15: Arroz con cerdo y verduras',
+      secciones: ['Almuerzo', 'Desayuno'],
+      componentes: [
+        { tipo_componente: 'Bebida con leche', nombre_componente: 'Jugo de fruta en leche' },
+        { tipo_componente: 'Alimento proteico', nombre_componente: 'Arroz con carne de cerdo y verduras' }
+      ]
+    },
+    // SEMANA 4
+    {
+      numero_menu: 16,
+      semana: 'Semana 4',
+      nombre_plato: 'Menú 16: Lentejas con colada de quinua',
+      secciones: ['Almuerzo', 'Desayuno'],
+      componentes: [
+        { tipo_componente: 'Bebida con leche', nombre_componente: 'Colada de quinua' },
+        { tipo_componente: 'Alimento proteico', nombre_componente: 'Lentejas guisadas con papa' },
+        { tipo_componente: 'Cereal acompañante', nombre_componente: 'Arroz blanco' }
+      ]
+    },
+    {
+      numero_menu: 17,
+      semana: 'Semana 4',
+      nombre_plato: 'Menú 17: Pericos con chocolate',
+      secciones: ['Desayuno', 'Almuerzo', 'Merienda'],
+      componentes: [
+        { tipo_componente: 'Bebida con leche', nombre_componente: 'Chocolate en leche' },
+        { tipo_componente: 'Alimento proteico', nombre_componente: 'Huevos pericos' },
+        { tipo_componente: 'Cereal acompañante', nombre_componente: 'Arroz blanco' }
+      ]
+    },
+    {
+      numero_menu: 18,
+      semana: 'Semana 4',
+      nombre_plato: 'Menú 18: Arroz con leche y galletas',
+      secciones: ['Desayuno', 'Merienda'],
+      componentes: [
+        { tipo_componente: 'Bebida con leche', nombre_componente: 'Arroz con leche y canela' },
+        { tipo_componente: 'Cereal acompañante', nombre_componente: 'Galleta tipo crackers' },
+        { tipo_componente: 'Fruta', nombre_componente: 'Mango, papaya, melón' }
+      ]
+    },
+    {
+      numero_menu: 19,
+      semana: 'Semana 4',
+      nombre_plato: 'Menú 19: Pollo con verduras y papas',
+      secciones: ['Almuerzo', 'Desayuno'],
+      componentes: [
+        { tipo_componente: 'Bebida con leche', nombre_componente: 'Refresco de avena' },
+        { tipo_componente: 'Alimento proteico', nombre_componente: 'Pollo en julianas con verduras' },
+        { tipo_componente: 'Cereal acompañante', nombre_componente: 'Papas en casco' }
+      ]
+    },
+    {
+      numero_menu: 20,
+      semana: 'Semana 4',
+      nombre_plato: 'Menú 20: Frijoles con arroz y fideos',
+      secciones: ['Almuerzo', 'Desayuno'],
+      componentes: [
+        { tipo_componente: 'Bebida con leche', nombre_componente: 'Agua de panela en leche' },
+        { tipo_componente: 'Alimento proteico', nombre_componente: 'Frijoles guisados con papa' },
+        { tipo_componente: 'Cereal acompañante', nombre_componente: 'Arroz con fideos' }
+      ]
+    }
+  ];
+
+  get plantillasMinutaOpciones(): OpcionRelacion[] {
+    return this.MINUTA_PAE_OFICIAL.map(m => ({
+      id: m.numero_menu,
+      label: `${m.semana} • ${m.nombre_plato}`
+    }));
+  }
+
+  menuRecetaForm: RecetaMenuExtendida = this.crearMenuRecetaVacio();
 
   mostrarModal = false;
   modoEdicion = false;
@@ -530,28 +842,14 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
   // ============================================================
 
   ngOnInit(): void {
-    // 1. Cargar primero la tabla visible con máxima prioridad
     this.cargarDatos();
-
-    // 2. Cargar las tablas maestras de apoyo tras pintar la tabla
-    setTimeout(() => {
-      this.cargarTodasLasFuentes();
-    }, 150);
-  }
-
-  private cargarTodasLasFuentes(): void {
-    const fuentes: FuenteRelacion[] = [
-      'instituciones',
-      'sedes',
-      'jornadas',
-      'unidades_medida',
-      'ingredientes',
-      'categorias_inventario',
-      'tipos_mercado',
-      'grados',
-      'turnos'
-    ];
-    fuentes.forEach(f => this.cargarFuente(f));
+    this.cargarFuente('instituciones');
+    this.cargarFuente('jornadas');
+    this.cargarFuente('unidades_medida');
+    this.cargarFuente('ingredientes');
+    this.cargarFuente('categorias_inventario');
+    this.cargarFuente('grados');
+    this.cargarFuente('secciones_menu');
   }
 
   ngOnDestroy(): void {
@@ -580,6 +878,10 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
 
   @HostListener('document:keydown.escape')
   onEscape(): void {
+    if (this.modalVerRecetaAbierto) {
+      this.cerrarModalVerReceta();
+      return;
+    }
     if (this.mostrarModal) {
       this.cerrarModal();
     }
@@ -602,7 +904,19 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
     if (this.tabActual === 'instituciones') {
       return 'Buscar por nombre, NIT o código...';
     }
+    if (this.tabActual === 'menus') {
+      return 'Ingresa el nombre del plato...';
+    }
     return `Buscar en ${this.tab.nombre.toLowerCase()}...`;
+  }
+
+  obtenerTextoComponentesRestantes(componentes: any[]): string {
+    if (!Array.isArray(componentes) || componentes.length <= 3) return '';
+    return componentes
+      .slice(3)
+      .map(c => `${c.tipo_componente ? c.tipo_componente + ': ' : ''}${c.nombre_componente || ''}`.trim())
+      .filter(Boolean)
+      .join(', ');
   }
 
   toggleMenuAccion(id: any, event: Event): void {
@@ -621,7 +935,6 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
   onFiltroCambio(): void {
     this.paginaActual = 1;
     this.menuAccionAbiertoId = null;
-    this.actualizarFiltros();
   }
 
   cambiarElementosPorPagina(nuevoLimite: any): void {
@@ -639,7 +952,8 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
 
   obtenerNombrePrincipal(item: any): string {
     if (!item) return '';
-    return item.nombre_institucion ||
+    return item.nombre_plato ||
+           item.nombre_institucion ||
            item.nombre_sede ||
            item.nombre_ingrediente ||
            item.nombre_categoria ||
@@ -662,10 +976,6 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
   }
 
   get datosFiltrados(): any[] {
-    return this._datosFiltradosCache;
-  }
-
-  actualizarFiltros(): void {
     let resultado = [...this.datos];
 
     // Filtro de sedes por institución
@@ -678,6 +988,19 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       });
     }
 
+    // Filtros específicos de Menús (Semana y Sección: Desayuno / Almuerzo / Merienda)
+    if (this.tabActual === 'menus') {
+      if (this.filtroSemanaMenu && this.filtroSemanaMenu !== 'TODAS') {
+        resultado = resultado.filter(item => (item?.semana || 'General') === this.filtroSemanaMenu);
+      }
+      if (this.filtroSeccionMenu && this.filtroSeccionMenu !== 'TODAS') {
+        resultado = resultado.filter(item => {
+          const secs: string[] = Array.isArray(item?.secciones) ? item.secciones : [];
+          return secs.some(s => s.toLowerCase() === this.filtroSeccionMenu.toLowerCase());
+        });
+      }
+    }
+
     // Filtro por texto de búsqueda
     if (this.busquedaTexto && this.busquedaTexto.trim()) {
       const q = this.busquedaTexto.trim().toLowerCase();
@@ -685,7 +1008,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
         return Object.values(item).some(val => {
           if (val === null || val === undefined) return false;
           if (typeof val === 'object') {
-            return Object.values(val).some(sub => sub && String(sub).toLowerCase().includes(q));
+            return JSON.stringify(val).toLowerCase().includes(q);
           }
           return String(val).toLowerCase().includes(q);
         });
@@ -717,7 +1040,17 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
         const valB = String(this.obtenerNombrePrincipal(b)).toLowerCase();
         return valB.localeCompare(valA, 'es');
       });
+    } else if (this.tabActual === 'menus') {
+      resultado.sort((a, b) => {
+        const numA = a?.numero_menu ?? 999;
+        const numB = b?.numero_menu ?? 999;
+        if (numA !== numB) return numA - numB;
+        const idA = this.obtenerIdItem(a) || 0;
+        const idB = this.obtenerIdItem(b) || 0;
+        return idA - idB;
+      });
     } else {
+      // Más recientes: ordenar por ID descendente si existe
       resultado.sort((a, b) => {
         const idA = this.obtenerIdItem(a) || 0;
         const idB = this.obtenerIdItem(b) || 0;
@@ -725,7 +1058,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       });
     }
 
-    this._datosFiltradosCache = resultado;
+    return resultado;
   }
 
   get totalRegistros(): number {
@@ -826,10 +1159,21 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       .obtenerDatos(this.tabActual)
       .subscribe({
         next: (res: any) => {
-          this.datos = this.normalizarRespuesta(res);
-          this.actualizarFiltros();
+          const crudos = this.normalizarRespuesta(res);
           if (this.tabActual === 'instituciones') {
-            this.institucionesCompletas = this.datos;
+            this.institucionesCompletas = crudos;
+          }
+          if (this.tabActual === 'menus') {
+            const requiereLimpiezaEjemplos = this.detectarPlatosEjemploAntiguos(crudos);
+            if (requiereLimpiezaEjemplos && !this.sincronizandoMinuta) {
+              this.reemplazarPlatosEjemploEnBackend(crudos);
+              return;
+            }
+            this.datos = this.ordenarPlatosPAE(
+              crudos.map(plato => this.enriquecerPlatoConReceta(plato))
+            );
+          } else {
+            this.datos = crudos;
           }
           this.cargando = false;
           this.cdr.detectChanges();
@@ -856,10 +1200,19 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
         if (fuente === 'instituciones') {
           this.institucionesCompletas = items;
         }
+        if (fuente === 'ingredientes') {
+          this.ingredientesCompletos = items;
+        }
+        if (fuente === 'unidades_medida') {
+          this.unidadesMedidaCompletas = items;
+        }
         this.opciones[fuente] = items.map(r => ({
           id: r[cfg.id] ?? r.id,
           label: cfg.etiqueta(r)
         }));
+        if (this.tabActual === 'menus' && this.datos.length > 0 && fuente === 'secciones_menu') {
+          this.datos = this.datos.map(plato => this.enriquecerPlatoConReceta(plato));
+        }
         this.cdr.detectChanges();
       },
       error: (err) => {
@@ -872,14 +1225,12 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
   private refrescarFuenteSiAplica(): void {
     if (
       this.tabActual === 'instituciones' ||
-      this.tabActual === 'sedes' ||
       this.tabActual === 'jornadas' ||
       this.tabActual === 'unidades_medida' ||
       this.tabActual === 'ingredientes' ||
       this.tabActual === 'categorias_inventario' ||
-      this.tabActual === 'tipos_mercado' ||
       this.tabActual === 'grados' ||
-      this.tabActual === 'turnos'
+      this.tabActual === 'secciones_menu'
     ) {
       this.cargarFuente(this.tabActual as FuenteRelacion);
     }
@@ -921,21 +1272,9 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
         const opcion = this.opciones[campo.source]?.find(
           o => String(o.id) === String(valor)
         );
-        // Fallbacks para nombres serializados por Django
+        // Fallback para sedes: si Django serializó institucion_nombre directamente
         if (!opcion && campo.name === 'id_institucion' && item?.institucion_nombre) {
           return item.institucion_nombre;
-        }
-        if (!opcion && campo.name === 'id_sede' && (item?.nombre_sede || item?.sede_nombre)) {
-          return item.nombre_sede || item.sede_nombre;
-        }
-        if (!opcion && campo.name === 'id_jornada' && (item?.nombre_jornada || item?.jornada_nombre)) {
-          return item.nombre_jornada || item.jornada_nombre;
-        }
-        if (!opcion && campo.name === 'id_tipo_mercado' && (item?.nombre_tipo || item?.tipo_mercado_nombre)) {
-          return item.nombre_tipo || item.tipo_mercado_nombre;
-        }
-        if (!opcion && campo.name === 'id_turno' && (item?.nombre_turno || item?.turno_nombre)) {
-          return item.nombre_turno || item.turno_nombre;
         }
         return opcion?.label || (valor ? String(valor) : '—');
       }
@@ -965,6 +1304,41 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
     this.modoEdicion = !!item;
     this.itemSeleccionadoId = item ? this.obtenerIdItem(item) : null;
     this.itemOriginal = item ? { ...item } : null;
+
+    if (this.tabActual === 'menus') {
+      this.plantillaMenuSeleccionada = '';
+      if (item) {
+        const enriquecido = this.enriquecerPlatoConReceta(item);
+        this.menuRecetaForm = {
+          id_plato: enriquecido.id_plato,
+          nombre_plato: enriquecido.nombre_plato || '',
+          semana: enriquecido.semana || 'Semana 1',
+          numero_menu: enriquecido.numero_menu ?? null,
+          secciones: Array.isArray(enriquecido.secciones) && enriquecido.secciones.length > 0
+            ? [...enriquecido.secciones]
+            : ['Desayuno', 'Almuerzo'],
+          imagen_url: enriquecido.imagen_url || '',
+          informacion_nutricional: enriquecido.informacion_nutricional || '',
+          estado: enriquecido.estado || 'ACTIVO',
+          componentes: Array.isArray(enriquecido.componentes) && enriquecido.componentes.length > 0
+            ? enriquecido.componentes.map((c: ComponentePlatoReceta) => ({
+                id_temporal: c.id_temporal || this.generarIdTemp(),
+                tipo_componente: c.tipo_componente || 'Alimento proteico',
+                nombre_componente: c.nombre_componente || '',
+                ingredientes: Array.isArray(c.ingredientes) ? c.ingredientes.map(i => ({ ...i })) : [],
+                pasos: Array.isArray(c.pasos) ? c.pasos.map((p, idx) => ({ numero_paso: idx + 1, descripcion_paso: p.descripcion_paso })) : [],
+                ingredienteTempId: null,
+                observacionTemp: ''
+              }))
+            : [this.crearComponenteVacio('Bebida con leche')]
+        };
+      } else {
+        this.menuRecetaForm = this.crearMenuRecetaVacio();
+      }
+      this.mostrarModal = true;
+      this.cdr.detectChanges();
+      return;
+    }
 
     const form: any = {};
     for (const campo of this.tab.campos) {
@@ -1003,6 +1377,627 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
     this.itemForm = {};
     this.itemSeleccionadoId = null;
     this.itemOriginal = null;
+    this.plantillaMenuSeleccionada = '';
+    this.archivoImagenPlatoSeleccionado = null;
+  }
+
+
+  // ============================================================
+  // LÓGICA DE MENÚS, COMPONENTES, INGREDIENTES Y PREPARACIÓN
+  // ============================================================
+
+  private generarIdTemp(): string {
+    return 'comp_' + Math.random().toString(36).slice(2, 9) + '_' + Date.now();
+  }
+
+  crearComponenteVacio(tipo: string = 'Alimento proteico', nombre: string = ''): ComponentePlatoReceta {
+    const guardado = nombre ? this.buscarComponenteEnCatalogo(nombre) : null;
+    return {
+      id_temporal: this.generarIdTemp(),
+      tipo_componente: guardado?.tipo_componente || tipo,
+      nombre_componente: nombre,
+      ingredientes: guardado?.ingredientes ? guardado.ingredientes.map(i => ({ ...i })) : [],
+      pasos: guardado?.pasos && guardado.pasos.length > 0
+        ? guardado.pasos.map((p, idx) => ({ numero_paso: idx + 1, descripcion_paso: p.descripcion_paso }))
+        : [{ numero_paso: 1, descripcion_paso: '' }],
+      ingredienteTempId: null,
+      observacionTemp: ''
+    };
+  }
+
+  crearMenuRecetaVacio(): RecetaMenuExtendida {
+    return {
+      nombre_plato: '',
+      semana: this.filtroSemanaMenu !== 'TODAS' ? this.filtroSemanaMenu : 'Semana 1',
+      numero_menu: null,
+      secciones: ['Desayuno', 'Almuerzo', 'Merienda'],
+      imagen_url: '',
+      informacion_nutricional: '',
+      estado: 'ACTIVO',
+      componentes: [
+        this.crearComponenteVacio('Bebida con leche'),
+        this.crearComponenteVacio('Alimento proteico'),
+        this.crearComponenteVacio('Cereal acompañante')
+      ]
+    };
+  }
+
+  aplicarPlantillaMenuPAE(numeroMenu: any): void {
+    const num = Number(numeroMenu);
+    const plantilla = this.MINUTA_PAE_OFICIAL.find(m => m.numero_menu === num);
+    if (!plantilla) return;
+
+    this.menuRecetaForm.nombre_plato = plantilla.nombre_plato;
+    this.menuRecetaForm.semana = plantilla.semana;
+    this.menuRecetaForm.numero_menu = plantilla.numero_menu;
+    this.menuRecetaForm.secciones = [...plantilla.secciones];
+    this.menuRecetaForm.componentes = plantilla.componentes.map(c =>
+      this.crearComponenteVacio(c.tipo_componente, c.nombre_componente)
+    );
+    this.cdr.detectChanges();
+  }
+
+  toggleSeccionMenu(seccionId: string): void {
+    const idx = this.menuRecetaForm.secciones.indexOf(seccionId);
+    if (idx >= 0) {
+      if (this.menuRecetaForm.secciones.length > 1) {
+        this.menuRecetaForm.secciones.splice(idx, 1);
+      } else {
+        this.sweetAlert.warning('Sección requerida', 'El menú/plato debe aplicar al menos a una sección (Desayuno, Almuerzo o Merienda).');
+      }
+    } else {
+      this.menuRecetaForm.secciones.push(seccionId);
+    }
+  }
+
+  esSeccionSeleccionada(seccionId: string): boolean {
+    return this.menuRecetaForm.secciones.includes(seccionId);
+  }
+
+  seleccionarTodasLasSecciones(): void {
+    this.menuRecetaForm.secciones = ['Desayuno', 'Almuerzo', 'Merienda'];
+  }
+
+  agregarComponenteAlPlato(): void {
+    this.menuRecetaForm.componentes.push(this.crearComponenteVacio('Alimento proteico'));
+  }
+
+  eliminarComponenteDelPlato(index: number): void {
+    if (this.menuRecetaForm.componentes.length <= 1) {
+      this.sweetAlert.warning('Mínimo un componente', 'El plato debe tener al menos un componente registrado.');
+      return;
+    }
+    this.menuRecetaForm.componentes.splice(index, 1);
+  }
+
+  onNombreComponenteChange(comp: ComponentePlatoReceta): void {
+    if (!comp.nombre_componente || comp.ingredientes.length > 0) return;
+    const guardado = this.buscarComponenteEnCatalogo(comp.nombre_componente);
+    if (guardado && (guardado.ingredientes.length > 0 || guardado.pasos.length > 0)) {
+      comp.ingredientes = guardado.ingredientes.map(i => ({ ...i }));
+      comp.pasos = guardado.pasos.map((p, idx) => ({
+        numero_paso: idx + 1,
+        descripcion_paso: p.descripcion_paso
+      }));
+      this.cdr.detectChanges();
+    }
+  }
+
+  reutilizarComponenteGuardado(comp: ComponentePlatoReceta, nombreCatalogo: string): void {
+    if (!nombreCatalogo) return;
+    const guardado = this.buscarComponenteEnCatalogo(nombreCatalogo);
+    if (!guardado) return;
+    comp.nombre_componente = guardado.nombre_componente;
+    comp.tipo_componente = guardado.tipo_componente || comp.tipo_componente;
+    comp.ingredientes = guardado.ingredientes.map(i => ({ ...i }));
+    comp.pasos = guardado.pasos.length > 0
+      ? guardado.pasos.map((p, idx) => ({ numero_paso: idx + 1, descripcion_paso: p.descripcion_paso }))
+      : [{ numero_paso: 1, descripcion_paso: '' }];
+    this.cdr.detectChanges();
+  }
+
+  get opcionesComponentesReutilizables(): OpcionRelacion[] {
+    const catalogo = this.obtenerCatalogoComponentesLocal();
+    return Object.values(catalogo).map(c => ({
+      id: c.nombre_componente,
+      label: `${c.nombre_componente} (${c.tipo_componente} • ${c.ingredientes.length} ingr.)`
+    }));
+  }
+
+  agregarIngredienteAComponente(comp: ComponentePlatoReceta): void {
+    const idIng = Number(comp.ingredienteTempId);
+    if (!idIng) {
+      this.sweetAlert.warning('Selecciona un ingrediente', 'Elige un ingrediente del inventario para agregarlo a este componente.');
+      return;
+    }
+    if (comp.ingredientes.some(i => Number(i.id_ingrediente) === idIng)) {
+      this.sweetAlert.warning('Ingrediente duplicado', 'Este ingrediente ya está incluido en este componente.');
+      return;
+    }
+
+    const ingOp = this.opciones['ingredientes']?.find(o => Number(o.id) === idIng);
+    const ingCompleto = this.ingredientesCompletos.find(i => Number(i.id_ingrediente ?? i.id) === idIng);
+    let unidad = '';
+    if (ingCompleto?.id_unidad_medida) {
+      const um = this.unidadesMedidaCompletas.find(
+        u => Number(u.id_unidad_medida ?? u.id) === Number(ingCompleto.id_unidad_medida)
+      );
+      unidad = um?.abreviatura || um?.nombre || '';
+    }
+
+    comp.ingredientes.push({
+      id_ingrediente: idIng,
+      nombre_ingrediente: ingOp?.label || ingCompleto?.nombre_ingrediente || `Ingrediente #${idIng}`,
+      unidad,
+      observacion: (comp.observacionTemp || '').trim()
+    });
+
+    comp.ingredienteTempId = null;
+    comp.observacionTemp = '';
+    this.cdr.detectChanges();
+  }
+
+  quitarIngredienteDeComponente(comp: ComponentePlatoReceta, index: number): void {
+    comp.ingredientes.splice(index, 1);
+  }
+
+  agregarPasoAComponente(comp: ComponentePlatoReceta): void {
+    comp.pasos.push({
+      numero_paso: comp.pasos.length + 1,
+      descripcion_paso: ''
+    });
+  }
+
+  quitarPasoDeComponente(comp: ComponentePlatoReceta, index: number): void {
+    if (comp.pasos.length <= 1) {
+      comp.pasos[0].descripcion_paso = '';
+      return;
+    }
+    comp.pasos.splice(index, 1);
+    comp.pasos.forEach((p, idx) => (p.numero_paso = idx + 1));
+  }
+
+  moverPasoComponente(comp: ComponentePlatoReceta, index: number, direccion: -1 | 1): void {
+    const destino = index + direccion;
+    if (destino < 0 || destino >= comp.pasos.length) return;
+    const temp = comp.pasos[index];
+    comp.pasos[index] = comp.pasos[destino];
+    comp.pasos[destino] = temp;
+    comp.pasos.forEach((p, idx) => (p.numero_paso = idx + 1));
+  }
+
+  onImagenPlatoSeleccionada(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input?.files?.[0];
+    if (!file) return;
+    if (file.size > 2.5 * 1024 * 1024) {
+      this.sweetAlert.warning('Imagen muy pesada', 'Selecciona una imagen menor a 2.5 MB.');
+      return;
+    }
+    this.archivoImagenPlatoSeleccionado = file;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        this.menuRecetaForm.imagen_url = reader.result;
+        this.cdr.detectChanges();
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+
+  abrirModalVerReceta(item: any): void {
+    this.recetaDetalleSeleccionada = this.enriquecerPlatoConReceta(item);
+    this.modalVerRecetaAbierto = true;
+    this.cdr.detectChanges();
+  }
+
+  cerrarModalVerReceta(): void {
+    this.modalVerRecetaAbierto = false;
+    this.recetaDetalleSeleccionada = null;
+  }
+
+  editarDesdeVistaReceta(): void {
+    const item = this.recetaDetalleSeleccionada;
+    this.cerrarModalVerReceta();
+    if (item) {
+      this.abrirModal(item);
+    }
+  }
+
+  private esPlatoOficialPAE(nombrePlato: string): boolean {
+    const limpio = String(nombrePlato || '').trim().toLowerCase();
+    if (!limpio) return false;
+    return this.MINUTA_PAE_OFICIAL.some(
+      m => m.nombre_plato.trim().toLowerCase() === limpio
+    );
+  }
+
+  private detectarPlatosEjemploAntiguos(crudos: any[]): boolean {
+    if (!Array.isArray(crudos) || crudos.length === 0) return true;
+    const tieneEjemplos = crudos.some(p => !this.esPlatoOficialPAE(p.nombre_plato));
+    const cantidadOficiales = crudos.filter(p => this.esPlatoOficialPAE(p.nombre_plato)).length;
+    return tieneEjemplos || cantidadOficiales < 20;
+  }
+
+  private ordenarPlatosPAE(lista: any[]): any[] {
+    return [...lista].sort((a, b) => {
+      const numA = a.numero_menu ?? this.extraerNumeroMenuDeNombre(a.nombre_plato) ?? 999;
+      const numB = b.numero_menu ?? this.extraerNumeroMenuDeNombre(b.nombre_plato) ?? 999;
+      if (numA !== numB) return numA - numB;
+      return String(a.nombre_plato || '').localeCompare(String(b.nombre_plato || ''));
+    });
+  }
+
+  private extraerNumeroMenuDeNombre(nombre: string): number | null {
+    const m = String(nombre || '').match(/men[uú]\s*(\d+)/i);
+    return m ? Number(m[1]) : null;
+  }
+
+  /**
+   * Elimina/reemplaza automáticamente los platos de ejemplo antiguos que estaban en la BD
+   * y deja únicamente los 20 platos oficiales del PAE (tanto para Banco de Datos como para la app móvil).
+   */
+  private reemplazarPlatosEjemploEnBackend(crudosActuales: any[], mostrarAlerta = false): void {
+    if (this.sincronizandoMinuta) return;
+    this.sincronizandoMinuta = true;
+
+    const oficialesMap = new Map<number, any>();
+    const ejemplosParaReemplazarOEliminar: any[] = [];
+
+    type OperacionSync =
+      | { tipo: 'update'; id: number; plantilla: PlantillaMenuPAE }
+      | { tipo: 'create'; plantilla: PlantillaMenuPAE }
+      | { tipo: 'delete'; id: number };
+
+    const operaciones: OperacionSync[] = [];
+
+    for (const item of crudosActuales) {
+      const num = this.extraerNumeroMenuDeNombre(item.nombre_plato);
+      const plantilla = num ? this.MINUTA_PAE_OFICIAL.find(m => m.numero_menu === num) : null;
+      if (plantilla && !oficialesMap.has(plantilla.numero_menu)) {
+        oficialesMap.set(plantilla.numero_menu, item);
+        // Si tiene el número de menú pero tenía el nombre largo anterior, actualizarlo al nombre corto:
+        if (String(item.nombre_plato || '').trim().toLowerCase() !== plantilla.nombre_plato.trim().toLowerCase()) {
+          const idItem = Number(item.id_plato ?? item.id);
+          if (idItem) {
+            operaciones.push({ tipo: 'update', id: idItem, plantilla });
+          }
+        }
+      } else {
+        ejemplosParaReemplazarOEliminar.push(item);
+      }
+    }
+
+    const faltantes = this.MINUTA_PAE_OFICIAL.filter(m => !oficialesMap.has(m.numero_menu));
+    let idxEjemplo = 0;
+
+    // 1. Reutilizar registros de ejemplo antiguos actualizándolos con los platos PAE faltantes (evita errores de FK en móvil/detalle_plato)
+    for (const plantilla of faltantes) {
+      if (idxEjemplo < ejemplosParaReemplazarOEliminar.length) {
+        const ej = ejemplosParaReemplazarOEliminar[idxEjemplo++];
+        const idEj = Number(ej.id_plato ?? ej.id);
+        if (idEj) {
+          operaciones.push({ tipo: 'update', id: idEj, plantilla });
+          continue;
+        }
+      }
+      operaciones.push({ tipo: 'create', plantilla });
+    }
+
+    // 2. Si sobraron platos de ejemplo antiguos, eliminarlos de la base de datos
+    while (idxEjemplo < ejemplosParaReemplazarOEliminar.length) {
+      const sobrante = ejemplosParaReemplazarOEliminar[idxEjemplo++];
+      const idSob = Number(sobrante.id_plato ?? sobrante.id);
+      if (idSob) {
+        operaciones.push({ tipo: 'delete', id: idSob });
+      }
+    }
+
+    if (operaciones.length === 0) {
+      this.sincronizandoMinuta = false;
+      this.datos = this.ordenarPlatosPAE(
+        crudosActuales.map(plato => this.enriquecerPlatoConReceta(plato))
+      );
+      this.cargando = false;
+      this.cdr.detectChanges();
+      return;
+    }
+
+    const idSeccionDefault = this.obtenerIdSeccionPrincipal(['Desayuno', 'Almuerzo']);
+
+    const ejecutarPaso = (idx: number) => {
+      if (idx >= operaciones.length) {
+        this.sincronizandoMinuta = false;
+        this.bancoDatosService.obtenerDatos('menus').subscribe({
+          next: (resFinal: any) => {
+            const listaFinal = this.normalizarRespuesta(resFinal);
+            // Filtrar cualquier plato ejemplo que no haya podido borrarse por FK
+            const soloOficiales = listaFinal.filter(p => this.esPlatoOficialPAE(p.nombre_plato));
+            this.datos = this.ordenarPlatosPAE(
+              (soloOficiales.length > 0 ? soloOficiales : listaFinal).map(plato =>
+                this.enriquecerPlatoConReceta(plato)
+              )
+            );
+            this.cargando = false;
+            this.cdr.detectChanges();
+            if (mostrarAlerta) {
+              this.sweetAlert.success(
+                '20 Platos Oficiales PAE listos',
+                'Se eliminaron los platos de ejemplo y quedaron registrados los 20 platos oficiales del PAE.'
+              );
+            }
+          },
+          error: () => {
+            this.cargando = false;
+            this.cdr.detectChanges();
+          }
+        });
+        return;
+      }
+
+      const op = operaciones[idx];
+      if (op.tipo === 'delete') {
+        this.bancoDatosService.eliminarDato('menus', op.id).subscribe({
+          next: () => ejecutarPaso(idx + 1),
+          error: () => ejecutarPaso(idx + 1)
+        });
+        return;
+      }
+
+      const plantilla = op.plantilla;
+      const resumenComponentes = plantilla.componentes.map(c => c.nombre_componente).join(', ');
+      const payloadBackend: any = {
+        nombre_plato: plantilla.nombre_plato.slice(0, 100),
+        id_seccion: idSeccionDefault,
+        componente: resumenComponentes.slice(0, 50)
+      };
+
+      const req$ = op.tipo === 'update'
+        ? this.bancoDatosService.actualizarDato('menus', op.id, payloadBackend)
+        : this.bancoDatosService.crearDato('menus', payloadBackend);
+
+      req$.subscribe({
+        next: (resp: any) => {
+          const idGuardado = op.tipo === 'update' ? op.id : (resp?.id_plato ?? resp?.id);
+          const recetaInicial: RecetaMenuExtendida = {
+            id_plato: idGuardado,
+            nombre_plato: plantilla.nombre_plato,
+            semana: plantilla.semana,
+            numero_menu: plantilla.numero_menu,
+            secciones: [...plantilla.secciones],
+            imagen_url: '',
+            informacion_nutricional: '',
+            estado: 'ACTIVO',
+            componentes: plantilla.componentes.map(c =>
+              this.crearComponenteVacio(c.tipo_componente, c.nombre_componente)
+            )
+          };
+          this.guardarRecetaExtendidaLocal(idGuardado, plantilla.nombre_plato, recetaInicial);
+          ejecutarPaso(idx + 1);
+        },
+        error: () => ejecutarPaso(idx + 1)
+      });
+    };
+
+    ejecutarPaso(0);
+  }
+
+  /** Sincroniza en la BD los 20 platos oficiales del PAE y elimina platos de ejemplo antiguos. */
+  sincronizarMinutaPAE(): void {
+    if (this.sincronizandoMinuta) return;
+    this.bancoDatosService.obtenerDatos('menus').subscribe({
+      next: (res: any) => {
+        const crudos = this.normalizarRespuesta(res);
+        this.reemplazarPlatosEjemploEnBackend(crudos, true);
+      },
+      error: () => {
+        this.reemplazarPlatosEjemploEnBackend(this.datos || [], true);
+      }
+    });
+  }
+
+  private obtenerIdSeccionPrincipal(seccionesNombres: string[]): number | null {
+    const secsOpciones = this.opciones['secciones_menu'] || [];
+    for (const nombre of seccionesNombres) {
+      const encontrada = secsOpciones.find(
+        s => s.label.trim().toLowerCase() === nombre.trim().toLowerCase()
+      );
+      if (encontrada) return Number(encontrada.id);
+    }
+    return secsOpciones[0] ? Number(secsOpciones[0].id) : 1;
+  }
+
+  private obtenerRecetarioLocal(): Record<string, RecetaMenuExtendida> {
+    try {
+      const raw = localStorage.getItem(this.STORAGE_RECETARIO_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  }
+
+  private guardarRecetaExtendidaLocal(idPlato: any, nombrePlato: string, receta: RecetaMenuExtendida): void {
+    try {
+      const mapa = this.obtenerRecetarioLocal();
+      if (idPlato !== undefined && idPlato !== null) {
+        mapa[`id_${idPlato}`] = receta;
+      }
+      if (nombrePlato) {
+        mapa[`nombre_${nombrePlato.trim().toLowerCase()}`] = receta;
+      }
+      localStorage.setItem(this.STORAGE_RECETARIO_KEY, JSON.stringify(mapa));
+
+      // También actualizar el catálogo de componentes reutilizables
+      const catComp = this.obtenerCatalogoComponentesLocal();
+      for (const comp of receta.componentes || []) {
+        const claveComp = (comp.nombre_componente || '').trim().toLowerCase();
+        if (claveComp && (comp.ingredientes.length > 0 || comp.pasos.some(p => p.descripcion_paso.trim()))) {
+          catComp[claveComp] = {
+            id_temporal: comp.id_temporal,
+            tipo_componente: comp.tipo_componente,
+            nombre_componente: comp.nombre_componente.trim(),
+            ingredientes: comp.ingredientes.map(i => ({ ...i })),
+            pasos: comp.pasos.filter(p => p.descripcion_paso.trim()).map((p, idx) => ({
+              numero_paso: idx + 1,
+              descripcion_paso: p.descripcion_paso.trim()
+            }))
+          };
+        }
+      }
+      localStorage.setItem(this.STORAGE_COMP_CATALOGO_KEY, JSON.stringify(catComp));
+    } catch (e) {
+      console.warn('No se pudo guardar en localStorage:', e);
+    }
+  }
+
+  private obtenerCatalogoComponentesLocal(): Record<string, ComponentePlatoReceta> {
+    try {
+      const raw = localStorage.getItem(this.STORAGE_COMP_CATALOGO_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  }
+
+  private buscarComponenteEnCatalogo(nombreComponente: string): ComponentePlatoReceta | null {
+    const clave = (nombreComponente || '').trim().toLowerCase();
+    if (!clave) return null;
+    const cat = this.obtenerCatalogoComponentesLocal();
+    return cat[clave] || null;
+  }
+
+  private enriquecerPlatoConReceta(plato: any): any {
+    const id = plato?.id_plato ?? plato?.id;
+    const nombre = String(plato?.nombre_plato ?? '').trim();
+    const mapa = this.obtenerRecetarioLocal();
+    const guardado = (id ? mapa[`id_${id}`] : null) || (nombre ? mapa[`nombre_${nombre.toLowerCase()}`] : null);
+
+    // Detectar si coincide con alguno de los 20 menús de la minuta oficial PAE
+    const plantillaCoincidente = this.MINUTA_PAE_OFICIAL.find(
+      m => m.nombre_plato.toLowerCase() === nombre.toLowerCase() ||
+           nombre.toLowerCase().startsWith(`menú ${m.numero_menu}:`) ||
+           nombre.toLowerCase().startsWith(`menu ${m.numero_menu}:`)
+    );
+
+    // Resolver nombre de sección desde id_seccion de la BD si no hay guardado
+    let secciones: string[] = [];
+    if (guardado?.secciones && guardado.secciones.length > 0) {
+      secciones = [...guardado.secciones];
+    } else if (plantillaCoincidente) {
+      secciones = [...plantillaCoincidente.secciones];
+    } else if (plato?.id_seccion) {
+      const secOp = this.opciones['secciones_menu']?.find(s => Number(s.id) === Number(plato.id_seccion));
+      const secNombre = secOp?.label || 'Almuerzo';
+      if (['Desayuno', 'Almuerzo', 'Merienda'].includes(secNombre)) {
+        secciones = [secNombre];
+      } else {
+        secciones = ['Desayuno', 'Almuerzo'];
+      }
+    } else {
+      secciones = ['Desayuno', 'Almuerzo'];
+    }
+
+    // Construir componentes
+    let componentes: ComponentePlatoReceta[] = [];
+    if (guardado?.componentes && guardado.componentes.length > 0) {
+      componentes = guardado.componentes.map(c => {
+        const delCatalogo = c.ingredientes.length === 0 ? this.buscarComponenteEnCatalogo(c.nombre_componente) : null;
+        return {
+          ...c,
+          ingredientes: c.ingredientes.length > 0 ? c.ingredientes : (delCatalogo?.ingredientes || []),
+          pasos: c.pasos && c.pasos.some(p => p.descripcion_paso?.trim())
+            ? c.pasos
+            : (delCatalogo?.pasos || c.pasos || [])
+        };
+      });
+    } else if (plantillaCoincidente) {
+      componentes = plantillaCoincidente.componentes.map(c =>
+        this.crearComponenteVacio(c.tipo_componente, c.nombre_componente)
+      );
+    } else if (plato?.componente) {
+      const partes = String(plato.componente).split(/\||,/).map(s => s.trim()).filter(Boolean);
+      componentes = partes.map(parte => {
+        const [posibleTipo, ...resto] = parte.split(':');
+        if (resto.length > 0) {
+          return this.crearComponenteVacio(posibleTipo.trim(), resto.join(':').trim());
+        }
+        return this.crearComponenteVacio('Alimento proteico', parte);
+      });
+    }
+
+    if (componentes.length === 0) {
+      componentes = [this.crearComponenteVacio('Alimento proteico', nombre || 'Componente principal')];
+    }
+
+    // Si el backend envió receta_componentes o pasos_preparacion anidados desde PostgreSQL
+    // y el componente aún no tiene ingredientes/pasos locales, los hidratamos desde el backend:
+    const tieneIngLocales = componentes.some(c => (c.ingredientes?.length || 0) > 0);
+    if (!tieneIngLocales && Array.isArray(plato?.receta_componentes) && plato.receta_componentes.length > 0) {
+      componentes[0].ingredientes = plato.receta_componentes.map((rc: any) => ({
+        id_ingrediente: Number(rc.id_ingrediente),
+        nombre_ingrediente: rc.nombre_ingrediente || `Ingrediente #${rc.id_ingrediente}`,
+        unidad: '',
+        observacion: ''
+      }));
+    }
+
+    const tienePasosLocales = componentes.some(
+      c => (c.pasos || []).some(p => p.descripcion_paso && p.descripcion_paso.trim() !== '')
+    );
+    if (!tienePasosLocales && Array.isArray(plato?.pasos_preparacion) && plato.pasos_preparacion.length > 0) {
+      for (const pasoBd of plato.pasos_preparacion) {
+        const descRaw = String(pasoBd.descripcion_paso || '').trim();
+        if (!descRaw) continue;
+        // Detectar si viene con prefijo "[NombreComponente] Descripción"
+        const matchComp = descRaw.match(/^\[([^\]]+)\]\s*(.+)$/);
+        if (matchComp) {
+          const nomComp = matchComp[1].trim().toLowerCase();
+          const textoPaso = matchComp[2].trim();
+          const compDestino = componentes.find(c => c.nombre_componente.trim().toLowerCase() === nomComp) || componentes[0];
+          compDestino.pasos = compDestino.pasos.filter(p => p.descripcion_paso.trim() !== '');
+          compDestino.pasos.push({
+            numero_paso: compDestino.pasos.length + 1,
+            descripcion_paso: textoPaso
+          });
+        } else {
+          componentes[0].pasos = componentes[0].pasos.filter(p => p.descripcion_paso.trim() !== '');
+          componentes[0].pasos.push({
+            numero_paso: Number(pasoBd.numero_paso) || (componentes[0].pasos.length + 1),
+            descripcion_paso: descRaw
+          });
+        }
+      }
+    }
+
+    const totalIngredientes = componentes.reduce((acc, c) => acc + (c.ingredientes?.length || 0), 0);
+    const totalPasos = componentes.reduce(
+      (acc, c) => acc + (c.pasos?.filter(p => p.descripcion_paso && p.descripcion_paso.trim()).length || 0),
+      0
+    );
+
+    const semana = guardado?.semana || plantillaCoincidente?.semana || 'Semana 1';
+    const numero_menu = guardado?.numero_menu ?? plantillaCoincidente?.numero_menu ?? null;
+    const estado = guardado?.estado || plato?.estado || 'ACTIVO';
+    const imagen_url = plato?.imagen_url || guardado?.imagen_url || '';
+    const informacion_nutricional = guardado?.informacion_nutricional || '';
+
+    return {
+      ...plato,
+      id_plato: id,
+      nombre_plato: nombre,
+      semana,
+      numero_menu,
+      secciones,
+      secciones_texto: secciones.join(', '),
+      componentes,
+      componente: componentes.map(c => `${c.tipo_componente}: ${c.nombre_componente}`).join(' | '),
+      totalIngredientes,
+      totalPasos,
+      resumen_receta: `${totalIngredientes} ingr. • ${totalPasos} pasos`,
+      imagen_url,
+      informacion_nutricional,
+      estado
+    };
   }
 
 
@@ -1068,6 +2063,11 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
   // ============================================================
 
   guardar(): void {
+    if (this.tabActual === 'menus') {
+      this.guardarMenuReceta();
+      return;
+    }
+
     if (this.guardando || !this.validarFormulario()) {
       return;
     }
@@ -1105,6 +2105,217 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
           this.mensajeError(err, 'Hubo un problema al guardar el registro.')
         );
         this.cdr.detectChanges();
+      }
+    });
+  }
+
+  guardarMenuReceta(): void {
+    if (this.guardando) return;
+
+    const nombre = (this.menuRecetaForm.nombre_plato || '').trim();
+    if (!nombre) {
+      this.sweetAlert.warning('Nombre requerido', 'Ingresa el nombre del plato.');
+      return;
+    }
+
+    const componentesValidos = (this.menuRecetaForm.componentes || []).filter(
+      c => (c.nombre_componente || '').trim() !== ''
+    );
+
+    if (componentesValidos.length === 0) {
+      this.sweetAlert.warning('Componentes requeridos', 'Agrega al menos un componente con su nombre de preparación (ej. Huevos pericos, Arroz blanco).');
+      return;
+    }
+
+    const resumenComponentes = componentesValidos
+      .map(c => c.nombre_componente.trim())
+      .join(', ');
+
+    const payloadBackend: any = {
+      nombre_plato: nombre.slice(0, 100),
+      componente: resumenComponentes.slice(0, 50)
+    };
+
+    const editando = this.modoEdicion && this.itemSeleccionadoId !== null;
+    const archivoSubir = this.archivoImagenPlatoSeleccionado;
+    this.guardando = true;
+
+    const peticion$ = editando
+      ? this.bancoDatosService.actualizarDato('menus', this.itemSeleccionadoId as number, payloadBackend)
+      : this.bancoDatosService.crearDato('menus', payloadBackend);
+
+    peticion$.subscribe({
+      next: (resp: any) => {
+        const idFinal = Number(resp?.id_plato ?? resp?.id ?? this.itemSeleccionadoId);
+        const recetaAGuardar: RecetaMenuExtendida = {
+          ...this.menuRecetaForm,
+          id_plato: idFinal,
+          nombre_plato: nombre,
+          componentes: componentesValidos.map(c => ({
+            ...c,
+            nombre_componente: c.nombre_componente.trim(),
+            pasos: (c.pasos || [])
+              .filter(p => (p.descripcion_paso || '').trim() !== '')
+              .map((p, idx) => ({ numero_paso: idx + 1, descripcion_paso: p.descripcion_paso.trim() }))
+          }))
+        };
+
+        // Sincronizar ingredientes (receta_componente) y pasos (pasos_preparacion) en PostgreSQL
+        if (idFinal) {
+          this.sincronizarRecetaYPasosEnBackend(idFinal, recetaAGuardar);
+        }
+
+        const finalizarGuardado = (urlFinal?: string) => {
+          if (urlFinal) {
+            recetaAGuardar.imagen_url = urlFinal;
+          }
+          this.guardarRecetaExtendidaLocal(idFinal, nombre, recetaAGuardar);
+
+          this.sweetAlert.success(
+            editando ? 'Menú y receta actualizados' : 'Menú y receta registrados',
+            editando
+              ? 'Los componentes, ingredientes, pasos de preparación e imagen quedaron guardados.'
+              : 'El menú con sus componentes, ingredientes y pasos quedó registrado en el sistema.'
+          );
+          this.cerrarModal();
+          this.cargarDatos();
+        };
+
+        // Si seleccionó un archivo desde su computador, subirlo a Cloudinary vía /api/platos/<id>/subir-imagen/
+        if (idFinal && archivoSubir) {
+          this.bancoDatosService.subirImagenPlato(idFinal, archivoSubir).subscribe({
+            next: (imgResp: any) => {
+              finalizarGuardado(imgResp?.imagen_url);
+            },
+            error: () => {
+              finalizarGuardado();
+            }
+          });
+        } else {
+          finalizarGuardado(resp?.imagen_url);
+        }
+      },
+      error: (err: any) => {
+        console.error('Error al guardar menú/plato:', err);
+        this.guardando = false;
+        this.sweetAlert.error(
+          'No se pudo guardar el menú',
+          this.mensajeError(err, 'Verifica los datos e inténtalo nuevamente.')
+        );
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  /** Guarda los ingredientes y pasos del plato en las tablas receta_componente y pasos_preparacion de PostgreSQL. */
+  private sincronizarRecetaYPasosEnBackend(idPlato: number, receta: RecetaMenuExtendida): void {
+    // 1. Ingredientes únicos del plato hacia /api/receta_componente/
+    const idsIngredientesUnicos = new Set<number>();
+    for (const comp of receta.componentes || []) {
+      for (const ing of comp.ingredientes || []) {
+        if (ing.id_ingrediente) {
+          idsIngredientesUnicos.add(Number(ing.id_ingrediente));
+        }
+      }
+    }
+
+    // Registrar ingredientes en receta_componente sin duplicados
+    this.bancoDatosService.obtenerDatos('receta_componente').subscribe({
+      next: (resRc: any) => {
+        const todosRc = this.normalizarRespuesta(resRc);
+        const yaRegistrados = new Set<number>(
+          todosRc
+            .filter((rc: any) => {
+              const rcPlatoId = typeof rc.id_plato === 'object' ? (rc.id_plato?.id_plato || rc.id_plato?.id) : rc.id_plato;
+              return Number(rcPlatoId) === Number(idPlato);
+            })
+            .map((rc: any) => {
+              const ingId = typeof rc.id_ingrediente === 'object' ? (rc.id_ingrediente?.id_ingrediente || rc.id_ingrediente?.id) : rc.id_ingrediente;
+              return Number(ingId);
+            })
+        );
+
+        idsIngredientesUnicos.forEach(idIngrediente => {
+          if (!yaRegistrados.has(Number(idIngrediente))) {
+            this.bancoDatosService
+              .crearDato('receta_componente', {
+                id_plato: idPlato,
+                id_ingrediente: idIngrediente,
+                id_gramaje: null
+              })
+              .subscribe({ error: () => {} });
+          }
+        });
+      },
+      error: () => {
+        idsIngredientesUnicos.forEach(idIngrediente => {
+          this.bancoDatosService
+            .crearDato('receta_componente', {
+              id_plato: idPlato,
+              id_ingrediente: idIngrediente,
+              id_gramaje: null
+            })
+            .subscribe({ error: () => {} });
+        });
+      }
+    });
+
+    // 2. Limpiar pasos anteriores de este plato si existen para evitar duplicados en la móvil
+    this.bancoDatosService.obtenerDatos('pasos_preparacion').subscribe({
+      next: (resPasos: any) => {
+        const todosPasos = this.normalizarRespuesta(resPasos);
+        const viejos = todosPasos.filter((p: any) => {
+          const pPlatoId = typeof p.id_plato === 'object' ? (p.id_plato?.id_plato || p.id_plato?.id) : p.id_plato;
+          return Number(pPlatoId) === Number(idPlato);
+        });
+
+        const registrarNuevosPasos = () => {
+          let contadorGlobal = 1;
+          for (const comp of receta.componentes || []) {
+            for (const paso of comp.pasos || []) {
+              const texto = (paso.descripcion_paso || '').trim();
+              if (!texto) continue;
+              this.bancoDatosService
+                .crearDato('pasos_preparacion', {
+                  id_plato: idPlato,
+                  numero_paso: contadorGlobal++,
+                  descripcion_paso: `[${comp.nombre_componente}] ${texto}`
+                })
+                .subscribe({ error: () => {} });
+            }
+          }
+        };
+
+        if (viejos.length > 0) {
+          const borrarObservables = viejos.map((v: any) => {
+            const idPaso = v.id_paso_preparacion || v.id;
+            return this.bancoDatosService.eliminarDato('pasos_preparacion', idPaso).pipe(
+              catchError(() => of(null))
+            );
+          });
+          forkJoin(borrarObservables).subscribe({
+            next: () => registrarNuevosPasos(),
+            error: () => registrarNuevosPasos()
+          });
+        } else {
+          registrarNuevosPasos();
+        }
+      },
+      error: () => {
+        let contadorGlobal = 1;
+        for (const comp of receta.componentes || []) {
+          for (const paso of comp.pasos || []) {
+            const texto = (paso.descripcion_paso || '').trim();
+            if (!texto) continue;
+            this.bancoDatosService
+              .crearDato('pasos_preparacion', {
+                id_plato: idPlato,
+                numero_paso: contadorGlobal++,
+                descripcion_paso: `[${comp.nombre_componente}] ${texto}`
+              })
+              .subscribe({ error: () => {} });
+          }
+        }
       }
     });
   }

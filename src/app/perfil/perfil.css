@@ -1,0 +1,11 @@
+.perfil-container {
+  font-family: inherit;
+}
+
+.btn-editar-personal:active {
+  transform: scale(0.98);
+}
+
+.btn-guardar-perfil:active {
+  transform: scale(0.98);
+}

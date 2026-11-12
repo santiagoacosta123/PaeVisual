@@ -44,4 +44,46 @@ describe('DashboardSupervisor', () => {
     expect(component.cargando).toBe(false);
     expect(component.errorMensaje).toContain('No se pudieron cargar');
   });
+
+  it('shows selected institution details, administrator, and associated sites', () => {
+    component.institucionActiva = {
+      id_institucion: 8,
+      nombre_institucion: 'Institución Central',
+      estado: 'ACTIVO',
+      nit: '900123456',
+      administrador_asignado: { nombre: 'Ana', apellido: 'Gómez' },
+      sedes: [{ nombre_sede: 'Sede Norte' }, { nombre: 'Sede Sur' }],
+    };
+
+    fixture.detectChanges();
+
+    const texto = fixture.nativeElement.textContent;
+    expect(texto).toContain('Institución seleccionada');
+    expect(texto).toContain('Institución Central');
+    expect(texto).toContain('ACTIVO');
+    expect(texto).toContain('900123456');
+    expect(texto).toContain('Ana Gómez');
+    expect(texto).toContain('Sede Norte');
+    expect(texto).toContain('Sede Sur');
+  });
+
+  it('shows the institution and site fallbacks when optional data is absent', () => {
+    component.institucionActiva = {
+      id_institucion: 8,
+      nombre_institucion: 'Institución Central',
+      estado: '',
+      nit: '',
+      administrador_asignado: null,
+      sedes: [],
+    };
+
+    fixture.detectChanges();
+
+    const texto = fixture.nativeElement.textContent;
+    expect(texto).toContain('No registrado');
+    expect(texto).toContain('Sin asignar');
+    expect(texto).toContain('Sin sedes registradas');
+    expect(texto).not.toContain('Representante');
+    expect(texto).not.toContain('Teléfono');
+  });
 });

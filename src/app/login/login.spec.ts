@@ -259,4 +259,41 @@ describe('LoginComponent', () => {
     expect(authServiceMock.recuperarContrasena).not.toHaveBeenCalled();
     expect(component.errorRecuperacion).toContain('válido');
   });
+
+  it('toggles password visibility between password and text', () => {
+    const passwordInput = fixture.nativeElement.querySelector('#clave') as HTMLInputElement;
+    const toggleBtn = fixture.nativeElement.querySelector('button[aria-label="Mostrar u ocultar contraseña"]') as HTMLButtonElement;
+    expect(passwordInput.type).toBe('password');
+
+    toggleBtn.click();
+    fixture.detectChanges();
+    expect(component.mostrarClave).toBe(true);
+    expect(passwordInput.type).toBe('text');
+
+    toggleBtn.click();
+    fixture.detectChanges();
+    expect(component.mostrarClave).toBe(false);
+    expect(passwordInput.type).toBe('password');
+  });
+
+  it('displays account temporary lockout message without revealing sensitive data', () => {
+    const lockMessage = 'La cuenta ha sido bloqueada temporalmente por múltiples intentos fallidos de inicio de sesión. Por favor intenta nuevamente más tarde.';
+    authServiceMock.login.mockReturnValue(
+      throwError(() => ({
+        status: 401,
+        error: { detail: lockMessage },
+      }))
+    );
+    component.loginForm.setValue({
+      correo: 'ana@example.com',
+      clave: 'password-incorrecto',
+    });
+
+    component.onSubmit();
+    fixture.detectChanges();
+
+    expect(component.cargando).toBe(false);
+    expect(component.errorMensaje).toBe(lockMessage);
+    expect(fixture.nativeElement.textContent).toContain('bloqueada temporalmente');
+  });
 });

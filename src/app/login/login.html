@@ -102,7 +102,7 @@
           </div>
           <div class="w-full h-[2px] bg-[#0b6638] rounded-xs transition-all group-focus-within:h-[2.5px] group-focus-within:bg-[#084b29]"></div>
           <span class="text-xs text-red-600 font-medium mt-1.5" *ngIf="correo?.invalid && (correo?.dirty || correo?.touched)">
-            Ingresa un correo electrónico válido
+            {{ correo?.errors?.['required'] ? 'El correo electrónico es obligatorio' : 'Ingresa un correo electrónico válido' }}
           </span>
         </div>
 
@@ -145,7 +145,7 @@
           </div>
           <div class="w-full h-[2px] bg-[#0b6638] rounded-xs transition-all group-focus-within:h-[2.5px] group-focus-within:bg-[#084b29]"></div>
           <span class="text-xs text-red-600 font-medium mt-1.5" *ngIf="clave?.invalid && (clave?.dirty || clave?.touched)">
-            Mínimo 6 caracteres
+            {{ clave?.errors?.['required'] ? 'La contraseña es obligatoria' : 'Mínimo 6 caracteres' }}
           </span>
         </div>
 

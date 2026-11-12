@@ -1,192 +1,980 @@
+
+
 <style>
-  .sx {
-    --sx-yellow: #FFD03A;
-    --sx-amber: #F5A300;
-    --sx-deep: #7A5200;
-    --sx-cream: #FFF6D6;
-    --sx-sand: #FFFBEF;
-    --sx-line: #F5D98A;
-    --sx-navy: #1E2B45;
-    --sx-ink: #1F2937;
-    --sx-mute: #64748B;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 330px;
-    gap: 18px;
-    align-items: stretch;
-    width: 100%;
-    color: var(--sx-ink);
-  }
-  .sx * { box-sizing: border-box; }
-  .sx h1, .sx h2, .sx h3, .sx p { margin: 0; }
-  .sx-main { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
 
-  /* ---------- HERO COMPACTO ---------- */
-  .sx-hero {
-    position: relative; overflow: hidden; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 16px;
-    padding: 32px 40px; border-radius: 26px;
-    background: linear-gradient(120deg, #FFE98F 0%, #FFD03A 55%, #F5A300 100%);
-  }
-  .sx-hero::before { content: ''; position: absolute; width: 220px; height: 220px; right: -70px; top: -100px; border-radius: 50%; background: rgba(255,255,255,.22); pointer-events: none; }
-  .sx-hero__text { position: relative; z-index: 2; display: flex; flex-direction: column; gap: 8px; }
-  .sx-hero__badge {
-    align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; padding: 5px 14px; border-radius: 999px;
-    background: rgba(255,255,255,.75); font-size: 13px; font-weight: 700; color: var(--sx-deep);
-  }
-  .sx-hero__title { font-size: clamp(24px, 2.9vw, 36px); font-weight: 900; line-height: 1.1; letter-spacing: -.02em; color: var(--sx-navy); }
-  .sx-hero__lead { max-width: 540px; font-size: 14.5px; line-height: 1.5; color: #3b2a00; }
+/* ---------- 1. Variables y base ---------- */
+:host { display: block; }
 
-  /* Logo en círculo */
-  .sx-logo { position: relative; z-index: 2; width: 124px; height: 124px; flex-shrink: 0; margin-right: 8px; }
-  .sx-logo::before { content: ''; position: absolute; inset: -7px; border-radius: 50%; border: 2px solid rgba(255,255,255,.75); }
-  .sx-logo__circle { position: absolute; inset: 0; display: grid; place-items: center; border-radius: 50%; background: #fff; box-shadow: 0 14px 24px -14px rgba(90,55,0,.8); }
-  .sx-logo__circle img { display: block; width: 76%; height: auto; }
+.sd,
+.sg1 {
+  --g900: #111827;
+  --g800: #1f2937;
+  --g700: #7a5200;
+  --g600: #b7791f;
+  --g500: #f5a300;
+  --g100: #fff1c2;
+  --g50: #fffbef;
+  --yellow: #ffd03a;
+  --amber: #f5a300;
+  --deep: #7a5200;
+  --ink: #1f2937;
+  --mute: #6b7280;
+  --line: #e9e7dd;
+  --card-shadow: 0 14px 30px -24px rgba(122, 82, 0, 0.28);
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  color: var(--ink);
+  width: 100%;
+}
 
-  /* ---------- FUNCIONES RÁPIDAS (3 en una fila) ---------- */
-  .sx-fn { display: flex; flex: 1; flex-direction: column; min-height: 0; }
-  .sx-section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
-  .sx-section-head h2 { font-size: 22px; font-weight: 900; }
-  .sx-section-head p { font-size: 13px; color: var(--sx-mute); font-weight: 500; }
-  .sx-quick { display: grid; flex: 1; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: 1fr; gap: 14px; }
-  .sx-q {
-    position: relative; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 16px; padding: 24px; text-align: left; cursor: pointer;
-    border-radius: 22px; background: #fff; border: 1px solid var(--sx-line); font: inherit; color: inherit;
-    transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
-  }
-  .sx-q:hover { transform: translateY(-3px); border-color: var(--sx-amber); box-shadow: 0 16px 26px -20px rgba(245,163,0,.9); }
-  .sx-q:focus-visible { outline: 3px solid var(--sx-amber); outline-offset: 2px; }
-  .sx-q__icon { display: grid; place-items: center; width: 62px; height: 62px; border-radius: 18px; background: var(--sx-yellow); color: var(--sx-ink); flex-shrink: 0; }
-  .sx-q__icon .material-symbols-outlined { font-size: 34px; }
-  .sx-q__body { flex: 1; min-width: 0; }
-  .sx-q h3 { font-size: 19px; font-weight: 800; line-height: 1.2; }
-  .sx-q p { font-size: 13.5px; line-height: 1.5; color: var(--sx-mute); margin-top: 6px; }
-  .sx-q__go { position: absolute; top: 18px; right: 18px; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; background: var(--sx-cream); color: var(--sx-deep); transition: transform .2s ease, background .2s ease; }
-  .sx-q:hover .sx-q__go { transform: translateX(3px); background: var(--sx-yellow); }
+.sd *, .sg1 * { box-sizing: border-box; }
+.sd h1, .sd h2, .sd h3, .sd p,
+.sg1 h1, .sg1 h2, .sg1 h3, .sg1 p { margin: 0; }
+.sd ul, .sg1 ul { margin: 0; padding: 0; list-style: none; }
 
-  /* ---------- TARJETA LATERAL ---------- */
-  .sx-panel { display: flex; flex-direction: column; overflow: hidden; border-radius: 22px; background: #fff; border: 1px solid var(--sx-line); box-shadow: 0 22px 38px -32px rgba(245,163,0,.8); }
-  .sx-panel__art { position: relative; flex-shrink: 0; height: 175px; background: #FFF3C2; }
-  .sx-panel__art img { display: block; width: 100%; height: 100%; object-fit: cover; }
-  .sx-change {
-    position: absolute; top: 12px; right: 12px; display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 999px;
-    border: 1px solid var(--sx-line); background: rgba(255,255,255,.95); color: var(--sx-ink); font: inherit; font-size: 12px; font-weight: 800; cursor: pointer;
-    box-shadow: 0 10px 18px -12px rgba(0,0,0,.5); transition: background .2s ease, border-color .2s ease;
-  }
-  .sx-change:hover { background: var(--sx-yellow); border-color: var(--sx-amber); }
-  .sx-change:focus-visible { outline: 3px solid var(--sx-amber); outline-offset: 2px; }
-  .sx-change .material-symbols-outlined { font-size: 17px; }
-  .sx-panel__body { flex: 1; padding: 18px 22px 22px; }
-  .sx-pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 11px; border-radius: 999px; background: #FFE9A3; color: var(--sx-deep); font-size: 11.5px; font-weight: 800; }
-  .sx-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--sx-amber); box-shadow: 0 0 0 3px rgba(245,163,0,.2); }
-  .sx-panel h2 { margin-top: 10px; font-size: 18px; font-weight: 900; line-height: 1.2; }
-  .sx-rows { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 10px; margin-top: 18px; }
-  .sx-row { display: flex; align-items: center; gap: 10px; min-width: 0; font-size: 12.5px; }
-  .sx-row > div { min-width: 0; }
-  .sx-row__icon { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 11px; background: var(--sx-cream); flex-shrink: 0; }
-  .sx-row__icon .material-symbols-outlined { font-size: 19px; color: var(--sx-amber); }
-  .sx-row small { display: block; font-size: 10.5px; font-weight: 700; color: var(--sx-mute); }
-  .sx-row strong { display: block; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .sx-sedes-head { display: flex; align-items: center; justify-content: space-between; margin: 18px 0 12px; padding-top: 16px; border-top: 1px dashed var(--sx-line); font-size: 13.5px; font-weight: 800; }
-  .sx-sedes-head span { font-size: 11.5px; color: var(--sx-deep); background: #FFF7D6; padding: 1px 8px; border-radius: 999px; }
-  .sx-sedes { display: flex; flex-wrap: wrap; gap: 6px; }
-  .sx-sede { padding: 4px 11px; border-radius: 10px; background: #FFF7D6; border: 1px solid #F3D98A; font-size: 11.5px; font-weight: 700; color: var(--sx-deep); }
-  .sx-empty { font-size: 11px; color: var(--sx-mute); }
+.sd {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
 
-  /* ---------- RESPONSIVE ---------- */
-  @media (max-width: 1100px) { .sx { grid-template-columns: 1fr; } }
-  @media (max-width: 760px) { .sx-quick { grid-template-columns: 1fr; } }
-  @media (max-width: 620px) {
-    .sx-hero { grid-template-columns: 1fr; padding: 18px; }
-    .sx-logo { width: 80px; height: 80px; order: -1; }
-  }
-  @media (prefers-reduced-motion: reduce) { .sx-q, .sx-q__go { transition: none; } }
+.sd .material-symbols-outlined { line-height: 1; }
 
-  /* ---------- PASO 1: ELEGIR INSTITUCIÓN ---------- */
-  .sx1 { display: flex; flex-direction: column; gap: 22px; width: 100%; color: #1F2937; }
-  .sx1 * { box-sizing: border-box; }
-  .sx1 h1, .sx1 h2, .sx1 h3, .sx1 p { margin: 0; }
-  .sx1-hero {
-    position: relative; overflow: hidden; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 24px;
-    padding: 16px 32px; border-radius: 22px; background: linear-gradient(120deg, #FFE98F 0%, #FFD03A 55%, #F5A300 100%);
-  }
-  .sx1-hero::before { content: ''; position: absolute; width: 200px; height: 200px; right: -60px; top: -90px; border-radius: 50%; background: rgba(255,255,255,.22); pointer-events: none; }
-  .sx1-hero__text { position: relative; z-index: 2; display: flex; flex-direction: column; gap: 4px; }
-  .sx1-hero h1 { font-size: clamp(20px, 2.4vw, 26px); font-weight: 900; line-height: 1.08; letter-spacing: -.02em; color: #1E2B45; }
-  .sx1-hero p { max-width: 460px; font-size: 13px; line-height: 1.45; color: #3b2a00; }
-  .sx1-logo { position: relative; z-index: 2; width: 84px; height: 84px; margin-right: 8px; }
-  .sx1-logo::before { content: ''; position: absolute; inset: -6px; border-radius: 50%; border: 2px solid rgba(255,255,255,.75); }
-  .sx1-logo div { position: absolute; inset: 0; display: grid; place-items: center; border-radius: 50%; background: #fff; box-shadow: 0 12px 20px -12px rgba(90,55,0,.8); }
-  .sx1-logo img { display: block; width: 76%; height: auto; }
+/* ---------- 2. Tonos de estado ---------- */
+.t-ok     { background: #dcfce7; color: #15803d; }
+.t-warn   { background: #fef3c7; color: #b45309; }
+.t-info   { background: #dbeafe; color: #1d4ed8; }
+.t-danger { background: #fee2e2; color: #b91c1c; }
 
-  .sx1-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
-  .sx1-head h2 { font-size: 22px; font-weight: 900; }
-  .sx1-head p { font-size: 12px; color: #64748B; font-weight: 500; }
-  .sx1-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px; }
-  .sx1-card {
-    display: flex; flex-direction: column; overflow: hidden; cursor: pointer; border-radius: 24px; background: #fff; border: 1px solid #F5D98A;
-    transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
-  }
-  .sx1-card:hover { transform: translateY(-4px); border-color: #F5A300; box-shadow: 0 22px 34px -26px rgba(245,163,0,.9); }
-  .sx1-card:focus-visible { outline: 3px solid #F5A300; outline-offset: 2px; }
-  .sx1-card img { display: block; width: 100%; height: 160px; object-fit: cover; }
-  .sx1-card__body { display: flex; flex: 1; flex-direction: column; gap: 16px; padding: 20px; }
-  .sx1-card h3 { font-size: 17px; font-weight: 800; line-height: 1.25; }
-  .sx1-btn {
-    display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; margin-top: auto; padding: 12px 16px;
-    border: 1px solid #F5A300; border-radius: 14px; background: #FFD03A; color: #1F2937; font: inherit; font-size: 13px; font-weight: 800; cursor: pointer;
-  }
-  .sx1-btn:hover { background: #F5A300; }
-  .sx1-state { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 56px 24px; text-align: center; border-radius: 24px; border: 1px dashed #F5A300; background: #FFFBEF; }
-  .sx1-state h3 { font-size: 16px; font-weight: 800; }
-  .sx1-state p { max-width: 420px; font-size: 12px; line-height: 1.5; color: #64748B; }
-  .sx1-error { padding: 14px 18px; border-radius: 16px; background: #FEF2F2; border: 1px solid #FECACA; color: #991B1B; font-size: 12px; font-weight: 600; }
-  .sx1-error button { margin-left: 8px; background: none; border: 0; text-decoration: underline; font: inherit; font-weight: 800; color: inherit; cursor: pointer; }
-  .sx1-spin { animation: sx1spin 1s linear infinite; }
-  @keyframes sx1spin { to { transform: rotate(360deg); } }
-  @media (max-width: 620px) { .sx1-hero { padding: 16px 20px; gap: 14px; } .sx1-logo { width: 68px; height: 68px; } }
-  @media (prefers-reduced-motion: reduce) { .sx1-card, .sx1-spin { transition: none; animation: none; } }
+/* ---------- 3. Encabezado ---------- */
+.sd-top {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 0.9fr);
+  gap: 14px;
+  align-items: stretch;
+}
+
+.sd-hero {
+  position: relative;
+  overflow: hidden;
+  min-height: 170px;
+  border-radius: 22px;
+  border: 1px solid var(--line);
+  background: linear-gradient(110deg, #fff3c4 0%, #fffbef 55%, #ffffff 100%);
+}
+
+.sd-hero__photo {
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: 52%;
+  background: url('/cocineras.jpg') center / cover no-repeat;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 38%);
+          mask-image: linear-gradient(90deg, transparent 0%, #000 38%);
+}
+
+.sd-hero__body {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  max-width: 60%;
+  padding: 18px 24px;
+}
+
+.sd-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--yellow);
+  color: var(--g800);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.sd-pill .material-symbols-outlined { font-size: 16px; }
+
+.sd-hero h1 {
+  font-size: clamp(21px, 2.2vw, 27px);
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.sd-hero h1 em { font-style: normal; color: var(--g500); }
+
+.sd-hero p {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: #4b5563;
+}
+
+.sd-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.sd-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 13px;
+  border: 1px solid var(--amber);
+  border-radius: 12px;
+  background: var(--yellow);
+  color: var(--g800);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.sd-btn:hover { background: var(--amber); transform: translateY(-1px); }
+.sd-btn .material-symbols-outlined { font-size: 16px; }
+
+.sd-btn--ghost {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: var(--line);
+}
+
+.sd-btn--ghost:hover { background: var(--g100); border-color: var(--amber); }
+
+.sd-btn:focus-visible,
+.sd-chip-btn:focus-visible { outline: 3px solid var(--g500); outline-offset: 2px; }
+
+/* Tarjeta de institución (datos, cambiar y sedes) */
+.sd-inst {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 22px;
+  border: 1px solid var(--line);
+  background: linear-gradient(160deg, #fffbef 0%, #ffffff 100%);
+  box-shadow: var(--card-shadow);
+}
+
+.sd-inst__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sd-inst__tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  font-size: 11.5px;
+  font-weight: 800;
+  color: var(--g700);
+}
+
+.sd-inst__tag .material-symbols-outlined { font-size: 15px; color: var(--amber); }
+
+.sd-inst__name { display: flex; align-items: center; gap: 10px; }
+
+.sd-inst__ic {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: 11px;
+  background: var(--yellow);
+  color: var(--g800);
+}
+
+.sd-inst__ic .material-symbols-outlined { font-size: 21px; }
+.sd-inst__name h2 { font-size: 15px; font-weight: 900; line-height: 1.2; }
+
+.sd-inst__data {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 14px;
+}
+
+.sd-inst__data div { min-width: 0; }
+
+.sd-inst__data small {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--mute);
+}
+
+.sd-inst__data strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12.5px;
+  font-weight: 800;
+}
+
+.sd-inst__sedes-h {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.sd-inst__n {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--g100);
+  color: var(--g700);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.sd-inst__list { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.sd-inst__list li {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.sd-inst__list .material-symbols-outlined { font-size: 15px; color: var(--amber); }
+
+.sd-chip-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.sd-chip-btn:hover { background: var(--g100); border-color: var(--amber); }
+.sd-chip-btn .material-symbols-outlined { font-size: 16px; }
+
+.sd-link {
+  border: none;
+  background: none;
+  padding: 4px 6px;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--deep);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.sd-link:hover { background: var(--g100); }
+
+/* ---------- 4. Filtros ---------- */
+.sd-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 18px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #fff;
+}
+
+.sd-bar__l { display: flex; align-items: center; gap: 12px; }
+
+.sd-bar__ic {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: var(--g100);
+  color: var(--g600);
+}
+
+.sd-bar__l h2 { font-size: 15px; font-weight: 900; }
+.sd-bar__l p { font-size: 12px; color: var(--mute); }
+
+.sd-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+
+.sd-select {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--g50);
+}
+
+.sd-select label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--g700);
+}
+
+.sd-select label .material-symbols-outlined { font-size: 16px; }
+
+.sd-select select {
+  max-width: 200px;
+  border: none;
+  background: transparent;
+  outline: none;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.sd-pills {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--g50);
+}
+
+.sd-pills button {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--mute);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sd-pills button:hover { color: var(--ink); }
+
+.sd-pills button.on {
+  background: var(--yellow);
+  color: var(--g800);
+  font-weight: 800;
+  box-shadow: 0 4px 10px -4px rgba(245, 163, 0, 0.7);
+}
+
+/* ---------- 5. KPIs ---------- */
+.sd-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.sd-kpi {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: var(--card-shadow);
+  transition: transform 0.2s ease;
+}
+
+.sd-kpi:hover { transform: translateY(-2px); }
+
+.sd-kpi__ic {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+
+.sd-kpi__ic .material-symbols-outlined { font-size: 26px; }
+.sd-kpi__tx { min-width: 0; }
+
+.sd-kpi__v {
+  font-size: 26px;
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--g800);
+}
+
+.sd-kpi__l { margin-top: 2px; font-size: 12.5px; font-weight: 700; color: var(--ink); }
+.sd-kpi__h { font-size: 11.5px; color: var(--mute); }
+
+/* ---------- 6. Tarjetas y gráficos ---------- */
+.sd-row3 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  align-items: stretch;
+}
+
+.sd-row2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  align-items: stretch;
+}
+
+.sd-card {
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: var(--card-shadow);
+}
+
+.sd-ch { display: flex; align-items: center; gap: 10px; }
+
+.sd-ch__ic {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 11px;
+  background: var(--yellow);
+  color: var(--g800);
+}
+
+.sd-ch__ic .material-symbols-outlined { font-size: 20px; }
+.sd-ch__t { flex: 1; min-width: 0; }
+
+.sd-ch__t h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.sd-ch__t p { margin-top: 2px; font-size: 11.5px; color: var(--mute); }
+
+.sd-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--g50);
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--g700);
+  white-space: nowrap;
+}
+
+.sd-quality {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  align-items: center;
+  gap: 18px;
+  margin-top: 14px;
+}
+
+.sd-donut { position: relative; width: 100%; height: 180px; }
+.sd-donut--sm { width: 170px; height: 170px; flex-shrink: 0; }
+
+.sd-donut__c {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.sd-donut__c strong { font-size: 24px; font-weight: 900; line-height: 1; color: var(--g800); }
+.sd-donut__c span { margin-top: 3px; font-size: 12px; font-weight: 600; color: var(--mute); }
+
+.sd-legend { display: flex; flex-direction: column; gap: 10px; }
+
+.sd-legend li { display: flex; align-items: center; gap: 8px; font-size: 12.5px; }
+.sd-legend__t { flex: 1; color: #374151; font-weight: 500; }
+.sd-legend strong { font-weight: 800; }
+.sd-pct { font-size: 11.5px; font-weight: 600; color: var(--mute); }
+
+.sd-dot { width: 11px; height: 11px; flex-shrink: 0; border-radius: 50%; }
+.sd-dot--perecedero { background: #3b82f6; }
+.sd-dot--no-perecedero { background: #f59e0b; }
+
+.sd-bars { position: relative; height: 200px; margin-top: 12px; }
+
+/* ---------- 7. Últimas entregas ---------- */
+.sd-table-wrap { margin-top: 10px; overflow-x: auto; }
+
+.sd-table {
+  width: 100%;
+  min-width: 560px;
+  border-collapse: collapse;
+  font-size: 12px;
+  text-align: left;
+}
+
+.sd-table th {
+  padding: 8px 6px;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--mute);
+  border-bottom: 1px solid var(--line);
+}
+
+.sd-table td {
+  padding: 9px 6px;
+  border-bottom: 1px solid #f3efe0;
+  vertical-align: middle;
+}
+
+.sd-table tbody tr:last-child td { border-bottom: none; }
+.sd-table tbody tr:hover { background: var(--g50); }
+
+.sd-cell { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; }
+
+.sd-circ {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+
+.sd-circ .material-symbols-outlined { font-size: 16px; }
+
+.sd-avatar {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--g100);
+  color: var(--g700);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.sd-detalle { color: #374151; }
+.sd-empty-row { padding: 24px 8px !important; text-align: center; color: var(--mute); }
+
+/* ---------- 8. Alertas ---------- */
+.sd-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.sd-card--alert { background: linear-gradient(160deg, #fffbef 0%, #ffffff 80%); }
+
+.sd-alerts { display: flex; flex-direction: column; margin-top: 8px; }
+
+.sd-alerts li {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid #f3efe0;
+}
+
+.sd-alerts li:last-child { border-bottom: none; }
+.sd-alerts li.sd-empty { display: block; padding: 18px 0; text-align: center; }
+
+.sd-alerts__tx { min-width: 0; }
+
+.sd-alerts__tx strong,
+.sd-alerts__tx small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sd-alerts__tx strong { font-size: 12.5px; font-weight: 800; }
+.sd-alerts__tx small { font-size: 11.5px; color: var(--mute); }
+
+.sd-state {
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.sd-empty { font-size: 12px; color: var(--mute); }
+
+/* ---------- 9. Composición de alimentos (dentro de la fila de alertas) ---------- */
+.sd-comp { display: flex; align-items: center; gap: 28px; margin-top: 12px; }
+.sd-comp .sd-legend { flex: 1; }
+
+/* ---------- 10. Paso 1: elegir institución ---------- */
+/* =========================================================================
+   PASO 1: ELEGIR INSTITUCIÓN
+   ========================================================================= */
+.sg1 {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.sg1-hero {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 24px;
+  padding: 18px 32px;
+  border-radius: 22px;
+  background: linear-gradient(120deg, #fff3c4 0%, #ffffff 70%);
+  color: var(--g800);
+  border: 1px solid var(--line);
+}
+
+.sg1-hero::before {
+  content: '';
+  position: absolute;
+  width: 200px;
+  height: 200px;
+  right: -60px;
+  top: -90px;
+  border-radius: 50%;
+  background: rgba(255, 208, 58, 0.22);
+  pointer-events: none;
+}
+
+.sg1-hero__text {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sg1-hero h1 {
+  font-size: clamp(20px, 2.4vw, 26px);
+  font-weight: 900;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+}
+
+.sg1-hero p {
+  max-width: 460px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #4b5563;
+}
+
+.sg1-logo {
+  position: relative;
+  z-index: 1;
+  width: 84px;
+  height: 84px;
+  margin-right: 8px;
+}
+
+.sg1-logo div {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 5px rgba(255, 208, 58, 0.45), 0 12px 20px -12px rgba(0, 0, 0, 0.5);
+}
+
+.sg1-logo img {
+  display: block;
+  width: 76%;
+  height: auto;
+}
+
+.sg1-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.sg1-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sg1-head h2 {
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.sg1-head p {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--mute);
+}
+
+.sg1-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 18px;
+}
+
+.sg1-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  cursor: pointer;
+  border-radius: 22px;
+  background: #fff;
+  border: 1px solid var(--line);
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.sg1-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--g500);
+  box-shadow: 0 22px 34px -26px rgba(245, 163, 0, 0.9);
+}
+
+.sg1-card:focus-visible {
+  outline: 3px solid var(--g500);
+  outline-offset: 2px;
+}
+
+.sg1-card img {
+  display: block;
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+}
+
+.sg1-card__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+}
+
+.sg1-card h3 {
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.sg1-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: auto;
+  padding: 12px 16px;
+  border: 1px solid var(--amber);
+  border-radius: 14px;
+  background: var(--yellow);
+  color: var(--g800);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.sg1-btn:hover {
+  background: var(--amber);
+}
+
+.sg1-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 56px 24px;
+  text-align: center;
+  border-radius: 24px;
+  border: 1px dashed var(--g500);
+  background: var(--g50);
+}
+
+.sg1-state--solid {
+  border-style: solid;
+}
+
+.sg1-state h3 {
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.sg1-state p {
+  max-width: 420px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--mute);
+}
+
+.sg1-error {
+  padding: 14px 18px;
+  border-radius: 16px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.sg1-error button {
+  margin-left: 8px;
+  border: 0;
+  background: none;
+  text-decoration: underline;
+  font: inherit;
+  font-weight: 800;
+  color: inherit;
+  cursor: pointer;
+}
+
+.sg1-spin {
+  animation: sg1spin 1s linear infinite;
+}
+
+@keyframes sg1spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ---------- Utilidades de estado (antes eran estilos en línea) ---------- */
+.sg1-state__icon        { font-size: 34px; color: var(--amber); }
+.sg1-state__icon--lg    { font-size: 40px; color: var(--deep); }
+.sg1-btn--auto          { width: auto; }
+.sg1-btn .material-symbols-outlined { font-size: 18px; }
+
+
+
+/* ---------- 11. Responsive ---------- */
+@media (max-width: 1180px) {
+}
+
+@media (max-width: 1000px) {
+  .sd-row3 { grid-template-columns: 1fr; }
+  .sd-top { grid-template-columns: 1fr; }
+  .sd-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sd-row2 { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 720px) {
+  .sd-hero { min-height: 0; }
+  .sd-hero__photo { display: none; }
+  .sd-hero__body { max-width: 100%; padding: 20px; }
+  .sd-quality { grid-template-columns: 1fr; }
+  .sd-comp { flex-direction: column; align-items: stretch; }
+  .sd-bar { flex-direction: column; align-items: stretch; }
+  .sd-filters { flex-direction: column; align-items: stretch; }
+  .sd-pills { justify-content: center; }
+}
+
+@media (max-width: 520px) {
+  .sd-kpis { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sd-btn, .sd-kpi, .sg1-card, .sg1-spin { transition: none; animation: none; }
+}
+
+@media (max-width: 620px) {
+  .sg1-hero { padding: 16px 20px; gap: 14px; }
+  .sg1-logo { width: 68px; height: 68px; }
+}
 </style>
 
 
 <!-- ======================================================================= -->
-<!-- PASO 1: ELEGIR INSTITUCIÓN (cuando todavía no hay una seleccionada)      -->
+<!-- A. PASO 1 · ELEGIR INSTITUCIÓN                                          -->
 <!-- ======================================================================= -->
-<section *ngIf="!institucionActiva" class="sx1" style="font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;">
+<section *ngIf="!institucionActiva" class="sg1">
 
-  <header class="sx1-hero">
-    <div class="sx1-hero__text">
+  <!-- Encabezado -->
+  <header class="sg1-hero">
+    <div class="sg1-hero__text">
       <h1>Elige tu institución</h1>
       <p>Selecciona la institución educativa con la que vas a trabajar para ver todas sus funciones.</p>
     </div>
-    <div class="sx1-logo"><div><img src="/sirae-logo-dark.png" alt="Logo SIRAE" /></div></div>
+    <div class="sg1-logo">
+      <div><img src="/sirae-logo-dark.png" alt="Logo SIRAE" /></div>
+    </div>
   </header>
 
-  <!-- Cargando -->
-  <div *ngIf="cargando && instituciones.length === 0" class="sx1-state" style="border-style:solid">
-    <span class="material-symbols-outlined sx1-spin" style="font-size:34px;color:#F5A300">progress_activity</span>
+  <!-- Estado: cargando -->
+  <div *ngIf="cargando && instituciones.length === 0" class="sg1-state sg1-state--solid">
+    <span class="material-symbols-outlined sg1-spin sg1-state__icon">progress_activity</span>
     <p>Cargando tus instituciones...</p>
   </div>
 
-  <!-- Error -->
-  <div *ngIf="errorMensaje" role="alert" class="sx1-error">
+  <!-- Estado: error -->
+  <div *ngIf="errorMensaje" role="alert" class="sg1-error">
     {{ errorMensaje }}
     <button type="button" (click)="cargarInstitucionesServidor()">Reintentar</button>
   </div>
 
-  <!-- Tarjetas -->
-  <div *ngIf="instituciones.length > 0" class="flex flex-col" style="display:flex;flex-direction:column;gap:14px">
-    <div class="sx1-head">
+  <!-- Listado de instituciones -->
+  <div *ngIf="instituciones.length > 0" class="sg1-wrap">
+    <div class="sg1-head">
       <h2>Tus instituciones ({{ instituciones.length }})</h2>
       <p>Toca una para continuar</p>
     </div>
 
-    <div class="sx1-grid">
-      <article *ngFor="let inst of instituciones; let i = index; trackBy: trackInstitucion"
-        class="sx1-card" tabindex="0" (click)="seleccionarInstitucion(inst)" (keydown.enter)="seleccionarInstitucion(inst)">
-        <img [src]="imagenDe(i)" [alt]="'Fachada de ' + inst.nombre_institucion" loading="lazy" />
-        <div class="sx1-card__body">
+    <div class="sg1-grid">
+      <article
+        *ngFor="let inst of instituciones; let i = index; trackBy: trackInstitucion"
+        class="sg1-card"
+        tabindex="0"
+        (click)="seleccionarInstitucion(inst)"
+        (keydown.enter)="seleccionarInstitucion(inst)">
+
+        <img [src]="imagenDe(i)" [alt]="'Fachada de ' + inst.nombre_institucion" loading="lazy" width="300" height="160" style="width:100%; height:160px; object-fit:cover;" />
+
+        <div class="sg1-card__body">
           <h3>{{ inst.nombre_institucion }}</h3>
-          <button type="button" class="sx1-btn" (click)="seleccionarInstitucion(inst); $event.stopPropagation()">
-            <span class="material-symbols-outlined" style="font-size:18px">check_circle</span>
+          <button type="button" class="sg1-btn" (click)="seleccionarInstitucion(inst); $event.stopPropagation()">
+            <span class="material-symbols-outlined">check_circle</span>
             Seleccionar institución
           </button>
         </div>
@@ -194,121 +982,354 @@
     </div>
   </div>
 
-  <!-- Sin instituciones -->
-  <div *ngIf="!cargando && instituciones.length === 0 && !errorMensaje" class="sx1-state">
-    <span class="material-symbols-outlined" style="font-size:40px;color:#7A5200">domain_disabled</span>
+  <!-- Estado: sin instituciones asignadas -->
+  <div *ngIf="!cargando && instituciones.length === 0 && !errorMensaje" class="sg1-state">
+    <span class="material-symbols-outlined sg1-state__icon--lg">domain_disabled</span>
     <h3>No tienes instituciones educativas asignadas</h3>
     <p>Comunícate con el Super Administrador para que asigne las instituciones correspondientes a tu cuenta de supervisor.</p>
-    <button type="button" class="sx1-btn" style="width:auto" (click)="cargarInstitucionesServidor()">
-      <span class="material-symbols-outlined" style="font-size:18px">refresh</span>
+    <button type="button" class="sg1-btn sg1-btn--auto" (click)="cargarInstitucionesServidor()">
+      <span class="material-symbols-outlined">refresh</span>
       Verificar de nuevo
     </button>
   </div>
 
 </section>
 
-<!-- ======================================================================= -->
-<!-- SIRAE · INICIO DEL SUPERVISOR (institución ya seleccionada)              -->
-<!-- ======================================================================= -->
-<section *ngIf="institucionActiva as inst" class="sx" style="font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;">
 
-  <div class="sx-main">
+<!-- ======================================================================= -->
+<!-- B. PASO 2 · INICIO DEL SUPERVISOR (institución ya seleccionada)         -->
+<!-- ======================================================================= -->
+<section *ngIf="institucionActiva as inst" class="sd">
 
-    <!-- HERO COMPACTO CON LOGO EN CÍRCULO -->
-    <header class="sx-hero">
-      <div class="sx-hero__text">
-        <span class="sx-hero__badge">
-          <span class="material-symbols-outlined" style="font-size:16px">waving_hand</span>
+  <!-- ===================================================================== -->
+  <!-- 1. ENCABEZADO: banner + institución activa                            -->
+  <!-- ===================================================================== -->
+  <div class="sd-top">
+
+    <!-- Banner -->
+    <header class="sd-hero">
+      <div class="sd-hero__photo" aria-hidden="true"></div>
+
+      <div class="sd-hero__body">
+        <span class="sd-pill">
+          <span class="material-symbols-outlined">waving_hand</span>
           Hola, {{ nombreSupervisor }}
         </span>
-        <h1 class="sx-hero__title">Alimentación escolar bajo control</h1>
-        <p class="sx-hero__lead">Todo lo que necesitas para acompañar la alimentación de tus estudiantes, en un solo lugar.</p>
-      </div>
 
-      <div class="sx-logo">
-        <div class="sx-logo__circle">
-          <img src="/sirae-logo-dark.png" alt="Logo SIRAE" />
+        <h1>Control y seguimiento del <em>PAE</em></h1>
+        <p>Consulta el estado de las entregas, el inventario y la distribución por sedes en tiempo real.</p>
+
+        <div class="sd-hero__actions">
+          <button type="button" class="sd-btn" (click)="irA('reportes')">
+            Ver reportes <span class="material-symbols-outlined">arrow_forward</span>
+          </button>
+          <button type="button" class="sd-btn sd-btn--ghost" (click)="irA('entregas')">
+            <span class="material-symbols-outlined">local_shipping</span> Registrar entrega
+          </button>
+          <button type="button" class="sd-btn sd-btn--ghost" (click)="irA('sedes')">
+            <span class="material-symbols-outlined">inventory_2</span> Revisar inventario
+          </button>
         </div>
       </div>
     </header>
 
-    <!-- FUNCIONES RÁPIDAS -->
-    <div class="sx-fn">
-      <div class="sx-section-head">
-        <h2>Funciones rápidas</h2>
-        <p>Toca una opción para empezar</p>
+    <!-- Institución activa: datos, cambiar y sedes -->
+    <aside class="sd-inst" aria-label="Institución seleccionada">
+
+      <div class="sd-inst__head">
+        <span class="sd-inst__tag">
+          <span class="material-symbols-outlined">check_circle</span>
+          Institución seleccionada
+        </span>
+        <button type="button" class="sd-chip-btn" (click)="deseleccionarInstitucion()" title="Cambiar institución">
+          <span class="material-symbols-outlined">sync_alt</span> Cambiar
+        </button>
       </div>
 
-      <div class="sx-quick">
-        <button type="button" class="sx-q" (click)="irA('entregas')">
-          <span class="sx-q__icon"><span class="material-symbols-outlined">local_shipping</span></span>
-          <div class="sx-q__body">
-            <h3>Registrar una entrega</h3>
-            <p>Anota los víveres que llegaron: lotes, cantidades y vencimientos.</p>
-          </div>
-          <span class="sx-q__go"><span class="material-symbols-outlined" style="font-size:20px">arrow_forward</span></span>
-        </button>
+      <div class="sd-inst__name">
+        <span class="sd-inst__ic"><span class="material-symbols-outlined">account_balance</span></span>
+        <h2>{{ inst.nombre_institucion }}</h2>
+      </div>
 
-        <button type="button" class="sx-q" (click)="irA('sedes')">
-          <span class="sx-q__icon"><span class="material-symbols-outlined">inventory_2</span></span>
-          <div class="sx-q__body">
-            <h3>Revisar el inventario</h3>
-            <p>Mira cuánto stock y saldo de alimentos hay en cada sede.</p>
-          </div>
-          <span class="sx-q__go"><span class="material-symbols-outlined" style="font-size:20px">arrow_forward</span></span>
-        </button>
+      <div class="sd-inst__data">
+        <div><small>Estado</small><strong>{{ inst.estado?.trim() || 'No registrado' }}</strong></div>
+        <div><small>NIT / Código</small><strong>{{ inst.nit?.trim() || 'No registrado' }}</strong></div>
+        <div><small>Administrador</small><strong>{{ inst.administrador_asignado?.nombre_completo || 'Sin asignar' }}</strong></div>
+        <div><small>Representante legal</small><strong>{{ inst.representante_legal?.trim() || 'No registrado' }}</strong></div>
+        <div><small>Teléfono</small><strong>{{ inst.telefono?.trim() || 'No registrado' }}</strong></div>
+      </div>
 
-        <button type="button" class="sx-q" (click)="irA('reportes')">
-          <span class="sx-q__icon"><span class="material-symbols-outlined">analytics</span></span>
-          <div class="sx-q__body">
-            <h3>Consultar reportes</h3>
-            <p>Cupos, entregas y novedades de tu institución.</p>
-          </div>
-          <span class="sx-q__go"><span class="material-symbols-outlined" style="font-size:20px">arrow_forward</span></span>
-        </button>
+      <div class="sd-inst__sedes">
+        <div class="sd-inst__sedes-h">
+          Sedes disponibles <span class="sd-inst__n">{{ inst.sedes?.length || 0 }}</span>
+        </div>
+
+        <p *ngIf="!inst.sedes || inst.sedes.length === 0" class="sd-empty">Sin sedes registradas</p>
+
+        <ul *ngIf="inst.sedes && inst.sedes.length > 0" class="sd-inst__list">
+          <li *ngFor="let s of inst.sedes">
+            <span class="material-symbols-outlined">location_on</span>
+            {{ s.nombre_sede }}
+          </li>
+        </ul>
+      </div>
+
+    </aside>
+
+  </div>
+
+
+  <!-- ===================================================================== -->
+  <!-- 2. FILTROS (sede y período)                                           -->
+  <!-- ===================================================================== -->
+  <div class="sd-bar">
+    <div class="sd-bar__l">
+      <span class="sd-bar__ic"><span class="material-symbols-outlined">monitoring</span></span>
+      <div>
+        <h2>Supervisión y Flujo PAE</h2>
+        <p>Métricas de recepción, calidad y cobertura de alimentos</p>
+      </div>
+    </div>
+
+    <div class="sd-filters">
+      <div class="sd-select">
+        <label for="filtroSedeSupervisor">
+          <span class="material-symbols-outlined">store</span> Sede:
+        </label>
+        <select id="filtroSedeSupervisor" [(ngModel)]="filtroSedeSeleccionada" (change)="alCambiarFiltroSede()">
+          <option value="TODAS">Todas las sedes ({{ inst.sedes?.length || 0 }})</option>
+          <option *ngFor="let s of inst.sedes" [value]="s.id_sede">{{ s.nombre_sede }}</option>
+        </select>
+      </div>
+
+      <div class="sd-pills" role="group" aria-label="Filtro de período">
+        <button type="button" [class.on]="filtroPeriodo === '30'" (click)="alCambiarFiltroPeriodo('30')">30 días</button>
+        <button type="button" [class.on]="filtroPeriodo === '90'" (click)="alCambiarFiltroPeriodo('90')">90 días</button>
+        <button type="button" [class.on]="filtroPeriodo === 'TOTAL'" (click)="alCambiarFiltroPeriodo('TOTAL')">Histórico</button>
       </div>
     </div>
   </div>
 
-  <!-- TARJETA VERTICAL DE LA INSTITUCIÓN (como la del ejemplo) -->
-  <aside class="sx-panel">
-    <div class="sx-panel__art">
-      <img [src]="imagenActiva" [alt]="'Fachada de ' + inst.nombre_institucion" />
-      <button type="button" class="sx-change" (click)="deseleccionarInstitucion()">
-        <span class="material-symbols-outlined">sync_alt</span>
-        Cambiar institución
-      </button>
-    </div>
 
-    <div class="sx-panel__body">
-      <span class="sx-pill"><span class="sx-dot"></span>{{ inst.estado || 'ACTIVO' }}</span>
-      <h2>{{ inst.nombre_institucion }}</h2>
+  <!-- ===================================================================== -->
+  <!-- 3. KPIs                                                               -->
+  <!-- ===================================================================== -->
+  <div class="sd-kpis">
 
-      <div class="sx-rows">
-        <div *ngIf="inst.nit" class="sx-row">
-          <span class="sx-row__icon"><span class="material-symbols-outlined">badge</span></span>
-          <div><small>NIT</small><strong>{{ inst.nit }}</strong></div>
+    <article class="sd-kpi">
+      <span class="sd-kpi__ic t-ok"><span class="material-symbols-outlined">verified</span></span>
+      <div class="sd-kpi__tx">
+        <div class="sd-kpi__v">{{ tasaCumplimiento }}%</div>
+        <div class="sd-kpi__l">Cumplimiento PAE</div>
+        <div class="sd-kpi__h">{{ recibidasConformes }} entregas conformes</div>
+      </div>
+    </article>
+
+    <article class="sd-kpi">
+      <span class="sd-kpi__ic t-warn"><span class="material-symbols-outlined">local_shipping</span></span>
+      <div class="sd-kpi__tx">
+        <div class="sd-kpi__v">{{ totalEntregas }}</div>
+        <div class="sd-kpi__l">Despachos registrados</div>
+        <div class="sd-kpi__h">{{ enTransito }} en camino a sedes</div>
+      </div>
+    </article>
+
+    <article class="sd-kpi">
+      <span class="sd-kpi__ic t-info"><span class="material-symbols-outlined">inventory</span></span>
+      <div class="sd-kpi__tx">
+        <div class="sd-kpi__v">{{ totalKilosLitros | number:'1.0-0' }}</div>
+        <div class="sd-kpi__l">Volumen de alimentos</div>
+        <div class="sd-kpi__h">Kg / Litros / Unidades</div>
+      </div>
+    </article>
+
+    <article class="sd-kpi">
+      <span class="sd-kpi__ic" [ngClass]="novedadesRechazos > 0 ? 't-danger' : 't-ok'">
+        <span class="material-symbols-outlined">{{ novedadesRechazos > 0 ? 'warning' : 'task_alt' }}</span>
+      </span>
+      <div class="sd-kpi__tx">
+        <div class="sd-kpi__v">{{ novedadesRechazos }}</div>
+        <div class="sd-kpi__l">Novedades y rechazos</div>
+        <div class="sd-kpi__h">{{ conNovedad }} con novedad · {{ rechazadas }} rechazos</div>
+      </div>
+    </article>
+
+  </div>
+
+
+  <!-- ===================================================================== -->
+  <!-- 4. CALIDAD · DISTRIBUCIÓN POR SEDES · ÚLTIMAS ENTREGAS                -->
+  <!-- ===================================================================== -->
+  <div class="sd-row3">
+
+    <!-- Calidad y estado de recepción -->
+    <article class="sd-card">
+      <div class="sd-ch">
+        <span class="sd-ch__ic"><span class="material-symbols-outlined">bar_chart</span></span>
+        <div class="sd-ch__t">
+          <h3>Calidad y Estado de Recepción</h3>
         </div>
-        <div *ngIf="inst.representante_legal" class="sx-row">
-          <span class="sx-row__icon"><span class="material-symbols-outlined">person</span></span>
-          <div><small>Representante</small><strong>{{ inst.representante_legal }}</strong></div>
-        </div>
-        <div *ngIf="inst.telefono" class="sx-row">
-          <span class="sx-row__icon"><span class="material-symbols-outlined">call</span></span>
-          <div><small>Teléfono</small><strong>{{ inst.telefono }}</strong></div>
-        </div>
-        <div class="sx-row">
-          <span class="sx-row__icon"><span class="material-symbols-outlined">admin_panel_settings</span></span>
-          <div><small>Administrador</small><strong>{{ inst.administrador_asignado?.nombre_completo || 'Sin asignar' }}</strong></div>
-        </div>
+        <span class="sd-tag">{{ etiquetaPeriodo }}</span>
       </div>
 
-      <div class="sx-sedes-head">Sedes <span>{{ inst.sedes?.length || 0 }}</span></div>
-      <p *ngIf="!inst.sedes || inst.sedes.length === 0" class="sx-empty">Sin sedes registradas</p>
-      <div *ngIf="inst.sedes && inst.sedes.length > 0" class="sx-sedes">
-        <span *ngFor="let s of inst.sedes" class="sx-sede">{{ s.nombre_sede }}</span>
+      <div class="sd-quality">
+        <div class="sd-donut">
+          <canvas #chartEstadosCanvas></canvas>
+          <div class="sd-donut__c">
+            <strong>{{ tasaCumplimiento }}%</strong>
+            <span>Aprobado</span>
+          </div>
+        </div>
+
+        <ul class="sd-legend">
+          <li *ngFor="let l of leyendaEstados">
+            <span class="sd-dot" [style.background]="l.color"></span>
+            <span class="sd-legend__t">{{ l.label }}</span>
+            <strong>{{ l.pct }}%</strong>
+          </li>
+        </ul>
       </div>
+    </article>
+
+    <!-- Distribución por sedes -->
+    <article class="sd-card">
+      <div class="sd-ch">
+        <span class="sd-ch__ic"><span class="material-symbols-outlined">pie_chart</span></span>
+        <div class="sd-ch__t">
+          <h3>Distribución por Sedes</h3>
+        </div>
+        <span class="sd-tag">{{ etiquetaPeriodo }}</span>
+      </div>
+
+      <div class="sd-bars">
+        <canvas #chartSedesCanvas></canvas>
+      </div>
+    </article>
+
+  </div>
+
+
+  <!-- ===================================================================== -->
+  <!-- 4b. ÚLTIMAS ENTREGAS (ancho completo)                                 -->
+  <!-- ===================================================================== -->
+  <article class="sd-card">
+    <div class="sd-ch">
+      <span class="sd-ch__ic"><span class="material-symbols-outlined">local_shipping</span></span>
+      <div class="sd-ch__t">
+        <h3>Últimas Entregas</h3>
+      </div>
+      <button type="button" class="sd-link" (click)="irA('entregas')">Ver todas →</button>
     </div>
-  </aside>
+
+    <div class="sd-table-wrap">
+      <table class="sd-table">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Acción</th>
+            <th>Usuario</th>
+            <th>Detalle</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr *ngFor="let e of ultimasEntregas">
+            <td>
+              <span class="sd-cell">
+                <span class="sd-circ" [ngClass]="tonoEstado(e.estado)">
+                  <span class="material-symbols-outlined">{{ iconoEstado(e.estado) }}</span>
+                </span>
+                {{ (e.fechaRecepcion | date:'dd/MM/yyyy') || 'Hoy' }}
+              </span>
+            </td>
+            <td>
+              <span class="sd-cell">
+                <span class="material-symbols-outlined">{{ iconoAccion(e.estado) }}</span>
+                {{ accionEstado(e.estado) }}
+              </span>
+            </td>
+            <td>
+              <span class="sd-cell">
+                <span class="sd-avatar">{{ iniciales(usuarioDe(e)) }}</span>
+                {{ usuarioDe(e) }}
+              </span>
+            </td>
+            <td class="sd-detalle">
+              {{ e.ingrediente }} · {{ e.cantidad }} {{ e.unidad }} en {{ e.sedeNombre || 'Sede Principal' }}
+            </td>
+          </tr>
+
+          <tr *ngIf="ultimasEntregas.length === 0">
+            <td colspan="4" class="sd-empty-row">No hay despachos registrados para este filtro.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </article>
+
+
+  <!-- ===================================================================== -->
+  <!-- 5. ALERTAS Y NOTIFICACIONES · COMPOSICIÓN DE ALIMENTOS                -->
+  <!-- ===================================================================== -->
+  <div class="sd-row2">
+
+    <!-- Alertas y notificaciones -->
+    <article class="sd-card sd-card--alert">
+      <div class="sd-ch">
+        <span class="sd-ch__ic t-danger"><span class="material-symbols-outlined">notifications_active</span></span>
+        <div class="sd-ch__t">
+          <h3>Alertas y Notificaciones <span class="sd-count">{{ pendientes.length }}</span></h3>
+        </div>
+        <button type="button" class="sd-link" (click)="irA('entregas')">Ver todas →</button>
+      </div>
+
+      <ul class="sd-alerts">
+        <li *ngFor="let p of pendientes | slice:0:4">
+          <span class="sd-circ" [ngClass]="tonoEstado(p.estado)">
+            <span class="material-symbols-outlined">{{ iconoEstado(p.estado) }}</span>
+          </span>
+          <div class="sd-alerts__tx">
+            <strong>{{ p.ingrediente }}</strong>
+            <small>{{ p.sedeNombre || 'Sede Principal' }} · {{ p.cantidad }} {{ p.unidad }}</small>
+          </div>
+          <span class="sd-state" [ngClass]="tonoEstado(p.estado)">{{ etiquetaEstado(p.estado) }}</span>
+        </li>
+
+        <li *ngIf="pendientes.length === 0" class="sd-empty">No hay entregas pendientes. Todo al día.</li>
+      </ul>
+    </article>
+
+    <!-- Composición de alimentos -->
+    <article class="sd-card">
+      <div class="sd-ch">
+        <span class="sd-ch__ic"><span class="material-symbols-outlined">nutrition</span></span>
+        <div class="sd-ch__t">
+          <h3>Composición de Alimentos</h3>
+          <p>Perecederos (cadena de frío) vs no perecederos (abarrotes)</p>
+        </div>
+        <span class="sd-tag">{{ etiquetaPeriodo }}</span>
+      </div>
+
+      <div class="sd-comp">
+        <div class="sd-donut sd-donut--sm">
+          <canvas #chartCategoriasCanvas></canvas>
+        </div>
+
+        <ul class="sd-legend">
+          <li>
+            <span class="sd-dot sd-dot--perecedero"></span>
+            <span class="sd-legend__t">Perecederos (lácteos, frutas, carnes)</span>
+            <strong>{{ totalPerecederos | number:'1.0-0' }} <span class="sd-pct">({{ pctPerecederos }}%)</span></strong>
+          </li>
+          <li>
+            <span class="sd-dot sd-dot--no-perecedero"></span>
+            <span class="sd-legend__t">No perecederos (granos, abarrotes)</span>
+            <strong>{{ totalNoPerecederos | number:'1.0-0' }} <span class="sd-pct">({{ pctNoPerecederos }}%)</span></strong>
+          </li>
+        </ul>
+      </div>
+    </article>
+
+  </div>
 
 </section>

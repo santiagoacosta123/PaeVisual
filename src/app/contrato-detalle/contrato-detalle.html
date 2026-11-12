@@ -1,15 +1,15 @@
-<div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(4px); display: flex; justify-content: center; align-items: flex-start; z-index: 9999; overflow-y: auto; padding: 24px 12px; box-sizing: border-box; font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;">
-  <div style="background-color: #ffffff; width: 100%; max-width: 960px; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); padding: 24px; color: #0f172a; position: relative; margin: auto;">
+<div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.55); backdrop-filter: blur(4px); display: flex; justify-content: center; align-items: flex-start; z-index: 9999; overflow-y: auto; padding: 24px 16px; box-sizing: border-box; font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;">
+  <div style="background-color: #ffffff; width: 100%; max-width: 960px; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); padding: 28px 32px; color: #0f172a; position: relative; margin: auto; box-sizing: border-box;">
     
-    <!-- Botón X para cerrar -->
-    <button (click)="volver()" style="position: absolute; top: 18px; right: 18px; background: none; border: none; font-size: 22px; color: #64748b; cursor: pointer; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: background-color 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">&times;</button>
+    <!-- Botón X para cerrar modal principal -->
+    <button (click)="volver()" style="position: absolute; top: 20px; right: 22px; background: none; border: none; font-size: 20px; color: #64748b; cursor: pointer; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: background-color 0.2s; z-index: 10;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">&times;</button>
 
     <!-- ======================================================== -->
     <!-- ESTADO DE CARGA (SPINNER)                                -->
     <!-- ======================================================== -->
     <div *ngIf="cargandoDetalle" style="padding: 60px 20px; text-align: center;">
       <div style="display: inline-flex; flex-direction: column; align-items: center; gap: 14px;">
-        <div style="width: 40px; height: 40px; border: 3px solid #fde68a; border-top-color: #d97706; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+        <div style="width: 36px; height: 36px; border: 3px solid #fde68a; border-top-color: #d97706; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
         <div>
           <strong style="color: #0f172a; font-size: 15px; display: block;">Cargando información del contrato...</strong>
           <span style="color: #64748b; font-size: 12px;">Consultando datos contractuales y distribución de cupos</span>
@@ -33,908 +33,947 @@
       </button>
     </div>
 
-    <!-- ======================================================== -->
-    <!-- VISTA 1: MODO CONSULTA (SOLO LECTURA - SUPERADMINISTRADOR) -->
-    <!-- ======================================================== -->
+    <!-- ========================================================================= -->
+    <!-- VISTA 1: MODO CONSULTA (IMÁGENES 1 & 2)                                   -->
+    <!-- ========================================================================= -->
     <ng-container *ngIf="modo === 'consulta' && !cargandoDetalle">
       
       <!-- Cabecera de Consulta -->
-      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; padding-right: 40px; border-bottom: 1px solid #f1f5f9; padding-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+      <div style="display: flex; justify-content: flex-start; align-items: flex-start; margin-bottom: 20px; padding-right: 40px; flex-wrap: wrap; gap: 14px;">
         <div>
-          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
-            <span style="font-size: 10px; font-weight: 800; color: #475569; background: #f1f5f9; padding: 3px 8px; border-radius: 6px; letter-spacing: 0.5px;">CONSULTA DE CONTRATO</span>
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+            <span style="font-size: 11px; font-weight: 800; color: #ca8a04; letter-spacing: 0.5px;">DETALLE DEL CONTRATO</span>
             
-            <!-- Indicador visual del estado del contrato (Verde: Activo, Rojo: Inactivo, Gris: Finalizado) -->
-            <span style="padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 5px;"
-                  [style.background]="estiloEstadoContrato.bg"
-                  [style.color]="estiloEstadoContrato.color"
-                  [style.border]="'1px solid ' + estiloEstadoContrato.border">
-              <span style="width: 6px; height: 6px; border-radius: 50%;" [style.background]="estiloEstadoContrato.dot"></span>
-              {{ contrato?.estado || 'Activo' }}
+            <!-- Pill de Estado con punto -->
+            <span *ngIf="contrato?.estado === 'Activo'" style="padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; display: inline-flex; align-items: center; gap: 5px;">
+              <span style="width: 6px; height: 6px; border-radius: 50%; background: #10b981;"></span>
+              Activo
+            </span>
+            <span *ngIf="contrato?.estado === 'Inactivo'" style="padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; display: inline-flex; align-items: center; gap: 5px;">
+              <span style="width: 6px; height: 6px; border-radius: 50%; background: #ef4444;"></span>
+              Inactivo
+            </span>
+            <span *ngIf="contrato?.estado === 'Finalizado'" style="padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; display: inline-flex; align-items: center; gap: 5px;">
+              <span style="width: 6px; height: 6px; border-radius: 50%; background: #94a3b8;"></span>
+              Finalizado
             </span>
           </div>
 
-          <h1 style="margin: 4px 0 2px 0; font-size: 22px; font-weight: 800; color: #0f172a; letter-spacing: -0.5px;">
-            Contrato {{ contrato?.codigo }}
+          <h1 style="margin: 0 0 4px 0; font-size: 26px; font-weight: 800; color: #0f172a; letter-spacing: -0.5px;">
+            {{ contrato?.codigo }}
           </h1>
-          <p style="margin: 0; color: #64748b; font-size: 13px;">
-            Consulta de información contractual, institución vinculada y distribución de cupos por sede.
+          <p style="margin: 0; color: #64748b; font-size: 14px;">
+            {{ contrato?.institucion || 'Sin institución asignada' }}
           </p>
         </div>
-
-        <!-- Botones de Acción: Editar Contrato y Prorrogar / Renovar -->
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <button type="button" (click)="abrirModalEdicion()"
-                  style="background: #fac94b; color: #000000; border: none; padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; box-shadow: 0 2px 6px rgba(250, 201, 75, 0.35); transition: all 0.15s;"
-                  onmouseover="this.style.background='#f5be38'"
-                  onmouseout="this.style.background='#fac94b'"
-                  title="Editar datos contractuales y cambiar estado">
-            <span class="material-symbols-outlined" style="font-size: 17px;">edit</span>
-            <span>Editar contrato</span>
-          </button>
-
-          <button type="button" (click)="abrirModalProrroga('PRORROGA')"
-                  style="background: #0f172a; color: #ffffff; border: none; padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; box-shadow: 0 2px 6px rgba(15,23,42,0.18); transition: all 0.15s;"
-                  onmouseover="this.style.background='#1e293b'"
-                  onmouseout="this.style.background='#0f172a'"
-                  title="Extender o renovar el periodo de vigencia de este contrato">
-            <span class="material-symbols-outlined" style="font-size: 17px; color: #fac94b;">update</span>
-            <span>Prorrogar o Renovar</span>
-          </button>
-        </div>
       </div>
 
-      <!-- ======================================================== -->
-      <!-- BANNERS DE CONTROL DE VIGENCIA Y ALERTAS CONTRACTUALES   -->
-      <!-- ======================================================== -->
-      <!-- 1. Alerta: Próximo a vencer (Criterio 1 y 2) -->
-      <div *ngIf="esContratoProximoAVencer" style="background: #fffbeb; border: 1px solid #fde68a; border-left: 5px solid #f59e0b; border-radius: 12px; padding: 12px 18px; margin-bottom: 20px; display: flex; align-items: center; gap: 14px; box-shadow: 0 2px 6px rgba(245,158,11,0.06);">
-        <span class="material-symbols-outlined" style="color: #d97706; font-size: 26px; flex-shrink: 0;">notification_important</span>
-        <div>
-          <strong style="color: #92400e; font-size: 13px; font-weight: 700; display: block;">
-            Alerta de Vigencia: Contrato próximo a su fecha de finalización
-          </strong>
-          <span style="color: #78350f; font-size: 12px;">
-            Este contrato vencerá en {{ diasRestantesVigencia === 0 ? 'el día de hoy' : (diasRestantesVigencia === 1 ? '1 día' : diasRestantesVigencia + ' días') }} (Fecha de finalización: {{ contrato?.fecha_fin }}). Tramita oportunamente la renovación o prórroga contractual para evitar la interrupción del servicio.
-          </span>
-        </div>
+      <!-- Barra de Pestañas (Imágenes 1 y 2) -->
+      <div style="display: flex; gap: 24px; border-bottom: 1px solid #e2e8f0; margin-bottom: 24px;">
+        <button type="button" (click)="seleccionarPestana('resumen')"
+                style="background: none; border: none; padding: 10px 0; font-size: 14px; cursor: pointer; transition: all 0.15s;"
+                [style.color]="pestanaActiva === 'resumen' ? '#ca8a04' : '#64748b'"
+                [style.font-weight]="pestanaActiva === 'resumen' ? '700' : '600'"
+                [style.border-bottom]="pestanaActiva === 'resumen' ? '2.5px solid #ca8a04' : '2.5px solid transparent'">
+          Resumen
+        </button>
+
+        <button type="button" (click)="seleccionarPestana('distribucion')"
+                style="background: none; border: none; padding: 10px 0; font-size: 14px; cursor: pointer; transition: all 0.15s;"
+                [style.color]="pestanaActiva === 'distribucion' ? '#ca8a04' : '#64748b'"
+                [style.font-weight]="pestanaActiva === 'distribucion' ? '700' : '600'"
+                [style.border-bottom]="pestanaActiva === 'distribucion' ? '2.5px solid #ca8a04' : '2.5px solid transparent'">
+          Distribución de cupos
+        </button>
+
+        <button type="button" (click)="seleccionarPestana('jornadas')"
+                style="background: none; border: none; padding: 10px 0; font-size: 14px; cursor: pointer; transition: all 0.15s;"
+                [style.color]="pestanaActiva === 'jornadas' ? '#ca8a04' : '#64748b'"
+                [style.font-weight]="pestanaActiva === 'jornadas' ? '700' : '600'"
+                [style.border-bottom]="pestanaActiva === 'jornadas' ? '2.5px solid #ca8a04' : '2.5px solid transparent'">
+          Jornadas y menús
+        </button>
+
+        <button type="button" (click)="seleccionarPestana('historial')"
+                style="background: none; border: none; padding: 10px 0; font-size: 14px; cursor: pointer; transition: all 0.15s;"
+                [style.color]="pestanaActiva === 'historial' ? '#ca8a04' : '#64748b'"
+                [style.font-weight]="pestanaActiva === 'historial' ? '700' : '600'"
+                [style.border-bottom]="pestanaActiva === 'historial' ? '2.5px solid #ca8a04' : '2.5px solid transparent'">
+          Historial
+        </button>
+
+        <button type="button" (click)="seleccionarPestana('prorrogas')"
+                style="background: none; border: none; padding: 10px 0; font-size: 14px; cursor: pointer; transition: all 0.15s;"
+                [style.color]="pestanaActiva === 'prorrogas' ? '#ca8a04' : '#64748b'"
+                [style.font-weight]="pestanaActiva === 'prorrogas' ? '700' : '600'"
+                [style.border-bottom]="pestanaActiva === 'prorrogas' ? '2.5px solid #ca8a04' : '2.5px solid transparent'">
+          Prórrogas
+        </button>
       </div>
 
-      <!-- 2. Alerta / Bloqueo: Contrato Finalizado (Criterio 3, 4 y 5) -->
-      <div *ngIf="esContratoFinalizado" style="background: #f8fafc; border: 1px solid #e2e8f0; border-left: 5px solid #94a3b8; border-radius: 12px; padding: 12px 18px; margin-bottom: 20px; display: flex; align-items: center; gap: 14px;">
-        <span class="material-symbols-outlined" style="color: #64748b; font-size: 26px; flex-shrink: 0;">history_toggle_off</span>
-        <div>
-          <strong style="color: #334155; font-size: 13px; font-weight: 700; display: block;">
-            Contrato Finalizado (Vigencia concluida)
-          </strong>
-          <span style="color: #64748b; font-size: 12px;">
-            Este contrato cumplió su vigencia el {{ contrato?.fecha_fin }}. Toda la información, sedes y registros relacionados se conservan intactos para fines históricos y de auditoría. Se bloquean nuevas operaciones operativas para evitar el uso de contratos vencidos.
-          </span>
-        </div>
-      </div>
-
-      <!-- Layout Principal en Consulta -->
-      <div style="display: grid; grid-template-columns: 1fr 280px; gap: 20px; align-items: start;">
+      <!-- ========================================== -->
+      <!-- PESTAÑA 1: RESUMEN (IMAGEN 2)             -->
+      <!-- ========================================== -->
+      <div *ngIf="pestanaActiva === 'resumen'" style="display: flex; flex-direction: column; gap: 20px;">
         
-        <!-- Columna Izquierda: Información Detallada -->
-        <div style="display: flex; flex-direction: column; gap: 18px; min-width: 0;">
+        <!-- 3 Tarjetas de Métricas Superiores (Imagen 2) -->
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
+          <!-- Cupos autorizados -->
+          <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 20px;">
+            <div style="font-size: 12px; font-weight: 600; color: #64748b; margin-bottom: 6px;">Cupos autorizados</div>
+            <div style="font-size: 28px; font-weight: 800; color: #2563eb; line-height: 1.1;">{{ cuposAutorizados }}</div>
+          </div>
 
-          <!-- Tarjeta: Datos Generales del Contrato -->
-          <div style="background: #ffffff; border-radius: 12px; padding: 20px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px;">
-              <div>
-                <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: #0f172a;">Datos generales</h3>
-                <p style="margin: 2px 0 0; font-size: 11px; color: #64748b;">Información contractual registrada en SIRAE</p>
-              </div>
-              <span style="font-size: 11px; font-weight: 600; color: #475569; background: #f8fafc; padding: 3px 8px; border-radius: 6px; border: 1px solid #e2e8f0;">
-                Zona {{ contrato?.zona || 'No especificada' }}
-              </span>
+          <!-- Sedes vinculadas -->
+          <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 20px;">
+            <div style="font-size: 12px; font-weight: 600; color: #64748b; margin-bottom: 6px;">Sedes vinculadas</div>
+            <div style="font-size: 28px; font-weight: 800; color: #0f172a; line-height: 1.1;">{{ sedesInstitucion.length }}</div>
+          </div>
+
+          <!-- Jornadas -->
+          <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 20px;">
+            <div style="font-size: 12px; font-weight: 600; color: #64748b; margin-bottom: 6px;">Jornadas</div>
+            <div style="font-size: 28px; font-weight: 800; color: #0f172a; line-height: 1.1;">{{ jornadasHabilitadas.length }}</div>
+          </div>
+        </div>
+
+        <!-- Tarjeta: Información contractual (Imagen 2) -->
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 22px 24px;">
+          <h3 style="margin: 0 0 18px 0; font-size: 16px; font-weight: 700; color: #0f172a;">Información contractual</h3>
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px 36px;">
+            <!-- Columna Izquierda -->
+            <div>
+              <div style="font-size: 12px; color: #64748b; margin-bottom: 3px;">Institución educativa</div>
+              <div style="font-size: 14px; font-weight: 700; color: #0f172a;">{{ contrato?.institucion || 'Sin asignar' }}</div>
             </div>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; font-size: 13px;">
-              <div>
-                <span style="display: block; font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 2px;">NÚMERO DE CONTRATO</span>
-                <strong style="color: #0f172a; font-size: 14px;">{{ contrato?.codigo }}</strong>
-              </div>
-
-              <div>
-                <span style="display: block; font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 2px;">INSTITUCIÓN EDUCATIVA</span>
-                <strong style="color: #0f172a; font-size: 14px;">{{ contrato?.institucion || 'Sin asignar' }}</strong>
-                <span *ngIf="institucionSeleccionadaInfo?.nit" style="display: block; font-size: 11px; color: #64748b; margin-top: 2px;">
-                  NIT: {{ institucionSeleccionadaInfo.nit }}
-                </span>
-              </div>
-
-              <div>
-                <span style="display: block; font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 2px;">CUPOS AUTORIZADOS</span>
-                <span style="background: #fef3c7; color: #92400e; font-size: 12px; font-weight: 800; padding: 4px 10px; border-radius: 6px; border: 1px solid #fde68a; display: inline-block;">
-                  {{ cuposAutorizados }} cupos
-                </span>
-                <span style="display: block; font-size: 10px; color: #78350f; margin-top: 2px;">Raciones diarias autorizadas</span>
-              </div>
-
-              <div>
-                <span style="display: block; font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 2px;">SUPERVISOR ENCARGADO</span>
-                <div style="display: flex; align-items: center; gap: 6px; margin-top: 2px;">
-                  <span class="material-symbols-outlined" style="font-size: 16px; color: #f59e0b;">shield_person</span>
-                  <span *ngIf="nombreSupervisorAsignado !== 'Sin asignar'" style="color: #0f172a; font-weight: 700;">
-                    {{ nombreSupervisorAsignado }}
-                  </span>
-                  <span *ngIf="nombreSupervisorAsignado === 'Sin asignar'" style="color: #94a3b8; font-style: italic;">
-                    Sin asignar
-                  </span>
-                </div>
-              </div>
-
-              <div>
-                <span style="display: block; font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 2px;">FECHA DE INICIO</span>
-                <span style="color: #334155; font-weight: 600;">{{ contrato?.fecha_inicio || 'No registrada' }}</span>
-              </div>
-
-              <div>
-                <span style="display: block; font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 2px;">FECHA DE FINALIZACIÓN</span>
-                <span style="color: #0f172a; font-weight: 700; font-size: 13px;">{{ contrato?.fecha_fin || 'No registrada' }}</span>
-                
-                <span *ngIf="esContratoProximoAVencer" style="display: inline-flex; align-items: center; gap: 3px; font-size: 10px; color: #b45309; font-weight: 700; margin-top: 2px; background: #fffbeb; padding: 1px 6px; border-radius: 4px; border: 1px solid #fde68a;">
-                  <span class="material-symbols-outlined" style="font-size: 12px; color: #d97706;">warning</span>
-                  <span>{{ mensajeVigenciaContrato }}</span>
-                </span>
-
-                <span *ngIf="esContratoFinalizado" style="display: inline-flex; align-items: center; gap: 3px; font-size: 10px; color: #475569; font-weight: 600; margin-top: 2px; background: #f1f5f9; padding: 1px 6px; border-radius: 4px; border: 1px solid #e2e8f0;">
-                  <span class="material-symbols-outlined" style="font-size: 12px; color: #94a3b8;">event_busy</span>
-                  <span>{{ mensajeVigenciaContrato }}</span>
-                </span>
-              </div>
+            <div>
+              <div style="font-size: 12px; color: #64748b; margin-bottom: 3px;">Código DANE</div>
+              <div style="font-size: 14px; font-weight: 700; color: #0f172a;">{{ institucionSeleccionadaInfo?.dane || institucionSeleccionadaInfo?.codigo_dane || ('DANE-' + (institucionSeleccionadaInfo?.id_institucion || '002')) }}</div>
             </div>
 
-            <div *ngIf="institucionSeleccionadaInfo" style="margin-top: 14px; padding-top: 12px; border-top: 1px dashed #e2e8f0; display: flex; gap: 16px; flex-wrap: wrap; font-size: 11px; color: #64748b;">
-              <span *ngIf="institucionSeleccionadaInfo.representante_legal">
-                <strong>Representante legal:</strong> {{ institucionSeleccionadaInfo.representante_legal }}
-              </span>
-              <span *ngIf="institucionSeleccionadaInfo.telefono">
-                <strong>Teléfono:</strong> {{ institucionSeleccionadaInfo.telefono }}
-              </span>
-              <span *ngIf="institucionSeleccionadaInfo.direccion">
-                <strong>Dirección:</strong> {{ institucionSeleccionadaInfo.direccion }}
-              </span>
+            <div>
+              <div style="font-size: 12px; color: #64748b; margin-bottom: 3px;">Zona</div>
+              <div style="font-size: 14px; font-weight: 700; color: #0f172a;">Zona {{ contrato?.zona || 'Centro' }}</div>
+            </div>
+
+            <div>
+              <div style="font-size: 12px; color: #64748b; margin-bottom: 3px;">Supervisor encargado</div>
+              <div style="font-size: 14px; font-weight: 700; color: #0f172a;">{{ nombreSupervisorAsignado }}</div>
+            </div>
+
+            <div>
+              <div style="font-size: 12px; color: #64748b; margin-bottom: 3px;">Fecha de inicio</div>
+              <div style="font-size: 14px; font-weight: 700; color: #0f172a;">{{ formatearFecha(contrato?.fecha_inicio) }}</div>
+            </div>
+
+            <div>
+              <div style="font-size: 12px; color: #64748b; margin-bottom: 3px;">Fecha de finalización</div>
+              <div style="font-size: 14px; font-weight: 700; color: #0f172a;">{{ formatearFecha(contrato?.fecha_fin) }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tarjeta: Sedes vinculadas (Imagen 2) -->
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 22px 24px;">
+          <h3 style="margin: 0 0 16px 0; font-size: 16px; font-weight: 700; color: #0f172a;">Sedes vinculadas</h3>
+          
+          <div *ngIf="sedesInstitucion.length > 0" style="display: flex; flex-direction: column; gap: 14px;">
+            <div *ngFor="let s of sedesInstitucion" style="display: flex; align-items: center; gap: 14px; padding: 4px 0;">
+              <!-- Icono de casita en caja gris/azul tenue -->
+              <div style="width: 38px; height: 38px; background: #f1f5f9; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                  <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg>
+              </div>
+
+              <div>
+                <div style="font-size: 14px; font-weight: 700; color: #0f172a;">{{ s.nombre_sede }}</div>
+                <div style="font-size: 12px; color: #94a3b8;">{{ s.codigo_dane || ('SD-' + (s.id_sede < 10 ? '0' + s.id_sede : s.id_sede)) }}</div>
+              </div>
             </div>
           </div>
 
-          <!-- Tarjeta: DISTRIBUCIÓN DE CUPOS POR SEDE -->
-          <div style="background: #ffffff; border-radius: 12px; padding: 20px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
-              <div>
-                <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 8px;">
-                  <span class="material-symbols-outlined" style="font-size: 20px; color: #b45309;">pie_chart</span>
-                  <span>Distribución de cupos por sede</span>
-                </h3>
-                <p style="margin: 2px 0 0; font-size: 11px; color: #64748b;">
-                  Distribución realizada por el Administrador institucional entre las sedes vinculadas.
-                </p>
-              </div>
+          <div *ngIf="sedesInstitucion.length === 0" style="padding: 16px; text-align: center; color: #64748b; font-size: 13px; background: #f8fafc; border-radius: 8px; border: 1px dashed #cbd5e1;">
+            No hay sedes vinculadas a esta institución.
+          </div>
+        </div>
 
-              <!-- Badge de estado de la distribución -->
-              <div>
-                <span *ngIf="tieneDistribucionRealizada && cuposPendientesDistribucion === 0" style="background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px; display: inline-flex; align-items: center; gap: 4px;">
-                  <span class="material-symbols-outlined" style="font-size: 14px;">check_circle</span>
-                  <span>Distribución completa (100%)</span>
-                </span>
-                <span *ngIf="tieneDistribucionRealizada && cuposPendientesDistribucion > 0" style="background: #fffbeb; color: #92400e; border: 1px solid #fde68a; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px; display: inline-flex; align-items: center; gap: 4px;">
-                  <span class="material-symbols-outlined" style="font-size: 14px;">pending</span>
-                  <span>Distribución parcial ({{ porcentajeDistribuido }}%)</span>
-                </span>
-                <span *ngIf="!tieneDistribucionRealizada" style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px; display: inline-flex; align-items: center; gap: 4px;">
-                  <span class="material-symbols-outlined" style="font-size: 14px;">info</span>
-                  <span>Distribución no realizada</span>
-                </span>
-              </div>
-            </div>
+      </div>
 
-            <!-- Métricas destacadas: Autorizados vs Asignados vs Pendientes -->
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px;">
-              <!-- 1. Cupos Autorizados -->
-              <div style="background: #fffcf0; border: 1px solid #fde68a; border-radius: 10px; padding: 12px 14px;">
-                <span style="font-size: 10px; font-weight: 700; color: #92400e; letter-spacing: 0.5px; display: block; margin-bottom: 3px;">CUPOS AUTORIZADOS</span>
-                <div style="font-size: 20px; font-weight: 800; color: #78350f;">
-                  {{ cuposAutorizados }} <span style="font-size: 11px; font-weight: 600; color: #b45309;">cupos</span>
-                </div>
-                <span style="font-size: 10px; color: #92400e; opacity: 0.85;">Total contrato</span>
-              </div>
+      <!-- ========================================== -->
+      <!-- PESTAÑA 2: DISTRIBUCIÓN DE CUPOS (IMAGEN 1) -->
+      <!-- ========================================== -->
+      <div *ngIf="pestanaActiva === 'distribucion'" style="display: flex; flex-direction: column; gap: 18px;">
+        
+        <!-- Banner de Solo Lectura (Imagen 1) -->
+        <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 14px 18px; font-size: 13px; line-height: 1.5;">
+          <strong style="color: #1d4ed8; font-weight: 700;">Consulta de solo lectura.</strong>
+          <span style="color: #2563eb;"> La distribución es gestionada por el Administrador institucional y no puede modificarse aquí.</span>
+        </div>
 
-              <!-- 2. Cupos Asignados a Sedes -->
-              <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 12px 14px;">
-                <span style="font-size: 10px; font-weight: 700; color: #166534; letter-spacing: 0.5px; display: block; margin-bottom: 3px;">CUPOS ASIGNADOS</span>
-                <div style="font-size: 20px; font-weight: 800; color: #14532d;">
-                  {{ totalCuposAsignadosSedes }} <span style="font-size: 11px; font-weight: 600; color: #166534;">cupos</span>
-                </div>
-                <span style="font-size: 10px; color: #166534; opacity: 0.85;">Distribuido en {{ sedesInstitucion.length }} sedes</span>
-              </div>
-
-              <!-- 3. Cupos Pendientes de Distribución -->
-              <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px;">
-                <span style="font-size: 10px; font-weight: 700; color: #475569; letter-spacing: 0.5px; display: block; margin-bottom: 3px;">PENDIENTES DISTRIBUCIÓN</span>
-                <div style="font-size: 20px; font-weight: 800;" [style.color]="cuposPendientesDistribucion > 0 ? '#b45309' : '#059669'">
-                  {{ cuposPendientesDistribucion }} <span style="font-size: 11px; font-weight: 600; color: #64748b;">cupos</span>
-                </div>
-                <span style="font-size: 10px; color: #64748b;">
-                  {{ cuposPendientesDistribucion === 0 ? 'Sin cupos pendientes' : 'Por asignar a sedes' }}
-                </span>
-              </div>
-            </div>
-
-            <!-- Barra de Avance de Distribución -->
-            <div style="margin-bottom: 16px; background: #f1f5f9; border-radius: 8px; height: 10px; overflow: hidden; display: flex;">
-              <div [style.width.%]="porcentajeDistribuido" style="background: #10b981; height: 100%; transition: width 0.3s;" title="Asignado a sedes"></div>
-              <div [style.width.%]="100 - porcentajeDistribuido" style="background: #e2e8f0; height: 100%; transition: width 0.3s;" title="Pendiente de distribución"></div>
-            </div>
-
-            <!-- Tabla de Sedes y su Distribución de Cupos -->
-            <div *ngIf="sedesInstitucion.length > 0" style="overflow-x: auto; border: 1px solid #f1f5f9; border-radius: 8px;">
-              <table style="width: 100%; border-collapse: collapse; font-size: 12px; text-align: left;">
-                <thead style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; color: #64748b;">
-                  <tr>
-                    <th style="padding: 10px 12px; font-size: 10px; letter-spacing: 0.5px;">SEDE EDUCATIVA</th>
-                    <th style="padding: 10px 12px; font-size: 10px; letter-spacing: 0.5px;">CÓDIGO DANE</th>
-                    <th style="padding: 10px 12px; font-size: 10px; letter-spacing: 0.5px;">ESTADO</th>
-                    <th style="padding: 10px 12px; font-size: 10px; letter-spacing: 0.5px; text-align: right;">CUPOS ASIGNADOS</th>
-                    <th style="padding: 10px 12px; font-size: 10px; letter-spacing: 0.5px; text-align: right;">% CONTRATO</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let s of sedesInstitucion" style="border-bottom: 1px solid #f1f5f9;">
-                    <td style="padding: 10px 12px;">
-                      <strong style="color: #0f172a; display: block;">{{ s.nombre_sede }}</strong>
-                      <span *ngIf="s.direccion" style="font-size: 10px; color: #64748b;">{{ s.direccion }}</span>
-                    </td>
-                    <td style="padding: 10px 12px; color: #475569;">
-                      {{ s.codigo_dane || 'Sin DANE' }}
-                    </td>
-                    <td style="padding: 10px 12px;">
-                      <span style="font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 4px;"
-                            [style.background]="s.estado === 'ACTIVO' ? '#dcfce7' : '#fee2e2'"
-                            [style.color]="s.estado === 'ACTIVO' ? '#166534' : '#991b1b'">
-                        {{ s.estado || 'ACTIVO' }}
-                      </span>
-                    </td>
-                    <td style="padding: 10px 12px; text-align: right;">
-                      <span *ngIf="obtenerCuposDeSede(s) > 0" style="background: #fef3c7; color: #92400e; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 6px; border: 1px solid #fde68a;">
-                        {{ obtenerCuposDeSede(s) }} cupos
-                      </span>
-                      <span *ngIf="obtenerCuposDeSede(s) === 0" style="color: #94a3b8; font-style: italic;">
-                        0 cupos (Sin asignar)
-                      </span>
-                    </td>
-                    <td style="padding: 10px 12px; text-align: right; color: #64748b; font-weight: 600;">
-                      {{ porcentajeCuposSede(s) }}%
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <!-- Aviso cuando no hay sedes registradas -->
-            <div *ngIf="sedesInstitucion.length === 0" style="padding: 20px; text-align: center; color: #64748b; font-size: 12px; background: #f8fafc; border-radius: 8px; border: 1px dashed #cbd5e1;">
-              No se registran sedes vinculadas a esta institución educativa.
-            </div>
-
-            <!-- Aviso explicativo si aún no hay distribución realizada -->
-            <div *ngIf="!tieneDistribucionRealizada && sedesInstitucion.length > 0" style="margin-top: 12px; background: #fffcf0; border: 1px solid #fde68a; border-radius: 8px; padding: 10px 14px; display: flex; align-items: center; gap: 8px; font-size: 11px; color: #92400e;">
-              <span class="material-symbols-outlined" style="font-size: 18px; color: #d97706;">info</span>
-              <span>
-                El Administrador institucional aún no ha registrado la asignación de cupos por sede. Los <strong>{{ cuposAutorizados }} cupos autorizados</strong> se encuentran pendientes de distribución.
-              </span>
-            </div>
-
-            <!-- Nota de no modificación / Inmutabilidad -->
-            <div style="margin-top: 14px; padding-top: 10px; border-top: 1px dashed #e2e8f0; display: flex; align-items: center; gap: 6px; font-size: 11px; color: #64748b;">
-              <span class="material-symbols-outlined" style="font-size: 15px; color: #94a3b8;">lock</span>
-              <span>Vista de solo consulta: La distribución de cupos entre sedes es gestionada exclusivamente por el Administrador Institucional y no se modifica desde este módulo.</span>
+        <!-- 2 Tarjetas de Métricas (Imagen 1) -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <!-- Cupos distribuidos -->
+          <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px 24px;">
+            <div style="font-size: 13px; font-weight: 600; color: #64748b; margin-bottom: 8px;">Cupos distribuidos</div>
+            <div style="font-size: 32px; font-weight: 800; color: #047857; margin-bottom: 12px; line-height: 1.1;">{{ totalCuposAsignadosSedes }}</div>
+            <!-- Barra horizontal verde -->
+            <div style="background: #e2e8f0; border-radius: 9999px; height: 6px; overflow: hidden; width: 100%;">
+              <div [style.width.%]="porcentajeDistribuido" style="background: #059669; height: 100%; transition: width 0.3s;"></div>
             </div>
           </div>
 
-          <!-- Tarjeta: Jornadas y Servicios de Menú asociados -->
-          <div style="background: #ffffff; border-radius: 12px; padding: 20px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
-            
-            <!-- Vista de Consulta (No editando) -->
-            <div *ngIf="!editandoSecciones">
-              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
-                <div>
-                  <h3 style="margin: 0 0 2px 0; font-size: 15px; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 6px;">
-                    <span class="material-symbols-outlined" style="font-size: 20px; color: #b45309;">restaurant_menu</span>
-                    <span>Jornadas y servicios de menú</span>
-                  </h3>
-                  <p style="margin: 0; font-size: 11px; color: #64748b;">Componentes del servicio de alimentación contemplados en la operación contratada</p>
-                </div>
+          <!-- Pendientes por distribuir -->
+          <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px 24px;">
+            <div style="font-size: 13px; font-weight: 600; color: #64748b; margin-bottom: 8px;">Pendientes por distribuir</div>
+            <div style="font-size: 32px; font-weight: 800; color: #d97706; margin-bottom: 6px; line-height: 1.1;">{{ cuposPendientesDistribucion }}</div>
+            <div style="font-size: 12px; color: #64748b;">de {{ cuposAutorizados }} cupos autorizados</div>
+          </div>
+        </div>
 
-                <!-- Botón para asociar/gestionar secciones si el contrato está VIGENTE -->
-                <button *ngIf="!esContratoNoVigente" type="button" (click)="iniciarEdicionSecciones()"
-                        style="background: #fac94b; color: #0f172a; border: none; padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 1px 3px rgba(250,201,75,0.25); transition: all 0.15s;"
-                        onmouseover="this.style.background='#f59e0b'"
-                        onmouseout="this.style.background='#fac94b'"
-                        title="Asociar o modificar componentes del menú vinculados a este contrato">
-                  <span class="material-symbols-outlined" style="font-size: 16px;">tune</span>
-                  <span>Asociar secciones</span>
-                </button>
+        <!-- Tarjeta: Distribución por sede (Imagen 1) -->
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 22px 24px;">
+          <h3 style="margin: 0 0 18px 0; font-size: 16px; font-weight: 700; color: #0f172a;">Distribución por sede</h3>
 
-                <!-- Bloqueo para contratos no vigentes / finalizados (Criterio 5) -->
-                <div *ngIf="esContratoNoVigente"
-                     style="background: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1; padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;"
-                     title="No se permiten nuevas operaciones que requieran un contrato vigente">
-                  <span class="material-symbols-outlined" style="font-size: 16px; color: #94a3b8;">lock</span>
-                  <span>Operación bloqueada ({{ contrato?.estado }})</span>
-                </div>
+          <div *ngIf="sedesInstitucion.length > 0" style="display: flex; flex-direction: column;">
+            <div *ngFor="let s of sedesInstitucion; let last = last"
+                 style="display: flex; justify-content: space-between; align-items: center; padding: 14px 0;"
+                 [style.border-bottom]="!last ? '1px solid #f1f5f9' : 'none'">
+              <div>
+                <div style="font-size: 14px; font-weight: 700; color: #0f172a;">{{ s.nombre_sede }}</div>
+                <div style="font-size: 12px; color: #94a3b8;">{{ s.codigo_dane || ('SD-' + (s.id_sede < 10 ? '0' + s.id_sede : s.id_sede)) }}</div>
               </div>
 
-              <div style="display: flex; flex-direction: column; gap: 14px;">
-                <!-- Jornadas amparadas activas -->
-                <div>
-                  <span style="font-size: 11px; font-weight: 700; color: #475569; display: block; margin-bottom: 6px;">JORNADAS AMPARADAS</span>
-                  <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                    <span *ngFor="let j of jornadasHabilitadas" style="background: #fef3c7; color: #92400e; border: 1px solid #fde68a; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
-                      <span class="material-symbols-outlined" style="font-size: 14px;">wb_sunny</span>
-                      <span>{{ j.nombre_jornada || j.nombre }}</span>
-                    </span>
-                    <span *ngIf="jornadasHabilitadas.length === 0" style="color: #94a3b8; font-size: 11px; font-style: italic;">
-                      No se registran jornadas activas para este contrato.
-                    </span>
-                  </div>
-                </div>
-
-                <!-- Secciones de menú activas -->
-                <div style="border-top: 1px dashed #e2e8f0; padding-top: 12px;">
-                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                    <span style="font-size: 11px; font-weight: 700; color: #475569;">COMPONENTES DE MENÚ VINCULADOS</span>
-                    <span style="font-size: 10px; font-weight: 700; color: #92400e; background: #fffcf0; padding: 2px 6px; border-radius: 4px; border: 1px solid #fde68a;">
-                      {{ totalAsignados }} servicios asociados
-                    </span>
-                  </div>
-                  
-                  <div *ngIf="totalAsignados > 0" style="display: flex; gap: 8px; flex-wrap: wrap;">
-                    <span *ngFor="let s of seccionesAsignadas" style="background: #f8fafc; color: #1e293b; border: 1px solid #cbd5e1; padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
-                      <span class="material-symbols-outlined" style="font-size: 15px; color: #d97706;">restaurant</span>
-                      <span>{{ s.nombre_seccion || s.nombre }}</span>
-                      <span *ngIf="s.jornada || s.nombre_jornada" style="font-size: 10px; color: #64748b; background: #e2e8f0; padding: 1px 6px; border-radius: 4px; margin-left: 2px;">
-                        {{ s.jornada || s.nombre_jornada }}
-                      </span>
-                    </span>
-                  </div>
-                  <div *ngIf="totalAsignados === 0" style="background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 12px; text-align: center; color: #64748b; font-size: 12px;">
-                    No hay secciones de menú vinculadas a este contrato. Presiona <strong>«Asociar secciones»</strong> para vincular los componentes de alimentación contemplados.
-                  </div>
-                </div>
-
-                <!-- Nota explicativa si el contrato no está vigente (Criterio 4 y 5) -->
-                <div *ngIf="esContratoNoVigente" style="margin-top: 4px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px; font-size: 11px; color: #64748b; display: flex; align-items: center; gap: 8px;">
-                  <span class="material-symbols-outlined" style="font-size: 18px; color: #94a3b8; flex-shrink: 0;">lock</span>
-                  <span>Modificaciones restringidas: No se permiten nuevas operaciones en contratos {{ contrato?.estado }}. Toda la información y componentes se conservan intactos con fines de consulta histórica y auditoría.</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Panel Interactivo de Asociación / Desasociación -->
-            <div *ngIf="editandoSecciones">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px;">
-                <div>
-                  <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 6px;">
-                    <span class="material-symbols-outlined" style="font-size: 20px; color: #d97706;">checklist</span>
-                    <span>Asociar secciones de menú al contrato</span>
-                  </h3>
-                  <p style="margin: 2px 0 0; font-size: 11px; color: #64748b;">
-                    Catálogo de secciones disponibles según las jornadas amparadas.
-                  </p>
-                </div>
-                <span style="font-size: 11px; font-weight: 700; color: #b45309; background: #fffbeb; border: 1px solid #fde68a; padding: 3px 8px; border-radius: 6px;">
-                  {{ totalSeccionesSeleccionadas }} seleccionadas
+              <div>
+                <span style="color: #2563eb; font-weight: 700; font-size: 14px;">
+                  {{ obtenerCuposDeSede(s) }} cupos
                 </span>
               </div>
-
-              <!-- Banner de Validación de Duplicados en Tiempo Real -->
-              <div *ngIf="mensajeValidacionDuplicado" style="background: #fef2f2; border: 1px solid #fecaca; border-left: 4px solid #ef4444; border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; font-size: 12px; color: #991b1b; display: flex; align-items: center; gap: 8px;">
-                <span class="material-symbols-outlined" style="font-size: 18px; color: #dc2626;">warning</span>
-                <span>{{ mensajeValidacionDuplicado }}</span>
-              </div>
-
-              <!-- Paso 1: Jornadas amparadas en el contrato -->
-              <div style="margin-bottom: 16px;">
-                <label style="font-size: 11px; font-weight: 700; color: #334155; display: block; margin-bottom: 6px;">
-                  1. JORNADAS AMPARADAS EN EL CONTRATO (Activa las jornadas aplicables)
-                </label>
-                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                  <label *ngFor="let j of jornadas" 
-                         style="border: 1.5px solid; border-radius: 8px; padding: 8px 14px; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; transition: all 0.15s;"
-                         [style.border-color]="j.habilitada ? '#f59e0b' : '#cbd5e1'"
-                         [style.background]="j.habilitada ? '#fffcf0' : '#ffffff'">
-                    <input type="checkbox" [checked]="j.habilitada" (change)="toggleJornada(j, $event)" style="accent-color: #f59e0b; width: 15px; height: 15px; cursor: pointer;">
-                    <span style="font-size: 12px; font-weight: 700; color: #0f172a;">{{ j.nombre_jornada || j.nombre }}</span>
-                  </label>
-                </div>
-              </div>
-
-              <!-- Paso 2: Catálogo disponible de secciones de menú según jornadas amparadas -->
-              <div style="margin-bottom: 18px;">
-                <label style="font-size: 11px; font-weight: 700; color: #334155; display: block; margin-bottom: 6px;">
-                  2. CATÁLOGO DE SECCIONES DE MENÚ DISPONIBLES (Marca las contempladas)
-                </label>
-
-                <!-- Cuadrícula con el catálogo disponible -->
-                <div *ngIf="jornadasHabilitadas.length > 0" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px;">
-                  <div *ngFor="let s of seccionesFiltradasPorJornadasHabilitadas()"
-                       (click)="toggleSeleccionSeccion(s)"
-                       style="padding: 12px 14px; border-radius: 8px; border: 1.5px solid; cursor: pointer; display: flex; flex-direction: column; gap: 6px; transition: all 0.15s; user-select: none;"
-                       [style.border-color]="estaSeccionSeleccionada(s.id_seccion || s.id) ? '#f59e0b' : '#e2e8f0'"
-                       [style.background]="estaSeccionSeleccionada(s.id_seccion || s.id) ? '#fffdf5' : '#ffffff'"
-                       [style.box-shadow]="estaSeccionSeleccionada(s.id_seccion || s.id) ? '0 2px 6px rgba(245,158,11,0.12)' : 'none'">
-                    
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                      <div style="display: flex; align-items: center; gap: 8px;">
-                        <span class="material-symbols-outlined" style="font-size: 18px;" [style.color]="estaSeccionSeleccionada(s.id_seccion || s.id) ? '#d97706' : '#64748b'">restaurant</span>
-                        <strong style="font-size: 13px; color: #0f172a;">{{ s.nombre_seccion || s.nombre }}</strong>
-                      </div>
-                      <input type="checkbox" [checked]="estaSeccionSeleccionada(s.id_seccion || s.id)" (click)="$event.stopPropagation(); toggleSeleccionSeccion(s)" style="accent-color: #f59e0b; width: 16px; height: 16px; cursor: pointer;">
-                    </div>
-
-                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; margin-top: 2px;">
-                      <span style="color: #64748b;">Jornada: {{ s.jornada || s.nombre_jornada || 'General' }}</span>
-                      
-                      <!-- Badge reactivo de estado / validación de duplicados -->
-                      <span *ngIf="estaSeccionSeleccionada(s.id_seccion || s.id)" style="color: #166534; font-weight: 700; background: #dcfce7; padding: 2px 6px; border-radius: 4px; font-size: 10px;">
-                        ✓ Asociada
-                      </span>
-                      <span *ngIf="!estaSeccionSeleccionada(s.id_seccion || s.id)" style="color: #64748b; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 10px;">
-                        Disponible
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Aviso si no hay jornadas habilitadas -->
-                <div *ngIf="jornadasHabilitadas.length === 0" style="padding: 18px; text-align: center; color: #64748b; font-size: 12px; background: #f8fafc; border-radius: 8px; border: 1px dashed #cbd5e1;">
-                  <span class="material-symbols-outlined" style="font-size: 24px; color: #f59e0b; display: block; margin-bottom: 4px;">warning</span>
-                  Selecciona al menos una jornada amparada arriba para desplegar el catálogo de secciones de menú disponibles.
-                </div>
-              </div>
-
-              <!-- Botones de Persistencia / Cancelar -->
-              <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid #f1f5f9; padding-top: 14px;">
-                <button type="button" (click)="cancelarEdicionSecciones()" [disabled]="guardandoSecciones"
-                        style="background: #ffffff; border: 1px solid #cbd5e1; color: #475569; padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer;">
-                  Cancelar
-                </button>
-
-                <button type="button" (click)="guardarSeccionesContrato()" [disabled]="guardandoSecciones"
-                        style="background: #0f172a; color: #ffffff; border: none; padding: 8px 20px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 2px 6px rgba(15,23,42,0.15);"
-                        [style.opacity]="guardandoSecciones ? '0.7' : '1'"
-                        [style.cursor]="guardandoSecciones ? 'not-allowed' : 'pointer'">
-                  <span *ngIf="guardandoSecciones" style="width: 12px; height: 12px; border: 2px solid #ffffff; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite;"></span>
-                  <span class="material-symbols-outlined" *ngIf="!guardandoSecciones" style="font-size: 16px;">save</span>
-                  <span>{{ guardandoSecciones ? 'Guardando en base de datos...' : 'Guardar secciones' }}</span>
-                </button>
-              </div>
-
             </div>
-
           </div>
 
-          <!-- Tarjeta: HISTORIAL DE PRÓRROGAS Y RENOVACIONES CONTRACTUALES (Criterio 4 y 5) -->
-          <div style="background: #ffffff; border-radius: 12px; padding: 20px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
-              <div>
-                <h3 style="margin: 0 0 2px 0; font-size: 15px; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 6px;">
-                  <span class="material-symbols-outlined" style="font-size: 20px; color: #1d4ed8;">history_edu</span>
-                  <span>Historial de prórrogas y renovaciones</span>
-                </h3>
-                <p style="margin: 0; font-size: 11px; color: #64748b;">
-                  Trazabilidad de extensiones de plazo, renovaciones y adiciones contractuales autorizadas.
-                </p>
-              </div>
+          <div *ngIf="sedesInstitucion.length === 0" style="padding: 16px; text-align: center; color: #64748b; font-size: 13px; background: #f8fafc; border-radius: 8px; border: 1px dashed #cbd5e1;">
+            No hay sedes vinculadas a esta institución.
+          </div>
+        </div>
 
-              <button type="button" (click)="abrirModalProrroga('PRORROGA')"
-                      style="background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.15s;"
-                      onmouseover="this.style.background='#dbeafe'"
-                      onmouseout="this.style.background='#eff6ff'">
-                <span class="material-symbols-outlined" style="font-size: 16px;">add</span>
-                <span>Registrar prórroga / renovación</span>
-              </button>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- PESTAÑA 3: JORNADAS Y MENÚS (IMAGEN 6)    -->
+      <!-- ========================================== -->
+      <div *ngIf="pestanaActiva === 'jornadas'" style="display: flex; flex-direction: column; gap: 20px;">
+        
+        <!-- Paso 2: Asignación de jornadas (Imagen 6) -->
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 22px 24px;">
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
+            <div style="width: 22px; height: 22px; border-radius: 50%; background: #0f172a; color: #ffffff; font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center;">2</div>
+            <div>
+              <strong style="font-size: 15px; font-weight: 700; color: #0f172a; display: block;">Asignación de jornadas</strong>
+              <span style="font-size: 12px; color: #64748b;">Selecciona las jornadas amparadas</span>
             </div>
+          </div>
 
-            <!-- Listado de modificaciones registradas (Prórrogas, Renovaciones y Modificaciones generales) -->
-            <div *ngIf="historialModificaciones.length > 0" style="display: flex; flex-direction: column; gap: 12px;">
-              <div *ngFor="let m of historialModificaciones" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 10px;">
-                
-                <!-- Encabezado de la modificación -->
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-                  <div style="display: flex; align-items: center; gap: 8px;">
-                    <span style="font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 6px;"
-                          [style.background]="m.tipo === 'PRORROGA' ? '#eff6ff' : (m.tipo === 'RENOVACION' ? '#faf5ff' : '#fef3c7')"
-                          [style.color]="m.tipo === 'PRORROGA' ? '#1d4ed8' : (m.tipo === 'RENOVACION' ? '#7e22ce' : '#92400e')"
-                          [style.border]="m.tipo === 'PRORROGA' ? '1px solid #bfdbfe' : (m.tipo === 'RENOVACION' ? '1px solid #e9d5ff' : '1px solid #fde68a')">
-                      {{ m.tipo === 'PRORROGA' ? 'PRÓRROGA' : (m.tipo === 'RENOVACION' ? 'RENOVACIÓN' : 'MODIFICACIÓN') }}
-                    </span>
-                    <strong *ngIf="m.numero_autorizacion" style="font-size: 13px; color: #0f172a;">{{ m.numero_autorizacion }}</strong>
-                    <strong *ngIf="!m.numero_autorizacion" style="font-size: 13px; color: #0f172a;">Ajuste de datos contractuales</strong>
-                  </div>
-
-                  <span style="font-size: 11px; color: #64748b; display: inline-flex; align-items: center; gap: 4px;">
-                    <span class="material-symbols-outlined" style="font-size: 14px;">calendar_month</span>
-                    <span>Registrado el {{ m.fecha_registro }}</span>
-                  </span>
-                </div>
-
-                <!-- Caso 1: Modificación directa de campos (Estado, Cupos, Supervisor, Fechas, Zona) -->
-                <div *ngIf="m.tipo === 'MODIFICACION' && m.cambios?.length > 0"
-                     style="background: #ffffff; border: 1px solid #f1f5f9; border-radius: 8px; overflow: hidden;">
-                  <table style="width: 100%; border-collapse: collapse; font-size: 12px; text-align: left;">
-                    <thead>
-                      <tr style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 11px; color: #475569;">
-                        <th style="padding: 6px 12px; font-weight: 700;">Campo modificado</th>
-                        <th style="padding: 6px 12px; font-weight: 700;">Valor anterior</th>
-                        <th style="padding: 6px 12px; font-weight: 700;">Nuevo valor</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr *ngFor="let c of m.cambios" style="border-bottom: 1px solid #f8fafc;">
-                        <td style="padding: 8px 12px; font-weight: 600; color: #1e293b;">{{ c.campo }}</td>
-                        <td style="padding: 8px 12px; color: #64748b; text-decoration: line-through;">{{ c.anterior }}</td>
-                        <td style="padding: 8px 12px; font-weight: 700; color: #047857;">{{ c.nuevo }}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-
-                <!-- Caso 2: Prórroga o Renovación -->
-                <div *ngIf="m.tipo === 'PRORROGA' || m.tipo === 'RENOVACION'"
-                     style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; font-size: 12px; background: #ffffff; border: 1px solid #f1f5f9; border-radius: 8px; padding: 10px 12px;">
-                  <div>
-                    <span style="font-size: 10px; color: #94a3b8; font-weight: 700; display: block;">PERIODO ANTERIOR</span>
-                    <span style="color: #64748b; text-decoration: line-through;">{{ m.fecha_inicio_anterior }} al {{ m.fecha_fin_anterior }}</span>
-                  </div>
-                  <div>
-                    <span style="font-size: 10px; color: #059669; font-weight: 700; display: block;">NUEVO PERIODO AUTORIZADO</span>
-                    <strong style="color: #047857;">{{ m.nueva_fecha_inicio }} al {{ m.nueva_fecha_fin }}</strong>
-                  </div>
-                  <div>
-                    <span style="font-size: 10px; color: #92400e; font-weight: 700; display: block;">CUPOS CONTRATADOS</span>
-                    <strong style="color: #78350f;">{{ m.nuevos_cupos }} cupos</strong>
-                    <span *ngIf="m.cupos_anteriores !== m.nuevos_cupos" style="font-size: 10px; color: #94a3b8; margin-left: 4px;">(Ant: {{ m.cupos_anteriores }})</span>
-                  </div>
-                </div>
-
-                <!-- Motivo y Responsable -->
-                <div style="font-size: 12px; color: #334155; display: flex; flex-direction: column; gap: 4px;">
-                  <div *ngIf="m.motivo"><strong>Motivo / Justificación:</strong> {{ m.motivo }}</div>
-                  <div style="font-size: 11px; color: #64748b; display: flex; align-items: center; gap: 4px;">
-                    <span class="material-symbols-outlined" style="font-size: 14px; color: #94a3b8;">person</span>
-                    <span>Modificado por: <strong>{{ m.usuario_responsable }}</strong></span>
-                  </div>
-                </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+            <!-- Card Mañana -->
+            <div (click)="!esContratoNoVigente && toggleJornadaPorNombre('Mañana')"
+                 style="border-radius: 10px; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.15s;"
+                 [style.border]="jornadaManana?.habilitada ? '1.5px solid #10b981' : '1px solid #e2e8f0'"
+                 [style.background]="jornadaManana?.habilitada ? '#f0fdf4' : '#ffffff'">
+              <span style="font-size: 14px; font-weight: 700; color: #0f172a;">Mañana</span>
+              <div style="width: 20px; height: 20px; border-radius: 4px; display: flex; align-items: center; justify-content: center;"
+                   [style.background]="jornadaManana?.habilitada ? '#059669' : '#ffffff'"
+                   [style.border]="jornadaManana?.habilitada ? 'none' : '1.5px solid #cbd5e1'">
+                <svg *ngIf="jornadaManana?.habilitada" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
               </div>
             </div>
 
-            <!-- Empty state si no hay modificaciones registradas -->
-            <div *ngIf="historialModificaciones.length === 0" style="padding: 18px; text-align: center; color: #64748b; font-size: 12px; background: #f8fafc; border-radius: 8px; border: 1px dashed #cbd5e1;">
-              <span class="material-symbols-outlined" style="font-size: 22px; color: #94a3b8; display: block; margin-bottom: 4px;">history</span>
-              No se registran modificaciones, prórrogas ni renovaciones previas para este contrato. El acuerdo se encuentra bajo sus términos y fechas originales.
+            <!-- Card Tarde -->
+            <div (click)="!esContratoNoVigente && toggleJornadaPorNombre('Tarde')"
+                 style="border-radius: 10px; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.15s;"
+                 [style.border]="jornadaTarde?.habilitada ? '1.5px solid #10b981' : '1px solid #e2e8f0'"
+                 [style.background]="jornadaTarde?.habilitada ? '#f0fdf4' : '#ffffff'">
+              <span style="font-size: 14px; font-weight: 700; color: #0f172a;">Tarde</span>
+              <div style="width: 20px; height: 20px; border-radius: 4px; display: flex; align-items: center; justify-content: center;"
+                   [style.background]="jornadaTarde?.habilitada ? '#059669' : '#ffffff'"
+                   [style.border]="jornadaTarde?.habilitada ? 'none' : '1.5px solid #cbd5e1'">
+                <svg *ngIf="jornadaTarde?.habilitada" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              </div>
             </div>
+          </div>
+        </div>
 
-            <!-- Nota de auditoría de solo lectura -->
-            <div style="margin-top: 10px; font-size: 11px; color: #94a3b8; display: flex; align-items: center; gap: 6px;">
-              <span class="material-symbols-outlined" style="font-size: 14px;">lock</span>
-              <span>El historial de modificaciones contractuales es de solo lectura y no puede ser alterado ni eliminado.</span>
+        <!-- Paso 3: Secciones de menú (Imagen 6) -->
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 22px 24px;">
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
+            <div style="width: 22px; height: 22px; border-radius: 50%; background: #0f172a; color: #ffffff; font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center;">3</div>
+            <div>
+              <strong style="font-size: 15px; font-weight: 700; color: #0f172a; display: block;">Secciones de menú</strong>
+              <span style="font-size: 12px; color: #64748b;">Catálogo filtrado por cada jornada</span>
+            </div>
+          </div>
+
+          <!-- Banner de Validación de Duplicados -->
+          <div *ngIf="mensajeValidacionDuplicado" style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 10px 14px; font-size: 12px; color: #991b1b; margin-bottom: 14px;">
+            {{ mensajeValidacionDuplicado }}
+          </div>
+
+          <!-- Grupo MAÑANA -->
+          <div style="margin-bottom: 16px;">
+            <div style="font-size: 11px; font-weight: 800; color: #64748b; letter-spacing: 0.5px; margin-bottom: 10px;">MAÑANA</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+              <div *ngFor="let s of seccionesPorNombreJornada('Mañana')"
+                   (click)="!esContratoNoVigente && toggleSeccionItem(s)"
+                   style="border-radius: 10px; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.15s;"
+                   [style.border]="estaSeccionAsignada(s.id_seccion || s.id) ? '1.5px solid #10b981' : '1px solid #e2e8f0'"
+                   [style.background]="estaSeccionAsignada(s.id_seccion || s.id) ? '#f0fdf4' : '#ffffff'">
+                <span style="font-size: 14px; font-weight: 700; color: #0f172a;">{{ s.nombre_seccion || s.nombre }}</span>
+                <div style="width: 20px; height: 20px; border-radius: 4px; display: flex; align-items: center; justify-content: center;"
+                     [style.background]="estaSeccionAsignada(s.id_seccion || s.id) ? '#059669' : '#ffffff'"
+                     [style.border]="estaSeccionAsignada(s.id_seccion || s.id) ? 'none' : '1.5px solid #cbd5e1'">
+                  <svg *ngIf="estaSeccionAsignada(s.id_seccion || s.id)" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Grupo TARDE -->
+          <div>
+            <div style="font-size: 11px; font-weight: 800; color: #64748b; letter-spacing: 0.5px; margin-bottom: 10px;">TARDE</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+              <div *ngFor="let s of seccionesPorNombreJornada('Tarde')"
+                   (click)="!esContratoNoVigente && toggleSeccionItem(s)"
+                   style="border-radius: 10px; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.15s;"
+                   [style.border]="estaSeccionAsignada(s.id_seccion || s.id) ? '1.5px solid #10b981' : '1px solid #e2e8f0'"
+                   [style.background]="estaSeccionAsignada(s.id_seccion || s.id) ? '#f0fdf4' : '#ffffff'">
+                <span style="font-size: 14px; font-weight: 700; color: #0f172a;">{{ s.nombre_seccion || s.nombre }}</span>
+                <div style="width: 20px; height: 20px; border-radius: 4px; display: flex; align-items: center; justify-content: center;"
+                     [style.background]="estaSeccionAsignada(s.id_seccion || s.id) ? '#059669' : '#ffffff'"
+                     [style.border]="estaSeccionAsignada(s.id_seccion || s.id) ? 'none' : '1.5px solid #cbd5e1'">
+                  <svg *ngIf="estaSeccionAsignada(s.id_seccion || s.id)" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </div>
+              </div>
             </div>
           </div>
 
         </div>
 
-        <!-- Columna Derecha: Sidebar de Resumen -->
-        <div style="background: #f8fafc; border-radius: 12px; padding: 18px; border: 1px solid #e2e8f0; position: sticky; top: 16px;">
-          <h3 style="margin: 0 0 14px 0; font-size: 14px; font-weight: 700; color: #0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
-            Resumen del Contrato
-          </h3>
+      </div>
 
-          <div style="margin-bottom: 12px;">
-            <span style="font-size: 10px; font-weight: 700; color: #94a3b8; letter-spacing: 0.5px; display: block; margin-bottom: 2px;">IDENTIFICADOR</span>
-            <div style="font-size: 14px; font-weight: 800; color: #0f172a;">{{ contrato?.codigo }}</div>
+      <!-- ========================================== -->
+      <!-- PESTAÑA 4: HISTORIAL (SOLO LECTURA)       -->
+      <!-- ========================================== -->
+      <div *ngIf="pestanaActiva === 'historial'" style="display: flex; flex-direction: column; gap: 16px;">
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 22px 24px;">
+          <h3 style="margin: 0 0 4px 0; font-size: 16px; font-weight: 700; color: #0f172a;">Historial de modificaciones del contrato</h3>
+          <p style="margin: 0 0 16px 0; font-size: 12px; color: #64748b;">Bitácora de auditoría y trazabilidad de cambios (Solo lectura).</p>
+
+          <div *ngIf="historialModificaciones.length > 0" style="overflow-x: auto; border: 1px solid #f1f5f9; border-radius: 8px;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 12px; text-align: left;">
+              <thead style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; color: #64748b;">
+                <tr>
+                  <th style="padding: 10px 14px;">FECHA Y HORA</th>
+                  <th style="padding: 10px 14px;">RESPONSABLE</th>
+                  <th style="padding: 10px 14px;">TIPO</th>
+                  <th style="padding: 10px 14px;">CAMPO / DETALLE</th>
+                  <th style="padding: 10px 14px;">VALOR ANTERIOR</th>
+                  <th style="padding: 10px 14px;">NUEVO VALOR</th>
+                </tr>
+              </thead>
+              <tbody>
+                <ng-container *ngFor="let m of historialModificaciones">
+                  <!-- Si es modificación directa de campos -->
+                  <ng-container *ngIf="m.tipo === 'MODIFICACION' && m.cambios?.length > 0">
+                    <tr *ngFor="let c of m.cambios" style="border-bottom: 1px solid #f1f5f9;">
+                      <td style="padding: 10px 14px; color: #334155; font-weight: 600;">{{ m.fecha_registro }}</td>
+                      <td style="padding: 10px 14px; color: #0f172a;">{{ m.usuario_responsable }}</td>
+                      <td style="padding: 10px 14px;">
+                        <span style="font-size: 10px; font-weight: 700; background: #fef3c7; color: #92400e; padding: 2px 6px; border-radius: 4px;">Edición</span>
+                      </td>
+                      <td style="padding: 10px 14px; font-weight: 600; color: #0f172a;">{{ c.campo }}</td>
+                      <td style="padding: 10px 14px; color: #64748b; text-decoration: line-through;">{{ c.anterior }}</td>
+                      <td style="padding: 10px 14px; font-weight: 700; color: #047857;">{{ c.nuevo }}</td>
+                    </tr>
+                  </ng-container>
+
+                  <!-- Si es prórroga o renovación -->
+                  <tr *ngIf="m.tipo === 'PRORROGA' || m.tipo === 'RENOVACION'" style="border-bottom: 1px solid #f1f5f9;">
+                    <td style="padding: 10px 14px; color: #334155; font-weight: 600;">{{ m.fecha_registro }}</td>
+                    <td style="padding: 10px 14px; color: #0f172a;">{{ m.usuario_responsable }}</td>
+                    <td style="padding: 10px 14px;">
+                      <span style="font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px;"
+                            [style.background]="m.tipo === 'PRORROGA' ? '#eff6ff' : '#faf5ff'"
+                            [style.color]="m.tipo === 'PRORROGA' ? '#1d4ed8' : '#7e22ce'">
+                        {{ m.tipo }}
+                      </span>
+                    </td>
+                    <td style="padding: 10px 14px; font-weight: 600; color: #0f172a;">
+                      {{ m.numero_autorizacion || 'Vigencia extendida' }}
+                    </td>
+                    <td style="padding: 10px 14px; color: #64748b; text-decoration: line-through;">
+                      Hasta {{ m.fecha_fin_anterior }} ({{ m.cupos_anteriores }} cupos)
+                    </td>
+                    <td style="padding: 10px 14px; font-weight: 700; color: #047857;">
+                      Hasta {{ m.nueva_fecha_fin }} ({{ m.nuevos_cupos }} cupos)
+                    </td>
+                  </tr>
+                </ng-container>
+              </tbody>
+            </table>
           </div>
 
-          <div style="margin-bottom: 14px;">
-            <span style="font-size: 10px; font-weight: 700; color: #94a3b8; letter-spacing: 0.5px; display: block; margin-bottom: 2px;">INSTITUCIÓN</span>
-            <div style="font-size: 12px; font-weight: 700; color: #334155;">{{ contrato?.institucion || 'Sin asignar' }}</div>
-          </div>
-
-          <!-- Cuadro destacado Cupos -->
-          <div style="background: #fffcf0; border: 1px solid #fde68a; border-radius: 8px; padding: 10px; margin-bottom: 12px;">
-            <span style="font-size: 9px; font-weight: 700; color: #92400e; letter-spacing: 0.5px; display: block; margin-bottom: 2px;">CUPOS CONTRATADOS</span>
-            <div style="font-size: 18px; font-weight: 800; color: #78350f;">
-              {{ cuposAutorizados }} <span style="font-size: 11px; font-weight: 600; color: #b45309;">cupos</span>
-            </div>
-            <div style="font-size: 10px; color: #92400e; margin-top: 4px; display: flex; justify-content: space-between;">
-              <span>Asignados: <strong>{{ totalCuposAsignadosSedes }}</strong></span>
-              <span>Pendientes: <strong>{{ cuposPendientesDistribucion }}</strong></span>
-            </div>
-          </div>
-
-          <!-- Cuadro Supervisor -->
-          <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; margin-bottom: 14px;">
-            <span style="font-size: 9px; font-weight: 700; color: #64748b; letter-spacing: 0.5px; display: block; margin-bottom: 2px;">SUPERVISOR</span>
-            <div style="font-size: 12px; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 4px;">
-              <span class="material-symbols-outlined" style="font-size: 14px; color: #f59e0b;">shield_person</span>
-              <span>{{ nombreSupervisorAsignado }}</span>
-            </div>
-          </div>
-
-          <!-- Sedes vinculadas resumen -->
-          <div style="margin-bottom: 14px;">
-            <span style="font-size: 10px; font-weight: 700; color: #94a3b8; letter-spacing: 0.5px; display: block; margin-bottom: 6px;">
-              SEDES VINCULADAS ({{ sedesInstitucion.length }})
-            </span>
-            <div *ngIf="sedesInstitucion.length > 0" style="display: flex; flex-direction: column; gap: 4px; max-height: 180px; overflow-y: auto;">
-              <div *ngFor="let s of sedesInstitucion" style="font-size: 11px; color: #334155; background: #ffffff; padding: 4px 8px; border-radius: 6px; border: 1px solid #e2e8f0; display: flex; justify-content: space-between;">
-                <span style="font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 140px;">{{ s.nombre_sede }}</span>
-                <span style="color: #92400e; font-weight: 700;">{{ obtenerCuposDeSede(s) }} c.</span>
-              </div>
-            </div>
-            <span *ngIf="sedesInstitucion.length === 0" style="font-size: 11px; color: #94a3b8; font-style: italic;">
-              Sin sedes vinculadas
-            </span>
+          <div *ngIf="historialModificaciones.length === 0" style="padding: 24px; text-align: center; color: #64748b; font-size: 13px; background: #f8fafc; border-radius: 8px; border: 1px dashed #cbd5e1;">
+            No se registran modificaciones previas para este contrato.
           </div>
         </div>
+      </div>
 
+      <!-- ========================================== -->
+      <!-- PESTAÑA 5: PRÓRROGAS                       -->
+      <!-- ========================================== -->
+      <div *ngIf="pestanaActiva === 'prorrogas'" style="display: flex; flex-direction: column; gap: 16px;">
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 22px 24px;">
+          <div style="margin-bottom: 16px;">
+            <div>
+              <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #0f172a;">Prórrogas y Renovaciones registradas</h3>
+              <p style="margin: 2px 0 0; font-size: 12px; color: #64748b;">Continuidad y vigencia ampliada del contrato</p>
+            </div>
+          </div>
+
+          <div *ngIf="historialModificaciones.length > 0" style="display: flex; flex-direction: column; gap: 12px;">
+            <div *ngFor="let m of historialModificaciones" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 18px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 6px;"
+                        [style.background]="m.tipo === 'PRORROGA' ? '#eff6ff' : '#faf5ff'"
+                        [style.color]="m.tipo === 'PRORROGA' ? '#1d4ed8' : '#7e22ce'">
+                    {{ m.tipo }}
+                  </span>
+                  <strong style="font-size: 13px; color: #0f172a;">{{ m.numero_autorizacion || 'Resolución contractual' }}</strong>
+                </div>
+                <span style="font-size: 11px; color: #64748b;">{{ m.fecha_registro }}</span>
+              </div>
+              <div style="font-size: 12px; color: #334155;">
+                Nueva vigencia: <strong style="color: #047857;">{{ m.nueva_fecha_inicio }} hasta {{ m.nueva_fecha_fin }}</strong> • Cupos: <strong>{{ m.nuevos_cupos }}</strong>
+              </div>
+              <div *ngIf="m.motivo" style="font-size: 11px; color: #64748b; margin-top: 4px;">
+                Motivo: {{ m.motivo }}
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="historialModificaciones.length === 0" style="padding: 24px; text-align: center; color: #64748b; font-size: 13px; background: #f8fafc; border-radius: 8px; border: 1px dashed #cbd5e1;">
+            No se han registrado prórrogas o renovaciones para este contrato.
+          </div>
+        </div>
       </div>
 
     </ng-container>
 
-    <!-- ======================================================== -->
-    <!-- VISTA 2: MODO CREACIÓN (NUEVO CONTRATO)                   -->
-    <!-- ======================================================== -->
-    <ng-container *ngIf="modo === 'nuevo' && !cargandoDetalle">
+    <!-- ========================================================================= -->
+    <!-- VISTA 2: MODO CREACIÓN (IMAGEN 8) Y MODO EDICIÓN (IMAGEN 3)               -->
+    <!-- ========================================================================= -->
+    <ng-container *ngIf="(modo === 'nuevo' || modo === 'edicion') && !cargandoDetalle">
       
-      <!-- Cabecera de Creación -->
-      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; padding-right: 30px;">
-        <div>
-          <span style="font-size: 10px; font-weight: 700; color: #d97706; background: #fef3c7; padding: 3px 6px; border-radius: 4px; letter-spacing: 0.5px;">NUEVO</span>
-          <h1 style="margin: 6px 0 2px 0; font-size: 20px; font-weight: 800; color: #0f172a;">Crear contrato de alimentación</h1>
-          <p style="margin: 0; color: #64748b; font-size: 12px;">Configura las jornadas y los servicios de menú asociados al nuevo contrato.</p>
-        </div>
-        <div style="display: flex; gap: 8px;">
-          <button (click)="volver()" style="background: #ffffff; border: 1px solid #cbd5e1; color: #475569; padding: 8px 14px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
-            Cancelar
-          </button>
-          <button (click)="guardarTodo()" style="background: #facc15; border: none; color: #713f12; padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
-            Guardar contrato
-          </button>
-        </div>
-      </div>
+      <!-- Cabecera de Formulario (Imagen 3 para Edición, Imagen 8 para Creación) -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-right: 36px;">
+        <div style="display: flex; align-items: center; gap: 14px;">
+          <!-- Icono cuadrado verde tenue -->
+          <div style="width: 38px; height: 38px; background: #ecfdf5; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <!-- Icono lápiz para Edición -->
+            <svg *ngIf="modo === 'edicion'" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 20h9"></path>
+              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+            </svg>
+            <!-- Icono documento para Nuevo -->
+            <svg *ngIf="modo === 'nuevo'" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+            </svg>
+          </div>
 
-      <!-- Aviso sobre la pantalla de nuevo contrato -->
-      <div *ngIf="mensajeAviso" style="background: #fffbeb; border: 1px solid #fde68a; border-left: 5px solid #f59e0b; border-radius: 10px; padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.08);">
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <span class="material-symbols-outlined" style="color: #d97706; font-size: 24px; flex-shrink: 0;">warning</span>
           <div>
-            <strong style="display: block; font-size: 13px; font-weight: 700; color: #92400e; margin-bottom: 2px;">{{ tituloAviso || 'Atención requerida' }}</strong>
-            <span style="font-size: 12px; color: #78350f;">{{ mensajeAviso }}</span>
-          </div>
-        </div>
-        <button type="button" (click)="mensajeAviso = ''" style="background: none; border: none; color: #92400e; cursor: pointer; font-size: 18px; line-height: 1; padding: 4px;" title="Cerrar aviso">✕</button>
-      </div>
-
-      <!-- Layout de Creación -->
-      <div style="display: grid; grid-template-columns: 1fr 250px; gap: 16px; align-items: start;">
-        
-        <!-- LADO IZQUIERDO -->
-        <div style="display: flex; flex-direction: column; gap: 16px; min-width: 0;">
-
-          <!-- Tarjeta: Datos Generales (Formulario Editable) -->
-          <div style="background: #ffffff; border-radius: 10px; padding: 16px; border: 1px solid #e2e8f0;">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
-              <div>
-                <h3 style="margin: 0; font-size: 14px; font-weight: 700;">Datos generales</h3>
-                <p style="margin: 0; font-size: 11px; color: #64748b;">Información principal del contrato</p>
-              </div>
-            </div>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-              <div>
-                <label style="display: block; font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 4px;">N° Contrato / Identificador *</label>
-                <input type="text" [(ngModel)]="contrato.codigo" placeholder="Ej: COR-2026-001" style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; background: #ffffff; color: #334155; box-sizing: border-box; outline: none;">
-              </div>
-              <div>
-                <label style="display: block; font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 4px;">Institución Educativa *</label>
-                <div (click)="abrirModalSeleccionarInstitucion()"
-                     style="width: 100%; min-height: 35px; padding: 7px 10px; border-radius: 6px; background: #ffffff; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 8px; box-sizing: border-box; transition: all 0.15s ease;"
-                     [style.border]="institucionRequeridaAviso ? '1.5px solid #ef4444' : '1px solid #cbd5e1'"
-                     [style.box-shadow]="institucionRequeridaAviso ? '0 0 0 3px rgba(239, 68, 68, 0.15)' : 'none'"
-                     title="Haz clic para seleccionar la institución">
-                  <span *ngIf="contrato.institucion" style="font-size: 12px; font-weight: 600; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;">
-                    {{ contrato.institucion }}
-                  </span>
-                  <span *ngIf="!contrato.institucion" style="font-size: 12px; color: #94a3b8; flex: 1;">
-                    Seleccione la institución...
-                  </span>
-                  <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
-                    <button *ngIf="contrato.institucion" type="button" (click)="deseleccionarInstitucion($event)" style="background: none; border: none; font-size: 13px; color: #94a3b8; cursor: pointer; padding: 0 3px; line-height: 1;">✕</button>
-                    <span class="material-symbols-outlined" style="font-size: 18px; color: #64748b; line-height: 1;">keyboard_arrow_down</span>
-                  </div>
-                </div>
-
-                <div *ngIf="institucionRequeridaAviso" style="margin-top: 5px; font-size: 11px; font-weight: 700; color: #dc2626; display: flex; align-items: center; gap: 4px;">
-                  <span class="material-symbols-outlined" style="font-size: 14px; color: #dc2626;">error</span>
-                  <span>Debes elegir una institución para registrar el contrato.</span>
-                </div>
-
-                <div *ngIf="institucionSeleccionadaInfo" style="margin-top: 6px; font-size: 11px; color: #64748b;">
-                  NIT: <strong style="color: #334155;">{{ institucionSeleccionadaInfo.nit }}</strong>
-                  <span *ngIf="institucionSeleccionadaInfo.representante_legal"> • Rep: {{ institucionSeleccionadaInfo.representante_legal }}</span>
-                </div>
-              </div>
-              <div>
-                <label style="display: block; font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 4px;">Zona</label>
-                <app-custom-select
-                  [options]="opcionesZona"
-                  [(ngModel)]="contrato.zona"
-                  placeholder="Seleccionar zona..."
-                  size="sm"
-                ></app-custom-select>
-              </div>
-              <div>
-                <label style="display: block; font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 4px;">Fecha de Inicio</label>
-                <input type="date" [(ngModel)]="contrato.fecha_inicio" style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; background: #ffffff; color: #334155; box-sizing: border-box; outline: none;">
-              </div>
-              <div>
-                <label style="display: block; font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 4px;">Fecha de Finalización</label>
-                <input type="date" [(ngModel)]="contrato.fecha_fin" style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; background: #ffffff; color: #334155; box-sizing: border-box; outline: none;">
-              </div>
-              <div>
-                <label style="display: block; font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 4px;">Estado</label>
-                <label style="position: relative; display: inline-flex; align-items: center; cursor: pointer; margin-top: 2px;">
-                  <input type="checkbox" [checked]="contrato.estado === 'Activo'" (change)="contrato.estado = $event.target.checked ? 'Activo' : 'Inactivo'" style="opacity: 0; width: 0; height: 0; position: absolute;">
-                  <div style="width: 30px; height: 16px; background-color: {{ contrato.estado === 'Activo' ? '#0f172a' : '#e2e8f0' }}; border-radius: 9999px; position: relative; transition: background-color 0.2s;">
-                    <div style="width: 12px; height: 12px; background-color: #ffffff; border-radius: 50%; position: absolute; top: 2px; left: {{ contrato.estado === 'Activo' ? '16px' : '2px' }}; transition: left 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.1);"></div>
-                  </div>
-                  <span style="margin-left: 8px; font-size: 12px; font-weight: 600; color: #334155;">{{ contrato.estado }}</span>
-                </label>
-              </div>
-              <div>
-                <label style="display: block; font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 4px;">Cupos Asignados (Raciones/Día) *</label>
-                <input type="number" [(ngModel)]="contrato.cupos" min="0" placeholder="Ej: 350" style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; background: #ffffff; color: #334155; box-sizing: border-box; outline: none;">
-              </div>
-              <div>
-                <label style="display: block; font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 4px;">Supervisor Encargado</label>
-                <app-custom-select
-                  [options]="opcionesSupervisores"
-                  [valueField]="'id_usuario'"
-                  [labelField]="'nombre_completo'"
-                  [(ngModel)]="contrato.id_usuario_supervisor"
-                  placeholder="Sin supervisor asignado..."
-                  size="sm"
-                ></app-custom-select>
-              </div>
-            </div>
-          </div>
-
-          <!-- Tarjeta: Sedes asociadas a la Institución -->
-          <div *ngIf="contrato?.institucion" style="background: #ffffff; border-radius: 10px; padding: 16px; border: 1px solid #e2e8f0;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <div>
-                <h3 style="margin: 0 0 2px 0; font-size: 14px; font-weight: 700; color: #0f172a;">
-                  Sedes de la institución
-                </h3>
-                <p style="margin: 0; font-size: 11px; color: #64748b;">
-                  Sedes vinculadas a {{ contrato.institucion }}
-                </p>
-              </div>
-              <span *ngIf="sedesInstitucion.length > 0" style="font-size: 11px; font-weight: 700; background: #fef3c7; color: #92400e; border: 1px solid #fde68a; padding: 3px 8px; border-radius: 6px;">
-                {{ sedesInstitucion.length }} sedes registradas
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <h2 style="margin: 0; font-size: 18px; font-weight: 800; color: #0f172a;">
+                {{ modo === 'edicion' ? ('Editar ' + contrato.codigo) : 'Crear contrato de alimentación' }}
+              </h2>
+              <!-- Tag NUEVO o EDICIÓN -->
+              <span *ngIf="modo === 'nuevo'" style="font-size: 10px; font-weight: 800; color: #059669; background: #ecfdf5; padding: 2px 6px; border-radius: 4px; letter-spacing: 0.5px;">
+                NUEVO
+              </span>
+              <span *ngIf="modo === 'edicion'" style="font-size: 10px; font-weight: 800; color: #2563eb; background: #eff6ff; padding: 2px 6px; border-radius: 4px; letter-spacing: 0.5px;">
+                EDICIÓN
               </span>
             </div>
+            <p style="margin: 2px 0 0 0; color: #64748b; font-size: 12px;">
+              {{ modo === 'edicion' ? 'Actualiza únicamente la información autorizada.' : 'Registra la información contractual y su alcance.' }}
+            </p>
+          </div>
+        </div>
+      </div>
 
-            <div *ngIf="sedesInstitucion.length > 0" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-top: 10px;">
-              <div *ngFor="let s of sedesInstitucion" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 4px;">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                  <strong style="font-size: 12px; color: #0f172a;">{{ s.nombre_sede }}</strong>
-                  <span style="font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 4px;"
-                    [style.background]="s.estado === 'ACTIVO' ? '#dcfce7' : '#fee2e2'"
-                    [style.color]="s.estado === 'ACTIVO' ? '#166534' : '#991b1b'">
-                    {{ s.estado }}
-                  </span>
-                </div>
-                <div *ngIf="s.codigo_dane" style="font-size: 11px; color: #64748b;">
-                  <strong>DANE:</strong> {{ s.codigo_dane }}
-                </div>
+      <!-- Aviso si falta institución -->
+      <div *ngIf="mensajeAviso" style="background: #fffbeb; border: 1px solid #fde68a; border-left: 4px solid #f59e0b; border-radius: 8px; padding: 10px 14px; margin-bottom: 18px; font-size: 12px; color: #92400e; display: flex; justify-content: space-between; align-items: center;">
+        <span>{{ mensajeAviso }}</span>
+        <button type="button" (click)="mensajeAviso = ''" style="background: none; border: none; color: #92400e; cursor: pointer; font-size: 14px;">✕</button>
+      </div>
+
+      <!-- Layout Principal en 2 Columnas (Imágenes 3 y 8) -->
+      <div style="display: grid; grid-template-columns: 1fr 280px; gap: 24px; align-items: start;">
+        
+        <!-- COLUMNA IZQUIERDA: Pasos 1, 2 y 3 -->
+        <div style="display: flex; flex-direction: column; gap: 24px;">
+
+          <!-- PASO 1: Datos generales (Imágenes 3 y 8) -->
+          <div>
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 14px;">
+              <div style="width: 22px; height: 22px; border-radius: 50%; background: #0f172a; color: #ffffff; font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center;">1</div>
+              <div>
+                <strong style="font-size: 15px; font-weight: 700; color: #0f172a; display: block;">Datos generales</strong>
+                <span style="font-size: 12px; color: #64748b;">Información principal del acuerdo</span>
               </div>
             </div>
 
-            <div *ngIf="sedesInstitucion.length === 0" style="padding: 16px; text-align: center; color: #64748b; font-size: 12px; background: #f8fafc; border-radius: 8px; border: 1px dashed #cbd5e1; margin-top: 10px;">
-              No hay sedes registradas.
-            </div>
-          </div>
-
-          <!-- Tarjeta: Asignación de jornadas -->
-          <div style="background: #ffffff; border-radius: 10px; padding: 16px; border: 1px solid #e2e8f0;">
-            <h3 style="margin: 0 0 2px 0; font-size: 14px; font-weight: 700;">
-              Asignación de jornadas
-            </h3>
-            <p style="margin: 0 0 12px 0; font-size: 11px; color: #64748b;">Activa las jornadas que estarán disponibles.</p>
-            
-            <div style="display: flex; gap: 12px;">
-              <label *ngFor="let j of jornadas" style="flex: 1; border: 1px solid; border-radius: 6px; padding: 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s;" [style.border-color]="j.habilitada ? '#f59e0b' : '#cbd5e1'" [style.background]="j.habilitada ? '#fefce8' : '#ffffff'">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                  <input type="checkbox" [checked]="j.habilitada" (change)="toggleJornada(j, $event); seleccionarJornadaParaVer(j)" style="width: 14px; height: 14px; accent-color: #f59e0b; cursor: pointer;">
-                  <span style="font-weight: 600; font-size: 12px; color: #0f172a;">{{ j.nombre_jornada || j.nombre }}</span>
-                </div>
-              </label>
-            </div>
-          </div>
-
-          <!-- Tarjeta: Asignación de menús -->
-          <div style="background: #ffffff; border-radius: 10px; padding: 16px; border: 1px solid #e2e8f0;">
-            <div style="margin-bottom: 12px;">
-              <h3 style="margin: 0 0 2px 0; font-size: 14px; font-weight: 700;">
-                Secciones de menú
-              </h3>
-              <p style="margin: 0; font-size: 11px; color: #64748b;">Selecciona los servicios disponibles para cada jornada.</p>
-            </div>
+            <!-- Campos en 2 Columnas -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
               
-            <ng-container *ngIf="jornadasHabilitadas.length > 0; else noSelection">
-              <div style="display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 4px;">
-                <label *ngFor="let s of seccionesFiltradasPorJornadasHabilitadas()" 
-                       style="border: 2px solid; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; cursor: pointer; transition: all 0.2s; position: relative; min-width: 120px; flex-shrink: 0;"
-                       [style.border-color]="estaSeccionAsignada(s.id_seccion || s.id) ? '#f59e0b' : '#e2e8f0'">
-                  <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
-                    <input type="checkbox" [checked]="estaSeccionAsignada(s.id_seccion || s.id)" (change)="toggleSeccionMenu(s.id_seccion || s.id, $event)" 
-                           style="width: 14px; height: 14px; accent-color: #f59e0b; cursor: pointer;">
-                  </div>
-                  <span style="font-weight: 700; color: #0f172a; font-size: 11px;">{{ s.nombre_seccion || s.nombre }}</span>
+              <!-- 1. Número de contrato -->
+              <div>
+                <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 5px;">
+                  Número de contrato <span style="color: #ef4444;">*</span>
                 </label>
+                <input type="text" [(ngModel)]="contrato.codigo" [disabled]="modo === 'edicion'"
+                       placeholder="Ej: PAE-2026-042"
+                       style="width: 100%; padding: 9px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; outline: none; box-sizing: border-box;"
+                       [style.background]="modo === 'edicion' ? '#f8fafc' : '#ffffff'"
+                       [style.color]="modo === 'edicion' ? '#334155' : '#0f172a'">
               </div>
-            </ng-container>
-            <ng-template #noSelection>
-              <div style="padding: 16px; text-align: center; color: #64748b; font-size: 11px; background: #f8fafc; border-radius: 6px; border: 1px dashed #cbd5e1;">
-                Selecciona al menos una jornada para ver sus menús.
+
+              <!-- 2. Institución Educativa -->
+              <div>
+                <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 5px;">
+                  Institución Educativa <span style="color: #ef4444;">*</span>
+                </label>
+                <div (click)="abrirModalSeleccionarInstitucion()"
+                     style="width: 100%; padding: 9px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; background: #ffffff; cursor: pointer; display: flex; align-items: center; justify-content: space-between; box-sizing: border-box;">
+                  <span [style.color]="contrato.institucion ? '#0f172a' : '#94a3b8'" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                    {{ contrato.institucion || 'Seleccionar institución' }}
+                  </span>
+                  <span style="color: #64748b; font-size: 12px;">▼</span>
+                </div>
               </div>
-            </ng-template>
-          </div>
-        </div>
 
-        <!-- LADO DERECHO: Resumen Sidebar de Creación -->
-        <div style="background: #ffffff; border-radius: 10px; padding: 16px; border: 1px solid #e2e8f0; position: sticky; top: 16px;">
-          <h3 style="margin: 0 0 16px 0; font-size: 14px; font-weight: 700; color: #0f172a;">Resumen</h3>
+              <!-- 3. Zona -->
+              <div>
+                <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 5px;">
+                  Zona <span style="color: #ef4444;">*</span>
+                </label>
+                <div style="position: relative;">
+                  <select [(ngModel)]="contrato.zona"
+                          style="width: 100%; padding: 9px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; background: #ffffff; color: #0f172a; outline: none; box-sizing: border-box; appearance: none; -webkit-appearance: none;">
+                    <option value="Zona Norte">Zona Norte</option>
+                    <option value="Zona Sur">Zona Sur</option>
+                    <option value="Zona Centro">Zona Centro</option>
+                    <option value="Zona Oriente">Zona Oriente</option>
+                    <option value="Zona Occidente">Zona Occidente</option>
+                    <option value="Zona Rural">Zona Rural</option>
+                    <option value="Zona Urbana">Zona Urbana</option>
+                    <option value="Norte">Norte</option>
+                    <option value="Sur">Sur</option>
+                    <option value="Centro">Centro</option>
+                    <option value="Rural">Rural</option>
+                  </select>
+                  <span style="position: absolute; right: 12px; top: 12px; pointer-events: none; color: #64748b; font-size: 12px;">▼</span>
+                </div>
+              </div>
 
-          <div style="margin-bottom: 16px;">
-            <span style="font-size: 9px; font-weight: 700; color: #94a3b8; letter-spacing: 0.5px; display: block; margin-bottom: 4px;">CONTRATO</span>
-            <div style="font-size: 13px; font-weight: 800; color: #0f172a; margin-bottom: 2px;">{{ contrato.codigo || 'Sin código' }}</div>
-            <span style="font-size: 11px; font-weight: 600; color: #334155;">{{ contrato?.institucion || 'Sin asignar' }}</span>
-          </div>
+              <!-- 4. Supervisor encargado -->
+              <div>
+                <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 5px;">
+                  Supervisor encargado
+                </label>
+                <div style="position: relative;">
+                  <select [(ngModel)]="contrato.id_usuario_supervisor"
+                          style="width: 100%; padding: 9px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; background: #ffffff; color: #0f172a; outline: none; box-sizing: border-box; appearance: none; -webkit-appearance: none;">
+                    <option [ngValue]="null">Sin asignar</option>
+                    <option *ngFor="let s of supervisores" [ngValue]="s.id_usuario">
+                      {{ s.nombre_completo }}
+                    </option>
+                  </select>
+                  <span style="position: absolute; right: 12px; top: 12px; pointer-events: none; color: #64748b; font-size: 12px;">▼</span>
+                </div>
+              </div>
 
-          <div style="margin-bottom: 14px; background: #fffcf0; border: 1px solid #fde68a; border-radius: 8px; padding: 10px;">
-            <span style="font-size: 9px; font-weight: 700; color: #92400e; letter-spacing: 0.5px; display: block; margin-bottom: 2px;">CUPOS AUTORIZADOS</span>
-            <div style="font-size: 16px; font-weight: 800; color: #78350f;">
-              {{ contrato?.cupos || 0 }} <span style="font-size: 11px; font-weight: 600; color: #b45309;">cupos</span>
+              <!-- 5. Fecha de inicio -->
+              <div>
+                <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 5px;">
+                  Fecha de inicio <span style="color: #ef4444;">*</span>
+                </label>
+                <input type="date" [(ngModel)]="contrato.fecha_inicio"
+                       style="width: 100%; padding: 9px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; color: #0f172a; outline: none; box-sizing: border-box; background: #ffffff;">
+              </div>
+
+              <!-- 6. Fecha de finalización -->
+              <div>
+                <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 5px;">
+                  Fecha de finalización <span style="color: #ef4444;">*</span>
+                </label>
+                <input type="date" [(ngModel)]="contrato.fecha_fin"
+                       style="width: 100%; padding: 9px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; color: #0f172a; outline: none; box-sizing: border-box; background: #ffffff;">
+              </div>
+
+              <!-- 7. Cupos autorizados -->
+              <div>
+                <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 5px;">
+                  Cupos autorizados <span style="color: #ef4444;">*</span>
+                </label>
+                <input type="number" [(ngModel)]="contrato.cupos" min="1" placeholder="Ej: 420"
+                       style="width: 100%; padding: 9px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; color: #0f172a; outline: none; box-sizing: border-box; background: #ffffff;">
+                <span *ngIf="modo === 'edicion'" style="display: block; font-size: 11px; color: #64748b; margin-top: 4px;">
+                  {{ totalCuposAsignadosSedes }} cupos distribuidos actualmente
+                </span>
+              </div>
+
+              <!-- 8. Estado (Dos botones tipo toggle: Activo / Inactivo) -->
+              <div>
+                <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 5px;">
+                  Estado
+                </label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                  <button type="button" (click)="cambiarEstadoContrato('Activo')"
+                          style="padding: 9px 12px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; text-align: center;"
+                          [style.background]="contrato.estado === 'Activo' ? '#ecfdf5' : '#ffffff'"
+                          [style.border]="contrato.estado === 'Activo' ? '1.5px solid #10b981' : '1px solid #e2e8f0'"
+                          [style.color]="contrato.estado === 'Activo' ? '#047857' : '#64748b'">
+                    Activo
+                  </button>
+
+                  <button type="button" (click)="cambiarEstadoContrato('Inactivo')"
+                          style="padding: 9px 12px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; text-align: center;"
+                          [style.background]="contrato.estado === 'Inactivo' ? '#fef2f2' : '#ffffff'"
+                          [style.border]="contrato.estado === 'Inactivo' ? '1.5px solid #ef4444' : '1px solid #e2e8f0'"
+                          [style.color]="contrato.estado === 'Inactivo' ? '#dc2626' : '#64748b'">
+                    Inactivo
+                  </button>
+                </div>
+              </div>
+
             </div>
           </div>
 
-          <div style="margin-bottom: 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px;">
-            <span style="font-size: 9px; font-weight: 700; color: #64748b; letter-spacing: 0.5px; display: block; margin-bottom: 2px;">SUPERVISOR ASIGNADO</span>
-            <div style="font-size: 11px; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 4px;">
-              <span class="material-symbols-outlined" style="font-size: 15px; color: #f59e0b;">shield_person</span>
-              <span>{{ nombreSupervisorAsignado }}</span>
+          <!-- PASO 2: Asignación de jornadas (Imágenes 3, 6 y 8) -->
+          <div>
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 14px;">
+              <div style="width: 22px; height: 22px; border-radius: 50%; background: #0f172a; color: #ffffff; font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center;">2</div>
+              <div>
+                <strong style="font-size: 15px; font-weight: 700; color: #0f172a; display: block;">Asignación de jornadas</strong>
+                <span style="font-size: 12px; color: #64748b;">Selecciona las jornadas amparadas</span>
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+              <!-- Card Mañana -->
+              <div (click)="toggleJornadaPorNombre('Mañana')"
+                   style="border-radius: 10px; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.15s;"
+                   [style.border]="jornadaManana?.habilitada ? '1.5px solid #10b981' : '1px solid #e2e8f0'"
+                   [style.background]="jornadaManana?.habilitada ? '#f0fdf4' : '#ffffff'">
+                <span style="font-size: 14px; font-weight: 700; color: #0f172a;">Mañana</span>
+                <div style="width: 20px; height: 20px; border-radius: 4px; display: flex; align-items: center; justify-content: center;"
+                     [style.background]="jornadaManana?.habilitada ? '#059669' : '#ffffff'"
+                     [style.border]="jornadaManana?.habilitada ? 'none' : '1.5px solid #cbd5e1'">
+                  <svg *ngIf="jornadaManana?.habilitada" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </div>
+              </div>
+
+              <!-- Card Tarde -->
+              <div (click)="toggleJornadaPorNombre('Tarde')"
+                   style="border-radius: 10px; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.15s;"
+                   [style.border]="jornadaTarde?.habilitada ? '1.5px solid #10b981' : '1px solid #e2e8f0'"
+                   [style.background]="jornadaTarde?.habilitada ? '#f0fdf4' : '#ffffff'">
+                <span style="font-size: 14px; font-weight: 700; color: #0f172a;">Tarde</span>
+                <div style="width: 20px; height: 20px; border-radius: 4px; display: flex; align-items: center; justify-content: center;"
+                     [style.background]="jornadaTarde?.habilitada ? '#059669' : '#ffffff'"
+                     [style.border]="jornadaTarde?.habilitada ? 'none' : '1.5px solid #cbd5e1'">
+                  <svg *ngIf="jornadaTarde?.habilitada" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </div>
+              </div>
             </div>
           </div>
+
+          <!-- PASO 3: Secciones de menú (Imágenes 3, 6 y 8) -->
+          <div>
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 14px;">
+              <div style="width: 22px; height: 22px; border-radius: 50%; background: #0f172a; color: #ffffff; font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center;">3</div>
+              <div>
+                <strong style="font-size: 15px; font-weight: 700; color: #0f172a; display: block;">Secciones de menú</strong>
+                <span style="font-size: 12px; color: #64748b;">Catálogo filtrado por cada jornada</span>
+              </div>
+            </div>
+
+            <!-- Grupo MAÑANA -->
+            <div style="margin-bottom: 16px;">
+              <div style="font-size: 11px; font-weight: 800; color: #64748b; letter-spacing: 0.5px; margin-bottom: 10px;">MAÑANA</div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                <div *ngFor="let s of seccionesPorNombreJornada('Mañana')"
+                     (click)="toggleSeccionItem(s)"
+                     style="border-radius: 10px; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.15s;"
+                     [style.border]="estaSeccionAsignada(s.id_seccion || s.id) ? '1.5px solid #10b981' : '1px solid #e2e8f0'"
+                     [style.background]="estaSeccionAsignada(s.id_seccion || s.id) ? '#f0fdf4' : '#ffffff'">
+                  <span style="font-size: 14px; font-weight: 700; color: #0f172a;">{{ s.nombre_seccion || s.nombre }}</span>
+                  <div style="width: 20px; height: 20px; border-radius: 4px; display: flex; align-items: center; justify-content: center;"
+                       [style.background]="estaSeccionAsignada(s.id_seccion || s.id) ? '#059669' : '#ffffff'"
+                       [style.border]="estaSeccionAsignada(s.id_seccion || s.id) ? 'none' : '1.5px solid #cbd5e1'">
+                    <svg *ngIf="estaSeccionAsignada(s.id_seccion || s.id)" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Grupo TARDE -->
+            <div>
+              <div style="font-size: 11px; font-weight: 800; color: #64748b; letter-spacing: 0.5px; margin-bottom: 10px;">TARDE</div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                <div *ngFor="let s of seccionesPorNombreJornada('Tarde')"
+                     (click)="toggleSeccionItem(s)"
+                     style="border-radius: 10px; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.15s;"
+                     [style.border]="estaSeccionAsignada(s.id_seccion || s.id) ? '1.5px solid #10b981' : '1px solid #e2e8f0'"
+                     [style.background]="estaSeccionAsignada(s.id_seccion || s.id) ? '#f0fdf4' : '#ffffff'">
+                  <span style="font-size: 14px; font-weight: 700; color: #0f172a;">{{ s.nombre_seccion || s.nombre }}</span>
+                  <div style="width: 20px; height: 20px; border-radius: 4px; display: flex; align-items: center; justify-content: center;"
+                       [style.background]="estaSeccionAsignada(s.id_seccion || s.id) ? '#059669' : '#ffffff'"
+                       [style.border]="estaSeccionAsignada(s.id_seccion || s.id) ? 'none' : '1.5px solid #cbd5e1'">
+                    <svg *ngIf="estaSeccionAsignada(s.id_seccion || s.id)" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
         </div>
 
+        <!-- COLUMNA DERECHA: Resumen de Sedes Vinculadas (Imágenes 3 y 8) -->
+        <div>
+          <div style="font-size: 11px; font-weight: 800; color: #64748b; letter-spacing: 0.5px; margin-bottom: 4px;">RESUMEN</div>
+          <h3 style="margin: 0 0 16px 0; font-size: 15px; font-weight: 700; color: #0f172a;">Sedes vinculadas</h3>
+
+          <!-- Caso A: NO hay institución seleccionada (Imagen 8) -->
+          <div *ngIf="!contrato.institucion"
+               style="border: 1.5px dashed #cbd5e1; border-radius: 12px; padding: 48px 20px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect>
+              <line x1="9" y1="22" x2="9" y2="2"></line>
+              <path d="M5 12h4"></path>
+              <path d="M5 17h4"></path>
+              <path d="M5 7h4"></path>
+              <path d="M15 12h4"></path>
+              <path d="M15 17h4"></path>
+              <path d="M15 7h4"></path>
+            </svg>
+            <span style="font-size: 13px; color: #64748b; font-weight: 500;">Selecciona una institución</span>
+          </div>
+
+          <!-- Caso B: SÍ hay institución seleccionada (Imagen 3) -->
+          <div *ngIf="contrato.institucion" style="display: flex; flex-direction: column; gap: 12px;">
+            
+            <!-- Cards de sedes individuales -->
+            <div *ngFor="let s of sedesInstitucion"
+                 style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px; display: flex; align-items: center; gap: 12px;">
+              <!-- Icono casita en caja gris/azul -->
+              <div style="width: 32px; height: 32px; background: #f1f5f9; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                  <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg>
+              </div>
+
+              <div>
+                <div style="font-size: 13px; font-weight: 700; color: #0f172a;">{{ s.nombre_sede }}</div>
+                <div style="font-size: 11px; color: #94a3b8;">{{ s.codigo_dane || ('SD-' + (s.id_sede < 10 ? '0' + s.id_sede : s.id_sede)) }}</div>
+              </div>
+            </div>
+
+            <!-- Recuadro verde menta: Total de sedes (Imagen 3) -->
+            <div style="background: #fef9c3; border-radius: 10px; padding: 14px 16px; margin-top: 4px;">
+              <div style="font-size: 12px; font-weight: 600; color: #ca8a04; margin-bottom: 2px;">Total de sedes</div>
+              <div style="font-size: 24px; font-weight: 800; color: #ca8a04; line-height: 1.1;">{{ sedesInstitucion.length }}</div>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Pie del Formulario (Imágenes 3 y 8) -->
+      <div style="display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-top: 28px; padding-top: 18px; border-top: 1px solid #f1f5f9;">
+        <button type="button" (click)="modo === 'edicion' ? cerrarModalEdicion() : volver()"
+                style="background: #ffffff; border: 1px solid #cbd5e1; color: #334155; padding: 9px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s;"
+                onmouseover="this.style.background='#f8fafc'"
+                onmouseout="this.style.background='#ffffff'">
+          Cancelar
+        </button>
+
+        <button type="button" (click)="guardarTodo()"
+                style="background: #fac94b; color: #000000; border: none; padding: 9px 24px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.15s; box-shadow: 0 1px 3px rgba(250,201,75,0.3);"
+                onmouseover="this.style.background='#eab308'"
+                onmouseout="this.style.background='#fac94b'">
+          {{ modo === 'edicion' ? 'Guardar cambios' : 'Guardar contrato' }}
+        </button>
       </div>
 
     </ng-container>
 
   </div>
 
-  <!-- ==================== MODAL EMERGENTE: SELECCIONAR INSTITUCIÓN ==================== -->
+  <!-- ========================================================================= -->
+  <!-- MODAL DE CONTROL DE VIGENCIA: PRORROGAR O RENOVAR (IMAGEN 7)              -->
+  <!-- ========================================================================= -->
+  <div *ngIf="modalProrrogaAbierto"
+       style="position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(4px); z-index: 10500; display: flex; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: #ffffff; border-radius: 16px; width: 100%; max-width: 540px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3); padding: 24px 28px; position: relative;">
+      
+      <!-- Botón cerrar X -->
+      <button type="button" (click)="cerrarModalProrroga()"
+              style="position: absolute; top: 18px; right: 20px; background: none; border: none; font-size: 20px; color: #64748b; cursor: pointer; line-height: 1;">✕</button>
+
+      <!-- Encabezado (Imagen 7) -->
+      <div style="margin-bottom: 20px;">
+        <div style="font-size: 11px; font-weight: 800; color: #b45309; letter-spacing: 0.5px; margin-bottom: 4px;">CONTROL DE VIGENCIA</div>
+        <h2 style="margin: 0 0 2px 0; font-size: 20px; font-weight: 800; color: #0f172a;">Prorrogar o renovar contrato</h2>
+        <span style="font-size: 13px; color: #64748b;">{{ contrato?.codigo }}</span>
+      </div>
+
+      <!-- 2 Cards de Selección: Prórroga / Renovación (Imagen 7) -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px;">
+        <!-- Card Prórroga -->
+        <div (click)="cambiarTipoOperacion('PRORROGA')"
+             style="border-radius: 10px; padding: 14px 16px; cursor: pointer; transition: all 0.15s;"
+             [style.border]="tipoOperacionVigencia === 'PRORROGA' ? '1.5px solid #facc15' : '1px solid #e2e8f0'"
+             [style.background]="tipoOperacionVigencia === 'PRORROGA' ? '#fefce8' : '#ffffff'">
+          <div style="font-size: 14px; font-weight: 800; color: #0f172a; margin-bottom: 3px;">Prórroga</div>
+          <div style="font-size: 12px; color: #64748b;">Extiende el acuerdo vigente</div>
+        </div>
+
+        <!-- Card Renovación -->
+        <div (click)="cambiarTipoOperacion('RENOVACION')"
+             style="border-radius: 10px; padding: 14px 16px; cursor: pointer; transition: all 0.15s;"
+             [style.border]="tipoOperacionVigencia === 'RENOVACION' ? '1.5px solid #facc15' : '1px solid #e2e8f0'"
+             [style.background]="tipoOperacionVigencia === 'RENOVACION' ? '#fefce8' : '#ffffff'">
+          <div style="font-size: 14px; font-weight: 800; color: #0f172a; margin-bottom: 3px;">Renovación</div>
+          <div style="font-size: 12px; color: #64748b;">Inicia un nuevo periodo autorizado</div>
+        </div>
+      </div>
+
+      <!-- Cuadro de Vigencia Actual (Imagen 7) -->
+      <div style="background: #f8fafc; border-radius: 10px; padding: 14px 18px; display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px;">
+        <div>
+          <div style="font-size: 11px; color: #64748b; margin-bottom: 2px;">Inicio actual</div>
+          <div style="font-size: 14px; font-weight: 700; color: #0f172a;">{{ formatearFecha(contrato?.fecha_inicio) }}</div>
+        </div>
+        <div>
+          <div style="font-size: 11px; color: #64748b; margin-bottom: 2px;">Finalización actual</div>
+          <div style="font-size: 14px; font-weight: 700; color: #0f172a;">{{ formatearFecha(contrato?.fecha_fin) }}</div>
+        </div>
+      </div>
+
+      <!-- Fechas Autorizadas: Nuevo inicio y Nueva finalización (Imagen 7) -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
+        <div>
+          <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 5px;">
+            Nuevo inicio <span style="color: #ef4444;">*</span>
+          </label>
+          <input type="date" [(ngModel)]="datosProrroga.nuevaFechaInicio"
+                 [disabled]="tipoOperacionVigencia === 'PRORROGA'"
+                 style="width: 100%; padding: 9px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; color: #0f172a; outline: none; box-sizing: border-box;"
+                 [style.background]="tipoOperacionVigencia === 'PRORROGA' ? '#f8fafc' : '#ffffff'">
+        </div>
+
+        <div>
+          <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 5px;">
+            Nueva finalización <span style="color: #ef4444;">*</span>
+          </label>
+          <input type="date" [(ngModel)]="datosProrroga.nuevaFechaFin"
+                 style="width: 100%; padding: 9px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; color: #0f172a; outline: none; box-sizing: border-box; background: #ffffff;">
+        </div>
+      </div>
+
+      <!-- Número de autorización / Acto administrativo -->
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 5px;">
+          N° Autorización o acto administrativo <span style="color: #ef4444;">*</span>
+        </label>
+        <input type="text" [(ngModel)]="datosProrroga.numeroAutorizacion"
+               placeholder="Ej: Resolución 0042 de 2026"
+               style="width: 100%; padding: 9px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; color: #0f172a; outline: none; box-sizing: border-box; background: #ffffff;">
+      </div>
+
+      <!-- Motivo o justificación -->
+      <div style="margin-bottom: 18px;">
+        <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 5px;">
+          Motivo o justificación <span style="color: #ef4444;">*</span>
+        </label>
+        <textarea rows="3" [(ngModel)]="datosProrroga.motivo"
+                  placeholder="Describe la justificación técnica o jurídica de la operación..."
+                  style="width: 100%; padding: 9px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; color: #0f172a; outline: none; box-sizing: border-box; resize: none; font-family: inherit;"></textarea>
+      </div>
+
+      <!-- Mensaje de error si validación falla -->
+      <div *ngIf="datosProrroga.errorValidacion" style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 10px 14px; font-size: 12px; color: #991b1b; margin-bottom: 16px;">
+        {{ datosProrroga.errorValidacion }}
+      </div>
+
+      <!-- Botones del Modal de Vigencia: Cancelar y Continuar (Imagen 7) -->
+      <div style="display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-top: 10px;">
+        <button type="button" (click)="cerrarModalProrroga()"
+                style="background: #ffffff; border: 1px solid #cbd5e1; color: #334155; padding: 9px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;">
+          Cancelar
+        </button>
+
+        <button type="button" (click)="guardarProrrogaORenovacion()"
+                [disabled]="guardandoProrroga"
+                style="background: #fac94b; color: #000000; border: none; padding: 9px 24px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 6px;"
+                onmouseover="this.style.background='#eab308'"
+                onmouseout="this.style.background='#fac94b'">
+          <span *ngIf="guardandoProrroga" style="width: 12px; height: 12px; border: 2px solid #ffffff; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite;"></span>
+          Continuar
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL SELECTOR DE INSTITUCIÓN                                             -->
+  <!-- ========================================================================= -->
   <div *ngIf="modalSeleccionarInstitucionAbierto" (click)="cerrarModalSeleccionarInstitucion()"
-       style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); display: flex; justify-content: center; align-items: center; z-index: 11000; padding: 20px; box-sizing: border-box;">
+       style="position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); display: flex; justify-content: center; align-items: center; z-index: 11000; padding: 20px; box-sizing: border-box;">
     
     <div (click)="$event.stopPropagation()"
          style="background: #ffffff; width: 560px; max-width: 95%; max-height: 85vh; border-radius: 16px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); display: flex; flex-direction: column; overflow: hidden; font-family: inherit;">
       
-      <!-- Cabecera del modal -->
+      <!-- Cabecera -->
       <div style="padding: 16px 20px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
         <div>
           <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #0f172a;">Seleccionar institución educativa</h3>
@@ -1000,7 +1039,7 @@
           </button>
           <button type="button" (click)="confirmarSeleccionInstitucion()"
                   [disabled]="!institucionTemporalSeleccionada && !contrato.institucion"
-                  style="background: #fac94b; border: none; color: #000000; font-weight: 700; padding: 8px 18px; border-radius: 8px; font-size: 12px; cursor: pointer; box-shadow: 0 1px 3px rgba(250, 201, 75, 0.3);"
+                  style="background: #fac94b; border: none; color: #000000; font-weight: 700; padding: 8px 18px; border-radius: 8px; font-size: 12px; cursor: pointer;"
                   [style.opacity]="(institucionTemporalSeleccionada || contrato.institucion) ? '1' : '0.5'"
                   [style.cursor]="(institucionTemporalSeleccionada || contrato.institucion) ? 'pointer' : 'not-allowed'">
             Guardar
@@ -1383,6 +1422,53 @@
                    [(ngModel)]="datosEdicion.fecha_fin"
                    [min]="datosEdicion.fecha_inicio"
                    style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 12px; color: #0f172a; outline: none; box-sizing: border-box;" />
+          </div>
+        </div>
+
+        <!-- 4. PERIODICIDAD DE ABASTECIMIENTO POR TIPO DE ALIMENTO (HU 5) -->
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px;">
+          <div style="font-size: 12px; font-weight: 700; color: #1e293b; margin-bottom: 8px;">
+            Periodicidad de abastecimiento y días de cobertura (cálculo de entregas)
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 110px 1fr 110px; gap: 10px; align-items: end;">
+            <div>
+              <label style="display: block; font-size: 11px; font-weight: 600; color: #334155; margin-bottom: 4px;">
+                Periodicidad perecederos
+              </label>
+              <select [(ngModel)]="datosEdicion.periodicidad_perecederos"
+                      (ngModelChange)="alCambiarPeriodicidad('perecederos')"
+                      style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 12px; color: #0f172a; background: #ffffff; box-sizing: border-box;">
+                <option *ngFor="let op of periodicidadOpciones" [value]="op.value">{{ op.label }}</option>
+              </select>
+            </div>
+            <div>
+              <label style="display: block; font-size: 11px; font-weight: 600; color: #334155; margin-bottom: 4px;">
+                Días per. *
+              </label>
+              <input type="number"
+                     min="1"
+                     [(ngModel)]="datosEdicion.dias_cobertura_perecederos"
+                     style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 12px; color: #0f172a; box-sizing: border-box;" />
+            </div>
+            <div>
+              <label style="display: block; font-size: 11px; font-weight: 600; color: #334155; margin-bottom: 4px;">
+                Periodicidad no perecederos
+              </label>
+              <select [(ngModel)]="datosEdicion.periodicidad_no_perecederos"
+                      (ngModelChange)="alCambiarPeriodicidad('no_perecederos')"
+                      style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 12px; color: #0f172a; background: #ffffff; box-sizing: border-box;">
+                <option *ngFor="let op of periodicidadOpciones" [value]="op.value">{{ op.label }}</option>
+              </select>
+            </div>
+            <div>
+              <label style="display: block; font-size: 11px; font-weight: 600; color: #334155; margin-bottom: 4px;">
+                Días no per. *
+              </label>
+              <input type="number"
+                     min="1"
+                     [(ngModel)]="datosEdicion.dias_cobertura_no_perecederos"
+                     style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 12px; color: #0f172a; box-sizing: border-box;" />
+            </div>
           </div>
         </div>
 

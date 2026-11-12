@@ -8,25 +8,79 @@ import { UsuarioService } from '../services/usuario.service';
 import { RolService } from '../services/rol.service';
 import { AuthService } from '../services/auth.service';
 import { environment } from '../../environments/environment';
-import { CustomSelectComponent } from '../shared/custom-select/custom-select';
 import { SweetAlertService } from '../sweet-alert.service';
 
 @Component({
   selector: 'app-contrato-detalle',
   standalone: true,
-  imports: [CommonModule, FormsModule, CustomSelectComponent],
+  imports: [CommonModule, FormsModule],
   templateUrl: './contrato-detalle.html',
   styleUrls: ['./contrato-detalle.css']
 })
 export class ContratoDetalleComponent implements OnInit {
   @Input() contratoId: string | null = null;
   @Input() modo: 'consulta' | 'nuevo' | 'edicion' = 'consulta';
+  @Input() pestanaInicial: string = 'resumen';
   @Output() cerrar = new EventEmitter<any>();
   
   cargandoDetalle = false;
   errorCargaDetalle = '';
   
-  pestanaActiva = 'jornadas'; // 'jornadas', 'secciones', 'turnos'
+  pestanaActiva = 'resumen'; // 'resumen', 'distribucion', 'jornadas', 'historial', 'prorrogas'
+
+  formatearFecha(fechaStr?: string): string {
+    if (!fechaStr) return 'No registrada';
+    try {
+      const partes = fechaStr.split('-');
+      if (partes.length === 3) {
+        const anio = partes[0];
+        const mesNum = parseInt(partes[1], 10);
+        const dia = parseInt(partes[2], 10);
+        const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+        const mesNombre = meses[mesNum - 1] || partes[1];
+        const diaStr = dia < 10 ? `0${dia}` : `${dia}`;
+        return `${diaStr} de ${mesNombre} de ${anio}`;
+      }
+      const d = new Date(fechaStr);
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' });
+      }
+      return fechaStr;
+    } catch {
+      return fechaStr;
+    }
+  }
+
+  formatearFechaDiaMes(fechaStr?: string): string {
+    if (!fechaStr) return 'No reg.';
+    try {
+      const partes = fechaStr.split('-');
+      if (partes.length === 3) {
+        const mesNum = parseInt(partes[1], 10);
+        const dia = parseInt(partes[2], 10);
+        const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+        const mesNombre = meses[mesNum - 1] || partes[1];
+        const diaStr = dia < 10 ? `0${dia}` : `${dia}`;
+        return `${diaStr} de ${mesNombre}`;
+      }
+      return fechaStr;
+    } catch {
+      return fechaStr;
+    }
+  }
+
+  formatearFechaAnio(fechaStr?: string): string {
+    if (!fechaStr) return '';
+    try {
+      const partes = fechaStr.split('-');
+      if (partes.length === 3) {
+        return `de ${partes[0]}`;
+      }
+      return '';
+    } catch {
+      return '';
+    }
+  }
 
   jornadas: any[] = [];
   seccionesMenu: any[] = [];
@@ -37,7 +91,7 @@ export class ContratoDetalleComponent implements OnInit {
   contrato: any = { 
     codigo: '', 
     institucion: '', 
-    zona: 'Norte', 
+    zona: '', 
     fecha_inicio: '', 
     fecha_fin: '', 
     estado: 'Activo',
@@ -308,6 +362,14 @@ export class ContratoDetalleComponent implements OnInit {
   modalEdicionAbierto = false;
   guardandoEdicion = false;
 
+  readonly periodicidadOpciones = [
+    { value: 'DIARIA', label: 'Diaria (1 día)', diasDefault: 1 },
+    { value: 'SEMANAL', label: 'Semanal (5 días)', diasDefault: 5 },
+    { value: 'QUINCENAL', label: 'Quincenal (10 días)', diasDefault: 10 },
+    { value: 'MENSUAL', label: 'Mensual (20 días)', diasDefault: 20 },
+    { value: 'PERSONALIZADA', label: 'Personalizada', diasDefault: null },
+  ];
+
   datosEdicion: {
     estado: 'Activo' | 'Inactivo' | 'Finalizado';
     id_usuario_supervisor: number | null;
@@ -315,34 +377,66 @@ export class ContratoDetalleComponent implements OnInit {
     zona: string;
     fecha_inicio: string;
     fecha_fin: string;
+    periodicidad_perecederos: string;
+    dias_cobertura_perecederos: number;
+    periodicidad_no_perecederos: string;
+    dias_cobertura_no_perecederos: number;
     errorValidacion: string;
   } = {
     estado: 'Activo',
     id_usuario_supervisor: null,
     cupos: 0,
-    zona: 'Norte',
+    zona: '',
     fecha_inicio: '',
     fecha_fin: '',
+    periodicidad_perecederos: 'SEMANAL',
+    dias_cobertura_perecederos: 5,
+    periodicidad_no_perecederos: 'MENSUAL',
+    dias_cobertura_no_perecederos: 20,
     errorValidacion: ''
   };
 
   abrirModalEdicion() {
+    this.modo = 'edicion';
     this.datosEdicion = {
       estado: (this.contrato?.estado as any) || 'Activo',
       id_usuario_supervisor: this.contrato?.id_usuario_supervisor ? Number(this.contrato.id_usuario_supervisor) : null,
       cupos: Number(this.contrato?.cupos) || 0,
-      zona: this.contrato?.zona || 'Norte',
+      zona: this.contrato?.zona || '',
       fecha_inicio: this.contrato?.fecha_inicio || '',
       fecha_fin: this.contrato?.fecha_fin || '',
+      periodicidad_perecederos: this.contrato?.periodicidad_perecederos || 'SEMANAL',
+      dias_cobertura_perecederos: Number(this.contrato?.dias_cobertura_perecederos) || 5,
+      periodicidad_no_perecederos: this.contrato?.periodicidad_no_perecederos || 'MENSUAL',
+      dias_cobertura_no_perecederos: Number(this.contrato?.dias_cobertura_no_perecederos) || 20,
       errorValidacion: ''
     };
     this.modalEdicionAbierto = true;
     this.cdr.detectChanges();
   }
 
+  alCambiarPeriodicidad(tipo: 'perecederos' | 'no_perecederos') {
+    const clave = tipo === 'perecederos'
+      ? this.datosEdicion.periodicidad_perecederos
+      : this.datosEdicion.periodicidad_no_perecederos;
+    const opcion = this.periodicidadOpciones.find(o => o.value === clave);
+    if (opcion?.diasDefault != null) {
+      if (tipo === 'perecederos') {
+        this.datosEdicion.dias_cobertura_perecederos = opcion.diasDefault;
+      } else {
+        this.datosEdicion.dias_cobertura_no_perecederos = opcion.diasDefault;
+      }
+    }
+  }
+
   cerrarModalEdicion() {
     this.modalEdicionAbierto = false;
     this.datosEdicion.errorValidacion = '';
+    if (this.contratoId && this.contratoId !== 'nuevo' && this.contratoId !== '0') {
+      this.modo = 'consulta';
+    } else {
+      this.volver();
+    }
     this.cdr.detectChanges();
   }
 
@@ -373,6 +467,13 @@ export class ContratoDetalleComponent implements OnInit {
         this.datosEdicion.errorValidacion = 'La fecha de finalización no puede ser anterior a la fecha de inicio del contrato.';
         return false;
       }
+    }
+
+    const diasPer = Number(this.datosEdicion.dias_cobertura_perecederos);
+    const diasNoPer = Number(this.datosEdicion.dias_cobertura_no_perecederos);
+    if (!Number.isFinite(diasPer) || diasPer < 1 || !Number.isFinite(diasNoPer) || diasNoPer < 1) {
+      this.datosEdicion.errorValidacion = 'Los días de cobertura para perecederos y no perecederos deben ser mayores o iguales a 1.';
+      return false;
     }
 
     return true;
@@ -468,6 +569,28 @@ export class ContratoDetalleComponent implements OnInit {
       });
     }
 
+    // 6. Periodicidad de abastecimiento (HU 5)
+    const perPerAnt = this.contrato?.periodicidad_perecederos || 'SEMANAL';
+    const diasPerAnt = Number(this.contrato?.dias_cobertura_perecederos) || 5;
+    const perNoPerAnt = this.contrato?.periodicidad_no_perecederos || 'MENSUAL';
+    const diasNoPerAnt = Number(this.contrato?.dias_cobertura_no_perecederos) || 20;
+    const diasPerNuevo = Number(this.datosEdicion.dias_cobertura_perecederos);
+    const diasNoPerNuevo = Number(this.datosEdicion.dias_cobertura_no_perecederos);
+    if (perPerAnt !== this.datosEdicion.periodicidad_perecederos || diasPerAnt !== diasPerNuevo) {
+      cambiosDetectados.push({
+        campo: 'Periodicidad perecederos',
+        anterior: `${perPerAnt} (${diasPerAnt} días)`,
+        nuevo: `${this.datosEdicion.periodicidad_perecederos} (${diasPerNuevo} días)`
+      });
+    }
+    if (perNoPerAnt !== this.datosEdicion.periodicidad_no_perecederos || diasNoPerAnt !== diasNoPerNuevo) {
+      cambiosDetectados.push({
+        campo: 'Periodicidad no perecederos',
+        anterior: `${perNoPerAnt} (${diasNoPerAnt} días)`,
+        nuevo: `${this.datosEdicion.periodicidad_no_perecederos} (${diasNoPerNuevo} días)`
+      });
+    }
+
     // Registrar en auditoría solo si hubo cambios reales
     const ahora = new Date();
     const fechaRegistroFormateada = ahora.toLocaleString('es-CO', {
@@ -498,6 +621,10 @@ export class ContratoDetalleComponent implements OnInit {
     this.contrato.zona = this.datosEdicion.zona;
     this.contrato.fecha_inicio = this.datosEdicion.fecha_inicio;
     this.contrato.fecha_fin = this.datosEdicion.fecha_fin;
+    this.contrato.periodicidad_perecederos = this.datosEdicion.periodicidad_perecederos;
+    this.contrato.dias_cobertura_perecederos = diasPerNuevo;
+    this.contrato.periodicidad_no_perecederos = this.datosEdicion.periodicidad_no_perecederos;
+    this.contrato.dias_cobertura_no_perecederos = diasNoPerNuevo;
 
     // Actualizar supervisor nombre si existe
     if (supNuevoId) {
@@ -531,7 +658,11 @@ export class ContratoDetalleComponent implements OnInit {
       estado: this.contrato.estado,
       zona: this.contrato.zona,
       fecha_inicio: this.contrato.fecha_inicio,
-      fecha_fin: this.contrato.fecha_fin
+      fecha_fin: this.contrato.fecha_fin,
+      periodicidad_perecederos: this.contrato.periodicidad_perecederos,
+      dias_cobertura_perecederos: this.contrato.dias_cobertura_perecederos,
+      periodicidad_no_perecederos: this.contrato.periodicidad_no_perecederos,
+      dias_cobertura_no_perecederos: this.contrato.dias_cobertura_no_perecederos
     };
 
     if (this.contratoId && this.contratoId !== 'nuevo' && this.contratoId !== '0') {
@@ -849,6 +980,9 @@ export class ContratoDetalleComponent implements OnInit {
       if (this.contratoId === 'nuevo' || this.contratoId === '0') {
         this.modo = 'nuevo';
       }
+      if (this.pestanaInicial) {
+        this.pestanaActiva = this.pestanaInicial;
+      }
       this.iniciarContrato();
       this.cargarDatosMaestros();
       if (this.contratoId && this.contratoId !== 'nuevo' && this.contratoId !== '0') {
@@ -862,7 +996,7 @@ export class ContratoDetalleComponent implements OnInit {
       const hoy = new Date().toISOString().split('T')[0];
       const anio = new Date().getFullYear();
       this.contrato = {
-        codigo: 'COR-' + anio + '-' + String(Math.floor(Math.random() * 900) + 100),
+        codigo: 'PAE-' + anio + '-' + String(Math.floor(Math.random() * 900) + 100),
         institucion: '',
         zona: 'Norte',
         fecha_inicio: hoy,
@@ -891,12 +1025,60 @@ export class ContratoDetalleComponent implements OnInit {
   private cargarSeccionesPorDefecto(): void {
     if (this.seccionesMenu.length === 0) {
       this.seccionesMenu = [
-        { id_seccion: 1, id: 1, nombre_seccion: 'Desayuno', nombre: 'Desayuno', jornada: 'Mañana', id_jornada: 1 },
-        { id_seccion: 2, id: 2, nombre_seccion: 'Almuerzo Mañana', nombre: 'Almuerzo Mañana', jornada: 'Mañana', id_jornada: 1 },
-        { id_seccion: 3, id: 3, nombre_seccion: 'Almuerzo Tarde', nombre: 'Almuerzo Tarde', jornada: 'Tarde', id_jornada: 2 },
-        { id_seccion: 4, id: 4, nombre_seccion: 'Refrigerio Tarde', nombre: 'Refrigerio Tarde', jornada: 'Tarde', id_jornada: 2 }
+        { id_seccion: 1, id: 1, nombre_seccion: 'Complemento AM', nombre: 'Complemento AM', jornada: 'Mañana', id_jornada: 1 },
+        { id_seccion: 2, id: 2, nombre_seccion: 'Desayuno preparado', nombre: 'Desayuno preparado', jornada: 'Mañana', id_jornada: 1 },
+        { id_seccion: 3, id: 3, nombre_seccion: 'Almuerzo preparado', nombre: 'Almuerzo preparado', jornada: 'Tarde', id_jornada: 2 },
+        { id_seccion: 4, id: 4, nombre_seccion: 'Complemento PM', nombre: 'Complemento PM', jornada: 'Tarde', id_jornada: 2 }
       ];
     }
+  }
+
+  get jornadaManana(): any {
+    return this.jornadas.find(j => (j.nombre_jornada || j.nombre || '').toLowerCase().includes('mañana')) || null;
+  }
+
+  get jornadaTarde(): any {
+    return this.jornadas.find(j => (j.nombre_jornada || j.nombre || '').toLowerCase().includes('tarde')) || null;
+  }
+
+  toggleJornadaPorNombre(tipo: 'Mañana' | 'Tarde') {
+    let j = tipo === 'Mañana' ? this.jornadaManana : this.jornadaTarde;
+    if (!j && this.jornadas.length === 0) {
+      this.cargarJornadasPorDefecto();
+      j = tipo === 'Mañana' ? this.jornadaManana : this.jornadaTarde;
+    }
+    if (j) {
+      this.toggleJornada(j, { target: { checked: !j.habilitada } });
+    }
+  }
+
+  seccionesPorNombreJornada(tipo: 'Mañana' | 'Tarde'): any[] {
+    const norm = tipo.toLowerCase();
+    if (this.seccionesMenu.length === 0) {
+      this.cargarSeccionesPorDefecto();
+    }
+    return this.seccionesMenu.filter(s => {
+      const jNom = (s.jornada || s.nombre_jornada || s.jornada_nombre || '').toLowerCase();
+      const jId = typeof s.id_jornada === 'object' ? s.id_jornada?.id_jornada : s.id_jornada;
+      if (norm.includes('mañana')) {
+        return jNom.includes('mañana') || jNom.includes('am') || Number(jId) === 1 || (s.nombre_seccion || '').toLowerCase().includes('am') || (s.nombre_seccion || '').toLowerCase().includes('desayuno');
+      }
+      if (norm.includes('tarde')) {
+        return jNom.includes('tarde') || jNom.includes('pm') || Number(jId) === 2 || (s.nombre_seccion || '').toLowerCase().includes('pm') || (s.nombre_seccion || '').toLowerCase().includes('almuerzo');
+      }
+      return false;
+    });
+  }
+
+  toggleSeccionItem(seccion: any) {
+    const sId = Number(seccion.id_seccion || seccion.id);
+    const estaAsignada = this.estaSeccionAsignada(sId);
+    this.toggleSeccionMenu(sId, { target: { checked: !estaAsignada } });
+  }
+
+  cambiarEstadoContrato(nuevoEstado: 'Activo' | 'Inactivo') {
+    this.contrato.estado = nuevoEstado;
+    this.cdr.detectChanges();
   }
 
   cargarDatosMaestros() {

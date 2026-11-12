@@ -67,8 +67,11 @@
         *ngFor="let opt of filteredOptions"
         class="cs-item"
         [class.cs-selected]="isSelected(opt)"
+        [style.opacity]="isOptionDisabled(opt) ? '0.55' : '1'"
+        [style.cursor]="isOptionDisabled(opt) ? 'not-allowed' : 'pointer'"
         (click)="selectOption(opt, $event)"
         role="option"
+        [attr.aria-disabled]="isOptionDisabled(opt)"
         [attr.aria-selected]="isSelected(opt)"
       >
         <span class="cs-item-text">{{ getOptionLabel(opt) }}</span>
