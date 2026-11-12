@@ -76,16 +76,7 @@
 
     <!-- BARRA DE CONFIGURACIÓN Y FILTROS POR FECHAS (Para las Planillas) -->
     <section *ngIf="pestanaActiva !== 'historial'" class="fx-panel p-4 sm:p-5 no-print" aria-label="Filtros de Fechas y Sincronización">
-      <div class="grid grid-cols-1 items-end gap-3 sm:grid-cols-2 md:grid-cols-4">
-
-        <!-- Selector de Periodo de Entrega -->
-        <label class="flex flex-col gap-1 text-xs font-bold text-slate-700">
-          Periodo de Entrega
-          <select [(ngModel)]="periodoSeleccionado" (change)="alCambiarPeriodoOFecha()"
-            class="h-10 rounded-xl border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800 shadow-xs focus:border-[#faa911] focus:outline-none">
-            <option *ngFor="let p of periodosDisponibles" [value]="p">{{ p }} ENTREGA</option>
-          </select>
-        </label>
+      <div class="grid grid-cols-1 items-end gap-3 sm:grid-cols-2 md:grid-cols-3">
 
         <!-- Fecha Inicio (Semana 1) -->
         <label class="flex flex-col gap-1 text-xs font-bold text-slate-700">
@@ -130,7 +121,7 @@
       <div class="mb-4 flex flex-wrap items-center gap-2 no-print">
         <span class="text-xs font-bold text-slate-600">Ver Clasificación:</span>
         <button type="button" class="pestana-btn text-xs py-1.5 px-3" [class.activa]="subFiltroRemision === 'todas'" (click)="subFiltroRemision = 'todas'">
-          Todas las 3 Clasificaciones
+          Todas las Clasificaciones
         </button>
         <button type="button" class="pestana-btn text-xs py-1.5 px-3" [class.activa]="subFiltroRemision === 'no-perecederos'" (click)="subFiltroRemision = 'no-perecederos'">
           1. No Perecederos (Víveres Secos)
@@ -138,20 +129,13 @@
         <button type="button" class="pestana-btn text-xs py-1.5 px-3" [class.activa]="subFiltroRemision === 'perecederos'" (click)="subFiltroRemision = 'perecederos'">
           2. Perecederos (Entregas 1 a 4)
         </button>
-        <button type="button" class="pestana-btn text-xs py-1.5 px-3" [class.activa]="subFiltroRemision === 'aseo'" (click)="subFiltroRemision = 'aseo'">
-          3. Insumos de Aseo
-        </button>
       </div>
 
       <article class="hoja-oficial-preview">
 
         <!-- MEMBRETE OFICIAL INSTITUCIONAL -->
         <header class="encabezado-membrete">
-          <div class="text-center font-bold text-[10px] uppercase">
-            <span class="material-symbols-outlined text-[32px] text-slate-800">account_balance</span>
-            <div>COLOMBIA<br>POTENCIA DE LA VIDA</div>
-          </div>
-          <div class="membrete-titulo">
+          <div class="membrete-titulo w-full text-center">
             <h3>ALCALDÍA DE POPAYÁN</h3>
             <h4>PROGRAMA DE ALIMENTACIÓN ESCOLAR - PAE</h4>
             <div style="font-size: 13px; font-weight: 800; margin-top: 2px;">REMISIÓN DE VÍVERES E INSUMOS POR COMEDOR ESCOLAR</div>
@@ -161,10 +145,6 @@
               <span><strong>FECHA TERMINACIÓN:</strong> {{ rem.fechaTerminacion }}</span>
               <span><strong>CONTRATO Nº:</strong> {{ rem.contratoNumero }}</span>
             </div>
-          </div>
-          <div class="text-center font-bold text-[10px]">
-            <span class="material-symbols-outlined text-[32px] text-amber-600">restaurant</span>
-            <div>ALIMENTANDO SUEÑOS</div>
           </div>
         </header>
 
@@ -465,11 +445,7 @@
 
         <!-- MEMBRETE KARDEX -->
         <header class="encabezado-membrete">
-          <div class="text-center font-bold text-[10px]">
-            <span class="material-symbols-outlined text-[32px] text-slate-800">event_note</span>
-            <div>PLANILLA KARDEX</div>
-          </div>
-          <div class="membrete-titulo">
+          <div class="membrete-titulo w-full text-center">
             <h3>ALCALDÍA DE POPAYÁN - PROGRAMA DE ALIMENTACIÓN ESCOLAR PAE</h3>
             <h4>CONTROL DIARIO DE SALIDAS Y CONSUMO DE ALIMENTOS</h4>
             <div class="membrete-meta">
@@ -478,10 +454,6 @@
               <span><strong>PERIODO:</strong> {{ kar.periodo }}</span>
               <span><strong>RANGO:</strong> {{ kar.fechaInicio }} AL {{ kar.fechaTerminacion }}</span>
             </div>
-          </div>
-          <div class="text-center font-bold text-[10px]">
-            <span class="material-symbols-outlined text-[32px] text-amber-600">inventory</span>
-            <div>SALIDAS DIARIAS</div>
           </div>
         </header>
 
@@ -591,11 +563,7 @@
       <article class="hoja-oficial-preview">
 
         <header class="encabezado-membrete">
-          <div class="text-center font-bold text-[10px]">
-            <span class="material-symbols-outlined text-[32px] text-slate-800">menu_book</span>
-            <div>MINUTA PATRÓN</div>
-          </div>
-          <div class="membrete-titulo">
+          <div class="membrete-titulo w-full text-center">
             <h3>ALCALDÍA DE POPAYÁN - PAE</h3>
             <h4>MINUTA PATRÓN Y CLASIFICACIÓN NUTRICIONAL POR NIVELES</h4>
             <div class="membrete-meta">
@@ -604,10 +572,6 @@
               <span><strong>CUPOS TOTALES:</strong> {{ planillaRemision?.cupos?.totalCupos || 227 }}</span>
               <span><strong>RACIONES PERIODO:</strong> {{ planillaRemision?.cupos?.racionesTotales || 4540 }}</span>
             </div>
-          </div>
-          <div class="text-center font-bold text-[10px]">
-            <span class="material-symbols-outlined text-[32px] text-amber-600">nutrition</span>
-            <div>GRAMAJES OFICIALES</div>
           </div>
         </header>
 

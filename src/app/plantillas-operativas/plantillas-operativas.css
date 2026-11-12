@@ -150,10 +150,10 @@
   border: 1.5px solid #000;
   padding: 10px 14px;
   margin-bottom: 16px;
-  display: grid;
-  grid-template-columns: 90px 1fr 140px;
-  gap: 12px;
+  display: flex;
+  justify-content: center;
   align-items: center;
+  text-align: center;
   background: #fafafa;
 }
 
