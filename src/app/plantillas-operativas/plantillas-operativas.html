@@ -72,16 +72,11 @@
         <span class="material-symbols-outlined text-[20px]">restaurant</span>
         Plantilla 3: Minuta Patrón y Clasificación por Niveles
       </button>
-
-      <button type="button" class="pestana-btn" [class.activa]="pestanaActiva === 'historial'" (click)="pestanaActiva = 'historial'">
-        <span class="material-symbols-outlined text-[20px]">analytics</span>
-        Historial de Entregas y Métricas
-      </button>
     </nav>
 
     <!-- BARRA DE CONFIGURACIÓN Y FILTROS POR FECHAS (Para las Planillas) -->
     <section *ngIf="pestanaActiva !== 'historial'" class="fx-panel p-4 sm:p-5 no-print" aria-label="Filtros de Fechas y Sincronización">
-      <div class="grid grid-cols-1 items-end gap-3 sm:grid-cols-2 md:grid-cols-5">
+      <div class="grid grid-cols-1 items-end gap-3 sm:grid-cols-2 md:grid-cols-4">
 
         <!-- Selector de Periodo de Entrega -->
         <label class="flex flex-col gap-1 text-xs font-bold text-slate-700">
@@ -116,35 +111,6 @@
           </select>
         </label>
 
-        <!-- Botones de Acción Rápida -->
-        <div class="flex items-center gap-2">
-          <button type="button" (click)="sincronizarConManipuladoras()" title="Autocompletar con los datos enviados por manipuladoras y entregas"
-            class="btn-naranja flex-1 inline-flex h-10 cursor-pointer items-center justify-center gap-1.5 rounded-xl px-3 text-xs font-black shadow-xs">
-            <span class="material-symbols-outlined text-[18px]">sync</span>
-            Sincronizar
-          </button>
-
-          <button type="button" (click)="modoEdicion = !modoEdicion" title="Activar/desactivar modo edición de celdas"
-            [class]="modoEdicion ? 'btn-rojo-pdf flex-1 inline-flex h-10 cursor-pointer items-center justify-center gap-1.5 rounded-xl px-3 text-xs font-black shadow-xs' : 'btn-outline-naranja flex-1 inline-flex h-10 cursor-pointer items-center justify-center gap-1.5 rounded-xl px-3 text-xs font-black shadow-xs'">
-            <span class="material-symbols-outlined text-[18px]">{{ modoEdicion ? 'cancel' : 'edit' }}</span>
-            {{ modoEdicion ? 'Listo' : 'Editar' }}
-          </button>
-
-          <button *ngIf="modoEdicion" type="button" (click)="guardarPlanillas()" title="Guardar ajustes"
-            class="btn-naranja inline-flex h-10 cursor-pointer items-center justify-center rounded-xl px-3 text-xs font-black shadow-xs">
-            <span class="material-symbols-outlined text-[18px]">save</span>
-          </button>
-        </div>
-
-      </div>
-
-      <!-- Notificación de auto-llenado -->
-      <div class="mt-3 flex items-center justify-between rounded-xl bg-amber-50/70 border border-amber-200 px-3 py-2 text-[11px] text-amber-900">
-        <div class="flex items-center gap-2">
-          <span class="material-symbols-outlined text-amber-600 text-[18px]">info</span>
-          <span><strong>Auto-Llenado Activo:</strong> La información se actualiza automáticamente con las recepciones registradas por las manipuladoras y sus reportes diarios de asistencia.</span>
-        </div>
-        <span class="font-bold text-amber-700">Días a atender: {{ diasAtenderPlanilla }} días hábiles</span>
       </div>
     </section>
 
