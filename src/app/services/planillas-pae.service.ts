@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable, forkJoin, of } from 'rxjs';
-import { map, catchError } from 'rxjs/operators';
+import { map, catchError, timeout } from 'rxjs/operators';
 import { EntregasService, Entrega } from '../features/entregas/services/entregas.service';
 import { AsistenciaDiariaService } from './asistencia-diaria.service';
 import { SiraeService } from '../features/contratos/services/contratos_pae.service';
@@ -281,10 +281,12 @@ export class PlanillasPaeService {
     const guardada = localStorage.getItem(cacheKey);
 
     return forkJoin({
-      entregas: this.entregasService.cargar(true),
-      contratos: this.siraeService.getContratos().pipe(catchError(() => of([])))
+      entregas: this.entregasService.cargar(true).pipe(timeout(3000), catchError(() => of([]))),
+      contratos: this.siraeService.getContratos().pipe(timeout(3000), catchError(() => of([])))
     }).pipe(
-      map(({ entregas, contratos }) => {
+      map(({ entregas, contratos }: { entregas: any; contratos: any }) => {
+        const listaContratos: any[] = Array.isArray(contratos) ? contratos : ((contratos && contratos.results) || []);
+        const listaEntregas: any[] = Array.isArray(entregas) ? entregas : ((entregas && entregas.results) || []);
         if (guardada) {
           try {
             return JSON.parse(guardada) as PlanillaRemisionData;
@@ -294,11 +296,11 @@ export class PlanillasPaeService {
         }
 
         // Buscar contrato de la sede
-        const contratosInstitucion = contratos.filter((c: any) =>
+        const contratosInstitucion = listaContratos.filter((c: any) =>
           Number(c.id_institucion) === params.institucionId
         );
         const contratoSede = params.sedeId
-          ? contratos.find((c: any) =>
+          ? listaContratos.find((c: any) =>
             Number(c.id_sede) === params.sedeId && Number(c.id_institucion) === params.institucionId
           )
           : undefined;
@@ -326,7 +328,7 @@ export class PlanillasPaeService {
           ...(params.sedeIds ?? []),
           ...contratosInstitucion.map((contrato: any) => Number(contrato.id_sede))
         ]);
-        const entregasSede = entregas.filter(e => {
+        const entregasSede: any[] = listaEntregas.filter((e: any) => {
           const idSede = Number(e.idSede);
           const perteneceInstitucion = Number(e.idInstitucion) === params.institucionId
             || (Number.isFinite(idSede) && sedesInstitucion.has(idSede));
@@ -338,10 +340,10 @@ export class PlanillasPaeService {
 
         // Mapear NO PERECEDEROS
         const noPerecederos: FilaNoPerecedero[] = this.NO_PERECEDEROS_BASE.map((item, idx) => {
-          const entregasProd = entregasSede.filter(e =>
+          const entregasProd = entregasSede.filter((e: any) =>
             e.ingrediente && e.ingrediente.toLowerCase().includes(item.alimento.toLowerCase().split(' ')[0])
           );
-          const cantidadRecibidaAuto = entregasProd.reduce((sum, e) => sum + (Number(e.cantidadRecibida ?? e.cantidad) || 0), 0);
+          const cantidadRecibidaAuto = entregasProd.reduce((sum: number, e: any) => sum + (Number(e.cantidadRecibida ?? e.cantidad) || 0), 0);
           const cantidadFinal = cantidadRecibidaAuto > 0 ? cantidadRecibidaAuto : item.baseMes;
 
           return {
@@ -356,7 +358,7 @@ export class PlanillasPaeService {
 
         // Mapear PERECEDEROS con 4 entregas
         const perecederos: FilaPerecedero[] = this.PERECEDEROS_BASE.map((item, idx) => {
-          const entregasProd = entregasSede.filter(e =>
+          const entregasProd = entregasSede.filter((e: any) =>
             e.ingrediente && e.ingrediente.toLowerCase().includes(item.alimento.toLowerCase().split(' ')[0])
           );
 
@@ -368,7 +370,7 @@ export class PlanillasPaeService {
           const totalEntregado = Math.round((e1 + e2 + e3 + e4) * 100) / 100;
 
           // Si hay entregas reales registradas, tomarlas
-          const recibidaReal = entregasProd.reduce((sum, e) => sum + (Number(e.cantidadRecibida ?? e.cantidad) || 0), 0);
+          const recibidaReal = entregasProd.reduce((sum: number, e: any) => sum + (Number(e.cantidadRecibida ?? e.cantidad) || 0), 0);
           const totalRecibido = recibidaReal > 0 ? recibidaReal : totalEntregado;
 
           return {
@@ -449,10 +451,12 @@ export class PlanillasPaeService {
     const guardada = localStorage.getItem(cacheKey);
 
     return forkJoin({
-      asistencias: this.asistenciaService.getAsistencias(),
-      entregas: this.entregasService.cargar(true)
+      asistencias: this.asistenciaService.getAsistencias().pipe(timeout(3000), catchError(() => of([]))),
+      entregas: this.entregasService.cargar(true).pipe(timeout(3000), catchError(() => of([])))
     }).pipe(
-      map(({ asistencias, entregas }) => {
+      map(({ asistencias, entregas }: { asistencias: any; entregas: any }) => {
+        const listaAsistencias: any[] = Array.isArray(asistencias) ? asistencias : ((asistencias && asistencias.results) || []);
+        const listaEntregas: any[] = Array.isArray(entregas) ? entregas : ((entregas && entregas.results) || []);
         if (guardada) {
           try {
             return JSON.parse(guardada) as PlanillaKardexData;
@@ -481,7 +485,7 @@ export class PlanillasPaeService {
               const diaIdx = s * 5 + d;
               const fechaDia = diasHabiles[diaIdx] || '';
               // Verificar asistencia registrada de la manipuladora para este día
-              const asistDia = asistencias.find(a => a.fecha === fechaDia);
+              const asistDia = listaAsistencias.find((a: any) => a.fecha === fechaDia);
               const ninos = asistDia ? asistDia.ninos_presentes : 227;
 
               // Distribución de consumo según alimento y días asignados

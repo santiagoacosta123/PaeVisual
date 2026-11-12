@@ -179,6 +179,7 @@ export class Reportes implements OnInit, OnDestroy {
         this.sedeFiltro = sede.id_sede;
         this.paginaActual = 1;
       }
+      this.cargarPlanillas(false);
       this.cargar();
     });
 
@@ -289,7 +290,7 @@ export class Reportes implements OnInit, OnDestroy {
         this.planillaKardex = kardex;
         this.minutaPatron = this.planillasPaeService.obtenerMinutaPatron(remision.cupos, remision.diasAtender);
         this.cargandoPlanillas = false;
-        this.cdr.markForCheck();
+        this.cdr.detectChanges();
         if (confirmarSincronizacion) {
           void this.alertas.success(
             'Consulta completada',
