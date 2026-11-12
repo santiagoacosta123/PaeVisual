@@ -17,9 +17,9 @@
           Ámbito: {{ alcance.instituciones.length }} Inst. / {{ alcance.sedes.length }} Sedes
         </span>
       </div>
-      <h1 class="m-0 mt-1.5 text-2xl font-black tracking-tight text-slate-900">Reportes Operativos, Plantillas y Planillas PAE</h1>
+      <h1 class="m-0 mt-1.5 text-2xl font-black tracking-tight text-slate-900">{{ tituloModuloPorRol }}</h1>
       <p class="m-0 text-xs text-slate-500">
-        Datos trazables en tiempo real desde contratos, cupos, gramajes, entregas, inventarios, preparaciones y asistencia.
+        {{ subtituloModuloPorRol }}
       </p>
     </div>
 
@@ -43,24 +43,24 @@
     </div>
   </header>
 
-  <!-- PESTAÑAS PRINCIPALES -->
-  <nav class="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-3 pestanas-selector no-print" aria-label="Módulos de Reportes">
-    <button type="button" class="pestana-btn" [class.activa]="pestanaActiva === 'consolidados'" (click)="cambiarPestanaPrincipal('consolidados')">
-      <span class="material-symbols-outlined text-[20px]">monitoring</span>
-      Reportes Operativos Consolidados
-    </button>
-
-    <button type="button" class="pestana-btn" [class.activa]="pestanaActiva === 'planillas'" (click)="cambiarPestanaPrincipal('planillas')">
-      <span class="material-symbols-outlined text-[20px]">description</span>
-      Planillas Auto-Diligenciadas
-    </button>
-
-    <button type="button" class="pestana-btn" [class.activa]="pestanaActiva === 'plantillas'" (click)="cambiarPestanaPrincipal('plantillas')">
+  <!-- PESTAÑAS PRINCIPALES POR ROL -->
+  <nav *ngIf="mostrarBarraPestanas" class="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-3 pestanas-selector no-print" aria-label="Módulos de Reportes">
+    <button *ngIf="puedeVerTabPlantillas" type="button" class="pestana-btn" [class.activa]="pestanaActiva === 'plantillas'" (click)="cambiarPestanaPrincipal('plantillas')">
       <span class="material-symbols-outlined text-[20px]">design_services</span>
-      {{ esSuperAdmin ? 'Constructor de Plantillas' : 'Catálogo de Plantillas' }}
+      Plantilla Maestra Oficial
     </button>
 
-    <button type="button" class="pestana-btn" [class.activa]="pestanaActiva === 'historial'" (click)="cambiarPestanaPrincipal('historial')">
+    <button *ngIf="puedeVerTabPlanillas" type="button" class="pestana-btn" [class.activa]="pestanaActiva === 'planillas'" (click)="cambiarPestanaPrincipal('planillas')">
+      <span class="material-symbols-outlined text-[20px]">description</span>
+      {{ etiquetaTabPlanillas }}
+    </button>
+
+    <button *ngIf="puedeVerTabConsolidados" type="button" class="pestana-btn" [class.activa]="pestanaActiva === 'consolidados'" (click)="cambiarPestanaPrincipal('consolidados')">
+      <span class="material-symbols-outlined text-[20px]">monitoring</span>
+      {{ etiquetaTabConsolidados }}
+    </button>
+
+    <button *ngIf="puedeVerTabHistorial" type="button" class="pestana-btn" [class.activa]="pestanaActiva === 'historial'" (click)="cambiarPestanaPrincipal('historial')">
       <span class="material-symbols-outlined text-[20px]">local_shipping</span>
       Historial de Entregas por Sede
     </button>
@@ -73,13 +73,38 @@
 
     <!-- FILTROS CONSOLIDADO -->
     <section class="fx-panel p-5" aria-label="Filtros Reporte Consolidado">
+      <div *ngIf="(consolidado?.tipos_disponibles?.length || 0) > 0" class="mb-4 border-b border-slate-100 pb-4">
+        <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 class="m-0 text-sm font-black text-slate-900">1. Elige el reporte autorizado para tu rol</h2>
+            <p *ngIf="reporteSeleccionadoInfo?.descripcion" class="m-0 mt-0.5 text-xs text-slate-500">
+              {{ reporteSeleccionadoInfo?.descripcion }}
+            </p>
+          </div>
+          <span class="rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-black text-amber-800">
+            {{ consolidado?.tipos_disponibles?.length || 0 }} reportes disponibles
+          </span>
+        </div>
+
+        <div class="flex flex-wrap gap-2">
+          <button *ngFor="let t of (consolidado?.tipos_disponibles || [])" type="button"
+            (click)="seleccionarTipoReporte(t.codigo)"
+            class="cursor-pointer rounded-xl border px-3 py-1.5 text-xs font-bold transition"
+            [ngClass]="tipoReporteFiltro === t.codigo
+              ? 'border-[#faa911] bg-amber-50 text-amber-900 shadow-sm'
+              : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'">
+            {{ t.nombre }}
+          </button>
+        </div>
+      </div>
+
       <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <label class="flex flex-col gap-1 text-xs font-bold text-slate-700">
-          Tipo de Reporte (SIRAE)
+          Reporte seleccionado
           <select [(ngModel)]="tipoReporteFiltro" (change)="cargarConsolidado()"
             class="h-10 rounded-xl border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800 focus:border-[#faa911] focus:outline-none">
             <option *ngFor="let t of (consolidado?.tipos_disponibles || [])" [value]="t.codigo">{{ t.nombre }}</option>
-            <option *ngIf="!consolidado?.tipos_disponibles?.length" value="RESUMEN_GENERAL">Resumen general del operador / contrato</option>
+            <option *ngIf="!consolidado?.tipos_disponibles?.length" value="RESUMEN_GENERAL">Resumen general de la operación</option>
           </select>
         </label>
 
@@ -202,8 +227,8 @@
     <section *ngIf="consolidado as rep" class="fx-panel p-5">
       <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 class="m-0 text-base font-black text-slate-900">Detalle del Reporte: {{ rep.tipo_reporte }}</h2>
-          <p class="m-0 text-xs text-slate-500">{{ rep.detalle.length }} registros calculados con datos vigentes</p>
+          <h2 class="m-0 text-base font-black text-slate-900">{{ reporteSeleccionadoInfo?.nombre || ('Detalle del Reporte: ' + rep.tipo_reporte) }}</h2>
+          <p class="m-0 text-xs text-slate-500">{{ rep.detalle.length }} registros calculados con datos reales de SIRAE</p>
         </div>
       </div>
 
@@ -323,43 +348,67 @@
 
     <!-- PANEL GENERADOR AUTOMÁTICO (SIR-171) -->
     <section class="fx-panel p-5 no-print" aria-label="Generador Automático de Planillas">
-      <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+      <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 class="m-0 text-base font-black text-slate-900">Generar Planilla Automática desde SIRAE</h2>
+          <h2 class="m-0 text-base font-black text-slate-900">Crear o Diligenciar una Planilla</h2>
           <p class="m-0 text-xs text-slate-500">
-            Recopila automáticamente contratos, cupos, gramajes, entregas, recepciones, asistencia y preparaciones; marca campos faltantes como PENDIENTE.
+            Elige uno de los formatos habilitados para tu rol; el sistema llena automáticamente los datos disponibles del PAE y deja listos los espacios por completar.
           </p>
+        </div>
+        <span class="rounded-full bg-amber-100 px-3 py-1 text-[11px] font-black text-amber-800">
+          {{ plantillasDisponiblesParaUsuario.length }} formatos disponibles para ti
+        </span>
+      </div>
+
+      <!-- PASO 1: TARJETAS CLARAS POR ROL -->
+      <div *ngIf="plantillasDisponiblesParaUsuario.length > 0" class="mb-4">
+        <span class="mb-2 block text-xs font-black text-slate-700">Paso 1. Selecciona la planilla que deseas generar</span>
+        <div class="grid grid-cols-1 gap-2.5 md:grid-cols-2 lg:grid-cols-3">
+          <button *ngFor="let tpl of plantillasDisponiblesParaUsuario" type="button"
+            (click)="seleccionarPlantillaParaGenerar(tpl)"
+            class="flex flex-col items-start gap-1.5 rounded-2xl border p-3.5 text-left transition cursor-pointer"
+            [ngClass]="genPlantillaId === tpl.id_plantilla
+              ? 'border-[#faa911] bg-amber-50/80 shadow-sm ring-1 ring-[#faa911]'
+              : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'">
+            <div class="flex w-full items-center justify-between gap-2">
+              <span class="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-black text-slate-700">
+                {{ esSuperAdmin ? etiquetaDuenoPlantilla(tpl) : 'Formato oficial habilitado' }}
+              </span>
+              <span *ngIf="genPlantillaId === tpl.id_plantilla"
+                class="inline-flex items-center gap-0.5 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-black text-emerald-800">
+                <span class="material-symbols-outlined text-[13px]">check_circle</span>
+                Seleccionada
+              </span>
+            </div>
+            <strong class="text-xs font-black text-slate-900 leading-snug">{{ tpl.nombre }}</strong>
+            <span class="text-[11px] text-slate-600 leading-relaxed">{{ tpl.descripcion || tpl.finalidad }}</span>
+          </button>
         </div>
       </div>
 
+      <span class="mb-2 block text-xs font-black text-slate-700">
+        {{ plantillasDisponiblesParaUsuario.length > 0 ? 'Paso 2. Selecciona institución, sede y periodo' : 'Selecciona los datos para generar la planilla' }}
+      </span>
+      <div *ngIf="esSupervisor && !genInstId"
+        class="mb-3 flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50/80 px-3 py-2 text-xs text-amber-900">
+        <span class="material-symbols-outlined text-[18px] text-amber-600">info</span>
+        <span>Selecciona una de tus instituciones asignadas (aquí o en la barra superior) para generar la planilla con sus datos reales.</span>
+      </div>
       <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <label class="flex flex-col gap-1 text-xs font-bold text-slate-700">
-          Plantilla Oficial Publicada (Opcional)
-          <select [(ngModel)]="genPlantillaId"
-            class="h-10 rounded-xl border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800">
-            <option [ngValue]="null">Selección automática según proceso PAE</option>
-            <ng-container *ngFor="let tpl of plantillas">
-              <option *ngIf="tpl.version_publicada && tpl.activa" [ngValue]="tpl.id_plantilla">
-                {{ tpl.codigo }} - {{ tpl.nombre }} (v{{ tpl.version_publicada.numero_version }})
-              </option>
-            </ng-container>
-          </select>
-        </label>
-
-        <label class="flex flex-col gap-1 text-xs font-bold text-slate-700" *ngIf="!genPlantillaId">
-          Proceso PAE
+        <label *ngIf="plantillasDisponiblesParaUsuario.length === 0" class="flex flex-col gap-1 text-xs font-bold text-slate-700">
+          Tipo de Planilla
           <select [(ngModel)]="genProceso"
             class="h-10 rounded-xl border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800">
-            <option *ngFor="let p of (metadatosPlantillas?.procesos_pae || [])" [value]="p.codigo">{{ p.nombre }}</option>
-            <option *ngIf="!metadatosPlantillas?.procesos_pae?.length" value="REMISION">Remisión de alimentos</option>
+            <option *ngFor="let p of procesosFiltradosParaUsuario" [value]="p.codigo">{{ p.nombre }}</option>
+            <option *ngIf="procesosFiltradosParaUsuario.length === 0" value="INVENTARIO">Control de Entrada y Salida (Kárdex)</option>
           </select>
         </label>
 
         <label class="flex flex-col gap-1 text-xs font-bold text-slate-700">
-          Institución
+          Institución educativa
           <select [(ngModel)]="genInstId" (change)="genSedeId = null; genContratoId = null"
             class="h-10 rounded-xl border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800">
-            <option [ngValue]="null">Seleccionar / Ámbito actual</option>
+            <option [ngValue]="null">Seleccionar institución</option>
             <option *ngFor="let inst of (alcance?.instituciones || [])" [ngValue]="inst.id_institucion">
               {{ inst.nombre_institucion }}
             </option>
@@ -367,19 +416,19 @@
         </label>
 
         <label class="flex flex-col gap-1 text-xs font-bold text-slate-700">
-          Sede Educativa
+          Sede escolar
           <select [(ngModel)]="genSedeId"
             class="h-10 rounded-xl border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800">
-            <option [ngValue]="null">Consolidado de institución / Todas</option>
+            <option [ngValue]="null">Todas las sedes / Consolidado</option>
             <option *ngFor="let s of sedesPorInstitucion(genInstId)" [ngValue]="s.id_sede">{{ s.nombre_sede }}</option>
           </select>
         </label>
 
         <label class="flex flex-col gap-1 text-xs font-bold text-slate-700">
-          Contrato (Opcional)
+          Contrato PAE (Opcional)
           <select [(ngModel)]="genContratoId"
             class="h-10 rounded-xl border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800">
-            <option [ngValue]="null">Automático según institución/sede</option>
+            <option [ngValue]="null">Automático según sede</option>
             <option *ngFor="let c of contratosPorAlcance(genInstId, genSedeId)" [ngValue]="c.id_contrato">
               {{ c.numero_cor }} - {{ c.operador }}
             </option>
@@ -396,19 +445,19 @@
         </label>
 
         <label class="flex flex-col gap-1 text-xs font-bold text-slate-700">
-          Periodo (Clave anti-duplicados)
-          <input type="text" [(ngModel)]="genPeriodo" placeholder="Ej: 2026-11 o SEMANA-1"
+          Periodo o Mes (Ej: 2026-11)
+          <input type="text" [(ngModel)]="genPeriodo" placeholder="Ej: 2026-11 o Noviembre 2026"
             class="h-10 rounded-xl border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800" />
         </label>
 
         <div class="grid grid-cols-2 gap-2">
           <label class="flex flex-col gap-1 text-xs font-bold text-slate-700">
-            Inicio
+            Desde
             <input type="date" [(ngModel)]="genFechaInicio"
               class="h-10 rounded-xl border border-slate-300 bg-white px-2 text-xs font-semibold text-slate-800" />
           </label>
           <label class="flex flex-col gap-1 text-xs font-bold text-slate-700">
-            Fin
+            Hasta
             <input type="date" [(ngModel)]="genFechaFin"
               class="h-10 rounded-xl border border-slate-300 bg-white px-2 text-xs font-semibold text-slate-800" />
           </label>
@@ -416,19 +465,19 @@
       </div>
 
       <div class="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <input type="text" [(ngModel)]="genObservaciones" placeholder="Observaciones iniciales del evento / responsable..."
+        <input type="text" [(ngModel)]="genObservaciones" placeholder="Notas u observaciones iniciales (opcional)..."
           class="h-10 flex-1 rounded-xl border border-slate-300 bg-white px-3 text-xs text-slate-800" />
 
         <div class="flex flex-wrap gap-2">
           <button type="button" (click)="generarNuevaPlanilla(false)" [disabled]="generandoPlanilla"
             class="btn-naranja inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-xl px-4 text-xs font-black">
             <span class="material-symbols-outlined text-[18px]">auto_fix_high</span>
-            {{ generandoPlanilla ? 'Generando...' : 'Generar Planilla' }}
+            {{ generandoPlanilla ? 'Creando planilla...' : 'Crear o Abrir Planilla' }}
           </button>
           <button type="button" (click)="generarNuevaPlanilla(true)" [disabled]="generandoPlanilla"
             class="btn-outline-naranja inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-xl px-4 text-xs font-black">
             <span class="material-symbols-outlined text-[18px]">sync</span>
-            Regenerar Borrador
+            Actualizar Borrador
           </button>
         </div>
       </div>
@@ -439,7 +488,7 @@
       <div class="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <h2 class="m-0 text-base font-black text-slate-900">Planillas Generadas en tu Ámbito ({{ planillas.length }})</h2>
-          <p class="m-0 text-xs text-slate-500">Consulta filtrada por permisos institucionales, proceso, estado y periodo.</p>
+          <p class="m-0 text-xs text-slate-500">Aquí solo ves las planillas autorizadas para tu rol y tus sedes asignadas.</p>
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
@@ -449,8 +498,8 @@
 
           <select [(ngModel)]="filtroProcesoPlanilla" (change)="cargarPlanillasGeneradas()"
             class="h-9 rounded-xl border border-slate-300 bg-white px-2.5 text-xs font-semibold text-slate-700">
-            <option value="">Todos los procesos</option>
-            <option *ngFor="let p of (metadatosPlantillas?.procesos_pae || [])" [value]="p.codigo">{{ p.nombre }}</option>
+            <option value="">Todos los formatos permitidos</option>
+            <option *ngFor="let p of procesosFiltradosParaUsuario" [value]="p.codigo">{{ p.nombre }}</option>
           </select>
 
           <select [(ngModel)]="filtroEstadoPlanilla" (change)="cargarPlanillasGeneradas()"
@@ -890,6 +939,12 @@
           </div>
           <span class="text-xs font-bold text-slate-700">{{ tpl.nombre }}</span>
           <span class="text-[11px] text-slate-500">{{ tpl.categoria_proceso_display || tpl.categoria_proceso }}</span>
+          <div class="mt-1 flex flex-wrap gap-1">
+            <span *ngFor="let rol of (tpl.roles_autorizados || [])"
+              class="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-600">
+              {{ etiquetaRolCorto(rol) }}
+            </span>
+          </div>
         </button>
 
         <div *ngIf="plantillas.length === 0" class="p-6 text-center text-xs text-slate-400">
@@ -904,14 +959,21 @@
       <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3">
         <div>
           <h2 class="m-0 text-lg font-black text-slate-900">
-            {{ plantillaForm.id_plantilla ? 'Configuración: ' + plantillaForm.nombre : 'Nueva Plantilla Oficial PAE' }}
+            {{ plantillaForm.id_plantilla ? plantillaForm.nombre : 'Nueva Plantilla Oficial PAE' }}
           </h2>
           <p class="m-0 text-xs text-slate-500">
-            Versión v{{ plantillaForm.numero_version }} · Estado: <strong>{{ plantillaForm.estado_version }}</strong>
+            Código: <strong>{{ plantillaForm.codigo || 'Sin código' }}</strong> · Versión v{{ plantillaForm.numero_version }} · Estado: <strong>{{ plantillaForm.estado_version }}</strong>
           </p>
         </div>
 
         <div class="flex flex-wrap gap-2">
+          <button *ngIf="esSuperAdmin && plantillaForm.id_plantilla" type="button"
+            (click)="mostrarEditorAvanzadoPlantilla = !mostrarEditorAvanzadoPlantilla"
+            class="cursor-pointer inline-flex items-center gap-1 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50">
+            <span class="material-symbols-outlined text-[16px]">{{ mostrarEditorAvanzadoPlantilla ? 'visibility' : 'tune' }}</span>
+            {{ mostrarEditorAvanzadoPlantilla ? 'Ver resumen simple' : 'Personalizar campos, columnas y permisos' }}
+          </button>
+
           <button *ngIf="esSuperAdmin && plantillaForm.es_inmutable && plantillaForm.id_plantilla" type="button"
             (click)="crearNuevaVersion()" [disabled]="guardandoPlantilla"
             class="btn-naranja inline-flex cursor-pointer items-center gap-1 rounded-xl px-3.5 py-2 text-xs font-black">
@@ -919,7 +981,8 @@
             Crear Nueva Versión en Borrador
           </button>
 
-          <button *ngIf="esSuperAdmin && !plantillaForm.es_inmutable" type="button" (click)="guardarPlantilla()" [disabled]="guardandoPlantilla"
+          <button *ngIf="esSuperAdmin && !plantillaForm.es_inmutable && (mostrarEditorAvanzadoPlantilla || !plantillaForm.id_plantilla)" type="button"
+            (click)="guardarPlantilla()" [disabled]="guardandoPlantilla"
             class="btn-naranja inline-flex cursor-pointer items-center gap-1 rounded-xl px-3.5 py-2 text-xs font-black">
             <span class="material-symbols-outlined text-[16px]">save</span>
             {{ guardandoPlantilla ? 'Guardando...' : 'Guardar Borrador' }}
@@ -933,6 +996,57 @@
         </div>
       </div>
 
+      <!-- FICHA RESUMEN SIMPLE PARA SUPERADMIN (POR DEFECTO) -->
+      <div *ngIf="plantillaForm.id_plantilla && !mostrarEditorAvanzadoPlantilla" class="flex flex-col gap-4">
+        <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <div class="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+            <span class="block text-[11px] font-black uppercase tracking-wide text-slate-400">¿Para qué sirve este formato?</span>
+            <p class="m-0 mt-1.5 text-xs font-semibold text-slate-800 leading-relaxed">
+              {{ plantillaForm.finalidad || plantillaForm.descripcion || 'Formato oficial del Programa de Alimentación Escolar.' }}
+            </p>
+            <span class="mt-2 inline-block rounded-lg bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-800">
+              Proceso: {{ plantillaForm.categoria_proceso }}
+            </span>
+          </div>
+
+          <div class="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+            <span class="block text-[11px] font-black uppercase tracking-wide text-slate-400">¿Quiénes la pueden usar y diligenciar?</span>
+            <div class="mt-2 flex flex-wrap gap-1.5">
+              <span *ngFor="let rol of (plantillaForm.roles_autorizados || [])"
+                class="rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-800">
+                {{ etiquetaRolCorto(rol) }}
+              </span>
+              <span *ngIf="!plantillaForm.roles_autorizados?.length" class="text-xs text-slate-400">Sin roles asignados</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="rounded-2xl border border-slate-200 bg-white p-4">
+          <span class="block text-[11px] font-black uppercase tracking-wide text-slate-400 mb-2">Estructura incluida en el documento</span>
+          <div class="flex flex-col gap-3">
+            <div *ngIf="plantillaForm.esquema.campos.length > 0">
+              <span class="block text-xs font-bold text-slate-700 mb-1.5">Datos de cabecera y firmas ({{ plantillaForm.esquema.campos.length }})</span>
+              <div class="flex flex-wrap gap-1.5">
+                <span *ngFor="let c of plantillaForm.esquema.campos"
+                  class="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-700">
+                  {{ c.etiqueta }}
+                </span>
+              </div>
+            </div>
+            <div *ngFor="let t of plantillaForm.esquema.tablas">
+              <span class="block text-xs font-bold text-slate-700 mb-1.5">Tabla: {{ t.titulo }} ({{ t.columnas.length }} columnas)</span>
+              <div class="flex flex-wrap gap-1.5">
+                <span *ngFor="let col of t.columnas"
+                  class="rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-700">
+                  {{ col.etiqueta }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <ng-container *ngIf="mostrarEditorAvanzadoPlantilla || !plantillaForm.id_plantilla">
       <!-- AVISO DE INMUTABILIDAD -->
       <div *ngIf="plantillaForm.es_inmutable" class="rounded-2xl border border-amber-300 bg-amber-50 p-3.5 text-xs text-amber-900">
         <strong class="font-black">Versión inmutable ({{ plantillaForm.estado_version }}):</strong>
@@ -1138,6 +1252,7 @@
           </div>
         </div>
       </fieldset>
+      </ng-container>
 
       <!-- BARRA Y PANEL DE PREVISUALIZACIÓN ANTES DE PUBLICAR -->
       <div *ngIf="plantillaForm.id_plantilla" class="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-3.5">

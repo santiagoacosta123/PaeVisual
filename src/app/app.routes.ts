@@ -16,6 +16,7 @@ import { MenusComponent } from './menus/menus';
 import { EntradasInventario } from './entradas-inventario/entradas-inventario';
 import { ContratoDetalleComponent } from './contrato-detalle/contrato-detalle';
 import { NotificacionesComponent } from './notificaciones/notificaciones.component';
+import { MensajeriaComponent } from './mensajeria/mensajeria.component';
 import { DashboardSupervisor } from './dashboard-supervisor/dashboard-supervisor';
 import { authGuard, guestGuard, roleGuard } from '@core/auth';
 import { BancoDatosComponent } from './banco-datos/banco-datos';
@@ -32,6 +33,7 @@ import { FacturasCompraComponent } from './facturas-compra/facturas-compra';
 import { PerfilComponent } from './perfil/perfil';
 import { ConsultaGramajesComponent } from './consulta-gramajes/consulta-gramajes';
 import { SedesAdministradorComponent } from './sedes-administrador/sedes-administrador';
+import { PlanillasOperativasComponent } from './plantillas-operativas/plantillas-operativas';
 
 // NUEVO: página de Instituciones
 
@@ -84,8 +86,21 @@ export const routes: Routes = [
       },
 
       {
-        path: 'reportes-consumo',
+        path: 'plantillas-maestras',
         component: Reportes,
+        canActivate: [roleGuard],
+        data: {
+          modoModulo: 'plantillas',
+          roles: [
+            'superadministrador',
+            'super administrador',
+            'super admin',
+          ]
+        }
+      },
+      {
+        path: 'reportes-consumo',
+        component: PlanillasOperativasComponent,
         canActivate: [roleGuard],
         data: {
           roles: [
@@ -101,6 +116,18 @@ export const routes: Routes = [
             'jefa de manipuladoras',
             'jefa manipuladoras',
             'jefamanipuladoras',
+          ]
+        }
+      },
+      {
+        path: 'plantillas-operativas',
+        component: PlanillasOperativasComponent,
+        canActivate: [roleGuard],
+        data: {
+          roles: [
+            'supervisor',
+            'coordinador',
+            'coordinador pae',
           ]
         }
       },
@@ -227,6 +254,10 @@ export const routes: Routes = [
       {
         path: 'notificaciones',
         component: NotificacionesComponent
+      },
+      {
+        path: 'mensajeria',
+        component: MensajeriaComponent
       },
       {
         path: 'banco-datos',

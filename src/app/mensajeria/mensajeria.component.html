@@ -1,0 +1,282 @@
+<div class="h-[calc(100vh-80px)] p-4 bg-slate-50 flex flex-col">
+  <!-- Encabezado Principal -->
+  <div class="flex items-center justify-between mb-3 bg-white px-5 py-3 rounded-xl border border-slate-200 shadow-sm">
+    <div class="flex items-center space-x-3">
+      <div class="w-10 h-10 rounded-full bg-emerald-600 flex items-center justify-center text-white shadow-sm">
+        <span class="material-symbols-outlined text-2xl">chat</span>
+      </div>
+      <div>
+        <h1 class="text-base font-bold text-slate-800 flex items-center gap-2">
+          Centro de Mensajería y Coordinación PAE
+          <span *ngIf="totalNoLeidos > 0" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-500 text-white animate-pulse">
+            {{ totalNoLeidos }} no leídos
+          </span>
+        </h1>
+        <p class="text-xs text-slate-500">Canal oficial seguro de comunicación y novedades en cocina</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contenedor Doble Panel (CA-10) -->
+  <div class="flex-1 flex bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+    <!-- PANEL IZQUIERDO: Directorio de Contactos Permitidos -->
+    <div class="w-80 md:w-96 border-r border-slate-200 flex flex-col bg-slate-50/50">
+      <!-- Buscador y filtro -->
+      <div class="p-3 border-b border-slate-200 bg-white">
+        <div class="relative">
+          <span class="material-symbols-outlined absolute left-3 top-2.5 text-slate-400 text-sm">search</span>
+          <input
+            type="text"
+            [(ngModel)]="busqueda"
+            (ngModelChange)="filtrarContactos()"
+            placeholder="Buscar contactos autorizados..."
+            class="w-full pl-9 pr-3 py-2 text-xs bg-slate-100 rounded-lg border-0 focus:ring-2 focus:ring-emerald-500 text-slate-800 placeholder-slate-400 outline-none"
+          />
+        </div>
+      </div>
+
+      <!-- Lista de contactos autorizados -->
+      <div class="flex-1 overflow-y-auto divide-y divide-slate-100">
+        <!-- Indicador de carga -->
+        <div *ngIf="cargandoContactos" class="flex flex-col items-center justify-center p-8 text-slate-400">
+          <div class="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mb-2"></div>
+          <span class="text-xs">Cargando contactos...</span>
+        </div>
+
+        <!-- Sin contactos -->
+        <div *ngIf="!cargandoContactos && contactosFiltrados.length === 0" class="p-8 text-center text-slate-400">
+          <span class="material-symbols-outlined text-3xl mb-2 text-slate-300">group_off</span>
+          <p class="text-xs font-medium">No se encontraron contactos</p>
+          <p class="text-[11px] text-slate-400 mt-1">Tu rol sólo puede comunicarse con roles asignados por la matriz institucional.</p>
+        </div>
+
+        <!-- Item de contacto -->
+        <button
+          type="button"
+          *ngFor="let contacto of contactosFiltrados"
+          (click)="seleccionarContacto(contacto)"
+          [class.bg-emerald-50]="contactoSeleccionado?.id_usuario === contacto.id_usuario"
+          [class.border-l-4]="contactoSeleccionado?.id_usuario === contacto.id_usuario"
+          [class.border-l-emerald-600]="contactoSeleccionado?.id_usuario === contacto.id_usuario"
+          class="w-full text-left p-3.5 flex items-start space-x-3 transition-colors hover:bg-slate-100/80 cursor-pointer"
+        >
+          <!-- Avatar inicial -->
+          <div class="relative flex-shrink-0">
+            <div class="w-10 h-10 rounded-full bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-sm shadow-inner uppercase">
+              {{ contacto.nombre.charAt(0) }}{{ contacto.apellido.charAt(0) }}
+            </div>
+            <!-- Badge no leídos (CA-11) -->
+            <span
+              *ngIf="contacto.mensajes_no_leidos > 0"
+              class="absolute -top-1 -right-1 w-5 h-5 bg-rose-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow"
+            >
+              {{ contacto.mensajes_no_leidos }}
+            </span>
+          </div>
+
+          <!-- Información del contacto -->
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between mb-0.5">
+              <h3 class="text-xs font-bold text-slate-800 truncate">{{ contacto.nombre_completo }}</h3>
+              <span class="text-[10px] text-slate-400 flex-shrink-0">{{ formatearFechaRelativa(contacto.ultima_fecha) }}</span>
+            </div>
+            
+            <div class="flex items-center space-x-1.5 mb-1">
+              <span
+                class="px-2 py-0.5 rounded-full text-[10px] font-semibold border"
+                [ngClass]="obtenerColorRol(contacto.rol)"
+              >
+                {{ contacto.rol }}
+              </span>
+            </div>
+
+            <p class="text-[11px] text-slate-500 truncate" [class.font-semibold]="contacto.mensajes_no_leidos > 0" [class.text-slate-800]="contacto.mensajes_no_leidos > 0">
+              {{ contacto.ultimo_mensaje || 'Sin mensajes aún' }}
+            </p>
+          </div>
+        </button>
+      </div>
+    </div>
+
+    <!-- PANEL DERECHO: Historial de Chat e Input (CA-10) -->
+    <div class="flex-1 flex flex-col bg-white">
+      <!-- Si no hay contacto seleccionado -->
+      <div *ngIf="!contactoSeleccionado" class="flex-1 flex flex-col items-center justify-center p-8 text-center bg-slate-50/30">
+        <div class="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-3">
+          <span class="material-symbols-outlined text-3xl">forum</span>
+        </div>
+        <h2 class="text-sm font-bold text-slate-700">Selecciona un contacto autorizado</h2>
+        <p class="text-xs text-slate-500 max-w-sm mt-1">
+          Elige un usuario del panel izquierdo para consultar el historial de mensajes o enviar novedades y directrices operativas.
+        </p>
+      </div>
+
+      <!-- Conversación activa -->
+      <ng-container *ngIf="contactoSeleccionado">
+        <!-- Header de la conversación -->
+        <div class="px-5 py-3 border-b border-slate-200 flex items-center justify-between bg-white shadow-xs">
+          <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-full bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-sm uppercase shadow-inner">
+              {{ contactoSeleccionado.nombre.charAt(0) }}{{ contactoSeleccionado.apellido.charAt(0) }}
+            </div>
+            <div>
+              <h2 class="text-sm font-bold text-slate-800">{{ contactoSeleccionado.nombre_completo }}</h2>
+              <div class="flex items-center space-x-2 text-xs">
+                <span
+                  class="px-2 py-0.5 rounded-full text-[10px] font-semibold border"
+                  [ngClass]="obtenerColorRol(contactoSeleccionado.rol)"
+                >
+                  {{ contactoSeleccionado.rol }}
+                </span>
+                <span class="text-slate-400 text-[11px]">{{ contactoSeleccionado.correo }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Área de mensajes scrollable (CA-08) -->
+        <div #mensajesContainer class="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-50/60">
+          <div *ngIf="cargandoMensajes" class="flex justify-center p-4">
+            <div class="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+
+          <div *ngIf="!cargandoMensajes && mensajes.length === 0" class="text-center py-12 text-slate-400">
+            <span class="material-symbols-outlined text-4xl text-slate-300">chat_bubble_outline</span>
+            <p class="text-xs font-medium mt-1">No hay mensajes previos</p>
+            <p class="text-[11px] text-slate-400">Inicia la conversación enviando un mensaje o imagen.</p>
+          </div>
+
+          <!-- Burbujas de mensajes -->
+          <div
+            *ngFor="let msg of mensajes"
+            class="flex flex-col"
+            [ngClass]="msg.es_emisor ? 'items-end' : 'items-start'"
+          >
+            <div
+              class="max-w-md lg:max-w-lg rounded-2xl px-4 py-2.5 shadow-xs text-xs"
+              [ngClass]="
+                msg.es_emisor
+                  ? 'bg-emerald-600 text-white rounded-br-xs'
+                  : 'bg-white text-slate-800 border border-slate-200 rounded-bl-xs'
+              "
+            >
+              <!-- Previsualización de imagen adjunta (CA-07) -->
+              <div *ngIf="msg.imagen_url" class="mb-2 overflow-hidden rounded-lg">
+                <img
+                  [src]="msg.imagen_url"
+                  alt="Evidencia fotográfica"
+                  (click)="abrirModalImagen(msg.imagen_url)"
+                  class="max-h-60 w-full object-cover cursor-pointer hover:opacity-95 transition-opacity rounded-lg"
+                />
+              </div>
+
+              <!-- Contenido de texto -->
+              <p *ngIf="msg.contenido_texto" class="whitespace-pre-wrap break-words leading-relaxed">
+                {{ msg.contenido_texto }}
+              </p>
+
+              <!-- Timestamp y estado de lectura -->
+              <div
+                class="flex items-center justify-end space-x-1 mt-1 text-[10px]"
+                [ngClass]="msg.es_emisor ? 'text-emerald-100' : 'text-slate-400'"
+              >
+                <span>{{ formatearHora(msg.fecha_envio) }}</span>
+                <span *ngIf="msg.es_emisor" class="material-symbols-outlined text-xs">
+                  {{ msg.leido ? 'done_all' : 'done' }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Banner de Error / Alerta de Validación -->
+        <div *ngIf="errorValidacion" class="px-4 py-2 bg-rose-50 border-t border-rose-200 flex items-center justify-between text-xs text-rose-700">
+          <span class="flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-sm">error</span>
+            {{ errorValidacion }}
+          </span>
+          <button (click)="errorValidacion = null" class="text-rose-500 hover:text-rose-700 font-bold">&times;</button>
+        </div>
+
+        <!-- Vista previa de imagen seleccionada antes de enviar -->
+        <div *ngIf="vistaPreviaImagen" class="px-4 py-2 bg-slate-100 border-t border-slate-200 flex items-center space-x-3">
+          <div class="relative w-14 h-14 rounded-lg overflow-hidden border border-slate-300">
+            <img [src]="vistaPreviaImagen" alt="Vista previa" class="w-full h-full object-cover" />
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-xs font-semibold text-slate-800 truncate">{{ archivoImagen?.name }}</p>
+            <p class="text-[10px] text-slate-500">{{ ((archivoImagen?.size || 0) / 1024 / 1024).toFixed(2) }} MB (Adjunto listo)</p>
+          </div>
+          <button
+            type="button"
+            (click)="limpiarAdjunto()"
+            class="p-1 rounded-full text-slate-500 hover:bg-slate-200"
+            title="Quitar imagen"
+          >
+            <span class="material-symbols-outlined text-sm">close</span>
+          </button>
+        </div>
+
+        <!-- Barra inferior de entrada de chat (CA-10) -->
+        <div class="p-3 border-t border-slate-200 bg-white">
+          <form (submit)="enviarMensaje(); $event.preventDefault()" class="flex items-center space-x-2">
+            <!-- Botón de adjuntar imagen -->
+            <input
+              #fileInput
+              type="file"
+              accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+              (change)="onSeleccionarArchivo($event)"
+              class="hidden"
+            />
+            <button
+              type="button"
+              (click)="fileInput.click()"
+              class="p-2.5 rounded-full text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 transition-colors"
+              title="Adjuntar imagen (.jpg, .jpeg, .png, máx. 5MB)"
+            >
+              <span class="material-symbols-outlined text-xl">attach_file</span>
+            </button>
+
+            <!-- Campo de texto -->
+            <input
+              type="text"
+              [(ngModel)]="nuevoMensajeTexto"
+              name="mensajeTexto"
+              placeholder="Escribe un mensaje..."
+              [disabled]="enviando"
+              class="flex-1 px-4 py-2.5 text-xs bg-slate-100 rounded-full border-0 focus:ring-2 focus:ring-emerald-500 text-slate-800 placeholder-slate-400 outline-none"
+            />
+
+            <!-- Botón Enviar -->
+            <button
+              type="submit"
+              [disabled]="enviando || (!nuevoMensajeTexto.trim() && !archivoImagen)"
+              class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white rounded-full text-xs font-bold transition-all shadow-sm flex items-center space-x-1.5 cursor-pointer disabled:cursor-not-allowed"
+            >
+              <span *ngIf="!enviando" class="material-symbols-outlined text-sm">send</span>
+              <span *ngIf="enviando" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+              <span>Enviar</span>
+            </button>
+          </form>
+        </div>
+      </ng-container>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para ver imagen ampliada -->
+<div
+  *ngIf="imagenModalUrl"
+  (click)="cerrarModalImagen()"
+  class="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-xs cursor-pointer"
+>
+  <div class="relative max-w-3xl max-h-[90vh]">
+    <img [src]="imagenModalUrl" alt="Ampliación" class="max-w-full max-h-[85vh] rounded-lg object-contain shadow-2xl" />
+    <button
+      (click)="cerrarModalImagen()"
+      class="absolute top-2 right-2 bg-black/60 hover:bg-black/80 text-white rounded-full p-2"
+    >
+      <span class="material-symbols-outlined text-xl">close</span>
+    </button>
+  </div>
+</div>

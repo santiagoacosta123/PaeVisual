@@ -53,3 +53,119 @@ button, input, select, textarea, a {
   background: #94a3b8;
 }
 
+/* ==========================================================================
+   REGLAS GLOBALES DE IMPRESIÓN OFICIAL PAE (@media print)
+   ========================================================================== */
+@media print {
+  /* 1. Ocultar todos los elementos de la interfaz de la aplicación: sidebars, navbars, encabezados web */
+  .sv-slot,
+  .sv-side,
+  .sv-head,
+  .svh-bar,
+  .svh-left,
+  .svh-center,
+  .svh-right,
+  .svh-ico,
+  .superadmin-sidebar,
+  .superadmin-header,
+  .superadmin-top-header,
+  .modern-sidebar,
+  .modern-header,
+  .modern-top-header,
+  .modern-header-actions,
+  aside,
+  nav,
+  header:not(.encabezado-membrete),
+  .no-print,
+  .pestanas-selector,
+  .swal2-container,
+  .sweet-alert,
+  .modal-overlay,
+  .dropdown-container,
+  button,
+  input,
+  select {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* 2. Quitar límites de altura fija y desbordamiento en todos los contenedores padre */
+  html,
+  body,
+  app-root,
+  app-layout,
+  app-layout > div,
+  .sv-body,
+  .sv-view,
+  .superadmin-body,
+  .superadmin-main,
+  .modern-body,
+  .modern-main,
+  main,
+  app-plantillas-operativas,
+  app-plantillas-operativas > section {
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    color: #000 !important;
+    position: static !important;
+    float: none !important;
+    box-shadow: none !important;
+  }
+
+  /* 3. La zona de la plantilla oficial debe desplegarse al 100% limpia */
+  .zona-impresion-oficial,
+  .hoja-oficial-preview {
+    display: block !important;
+    visibility: visible !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: #fff !important;
+    position: static !important;
+  }
+
+  .tabla-oficial-wrap {
+    max-height: none !important;
+    overflow: visible !important;
+    border: none !important;
+  }
+
+  .tabla-oficial {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+
+  /* 4. NO forzar saltos de página: que todo entre en 1 sola hoja */
+  tr,
+  .caja-firma,
+  .bloque-firmas,
+  .seccion-no-perecederos,
+  .seccion-perecederos,
+  .seccion-aseo,
+  .grid-datos-sede {
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+    page-break-before: auto !important;
+    page-break-after: auto !important;
+  }
+
+  /* 5. Oficio apaisado — 1 sola hoja */
+  @page {
+    size: legal landscape;
+    margin: 4mm 5mm;
+  }
+}
