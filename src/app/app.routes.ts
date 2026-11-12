@@ -33,6 +33,7 @@ import { FacturasCompraComponent } from './facturas-compra/facturas-compra';
 import { PerfilComponent } from './perfil/perfil';
 import { ConsultaGramajesComponent } from './consulta-gramajes/consulta-gramajes';
 import { SedesAdministradorComponent } from './sedes-administrador/sedes-administrador';
+import { PlanillasOperativasComponent } from './plantillas-operativas/plantillas-operativas';
 
 // NUEVO: página de Instituciones
 
@@ -116,6 +117,18 @@ export const routes: Routes = [
             'jefa de manipuladoras',
             'jefa manipuladoras',
             'jefamanipuladoras',
+          ]
+        }
+      },
+      {
+        path: 'plantillas-operativas',
+        component: PlanillasOperativasComponent,
+        canActivate: [roleGuard],
+        data: {
+          roles: [
+            'supervisor',
+            'coordinador',
+            'coordinador pae',
           ]
         }
       },

@@ -267,6 +267,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
       '/facturas-compra': 'Facturas',
       '/bodega-central': 'Bodega Central',
       '/plantillas-maestras': 'Plantillas Maestras PAE',
+      '/plantillas-operativas': 'Mis Plantillas Operativas PAE',
       '/reportes-consumo': 'Planillas y Reportes PAE',
       '/notificaciones': 'Notificaciones'
     };

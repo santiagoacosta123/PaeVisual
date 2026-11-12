@@ -1,6 +1,7 @@
 import { HistorialEntregas } from './historial-entregas/historial-entregas';
 import { routes } from './app.routes';
 import { RegistrarEntregaAlimentosComponent } from './registrar-entrega-alimentos/registrar-entrega-alimentos';
+import { PlanillasOperativasComponent } from './plantillas-operativas/plantillas-operativas';
 
 describe('delivery routes', () => {
   const layoutRoute = routes.find(route => route.children !== undefined);
@@ -58,6 +59,13 @@ describe('delivery routes', () => {
         'super admin',
       ]);
       expect(plantillasRoute?.data?.['roles']).not.toContain('supervisor');
+    });
+
+    it('restores the three operational templates for supervisors', () => {
+      const plantillasOperativas = children.find(route => route.path === 'plantillas-operativas');
+
+      expect(plantillasOperativas?.component).toBe(PlanillasOperativasComponent);
+      expect(plantillasOperativas?.data?.['roles']).toContain('supervisor');
     });
   });
 });
