@@ -246,15 +246,6 @@
 /* ========================================================= */
 
 @media print {
-  /* Ocultar elementos no imprimibles */
-  body {
-    background: #fff !important;
-    color: #000 !important;
-    font-size: 9pt !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-
   /* Ocultar sidebar, nav, barras de herramientas, botones */
   .no-print,
   app-plantillas-operativas > section > header,
@@ -273,7 +264,145 @@
     display: none !important;
   }
 
-  /* Contenedor que se imprime */
+  /* ─────────────────────────────────────────────────────────────────
+     NUNCA saltar de página dentro de una sección; toda la planilla
+     debe entrar en 1 sola hoja oficio apaisada.
+     ───────────────────────────────────────────────────────────────── */
+  .seccion-perecederos,
+  .seccion-no-perecederos,
+  .seccion-aseo,
+  .bloque-firmas,
+  .grid-datos-sede,
+  .encabezado-membrete {
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+    page-break-before: auto !important;
+    page-break-after: auto !important;
+  }
+
+  /* Tamaño de página: Oficio / Legal apaisado (355.6 × 215.9 mm) */
+  @page {
+    size: legal landscape;
+    margin: 4mm 5mm;
+  }
+
+  /* ─── Tipografía ultra-compacta para imprimir ─── */
+  body {
+    font-size: 6pt !important;
+  }
+
+  .tabla-oficial {
+    font-size: 5.8pt !important;
+    border-collapse: collapse !important;
+    width: 100% !important;
+  }
+
+  .tabla-oficial th,
+  .tabla-oficial td {
+    border: 0.6pt solid #000 !important;
+    padding: 0.8pt 1.5pt !important;
+    color: #000 !important;
+    background: #fff !important;
+    font-size: 5.8pt !important;
+    line-height: 1.1 !important;
+  }
+
+  .tabla-kardex th,
+  .tabla-kardex td {
+    font-size: 5.4pt !important;
+    padding: 0.6pt 1pt !important;
+  }
+
+  /* Membrete compacto */
+  .encabezado-membrete {
+    border: 1pt solid #000 !important;
+    padding: 2pt 4pt !important;
+    margin-bottom: 2pt !important;
+    background: #fff !important;
+  }
+
+  .membrete-titulo h3 {
+    font-size: 8pt !important;
+    margin: 0 !important;
+  }
+
+  .membrete-titulo h4 {
+    font-size: 6.5pt !important;
+    margin: 1pt 0 0 !important;
+  }
+
+  .membrete-titulo div {
+    font-size: 6pt !important;
+    margin-top: 1pt !important;
+  }
+
+  .membrete-meta {
+    font-size: 5.5pt !important;
+    padding-top: 1.5pt !important;
+    margin-top: 2pt !important;
+  }
+
+  /* Grilla de datos de sede compacta */
+  .grid-datos-sede {
+    margin-bottom: 2pt !important;
+    font-size: 5.8pt !important;
+  }
+
+  .grid-datos-sede td,
+  .grid-datos-sede th {
+    padding: 1pt 2pt !important;
+    font-size: 5.8pt !important;
+  }
+
+  /* Encabezados de sección compactos */
+  .seccion-no-perecederos > div:first-child,
+  .seccion-perecederos > div:first-child,
+  .seccion-aseo > div:first-child {
+    padding: 1.5pt 4pt !important;
+    font-size: 6pt !important;
+  }
+
+  .seccion-no-perecederos,
+  .seccion-perecederos,
+  .seccion-aseo {
+    margin-bottom: 2pt !important;
+  }
+
+  /* Firmas compactas */
+  .bloque-firmas {
+    margin-top: 4pt !important;
+    gap: 4pt !important;
+  }
+
+  .caja-firma {
+    border: 0.6pt solid #000 !important;
+    font-size: 5.8pt !important;
+    min-height: 30pt !important;
+    padding: 2pt !important;
+  }
+
+  .linea-firma {
+    margin-top: 12pt !important;
+    border-top: 0.6pt solid #000 !important;
+    padding-top: 1pt !important;
+    font-size: 5.4pt !important;
+  }
+
+  /* Hoja y zona de impresión sin bordes de pantalla */
+  .hoja-oficial-preview {
+    border: none !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+
+  .tabla-oficial-wrap {
+    border: none !important;
+    border-radius: 0 !important;
+    overflow: visible !important;
+  }
+
+  /* Forzar que todo el contenido de la planilla sea visible sin scroll */
   .zona-impresion-oficial {
     display: block !important;
     visibility: visible !important;
@@ -283,69 +412,5 @@
     padding: 0 !important;
     box-shadow: none !important;
     border: none !important;
-  }
-
-  .hoja-oficial-preview {
-    border: none !important;
-    padding: 0 !important;
-    box-shadow: none !important;
-  }
-
-  .encabezado-membrete {
-    border: 1.5pt solid #000 !important;
-    background: #fff !important;
-  }
-
-  .tabla-oficial-wrap {
-    border: none !important;
-    border-radius: 0 !important;
-    overflow: visible !important;
-  }
-
-  .tabla-oficial {
-    font-size: 7.5pt !important;
-    border-collapse: collapse !important;
-    width: 100% !important;
-  }
-
-  .tabla-oficial th,
-  .tabla-oficial td {
-    border: 0.8pt solid #000 !important;
-    padding: 2pt 3pt !important;
-    color: #000 !important;
-    background: #fff !important;
-  }
-
-  .tabla-kardex th,
-  .tabla-kardex td {
-    font-size: 6.8pt !important;
-    padding: 1.5pt 2pt !important;
-  }
-
-  .caja-firma {
-    border: 0.8pt solid #000 !important;
-    font-size: 7.5pt !important;
-    min-height: 80pt !important;
-  }
-
-  .linea-firma {
-    margin-top: 25pt !important;
-    border-top: 0.8pt solid #000 !important;
-  }
-
-  /* Evitar saltos de página partidos */
-  tr {
-    page-break-inside: avoid !important;
-  }
-
-  .seccion-perecederos,
-  .seccion-no-perecederos,
-  .seccion-aseo,
-  .bloque-firmas {
-    page-break-inside: avoid !important;
-  }
-
-  @page {
-    margin: 6mm;
   }
 }

@@ -61,10 +61,18 @@ button, input, select, textarea, a {
   .sv-slot,
   .sv-side,
   .sv-head,
+  .svh-bar,
+  .svh-left,
+  .svh-center,
+  .svh-right,
+  .svh-ico,
   .superadmin-sidebar,
   .superadmin-header,
+  .superadmin-top-header,
   .modern-sidebar,
   .modern-header,
+  .modern-top-header,
+  .modern-header-actions,
   aside,
   nav,
   header:not(.encabezado-membrete),
@@ -141,7 +149,7 @@ button, input, select, textarea, a {
     border-collapse: collapse !important;
   }
 
-  /* 4. Evitar saltos de página partidos */
+  /* 4. NO forzar saltos de página: que todo entre en 1 sola hoja */
   tr,
   .caja-firma,
   .bloque-firmas,
@@ -149,13 +157,15 @@ button, input, select, textarea, a {
   .seccion-perecederos,
   .seccion-aseo,
   .grid-datos-sede {
-    page-break-inside: avoid !important;
-    break-inside: avoid !important;
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+    page-break-before: auto !important;
+    page-break-after: auto !important;
   }
 
-  /* 5. Orientación apaisada (horizontal) por defecto para que las tablas PAE encajen completas */
+  /* 5. Oficio apaisado — 1 sola hoja */
   @page {
-    size: landscape;
-    margin: 8mm 6mm;
+    size: legal landscape;
+    margin: 4mm 5mm;
   }
 }
