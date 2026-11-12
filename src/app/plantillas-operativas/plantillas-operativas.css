@@ -257,6 +257,8 @@
 
   /* Ocultar sidebar, nav, barras de herramientas, botones */
   .no-print,
+  app-plantillas-operativas > section > header,
+  app-plantillas-operativas > section > section.fx-panel,
   app-reportes-consumo > section > header,
   app-reportes-consumo > section > section.fx-panel,
   .pestanas-selector,
@@ -264,7 +266,7 @@
   .modal-overlay,
   nav,
   aside,
-  header.sx-hero,
+  header:not(.encabezado-membrete),
   button,
   .sweet-alert,
   .swal2-container {

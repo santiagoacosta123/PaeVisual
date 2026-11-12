@@ -376,13 +376,16 @@ export class PlanillasOperativasComponent implements OnInit, OnDestroy {
 
   exportarPdf(formato: 'remision' | 'kardex' | 'minuta'): void {
     this.formatoImpresion = formato;
+    this.pestanaActiva = formato;
+    this.subFiltroRemision = 'todas';
     this.imprimiendoPdf = true;
+    this.cdr.detectChanges();
 
     // Disparar ventana de impresión del navegador formateada con @media print optimizado
     setTimeout(() => {
       window.print();
       this.imprimiendoPdf = false;
-      this.cdr.markForCheck();
+      this.cdr.detectChanges();
     }, 200);
   }
 
