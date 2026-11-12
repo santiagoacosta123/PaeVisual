@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
@@ -7,6 +7,37 @@ import { catchError } from 'rxjs/operators';
 import { environment } from '@env/environment';
 import { AuthService } from '@core/auth';
 import { SweetAlertService } from '../sweet-alert.service';
+import { CustomSelectComponent } from '../shared/custom-select/custom-select';
+
+export interface IngredienteComponenteReceta {
+  id_ingrediente: number;
+  nombre_ingrediente: string;
+  unidad?: string;
+  observacion?: string;
+}
+
+export interface PasoPreparacionReceta {
+  numero_paso: number;
+  descripcion_paso: string;
+}
+
+export interface ComponentePlatoReceta {
+  id_temporal: string;
+  tipo_componente: string;
+  nombre_componente: string;
+  ingredientes: IngredienteComponenteReceta[];
+  pasos: PasoPreparacionReceta[];
+  ingredienteTempId?: any;
+  observacionTemp?: string;
+}
+
+export interface RecetaMenuExtendida {
+  id_plato?: number;
+  numero_menu?: number | null;
+  nombre_plato: string;
+  secciones?: string[];
+  componentes: ComponentePlatoReceta[];
+}
 
 export interface CeldaDiaMinutaSede {
   tiene_menu_registrado: boolean;
@@ -42,21 +73,25 @@ export interface SemanaMinutaSede {
 @Component({
   selector: 'app-menus',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, CustomSelectComponent],
   templateUrl: './menus.html',
   styleUrls: ['./menus.css']
 })
 export class MenusComponent implements OnInit {
   private apiUrl = environment.apiUrl;
   private readonly STORAGE_MINUTA_SEDE_KEY = 'sirae_minutas_por_sede_v1';
+  private readonly STORAGE_APROBACIONES_KEY = 'sirae_aprobaciones_minuta_v1';
+  private readonly STORAGE_SEDES_MOMENTOS_KEY = 'sirae_sedes_momentos_v1';
+  private readonly STORAGE_PLATOS_CATALOGO_KEY = 'sirae_platos_catalogo_personalizados_v3';
 
-  pestanaActiva: 'minuta' | 'menus' | 'platos' | 'preparaciones' = 'minuta';
+  pestanaActiva: 'minuta' | 'platos' | 'menus' | 'preparaciones' = 'platos';
 
   // Roles y contexto del usuario actual
   currentUser: any = null;
   esSuperAdmin = false;
   esAdministrador = false;
   esJefaManipuladoras = false;
+  esSupervisor = false;
 
   // Sedes de la institución y Jefa asignada por sede
   sedesInstitucion: any[] = [];
@@ -66,6 +101,36 @@ export class MenusComponent implements OnInit {
   // Filtros de la Minuta de 20 días por Sede
   filtroSeccionMinuta: 'TODAS' | 'Desayuno' | 'Almuerzo' | 'Merienda' = 'TODAS';
   semanaSeleccionada: number = 1;
+
+  // Filtros y estado del Catálogo de Platos y Recetas
+  filtroMomentoPlatos: string = 'TODAS';
+  busquedaPlatos: string = '';
+  menuAccionAbiertoId: any = null;
+  modalVerRecetaAbierto: boolean = false;
+  platoVerReceta: any = null;
+
+  // Modal Oficial de Receta y Componentes (Idéntico a Banco de Datos / Super Admin)
+  modalRecetaPlatoAbierto: boolean = false;
+  modoEdicionReceta: boolean = true;
+  guardandoReceta: boolean = false;
+  platoRecetaSeleccionado: any = null;
+
+  menuRecetaForm: RecetaMenuExtendida = {
+    nombre_plato: '',
+    componentes: []
+  };
+
+  opcionesIngredientes: any[] = [];
+
+  readonly tiposComponentePAE = [
+    { id: 'Bebida con leche', label: 'Bebida con leche' },
+    { id: 'Alimento proteico', label: 'Alimento proteico' },
+    { id: 'Cereal acompañante', label: 'Cereal acompañante' },
+    { id: 'Fruta', label: 'Fruta' },
+    { id: 'Agua / Sopa', label: 'Agua potable tratada / Sopa' }
+  ];
+
+  readonly momentosPlatoOpciones: string[] = ['Desayuno', 'Almuerzo', 'Merienda'];
 
   readonly filasComponentesPAE: {
     key: 'bebida_leche' | 'proteico' | 'cereal' | 'fruta' | 'agua';
@@ -188,7 +253,9 @@ export class MenusComponent implements OnInit {
     this.esAdministrador = this.authService.esAdministrador(this.currentUser?.rol);
     const rolNorm = (this.authService.normalizarRol(this.currentUser?.rol) || '').toLowerCase();
     this.esJefaManipuladoras = rolNorm.includes('jefa') || rolNorm.includes('jefe');
+    this.esSupervisor = this.authService.esSupervisor(this.currentUser?.rol) || rolNorm.includes('supervisor') || rolNorm.includes('coordinador');
 
+    this.cargarCatalogoBasePlatos();
     this.cargarContextoSedesYDatos();
   }
 
@@ -211,8 +278,9 @@ export class MenusComponent implements OnInit {
       platos: this.http.get<any>(`${this.apiUrl}/platos/`).pipe(catchError(() => of([]))),
       menus: this.http.get<any>(`${this.apiUrl}/menus/`).pipe(catchError(() => of([]))),
       detalles: this.http.get<any>(`${this.apiUrl}/detalle-platos/`).pipe(catchError(() => of([]))),
-      preparaciones: this.http.get<any>(`${this.apiUrl}/preparaciones-asignadas/`).pipe(catchError(() => of([])))
-    }).subscribe(({ sedes, usuarios, jornadas, contratos, secciones, platos, menus, detalles, preparaciones }) => {
+      preparaciones: this.http.get<any>(`${this.apiUrl}/preparaciones-asignadas/`).pipe(catchError(() => of([]))),
+      ingredientes: this.http.get<any>(`${this.apiUrl}/ingredientes/`).pipe(catchError(() => of([])))
+    }).subscribe(({ sedes, usuarios, jornadas, contratos, secciones, platos, menus, detalles, preparaciones, ingredientes }) => {
       const listaSedes = Array.isArray(sedes) ? sedes : (sedes?.results || []);
       const listaUsuarios = Array.isArray(usuarios) ? usuarios : (usuarios?.results || []);
 
@@ -223,8 +291,19 @@ export class MenusComponent implements OnInit {
         ? (this.currentUser?.id_sede?.id_sede || this.currentUser?.id_sede?.id)
         : this.currentUser?.id_sede;
 
+      const instActiva = this.authService.obtenerInstitucionActiva();
+      const idInstSupervisor = instActiva?.id_institucion;
+
       if (this.esJefaManipuladoras && idSedeUsuario) {
         this.sedesInstitucion = listaSedes.filter((s: any) => Number(s.id_sede || s.id) === Number(idSedeUsuario));
+      } else if (this.esSupervisor && idInstSupervisor) {
+        const filtradas = listaSedes.filter((s: any) => {
+          const sInst = typeof s.id_institucion === 'object'
+            ? (s.id_institucion?.id_institucion || s.id_institucion?.id)
+            : s.id_institucion;
+          return Number(sInst) === Number(idInstSupervisor);
+        });
+        this.sedesInstitucion = filtradas.length > 0 ? filtradas : listaSedes;
       } else if (this.esAdministrador && idInstUsuario) {
         this.sedesInstitucion = listaSedes.filter((s: any) => {
           const sInst = typeof s.id_institucion === 'object'
@@ -272,6 +351,37 @@ export class MenusComponent implements OnInit {
         manipuladora: this.getNombreManipuladora(p.id_usuario_manipuladora)
       }));
 
+      const listaIng = Array.isArray(ingredientes) ? ingredientes : (ingredientes?.results || []);
+      this.opcionesIngredientes = listaIng.map((i: any) => ({
+        id: i.id_ingrediente || i.id,
+        label: i.nombre_ingrediente || i.nombre || `Ingrediente #${i.id_ingrediente || i.id}`
+      }));
+      if (this.opcionesIngredientes.length === 0) {
+        this.opcionesIngredientes = [
+          { id: 1, label: 'Huevos tipo A' },
+          { id: 2, label: 'Leche entera pasteurizada' },
+          { id: 3, label: 'Arroz blanco de primera' },
+          { id: 4, label: 'Pechuga de pollo' },
+          { id: 5, label: 'Carne de res magra molida' },
+          { id: 6, label: 'Lentejas secas' },
+          { id: 7, label: 'Frijoles rojos' },
+          { id: 8, label: 'Harina de maíz precocida' },
+          { id: 9, label: 'Avena en hojuelas' },
+          { id: 10, label: 'Chocolate en pastilla' },
+          { id: 11, label: 'Panela en bloque' },
+          { id: 12, label: 'Pasta alimenticia tipo fideos' },
+          { id: 13, label: 'Papa común / parda' },
+          { id: 14, label: 'Tomate chonto fresco' },
+          { id: 15, label: 'Cebolla cabezona / junca' },
+          { id: 16, label: 'Zanahoria fresca' },
+          { id: 17, label: 'Banano maduro' },
+          { id: 18, label: 'Papaya' },
+          { id: 19, label: 'Mandarina' },
+          { id: 20, label: 'Aceite vegetal comestible' }
+        ];
+      }
+
+      this.cargarCatalogoBasePlatos();
       this.cdr.detectChanges();
     });
   }
@@ -416,11 +526,17 @@ export class MenusComponent implements OnInit {
     return base;
   }
 
+  limpiarNombrePlato(nombre: string): string {
+    if (!nombre) return '';
+    return nombre.replace(/^men[uú]\s*\d+\s*:\s*/i, '').trim();
+  }
+
   private getCatalogo20MenusBasePAE(): {
     numeroMenu: number;
     semana: number;
     nombre_plato: string;
     seccion: string;
+    secciones: string[];
     componentes: { bebida_leche: string; proteico: string; cereal: string; fruta: string; agua: string };
     ingredientes: string[];
     pasos: string[];
@@ -428,145 +544,891 @@ export class MenusComponent implements OnInit {
     return [
       {
         numeroMenu: 1, semana: 1, seccion: 'Desayuno',
-        nombre_plato: 'Menú 1: Pericos con arroz',
+        secciones: ['Desayuno'],
+        nombre_plato: 'Pericos con arroz',
         componentes: { bebida_leche: 'Refresco de avena', proteico: 'Huevos pericos', cereal: 'Arroz blanco', fruta: '—', agua: 'Agua potable' },
         ingredientes: ['Avena en hojuelas', 'Leche', 'Huevos', 'Tomate y cebolla', 'Arroz blanco', 'Agua potable'],
         pasos: ['Preparar el refresco de avena con leche.', 'Elaborar los huevos pericos bien cocidos con tomate y cebolla.', 'Cocinar el arroz blanco y servir con agua potable.']
       },
       {
         numeroMenu: 2, semana: 1, seccion: 'Almuerzo',
-        nombre_plato: 'Menú 2: Pollo en salsa blanca con pasta',
+        secciones: ['Desayuno', 'Almuerzo', 'Merienda'],
+        nombre_plato: 'Pollo en salsa blanca con pasta',
         componentes: { bebida_leche: 'Jugo de fruta en leche', proteico: 'Pollo en salsa blanca', cereal: 'Pasta', fruta: '—', agua: '—' },
         ingredientes: ['Leche', 'Fruta de cosecha', 'Pechuga de pollo', 'Pasta alimenticia'],
         pasos: ['Licuar el jugo de fruta en leche pasteurizada.', 'Cocinar el pollo y preparar en salsa blanca.', 'Cocinar la pasta al dente y servir caliente.']
       },
       {
         numeroMenu: 3, semana: 1, seccion: 'Desayuno',
-        nombre_plato: 'Menú 3: Arepa con chocolate',
+        secciones: ['Desayuno', 'Merienda'],
+        nombre_plato: 'Arepa con chocolate',
         componentes: { bebida_leche: 'Chocolate en leche', proteico: '—', cereal: 'Arepa de maíz', fruta: 'Banano / Fruta cosecha', agua: '—' },
         ingredientes: ['Chocolate', 'Leche', 'Harina de maíz', 'Banano'],
         pasos: ['Preparar el chocolate en leche caliente.', 'Asar la arepa de maíz en plancha limpia.', 'Lavar y desinfectar el banano para servir.']
       },
       {
         numeroMenu: 4, semana: 1, seccion: 'Almuerzo',
-        nombre_plato: 'Menú 4: Lentejas con arroz',
+        secciones: ['Almuerzo', 'Desayuno'],
+        nombre_plato: 'Lentejas con arroz',
         componentes: { bebida_leche: 'Jugo de fruta en leche', proteico: 'Lentejas con papa guisada', cereal: 'Arroz', fruta: '—', agua: '—' },
         ingredientes: ['Leche', 'Fruta', 'Lentejas', 'Papa común', 'Arroz blanco'],
         pasos: ['Preparar el jugo de fruta en leche.', 'Cocinar las lentejas con papa guisada.', 'Preparar el arroz blanco y servir.']
       },
       {
         numeroMenu: 5, semana: 1, seccion: 'Desayuno',
-        nombre_plato: 'Menú 5: Torta de huevo con arroz',
+        secciones: ['Desayuno'],
+        nombre_plato: 'Torta de huevo con arroz',
         componentes: { bebida_leche: 'Agua de panela en leche', proteico: 'Torta de huevo', cereal: 'Arroz blanco', fruta: '—', agua: '—' },
         ingredientes: ['Panela', 'Leche', 'Huevos', 'Arroz blanco'],
         pasos: ['Preparar el agua de panela con leche.', 'Cocinar completamente la torta de huevo.', 'Acompañar con arroz blanco recién hecho.']
       },
       {
         numeroMenu: 6, semana: 2, seccion: 'Almuerzo',
-        nombre_plato: 'Menú 6: Carne guisada con arroz',
+        secciones: ['Almuerzo', 'Desayuno'],
+        nombre_plato: 'Carne guisada con arroz',
         componentes: { bebida_leche: 'Refresco de avena', proteico: 'Carne de res guisada', cereal: 'Arroz blanco', fruta: '—', agua: '—' },
         ingredientes: ['Avena', 'Leche', 'Carne de res', 'Tomate y cebolla', 'Arroz blanco'],
         pasos: ['Preparar el refresco de avena en leche.', 'Guisar la carne de res hasta que esté blanda.', 'Servir acompañada de arroz blanco.']
       },
       {
         numeroMenu: 7, semana: 2, seccion: 'Merienda',
-        nombre_plato: 'Menú 7: Hojaldras con chocolate',
+        secciones: ['Desayuno', 'Merienda'],
+        nombre_plato: 'Hojaldras con chocolate',
         componentes: { bebida_leche: 'Chocolate en leche', proteico: '—', cereal: 'Hojaldra', fruta: 'Papaya / Fruta cosecha', agua: 'Agua potable' },
         ingredientes: ['Chocolate', 'Leche', 'Hojaldra', 'Papaya', 'Agua potable'],
         pasos: ['Preparar el chocolate en leche caliente.', 'Porcionar la papaya lavada y desinfectada.', 'Entregar con hojaldra fresca y agua potable.']
       },
       {
         numeroMenu: 8, semana: 2, seccion: 'Almuerzo',
-        nombre_plato: 'Menú 8: Frijoles guisados con arroz',
+        secciones: ['Almuerzo'],
+        nombre_plato: 'Frijoles guisados con arroz',
         componentes: { bebida_leche: 'Agua de panela en leche', proteico: 'Frijoles guisados con papa', cereal: 'Arroz con fideos', fruta: '—', agua: '—' },
         ingredientes: ['Panela', 'Leche', 'Frijol', 'Papa', 'Arroz', 'Fideos'],
         pasos: ['Preparar el agua de panela en leche.', 'Cocinar los frijoles guisados con papa.', 'Preparar el arroz con fideos dorados y servir.']
       },
       {
         numeroMenu: 9, semana: 2, seccion: 'Merienda',
-        nombre_plato: 'Menú 9: Galleta cuca con leche',
+        secciones: ['Desayuno', 'Merienda'],
+        nombre_plato: 'Galleta cuca con leche',
         componentes: { bebida_leche: 'Leche', proteico: 'Galleta cuca', cereal: 'Maní salado', fruta: 'Mango / Fruta cosecha', agua: '—' },
         ingredientes: ['Leche pasteurizada', 'Galleta cuca', 'Maní salado', 'Mango'],
         pasos: ['Servir la porción de leche.', 'Acompañar con galleta cuca y maní salado.', 'Entregar con mango lavado y desinfectado.']
       },
       {
         numeroMenu: 10, semana: 2, seccion: 'Desayuno',
-        nombre_plato: 'Menú 10: Huevos revueltos con arroz',
+        secciones: ['Desayuno', 'Almuerzo', 'Merienda'],
+        nombre_plato: 'Huevos revueltos con arroz',
         componentes: { bebida_leche: 'Jugo de fruta en leche', proteico: 'Huevos revueltos', cereal: 'Arroz blanco', fruta: '—', agua: '—' },
         ingredientes: ['Leche', 'Fruta de cosecha', 'Huevos', 'Arroz blanco'],
         pasos: ['Preparar el jugo de fruta en leche.', 'Cocinar los huevos revueltos bien cocidos.', 'Servir con arroz blanco caliente.']
       },
       {
         numeroMenu: 11, semana: 3, seccion: 'Almuerzo',
-        nombre_plato: 'Menú 11: Pollo guisado con arroz',
+        secciones: ['Almuerzo', 'Desayuno'],
+        nombre_plato: 'Pollo guisado con arroz',
         componentes: { bebida_leche: 'Refresco de avena', proteico: 'Pollo guisado', cereal: 'Arroz blanco', fruta: '—', agua: '—' },
         ingredientes: ['Avena', 'Leche', 'Pollo', 'Arroz blanco'],
         pasos: ['Preparar el refresco de avena en leche.', 'Cocinar el pollo guisado con verduras.', 'Servir con arroz blanco.']
       },
       {
-        numeroMenu: 12, semana: 3, seccion: 'Almuerzo',
-        nombre_plato: 'Menú 12: Lentejas guisadas con arroz',
-        componentes: { bebida_leche: 'Agua de panela en leche', proteico: 'Lentejas guisadas con papa', cereal: 'Arroz blanco', fruta: 'Mango / Fruta cosecha', agua: '—' },
-        ingredientes: ['Panela', 'Leche', 'Lentejas', 'Papa', 'Arroz blanco', 'Mango'],
-        pasos: ['Preparar el agua de panela en leche.', 'Guisar las lentejas con papa.', 'Servir con arroz blanco y porción de mango.']
-      },
-      {
-        numeroMenu: 13, semana: 3, seccion: 'Desayuno',
-        nombre_plato: 'Menú 13: Torta de huevo con quinua',
-        componentes: { bebida_leche: 'Colada de quinua', proteico: 'Torta de huevo', cereal: 'Arroz blanco', fruta: '—', agua: '—' },
-        ingredientes: ['Quinua', 'Leche', 'Huevos', 'Arroz blanco'],
-        pasos: ['Preparar la colada de quinua con leche.', 'Cocinar la torta de huevo.', 'Acompañar con arroz blanco.']
-      },
-      {
-        numeroMenu: 14, semana: 3, seccion: 'Merienda',
-        nombre_plato: 'Menú 14: Torta pastel con yogurt',
+        numeroMenu: 12, semana: 3, seccion: 'Merienda',
+        secciones: ['Desayuno', 'Merienda'],
+        nombre_plato: 'Torta pastel con yogurt',
         componentes: { bebida_leche: 'Yogurt', proteico: '—', cereal: 'Torta pastel', fruta: 'Manzana / Fruta cosecha', agua: '—' },
         ingredientes: ['Yogurt pasteurizado', 'Torta pastel', 'Manzana'],
         pasos: ['Servir el yogurt frío.', 'Entregar con porción de torta pastel.', 'Acompañar con manzana lavada y desinfectada.']
       },
       {
-        numeroMenu: 15, semana: 3, seccion: 'Almuerzo',
-        nombre_plato: 'Menú 15: Arroz con cerdo y verduras',
+        numeroMenu: 13, semana: 3, seccion: 'Almuerzo',
+        secciones: ['Almuerzo'],
+        nombre_plato: 'Arroz con cerdo y verduras',
         componentes: { bebida_leche: 'Jugo de fruta en leche guayaba', proteico: 'Arroz con carne de cerdo y verduras', cereal: 'Arroz con carne de cerdo y verduras', fruta: '—', agua: 'Agua potable' },
         ingredientes: ['Guayaba', 'Leche', 'Carne de cerdo', 'Arroz', 'Verduras', 'Agua potable'],
         pasos: ['Preparar el jugo de guayaba en leche.', 'Cocinar la carne de cerdo e integrar con el arroz y verduras.', 'Servir con agua potable.']
       },
       {
-        numeroMenu: 16, semana: 4, seccion: 'Almuerzo',
-        nombre_plato: 'Menú 16: Lentejas con colada de quinua',
-        componentes: { bebida_leche: 'Colada de quinua saborizada', proteico: 'Lentejas guisadas con papa', cereal: 'Arroz blanco', fruta: '—', agua: '—' },
-        ingredientes: ['Quinua', 'Leche', 'Lentejas', 'Papa', 'Arroz blanco'],
-        pasos: ['Preparar la colada de quinua saborizada en leche.', 'Cocinar las lentejas guisadas con papa.', 'Servir con arroz blanco.']
-      },
-      {
-        numeroMenu: 17, semana: 4, seccion: 'Desayuno',
-        nombre_plato: 'Menú 17: Pericos con chocolate',
-        componentes: { bebida_leche: 'Chocolate en leche', proteico: 'Huevos pericos', cereal: 'Arroz blanco', fruta: '—', agua: '—' },
-        ingredientes: ['Chocolate', 'Leche', 'Huevos', 'Tomate y cebolla', 'Arroz blanco'],
-        pasos: ['Preparar el chocolate en leche.', 'Cocinar los huevos pericos.', 'Servir con arroz blanco.']
-      },
-      {
-        numeroMenu: 18, semana: 4, seccion: 'Merienda',
-        nombre_plato: 'Menú 18: Arroz con leche y galletas',
+        numeroMenu: 14, semana: 4, seccion: 'Merienda',
+        secciones: ['Desayuno', 'Merienda'],
+        nombre_plato: 'Arroz con leche y galletas',
         componentes: { bebida_leche: 'Arroz con leche y canela', proteico: '—', cereal: 'Galleta tipo crackers salada', fruta: 'Mango / Papaya / Melón', agua: 'Agua potable' },
         ingredientes: ['Arroz', 'Leche', 'Canela', 'Galleta tipo crackers', 'Mango, papaya o melón', 'Agua potable'],
         pasos: ['Preparar el arroz con leche y canela.', 'Acompañar con galleta tipo crackers salada.', 'Entregar con porción de fruta y agua potable.']
       },
       {
-        numeroMenu: 19, semana: 4, seccion: 'Almuerzo',
-        nombre_plato: 'Menú 19: Pollo con verduras y papas',
+        numeroMenu: 15, semana: 4, seccion: 'Almuerzo',
+        secciones: ['Almuerzo'],
+        nombre_plato: 'Pollo con verduras y papas',
         componentes: { bebida_leche: 'Refresco de avena', proteico: 'Pollo en julianas con verduras', cereal: 'Papas en casco', fruta: '—', agua: '—' },
         ingredientes: ['Avena', 'Leche', 'Pechuga de pollo', 'Verduras', 'Papa común'],
         pasos: ['Preparar el refresco de avena en leche.', 'Saltear y cocinar bien el pollo en julianas con verduras.', 'Cocinar las papas en casco y servir.']
-      },
-      {
-        numeroMenu: 20, semana: 4, seccion: 'Almuerzo',
-        nombre_plato: 'Menú 20: Frijoles con arroz y fideos',
-        componentes: { bebida_leche: 'Agua de panela en leche', proteico: 'Frijoles guisados con papa', cereal: 'Arroz con fideos', fruta: '—', agua: '—' },
-        ingredientes: ['Panela', 'Leche', 'Frijol', 'Papa', 'Arroz', 'Fideos'],
-        pasos: ['Preparar el agua de panela en leche.', 'Cocinar los frijoles guisados con papa.', 'Servir con arroz con fideos.']
       }
     ];
+  }
+
+  // ============================================================
+  // CONFIGURACIÓN DE MOMENTOS (SECCIONES) POR SEDE
+  // ============================================================
+  obtenerMomentosDeSede(idSede: number | null): string[] {
+    if (!idSede) return ['Desayuno', 'Almuerzo'];
+    try {
+      const raw = localStorage.getItem(this.STORAGE_SEDES_MOMENTOS_KEY);
+      const mapa = raw ? JSON.parse(raw) : {};
+      if (mapa[String(idSede)] && Array.isArray(mapa[String(idSede)])) {
+        return mapa[String(idSede)];
+      }
+    } catch (e) {
+      console.error('Error al leer momentos de la sede:', e);
+    }
+    // Regla institucional PAE: Jornada Mañana maneja Desayuno y Almuerzo; Tarde maneja Merienda
+    return ['Desayuno', 'Almuerzo'];
+  }
+
+  sedeManejaMomento(idSede: number | null, momento: string): boolean {
+    return this.obtenerMomentosDeSede(idSede).includes(momento);
+  }
+
+  toggleMomentoEnSede(idSede: number | null, momento: string): void {
+    if (!idSede) return;
+    const momentosActuales = [...this.obtenerMomentosDeSede(idSede)];
+    const idx = momentosActuales.indexOf(momento);
+    if (idx >= 0) {
+      if (momentosActuales.length <= 1) {
+        this.sweetAlert.warning('Momento requerido', 'La sede debe manejar al menos un momento de menú (Desayuno, Almuerzo o Merienda).');
+        return;
+      }
+      momentosActuales.splice(idx, 1);
+    } else {
+      momentosActuales.push(momento);
+    }
+
+    try {
+      const raw = localStorage.getItem(this.STORAGE_SEDES_MOMENTOS_KEY);
+      const mapa = raw ? JSON.parse(raw) : {};
+      mapa[String(idSede)] = momentosActuales;
+      localStorage.setItem(this.STORAGE_SEDES_MOMENTOS_KEY, JSON.stringify(mapa));
+      this.sweetAlert.success(
+        'Configuración de Sede actualizada',
+        `Esta sede ahora maneja: ${momentosActuales.join(', ')}.`
+      );
+      this.cdr.detectChanges();
+    } catch (e) {
+      console.error('Error al guardar momentos de la sede:', e);
+    }
+  }
+
+  // ============================================================
+  // CATÁLOGO DE PLATOS Y RECETAS PAE (SUPERVISOR Y COCINA)
+  // ============================================================
+  private normalizarTextoComp(t: any): string {
+    return (t || '')
+      .toString()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]/g, '')
+      .trim();
+  }
+
+  private obtenerFirmaComponentesPlato(comp: any): string {
+    if (!comp) return '';
+    const b = this.normalizarTextoComp(comp.bebida_leche);
+    const p = this.normalizarTextoComp(comp.proteico);
+    const c = this.normalizarTextoComp(comp.cereal);
+    const f = this.normalizarTextoComp(comp.fruta);
+    const contenido = [b, p, c, f].filter(x => x && x !== '' && x !== '—');
+    if (contenido.length === 0) return '';
+    return `${b}|${p}|${c}|${f}`;
+  }
+
+  private obtenerClaveCanonicaPlato(nombre: string): string {
+    const norm = (nombre || '')
+      .toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .trim();
+
+    if (norm.includes('frijol')) return 'frijoles_guisados_arroz';
+    if (norm.includes('perico')) return 'pericos_con_arroz';
+    if (norm.includes('torta de huevo')) return 'torta_huevo_arroz';
+    if (norm.includes('lenteja')) return 'lentejas_con_arroz';
+    if (norm.includes('pollo') && (norm.includes('salsa blanca') || norm.includes('pasta'))) return 'pollo_salsa_blanca_pasta';
+    if (norm.includes('pollo') && norm.includes('guisado')) return 'pollo_guisado_arroz';
+    if (norm.includes('pollo') && (norm.includes('verdura') || norm.includes('papa'))) return 'pollo_verduras_papas';
+    if (norm.includes('carne') && norm.includes('guisada')) return 'carne_guisada_arroz';
+    if (norm.includes('arepa') && norm.includes('chocolate')) return 'arepa_con_chocolate';
+    if (norm.includes('hojaldra')) return 'hojaldras_con_chocolate';
+    if (norm.includes('cuca')) return 'galleta_cuca_leche';
+    if (norm.includes('revuelto')) return 'huevos_revueltos_arroz';
+    if (norm.includes('pastel') || norm.includes('yogurt')) return 'torta_pastel_yogurt';
+    if (norm.includes('cerdo')) return 'arroz_cerdo_verduras';
+    if (norm.includes('arroz con leche')) return 'arroz_leche_galletas';
+
+    return norm.replace(/[^a-z0-9]/g, '');
+  }
+
+  cargarCatalogoBasePlatos(): void {
+    // 1. Limpiar versiones anteriores del almacenamiento local para que no persistan duplicados ni prefijos antiguos
+    try {
+      localStorage.removeItem('sirae_platos_catalogo_personalizados_v1');
+      localStorage.removeItem('sirae_platos_catalogo_personalizados_v2');
+      localStorage.removeItem('sirae_catalogo_platos_pae_estipulados_v1');
+    } catch {}
+
+    const baseMenus = this.getCatalogo20MenusBasePAE();
+    let personalizados: any[] = [];
+    try {
+      const raw = localStorage.getItem(this.STORAGE_PLATOS_CATALOGO_KEY);
+      personalizados = raw ? JSON.parse(raw) : [];
+    } catch {
+      personalizados = [];
+    }
+
+    const mapa = new Map<string, any>();
+    const componentesRegistrados = new Set<string>();
+
+    const registrarPlatoUnico = (item: any) => {
+      if (!item || !item.nombre_plato) return;
+      item.nombre_plato = this.limpiarNombrePlato(item.nombre_plato);
+      const claveCanon = this.obtenerClaveCanonicaPlato(item.nombre_plato);
+      if (!claveCanon || mapa.has(claveCanon)) return;
+
+      const firma = this.obtenerFirmaComponentesPlato(item.componentes);
+      // Evitar registrar platos que tengan exactamente los mismos componentes
+      if (firma && componentesRegistrados.has(firma)) {
+        return;
+      }
+      if (firma) {
+        componentesRegistrados.add(firma);
+      }
+      mapa.set(claveCanon, item);
+    };
+
+    // 1. Platos base oficiales del PAE (15 platos únicos sin platos repetidos ni prefijo "Menú X:")
+    for (const b of baseMenus) {
+      registrarPlatoUnico(b);
+    }
+
+    // 2. Platos personalizados creados previamente
+    for (const pers of personalizados) {
+      registrarPlatoUnico(pers);
+    }
+
+    // 3. Platos traídos del backend
+    for (const p of this.platos || []) {
+      const secNom = this.getNombreSeccion(p.id_seccion);
+      const secs = secNom && secNom !== 'Desconocida' ? [secNom] : ['Desayuno', 'Almuerzo'];
+      const platoObj = {
+        id_plato: p.id_plato,
+        numeroMenu: p.id_plato,
+        nombre_plato: this.limpiarNombrePlato(p.nombre_plato),
+        secciones: secs,
+        seccion: secs[0],
+        componentes: this.extraerComponentesDesdePlato(p.nombre_plato, p.componente, p),
+        ingredientes: (p.receta_componentes || []).map((rc: any) => rc.nombre_ingrediente).filter(Boolean),
+        pasos: (p.pasos_preparacion || []).map((ps: any) => ps.descripcion_paso).filter(Boolean),
+        origen: 'PAE_ESTIPULADO'
+      };
+      registrarPlatoUnico(platoObj);
+    }
+
+    this.platosEstipuladosPAE = Array.from(mapa.values());
+    this.guardarEstadoCatalogoPlatos();
+    this.cdr.detectChanges();
+  }
+
+  private guardarEstadoCatalogoPlatos(): void {
+    try {
+      localStorage.setItem(this.STORAGE_PLATOS_CATALOGO_KEY, JSON.stringify(this.platosEstipuladosPAE));
+    } catch (e) {
+      console.error('Error guardando catálogo de platos:', e);
+    }
+  }
+
+  get catalogoPlatosVista(): any[] {
+    const mapaUnicos = new Map<string, any>();
+    const vistosFirmas = new Set<string>();
+
+    for (const p of this.platosEstipuladosPAE || []) {
+      const nombreLimpio = this.limpiarNombrePlato(p.nombre_plato);
+      if (!nombreLimpio) continue;
+
+      const claveCanon = this.obtenerClaveCanonicaPlato(nombreLimpio);
+      if (mapaUnicos.has(claveCanon)) continue;
+
+      const firma = this.obtenerFirmaComponentesPlato(p.componentes);
+      if (firma && vistosFirmas.has(firma)) continue;
+      if (firma) vistosFirmas.add(firma);
+
+      const secRaw = p.secciones && p.secciones.length > 0
+        ? p.secciones
+        : (p.seccion ? [p.seccion] : ['Desayuno', 'Almuerzo']);
+
+      mapaUnicos.set(claveCanon, {
+        ...p,
+        nombre_plato: nombreLimpio,
+        secciones: secRaw
+      });
+    }
+
+    let lista = Array.from(mapaUnicos.values());
+
+    if (this.filtroMomentoPlatos && this.filtroMomentoPlatos !== 'TODAS') {
+      if (this.filtroMomentoPlatos === 'SEDE_ACTIVA') {
+        const momentosSede = this.obtenerMomentosDeSede(this.sedeSeleccionadaId);
+        lista = lista.filter(p =>
+          (p.secciones || []).some((s: string) => momentosSede.includes(s))
+        );
+      } else {
+        lista = lista.filter(p =>
+          (p.secciones || []).some((s: string) => s.toLowerCase() === this.filtroMomentoPlatos.toLowerCase())
+        );
+      }
+    }
+
+    if (this.busquedaPlatos && this.busquedaPlatos.trim()) {
+      const q = this.busquedaPlatos.trim().toLowerCase();
+      lista = lista.filter(p => (p.nombre_plato || '').toLowerCase().includes(q));
+    }
+
+    return lista;
+  }
+
+  crearComponenteVacio(tipo: string = 'Alimento proteico', nombre: string = ''): ComponentePlatoReceta {
+    return {
+      id_temporal: 'comp_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+      tipo_componente: tipo,
+      nombre_componente: nombre,
+      ingredientes: [],
+      pasos: [{ numero_paso: 1, descripcion_paso: '' }],
+      ingredienteTempId: null,
+      observacionTemp: ''
+    };
+  }
+
+  crearComponentesDesdeMenuPAE(menuBase: any): ComponentePlatoReceta[] {
+    const comps: ComponentePlatoReceta[] = [];
+    let contador = 1;
+
+    const agregarComp = (tipo: string, nombre: string, defaultIngs: string[] = [], defaultPasos: string[] = []) => {
+      if (!nombre || nombre === '—') return;
+      comps.push({
+        id_temporal: 'comp_' + Date.now() + '_' + (contador++),
+        tipo_componente: tipo,
+        nombre_componente: nombre,
+        ingredientes: defaultIngs.map((ing, idx) => ({
+          id_ingrediente: idx + 1,
+          nombre_ingrediente: ing,
+          unidad: 'g',
+          observacion: ''
+        })),
+        pasos: defaultPasos.length > 0
+          ? defaultPasos.map((p, idx) => ({ numero_paso: idx + 1, descripcion_paso: p }))
+          : [{ numero_paso: 1, descripcion_paso: `Preparar ${nombre} según guía PAE.` }],
+        ingredienteTempId: null,
+        observacionTemp: ''
+      });
+    };
+
+    if (menuBase.componentes) {
+      if (menuBase.componentes.bebida_leche && menuBase.componentes.bebida_leche !== '—') {
+        const ings = (menuBase.ingredientes || []).filter((i: string) =>
+          i.toLowerCase().includes('leche') || i.toLowerCase().includes('avena') || i.toLowerCase().includes('chocolate') || i.toLowerCase().includes('panela') || i.toLowerCase().includes('quinua') || i.toLowerCase().includes('yogurt')
+        );
+        const pasos = (menuBase.pasos || []).filter((p: string) =>
+          p.toLowerCase().includes('bebida') || p.toLowerCase().includes('leche') || p.toLowerCase().includes('avena') || p.toLowerCase().includes('chocolate') || p.toLowerCase().includes('jugo') || p.toLowerCase().includes('colada')
+        );
+        agregarComp('Bebida con leche', menuBase.componentes.bebida_leche, ings, pasos);
+      }
+
+      if (menuBase.componentes.proteico && menuBase.componentes.proteico !== '—') {
+        const ings = (menuBase.ingredientes || []).filter((i: string) =>
+          i.toLowerCase().includes('huevo') || i.toLowerCase().includes('pollo') || i.toLowerCase().includes('carne') || i.toLowerCase().includes('cerdo') || i.toLowerCase().includes('lenteja') || i.toLowerCase().includes('frijol') || i.toLowerCase().includes('queso')
+        );
+        const pasos = (menuBase.pasos || []).filter((p: string) =>
+          p.toLowerCase().includes('huevo') || p.toLowerCase().includes('pollo') || p.toLowerCase().includes('carne') || p.toLowerCase().includes('cerdo') || p.toLowerCase().includes('lenteja') || p.toLowerCase().includes('frijol')
+        );
+        agregarComp('Alimento proteico', menuBase.componentes.proteico, ings, pasos);
+      }
+
+      if (menuBase.componentes.cereal && menuBase.componentes.cereal !== '—') {
+        const ings = (menuBase.ingredientes || []).filter((i: string) =>
+          i.toLowerCase().includes('arroz') || i.toLowerCase().includes('arepa') || i.toLowerCase().includes('pasta') || i.toLowerCase().includes('fideos') || i.toLowerCase().includes('papa') || i.toLowerCase().includes('hojaldra') || i.toLowerCase().includes('galleta') || i.toLowerCase().includes('torta')
+        );
+        const pasos = (menuBase.pasos || []).filter((p: string) =>
+          p.toLowerCase().includes('arroz') || p.toLowerCase().includes('arepa') || p.toLowerCase().includes('pasta') || p.toLowerCase().includes('papa')
+        );
+        agregarComp('Cereal acompañante', menuBase.componentes.cereal, ings, pasos);
+      }
+
+      if (menuBase.componentes.fruta && menuBase.componentes.fruta !== '—') {
+        const ings = (menuBase.ingredientes || []).filter((i: string) =>
+          i.toLowerCase().includes('fruta') || i.toLowerCase().includes('banano') || i.toLowerCase().includes('papaya') || i.toLowerCase().includes('mango') || i.toLowerCase().includes('manzana') || i.toLowerCase().includes('mandarina') || i.toLowerCase().includes('guayaba')
+        );
+        agregarComp('Fruta', menuBase.componentes.fruta, ings, ['Lavar, desinfectar y porcionar la fruta fresca.']);
+      }
+    }
+
+    if (comps.length === 0) {
+      comps.push(this.crearComponenteVacio('Alimento proteico', menuBase.nombre_plato || 'Componente principal'));
+    }
+
+    return comps;
+  }
+
+  abrirModalRecetaPlato(plato: any): void {
+    this.modoEdicionReceta = true;
+    this.platoRecetaSeleccionado = plato;
+
+    const compsExistentes = plato.componentes_estructurados && plato.componentes_estructurados.length > 0
+      ? JSON.parse(JSON.stringify(plato.componentes_estructurados))
+      : this.crearComponentesDesdeMenuPAE(plato);
+
+    this.menuRecetaForm = {
+      id_plato: plato.id_plato,
+      numero_menu: plato.numeroMenu,
+      nombre_plato: this.limpiarNombrePlato(plato.nombre_plato),
+      secciones: plato.secciones || ['Desayuno', 'Almuerzo'],
+      componentes: compsExistentes
+    };
+
+    this.modalRecetaPlatoAbierto = true;
+    this.cdr.detectChanges();
+  }
+
+  abrirModalCrearPlato(): void {
+    this.modoEdicionReceta = false;
+    this.platoRecetaSeleccionado = null;
+    const sigNumero = (this.platosEstipuladosPAE?.length || 19) + 1;
+    this.menuRecetaForm = {
+      numero_menu: sigNumero,
+      nombre_plato: '',
+      secciones: this.obtenerMomentosDeSede(this.sedeSeleccionadaId),
+      componentes: [
+        this.crearComponenteVacio('Bebida con leche', ''),
+        this.crearComponenteVacio('Alimento proteico', ''),
+        this.crearComponenteVacio('Cereal acompañante', '')
+      ]
+    };
+    this.modalRecetaPlatoAbierto = true;
+    this.cdr.detectChanges();
+  }
+
+  platoAplicaMomento(momento: string): boolean {
+    return (this.menuRecetaForm.secciones || []).includes(momento);
+  }
+
+  toggleMomentoEnPlatoForm(momento: string): void {
+    if (!this.menuRecetaForm.secciones) {
+      this.menuRecetaForm.secciones = [];
+    }
+    const idx = this.menuRecetaForm.secciones.indexOf(momento);
+    if (idx >= 0) {
+      if (this.menuRecetaForm.secciones.length <= 1) {
+        this.sweetAlert.warning('Momento requerido', 'El plato debe pertenecer al menos a una sección o momento.');
+        return;
+      }
+      this.menuRecetaForm.secciones.splice(idx, 1);
+    } else {
+      this.menuRecetaForm.secciones.push(momento);
+    }
+  }
+
+  trackByCompId(index: number, comp: ComponentePlatoReceta): string {
+    return comp.id_temporal || ('comp_' + index);
+  }
+
+  get opcionesComponentesReutilizables(): { id: string; label: string }[] {
+    const catalogo = this.obtenerCatalogoComponentesLocal();
+    return Object.values(catalogo).map(c => ({
+      id: c.nombre_componente,
+      label: `${c.nombre_componente} (${c.tipo_componente} • ${c.ingredientes.length} ingr.)`
+    }));
+  }
+
+  private obtenerCatalogoComponentesLocal(): Record<string, ComponentePlatoReceta> {
+    try {
+      const raw = localStorage.getItem('sirae_catalogo_componentes_pae_v1');
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  }
+
+  private buscarComponenteEnCatalogo(nombreComponente: string): ComponentePlatoReceta | null {
+    const clave = (nombreComponente || '').trim().toLowerCase();
+    if (!clave) return null;
+    const cat = this.obtenerCatalogoComponentesLocal();
+    return cat[clave] || null;
+  }
+
+  onNombreComponenteChange(comp: ComponentePlatoReceta): void {
+    if (!comp.nombre_componente || comp.ingredientes.length > 0) return;
+    const guardado = this.buscarComponenteEnCatalogo(comp.nombre_componente);
+    if (guardado && (guardado.ingredientes.length > 0 || guardado.pasos.length > 0)) {
+      comp.ingredientes = guardado.ingredientes.map(i => ({ ...i }));
+      comp.pasos = guardado.pasos.map((p, idx) => ({
+        numero_paso: idx + 1,
+        descripcion_paso: p.descripcion_paso
+      }));
+      this.cdr.detectChanges();
+    }
+  }
+
+  reutilizarComponenteGuardado(comp: ComponentePlatoReceta, nombreCatalogo: string): void {
+    if (!nombreCatalogo) return;
+    const guardado = this.buscarComponenteEnCatalogo(nombreCatalogo);
+    if (!guardado) return;
+    comp.nombre_componente = guardado.nombre_componente;
+    comp.tipo_componente = guardado.tipo_componente || comp.tipo_componente;
+    comp.ingredientes = guardado.ingredientes.map(i => ({ ...i }));
+    comp.pasos = guardado.pasos.length > 0
+      ? guardado.pasos.map((p, idx) => ({ numero_paso: idx + 1, descripcion_paso: p.descripcion_paso }))
+      : [{ numero_paso: 1, descripcion_paso: '' }];
+    this.cdr.detectChanges();
+  }
+
+  @HostListener('document:click')
+  onDocumentClick(): void {
+    if (this.menuAccionAbiertoId !== null) {
+      this.menuAccionAbiertoId = null;
+    }
+  }
+
+  toggleMenuAccion(id: any, event: Event): void {
+    event.stopPropagation();
+    this.menuAccionAbiertoId = this.menuAccionAbiertoId === id ? null : id;
+  }
+
+  cerrarMenuAccion(): void {
+    this.menuAccionAbiertoId = null;
+  }
+
+  abrirModalVerReceta(plato: any): void {
+    this.platoVerReceta = {
+      ...plato,
+      nombre_plato: this.limpiarNombrePlato(plato.nombre_plato),
+      componentes_estructurados: plato.componentes_estructurados && plato.componentes_estructurados.length > 0
+        ? plato.componentes_estructurados
+        : this.crearComponentesDesdeMenuPAE(plato)
+    };
+    this.modalVerRecetaAbierto = true;
+    this.cdr.detectChanges();
+  }
+
+  cerrarModalVerReceta(): void {
+    this.modalVerRecetaAbierto = false;
+    this.platoVerReceta = null;
+    this.cdr.detectChanges();
+  }
+
+  eliminarPlato(plato: any, event?: Event): void {
+    if (event) event.stopPropagation();
+    this.cerrarMenuAccion();
+
+    this.sweetAlert.confirm(
+      '¿Eliminar plato?',
+      `¿Estás seguro de que deseas eliminar "${plato.nombre_plato}"? Esta acción no se puede deshacer.`
+    ).then((result: any) => {
+      if (result.isConfirmed) {
+        const idx = this.platosEstipuladosPAE.findIndex(p =>
+          (plato.id_plato && p.id_plato === plato.id_plato) ||
+          p.nombre_plato === plato.nombre_plato
+        );
+        if (idx >= 0) {
+          this.platosEstipuladosPAE.splice(idx, 1);
+          this.guardarEstadoCatalogoPlatos();
+        }
+
+        if (plato.id_plato) {
+          this.http.delete(`${this.apiUrl}/platos/${plato.id_plato}/`).pipe(
+            catchError(() => of(null))
+          ).subscribe();
+        }
+
+        this.sweetAlert.success('Plato eliminado', `El plato "${plato.nombre_plato}" ha sido eliminado del sistema.`);
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  cerrarModalRecetaPlato(): void {
+    this.modalRecetaPlatoAbierto = false;
+    this.platoRecetaSeleccionado = null;
+    this.cdr.detectChanges();
+  }
+
+  agregarComponenteAlPlato(): void {
+    if (!this.menuRecetaForm) {
+      this.menuRecetaForm = { nombre_plato: '', componentes: [] };
+    }
+    if (!this.menuRecetaForm.componentes) {
+      this.menuRecetaForm.componentes = [];
+    }
+    const nuevoComp = this.crearComponenteVacio('Alimento proteico', '');
+    this.menuRecetaForm.componentes = [...this.menuRecetaForm.componentes, nuevoComp];
+    this.cdr.detectChanges();
+  }
+
+  eliminarComponenteDelPlato(index: number): void {
+    if (this.menuRecetaForm.componentes.length <= 1) {
+      this.sweetAlert.warning('Mínimo un componente', 'El plato debe tener al menos un componente registrado.');
+      return;
+    }
+    const comps = [...this.menuRecetaForm.componentes];
+    comps.splice(index, 1);
+    this.menuRecetaForm.componentes = comps;
+    this.cdr.detectChanges();
+  }
+
+  agregarIngredienteAComponente(comp: ComponentePlatoReceta): void {
+    const idIng = Number(comp.ingredienteTempId);
+    if (!idIng) {
+      this.sweetAlert.warning('Selecciona un ingrediente', 'Elige un ingrediente del inventario para agregarlo a este componente.');
+      return;
+    }
+    if (comp.ingredientes.some(i => Number(i.id_ingrediente) === idIng)) {
+      this.sweetAlert.warning('Ingrediente duplicado', 'Este ingrediente ya está incluido en este componente.');
+      return;
+    }
+
+    const ingOp = this.opcionesIngredientes.find(o => Number(o.id) === idIng);
+    comp.ingredientes = [
+      ...comp.ingredientes,
+      {
+        id_ingrediente: idIng,
+        nombre_ingrediente: ingOp?.label || `Ingrediente #${idIng}`,
+        unidad: '',
+        observacion: (comp.observacionTemp || '').trim()
+      }
+    ];
+
+    comp.ingredienteTempId = null;
+    comp.observacionTemp = '';
+    this.cdr.detectChanges();
+  }
+
+  quitarIngredienteDeComponente(comp: ComponentePlatoReceta, index: number): void {
+    const ings = [...comp.ingredientes];
+    ings.splice(index, 1);
+    comp.ingredientes = ings;
+    this.cdr.detectChanges();
+  }
+
+  agregarPasoAComponente(comp: ComponentePlatoReceta): void {
+    comp.pasos = [
+      ...comp.pasos,
+      {
+        numero_paso: comp.pasos.length + 1,
+        descripcion_paso: ''
+      }
+    ];
+    this.cdr.detectChanges();
+  }
+
+  quitarPasoDeComponente(comp: ComponentePlatoReceta, index: number): void {
+    if (comp.pasos.length <= 1) {
+      comp.pasos = [{ numero_paso: 1, descripcion_paso: '' }];
+      this.cdr.detectChanges();
+      return;
+    }
+    const pasos = [...comp.pasos];
+    pasos.splice(index, 1);
+    pasos.forEach((p, idx) => (p.numero_paso = idx + 1));
+    comp.pasos = pasos;
+    this.cdr.detectChanges();
+  }
+
+  moverPasoComponente(comp: ComponentePlatoReceta, index: number, direccion: -1 | 1): void {
+    const destino = index + direccion;
+    if (destino < 0 || destino >= comp.pasos.length) return;
+    const pasos = [...comp.pasos];
+    const temp = pasos[index];
+    pasos[index] = pasos[destino];
+    pasos[destino] = temp;
+    pasos.forEach((p, idx) => (p.numero_paso = idx + 1));
+    comp.pasos = pasos;
+    this.cdr.detectChanges();
+  }
+
+  guardarRecetaPlato(): void {
+    const nombre = this.limpiarNombrePlato(this.menuRecetaForm.nombre_plato || '').trim();
+    if (!nombre) {
+      this.sweetAlert.warning('Nombre requerido', 'Ingresa el nombre del plato.');
+      return;
+    }
+    if (!this.menuRecetaForm.componentes || this.menuRecetaForm.componentes.length === 0) {
+      this.sweetAlert.warning('Componentes requeridos', 'Registra al menos un componente para el plato.');
+      return;
+    }
+
+    this.guardandoReceta = true;
+
+    const compResumenObj: any = {
+      bebida_leche: '—',
+      proteico: '—',
+      cereal: '—',
+      fruta: '—',
+      agua: 'Agua potable tratada'
+    };
+
+    const listaIngredientesTotal: string[] = [];
+    const listaPasosTotal: string[] = [];
+
+    for (const c of this.menuRecetaForm.componentes) {
+      const tipo = c.tipo_componente;
+      const nom = c.nombre_componente || '';
+      if (tipo === 'Bebida con leche') compResumenObj.bebida_leche = nom;
+      else if (tipo === 'Alimento proteico') compResumenObj.proteico = nom;
+      else if (tipo === 'Cereal acompañante') compResumenObj.cereal = nom;
+      else if (tipo === 'Fruta') compResumenObj.fruta = nom;
+      else if (tipo.includes('Agua') || tipo.includes('Sopa')) compResumenObj.agua = nom;
+
+      for (const ing of c.ingredientes || []) {
+        if (ing.nombre_ingrediente && !listaIngredientesTotal.includes(ing.nombre_ingrediente)) {
+          listaIngredientesTotal.push(ing.nombre_ingrediente);
+        }
+      }
+      for (const p of c.pasos || []) {
+        if (p.descripcion_paso && p.descripcion_paso.trim()) {
+          listaPasosTotal.push(`[${nom}] ${p.descripcion_paso.trim()}`);
+        }
+      }
+    }
+
+    const numMenu = this.menuRecetaForm.numero_menu;
+    const idx = this.platosEstipuladosPAE.findIndex(p =>
+      (numMenu && p.numeroMenu === numMenu) ||
+      (this.platoRecetaSeleccionado && p.nombre_plato === this.platoRecetaSeleccionado.nombre_plato) ||
+      p.nombre_plato === nombre
+    );
+
+    const platoActualizado = {
+      ...(idx >= 0 ? this.platosEstipuladosPAE[idx] : {}),
+      id_plato: this.menuRecetaForm.id_plato || Date.now(),
+      numeroMenu: numMenu || (this.platosEstipuladosPAE.length + 1),
+      nombre_plato: nombre,
+      secciones: this.menuRecetaForm.secciones || ['Desayuno', 'Almuerzo'],
+      componentes: compResumenObj,
+      componentes_estructurados: JSON.parse(JSON.stringify(this.menuRecetaForm.componentes)),
+      ingredientes: listaIngredientesTotal.length > 0 ? listaIngredientesTotal : ['Ingredientes estandarizados PAE'],
+      pasos: listaPasosTotal.length > 0 ? listaPasosTotal : ['Preparar según las directrices de inocuidad del PAE.'],
+      origen: 'PAE_ESTIPULADO'
+    };
+
+    if (idx >= 0) {
+      this.platosEstipuladosPAE[idx] = platoActualizado;
+    } else {
+      this.platosEstipuladosPAE.push(platoActualizado);
+    }
+
+    this.guardarEstadoCatalogoPlatos();
+
+    try {
+      const catComp = this.obtenerCatalogoComponentesLocal();
+      for (const comp of this.menuRecetaForm.componentes || []) {
+        const claveComp = (comp.nombre_componente || '').trim().toLowerCase();
+        if (claveComp && (comp.ingredientes.length > 0 || comp.pasos.some(p => p.descripcion_paso.trim()))) {
+          catComp[claveComp] = {
+            id_temporal: comp.id_temporal,
+            tipo_componente: comp.tipo_componente,
+            nombre_componente: comp.nombre_componente.trim(),
+            ingredientes: comp.ingredientes.map(i => ({ ...i })),
+            pasos: comp.pasos.filter(p => p.descripcion_paso.trim()).map((p, idx) => ({
+              numero_paso: idx + 1,
+              descripcion_paso: p.descripcion_paso.trim()
+            }))
+          };
+        }
+      }
+      localStorage.setItem('sirae_catalogo_componentes_pae_v1', JSON.stringify(catComp));
+    } catch (e) {
+      console.warn('No se pudo guardar catálogo de componentes:', e);
+    }
+
+    const compTexto = [compResumenObj.bebida_leche, compResumenObj.proteico, compResumenObj.cereal, compResumenObj.fruta]
+      .filter(c => c && c !== '—')
+      .join(', ');
+
+    const req = (this.modoEdicionReceta && platoActualizado.id_plato)
+      ? this.http.put<any>(`${this.apiUrl}/platos/${platoActualizado.id_plato}/`, {
+          nombre_plato: nombre.slice(0, 100),
+          componente: (compTexto || 'Componentes PAE').slice(0, 50),
+          id_seccion: 1
+        })
+      : this.http.post<any>(`${this.apiUrl}/platos/`, {
+          nombre_plato: nombre.slice(0, 100),
+          componente: (compTexto || 'Componentes PAE').slice(0, 50),
+          id_seccion: 1
+        });
+
+    req.pipe(catchError(() => of(null))).subscribe(() => {
+      this.guardandoReceta = false;
+    });
+
+    this.sweetAlert.success(
+      this.modoEdicionReceta ? 'Plato actualizado' : 'Plato creado',
+      `La receta y componentes del plato "${nombre}" han sido guardados.`
+    );
+    this.cerrarModalRecetaPlato();
+  }
+
+  // ============================================================
+  // FLUJO DE APROBACIÓN DE MINUTA (JEFA DE COCINA Y SUPERVISOR)
+  // ============================================================
+  private obtenerAprobacionesLocales(): Record<string, any> {
+    try {
+      const raw = localStorage.getItem(this.STORAGE_APROBACIONES_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  }
+
+  obtenerAprobacionSemana(semana: number): { aprobado_jefa: boolean; aprobado_supervisor: boolean; jefa_nombre?: string; supervisor_nombre?: string; fecha_jefa?: string; fecha_supervisor?: string } {
+    const sedeId = this.sedeSeleccionadaId || 0;
+    const mapa = this.obtenerAprobacionesLocales();
+    const clave = `sede_${sedeId}_sem_${semana}`;
+    return mapa[clave] || { aprobado_jefa: false, aprobado_supervisor: false };
+  }
+
+  aprobarSemanaComoSupervisor(semana: number): void {
+    const sedeId = this.sedeSeleccionadaId;
+    if (!sedeId) return;
+    this.sweetAlert.confirm(
+      `¿Aprobar Minuta de la Semana ${semana}?`,
+      `Al dar tu visto bueno como Supervisor PAE, confirmas que la minuta seleccionada para esta sede cumple con las directrices nutricionales del programa.`
+    ).then((conf) => {
+      if (conf) {
+        const mapa = this.obtenerAprobacionesLocales();
+        const clave = `sede_${sedeId}_sem_${semana}`;
+        const actual = mapa[clave] || { aprobado_jefa: true };
+        mapa[clave] = {
+          ...actual,
+          aprobado_supervisor: true,
+          supervisor_nombre: `${this.currentUser?.nombre || 'Supervisor'} ${this.currentUser?.apellido || ''}`.trim(),
+          fecha_supervisor: new Date().toLocaleDateString('es-CO')
+        };
+        localStorage.setItem(this.STORAGE_APROBACIONES_KEY, JSON.stringify(mapa));
+        this.sweetAlert.success('Minuta Aprobada', `La Semana ${semana} ha sido formalmente aprobada por el Supervisor PAE.`);
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  aprobarSemanaComoJefa(semana: number): void {
+    const sedeId = this.sedeSeleccionadaId;
+    if (!sedeId) return;
+    const mapa = this.obtenerAprobacionesLocales();
+    const clave = `sede_${sedeId}_sem_${semana}`;
+    const actual = mapa[clave] || {};
+    mapa[clave] = {
+      ...actual,
+      aprobado_jefa: true,
+      jefa_nombre: `${this.currentUser?.nombre || 'Jefa de Manipuladoras'} ${this.currentUser?.apellido || ''}`.trim(),
+      fecha_jefa: new Date().toLocaleDateString('es-CO')
+    };
+    localStorage.setItem(this.STORAGE_APROBACIONES_KEY, JSON.stringify(mapa));
+    this.sweetAlert.success('Visto Bueno Registrado', `Has aprobado la minuta de la Semana ${semana} para tu sede. Ahora se encuentra lista para el visto bueno del Supervisor.`);
+    this.cdr.detectChanges();
   }
 
   /**
@@ -869,6 +1731,7 @@ export class MenusComponent implements OnInit {
       if (this.opcionesFiltradasModalProgramar.length > 0 && !this.programarDiaForm.nombre_plato) {
         this.seleccionarOpcionParaDia(this.opcionesFiltradasModalProgramar[0], 0);
       }
+      this.cargarCatalogoBasePlatos();
       this.cdr.detectChanges();
     });
   }
@@ -881,6 +1744,13 @@ export class MenusComponent implements OnInit {
       return this.opcionesSugeridasIA.filter(o => o.origen === 'IA_INVENTARIO');
     }
     return this.opcionesSugeridasIA;
+  }
+
+  onPlatoSeleccionadoEnSelect(): void {
+    const plato = this.platosEstipuladosPAE.find(p => p.nombre_plato === this.programarDiaForm.nombre_plato);
+    if (plato) {
+      this.seleccionarOpcionParaDia(plato, 0);
+    }
   }
 
   seleccionarOpcionParaDia(opcion: any, idx: number): void {

@@ -1,30 +1,49 @@
 <div class="flex flex-col gap-4 max-w-7xl font-sans">
 
-  <!-- ===================== CABECERA: CONTEXTO INSTITUCIONAL Y SELECTOR DE SEDE ===================== -->
+  <!-- ===================== CABECERA: CONTEXTO INSTITUCIONAL Y PESTAÑAS ===================== -->
   <header class="bg-white border border-amber-200/80 rounded-2xl p-5 shadow-xs flex flex-col gap-4"
     style="background: linear-gradient(135deg, #fffcf0 0%, #ffffff 100%);">
     <div class="flex flex-wrap items-center justify-between gap-4">
       <div>
         <div class="flex items-center gap-2 flex-wrap">
           <h1 class="text-lg font-extrabold text-slate-900 m-0 tracking-tight">
-            Minuta
+            {{ pestanaActiva === 'minuta' ? 'Minuta Institucional' : 'Platos y Recetas' }}
           </h1>
           <span
             class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
-            {{ esJefaManipuladoras ? 'Encargada de la Sede' : 'Administrador Institucional' }}
+            {{ esJefaManipuladoras ? 'Encargada de la Sede' : (esSupervisor ? 'Supervisor PAE' : 'Administrador Institucional') }}
           </span>
         </div>
         <p class="text-xs text-slate-600 m-0 mt-0.5">
-          Consulta de la minuta y menús seleccionados para cada sede.
+          {{ pestanaActiva === 'minuta' ? 'Supervisión y aprobación de la minuta semanal por sede educativa.' : 'Catálogo oficial de platos y recetas del ciclo PAE.' }}
         </p>
+      </div>
+
+      <!-- Selector de Pestañas (Platos y Recetas a la izquierda / Minuta a la derecha) -->
+      <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200">
+        <button type="button" (click)="pestanaActiva = 'platos'"
+          [ngClass]="pestanaActiva === 'platos'
+            ? 'bg-[#fac94b] text-slate-950 font-bold shadow-2xs border-amber-400'
+            : 'text-slate-600 hover:text-slate-900 font-medium border-transparent'"
+          class="px-3.5 py-1.5 rounded-lg text-xs border transition cursor-pointer">
+          Platos y Recetas PAE
+        </button>
+
+        <button type="button" (click)="pestanaActiva = 'minuta'"
+          [ngClass]="pestanaActiva === 'minuta'
+            ? 'bg-[#fac94b] text-slate-950 font-bold shadow-2xs border-amber-400'
+            : 'text-slate-600 hover:text-slate-900 font-medium border-transparent'"
+          class="px-3.5 py-1.5 rounded-lg text-xs border transition cursor-pointer">
+          Minuta Semanal de Sedes
+        </button>
       </div>
     </div>
 
-    <!-- BARRA DE SELECCIÓN DE SEDE (1 Minuta diferente de 20 días por cada Sede) -->
-    <div class="bg-white/90 border border-slate-200 rounded-xl p-3.5 flex flex-col gap-3">
-      <div class="flex items-center gap-2">
+    <!-- BARRA DE SELECCIÓN DE SEDE (Visible solo al gestionar la Minuta Semanal de Sedes) -->
+    <div *ngIf="pestanaActiva === 'minuta'" class="bg-white/90 border border-slate-200 rounded-xl p-3.5 flex flex-col gap-3">
+      <div class="flex items-center justify-between flex-wrap gap-2">
         <span class="text-xs font-bold text-slate-800 uppercase tracking-wider">
-          Sedes de la Institución ({{ sedesInstitucion.length }} {{ sedesInstitucion.length === 1 ? 'Sede' : 'Sedes — Cada sede maneja su propia minuta' }}):
+          Sedes de la Institución ({{ sedesInstitucion.length }} {{ sedesInstitucion.length === 1 ? 'Sede' : 'Sedes — Cada sede maneja su propia minuta y momentos' }}):
         </span>
       </div>
 
@@ -53,9 +72,9 @@
   </header>
 
   <!-- ===================================================================== -->
-  <!-- MINUTA SEMANAL DE LA SEDE (FORMATO OFICIAL PAE POR SEMANAS)           -->
+  <!-- VISTA 1: MINUTA SEMANAL DE LA SEDE (CON APROBACIÓN DE JEFA Y SUPERVISOR) -->
   <!-- ===================================================================== -->
-  <div class="flex flex-col gap-4">
+  <div *ngIf="pestanaActiva === 'minuta'" class="flex flex-col gap-4">
 
     <!-- SELECTOR DE SEMANAS (1 A 4) Y FILTROS -->
     <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs flex flex-wrap items-center justify-between gap-3">
@@ -92,11 +111,11 @@
       </div>
     </div>
 
-    <!-- TARJETA DE LA SEMANA SELECCIONADA (Estilo Banco de Datos Superadmin) -->
+    <!-- TARJETA DE LA SEMANA SELECCIONADA -->
     <div *ngIf="semanaActualMinuta as semana"
       class="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs flex flex-col gap-4">
 
-      <!-- Encabezado Limpio e Institucional de la Semana -->
+      <!-- Encabezado con Estado de Aprobación Institucional -->
       <div class="flex items-center justify-between pb-3.5 border-b border-slate-100 flex-wrap gap-3">
         <div>
           <div class="flex items-center gap-2 flex-wrap">
@@ -112,6 +131,47 @@
             Sede: <strong class="text-slate-700">{{ sedeActualObj?.nombre_sede || 'Sede Principal' }}</strong> •
             Menús registrados para la sede.
           </p>
+        </div>
+
+        <!-- Bloque de Aprobación Institucional (Jefa de Cocina y Supervisor) -->
+        <div class="flex items-center gap-2 flex-wrap">
+          <!-- Aprobación Jefa -->
+          <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border"
+            [ngClass]="obtenerAprobacionSemana(semana.numeroSemana).aprobado_jefa
+              ? 'bg-emerald-50 text-emerald-900 border-emerald-300'
+              : 'bg-amber-50 text-amber-900 border-amber-300'">
+            <span class="w-2 h-2 rounded-full"
+              [ngClass]="obtenerAprobacionSemana(semana.numeroSemana).aprobado_jefa ? 'bg-emerald-500' : 'bg-amber-500'"></span>
+            <span>Jefa de Cocina:</span>
+            <span>{{ obtenerAprobacionSemana(semana.numeroSemana).aprobado_jefa ? 'Aprobado' : 'Pendiente' }}</span>
+          </div>
+
+          <!-- Aprobación Supervisor -->
+          <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border"
+            [ngClass]="obtenerAprobacionSemana(semana.numeroSemana).aprobado_supervisor
+              ? 'bg-emerald-50 text-emerald-900 border-emerald-300'
+              : 'bg-slate-50 text-slate-700 border-slate-300'">
+            <span class="w-2 h-2 rounded-full"
+              [ngClass]="obtenerAprobacionSemana(semana.numeroSemana).aprobado_supervisor ? 'bg-emerald-500' : 'bg-slate-400'"></span>
+            <span>Supervisor PAE:</span>
+            <span>{{ obtenerAprobacionSemana(semana.numeroSemana).aprobado_supervisor ? 'Aprobado' : 'Pendiente' }}</span>
+          </div>
+
+          <!-- Botón de acción para el Supervisor -->
+          <button *ngIf="esSupervisor && !obtenerAprobacionSemana(semana.numeroSemana).aprobado_supervisor"
+            type="button"
+            (click)="aprobarSemanaComoSupervisor(semana.numeroSemana)"
+            class="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-[#fac94b] hover:bg-amber-400 text-slate-950 border border-amber-400 cursor-pointer shadow-2xs transition">
+            Aprobar Minuta Semana {{ semana.numeroSemana }}
+          </button>
+
+          <!-- Botón de acción para la Jefa de Manipuladoras -->
+          <button *ngIf="esJefaManipuladoras && !obtenerAprobacionSemana(semana.numeroSemana).aprobado_jefa"
+            type="button"
+            (click)="aprobarSemanaComoJefa(semana.numeroSemana)"
+            class="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-slate-950 border border-amber-500 cursor-pointer shadow-2xs transition">
+            Dar Visto Bueno (Jefa)
+          </button>
         </div>
       </div>
 
@@ -157,7 +217,8 @@
                 
                 <!-- Si ya fue registrado -->
                 <div *ngIf="dia.tiene_menu_registrado"
-                  class="bg-white border border-amber-200/90 rounded-xl p-3 shadow-2xs flex flex-col items-center gap-1.5 text-center min-h-[74px] justify-center">
+                  (click)="abrirModalProgramarMenuDia(dia)"
+                  class="bg-white border border-amber-200/90 hover:border-amber-400 rounded-xl p-2.5 shadow-2xs flex flex-col items-center gap-1.5 text-center min-h-[74px] justify-center cursor-pointer transition group">
                   <!-- Momento del día (Desayuno, Almuerzo o Merienda) -->
                   <span
                     [ngClass]="dia.seccion === 'Desayuno'
@@ -171,12 +232,15 @@
                   <div class="font-extrabold text-slate-900 text-xs leading-snug">
                     {{ dia.nombre_plato }}
                   </div>
+                  <span class="text-[9.5px] text-amber-900 font-semibold group-hover:underline">Cambiar menú</span>
                 </div>
 
                 <!-- Si aún no ha sido seleccionado -->
                 <div *ngIf="!dia.tiene_menu_registrado"
-                  class="bg-slate-50/70 border border-dashed border-slate-300 rounded-xl p-3 flex flex-col items-center justify-center gap-1 text-center min-h-[74px]">
-                  <span class="text-xs text-slate-400 font-medium italic">Sin registrar</span>
+                  (click)="abrirModalProgramarMenuDia(dia)"
+                  class="bg-slate-50/70 hover:bg-amber-50/60 border border-dashed border-slate-300 hover:border-amber-400 rounded-xl p-2.5 flex flex-col items-center justify-center gap-1 text-center min-h-[74px] cursor-pointer transition">
+                  <span class="text-xs text-amber-900 font-bold">+ Asignar Menú</span>
+                  <span class="text-[10px] text-slate-400">Clic para programar</span>
                 </div>
               </td>
             </tr>
@@ -207,6 +271,709 @@
       </div>
     </div>
 
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- VISTA 2: CATÁLOGO DE PLATOS Y RECETAS (LA PANTALLA DE LA IMAGEN)      -->
+  <!-- ===================================================================== -->
+  <div *ngIf="pestanaActiva === 'platos'" class="flex flex-col gap-4">
+
+    <!-- Tarjeta Principal de Platos y Recetas -->
+    <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs flex flex-col gap-4">
+
+      <!-- Encabezado de la Tarjeta -->
+      <div class="flex items-center justify-between pb-3.5 border-b border-slate-100 flex-wrap gap-3">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-amber-100 border border-amber-300 text-amber-900 flex items-center justify-center font-black text-sm">
+            PAE
+          </div>
+          <div>
+            <h2 class="text-base font-extrabold text-slate-900 m-0">
+              Platos y Recetas
+            </h2>
+            <p class="text-xs text-slate-500 m-0 mt-0.5">
+              {{ catalogoPlatosVista.length }} platos y recetas en el sistema
+            </p>
+          </div>
+        </div>
+
+        <!-- Botón Crear Nuevo Plato (como estaba en Super Admin) -->
+        <button type="button" (click)="abrirModalCrearPlato()"
+          class="px-4 py-2 rounded-xl text-xs font-bold bg-[#fac94b] hover:bg-amber-400 text-slate-950 border border-amber-400 transition cursor-pointer shadow-2xs inline-flex items-center gap-1.5">
+          <span class="text-sm font-black">+</span>
+          <span>Crear nuevo plato</span>
+        </button>
+      </div>
+
+      <!-- Barra de Filtros: Buscador + Filtro por Momento (Exacto a Imagen 1) -->
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
+        <!-- Input de búsqueda -->
+        <div class="relative flex-1 w-full">
+          <input
+            type="text"
+            [(ngModel)]="busquedaPlatos"
+            placeholder="Ingresa el nombre del plato..."
+            class="w-full pl-3.5 pr-8 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-amber-400 bg-white"
+          />
+          <button *ngIf="busquedaPlatos" type="button" (click)="busquedaPlatos = ''"
+            class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs">
+            ✕
+          </button>
+        </div>
+
+        <!-- Filtro por Momento -->
+        <div class="flex items-center gap-1.5 shrink-0 self-start sm:self-auto">
+          <span class="text-xs font-semibold text-slate-600 mr-1">Momento:</span>
+          <button
+            type="button"
+            (click)="filtroMomentoPlatos = 'TODAS'"
+            [ngClass]="filtroMomentoPlatos === 'TODAS'
+              ? 'bg-[#fac94b] border-amber-400 text-slate-950 font-bold shadow-2xs'
+              : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'"
+            class="px-3.5 py-1 text-xs rounded-lg border transition cursor-pointer">
+            Todos
+          </button>
+          <button
+            type="button"
+            (click)="filtroMomentoPlatos = 'Desayuno'"
+            [ngClass]="filtroMomentoPlatos === 'Desayuno'
+              ? 'bg-[#fac94b] border-amber-400 text-slate-950 font-bold shadow-2xs'
+              : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'"
+            class="px-3.5 py-1 text-xs rounded-lg border transition cursor-pointer">
+            Desayuno
+          </button>
+          <button
+            type="button"
+            (click)="filtroMomentoPlatos = 'Almuerzo'"
+            [ngClass]="filtroMomentoPlatos === 'Almuerzo'
+              ? 'bg-[#fac94b] border-amber-400 text-slate-950 font-bold shadow-2xs'
+              : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'"
+            class="px-3.5 py-1 text-xs rounded-lg border transition cursor-pointer">
+            Almuerzo
+          </button>
+          <button
+            type="button"
+            (click)="filtroMomentoPlatos = 'Merienda'"
+            [ngClass]="filtroMomentoPlatos === 'Merienda'
+              ? 'bg-[#fac94b] border-amber-400 text-slate-950 font-bold shadow-2xs'
+              : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'"
+            class="px-3.5 py-1 text-xs rounded-lg border transition cursor-pointer">
+            Merienda
+          </button>
+        </div>
+      </div>
+
+      <!-- Tabla de Platos y Recetas (Sin líneas divisoras verticales, idéntica a Imagen 1) -->
+      <div class="overflow-x-auto">
+        <table class="w-full border-collapse text-left text-xs min-w-[860px]">
+          <thead>
+            <tr class="border-b border-slate-200 text-slate-700">
+              <th class="py-3 px-4 font-bold uppercase tracking-wider text-[11px] text-slate-600 w-64">
+                Nombre del Plato
+              </th>
+              <th class="py-3 px-4 font-bold uppercase tracking-wider text-[11px] text-slate-600 w-52">
+                Secciones / Momentos
+              </th>
+              <th class="py-3 px-4 font-bold uppercase tracking-wider text-[11px] text-slate-600">
+                Componentes del plato
+              </th>
+              <th class="py-3 px-4 font-bold uppercase tracking-wider text-[11px] text-slate-600 w-48 text-center">
+                Ingredientes y preparación
+              </th>
+              <th class="py-3 px-3 font-bold uppercase tracking-wider text-[11px] text-slate-600 w-16 text-center">
+                Acciones
+              </th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 text-slate-800">
+            <tr *ngFor="let plato of catalogoPlatosVista" class="hover:bg-amber-50/20 transition">
+              
+              <!-- Columna 1: Nombre del Plato -->
+              <td class="py-3.5 px-4 font-extrabold text-slate-900 text-xs">
+                {{ plato.nombre_plato }}
+              </td>
+
+              <!-- Columna 2: Secciones / Momentos (Pills exactas de Imagen 1) -->
+              <td class="py-3.5 px-4">
+                <div class="flex flex-wrap items-center gap-1.5">
+                  <ng-container *ngFor="let sec of plato.secciones">
+                    <span *ngIf="sec === 'Desayuno'"
+                      class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-sky-50 text-sky-700 border border-sky-300">
+                      Desayuno
+                    </span>
+                    <span *ngIf="sec === 'Almuerzo'"
+                      class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-300">
+                      Almuerzo
+                    </span>
+                    <span *ngIf="sec === 'Merienda'"
+                      class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-300">
+                      Merienda
+                    </span>
+                  </ng-container>
+                </div>
+              </td>
+
+              <!-- Columna 3: Componentes del plato -->
+              <td class="py-3.5 px-4">
+                <div class="flex flex-wrap items-center gap-1.5">
+                  <span *ngIf="plato.componentes?.bebida_leche && plato.componentes.bebida_leche !== '—'"
+                    class="px-2.5 py-0.5 rounded-md text-[11px] bg-slate-50 border border-slate-200 text-slate-700 max-w-[230px] truncate"
+                    [title]="plato.componentes.bebida_leche">
+                    <strong class="font-bold">Bebida con leche:</strong> {{ plato.componentes.bebida_leche }}
+                  </span>
+                  <span *ngIf="plato.componentes?.proteico && plato.componentes.proteico !== '—'"
+                    class="px-2.5 py-0.5 rounded-md text-[11px] bg-slate-50 border border-slate-200 text-slate-700 max-w-[230px] truncate"
+                    [title]="plato.componentes.proteico">
+                    <strong class="font-bold">Alimento proteico:</strong> {{ plato.componentes.proteico }}
+                  </span>
+                  <span *ngIf="plato.componentes?.cereal && plato.componentes.cereal !== '—'"
+                    class="px-2.5 py-0.5 rounded-md text-[11px] bg-slate-50 border border-slate-200 text-slate-700 max-w-[230px] truncate"
+                    [title]="plato.componentes.cereal">
+                    <strong class="font-bold">Cereal acompañante:</strong> {{ plato.componentes.cereal }}
+                  </span>
+                  <span *ngIf="plato.componentes?.fruta && plato.componentes.fruta !== '—'"
+                    class="px-2.5 py-0.5 rounded-md text-[11px] bg-slate-50 border border-slate-200 text-slate-700 max-w-[230px] truncate"
+                    [title]="plato.componentes.fruta">
+                    <strong class="font-bold">Fruta:</strong> {{ plato.componentes.fruta }}
+                  </span>
+                  <span *ngIf="plato.componentes?.agua && plato.componentes.agua !== '—' && plato.componentes.agua !== 'Agua' && plato.componentes.agua !== 'Agua potable tratada'"
+                    class="px-2 py-0.5 rounded-md text-[10.5px] bg-amber-100 text-amber-900 border border-amber-300 font-bold">
+                    +1 más
+                  </span>
+                </div>
+              </td>
+
+              <!-- Columna 4: Ingredientes y preparación -->
+              <td class="py-3.5 px-4 text-center">
+                <button
+                  type="button"
+                  (click)="abrirModalRecetaPlato(plato)"
+                  class="px-4 py-1.5 rounded-full text-xs font-bold text-amber-900 border border-amber-300 hover:bg-amber-50 cursor-pointer transition shadow-2xs">
+                  Configurar receta
+                </button>
+              </td>
+
+              <!-- Columna 5: Acciones (Botón circular ⋮ con Popover interactivo exacto a la imagen) -->
+              <td class="py-3.5 px-3 text-center">
+                <div class="row-actions-container">
+                  <button
+                    type="button"
+                    class="bd-action-trigger"
+                    (click)="toggleMenuAccion(plato.id_plato || plato.nombre_plato, $event)"
+                    title="Opciones"
+                    aria-label="Opciones del plato"
+                  >
+                    <span class="material-symbols-outlined" aria-hidden="true">more_vert</span>
+                  </button>
+
+                  <!-- Menú Desplegable Flotante -->
+                  <div
+                    *ngIf="menuAccionAbiertoId === (plato.id_plato || plato.nombre_plato)"
+                    class="bd-actions-menu"
+                    (click)="$event.stopPropagation()"
+                  >
+                    <button
+                      type="button"
+                      class="bd-menu-item"
+                      (click)="abrirModalVerReceta(plato); cerrarMenuAccion()"
+                    >
+                      <span class="material-symbols-outlined item-icon-sedes" aria-hidden="true">menu_book</span>
+                      <span>Ver receta</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      class="bd-menu-item"
+                      (click)="abrirModalRecetaPlato(plato); cerrarMenuAccion()"
+                    >
+                      <span class="material-symbols-outlined item-icon-edit" aria-hidden="true">edit</span>
+                      <span>Editar</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      class="bd-menu-item item-delete"
+                      (click)="eliminarPlato(plato, $event)"
+                    >
+                      <span class="material-symbols-outlined item-icon-delete" aria-hidden="true">delete</span>
+                      <span>Eliminar</span>
+                    </button>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL: CONFIGURAR RECETA Y COMPONENTES DEL MENÚ (IDÉNTICO A IMAGEN 2)  -->
+  <!-- ===================================================================== -->
+  <div *ngIf="modalRecetaPlatoAbierto" class="bd-modal-overlay" (click)="cerrarModalRecetaPlato()">
+    <div class="bd-modal-window bd-modal-window-menus" (click)="$event.stopPropagation()">
+      
+      <!-- Cabecera del Modal -->
+      <div class="bd-modal-head">
+        <div>
+          <span class="bd-modal-eyebrow">PLATOS Y RECETAS</span>
+          <h2 class="bd-modal-heading">
+            {{ modoEdicionReceta ? 'Configurar receta y componentes del menú' : 'Nuevo menú / plato del ciclo PAE' }}
+          </h2>
+        </div>
+        <button type="button" class="bd-modal-close-btn" (click)="cerrarModalRecetaPlato()" title="Cerrar">
+          ✕
+        </button>
+      </div>
+
+      <!-- Cuerpo del Modal -->
+      <div class="bd-modal-content bd-menus-modal-body">
+        
+        <!-- 1. Información del plato global (Exacto a Imagen 2) -->
+        <div class="bd-menus-section-box">
+          <div class="bd-menus-section-header">
+            <div>
+              <h3 class="bd-menus-section-title">Información del plato global</h3>
+              <p class="bd-menus-section-sub">Define el nombre del plato que estará disponible de forma global para las instituciones.</p>
+            </div>
+          </div>
+
+          <div class="bd-field-box">
+            <label class="bd-field-label">
+              Nombre del plato <span class="bd-required-asterisk">*</span>
+            </label>
+            <input
+              type="text"
+              name="menu_nombre_plato"
+              class="bd-field-input"
+              [(ngModel)]="menuRecetaForm.nombre_plato"
+              placeholder="Ingresa el nombre del plato"
+              autocomplete="off"
+            />
+          </div>
+
+          <!-- Secciones de menú aplicables idénticas a Super Admin -->
+          <div class="bd-field-box">
+            <label class="bd-field-label">
+              Secciones de menú aplicables <span class="bd-required-asterisk">*</span>
+              <span class="text-[11px] font-normal text-slate-500 ml-1.5">(Selecciona una o más secciones para este plato)</span>
+            </label>
+
+            <div class="flex flex-wrap gap-2 pt-1">
+              <button
+                *ngFor="let momento of momentosPlatoOpciones"
+                type="button"
+                (click)="toggleMomentoEnPlatoForm(momento)"
+                [ngClass]="platoAplicaMomento(momento)
+                  ? 'bg-amber-100 text-amber-950 border-amber-400 font-bold shadow-2xs'
+                  : 'bg-white hover:bg-slate-50 text-slate-600 border-slate-200 font-medium'"
+                class="px-3.5 py-1.5 rounded-xl text-xs border transition cursor-pointer inline-flex items-center gap-1.5"
+              >
+                <span>{{ momento }}</span>
+                <span
+                  *ngIf="platoAplicaMomento(momento)"
+                  class="w-4 h-4 rounded-full bg-amber-500 text-slate-950 text-[10px] inline-flex items-center justify-center font-black"
+                >
+                  ✓
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Componentes del plato, ingredientes y preparación -->
+        <div class="bd-menus-section-box">
+          <div class="bd-menus-section-header bd-menus-section-header-between">
+            <div class="bd-menus-section-header-left">
+              <div>
+                <h3 class="bd-menus-section-title">Componentes del plato, ingredientes y preparación</h3>
+                <p class="bd-menus-section-sub">
+                  Registra cada componente por separado (proteico, cereal, bebida, sopa o fruta).
+                </p>
+              </div>
+            </div>
+
+            <button type="button" class="bd-btn-add-comp" (click)="agregarComponenteAlPlato()">
+              <span class="text-base font-black">+</span>
+              <span>Añadir componente</span>
+            </button>
+          </div>
+
+          <!-- Lista de tarjetas de componentes -->
+          <div class="bd-componentes-list">
+            <div
+              *ngFor="let comp of menuRecetaForm.componentes; trackBy: trackByCompId; let idxComp = index"
+              class="bd-comp-card"
+            >
+              <!-- Cabecera del componente -->
+              <div class="bd-comp-card-head">
+                <div class="bd-comp-badge-num">Componente {{ idxComp + 1 }}</div>
+
+                <div class="bd-comp-head-fields">
+                  <div class="bd-field-box">
+                    <label class="bd-field-label">Categoría del componente <span class="bd-required-asterisk">*</span></label>
+                    <app-custom-select
+                      [name]="'comp_tipo_' + comp.id_temporal"
+                      [options]="tiposComponentePAE"
+                      valueField="id"
+                      labelField="label"
+                      placeholder="Categoría…"
+                      [(ngModel)]="comp.tipo_componente"
+                    ></app-custom-select>
+                  </div>
+
+                  <div class="bd-field-box">
+                    <label class="bd-field-label">Nombre de la preparación / componente <span class="bd-required-asterisk">*</span></label>
+                    <input
+                      type="text"
+                      [name]="'comp_nombre_' + comp.id_temporal"
+                      class="bd-field-input"
+                      [(ngModel)]="comp.nombre_componente"
+                      (blur)="onNombreComponenteChange(comp)"
+                      placeholder="Ej: Refresco de avena, Huevos pericos…"
+                    />
+                  </div>
+
+                  <div class="bd-field-box" *ngIf="opcionesComponentesReutilizables.length > 0">
+                    <label class="bd-field-label">Reutilizar receta guardada (Opcional)</label>
+                    <app-custom-select
+                      [name]="'comp_reutilizar_' + comp.id_temporal"
+                      [options]="opcionesComponentesReutilizables"
+                      valueField="id"
+                      labelField="label"
+                      placeholder="Copiar ingredientes y pasos de…"
+                      [allowClear]="true"
+                      [ngModel]="''"
+                      (ngModelChange)="reutilizarComponenteGuardado(comp, $event)"
+                    ></app-custom-select>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  class="bd-comp-delete-btn"
+                  (click)="eliminarComponenteDelPlato(idxComp)"
+                  title="Eliminar este componente"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <!-- Cuerpo del componente en 2 columnas: Ingredientes | Pasos de preparación -->
+              <div class="bd-comp-card-split">
+                
+                <!-- COLUMNA A: INGREDIENTES DEL COMPONENTE -->
+                <div class="bd-comp-subbox">
+                  <div class="bd-comp-subbox-head">
+                    <div>
+                      <h4 class="bd-comp-subbox-title">Ingredientes de este componente</h4>
+                      <span class="bd-comp-subbox-caption">Selecciona los insumos del inventario que se usan para preparar {{ comp.nombre_componente || 'este componente' }}.</span>
+                    </div>
+                  </div>
+
+                  <!-- Selector para agregar ingrediente -->
+                  <div class="bd-ing-adder-row">
+                    <div class="bd-ing-select-col">
+                      <app-custom-select
+                        [name]="'ing_sel_' + comp.id_temporal"
+                        [options]="opcionesIngredientes"
+                        valueField="id"
+                        labelField="label"
+                        placeholder="Buscar ingrediente del inventario…"
+                        [allowClear]="true"
+                        [(ngModel)]="comp.ingredienteTempId"
+                      ></app-custom-select>
+                    </div>
+
+                    <div class="bd-ing-obs-input">
+                      <input
+                        type="text"
+                        class="bd-field-input"
+                        [name]="'ing_obs_' + comp.id_temporal"
+                        placeholder="Uso u obs. (ej: para el guiso…)"
+                        [(ngModel)]="comp.observacionTemp"
+                        (keyup.enter)="agregarIngredienteAComponente(comp)"
+                      />
+                    </div>
+
+                    <button
+                      type="button"
+                      class="bd-btn-add-ing"
+                      (click)="agregarIngredienteAComponente(comp)"
+                    >
+                      <span>+</span>
+                      <span>Agregar</span>
+                    </button>
+                  </div>
+
+                  <!-- Lista de ingredientes agregados a este componente -->
+                  <div class="bd-ing-chips-list" *ngIf="comp.ingredientes.length > 0">
+                    <div
+                      *ngFor="let ing of comp.ingredientes; let idxIng = index"
+                      class="bd-ing-chip-item"
+                    >
+                      <div class="bd-ing-chip-info">
+                        <span class="text-emerald-600 font-bold">•</span>
+                        <span class="bd-ing-chip-name">{{ ing.nombre_ingrediente }}</span>
+                        <span class="bd-ing-chip-obs" *ngIf="ing.observacion">({{ ing.observacion }})</span>
+                      </div>
+                      <button
+                        type="button"
+                        class="bd-ing-chip-remove"
+                        (click)="quitarIngredienteDeComponente(comp, idxIng)"
+                        title="Quitar ingrediente"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+
+                  <p class="bd-subbox-empty" *ngIf="comp.ingredientes.length === 0">
+                    Aún no has agregado ingredientes a este componente.
+                  </p>
+                </div>
+
+                <!-- COLUMNA B: PASOS DE PREPARACIÓN -->
+                <div class="bd-comp-subbox">
+                  <div class="bd-comp-subbox-head">
+                    <div>
+                      <h4 class="bd-comp-subbox-title">Pasos de preparación</h4>
+                      <span class="bd-comp-subbox-caption">Describe paso a paso cómo preparar {{ comp.nombre_componente || 'este componente' }}.</span>
+                    </div>
+                  </div>
+
+                  <!-- Lista de pasos -->
+                  <div class="bd-pasos-list">
+                    <div
+                      *ngFor="let paso of comp.pasos; let idxPaso = index"
+                      class="bd-paso-item-row"
+                    >
+                      <span class="bd-paso-num-badge">{{ paso.numero_paso }}</span>
+                      
+                      <input
+                        type="text"
+                        class="bd-field-input bd-paso-input"
+                        [name]="'paso_' + comp.id_temporal + '_' + idxPaso"
+                        [(ngModel)]="paso.descripcion_paso"
+                        [placeholder]="'Paso ' + paso.numero_paso + ': Ej. Lavar y picar los ingredientes…'"
+                      />
+
+                      <div class="bd-paso-actions">
+                        <button
+                          type="button"
+                          class="bd-paso-btn"
+                          (click)="moverPasoComponente(comp, idxPaso, -1)"
+                          [disabled]="idxPaso === 0"
+                          title="Subir paso"
+                        >
+                          ↑
+                        </button>
+                        <button
+                          type="button"
+                          class="bd-paso-btn"
+                          (click)="agregarPasoAComponente(comp)"
+                          title="Añadir paso debajo"
+                        >
+                          +
+                        </button>
+                        <button
+                          type="button"
+                          class="bd-paso-btn bd-paso-btn-del"
+                          (click)="quitarPasoDeComponente(comp, idxPaso)"
+                          title="Eliminar paso"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    class="bd-btn-add-step"
+                    (click)="agregarPasoAComponente(comp)"
+                  >
+                    <span>+</span>
+                    <span>Añadir otro paso</span>
+                  </button>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Pie del Modal -->
+      <div class="bd-modal-foot">
+        <button type="button" class="bd-modal-btn-cancel" (click)="cerrarModalRecetaPlato()">Cancelar</button>
+        <button type="button" class="bd-btn-save" (click)="guardarRecetaPlato()" [disabled]="guardandoReceta">
+          <span>✓</span>
+          <span>{{ guardandoReceta ? 'Guardando…' : 'Guardar cambios' }}</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL: VER FICHA TÉCNICA / RECETA COMPLETA                           -->
+  <!-- ===================================================================== -->
+  <div *ngIf="modalVerRecetaAbierto && platoVerReceta" class="bd-modal-overlay" (click)="cerrarModalVerReceta()">
+    <div class="bd-modal-window bd-modal-window-menus" (click)="$event.stopPropagation()">
+      <div class="bd-modal-head">
+        <div>
+          <span class="bd-modal-eyebrow">RECETA GLOBAL PAE</span>
+          <h2 class="bd-modal-heading">{{ platoVerReceta.nombre_plato }}</h2>
+        </div>
+        <button type="button" class="bd-modal-close-btn" (click)="cerrarModalVerReceta()" title="Cerrar">
+          ✕
+        </button>
+      </div>
+
+      <div class="bd-modal-content bd-receta-viewer-body">
+        <!-- Resumen superior de componentes, ingredientes y pasos -->
+        <div class="bd-receta-hero-card">
+          <div class="bd-receta-hero-info">
+            <div class="bd-receta-stats-row">
+              <span><strong>{{ (platoVerReceta.componentes_estructurados || []).length }}</strong> componentes</span>
+              <span>•</span>
+              <span><strong>{{ (platoVerReceta.ingredientes || []).length }}</strong> ingredientes asociados</span>
+              <span>•</span>
+              <span><strong>{{ (platoVerReceta.pasos || []).length }}</strong> pasos de preparación</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Desglose por cada componente -->
+        <div class="bd-receta-comp-grid">
+          <div *ngFor="let comp of (platoVerReceta.componentes_estructurados || []); let i = index" class="bd-receta-comp-card">
+            <div class="bd-receta-comp-header">
+              <span class="bd-comp-badge-num">{{ comp.tipo_componente }}</span>
+              <h4 class="bd-receta-comp-name">{{ comp.nombre_componente }}</h4>
+            </div>
+
+            <div class="bd-receta-comp-columns">
+              <div>
+                <h5 class="bd-receta-subtitle">Ingredientes (para inventario)</h5>
+                <ul class="bd-receta-ing-list" *ngIf="comp.ingredientes?.length > 0">
+                  <li *ngFor="let ing of comp.ingredientes">
+                    <strong>{{ ing.nombre_ingrediente }}</strong>
+                    <span *ngIf="ing.unidad" class="bd-ing-chip-unit">{{ ing.unidad }}</span>
+                    <span *ngIf="ing.observacion" class="bd-ing-chip-obs"> — {{ ing.observacion }}</span>
+                  </li>
+                </ul>
+                <p *ngIf="!comp.ingredientes?.length" class="bd-subbox-empty">Sin ingredientes registrados aún.</p>
+              </div>
+
+              <div>
+                <h5 class="bd-receta-subtitle">Pasos de preparación</h5>
+                <ol class="bd-receta-pasos-list" *ngIf="comp.pasos?.length > 0 && comp.pasos[0]?.descripcion_paso">
+                  <ng-container *ngFor="let p of comp.pasos">
+                    <li *ngIf="p.descripcion_paso">{{ p.descripcion_paso }}</li>
+                  </ng-container>
+                </ol>
+                <p *ngIf="!comp.pasos?.length || !comp.pasos[0]?.descripcion_paso" class="bd-subbox-empty">
+                  Sin pasos de preparación registrados aún.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bd-modal-foot">
+        <button type="button" class="bd-modal-btn-cancel" (click)="cerrarModalVerReceta()">Cerrar</button>
+        <button type="button" class="bd-btn-save" (click)="abrirModalRecetaPlato(platoVerReceta); cerrarModalVerReceta()">
+          <span>Configurar receta y componentes</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL: PROGRAMAR MENÚ DEL DÍA PARA LA SEDE                            -->
+  <!-- ===================================================================== -->
+  <div *ngIf="mostrarModalProgramarDia"
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
+    <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 flex flex-col gap-4">
+      
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div>
+          <h3 class="text-base font-extrabold text-slate-900 m-0">
+            Programar Menú del Día — Menú {{ programarDiaForm.numero_menu_ciclo }}
+          </h3>
+          <p class="text-xs text-slate-500 m-0 mt-0.5">
+            Sede: {{ sedeActualObj?.nombre_sede || sedeActualObj?.nombre || 'Sede seleccionada' }}
+          </p>
+        </div>
+        <button type="button" (click)="mostrarModalProgramarDia = false"
+          class="text-slate-400 hover:text-slate-600 text-sm font-bold p-1 cursor-pointer">
+          ✕
+        </button>
+      </div>
+
+      <!-- Momento que maneja esta sede -->
+      <div class="flex flex-col gap-1.5">
+        <label class="text-xs font-bold text-slate-700">
+          Momento de entrega en la sede
+        </label>
+        <div class="flex flex-wrap gap-2">
+          <button *ngFor="let mom of obtenerMomentosDeSede(sedeSeleccionadaId)"
+            type="button"
+            (click)="programarDiaForm.id_seccion = (mom === 'Desayuno' ? 1 : (mom === 'Merienda' ? 3 : 2))"
+            [ngClass]="(programarDiaForm.id_seccion === 1 && mom === 'Desayuno') || (programarDiaForm.id_seccion === 2 && mom === 'Almuerzo') || (programarDiaForm.id_seccion === 3 && mom === 'Merienda')
+              ? 'bg-[#fac94b] text-slate-950 font-bold border-amber-400 shadow-2xs'
+              : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200 font-medium'"
+            class="px-3.5 py-1.5 rounded-xl text-xs border transition cursor-pointer">
+            {{ mom }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Plato a Programar -->
+      <div class="flex flex-col gap-1.5">
+        <label class="text-xs font-bold text-slate-700">
+          Plato o Menú estipulado para este día
+        </label>
+        <select [(ngModel)]="programarDiaForm.nombre_plato"
+          (change)="onPlatoSeleccionadoEnSelect()"
+          class="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-amber-400 bg-white font-semibold">
+          <option value="">-- Elige un plato del catálogo PAE --</option>
+          <option *ngFor="let p of catalogoPlatosVista" [value]="p.nombre_plato">
+            {{ p.nombre_plato }} ({{ p.secciones?.join(', ') }})
+          </option>
+        </select>
+      </div>
+
+      <!-- Componentes automáticos del plato seleccionado -->
+      <div *ngIf="programarDiaForm.nombre_plato" class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex flex-col gap-2">
+        <span class="text-xs font-bold text-slate-800">Componentes del plato:</span>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-700">
+          <div><span class="font-semibold text-slate-900">Bebida con leche:</span> {{ programarDiaForm.bebida_leche || '—' }}</div>
+          <div><span class="font-semibold text-slate-900">Alimento proteico:</span> {{ programarDiaForm.proteico || '—' }}</div>
+          <div><span class="font-semibold text-slate-900">Cereal acompañante:</span> {{ programarDiaForm.cereal || '—' }}</div>
+          <div><span class="font-semibold text-slate-900">Fruta:</span> {{ programarDiaForm.fruta || '—' }}</div>
+        </div>
+      </div>
+
+      <!-- Botones de Acción -->
+      <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+        <button type="button" (click)="mostrarModalProgramarDia = false"
+          class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition cursor-pointer">
+          Cancelar
+        </button>
+        <button type="button" (click)="guardarProgramacionDiaSede()"
+          class="px-5 py-2 rounded-xl text-xs font-bold bg-[#fac94b] hover:bg-amber-400 text-slate-950 border border-amber-400 transition cursor-pointer shadow-2xs">
+          Guardar Menú del Día
+        </button>
+      </div>
+
+    </div>
   </div>
 
 </div>

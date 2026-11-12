@@ -221,7 +221,7 @@ export const routes: Routes = [
         path: 'menus',
         component: MenusComponent,
         canActivate: [roleGuard],
-        data: { roles: ['superadministrador', 'super administrador', 'super admin', 'jefa de manipuladoras', 'jefa manipuladoras', 'jefamanipuladoras', 'administrador', 'admin'] }
+        data: { roles: ['superadministrador', 'super administrador', 'super admin', 'supervisor', 'coordinador', 'coordinador pae', 'jefa de manipuladoras', 'jefa manipuladoras', 'jefamanipuladoras', 'administrador', 'admin'] }
       },
 
       {

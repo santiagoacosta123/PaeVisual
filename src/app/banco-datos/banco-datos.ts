@@ -331,20 +331,6 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       ]
     },
     {
-      id: 'menus',
-      nombre: 'Platos y Recetas',
-      singular: 'plato',
-      icon: 'restaurant_menu',
-      idField: 'id_plato',
-      categoria: 'operacion',
-      campos: [
-        { name: 'nombre_plato', label: 'Nombre del Plato', type: 'text', required: true, placeholder: 'Ej: Menú 1: Pericos con arroz' },
-        { name: 'secciones_texto', label: 'Secciones / Momentos', type: 'text' },
-        { name: 'componente', label: 'Componentes del plato', type: 'text', required: true },
-        { name: 'resumen_receta', label: 'Ingredientes y preparación', type: 'text' }
-      ]
-    },
-    {
       id: 'turnos',
       nombre: 'Turnos',
       singular: 'turno',
