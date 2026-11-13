@@ -1,3 +1,4 @@
+
 import { ChangeDetectorRef, Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -10,7 +11,13 @@ import { SweetAlertService } from '../sweet-alert.service';
 import { EntregasService } from '../services/entregas.service';
 import { AuthService, InstitucionAsignada } from '../core/auth/auth.service';
 import { FacturasCompraService, InventarioCentralItem } from '../services/facturas-compra.service';
-import type { TipoMercadoOpcion } from '../features/entregas/services/entregas.service';
+import type {
+  TipoMercadoOpcion,
+  CalculoAbastecimientoResponse,
+  CalculoEntregaSoporte,
+  ProductoCalculado,
+  DespachoLotePayload,
+} from '../features/entregas/services/entregas.service';
 
 // ===================== TIPOS =====================
 interface Opcion { id: number; nombre: string; }
@@ -27,6 +34,8 @@ interface FilaEntrega {
   cantidadRechazada?: number | null;
   motivoRechazo?: string;
   usuarioReceptorNombre?: string;
+  documentoEntrega?: string;
+  idCalculoEntrega?: number;
 }
 
 interface ProductoCatalogo {
@@ -67,6 +76,30 @@ interface GrupoEntrada {
   responsable: string; items: FilaEntrega[]; productos: ResumenEntradaProducto[];
   estadoAprobacion?: 'ACEPTADA' | 'RECHAZADA' | 'CON_NOVEDAD' | 'EN_PROCESO';
   motivoRechazo?: string;
+  documentoEntrega?: string;
+  idCalculoEntrega?: number;
+  primerIdEntrega?: number;
+}
+interface EnvioConfirmado {
+  id?: number;
+  id_temporal: number;
+  id_institucion: number;
+  id_sede?: number;
+  id_ingrediente: number;
+  id_tipo_mercado: number;
+  ingrediente_nombre: string;
+  cantidad: number;
+  unidad: string;
+  fecha_entrega: string;
+  fecha_salida: string;
+  fecha_vencimiento: string;
+  frecuencia: string;
+  destino: string;
+  responsable: string;
+  created_at: string;
+  lote_registro: string;
+  documento_entrega?: string;
+  id_calculo_entrega?: number;
 }
 interface GrupoEnvio { clave: string; destino: string; fechaSalida: string; fechaEntrega: string; responsable: string; items: EnvioRegistro[]; }
 
@@ -108,7 +141,11 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
   private readonly urlEntregas = `${environment.apiUrl}/entregas/`;
   cargandoHistorial = false;
   errorHistorial = false;
-  private entregasRaw: any[] = [];          // solo ENTRADAS (sin fecha_salida)
+  private entregasRaw: any[] = [];
+  private readonly claveEnviosPendientes = 'sirae_envios_confirmados_pendientes';
+  private enviosPendientes: EnvioConfirmado[] = this.leerCache<EnvioConfirmado[]>(this.claveEnviosPendientes) ?? [];
+  private ultimaConsultaHistorial = 0;
+  private idEnvioTemporal = 0;
   historial: FilaEntrega[] = [];
   historialEnvios: EnvioRegistro[] = [];
 
@@ -157,7 +194,10 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       const anterior = this.idInstitucion;
       this.institucionActiva = institucion;
       this.idInstitucion = institucion?.id_institucion ?? this.authService.obtenerUsuario()?.id_institucion ?? null;
-      if (anterior !== this.idInstitucion) this.cargarHistorial();
+      if (anterior !== this.idInstitucion) {
+        this.cargarHistorial();
+        this.actualizarCalculoAbastecimiento();
+      }
       this.cdr.markForCheck();
     });
 
@@ -166,6 +206,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       if (nuevaSede !== this.idSede) {
         this.idSede = nuevaSede;
         this.cargarHistorial();
+        this.actualizarCalculoAbastecimiento();
         this.cdr.markForCheck();
       }
     });
@@ -173,7 +214,11 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     this.subRuta = this.route.queryParamMap.subscribe(params => {
       const sede = Number(params.get('sede'));
       const idSede = Number.isInteger(sede) && sede > 0 ? sede : null;
-      if (idSede !== this.idSede) { this.idSede = idSede; this.cargarHistorial(); }
+      if (params.has('sede') && idSede !== this.idSede) {
+        this.idSede = idSede;
+        this.cargarHistorial();
+        this.actualizarCalculoAbastecimiento();
+      }
       const reponer = params.get('reponer');
       if (reponer) { this.textoFiltro = reponer; }
       this.cdr.markForCheck();
@@ -200,6 +245,8 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     this.subInstitucion?.unsubscribe();
     this.subSede?.unsubscribe();
     this.subRuta?.unsubscribe();
+    this.subCalculoAbastecimiento?.unsubscribe();
+    this.subSoporteCalculo?.unsubscribe();
     if (this.reloj !== undefined) clearInterval(this.reloj);
 
     // ===== NUEVO =====
@@ -212,7 +259,8 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
 
   @HostListener('document:keydown.escape')
   alPresionarEsc(): void {
-    if (this.detalleEntrada) this.cerrarDetalleEntrada();
+    if (this.mostrarModalSoporte) this.mostrarModalSoporte = false;
+    else if (this.detalleEntrada) this.cerrarDetalleEntrada();
     else if (this.mostrarModalInventario) this.mostrarModalInventario = false;
     else if (this.mostrarModalEntrada && !this.guardandoEntrada) this.mostrarModalEntrada = false;
     else this.modalDiaAbierto = false;
@@ -459,28 +507,66 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     this.errorHistorial = false;
 
     const idPedido = this.idInstitucion, sedePedida = this.idSede;
+    const consulta = ++this.ultimaConsultaHistorial;
+    const esConsultaActual = () => consulta === this.ultimaConsultaHistorial
+      && idPedido === this.idInstitucion && sedePedida === this.idSede;
     let params = new HttpParams();
     if (idPedido != null) params = params.set('id_institucion', idPedido);
     if (sedePedida != null) params = params.set('id_sede', sedePedida);
 
-    this.http.get<any>(this.urlEntregas, { params }).pipe(
-      map(d => this.soloDeInstitucion(Array.isArray(d) ? d : (d?.results ?? []))),
-    ).subscribe({
-      next: lista => {
-        if (idPedido !== this.idInstitucion || sedePedida !== this.idSede) return;   // llegó tarde
-        this.historialEnvios = this.registrosEnvioDe(lista.filter(i => this.esEnvio(i)));
-        this.entregasRaw = lista;
-        this.reconstruirHistorial();
+    this.http.get<any>(this.urlEntregas, { params }).subscribe({
+      next: respuesta => {
+        if (!esConsultaActual()) return;
+        const datos = Array.isArray(respuesta) ? respuesta
+          : respuesta?.results ?? respuesta?.data ?? respuesta?.entregas ?? [];
+        const lista = this.soloDeInstitucion(Array.isArray(datos) ? datos : []);
+        this.aplicarHistorial(this.conciliarEnvios(lista));
         this.cargandoHistorial = false;
         this.cdr.markForCheck();
       },
       error: error => {
+        if (!esConsultaActual()) return;
         console.error('Error al consultar entregas:', error);
         this.cargandoHistorial = false;
         this.errorHistorial = this.entregasRaw.length === 0;
         this.cdr.markForCheck();
       },
     });
+  }
+
+  private aplicarHistorial(lista: any[]): void {
+    this.entregasRaw = lista;
+    this.historialEnvios = this.registrosEnvioDe(lista.filter(item => this.esEnvio(item)));
+    this.reconstruirHistorial();
+  }
+
+  private conciliarEnvios(lista: any[]): any[] {
+    const pendientes = this.enviosPendientes.filter(envio =>
+      envio.id_institucion === this.idInstitucion && (this.idSede == null || envio.id_sede === this.idSede));
+    const porId = new Map(pendientes.filter(envio => envio.id != null).map(envio => [envio.id, envio]));
+    const confirmados = new Set<EnvioConfirmado>();
+    const servidor = lista.map(item => {
+      const envio = porId.get(Number(item.id_entrega ?? item.id));
+      if (!envio) return item;
+      confirmados.add(envio);
+      return {
+        ...envio,
+        ...item,
+        fecha_salida: item.fecha_salida || envio.fecha_salida,
+        destino: item.destino || envio.destino,
+        responsable: item.responsable || item.responsable_nombre || envio.responsable,
+        documento_entrega: item.documento_entrega || envio.documento_entrega,
+        id_calculo_entrega: item.id_calculo_entrega ?? envio.id_calculo_entrega,
+      };
+    });
+    if (confirmados.size) {
+      this.enviosPendientes = this.enviosPendientes.filter(envio => !confirmados.has(envio));
+      this.guardarCache(this.claveEnviosPendientes, this.enviosPendientes.filter(envio => envio.id != null));
+    }
+    return [
+      ...pendientes.filter(envio => envio.id != null && !confirmados.has(envio)),
+      ...servidor,
+    ];
   }
 
   // ===== NUEVO: también refresca el modal de detalle si está abierto =====
@@ -568,7 +654,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     const receptorNombre = item.usuario_receptor_nombre || recepcionAdmin?.usuario_receptor_nombre || '';
 
     return {
-      id: item.id ?? item.id_entrega, idIngrediente: idIng, idTipoMercado: idTip, ingrediente, tipoMercado,
+      id: item.id_entrega ?? item.id, idIngrediente: idIng, idTipoMercado: idTip, ingrediente, tipoMercado,
       categoria: perecedero ? 'Perecederos' : 'Granos',
       frecuencia: item.frecuencia || '',
       cantidad: Number(item.cantidad) || 0,
@@ -588,6 +674,8 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       cantidadRechazada: cantRech,
       motivoRechazo: motRech,
       usuarioReceptorNombre: receptorNombre,
+      documentoEntrega: this.texto(item.documento_entrega ?? item.documentoEntrega),
+      idCalculoEntrega: Number(item.id_calculo_entrega ?? item.idCalculoEntrega) || undefined,
     };
   }
 
@@ -603,10 +691,10 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       if ((idInst == null || idInst === '') && !nombre) return [];
 
       return [{
-        id: Number(item.id_entrega ?? item.id ?? index),
+        id: Number(item.id_entrega ?? item.id ?? item.id_temporal ?? index),
         idInstitucion: idInst == null ? null : Number(idInst),
-        ingrediente: item.ingrediente_nombre || nombreRef(item.ingrediente)
-          || this.ingredientes.find(i => i.id === Number(item.ingrediente))?.nombre || '',
+        ingrediente: item.ingrediente_nombre || item.nombre_ingrediente || nombreRef(item.ingrediente)
+          || this.ingredientes.find(i => i.id === Number(item.id_ingrediente ?? item.ingrediente))?.nombre || '',
         cantidad: item.cantidad == null || item.cantidad === '' ? 0 : Number(item.cantidad),
         unidad: item.unidad ?? '',
         // Primero lo que escribió quien envió; "usuario" (quien inició sesión) solo como último recurso
@@ -649,6 +737,11 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       }
       g.responsable ||= e.responsable || '';
       g.hora ||= e.hora || '';
+      if (!g.primerIdEntrega && e.id && (e.documentoEntrega || e.idCalculoEntrega)) {
+        g.primerIdEntrega = e.id;
+        g.documentoEntrega = e.documentoEntrega;
+        g.idCalculoEntrega = e.idCalculoEntrega;
+      }
       g.items.push(e);
     }
 
@@ -1228,13 +1321,111 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
 
   cancelarDeslizar(): void { this.swipeInicio = null; this.swipeId = null; this.swipeDx = 0; }
 
+  private calculoAbastecimiento: CalculoAbastecimientoResponse | null = null;
+  private subCalculoAbastecimiento?: Subscription;
+  private subSoporteCalculo?: Subscription;
+  autorizacionExceso = false;
+  autorizadoPor = '';
+  justificacionExceso = '';
+  mostrarModalSoporte = false;
+  cargandoSoporte = false;
+  soporteSeleccionado: CalculoEntregaSoporte | null = null;
+
+  private actualizarCalculoAbastecimiento(): void {
+    this.subCalculoAbastecimiento?.unsubscribe();
+    this.calculoAbastecimiento = null;
+    this.limpiarAutorizacionExceso();
+    if (this.idSede == null) return;
+
+    this.subCalculoAbastecimiento = this.entregasService.calcularMercado({
+      id_sede: this.idSede,
+      id_institucion: this.idInstitucion,
+      id_jornada: null,
+      dias_perecederos: null,
+      dias_no_perecederos: null,
+      incluir_todos_gramajes: false,
+    }).subscribe({
+      next: calculo => {
+        this.calculoAbastecimiento = calculo;
+        this.cdr.markForCheck();
+      },
+      error: error => {
+        console.error('No se pudo consultar el cálculo de abastecimiento:', error);
+      },
+    });
+  }
+
+  private limpiarAutorizacionExceso(): void {
+    this.autorizacionExceso = false;
+    this.autorizadoPor = '';
+    this.justificacionExceso = '';
+  }
+
+  calculadoDe(sel: FilaEntrega): ProductoCalculado | null {
+    return this.calculoAbastecimiento?.productos_sugeridos?.find(p => p.id_ingrediente === sel.idIngrediente) ?? null;
+  }
+
+  get itemsConExcesoCalculo(): Array<{ sel: FilaEntrega; enviado: number; requerido: number }> {
+    if (!this.calculoAbastecimiento) return [];
+    const salida: Array<{ sel: FilaEntrega; enviado: number; requerido: number }> = [];
+    for (const sel of this.productosParaEnviar) {
+      const enviado = this.cantidadEnviarDe(sel);
+      const calc = this.calculadoDe(sel);
+      const requerido = calc ? Number(calc.cantidad_sugerida_despacho ?? 0) : 0;
+      if (enviado > requerido + 0.0001) {
+        salida.push({ sel, enviado, requerido });
+      }
+    }
+    return salida;
+  }
+
+  verSoporteCalculoPorEntrega(idEntrega?: number): void {
+    if (!idEntrega) return;
+    this.subSoporteCalculo?.unsubscribe();
+    this.cargandoSoporte = true;
+    this.mostrarModalSoporte = true;
+    this.soporteSeleccionado = null;
+    this.subSoporteCalculo = this.entregasService.obtenerSoporteCalculoPorEntrega(idEntrega).subscribe({
+      next: soporte => {
+        this.soporteSeleccionado = soporte;
+        this.cargandoSoporte = false;
+        this.cdr.markForCheck();
+      },
+      error: err => {
+        this.cargandoSoporte = false;
+        this.mostrarModalSoporte = false;
+        void this.alertas.error('Soporte no disponible', this.describirError(err));
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
   // ===================== ENVÍO DESDE EL PANEL (un botón para uno o varios productos) =====================
   private cantidadesEnviar: Record<number, number | null> = {};
   errorEnvioPanel = '';
   guardandoEnvio = false;
 
-  // La fecha del envío es siempre la de hoy y se pone sola; el responsable es el usuario con sesión iniciada
-  get envioFecha(): string { return this.fechaHoy(); }
+  // Valores automáticos del envío, con opción de asignarlos desde el componente.
+  private fechaEnvioAsignada: string | null = null;
+  private responsableEnvioAsignado: string | null = null;
+
+  get envioFecha(): string {
+    return this.fechaEnvioAsignada ?? this.fechaHoy();
+  }
+
+  set envioFecha(valor: string) {
+    this.fechaEnvioAsignada = valor;
+  }
+
+  get envioResponsable(): string {
+    const usuario: any = this.authService.obtenerUsuario();
+    return this.responsableEnvioAsignado
+      ?? usuario?.nombre ?? usuario?.username ?? usuario?.first_name ?? 'Sistema';
+  }
+
+  set envioResponsable(valor: string) {
+    this.responsableEnvioAsignado = valor;
+  }
 
   disponibleDe(sel: FilaEntrega): number {
     return sel.idIngrediente == null ? 0 : this.saldosInventario.get(sel.idIngrediente) ?? 0;
@@ -1275,6 +1466,18 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     if (!items.length) return fallo('Escribe la cantidad a enviar de al menos un producto.');
     const excedidos = items.filter(s => this.cantidadEnviarDe(s) > this.disponibleDe(s));
     if (excedidos.length) return fallo(`No puedes enviar más de lo disponible: ${excedidos.map(s => s.ingrediente).join(', ')}.`);
+    const excesosCalculo = this.itemsConExcesoCalculo;
+    if (excesosCalculo.length > 0) {
+      if (!this.autorizacionExceso) {
+        return fallo(
+          `Las cantidades de ${excesosCalculo.map(x => x.sel.ingrediente).join(', ')} superan el cálculo nutricional. Marca la autorización e ingresa responsable y justificación.`,
+        );
+      }
+      if (!this.autorizadoPor.trim() || this.justificacionExceso.trim().length < 5) {
+        return fallo('Ingresa quién autoriza el excedente y una justificación técnica de al menos 5 caracteres.');
+      }
+    }
+
     const incompletos = items.flatMap(s => {
       const producto = this.catalogoMenu.find(p => p.id === s.idIngrediente);
       const mercadoEsperado = producto
@@ -1295,11 +1498,93 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     const datos = this.datosInstitucion(destino);
     if (datos.id_institucion === undefined) return fallo('No se encontró el identificador de la institución.');
 
-    const hoy = this.envioFecha;                       // siempre la fecha de hoy
-    // El responsable es el usuario que inició sesión (ya no se escribe a mano)
-    const usuario: any = this.authService.obtenerUsuario();
-    const responsable: string = usuario?.nombre ?? usuario?.username ?? usuario?.first_name ?? 'Sistema';
+    const hoy = this.envioFecha.trim();
+    const responsable = this.envioResponsable.trim();
+    if (!hoy) return fallo('Indica la fecha de envío.');
+    if (!responsable) return fallo('Indica el responsable del envío.');
     this.guardandoEnvio = true;
+
+    const idInstitucionVista = this.idInstitucion;
+    const idSede = this.idSede;
+    const sigueEnLaVista = () => idInstitucionVista === this.idInstitucion && idSede === this.idSede;
+    const fechaRegistro = new Date().toISOString();
+    const lote = fechaRegistro;
+    const datosEnvio = (sel: FilaEntrega, cantidad: number, unidad: string): EnvioConfirmado => ({
+      id_temporal: --this.idEnvioTemporal,
+      id_institucion: datos.id_institucion!,
+      id_sede: datos.id_sede,
+      id_ingrediente: sel.idIngrediente!,
+      id_tipo_mercado: sel.idTipoMercado!,
+      ingrediente_nombre: sel.ingrediente,
+      cantidad,
+      unidad,
+      fecha_entrega: hoy,
+      fecha_salida: hoy,
+      fecha_vencimiento: sel.fechaVencimiento,
+      frecuencia: sel.frecuencia,
+      destino,
+      responsable,
+      created_at: fechaRegistro,
+      lote_registro: lote,
+    });
+    const calculo = this.calculoAbastecimiento;
+    if (idSede != null && calculo) {
+      const envios = items.map(sel => datosEnvio(
+        sel, this.cantidadEnviarDe(sel), this.normalizarUnidad(sel.unidad) || 'Kg',
+      ));
+      const payload: DespachoLotePayload = {
+        id_sede: idSede,
+        fecha_entrega: hoy,
+        id_contrato: calculo.contrato?.id_contrato ?? undefined,
+        dias_perecederos: calculo.periodicidad?.dias_perecederos ?? undefined,
+        dias_no_perecederos: calculo.periodicidad?.dias_no_perecederos ?? undefined,
+        incluir_todos_gramajes: false,
+        validar_contra_calculo: true,
+        autorizacion_exceso: this.autorizacionExceso,
+        autorizado_por: this.autorizacionExceso ? this.autorizadoPor.trim() : '',
+        justificacion_exceso: this.autorizacionExceso ? this.justificacionExceso.trim() : '',
+        observaciones: `Responsable: ${responsable}`,
+        frecuencia: items[0]?.frecuencia || 'Semanal',
+        items: envios.map(({ id_ingrediente, cantidad, unidad, id_tipo_mercado, fecha_vencimiento }) => ({
+          id_ingrediente, cantidad, unidad, id_tipo_mercado, fecha_vencimiento,
+        })),
+      };
+
+      this.entregasService.despachoLote(payload).subscribe({
+        next: respuesta => {
+          this.guardandoEnvio = false;
+          const despachos = respuesta.despachos ?? [];
+          const confirmados = envios.map((envio, i) => ({
+            ...envio,
+            id: Number(despachos[i]?.id_entrega) || undefined,
+            documento_entrega: respuesta.codigo_documento,
+            id_calculo_entrega: respuesta.id_calculo_entrega,
+          }));
+          this.incorporarEnviosConfirmados(confirmados, sigueEnLaVista());
+          if (sigueEnLaVista()) {
+            items.forEach(sel => this.fijarCantidadEnviar(sel, null));
+            this.limpiarAutorizacionExceso();
+            this.cargarHistorial();
+            this.cargarCatalogos();
+            this.actualizarCalculoAbastecimiento();
+          }
+          void this.alertas.success(
+            'Envío registrado',
+            respuesta.codigo_documento
+              ? `Documento ${respuesta.codigo_documento} · ${destino}`
+              : `Se registró el envío a ${destino}.`,
+          );
+          this.cdr.markForCheck();
+        },
+        error: error => {
+          this.guardandoEnvio = false;
+          this.errorEnvioPanel = this.describirError(error);
+          void this.alertas.error('No se pudo confirmar el despacho', this.errorEnvioPanel);
+          this.cdr.markForCheck();
+        },
+      });
+      return;
+    }
 
     const peticiones = items.map(sel => {
       const cantidad = this.cantidadEnviarDe(sel);
@@ -1324,45 +1609,18 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       const exitosos = resultados.filter(r => r.ok);
       const fallidos = resultados.filter(r => !r.ok);
 
-      // Se muestran al instante; al recargar se reemplazan por los del servidor
-      const registros: EnvioRegistro[] = exitosos.map((r, i) => ({
-        id: Date.now() + i, idInstitucion: datos.id_institucion ?? null, ingrediente: r.sel.ingrediente,
-        cantidad: r.cantidad, unidad: r.unidad, destino, fechaSalida: hoy, fechaEntrega: hoy, enviadoEl: hoy, responsable,
+      const confirmados = exitosos.map(r => ({
+        ...datosEnvio(r.sel, r.cantidad, r.unidad),
+        id: Number(r.idResp) || undefined,
       }));
+      this.incorporarEnviosConfirmados(confirmados, sigueEnLaVista());
 
-      const ahoraISO = new Date().toISOString();
-      const hora = this.horaDe(ahoraISO), lote = String(Date.now());
-
-      exitosos.forEach(r => {
-        this.recordarIdEnvio(r.idResp);
-        this.guardarExtra(r.idResp, { idIngrediente: r.sel.idIngrediente, cantidad: r.cantidad, unidad: r.unidad, perecedero: this.esPerecedero(r.sel as any) }, { destino, responsable, hora, fechaRegistro: hoy, loteRegistro: lote });
-      });
-
-      this.historialEnvios = [...registros, ...this.historialEnvios];
-
-      // Aparece de inmediato en Entradas
-      this.entregasRaw = [...exitosos.map((r, i) => ({
-        id: r.idResp ?? Date.now() + i,
-        id_ingrediente: r.sel.idIngrediente,
-        id_tipo_mercado: r.sel.idTipoMercado,
-        cantidad: r.cantidad,
-        unidad: r.unidad,
-        fecha_entrega: hoy,
-        fecha_salida: hoy,
-        fecha_vencimiento: r.sel.fechaVencimiento,
-        frecuencia: r.sel.frecuencia,
-        destino,
-        responsable,
-        observaciones: `Responsable: ${responsable}`,
-        created_at: ahoraISO,
-        lote_registro: lote,
-      })), ...this.entregasRaw];
-      this.reconstruirHistorial();
-
-      exitosos.forEach(r => this.fijarCantidadEnviar(r.sel, null));
-      if (exitosos.length) {
-        this.cargarHistorial();
-        this.cargarCatalogos();
+      if (sigueEnLaVista()) {
+        exitosos.forEach(r => this.fijarCantidadEnviar(r.sel, null));
+        if (exitosos.length) {
+          this.cargarHistorial();
+          this.cargarCatalogos();
+        }
       }
 
       if (fallidos.length) {
@@ -1373,6 +1631,27 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       }
       this.cdr.markForCheck();
     });
+  }
+
+  private incorporarEnviosConfirmados(envios: EnvioConfirmado[], vistaActiva: boolean): void {
+    if (!envios.length) return;
+    const ids = new Set(envios.flatMap(envio => envio.id == null ? [] : [envio.id]));
+    for (const envio of envios) {
+      this.recordarIdEnvio(envio.id);
+      if (envio.id != null) this.extrasEnvio[`id:${envio.id}`] = envio.responsable;
+    }
+    this.guardarCache(this.claveExtrasEnvio, this.extrasEnvio);
+    this.enviosPendientes = [
+      ...envios.filter(envio => envio.id != null),
+      ...this.enviosPendientes.filter(envio => envio.id != null && !ids.has(envio.id)),
+    ];
+    this.guardarCache(this.claveEnviosPendientes, this.enviosPendientes);
+    if (!vistaActiva) return;
+    this.aplicarHistorial([
+      ...envios,
+      ...this.entregasRaw.filter(item => !ids.has(Number(item.id_entrega ?? item.id))),
+    ]);
+    this.mostrarHistorialEnvios = true;
   }
 
   // ===================== CALENDARIO (vista Historial) =====================
