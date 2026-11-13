@@ -39,14 +39,41 @@ export interface RecetaMenuExtendida {
   componentes: ComponentePlatoReceta[];
 }
 
-export interface CeldaDiaMinutaSede {
+export interface MomentoDiaMinuta {
+  momento: 'Desayuno' | 'Almuerzo' | 'Merienda';
   tiene_menu_registrado: boolean;
+  numeroMenu?: number;
+  id_menu?: number;
+  id_plato?: number;
+  nombre_plato: string;
+  origen: 'PAE_ESTIPULADO' | 'SUGERENCIA_IA' | 'PENDIENTE';
+  ninos_presentes: number;
+  estado_aprobacion: 'PENDIENTE' | 'APROBADO' | 'RECHAZADO' | 'CANCELADO' | 'SIN_SERVICIO';
+  motivo_rechazo_o_cancelacion?: string;
+  usuario_jefa?: string;
+  usuario_evaluador?: string;
+  fecha_evaluacion?: string;
+  componentes: {
+    bebida_leche: string;
+    proteico: string;
+    cereal: string;
+    fruta: string;
+    agua: string;
+  };
+  ingredientes: string[];
+  pasos: string[];
+}
+
+export interface CeldaDiaMinutaSede {
   numeroMenu: number; // 1..20
   semana: number; // 1..4
   diaSemana: string; // Lunes..Viernes
   fecha: string;
-  jornada: string; // Jornada Mañana | Jornada Tarde | Jornada Única
-  seccion: string; // Desayuno | Almuerzo | Merienda
+  momentos: Record<'Desayuno' | 'Almuerzo' | 'Merienda', MomentoDiaMinuta>;
+  // Propiedades auxiliares y de retrocompatibilidad
+  tiene_menu_registrado: boolean;
+  jornada?: string;
+  seccion?: string;
   id_menu?: number;
   id_plato?: number;
   nombre_plato: string;
@@ -195,6 +222,23 @@ export class MenusComponent implements OnInit {
   // Modal para ver la Ficha Técnica de Receta de un día de la Minuta
   mostrarModalFichaReceta = false;
   celdaRecetaSeleccionada: CeldaDiaMinutaSede | null = null;
+
+  // Modal de Rechazo obligatorio para el Supervisor
+  mostrarModalRechazoSupervisor = false;
+  rechazoForm = {
+    dia: null as CeldaDiaMinutaSede | null,
+    momento: '' as 'Desayuno' | 'Almuerzo' | 'Merienda' | '',
+    motivo: ''
+  };
+
+  // Modal de Novedad (Cancelado de última hora / Sin servicio por no haber clase)
+  mostrarModalNovedadMomento = false;
+  novedadForm = {
+    dia: null as CeldaDiaMinutaSede | null,
+    momento: '' as 'Desayuno' | 'Almuerzo' | 'Merienda' | '',
+    tipo: 'CANCELADO' as 'CANCELADO' | 'SIN_SERVICIO',
+    motivo: ''
+  };
 
   // Estados de formularios clásicos
   mostrarFormulario = false;
@@ -441,7 +485,35 @@ export class MenusComponent implements OnInit {
   // CONSTRUCCIÓN DINÁMICA DE LA MINUTA DE 20 DÍAS POR SEDE
   // ============================================================
 
-  private leerMinutasLocalesPorSede(): Record<string, Record<number, Partial<CeldaDiaMinutaSede>>> {
+  get momentosVisibles(): ('Desayuno' | 'Almuerzo' | 'Merienda')[] {
+    if (this.filtroSeccionMinuta && this.filtroSeccionMinuta !== 'TODAS') {
+      return [this.filtroSeccionMinuta as 'Desayuno' | 'Almuerzo' | 'Merienda'];
+    }
+    return ['Desayuno', 'Almuerzo', 'Merienda'];
+  }
+
+  crearMomentoVacio(momento: 'Desayuno' | 'Almuerzo' | 'Merienda'): MomentoDiaMinuta {
+    return {
+      momento,
+      tiene_menu_registrado: false,
+      nombre_plato: '',
+      origen: 'PENDIENTE',
+      ninos_presentes: 0,
+      estado_aprobacion: 'PENDIENTE',
+      motivo_rechazo_o_cancelacion: '',
+      componentes: {
+        bebida_leche: '—',
+        proteico: '—',
+        cereal: '—',
+        fruta: '—',
+        agua: '—'
+      },
+      ingredientes: [],
+      pasos: []
+    };
+  }
+
+  private leerMinutasLocalesPorSede(): Record<string, Record<string, any>> {
     try {
       const raw = localStorage.getItem(this.STORAGE_MINUTA_SEDE_KEY);
       return raw ? JSON.parse(raw) : {};
@@ -450,16 +522,36 @@ export class MenusComponent implements OnInit {
     }
   }
 
-  private guardarDiaEnMinutaLocalSede(idSede: number, numeroMenu: number, datos: Partial<CeldaDiaMinutaSede>): void {
+  guardarMomentoEnMinutaLocalSede(
+    idSede: number,
+    numeroMenu: number,
+    momento: string,
+    datos: Partial<MomentoDiaMinuta>
+  ): void {
     try {
       const todo = this.leerMinutasLocalesPorSede();
       const key = String(idSede);
       if (!todo[key]) todo[key] = {};
-      todo[key][numeroMenu] = { ...(todo[key][numeroMenu] || {}), ...datos };
+      const slotKey = `${numeroMenu}_${momento.toLowerCase()}`;
+      todo[key][slotKey] = {
+        ...(todo[key][slotKey] || {}),
+        ...datos,
+        momento: momento as any,
+        tiene_menu_registrado: datos.tiene_menu_registrado !== undefined ? datos.tiene_menu_registrado : true
+      };
       localStorage.setItem(this.STORAGE_MINUTA_SEDE_KEY, JSON.stringify(todo));
     } catch (e) {
       console.warn('No se pudo guardar minuta local de la sede:', e);
     }
+  }
+
+  private guardarDiaEnMinutaLocalSede(idSede: number, numeroMenu: number, datos: any): void {
+    const sec = datos.seccion || 'Almuerzo';
+    this.guardarMomentoEnMinutaLocalSede(idSede, numeroMenu, sec, {
+      ...datos,
+      momento: sec as any,
+      estado_aprobacion: datos.estado_aprobacion || 'PENDIENTE'
+    });
   }
 
   extraerComponentesDesdePlato(nombrePlato: string, componenteTexto: string, platoObj?: any): {
@@ -669,18 +761,19 @@ export class MenusComponent implements OnInit {
   // CONFIGURACIÓN DE MOMENTOS (SECCIONES) POR SEDE
   // ============================================================
   obtenerMomentosDeSede(idSede: number | null): string[] {
-    if (!idSede) return ['Desayuno', 'Almuerzo'];
+    if (!idSede) return ['Desayuno', 'Almuerzo', 'Merienda'];
     try {
       const raw = localStorage.getItem(this.STORAGE_SEDES_MOMENTOS_KEY);
       const mapa = raw ? JSON.parse(raw) : {};
       if (mapa[String(idSede)] && Array.isArray(mapa[String(idSede)])) {
-        return mapa[String(idSede)];
+        const list = mapa[String(idSede)];
+        if (!list.includes('Merienda')) list.push('Merienda');
+        return list;
       }
     } catch (e) {
       console.error('Error al leer momentos de la sede:', e);
     }
-    // Regla institucional PAE: Jornada Mañana maneja Desayuno y Almuerzo; Tarde maneja Merienda
-    return ['Desayuno', 'Almuerzo'];
+    return ['Desayuno', 'Almuerzo', 'Merienda'];
   }
 
   sedeManejaMomento(idSede: number | null, momento: string): boolean {
@@ -802,14 +895,14 @@ export class MenusComponent implements OnInit {
       mapa.set(claveCanon, item);
     };
 
-    // 1. Platos base oficiales del PAE (15 platos únicos sin platos repetidos ni prefijo "Menú X:")
-    for (const b of baseMenus) {
-      registrarPlatoUnico(b);
-    }
-
-    // 2. Platos personalizados creados previamente
+    // 1. Platos personalizados creados o editados previamente por el usuario (PRIORIDAD MÁXIMA)
     for (const pers of personalizados) {
       registrarPlatoUnico(pers);
+    }
+
+    // 2. Platos base oficiales del PAE (plantilla inicial para los platos no personalizados)
+    for (const b of baseMenus) {
+      registrarPlatoUnico(b);
     }
 
     // 3. Platos traídos del backend
@@ -845,7 +938,6 @@ export class MenusComponent implements OnInit {
 
   get catalogoPlatosVista(): any[] {
     const mapaUnicos = new Map<string, any>();
-    const vistosFirmas = new Set<string>();
 
     for (const p of this.platosEstipuladosPAE || []) {
       const nombreLimpio = this.limpiarNombrePlato(p.nombre_plato);
@@ -853,10 +945,6 @@ export class MenusComponent implements OnInit {
 
       const claveCanon = this.obtenerClaveCanonicaPlato(nombreLimpio);
       if (mapaUnicos.has(claveCanon)) continue;
-
-      const firma = this.obtenerFirmaComponentesPlato(p.componentes);
-      if (firma && vistosFirmas.has(firma)) continue;
-      if (firma) vistosFirmas.add(firma);
 
       const secRaw = p.secciones && p.secciones.length > 0
         ? p.secciones
@@ -1030,6 +1118,8 @@ export class MenusComponent implements OnInit {
     } else {
       this.menuRecetaForm.secciones.push(momento);
     }
+    this.menuRecetaForm.secciones = [...this.menuRecetaForm.secciones];
+    this.cdr.detectChanges();
   }
 
   trackByCompId(index: number, comp: ComponentePlatoReceta): string {
@@ -1249,6 +1339,13 @@ export class MenusComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
+  private obtenerIdSeccionDeLista(secciones: string[]): number {
+    if (!secciones || secciones.length === 0) return 1;
+    if (secciones.includes('Almuerzo')) return 2;
+    if (secciones.includes('Merienda')) return 3;
+    return 1;
+  }
+
   guardarRecetaPlato(): void {
     const nombre = this.limpiarNombrePlato(this.menuRecetaForm.nombre_plato || '').trim();
     if (!nombre) {
@@ -1295,18 +1392,24 @@ export class MenusComponent implements OnInit {
     }
 
     const numMenu = this.menuRecetaForm.numero_menu;
-    const idx = this.platosEstipuladosPAE.findIndex(p =>
-      (numMenu && p.numeroMenu === numMenu) ||
-      (this.platoRecetaSeleccionado && p.nombre_plato === this.platoRecetaSeleccionado.nombre_plato) ||
-      p.nombre_plato === nombre
-    );
+    const claveCanon = this.obtenerClaveCanonicaPlato(nombre);
+    const claveSel = this.platoRecetaSeleccionado
+      ? this.obtenerClaveCanonicaPlato(this.platoRecetaSeleccionado.nombre_plato)
+      : '';
+
+    const idx = this.platosEstipuladosPAE.findIndex(p => {
+      const c = this.obtenerClaveCanonicaPlato(p.nombre_plato);
+      return (claveSel && c === claveSel) ||
+             (claveCanon && c === claveCanon) ||
+             (p.id_plato && this.menuRecetaForm.id_plato && Number(p.id_plato) === Number(this.menuRecetaForm.id_plato));
+    });
 
     const platoActualizado = {
       ...(idx >= 0 ? this.platosEstipuladosPAE[idx] : {}),
-      id_plato: this.menuRecetaForm.id_plato || Date.now(),
-      numeroMenu: numMenu || (this.platosEstipuladosPAE.length + 1),
+      id_plato: this.menuRecetaForm.id_plato || (idx >= 0 && this.platosEstipuladosPAE[idx].id_plato ? this.platosEstipuladosPAE[idx].id_plato : Date.now()),
+      numeroMenu: numMenu || (idx >= 0 ? this.platosEstipuladosPAE[idx].numeroMenu : this.platosEstipuladosPAE.length + 1),
       nombre_plato: nombre,
-      secciones: this.menuRecetaForm.secciones || ['Desayuno', 'Almuerzo'],
+      secciones: [...(this.menuRecetaForm.secciones || ['Desayuno', 'Almuerzo'])],
       componentes: compResumenObj,
       componentes_estructurados: JSON.parse(JSON.stringify(this.menuRecetaForm.componentes)),
       ingredientes: listaIngredientesTotal.length > 0 ? listaIngredientesTotal : ['Ingredientes estandarizados PAE'],
@@ -1317,10 +1420,12 @@ export class MenusComponent implements OnInit {
     if (idx >= 0) {
       this.platosEstipuladosPAE[idx] = platoActualizado;
     } else {
-      this.platosEstipuladosPAE.push(platoActualizado);
+      this.platosEstipuladosPAE.unshift(platoActualizado);
     }
 
+    this.platosEstipuladosPAE = [...this.platosEstipuladosPAE];
     this.guardarEstadoCatalogoPlatos();
+    this.cdr.detectChanges();
 
     try {
       const catComp = this.obtenerCatalogoComponentesLocal();
@@ -1348,16 +1453,17 @@ export class MenusComponent implements OnInit {
       .filter(c => c && c !== '—')
       .join(', ');
 
+    const idSeccionPrincipal = this.obtenerIdSeccionDeLista(platoActualizado.secciones);
     const req = (this.modoEdicionReceta && platoActualizado.id_plato)
       ? this.http.put<any>(`${this.apiUrl}/platos/${platoActualizado.id_plato}/`, {
           nombre_plato: nombre.slice(0, 100),
           componente: (compTexto || 'Componentes PAE').slice(0, 50),
-          id_seccion: 1
+          id_seccion: idSeccionPrincipal
         })
       : this.http.post<any>(`${this.apiUrl}/platos/`, {
           nombre_plato: nombre.slice(0, 100),
           componente: (compTexto || 'Componentes PAE').slice(0, 50),
-          id_seccion: 1
+          id_seccion: idSeccionPrincipal
         });
 
     req.pipe(catchError(() => of(null))).subscribe(() => {
@@ -1366,7 +1472,7 @@ export class MenusComponent implements OnInit {
 
     this.sweetAlert.success(
       this.modoEdicionReceta ? 'Plato actualizado' : 'Plato creado',
-      `La receta y componentes del plato "${nombre}" han sido guardados.`
+      `La receta y momentos del plato "${nombre}" han sido guardados.`
     );
     this.cerrarModalRecetaPlato();
   }
@@ -1395,19 +1501,44 @@ export class MenusComponent implements OnInit {
     if (!sedeId) return;
     this.sweetAlert.confirm(
       `¿Aprobar Minuta de la Semana ${semana}?`,
-      `Al dar tu visto bueno como Supervisor PAE, confirmas que la minuta seleccionada para esta sede cumple con las directrices nutricionales del programa.`
+      `Al dar tu visto bueno como Supervisor PAE, confirmas que todos los menús programados de esta semana cumplen con los lineamientos del programa.`
     ).then((conf) => {
       if (conf) {
         const mapa = this.obtenerAprobacionesLocales();
         const clave = `sede_${sedeId}_sem_${semana}`;
         const actual = mapa[clave] || { aprobado_jefa: true };
+        const nombreSup = `${this.currentUser?.nombre || 'Supervisor'} ${this.currentUser?.apellido || ''}`.trim();
+        const fechaSup = new Date().toLocaleDateString('es-CO');
+
         mapa[clave] = {
           ...actual,
           aprobado_supervisor: true,
-          supervisor_nombre: `${this.currentUser?.nombre || 'Supervisor'} ${this.currentUser?.apellido || ''}`.trim(),
-          fecha_supervisor: new Date().toLocaleDateString('es-CO')
+          supervisor_nombre: nombreSup,
+          fecha_supervisor: fechaSup
         };
         localStorage.setItem(this.STORAGE_APROBACIONES_KEY, JSON.stringify(mapa));
+
+        // Actualizar todos los momentos de los días de la semana a APROBADO
+        const semObj = this.semanasMinutaSedeActual.find(s => s.numeroSemana === semana);
+        if (semObj) {
+          for (const dia of semObj.dias) {
+            for (const mom of ['Desayuno', 'Almuerzo', 'Merienda'] as const) {
+              const item = dia.momentos[mom];
+              if (item && item.tiene_menu_registrado && item.estado_aprobacion !== 'CANCELADO' && item.estado_aprobacion !== 'SIN_SERVICIO') {
+                item.estado_aprobacion = 'APROBADO';
+                item.usuario_evaluador = nombreSup;
+                item.fecha_evaluacion = fechaSup;
+                this.guardarMomentoEnMinutaLocalSede(Number(sedeId), dia.numeroMenu, mom, item);
+
+                if (item.id_menu) {
+                  this.http.put<any>(`${this.apiUrl}/menus/${item.id_menu}/`, { estado: 'Aprobado' })
+                    .pipe(catchError(() => of(null))).subscribe();
+                }
+              }
+            }
+          }
+        }
+
         this.sweetAlert.success('Minuta Aprobada', `La Semana ${semana} ha sido formalmente aprobada por el Supervisor PAE.`);
         this.cdr.detectChanges();
       }
@@ -1428,6 +1559,190 @@ export class MenusComponent implements OnInit {
     };
     localStorage.setItem(this.STORAGE_APROBACIONES_KEY, JSON.stringify(mapa));
     this.sweetAlert.success('Visto Bueno Registrado', `Has aprobado la minuta de la Semana ${semana} para tu sede. Ahora se encuentra lista para el visto bueno del Supervisor.`);
+    this.cdr.detectChanges();
+  }
+
+  // Acciones individuales del Supervisor
+  aprobarMomentoPlato(dia: CeldaDiaMinutaSede, momento: 'Desayuno' | 'Almuerzo' | 'Merienda'): void {
+    const idSede = Number(this.sedeSeleccionadaId);
+    if (!idSede) return;
+    const item = dia.momentos[momento];
+    if (!item || !item.tiene_menu_registrado) return;
+
+    item.estado_aprobacion = 'APROBADO';
+    item.motivo_rechazo_o_cancelacion = '';
+    item.usuario_evaluador = `${this.currentUser?.nombre || 'Supervisor'} ${this.currentUser?.apellido || ''}`.trim();
+    item.fecha_evaluacion = new Date().toLocaleDateString('es-CO');
+
+    this.guardarMomentoEnMinutaLocalSede(idSede, dia.numeroMenu, momento, item);
+
+    if (item.id_menu) {
+      this.http.put<any>(`${this.apiUrl}/menus/${item.id_menu}/`, {
+        estado: 'Aprobado'
+      }).pipe(catchError(() => of(null))).subscribe();
+    }
+
+    this.sweetAlert.success(
+      'Plato Aprobado',
+      `El menú de ${momento} del ${dia.diaSemana} ha sido aprobado para la sede.`
+    );
+    this.cdr.detectChanges();
+  }
+
+  abrirModalRechazoSupervisor(dia: CeldaDiaMinutaSede, momento: 'Desayuno' | 'Almuerzo' | 'Merienda'): void {
+    this.rechazoForm = {
+      dia,
+      momento,
+      motivo: dia.momentos[momento]?.motivo_rechazo_o_cancelacion || ''
+    };
+    this.mostrarModalRechazoSupervisor = true;
+    this.cdr.detectChanges();
+  }
+
+  confirmarRechazoSupervisor(): void {
+    const idSede = Number(this.sedeSeleccionadaId);
+    const { dia, momento, motivo } = this.rechazoForm;
+    if (!dia || !momento || !idSede) return;
+
+    if (!motivo || !motivo.trim()) {
+      this.sweetAlert.warning(
+        'Motivo obligatorio',
+        'Debes ingresar el motivo por el cual rechazas este plato para que la jefa de cocina sepa qué debe corregir.'
+      );
+      return;
+    }
+
+    const item = dia.momentos[momento as 'Desayuno' | 'Almuerzo' | 'Merienda'];
+    if (item) {
+      item.estado_aprobacion = 'RECHAZADO';
+      item.motivo_rechazo_o_cancelacion = motivo.trim();
+      item.usuario_evaluador = `${this.currentUser?.nombre || 'Supervisor'} ${this.currentUser?.apellido || ''}`.trim();
+      item.fecha_evaluacion = new Date().toLocaleDateString('es-CO');
+
+      this.guardarMomentoEnMinutaLocalSede(idSede, dia.numeroMenu, momento, item);
+
+      if (item.id_menu) {
+        this.http.put<any>(`${this.apiUrl}/menus/${item.id_menu}/`, {
+          estado: 'Rechazado'
+        }).pipe(catchError(() => of(null))).subscribe();
+      }
+    }
+
+    this.mostrarModalRechazoSupervisor = false;
+    this.sweetAlert.success(
+      'Plato Rechazado',
+      `Se registró la observación para ${momento} del ${dia.diaSemana}. La jefa de cocina verá la alerta para cambiarlo.`
+    );
+    this.cdr.detectChanges();
+  }
+
+  abrirModalNovedadMomento(dia: CeldaDiaMinutaSede, momento: 'Desayuno' | 'Almuerzo' | 'Merienda', tipo: 'CANCELADO' | 'SIN_SERVICIO'): void {
+    this.novedadForm = {
+      dia,
+      momento,
+      tipo,
+      motivo: dia.momentos[momento]?.motivo_rechazo_o_cancelacion || ''
+    };
+    this.mostrarModalNovedadMomento = true;
+    this.cdr.detectChanges();
+  }
+
+  confirmarNovedadMomento(): void {
+    const idSede = Number(this.sedeSeleccionadaId);
+    const { dia, momento, tipo, motivo } = this.novedadForm;
+    if (!dia || !momento || !idSede) return;
+
+    if (!motivo || !motivo.trim()) {
+      this.sweetAlert.warning(
+        'Motivo obligatorio',
+        tipo === 'CANCELADO'
+          ? 'Ingresa la justificación de la cancelación (ej. "Aviso de rectoría: primaria no tuvo clase").'
+          : 'Ingresa por qué no habrá servicio (ej. "Jornada pedagógica institucional" o "Paro docente").'
+      );
+      return;
+    }
+
+    const item = dia.momentos[momento as 'Desayuno' | 'Almuerzo' | 'Merienda'];
+    if (item) {
+      item.estado_aprobacion = tipo;
+      item.motivo_rechazo_o_cancelacion = motivo.trim();
+      item.tiene_menu_registrado = true;
+
+      this.guardarMomentoEnMinutaLocalSede(idSede, dia.numeroMenu, momento, item);
+    }
+
+    this.mostrarModalNovedadMomento = false;
+    this.sweetAlert.success(
+      'Novedad Registrada',
+      tipo === 'CANCELADO'
+        ? `Se registró como Cancelado el ${momento} del ${dia.diaSemana}. Se mostrará al supervisor en la minuta.`
+        : `Se registró como Sin Servicio el ${momento} del ${dia.diaSemana}.`
+    );
+    this.cdr.detectChanges();
+  }
+
+  reactivarMomento(dia: CeldaDiaMinutaSede, momento: 'Desayuno' | 'Almuerzo' | 'Merienda'): void {
+    const idSede = Number(this.sedeSeleccionadaId);
+    if (!idSede) return;
+    const item = dia.momentos[momento];
+    if (item) {
+      item.estado_aprobacion = 'PENDIENTE';
+      item.motivo_rechazo_o_cancelacion = '';
+      this.guardarMomentoEnMinutaLocalSede(idSede, dia.numeroMenu, momento, item);
+      this.cdr.detectChanges();
+    }
+  }
+
+  abrirModalProgramarMenuDiaMomento(dia: CeldaDiaMinutaSede, momento: 'Desayuno' | 'Almuerzo' | 'Merienda'): void {
+    const idSede = Number(this.sedeSeleccionadaId || this.currentUser?.id_sede || (this.sedesInstitucion[0]?.id_sede));
+    const seccionId = (momento === 'Desayuno' ? 1 : momento === 'Merienda' ? 3 : 2);
+    const mObj = dia.momentos[momento];
+
+    this.programarDiaForm = {
+      id_sede: idSede,
+      numero_menu_ciclo: dia.numeroMenu,
+      fecha: dia.fecha && /^\d{4}-\d{2}-\d{2}$/.test(dia.fecha) ? dia.fecha : this.obtenerFechaManana(),
+      id_seccion: seccionId,
+      id_jornada: this.jornadas[0]?.id_jornada || 1,
+      ninos_presentes: mObj?.ninos_presentes || 120,
+      origen_eleccion: mObj?.origen === 'SUGERENCIA_IA' ? 'SUGERENCIA_IA' : 'PAE_ESTIPULADO',
+      opcionSeleccionadaIndex: 0,
+      id_plato: mObj?.id_plato || null,
+      nombre_plato: mObj?.nombre_plato || '',
+      bebida_leche: mObj?.componentes?.bebida_leche || '',
+      proteico: mObj?.componentes?.proteico || '',
+      cereal: mObj?.componentes?.cereal || '',
+      fruta: mObj?.componentes?.fruta || '',
+      agua: mObj?.componentes?.agua || 'Agua potable tratada',
+      ingredientes: [...(mObj?.ingredientes || [])],
+      pasos: [...(mObj?.pasos || [])]
+    };
+
+    this.mostrarModalProgramarDia = true;
+    this.consultarSugerenciasIAParaSede();
+  }
+
+  verFichaRecetaMomento(dia: CeldaDiaMinutaSede, momento: 'Desayuno' | 'Almuerzo' | 'Merienda'): void {
+    const item = dia.momentos[momento];
+    if (!item) return;
+    this.celdaRecetaSeleccionada = {
+      tiene_menu_registrado: item.tiene_menu_registrado,
+      numeroMenu: dia.numeroMenu,
+      semana: dia.semana,
+      diaSemana: dia.diaSemana,
+      fecha: dia.fecha,
+      jornada: `Momento ${momento}`,
+      seccion: momento,
+      nombre_plato: item.nombre_plato,
+      origen: item.origen,
+      ninos_presentes: item.ninos_presentes,
+      estado: item.estado_aprobacion,
+      componentes: item.componentes,
+      ingredientes: item.ingredientes,
+      pasos: item.pasos,
+      momentos: dia.momentos
+    };
+    this.mostrarModalFichaReceta = true;
     this.cdr.detectChanges();
   }
 
@@ -1465,13 +1780,15 @@ export class MenusComponent implements OnInit {
 
   /**
    * Construye las 4 semanas (Menú 1 a Menú 20) específicas para la Sede seleccionada.
-   * Se alimenta exclusivamente de los menús registrados para la sede.
+   * Muestra Desayuno, Almuerzo y Merienda para cada día con datos 100% dinámicos.
    */
   get semanasMinutaSedeActual(): SemanaMinutaSede[] {
     const menusSede = [...this.menusDeSedeSeleccionada].sort((a, b) =>
       String(a.fecha || '').localeCompare(String(b.fecha || ''))
     );
 
+    const idSede = Number(this.sedeSeleccionadaId || 0);
+    const minutasLocalesSede = this.leerMinutasLocalesPorSede()[String(idSede)] || {};
     const diasSemanaNombres = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
     const celdas20: CeldaDiaMinutaSede[] = [];
 
@@ -1479,93 +1796,128 @@ export class MenusComponent implements OnInit {
       const numMenu = i + 1;
       const numSemana = Math.floor(i / 5) + 1;
       const diaNombre = diasSemanaNombres[i % 5];
+      let fechaDia = `Día ${numMenu}`;
 
-      // Verificar si hay un menú registrado en el backend para este día de la sede
-      const menuBackend = menusSede.find(m => {
-        const info = String(m.informacion_nutricional || '');
-        const matchDia = info.match(/\[MENU_CICLO:(\d+)\]/);
-        return matchDia ? Number(matchDia[1]) === numMenu : false;
-      }) || (menusSede[i] || null);
+      const momentosDia: Record<'Desayuno' | 'Almuerzo' | 'Merienda', MomentoDiaMinuta> = {
+        Desayuno: this.crearMomentoVacio('Desayuno'),
+        Almuerzo: this.crearMomentoVacio('Almuerzo'),
+        Merienda: this.crearMomentoVacio('Merienda')
+      };
 
-      if (menuBackend) {
-        const platoDet = (menuBackend.platos_detalle && menuBackend.platos_detalle[0]) || null;
-        const platoCatalogo = platoDet?.id_plato
-          ? this.platos.find(p => Number(p.id_plato) === Number(platoDet.id_plato))
-          : (menuBackend.id_plato ? this.platos.find(p => Number(p.id_plato) === Number(menuBackend.id_plato)) : null);
+      const momentosNombres: ('Desayuno' | 'Almuerzo' | 'Merienda')[] = ['Desayuno', 'Almuerzo', 'Merienda'];
 
-        const nombrePlato = platoDet?.nombre_plato || platoCatalogo?.nombre_plato || menuBackend.nombre_plato || `Menú ${numMenu}`;
-        const compTexto = platoDet?.componente || platoCatalogo?.componente || menuBackend.componente_plato || '';
-        const infoLimpia = String(menuBackend.informacion_nutricional_limpia || menuBackend.informacion_nutricional || '');
-        const esIA = infoLimpia.toUpperCase().includes('IA');
+      for (const m of momentosNombres) {
+        const idSec = m === 'Desayuno' ? 1 : (m === 'Merienda' ? 3 : 2);
+        const slotKey = `${numMenu}_${m.toLowerCase()}`;
 
-        const seccionNombre = this.getNombreSeccion(menuBackend.id_seccion || platoDet?.id_seccion || platoCatalogo?.id_seccion);
-        const jornadaNombre = menuBackend.id_jornada
-          ? this.getNombreJornada(menuBackend.id_jornada)
-          : 'Jornada Mañana';
+        // 1. Ver si existe en local
+        const localSlot = minutasLocalesSede[slotKey] || (minutasLocalesSede[numMenu]?.seccion === m ? minutasLocalesSede[numMenu] : null);
 
-        const comps = this.extraerComponentesDesdePlato(nombrePlato, compTexto, platoCatalogo);
-        const ingList = (platoCatalogo?.receta_componentes || []).map((rc: any) => rc.nombre_ingrediente || rc.nombre_componente).filter(Boolean);
-        const pasosList = (platoCatalogo?.pasos_preparacion || []).map((ps: any) => ps.descripcion_paso).filter(Boolean);
-
-        celdas20.push({
-          tiene_menu_registrado: true,
-          numeroMenu: numMenu,
-          semana: numSemana,
-          diaSemana: diaNombre,
-          fecha: menuBackend.fecha || `Día ${numMenu}`,
-          jornada: jornadaNombre,
-          seccion: seccionNombre !== 'Desconocida' ? seccionNombre : 'Almuerzo',
-          id_menu: menuBackend.id_menu,
-          id_plato: platoDet?.id_plato || platoCatalogo?.id_plato,
-          nombre_plato: nombrePlato,
-          origen: esIA ? 'SUGERENCIA_IA' : 'PAE_ESTIPULADO',
-          ninos_presentes: Number(menuBackend.ninos_presentes || 0),
-          estado: menuBackend.estado || 'Elegido por Jefa',
-          componentes: comps,
-          ingredientes: ingList,
-          pasos: pasosList
+        // 2. Ver si existe en backend
+        const menuBackend = menusSede.find(mb => {
+          const matchSec = Number(mb.id_seccion) === idSec;
+          const info = String(mb.informacion_nutricional || '');
+          const matchDia = info.match(/\[MENU_CICLO:(\d+)\]/);
+          return matchSec && (matchDia ? Number(matchDia[1]) === numMenu : false);
         });
-      } else {
-        // Día pendiente de elección por parte de la Jefa de Manipuladoras (sin datos quemados)
-        celdas20.push({
-          tiene_menu_registrado: false,
-          numeroMenu: numMenu,
-          semana: numSemana,
-          diaSemana: diaNombre,
-          fecha: 'Pendiente',
-          jornada: 'Pendiente',
-          seccion: 'Pendiente',
-          nombre_plato: 'Sin menú seleccionado',
-          origen: 'PENDIENTE',
-          ninos_presentes: 0,
-          estado: 'Pendiente de registro por la Jefa',
-          componentes: {
-            bebida_leche: '—',
-            proteico: '—',
-            cereal: '—',
-            fruta: '—',
-            agua: '—'
-          },
-          ingredientes: [],
-          pasos: []
-        });
+
+        if (menuBackend && !fechaDia.includes('-') && menuBackend.fecha) {
+          fechaDia = menuBackend.fecha;
+        }
+        if (localSlot && !fechaDia.includes('-') && localSlot.fecha) {
+          fechaDia = localSlot.fecha;
+        }
+
+        if (localSlot && (localSlot.nombre_plato || localSlot.estado_aprobacion === 'CANCELADO' || localSlot.estado_aprobacion === 'SIN_SERVICIO')) {
+          momentosDia[m] = {
+            momento: m,
+            tiene_menu_registrado: localSlot.tiene_menu_registrado !== undefined ? localSlot.tiene_menu_registrado : Boolean(localSlot.nombre_plato),
+            id_menu: localSlot.id_menu || menuBackend?.id_menu,
+            id_plato: localSlot.id_plato,
+            nombre_plato: localSlot.nombre_plato || '',
+            origen: localSlot.origen || 'PAE_ESTIPULADO',
+            ninos_presentes: Number(localSlot.ninos_presentes || 120),
+            estado_aprobacion: localSlot.estado_aprobacion || 'PENDIENTE',
+            motivo_rechazo_o_cancelacion: localSlot.motivo_rechazo_o_cancelacion || '',
+            usuario_jefa: localSlot.usuario_jefa || 'Jefa de Cocina',
+            usuario_evaluador: localSlot.usuario_evaluador,
+            fecha_evaluacion: localSlot.fecha_evaluacion,
+            componentes: localSlot.componentes || {
+              bebida_leche: '—',
+              proteico: '—',
+              cereal: '—',
+              fruta: '—',
+              agua: '—'
+            },
+            ingredientes: localSlot.ingredientes || [],
+            pasos: localSlot.pasos || []
+          };
+        } else if (menuBackend) {
+          const platoDet = (menuBackend.platos_detalle && menuBackend.platos_detalle[0]) || null;
+          const platoCatalogo = platoDet?.id_plato
+            ? this.platos.find(p => Number(p.id_plato) === Number(platoDet.id_plato))
+            : (menuBackend.id_plato ? this.platos.find(p => Number(p.id_plato) === Number(menuBackend.id_plato)) : null);
+
+          const nombrePlato = platoDet?.nombre_plato || platoCatalogo?.nombre_plato || menuBackend.nombre_plato || `Menú ${numMenu}`;
+          const compTexto = platoDet?.componente || platoCatalogo?.componente || menuBackend.componente_plato || '';
+          const infoLimpia = String(menuBackend.informacion_nutricional_limpia || menuBackend.informacion_nutricional || '');
+          const esIA = infoLimpia.toUpperCase().includes('IA');
+
+          const comps = this.extraerComponentesDesdePlato(nombrePlato, compTexto, platoCatalogo);
+          const ingList = (platoCatalogo?.receta_componentes || []).map((rc: any) => rc.nombre_ingrediente || rc.nombre_componente).filter(Boolean);
+          const pasosList = (platoCatalogo?.pasos_preparacion || []).map((ps: any) => ps.descripcion_paso).filter(Boolean);
+
+          let estadoBackend: 'PENDIENTE' | 'APROBADO' | 'RECHAZADO' | 'CANCELADO' | 'SIN_SERVICIO' = 'PENDIENTE';
+          if (menuBackend.estado?.toLowerCase().includes('aprob')) estadoBackend = 'APROBADO';
+          else if (menuBackend.estado?.toLowerCase().includes('rechaz')) estadoBackend = 'RECHAZADO';
+          else if (menuBackend.estado?.toLowerCase().includes('cancel')) estadoBackend = 'CANCELADO';
+
+          momentosDia[m] = {
+            momento: m,
+            tiene_menu_registrado: true,
+            id_menu: menuBackend.id_menu,
+            id_plato: platoDet?.id_plato || platoCatalogo?.id_plato,
+            nombre_plato: nombrePlato,
+            origen: esIA ? 'SUGERENCIA_IA' : 'PAE_ESTIPULADO',
+            ninos_presentes: Number(menuBackend.ninos_presentes || 120),
+            estado_aprobacion: estadoBackend,
+            motivo_rechazo_o_cancelacion: '',
+            componentes: comps,
+            ingredientes: ingList,
+            pasos: pasosList
+          };
+        }
       }
+
+      const celda: CeldaDiaMinutaSede = {
+        numeroMenu: numMenu,
+        semana: numSemana,
+        diaSemana: diaNombre,
+        fecha: fechaDia,
+        momentos: momentosDia,
+        tiene_menu_registrado: Object.values(momentosDia).some(m => m.tiene_menu_registrado),
+        nombre_plato: momentosDia.Almuerzo?.nombre_plato || momentosDia.Desayuno?.nombre_plato || '',
+        seccion: 'Almuerzo',
+        origen: 'PAE_ESTIPULADO',
+        ninos_presentes: 120,
+        estado: 'Elegido por Jefa',
+        componentes: momentosDia.Almuerzo?.componentes || momentosDia.Desayuno?.componentes,
+        ingredientes: [],
+        pasos: []
+      };
+
+      celdas20.push(celda);
     }
 
     const semanas: SemanaMinutaSede[] = [1, 2, 3, 4].map(numSem => {
       const inicio = (numSem - 1) * 5 + 1;
       const fin = numSem * 5;
-      const diasFiltrados = celdas20
-        .filter(c => c.semana === numSem)
-        .filter(c => {
-          if (this.filtroSeccionMinuta === 'TODAS') return true;
-          return c.tiene_menu_registrado && c.seccion.toLowerCase() === this.filtroSeccionMinuta.toLowerCase();
-        });
+      const diasDeSemana = celdas20.filter(c => c.semana === numSem);
 
       return {
         numeroSemana: numSem,
         titulo: `Semana ${numSem} (Menú ${inicio} al Menú ${fin})`,
-        dias: diasFiltrados
+        dias: diasDeSemana
       };
     });
 
@@ -1792,28 +2144,30 @@ export class MenusComponent implements OnInit {
 
     const numMenu = Number(this.programarDiaForm.numero_menu_ciclo || 1);
     const seccionNombre = this.getNombreSeccion(this.programarDiaForm.id_seccion);
+    const momentoCanon: 'Desayuno' | 'Almuerzo' | 'Merienda' =
+      (seccionNombre === 'Desayuno' || seccionNombre === 'Merienda') ? seccionNombre : 'Almuerzo';
     const jornadaNombre = this.jornadas.length > 0
       ? this.getNombreJornada(Number(this.programarDiaForm.id_jornada || this.jornadas[0].id_jornada))
       : 'Jornada Mañana';
 
-    // 1. Guardar inmediatamente en la minuta de la sede
-    this.guardarDiaEnMinutaLocalSede(idSede, numMenu, {
+    // 1. Guardar inmediatamente en la minuta de la sede por momento (Desayuno, Almuerzo o Merienda)
+    this.guardarMomentoEnMinutaLocalSede(idSede, numMenu, momentoCanon, {
+      momento: momentoCanon,
       numeroMenu: numMenu,
-      semana: Math.floor((numMenu - 1) / 5) + 1,
-      fecha: this.programarDiaForm.fecha,
-      jornada: jornadaNombre,
-      seccion: seccionNombre !== 'Desconocida' ? seccionNombre : 'Almuerzo',
-      id_plato: this.programarDiaForm.id_plato || undefined,
+      tiene_menu_registrado: true,
       nombre_plato: this.programarDiaForm.nombre_plato.trim(),
-      origen: this.programarDiaForm.origen_eleccion,
+      id_plato: this.programarDiaForm.id_plato || undefined,
+      origen: this.programarDiaForm.origen_eleccion as any,
       ninos_presentes: Number(this.programarDiaForm.ninos_presentes || 120),
-      estado: 'Elegido por Jefa',
+      estado_aprobacion: 'PENDIENTE',
+      motivo_rechazo_o_cancelacion: '',
+      usuario_jefa: `${this.currentUser?.nombre || 'Jefa de Cocina'} ${this.currentUser?.apellido || ''}`.trim(),
       componentes: {
         bebida_leche: this.programarDiaForm.bebida_leche || 'Bebida con leche',
         proteico: this.programarDiaForm.proteico || 'Alimento proteico',
         cereal: this.programarDiaForm.cereal || 'Cereal acompañante',
         fruta: this.programarDiaForm.fruta || 'Fruta',
-        agua: this.programarDiaForm.agua || 'Agua'
+        agua: this.programarDiaForm.agua || 'Agua potable tratada'
       },
       ingredientes: this.programarDiaForm.ingredientes,
       pasos: this.programarDiaForm.pasos
