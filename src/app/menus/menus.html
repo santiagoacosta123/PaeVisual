@@ -175,14 +175,14 @@
         </div>
       </div>
 
-      <!-- Tabla estilo Minuta PAE por Semana (Lunes a Viernes) -->
+      <!-- Tabla estilo Minuta PAE por Semana (Lunes a Viernes con Desayuno, Almuerzo y Merienda) -->
       <div class="overflow-x-auto rounded-xl border border-slate-200">
         <table class="w-full border-collapse text-left text-xs min-w-[760px]">
           <thead>
             <tr class="bg-slate-50/80 border-b border-slate-200 text-slate-700">
               <th
                 class="py-3 px-4 text-left font-bold uppercase tracking-wider text-[11px] text-slate-600 w-48 border-r border-slate-200 bg-slate-50">
-                Componente PAE
+                Jornada / Momento
               </th>
               <th *ngFor="let dia of semana.dias" class="py-3 px-3 text-center border-r border-slate-200 min-w-[190px]">
                 <div class="flex flex-col items-center gap-0.5">
@@ -204,61 +204,184 @@
           </thead>
           <tbody class="divide-y divide-slate-100 text-slate-800">
 
-            <!-- FILA 1: PLATO SELECCIONADO / MENÚ DEL DÍA (Elegido por la Sede) -->
-            <tr class="bg-amber-50/30 border-b border-amber-200">
-              <td class="py-3 px-4 font-bold text-amber-950 border-r border-slate-200 bg-amber-50/50 align-middle">
-                <div class="flex flex-col">
-                  <span class="text-[10px] uppercase tracking-wider text-amber-800 font-extrabold">Elección de la Sede</span>
-                  <span class="text-xs font-black text-slate-900">Plato Seleccionado</span>
-                </div>
-              </td>
-              <td *ngFor="let dia of semana.dias"
-                class="py-3 px-3 text-center border-r border-slate-200 align-middle">
+            <!-- ITERACIÓN POR CADA MOMENTO VISIBLE (DESAYUNO, ALMUERZO, MERIENDA) -->
+            <ng-container *ngFor="let mom of momentosVisibles">
+              <tr class="border-b border-slate-200/80">
                 
-                <!-- Si ya fue registrado -->
-                <div *ngIf="dia.tiene_menu_registrado"
-                  (click)="abrirModalProgramarMenuDia(dia)"
-                  class="bg-white border border-amber-200/90 hover:border-amber-400 rounded-xl p-2.5 shadow-2xs flex flex-col items-center gap-1.5 text-center min-h-[74px] justify-center cursor-pointer transition group">
-                  <!-- Momento del día (Desayuno, Almuerzo o Merienda) -->
-                  <span
-                    [ngClass]="dia.seccion === 'Desayuno'
-                      ? 'bg-sky-50 text-sky-800 border-sky-200'
-                      : (dia.seccion === 'Merienda' ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-emerald-50 text-emerald-800 border-emerald-200')"
-                    class="px-2.5 py-0.5 rounded-full text-[10px] font-bold border">
-                    {{ dia.seccion }}
-                  </span>
-
-                  <!-- Nombre del plato elegido -->
-                  <div class="font-extrabold text-slate-900 text-xs leading-snug">
-                    {{ dia.nombre_plato }}
+                <!-- Columna Encabezado del Momento -->
+                <td class="py-3 px-4 font-bold border-r border-slate-200 align-middle"
+                  [ngClass]="mom === 'Desayuno' ? 'bg-sky-50/60 text-sky-950' : (mom === 'Almuerzo' ? 'bg-emerald-50/60 text-emerald-950' : 'bg-amber-50/60 text-amber-950')">
+                  <div class="flex flex-col gap-0.5">
+                    <span class="text-[10px] uppercase tracking-wider font-extrabold opacity-75">Momento PAE</span>
+                    <span class="text-xs font-black">{{ mom }}</span>
+                    <span class="text-[9.5px] font-medium text-slate-500">
+                      {{ sedeManejaMomento(sedeSeleccionadaId, mom) ? 'Obligatorio en sede' : 'Opcional' }}
+                    </span>
                   </div>
-                  <span class="text-[9.5px] text-amber-900 font-semibold group-hover:underline">Cambiar menú</span>
-                </div>
+                </td>
 
-                <!-- Si aún no ha sido seleccionado -->
-                <div *ngIf="!dia.tiene_menu_registrado"
-                  (click)="abrirModalProgramarMenuDia(dia)"
-                  class="bg-slate-50/70 hover:bg-amber-50/60 border border-dashed border-slate-300 hover:border-amber-400 rounded-xl p-2.5 flex flex-col items-center justify-center gap-1 text-center min-h-[74px] cursor-pointer transition">
-                  <span class="text-xs text-amber-900 font-bold">+ Asignar Menú</span>
-                  <span class="text-[10px] text-slate-400">Clic para programar</span>
-                </div>
-              </td>
-            </tr>
+                <!-- Columnas de Lunes a Viernes para este Momento -->
+                <td *ngFor="let dia of semana.dias" class="py-3 px-3 border-r border-slate-200 align-top">
+                  
+                  <!-- CASO 1: TIENE MENÚ REGISTRADO (ACTIVO) -->
+                  <div *ngIf="dia.momentos[mom].tiene_menu_registrado && dia.momentos[mom].estado_aprobacion !== 'CANCELADO' && dia.momentos[mom].estado_aprobacion !== 'SIN_SERVICIO'"
+                    class="bg-white border rounded-xl p-3 shadow-2xs flex flex-col gap-2 text-left transition"
+                    [ngClass]="dia.momentos[mom].estado_aprobacion === 'APROBADO'
+                      ? 'border-emerald-300 ring-1 ring-emerald-100'
+                      : (dia.momentos[mom].estado_aprobacion === 'RECHAZADO'
+                          ? 'border-rose-300 ring-1 ring-rose-100 bg-rose-50/15'
+                          : 'border-amber-200/90')">
+                    
+                    <!-- Encabezado con Estado de Aprobación -->
+                    <div class="flex items-center justify-between gap-1 flex-wrap">
+                      <span class="px-2 py-0.5 rounded-full text-[10px] font-bold border"
+                        [ngClass]="dia.momentos[mom].estado_aprobacion === 'APROBADO'
+                          ? 'bg-emerald-50 text-emerald-900 border-emerald-200'
+                          : (dia.momentos[mom].estado_aprobacion === 'RECHAZADO'
+                              ? 'bg-rose-50 text-rose-900 border-rose-200'
+                              : 'bg-amber-50 text-amber-900 border-amber-200')">
+                        {{ dia.momentos[mom].estado_aprobacion === 'APROBADO' ? 'Aprobado' : (dia.momentos[mom].estado_aprobacion === 'RECHAZADO' ? 'Rechazado' : 'Pendiente') }}
+                      </span>
 
-            <!-- FILAS DE LOS 5 COMPONENTES (Idéntico al formato oficial del PAE) -->
-            <tr *ngFor="let comp of filasComponentesPAE; let odd = odd"
-              [ngClass]="odd ? 'bg-slate-50/40' : 'bg-white'"
-              class="border-b border-slate-100 hover:bg-amber-50/15 transition">
-              <td class="py-2.5 px-4 font-semibold text-slate-700 border-r border-slate-200 text-xs bg-slate-50/30">
-                {{ comp.label }}
-              </td>
-              <td *ngFor="let dia of semana.dias"
-                class="py-2.5 px-3 text-center border-r border-slate-200 font-medium text-slate-700 align-middle text-xs">
-                <span [class.text-slate-400]="!dia.componentes[comp.key] || dia.componentes[comp.key] === '—'">
-                  {{ dia.componentes[comp.key] || '—' }}
-                </span>
-              </td>
-            </tr>
+                      <button type="button" (click)="verFichaRecetaMomento(dia, mom)"
+                        class="text-[10px] font-semibold text-amber-800 hover:text-amber-950 underline cursor-pointer">
+                        Ver receta
+                      </button>
+                    </div>
+
+                    <!-- Nombre del plato elegido por la Jefa -->
+                    <div class="font-extrabold text-slate-900 text-xs leading-snug">
+                      {{ dia.momentos[mom].nombre_plato }}
+                    </div>
+
+                    <!-- Resumen de componentes clave -->
+                    <div class="text-[10px] text-slate-500 leading-tight">
+                      {{ dia.momentos[mom].componentes.proteico }} • {{ dia.momentos[mom].componentes.cereal }}
+                    </div>
+
+                    <!-- Alerta de Rechazo del Supervisor con Motivo -->
+                    <div *ngIf="dia.momentos[mom].estado_aprobacion === 'RECHAZADO'"
+                      class="p-2 rounded-lg bg-rose-50 border border-rose-200 text-rose-950 text-[10.5px]">
+                      <div class="font-bold">Motivo del rechazo (Supervisor):</div>
+                      <div class="italic mt-0.5">{{ dia.momentos[mom].motivo_rechazo_o_cancelacion }}</div>
+                    </div>
+
+                    <!-- ACCIONES DEL SUPERVISOR: Aprobar o Rechazar -->
+                    <div *ngIf="esSupervisor" class="flex items-center gap-1.5 pt-1.5 border-t border-slate-100">
+                      <button *ngIf="dia.momentos[mom].estado_aprobacion !== 'APROBADO'"
+                        type="button" (click)="aprobarMomentoPlato(dia, mom)"
+                        class="flex-1 py-1 px-2 rounded-lg text-[10.5px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer transition text-center shadow-2xs">
+                        Aprobar
+                      </button>
+                      <button *ngIf="dia.momentos[mom].estado_aprobacion !== 'RECHAZADO'"
+                        type="button" (click)="abrirModalRechazoSupervisor(dia, mom)"
+                        class="flex-1 py-1 px-2 rounded-lg text-[10.5px] font-bold bg-rose-100 hover:bg-rose-200 text-rose-900 border border-rose-300 cursor-pointer transition text-center">
+                        Rechazar
+                      </button>
+                    </div>
+
+                    <!-- ACCIONES DE LA JEFA: Cambiar Menú o Cancelar Entrega -->
+                    <div *ngIf="esJefaManipuladoras || esSuperAdmin"
+                      class="flex items-center justify-between gap-1 pt-1.5 border-t border-slate-100 text-[10px]">
+                      <button type="button" (click)="abrirModalProgramarMenuDiaMomento(dia, mom)"
+                        class="font-bold text-amber-900 hover:underline cursor-pointer">
+                        Cambiar menú
+                      </button>
+                      <button type="button" (click)="abrirModalNovedadMomento(dia, mom, 'CANCELADO')"
+                        class="text-slate-500 hover:text-rose-700 cursor-pointer">
+                        Cancelar entrega
+                      </button>
+                    </div>
+
+                  </div>
+
+                  <!-- CASO 2: CANCELADO DE ÚLTIMA HORA (Aviso imprevisto ej: primaria sin clase) -->
+                  <div *ngIf="dia.momentos[mom].estado_aprobacion === 'CANCELADO'"
+                    class="bg-slate-50 border border-slate-300 rounded-xl p-3 flex flex-col gap-1.5 text-left">
+                    <div class="flex items-center justify-between">
+                      <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-800 border border-slate-300">
+                        Cancelado
+                      </span>
+                      <button *ngIf="esJefaManipuladoras || esSuperAdmin" type="button"
+                        (click)="reactivarMomento(dia, mom)"
+                        class="text-[9.5px] text-amber-800 hover:underline cursor-pointer">
+                        Reactivar
+                      </button>
+                    </div>
+                    <div class="line-through text-slate-500 font-bold text-xs">
+                      {{ dia.momentos[mom].nombre_plato || 'Menú programado' }}
+                    </div>
+                    <div class="text-[10px] text-slate-600 bg-white p-1.5 rounded border border-slate-200">
+                      <span class="font-bold text-slate-700">Motivo:</span> {{ dia.momentos[mom].motivo_rechazo_o_cancelacion }}
+                    </div>
+                  </div>
+
+                  <!-- CASO 3: SIN SERVICIO ANTICIPADO (Jornada pedagógica / Festivo) -->
+                  <div *ngIf="dia.momentos[mom].estado_aprobacion === 'SIN_SERVICIO'"
+                    class="bg-amber-50/40 border border-dashed border-amber-300 rounded-xl p-3 flex flex-col gap-1.5 text-left">
+                    <div class="flex items-center justify-between">
+                      <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
+                        Sin Servicio
+                      </span>
+                      <button *ngIf="esJefaManipuladoras || esSuperAdmin" type="button"
+                        (click)="reactivarMomento(dia, mom)"
+                        class="text-[9.5px] text-amber-800 hover:underline cursor-pointer">
+                        Habilitar
+                      </button>
+                    </div>
+                    <div class="text-[10.5px] font-bold text-slate-700">
+                      No aplica entrega de menú
+                    </div>
+                    <div class="text-[10px] text-slate-600">
+                      <span class="font-bold">Motivo:</span> {{ dia.momentos[mom].motivo_rechazo_o_cancelacion }}
+                    </div>
+                  </div>
+
+                  <!-- CASO 4: SIN ASIGNAR / PENDIENTE -->
+                  <div *ngIf="!dia.momentos[mom].tiene_menu_registrado && dia.momentos[mom].estado_aprobacion !== 'CANCELADO' && dia.momentos[mom].estado_aprobacion !== 'SIN_SERVICIO'"
+                    class="bg-slate-50/70 border border-dashed border-slate-300 rounded-xl p-3 flex flex-col items-center justify-center gap-1.5 text-center min-h-[85px]">
+                    
+                    <!-- Para la Jefa: Botón para elegir plato o marcar sin servicio -->
+                    <div *ngIf="esJefaManipuladoras || esSuperAdmin" class="flex flex-col items-center gap-1 w-full">
+                      <button type="button" (click)="abrirModalProgramarMenuDiaMomento(dia, mom)"
+                        class="w-full py-1.5 px-2 rounded-lg text-xs font-bold bg-amber-50 hover:bg-amber-100 text-amber-950 border border-amber-300 cursor-pointer transition">
+                        + Asignar {{ mom }}
+                      </button>
+                      <button type="button" (click)="abrirModalNovedadMomento(dia, mom, 'SIN_SERVICIO')"
+                        class="text-[9.5px] text-slate-500 hover:text-slate-700 cursor-pointer mt-0.5">
+                        Sin clase (No aplica)
+                      </button>
+                    </div>
+
+                    <!-- Para el Supervisor: Mensaje sutil de solo lectura -->
+                    <div *ngIf="esSupervisor && !esJefaManipuladoras && !esSuperAdmin" class="flex flex-col items-center gap-0.5">
+                      <span class="text-xs font-semibold text-slate-500">Sin asignar</span>
+                      <span class="text-[10px] text-slate-400">Pendiente por la Jefa</span>
+                    </div>
+
+                  </div>
+
+                </td>
+              </tr>
+
+              <!-- Si se filtra por un momento específico, se despliega el desglose de componentes debajo -->
+              <ng-container *ngIf="filtroSeccionMinuta !== 'TODAS'">
+                <tr *ngFor="let comp of filasComponentesPAE; let odd = odd"
+                  [ngClass]="odd ? 'bg-slate-50/40' : 'bg-white'"
+                  class="border-b border-slate-100 hover:bg-amber-50/15 transition">
+                  <td class="py-2.5 px-4 font-semibold text-slate-700 border-r border-slate-200 text-xs bg-slate-50/30">
+                    {{ comp.label }}
+                  </td>
+                  <td *ngFor="let dia of semana.dias"
+                    class="py-2.5 px-3 text-center border-r border-slate-200 font-medium text-slate-700 align-middle text-xs">
+                    <span [class.text-slate-400]="!dia.momentos[mom].componentes[comp.key] || dia.momentos[mom].componentes[comp.key] === '—'">
+                      {{ dia.momentos[mom].componentes[comp.key] || '—' }}
+                    </span>
+                  </td>
+                </tr>
+              </ng-container>
+
+            </ng-container>
 
           </tbody>
         </table>
@@ -321,9 +444,9 @@
           </button>
         </div>
 
-        <!-- Filtro por Momento -->
+        <!-- Filtro por Sección -->
         <div class="flex items-center gap-1.5 shrink-0 self-start sm:self-auto">
-          <span class="text-xs font-semibold text-slate-600 mr-1">Momento:</span>
+          <span class="text-xs font-semibold text-slate-600 mr-1">Sección:</span>
           <button
             type="button"
             (click)="filtroMomentoPlatos = 'TODAS'"
@@ -372,7 +495,7 @@
                 Nombre del Plato
               </th>
               <th class="py-3 px-4 font-bold uppercase tracking-wider text-[11px] text-slate-600 w-52">
-                Secciones / Momentos
+                Secciones
               </th>
               <th class="py-3 px-4 font-bold uppercase tracking-wider text-[11px] text-slate-600">
                 Componentes del plato
@@ -970,6 +1093,199 @@
         <button type="button" (click)="guardarProgramacionDiaSede()"
           class="px-5 py-2 rounded-xl text-xs font-bold bg-[#fac94b] hover:bg-amber-400 text-slate-950 border border-amber-400 transition cursor-pointer shadow-2xs">
           Guardar Menú del Día
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL DE RECHAZO CON MOTIVO OBLIGATORIO (SUPERVISOR PAE)              -->
+  <!-- ===================================================================== -->
+  <div *ngIf="mostrarModalRechazoSupervisor"
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
+    <div class="bg-white rounded-2xl shadow-xl border border-rose-200 w-full max-w-lg p-6 flex flex-col gap-4">
+      
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div>
+          <h3 class="text-base font-extrabold text-slate-900 m-0">
+            Rechazar Menú de {{ rechazoForm.momento }}
+          </h3>
+          <p class="text-xs text-slate-500 m-0 mt-0.5">
+            Día: {{ rechazoForm.dia?.diaSemana }} • Sede: {{ sedeActualObj?.nombre_sede || sedeActualObj?.nombre }}
+          </p>
+        </div>
+        <button type="button" (click)="mostrarModalRechazoSupervisor = false"
+          class="text-slate-400 hover:text-slate-600 text-sm font-bold p-1 cursor-pointer">
+          ✕
+        </button>
+      </div>
+
+      <!-- Plato en evaluación -->
+      <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 flex flex-col gap-1">
+        <span class="text-[10.5px] uppercase tracking-wider font-extrabold text-slate-500">Plato seleccionado por la Jefa:</span>
+        <div class="font-extrabold text-slate-900 text-sm">
+          {{ rechazoForm.momento ? rechazoForm.dia?.momentos?.[rechazoForm.momento]?.nombre_plato : '' }}
+        </div>
+      </div>
+
+      <!-- Campo obligatorio: Motivo del rechazo -->
+      <div class="flex flex-col gap-1.5">
+        <label class="text-xs font-bold text-slate-800">
+          Motivo o corrección requerida <span class="text-rose-600">*</span>
+        </label>
+        <textarea
+          [(ngModel)]="rechazoForm.motivo"
+          rows="3"
+          placeholder="Escribe la justificación del rechazo (ej. 'Exceso de carbohidratos en la semana, cambiar por proteína de origen animal')..."
+          class="w-full p-3 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-rose-400 bg-white"
+        ></textarea>
+        <p class="text-[10px] text-slate-500 m-0">
+          La jefa de cocina verá este motivo en la minuta y podrá seleccionar un plato alternativo a tiempo.
+        </p>
+      </div>
+
+      <!-- Botones de Acción -->
+      <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+        <button type="button" (click)="mostrarModalRechazoSupervisor = false"
+          class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition cursor-pointer">
+          Cancelar
+        </button>
+        <button type="button" (click)="confirmarRechazoSupervisor()"
+          class="px-5 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white transition cursor-pointer shadow-2xs">
+          Confirmar Rechazo
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL DE NOVEDAD (CANCELACIÓN DE ÚLTIMA HORA O SIN SERVICIO)         -->
+  <!-- ===================================================================== -->
+  <div *ngIf="mostrarModalNovedadMomento"
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
+    <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-lg p-6 flex flex-col gap-4">
+      
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div>
+          <h3 class="text-base font-extrabold text-slate-900 m-0">
+            Reportar Novedad — {{ novedadForm.momento }}
+          </h3>
+          <p class="text-xs text-slate-500 m-0 mt-0.5">
+            Día: {{ novedadForm.dia?.diaSemana }} • Sede: {{ sedeActualObj?.nombre_sede || sedeActualObj?.nombre }}
+          </p>
+        </div>
+        <button type="button" (click)="mostrarModalNovedadMomento = false"
+          class="text-slate-400 hover:text-slate-600 text-sm font-bold p-1 cursor-pointer">
+          ✕
+        </button>
+      </div>
+
+      <!-- Tipo de Novedad -->
+      <div class="flex flex-col gap-1.5">
+        <label class="text-xs font-bold text-slate-800">
+          Tipo de novedad
+        </label>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <button type="button"
+            (click)="novedadForm.tipo = 'CANCELADO'"
+            [ngClass]="novedadForm.tipo === 'CANCELADO'
+              ? 'bg-amber-100 border-amber-400 text-amber-950 font-bold'
+              : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'"
+            class="p-2.5 rounded-xl border text-xs text-left cursor-pointer transition">
+            <div class="font-bold">Cancelado de última hora</div>
+            <div class="text-[10px] text-slate-500 mt-0.5">Estaba programado pero se avisó que no hay clase (ej. primaria).</div>
+          </button>
+          <button type="button"
+            (click)="novedadForm.tipo = 'SIN_SERVICIO'"
+            [ngClass]="novedadForm.tipo === 'SIN_SERVICIO'
+              ? 'bg-amber-100 border-amber-400 text-amber-950 font-bold'
+              : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'"
+            class="p-2.5 rounded-xl border text-xs text-left cursor-pointer transition">
+            <div class="font-bold">Sin servicio anticipado</div>
+            <div class="text-[10px] text-slate-500 mt-0.5">Jornada pedagógica, paro o sin actividad escolar.</div>
+          </button>
+        </div>
+      </div>
+
+      <!-- Motivo obligatorio -->
+      <div class="flex flex-col gap-1.5">
+        <label class="text-xs font-bold text-slate-800">
+          Justificación o motivo de la novedad <span class="text-rose-600">*</span>
+        </label>
+        <textarea
+          [(ngModel)]="novedadForm.motivo"
+          rows="3"
+          placeholder="Escribe la justificación (ej. 'Aviso de rectoría: primaria no tuvo clase hoy por mantenimiento')..."
+          class="w-full p-3 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-amber-400 bg-white"
+        ></textarea>
+      </div>
+
+      <!-- Botones de Acción -->
+      <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+        <button type="button" (click)="mostrarModalNovedadMomento = false"
+          class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition cursor-pointer">
+          Cancelar
+        </button>
+        <button type="button" (click)="confirmarNovedadMomento()"
+          class="px-5 py-2 rounded-xl text-xs font-bold bg-[#fac94b] hover:bg-amber-400 text-slate-950 border border-amber-400 transition cursor-pointer shadow-2xs">
+          Guardar Novedad
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL DE FICHA TÉCNICA DE RECETA                                      -->
+  <!-- ===================================================================== -->
+  <div *ngIf="mostrarModalFichaReceta && celdaRecetaSeleccionada"
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
+    <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-lg p-6 flex flex-col gap-4">
+      
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div>
+          <span class="text-[10px] uppercase tracking-wider font-extrabold text-amber-900 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+            {{ celdaRecetaSeleccionada.seccion }} • {{ celdaRecetaSeleccionada.diaSemana }}
+          </span>
+          <h3 class="text-base font-extrabold text-slate-900 m-0 mt-1">
+            {{ celdaRecetaSeleccionada.nombre_plato }}
+          </h3>
+        </div>
+        <button type="button" (click)="mostrarModalFichaReceta = false"
+          class="text-slate-400 hover:text-slate-600 text-sm font-bold p-1 cursor-pointer">
+          ✕
+        </button>
+      </div>
+
+      <!-- Componentes PAE -->
+      <div class="flex flex-col gap-2">
+        <span class="text-xs font-bold text-slate-800">Componentes estipulados PAE:</span>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+          <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+            <span class="font-bold text-slate-700">Bebida con leche:</span>
+            <div class="text-slate-600 mt-0.5">{{ celdaRecetaSeleccionada.componentes.bebida_leche || '—' }}</div>
+          </div>
+          <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+            <span class="font-bold text-slate-700">Alimento proteico:</span>
+            <div class="text-slate-600 mt-0.5">{{ celdaRecetaSeleccionada.componentes.proteico || '—' }}</div>
+          </div>
+          <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+            <span class="font-bold text-slate-700">Cereal acompañante:</span>
+            <div class="text-slate-600 mt-0.5">{{ celdaRecetaSeleccionada.componentes.cereal || '—' }}</div>
+          </div>
+          <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+            <span class="font-bold text-slate-700">Fruta:</span>
+            <div class="text-slate-600 mt-0.5">{{ celdaRecetaSeleccionada.componentes.fruta || '—' }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end pt-3 border-t border-slate-100">
+        <button type="button" (click)="mostrarModalFichaReceta = false"
+          class="px-5 py-2 rounded-xl text-xs font-bold bg-[#fac94b] hover:bg-amber-400 text-slate-950 border border-amber-400 cursor-pointer shadow-2xs">
+          Cerrar
         </button>
       </div>
 

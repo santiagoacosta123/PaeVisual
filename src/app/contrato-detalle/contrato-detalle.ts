@@ -1025,10 +1025,9 @@ export class ContratoDetalleComponent implements OnInit {
   private cargarSeccionesPorDefecto(): void {
     if (this.seccionesMenu.length === 0) {
       this.seccionesMenu = [
-        { id_seccion: 1, id: 1, nombre_seccion: 'Complemento AM', nombre: 'Complemento AM', jornada: 'Mañana', id_jornada: 1 },
-        { id_seccion: 2, id: 2, nombre_seccion: 'Desayuno preparado', nombre: 'Desayuno preparado', jornada: 'Mañana', id_jornada: 1 },
-        { id_seccion: 3, id: 3, nombre_seccion: 'Almuerzo preparado', nombre: 'Almuerzo preparado', jornada: 'Tarde', id_jornada: 2 },
-        { id_seccion: 4, id: 4, nombre_seccion: 'Complemento PM', nombre: 'Complemento PM', jornada: 'Tarde', id_jornada: 2 }
+        { id_seccion: 1, id: 1, nombre_seccion: 'Desayuno', nombre: 'Desayuno', jornada: 'Mañana', id_jornada: 3 },
+        { id_seccion: 2, id: 2, nombre_seccion: 'Almuerzo', nombre: 'Almuerzo', jornada: 'Tarde', id_jornada: 5 },
+        { id_seccion: 3, id: 3, nombre_seccion: 'Merienda', nombre: 'Merienda', jornada: 'Tarde', id_jornada: 5 }
       ];
     }
   }
@@ -1058,13 +1057,14 @@ export class ContratoDetalleComponent implements OnInit {
       this.cargarSeccionesPorDefecto();
     }
     return this.seccionesMenu.filter(s => {
+      const nom = (s.nombre_seccion || s.nombre || '').toLowerCase();
       const jNom = (s.jornada || s.nombre_jornada || s.jornada_nombre || '').toLowerCase();
-      const jId = typeof s.id_jornada === 'object' ? s.id_jornada?.id_jornada : s.id_jornada;
+      const jId = Number(typeof s.id_jornada === 'object' ? s.id_jornada?.id_jornada : s.id_jornada);
       if (norm.includes('mañana')) {
-        return jNom.includes('mañana') || jNom.includes('am') || Number(jId) === 1 || (s.nombre_seccion || '').toLowerCase().includes('am') || (s.nombre_seccion || '').toLowerCase().includes('desayuno');
+        return nom.includes('desayuno') || nom.includes('am') || jNom.includes('mañana') || jId === 1 || jId === 3;
       }
       if (norm.includes('tarde')) {
-        return jNom.includes('tarde') || jNom.includes('pm') || Number(jId) === 2 || (s.nombre_seccion || '').toLowerCase().includes('pm') || (s.nombre_seccion || '').toLowerCase().includes('almuerzo');
+        return nom.includes('almuerzo') || nom.includes('merienda') || nom.includes('pm') || jNom.includes('tarde') || jId === 2 || jId === 5;
       }
       return false;
     });
