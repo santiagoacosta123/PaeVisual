@@ -8,6 +8,7 @@ import { environment } from '@env/environment';
 import { AuthService } from '@core/auth';
 import { SweetAlertService } from '../sweet-alert.service';
 import { CustomSelectComponent } from '../shared/custom-select/custom-select';
+import { CATALOGO_PREPARACIONES_PAE } from '../banco-datos/recetas-pae-base';
 
 export interface IngredienteComponenteReceta {
   id_ingrediente: number;
@@ -109,7 +110,7 @@ export class MenusComponent implements OnInit {
   private readonly STORAGE_MINUTA_SEDE_KEY = 'sirae_minutas_por_sede_v1';
   private readonly STORAGE_APROBACIONES_KEY = 'sirae_aprobaciones_minuta_v1';
   private readonly STORAGE_SEDES_MOMENTOS_KEY = 'sirae_sedes_momentos_v1';
-  private readonly STORAGE_PLATOS_CATALOGO_KEY = 'sirae_platos_catalogo_personalizados_v3';
+  private readonly STORAGE_PLATOS_CATALOGO_KEY = 'sirae_platos_catalogo_personalizados_v5';
 
   pestanaActiva: 'minuta' | 'platos' | 'menus' | 'preparaciones' = 'platos';
 
@@ -639,120 +640,120 @@ export class MenusComponent implements OnInit {
         secciones: ['Desayuno'],
         nombre_plato: 'Pericos con arroz',
         componentes: { bebida_leche: 'Refresco de avena', proteico: 'Huevos pericos', cereal: 'Arroz blanco', fruta: '—', agua: 'Agua potable' },
-        ingredientes: ['Avena en hojuelas', 'Leche', 'Huevos', 'Tomate y cebolla', 'Arroz blanco', 'Agua potable'],
-        pasos: ['Preparar el refresco de avena con leche.', 'Elaborar los huevos pericos bien cocidos con tomate y cebolla.', 'Cocinar el arroz blanco y servir con agua potable.']
+        ingredientes: ['Avena', 'Leche líquida', 'Azúcar', 'Huevos', 'Tomate', 'Cebolla', 'Arroz', 'Ajo', 'Aceite vegetal', 'Sal', 'Agua potable'],
+        pasos: ['Preparar el refresco de avena con leche líquida y azúcar.', 'Elaborar los huevos pericos bien cocidos con tomate y cebolla.', 'Cocinar el arroz blanco con ajo y sal, servir con agua potable.']
       },
       {
         numeroMenu: 2, semana: 1, seccion: 'Almuerzo',
-        secciones: ['Desayuno', 'Almuerzo', 'Merienda'],
+        secciones: ['Almuerzo'],
         nombre_plato: 'Pollo en salsa blanca con pasta',
         componentes: { bebida_leche: 'Jugo de fruta en leche', proteico: 'Pollo en salsa blanca', cereal: 'Pasta', fruta: '—', agua: '—' },
-        ingredientes: ['Leche', 'Fruta de cosecha', 'Pechuga de pollo', 'Pasta alimenticia'],
-        pasos: ['Licuar el jugo de fruta en leche pasteurizada.', 'Cocinar el pollo y preparar en salsa blanca.', 'Cocinar la pasta al dente y servir caliente.']
+        ingredientes: ['Leche líquida', 'Azúcar', 'Mango', 'Pollo', 'Harina de trigo', 'Mantequilla', 'Pasta', 'Sal', 'Agua potable'],
+        pasos: ['Licuar el jugo de fruta en leche líquida con azúcar.', 'Cocinar el pollo y preparar en salsa blanca suave.', 'Cocinar la pasta al dente y servir caliente.']
       },
       {
         numeroMenu: 3, semana: 1, seccion: 'Desayuno',
         secciones: ['Desayuno', 'Merienda'],
         nombre_plato: 'Arepa con chocolate',
-        componentes: { bebida_leche: 'Chocolate en leche', proteico: '—', cereal: 'Arepa de maíz', fruta: 'Banano / Fruta cosecha', agua: '—' },
-        ingredientes: ['Chocolate', 'Leche', 'Harina de maíz', 'Banano'],
-        pasos: ['Preparar el chocolate en leche caliente.', 'Asar la arepa de maíz en plancha limpia.', 'Lavar y desinfectar el banano para servir.']
+        componentes: { bebida_leche: 'Chocolate en leche', proteico: '—', cereal: 'Arepa de maíz', fruta: 'Banano', agua: '—' },
+        ingredientes: ['Chocolate', 'Leche líquida', 'Azúcar', 'Harina de maíz', 'Mantequilla', 'Sal', 'Banano'],
+        pasos: ['Preparar el chocolate en leche líquida caliente con azúcar.', 'Asar la arepa de maíz en plancha limpia.', 'Lavar y entregar el banano para el servicio.']
       },
       {
         numeroMenu: 4, semana: 1, seccion: 'Almuerzo',
-        secciones: ['Almuerzo', 'Desayuno'],
+        secciones: ['Almuerzo'],
         nombre_plato: 'Lentejas con arroz',
-        componentes: { bebida_leche: 'Jugo de fruta en leche', proteico: 'Lentejas con papa guisada', cereal: 'Arroz', fruta: '—', agua: '—' },
-        ingredientes: ['Leche', 'Fruta', 'Lentejas', 'Papa común', 'Arroz blanco'],
-        pasos: ['Preparar el jugo de fruta en leche.', 'Cocinar las lentejas con papa guisada.', 'Preparar el arroz blanco y servir.']
+        componentes: { bebida_leche: 'Jugo de fruta en leche', proteico: 'Lentejas con papa guisada', cereal: 'Arroz blanco', fruta: '—', agua: '—' },
+        ingredientes: ['Leche líquida', 'Azúcar', 'Mango', 'Lentejas', 'Papa', 'Tomate', 'Cebolla', 'Ajo', 'Arroz', 'Aceite vegetal', 'Sal', 'Agua potable'],
+        pasos: ['Preparar el jugo de fruta en leche líquida.', 'Cocinar las lentejas guisadas con papa, tomate y cebolla.', 'Preparar el arroz blanco con ajo y servir.']
       },
       {
         numeroMenu: 5, semana: 1, seccion: 'Desayuno',
         secciones: ['Desayuno'],
         nombre_plato: 'Torta de huevo con arroz',
-        componentes: { bebida_leche: 'Agua de panela en leche', proteico: 'Torta de huevo', cereal: 'Arroz blanco', fruta: '—', agua: '—' },
-        ingredientes: ['Panela', 'Leche', 'Huevos', 'Arroz blanco'],
-        pasos: ['Preparar el agua de panela con leche.', 'Cocinar completamente la torta de huevo.', 'Acompañar con arroz blanco recién hecho.']
+        componentes: { bebida_leche: 'Bebida dulce en leche', proteico: 'Torta de huevo', cereal: 'Arroz blanco', fruta: '—', agua: '—' },
+        ingredientes: ['Leche líquida', 'Azúcar', 'Huevos', 'Tomate', 'Cebolla', 'Arroz', 'Ajo', 'Aceite vegetal', 'Sal', 'Agua potable'],
+        pasos: ['Preparar la bebida dulce en leche líquida con azúcar.', 'Cocinar completamente la torta de huevo con tomate y cebolla.', 'Acompañar con arroz blanco recién hecho con ajo y sal.']
       },
       {
         numeroMenu: 6, semana: 2, seccion: 'Almuerzo',
-        secciones: ['Almuerzo', 'Desayuno'],
+        secciones: ['Almuerzo'],
         nombre_plato: 'Carne guisada con arroz',
         componentes: { bebida_leche: 'Refresco de avena', proteico: 'Carne de res guisada', cereal: 'Arroz blanco', fruta: '—', agua: '—' },
-        ingredientes: ['Avena', 'Leche', 'Carne de res', 'Tomate y cebolla', 'Arroz blanco'],
-        pasos: ['Preparar el refresco de avena en leche.', 'Guisar la carne de res hasta que esté blanda.', 'Servir acompañada de arroz blanco.']
+        ingredientes: ['Avena', 'Leche líquida', 'Azúcar', 'Carne de res', 'Tomate', 'Cebolla', 'Pimentón', 'Ajo', 'Arroz', 'Aceite vegetal', 'Sal', 'Agua potable'],
+        pasos: ['Preparar el refresco de avena en leche líquida con azúcar.', 'Guisar la carne de res con tomate, cebolla y pimentón hasta que esté blanda.', 'Servir acompañada de arroz blanco con ajo.']
       },
       {
         numeroMenu: 7, semana: 2, seccion: 'Merienda',
-        secciones: ['Desayuno', 'Merienda'],
+        secciones: ['Merienda', 'Desayuno'],
         nombre_plato: 'Hojaldras con chocolate',
-        componentes: { bebida_leche: 'Chocolate en leche', proteico: '—', cereal: 'Hojaldra', fruta: 'Papaya / Fruta cosecha', agua: 'Agua potable' },
-        ingredientes: ['Chocolate', 'Leche', 'Hojaldra', 'Papaya', 'Agua potable'],
-        pasos: ['Preparar el chocolate en leche caliente.', 'Porcionar la papaya lavada y desinfectada.', 'Entregar con hojaldra fresca y agua potable.']
+        componentes: { bebida_leche: 'Chocolate en leche', proteico: '—', cereal: 'Hojaldras', fruta: 'Papaya', agua: 'Agua potable' },
+        ingredientes: ['Chocolate', 'Leche líquida', 'Azúcar', 'Harina de trigo', 'Polvo de hornear', 'Aceite vegetal', 'Sal', 'Papaya', 'Agua potable'],
+        pasos: ['Preparar el chocolate en leche líquida caliente.', 'Elaborar y freír las hojaldras hasta dorar.', 'Porcionar la papaya limpia y entregar con agua potable.']
       },
       {
         numeroMenu: 8, semana: 2, seccion: 'Almuerzo',
         secciones: ['Almuerzo'],
         nombre_plato: 'Frijoles guisados con arroz',
-        componentes: { bebida_leche: 'Agua de panela en leche', proteico: 'Frijoles guisados con papa', cereal: 'Arroz con fideos', fruta: '—', agua: '—' },
-        ingredientes: ['Panela', 'Leche', 'Frijol', 'Papa', 'Arroz', 'Fideos'],
-        pasos: ['Preparar el agua de panela en leche.', 'Cocinar los frijoles guisados con papa.', 'Preparar el arroz con fideos dorados y servir.']
+        componentes: { bebida_leche: 'Bebida dulce en leche', proteico: 'Frijoles guisados con papa', cereal: 'Arroz con fideos', fruta: '—', agua: '—' },
+        ingredientes: ['Leche líquida', 'Azúcar', 'Frijoles', 'Papa', 'Tomate', 'Cebolla', 'Ajo', 'Arroz', 'Pasta', 'Aceite vegetal', 'Sal', 'Agua potable'],
+        pasos: ['Preparar la bebida dulce en leche líquida con azúcar.', 'Cocinar los frijoles guisados con papa.', 'Preparar el arroz con fideos dorados y servir.']
       },
       {
         numeroMenu: 9, semana: 2, seccion: 'Merienda',
-        secciones: ['Desayuno', 'Merienda'],
+        secciones: ['Merienda', 'Desayuno'],
         nombre_plato: 'Galleta cuca con leche',
-        componentes: { bebida_leche: 'Leche', proteico: 'Galleta cuca', cereal: 'Maní salado', fruta: 'Mango / Fruta cosecha', agua: '—' },
-        ingredientes: ['Leche pasteurizada', 'Galleta cuca', 'Maní salado', 'Mango'],
-        pasos: ['Servir la porción de leche.', 'Acompañar con galleta cuca y maní salado.', 'Entregar con mango lavado y desinfectado.']
+        componentes: { bebida_leche: 'Leche líquida', proteico: 'Galleta', cereal: 'Maní salado', fruta: 'Mango', agua: '—' },
+        ingredientes: ['Leche líquida', 'Galleta', 'Maní salado', 'Mango'],
+        pasos: ['Servir la porción de leche líquida.', 'Acompañar con galleta y maní salado.', 'Entregar con mango lavado y porcionado.']
       },
       {
         numeroMenu: 10, semana: 2, seccion: 'Desayuno',
-        secciones: ['Desayuno', 'Almuerzo', 'Merienda'],
+        secciones: ['Desayuno'],
         nombre_plato: 'Huevos revueltos con arroz',
         componentes: { bebida_leche: 'Jugo de fruta en leche', proteico: 'Huevos revueltos', cereal: 'Arroz blanco', fruta: '—', agua: '—' },
-        ingredientes: ['Leche', 'Fruta de cosecha', 'Huevos', 'Arroz blanco'],
-        pasos: ['Preparar el jugo de fruta en leche.', 'Cocinar los huevos revueltos bien cocidos.', 'Servir con arroz blanco caliente.']
+        ingredientes: ['Leche líquida', 'Azúcar', 'Mango', 'Huevos', 'Arroz', 'Ajo', 'Aceite vegetal', 'Sal', 'Agua potable'],
+        pasos: ['Preparar el jugo de fruta en leche líquida.', 'Cocinar los huevos revueltos bien cocidos en sartén caliente.', 'Servir con arroz blanco recién hecho con ajo y sal.']
       },
       {
         numeroMenu: 11, semana: 3, seccion: 'Almuerzo',
-        secciones: ['Almuerzo', 'Desayuno'],
+        secciones: ['Almuerzo'],
         nombre_plato: 'Pollo guisado con arroz',
         componentes: { bebida_leche: 'Refresco de avena', proteico: 'Pollo guisado', cereal: 'Arroz blanco', fruta: '—', agua: '—' },
-        ingredientes: ['Avena', 'Leche', 'Pollo', 'Arroz blanco'],
-        pasos: ['Preparar el refresco de avena en leche.', 'Cocinar el pollo guisado con verduras.', 'Servir con arroz blanco.']
+        ingredientes: ['Avena', 'Leche líquida', 'Azúcar', 'Pollo', 'Tomate', 'Cebolla', 'Pimentón', 'Ajo', 'Papa', 'Arroz', 'Aceite vegetal', 'Sal', 'Agua potable'],
+        pasos: ['Preparar el refresco de avena en leche líquida con azúcar.', 'Cocinar el pollo guisado con tomate, cebolla, pimentón y papa.', 'Servir con arroz blanco con ajo.']
       },
       {
         numeroMenu: 12, semana: 3, seccion: 'Merienda',
-        secciones: ['Desayuno', 'Merienda'],
+        secciones: ['Merienda', 'Desayuno'],
         nombre_plato: 'Torta pastel con yogurt',
-        componentes: { bebida_leche: 'Yogurt', proteico: '—', cereal: 'Torta pastel', fruta: 'Manzana / Fruta cosecha', agua: '—' },
-        ingredientes: ['Yogurt pasteurizado', 'Torta pastel', 'Manzana'],
+        componentes: { bebida_leche: 'Yogurt', proteico: '—', cereal: 'Torta pastel', fruta: 'Manzana', agua: '—' },
+        ingredientes: ['Yogurt', 'Harina de trigo', 'Huevos', 'Azúcar', 'Mantequilla', 'Polvo de hornear', 'Leche líquida', 'Manzana'],
         pasos: ['Servir el yogurt frío.', 'Entregar con porción de torta pastel.', 'Acompañar con manzana lavada y desinfectada.']
       },
       {
         numeroMenu: 13, semana: 3, seccion: 'Almuerzo',
         secciones: ['Almuerzo'],
         nombre_plato: 'Arroz con cerdo y verduras',
-        componentes: { bebida_leche: 'Jugo de fruta en leche guayaba', proteico: 'Arroz con carne de cerdo y verduras', cereal: 'Arroz con carne de cerdo y verduras', fruta: '—', agua: 'Agua potable' },
-        ingredientes: ['Guayaba', 'Leche', 'Carne de cerdo', 'Arroz', 'Verduras', 'Agua potable'],
-        pasos: ['Preparar el jugo de guayaba en leche.', 'Cocinar la carne de cerdo e integrar con el arroz y verduras.', 'Servir con agua potable.']
+        componentes: { bebida_leche: 'Jugo de fruta en leche', proteico: 'Arroz con carne de cerdo y verduras', cereal: 'Arroz con carne de cerdo y verduras', fruta: '—', agua: 'Agua potable' },
+        ingredientes: ['Leche líquida', 'Azúcar', 'Mango', 'Carne de cerdo', 'Arroz', 'Zanahoria', 'Pimentón', 'Ajo', 'Aceite vegetal', 'Sal', 'Agua potable'],
+        pasos: ['Preparar el jugo de fruta en leche líquida.', 'Cocinar la carne de cerdo salteada con verduras e integrar con el arroz.', 'Servir con agua potable.']
       },
       {
         numeroMenu: 14, semana: 4, seccion: 'Merienda',
-        secciones: ['Desayuno', 'Merienda'],
+        secciones: ['Merienda', 'Desayuno'],
         nombre_plato: 'Arroz con leche y galletas',
-        componentes: { bebida_leche: 'Arroz con leche y canela', proteico: '—', cereal: 'Galleta tipo crackers salada', fruta: 'Mango / Papaya / Melón', agua: 'Agua potable' },
-        ingredientes: ['Arroz', 'Leche', 'Canela', 'Galleta tipo crackers', 'Mango, papaya o melón', 'Agua potable'],
-        pasos: ['Preparar el arroz con leche y canela.', 'Acompañar con galleta tipo crackers salada.', 'Entregar con porción de fruta y agua potable.']
+        componentes: { bebida_leche: 'Arroz con leche y canela', proteico: '—', cereal: 'Galleta tipo crackers', fruta: 'Papaya', agua: 'Agua potable' },
+        ingredientes: ['Arroz', 'Leche líquida', 'Azúcar', 'Canela', 'Galleta tipo crackers', 'Papaya', 'Agua potable'],
+        pasos: ['Preparar el arroz con leche líquida, azúcar y canela.', 'Acompañar con galleta tipo crackers.', 'Entregar con porción de papaya fresca y agua potable.']
       },
       {
         numeroMenu: 15, semana: 4, seccion: 'Almuerzo',
         secciones: ['Almuerzo'],
         nombre_plato: 'Pollo con verduras y papas',
         componentes: { bebida_leche: 'Refresco de avena', proteico: 'Pollo en julianas con verduras', cereal: 'Papas en casco', fruta: '—', agua: '—' },
-        ingredientes: ['Avena', 'Leche', 'Pechuga de pollo', 'Verduras', 'Papa común'],
-        pasos: ['Preparar el refresco de avena en leche.', 'Saltear y cocinar bien el pollo en julianas con verduras.', 'Cocinar las papas en casco y servir.']
+        ingredientes: ['Avena', 'Leche líquida', 'Azúcar', 'Pollo', 'Zanahoria', 'Pimentón', 'Cebolla', 'Papa', 'Aceite vegetal', 'Sal', 'Agua potable'],
+        pasos: ['Preparar el refresco de avena en leche líquida con azúcar.', 'Saltear y cocinar el pollo en julianas con verduras.', 'Asar las papas en casco y servir.']
       }
     ];
   }
@@ -859,14 +860,22 @@ export class MenusComponent implements OnInit {
   }
 
   cargarCatalogoBasePlatos(): void {
-    // 1. Limpiar versiones anteriores del almacenamiento local para que no persistan duplicados ni prefijos antiguos
+    // 1. Limpiar versiones anteriores del almacenamiento local para que no persistan duplicados ni momentos desactualizados
     try {
       localStorage.removeItem('sirae_platos_catalogo_personalizados_v1');
       localStorage.removeItem('sirae_platos_catalogo_personalizados_v2');
+      localStorage.removeItem('sirae_platos_catalogo_personalizados_v3');
+      localStorage.removeItem('sirae_platos_catalogo_personalizados_v4');
       localStorage.removeItem('sirae_catalogo_platos_pae_estipulados_v1');
     } catch {}
 
     const baseMenus = this.getCatalogo20MenusBasePAE();
+    const baseMap = new Map<string, any>();
+    for (const b of baseMenus) {
+      const k = this.obtenerClaveCanonicaPlato(b.nombre_plato);
+      if (k) baseMap.set(k, b);
+    }
+
     let personalizados: any[] = [];
     try {
       const raw = localStorage.getItem(this.STORAGE_PLATOS_CATALOGO_KEY);
@@ -895,14 +904,46 @@ export class MenusComponent implements OnInit {
       mapa.set(claveCanon, item);
     };
 
-    // 1. Platos personalizados creados o editados previamente por el usuario (PRIORIDAD MÁXIMA)
-    for (const pers of personalizados) {
-      registrarPlatoUnico(pers);
+    let eliminados: string[] = [];
+    try {
+      const rawEl = localStorage.getItem('sirae_platos_eliminados_v1');
+      eliminados = rawEl ? JSON.parse(rawEl) : [];
+    } catch {
+      eliminados = [];
     }
 
-    // 2. Platos base oficiales del PAE (plantilla inicial para los platos no personalizados)
+    // 1. Platos base oficiales del PAE (con sus secciones canónicas actualizadas)
     for (const b of baseMenus) {
+      const k = this.obtenerClaveCanonicaPlato(b.nombre_plato);
+      if (k && eliminados.includes(k)) continue;
       registrarPlatoUnico(b);
+    }
+
+    // 2. Platos personalizados o editados previamente por el usuario
+    for (const pers of personalizados) {
+      if (!pers || !pers.nombre_plato) continue;
+      const k = this.obtenerClaveCanonicaPlato(pers.nombre_plato);
+      if (!k) continue;
+
+      if (baseMap.has(k)) {
+        // Es un plato base que el usuario configuró o editó:
+        // Preservamos sus componentes editados, ingredientes y pasos personalizados
+        const base = baseMap.get(k);
+        const platoActualizado = {
+          ...base,
+          ...pers,
+          secciones: pers.secciones && pers.secciones.length > 0 && pers.secciones.length < 3
+            ? pers.secciones
+            : base.secciones,
+          seccion: base.seccion,
+          componentes: pers.componentes || base.componentes,
+          componentes_estructurados: pers.componentes_estructurados || base.componentes_estructurados
+        };
+        mapa.set(k, platoActualizado);
+      } else {
+        // Plato totalmente nuevo creado por el usuario
+        registrarPlatoUnico(pers);
+      }
     }
 
     // 3. Platos traídos del backend
@@ -938,6 +979,12 @@ export class MenusComponent implements OnInit {
 
   get catalogoPlatosVista(): any[] {
     const mapaUnicos = new Map<string, any>();
+    const baseMenus = this.getCatalogo20MenusBasePAE();
+    const baseMap = new Map<string, any>();
+    for (const b of baseMenus) {
+      const k = this.obtenerClaveCanonicaPlato(b.nombre_plato);
+      if (k) baseMap.set(k, b);
+    }
 
     for (const p of this.platosEstipuladosPAE || []) {
       const nombreLimpio = this.limpiarNombrePlato(p.nombre_plato);
@@ -946,9 +993,12 @@ export class MenusComponent implements OnInit {
       const claveCanon = this.obtenerClaveCanonicaPlato(nombreLimpio);
       if (mapaUnicos.has(claveCanon)) continue;
 
-      const secRaw = p.secciones && p.secciones.length > 0
-        ? p.secciones
-        : (p.seccion ? [p.seccion] : ['Desayuno', 'Almuerzo']);
+      const baseMatch = baseMap.get(claveCanon);
+      const secRaw = baseMatch
+        ? [...baseMatch.secciones]
+        : (p.secciones && p.secciones.length > 0
+            ? p.secciones
+            : (p.seccion ? [p.seccion] : ['Desayuno', 'Almuerzo']));
 
       mapaUnicos.set(claveCanon, {
         ...p,
@@ -998,6 +1048,19 @@ export class MenusComponent implements OnInit {
 
     const agregarComp = (tipo: string, nombre: string, defaultIngs: string[] = [], defaultPasos: string[] = []) => {
       if (!nombre || nombre === '—') return;
+      const baseReceta = CATALOGO_PREPARACIONES_PAE[(nombre || '').trim().toLowerCase()];
+      if (baseReceta) {
+        comps.push({
+          id_temporal: 'comp_' + Date.now() + '_' + (contador++),
+          tipo_componente: baseReceta.tipo_componente || tipo,
+          nombre_componente: baseReceta.nombre_componente || nombre,
+          ingredientes: baseReceta.ingredientes.map(i => ({ ...i })),
+          pasos: baseReceta.pasos.map((p, idx) => ({ numero_paso: idx + 1, descripcion_paso: p.descripcion_paso })),
+          ingredienteTempId: null,
+          observacionTemp: ''
+        });
+        return;
+      }
       comps.push({
         id_temporal: 'comp_' + Date.now() + '_' + (contador++),
         tipo_componente: tipo,
@@ -1137,9 +1200,10 @@ export class MenusComponent implements OnInit {
   private obtenerCatalogoComponentesLocal(): Record<string, ComponentePlatoReceta> {
     try {
       const raw = localStorage.getItem('sirae_catalogo_componentes_pae_v1');
-      return raw ? JSON.parse(raw) : {};
+      const guardado = raw ? JSON.parse(raw) : {};
+      return { ...CATALOGO_PREPARACIONES_PAE, ...guardado };
     } catch {
-      return {};
+      return { ...CATALOGO_PREPARACIONES_PAE };
     }
   }
 
@@ -1227,6 +1291,16 @@ export class MenusComponent implements OnInit {
           this.platosEstipuladosPAE.splice(idx, 1);
           this.guardarEstadoCatalogoPlatos();
         }
+
+        const claveCanon = this.obtenerClaveCanonicaPlato(plato.nombre_plato);
+        try {
+          const rawEl = localStorage.getItem('sirae_platos_eliminados_v1');
+          const eliminados: string[] = rawEl ? JSON.parse(rawEl) : [];
+          if (claveCanon && !eliminados.includes(claveCanon)) {
+            eliminados.push(claveCanon);
+            localStorage.setItem('sirae_platos_eliminados_v1', JSON.stringify(eliminados));
+          }
+        } catch {}
 
         if (plato.id_plato) {
           this.http.delete(`${this.apiUrl}/platos/${plato.id_plato}/`).pipe(
