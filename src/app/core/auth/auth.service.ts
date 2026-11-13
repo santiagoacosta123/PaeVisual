@@ -236,7 +236,7 @@ export class AuthService {
 
   esAdministrador(rol: string | null | undefined): boolean {
     const rolNormalizado = this.normalizarRol(rol);
-    return rolNormalizado === 'administrador' || rolNormalizado === 'admin';
+    return rolNormalizado === 'administrador' || rolNormalizado === 'admin' || rolNormalizado.includes('administrador');
   }
 
   rolPermitido(rol: string | null | undefined): boolean {
