@@ -14,6 +14,7 @@ import { catchError } from 'rxjs/operators';
 import { BancoDatosService } from '../services/banco-datos.service';
 import { SweetAlertService } from '../sweet-alert.service';
 import { CustomSelectComponent } from '../shared/custom-select/custom-select';
+import { CATALOGO_PREPARACIONES_PAE } from './recetas-pae-base';
 
 
 // ============================================================
@@ -90,6 +91,7 @@ interface TabConfig {
   idField: string;
   categoria?: 'institucional' | 'inventario' | 'operacion';
   campos: CampoConfig[];
+  soloLectura?: boolean;
 }
 
 interface OpcionRelacion {
@@ -567,7 +569,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       numero_menu: 1,
       semana: 'Semana 1',
       nombre_plato: 'Menú 1: Pericos con arroz',
-      secciones: ['Desayuno', 'Almuerzo', 'Merienda'],
+      secciones: ['Desayuno'],
       componentes: [
         { tipo_componente: 'Bebida con leche', nombre_componente: 'Refresco de avena' },
         { tipo_componente: 'Alimento proteico', nombre_componente: 'Huevos pericos' },
@@ -579,7 +581,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       numero_menu: 2,
       semana: 'Semana 1',
       nombre_plato: 'Menú 2: Pollo en salsa blanca con pasta',
-      secciones: ['Desayuno', 'Almuerzo', 'Merienda'],
+      secciones: ['Almuerzo'],
       componentes: [
         { tipo_componente: 'Bebida con leche', nombre_componente: 'Jugo de fruta en leche' },
         { tipo_componente: 'Alimento proteico', nombre_componente: 'Pollo en salsa blanca' },
@@ -601,7 +603,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       numero_menu: 4,
       semana: 'Semana 1',
       nombre_plato: 'Menú 4: Lentejas con arroz',
-      secciones: ['Almuerzo', 'Desayuno'],
+      secciones: ['Almuerzo'],
       componentes: [
         { tipo_componente: 'Bebida con leche', nombre_componente: 'Jugo de fruta en leche' },
         { tipo_componente: 'Alimento proteico', nombre_componente: 'Lentejas con papa guisada' },
@@ -612,9 +614,9 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       numero_menu: 5,
       semana: 'Semana 1',
       nombre_plato: 'Menú 5: Torta de huevo con arroz',
-      secciones: ['Desayuno', 'Almuerzo', 'Merienda'],
+      secciones: ['Desayuno'],
       componentes: [
-        { tipo_componente: 'Bebida con leche', nombre_componente: 'Agua de panela en leche' },
+        { tipo_componente: 'Bebida con leche', nombre_componente: 'Bebida dulce en leche' },
         { tipo_componente: 'Alimento proteico', nombre_componente: 'Torta de huevo' },
         { tipo_componente: 'Cereal acompañante', nombre_componente: 'Arroz blanco' }
       ]
@@ -624,7 +626,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       numero_menu: 6,
       semana: 'Semana 2',
       nombre_plato: 'Menú 6: Carne guisada con arroz',
-      secciones: ['Almuerzo', 'Desayuno'],
+      secciones: ['Almuerzo'],
       componentes: [
         { tipo_componente: 'Bebida con leche', nombre_componente: 'Refresco de avena' },
         { tipo_componente: 'Alimento proteico', nombre_componente: 'Carne de res guisada' },
@@ -635,7 +637,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       numero_menu: 7,
       semana: 'Semana 2',
       nombre_plato: 'Menú 7: Hojaldras con chocolate',
-      secciones: ['Desayuno', 'Merienda'],
+      secciones: ['Merienda', 'Desayuno'],
       componentes: [
         { tipo_componente: 'Bebida con leche', nombre_componente: 'Chocolate en leche' },
         { tipo_componente: 'Cereal acompañante', nombre_componente: 'Hojaldras' },
@@ -647,9 +649,9 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       numero_menu: 8,
       semana: 'Semana 2',
       nombre_plato: 'Menú 8: Frijoles guisados con arroz',
-      secciones: ['Almuerzo', 'Desayuno'],
+      secciones: ['Almuerzo'],
       componentes: [
-        { tipo_componente: 'Bebida con leche', nombre_componente: 'Agua de panela en leche' },
+        { tipo_componente: 'Bebida con leche', nombre_componente: 'Bebida dulce en leche' },
         { tipo_componente: 'Alimento proteico', nombre_componente: 'Frijoles guisados con papa' },
         { tipo_componente: 'Cereal acompañante', nombre_componente: 'Arroz con fideos' }
       ]
@@ -658,10 +660,10 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       numero_menu: 9,
       semana: 'Semana 2',
       nombre_plato: 'Menú 9: Galleta cuca con leche',
-      secciones: ['Desayuno', 'Merienda'],
+      secciones: ['Merienda', 'Desayuno'],
       componentes: [
-        { tipo_componente: 'Bebida con leche', nombre_componente: 'Leche' },
-        { tipo_componente: 'Alimento proteico', nombre_componente: 'Galleta / cuca' },
+        { tipo_componente: 'Bebida con leche', nombre_componente: 'Leche líquida' },
+        { tipo_componente: 'Alimento proteico', nombre_componente: 'Galleta' },
         { tipo_componente: 'Cereal acompañante', nombre_componente: 'Maní salado' },
         { tipo_componente: 'Fruta', nombre_componente: 'Mango' }
       ]
@@ -670,7 +672,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       numero_menu: 10,
       semana: 'Semana 2',
       nombre_plato: 'Menú 10: Huevos revueltos con arroz',
-      secciones: ['Desayuno', 'Almuerzo', 'Merienda'],
+      secciones: ['Desayuno'],
       componentes: [
         { tipo_componente: 'Bebida con leche', nombre_componente: 'Jugo de fruta en leche' },
         { tipo_componente: 'Alimento proteico', nombre_componente: 'Huevos revueltos' },
@@ -682,7 +684,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       numero_menu: 11,
       semana: 'Semana 3',
       nombre_plato: 'Menú 11: Pollo guisado con arroz',
-      secciones: ['Almuerzo', 'Desayuno'],
+      secciones: ['Almuerzo'],
       componentes: [
         { tipo_componente: 'Bebida con leche', nombre_componente: 'Refresco de avena' },
         { tipo_componente: 'Alimento proteico', nombre_componente: 'Pollo guisado' },
@@ -693,9 +695,9 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       numero_menu: 12,
       semana: 'Semana 3',
       nombre_plato: 'Menú 12: Lentejas guisadas con arroz',
-      secciones: ['Almuerzo', 'Desayuno'],
+      secciones: ['Almuerzo'],
       componentes: [
-        { tipo_componente: 'Bebida con leche', nombre_componente: 'Agua de panela en leche' },
+        { tipo_componente: 'Bebida con leche', nombre_componente: 'Bebida dulce en leche' },
         { tipo_componente: 'Alimento proteico', nombre_componente: 'Lentejas guisadas con papa' },
         { tipo_componente: 'Cereal acompañante', nombre_componente: 'Arroz blanco' },
         { tipo_componente: 'Fruta', nombre_componente: 'Mango' }
@@ -705,7 +707,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       numero_menu: 13,
       semana: 'Semana 3',
       nombre_plato: 'Menú 13: Torta de huevo con quinua',
-      secciones: ['Desayuno', 'Almuerzo', 'Merienda'],
+      secciones: ['Desayuno'],
       componentes: [
         { tipo_componente: 'Bebida con leche', nombre_componente: 'Colada de quinua' },
         { tipo_componente: 'Alimento proteico', nombre_componente: 'Torta de huevo' },
@@ -716,7 +718,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       numero_menu: 14,
       semana: 'Semana 3',
       nombre_plato: 'Menú 14: Torta pastel con yogurt',
-      secciones: ['Desayuno', 'Merienda'],
+      secciones: ['Merienda', 'Desayuno'],
       componentes: [
         { tipo_componente: 'Bebida con leche', nombre_componente: 'Yogurt' },
         { tipo_componente: 'Cereal acompañante', nombre_componente: 'Torta pastel' },
@@ -727,7 +729,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       numero_menu: 15,
       semana: 'Semana 3',
       nombre_plato: 'Menú 15: Arroz con cerdo y verduras',
-      secciones: ['Almuerzo', 'Desayuno'],
+      secciones: ['Almuerzo'],
       componentes: [
         { tipo_componente: 'Bebida con leche', nombre_componente: 'Jugo de fruta en leche' },
         { tipo_componente: 'Alimento proteico', nombre_componente: 'Arroz con carne de cerdo y verduras' }
@@ -738,7 +740,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       numero_menu: 16,
       semana: 'Semana 4',
       nombre_plato: 'Menú 16: Lentejas con colada de quinua',
-      secciones: ['Almuerzo', 'Desayuno'],
+      secciones: ['Almuerzo'],
       componentes: [
         { tipo_componente: 'Bebida con leche', nombre_componente: 'Colada de quinua' },
         { tipo_componente: 'Alimento proteico', nombre_componente: 'Lentejas guisadas con papa' },
@@ -749,7 +751,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       numero_menu: 17,
       semana: 'Semana 4',
       nombre_plato: 'Menú 17: Pericos con chocolate',
-      secciones: ['Desayuno', 'Almuerzo', 'Merienda'],
+      secciones: ['Desayuno'],
       componentes: [
         { tipo_componente: 'Bebida con leche', nombre_componente: 'Chocolate en leche' },
         { tipo_componente: 'Alimento proteico', nombre_componente: 'Huevos pericos' },
@@ -760,18 +762,18 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       numero_menu: 18,
       semana: 'Semana 4',
       nombre_plato: 'Menú 18: Arroz con leche y galletas',
-      secciones: ['Desayuno', 'Merienda'],
+      secciones: ['Merienda', 'Desayuno'],
       componentes: [
         { tipo_componente: 'Bebida con leche', nombre_componente: 'Arroz con leche y canela' },
         { tipo_componente: 'Cereal acompañante', nombre_componente: 'Galleta tipo crackers' },
-        { tipo_componente: 'Fruta', nombre_componente: 'Mango, papaya, melón' }
+        { tipo_componente: 'Fruta', nombre_componente: 'Papaya' }
       ]
     },
     {
       numero_menu: 19,
       semana: 'Semana 4',
       nombre_plato: 'Menú 19: Pollo con verduras y papas',
-      secciones: ['Almuerzo', 'Desayuno'],
+      secciones: ['Almuerzo'],
       componentes: [
         { tipo_componente: 'Bebida con leche', nombre_componente: 'Refresco de avena' },
         { tipo_componente: 'Alimento proteico', nombre_componente: 'Pollo en julianas con verduras' },
@@ -782,9 +784,9 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       numero_menu: 20,
       semana: 'Semana 4',
       nombre_plato: 'Menú 20: Frijoles con arroz y fideos',
-      secciones: ['Almuerzo', 'Desayuno'],
+      secciones: ['Almuerzo'],
       componentes: [
-        { tipo_componente: 'Bebida con leche', nombre_componente: 'Agua de panela en leche' },
+        { tipo_componente: 'Bebida con leche', nombre_componente: 'Bebida dulce en leche' },
         { tipo_componente: 'Alimento proteico', nombre_componente: 'Frijoles guisados con papa' },
         { tipo_componente: 'Cereal acompañante', nombre_componente: 'Arroz con fideos' }
       ]
@@ -1036,6 +1038,8 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
         const idB = this.obtenerIdItem(b) || 0;
         return idA - idB;
       });
+    } else if (this.tabActual === 'secciones_menu') {
+      resultado.sort((a, b) => (a._orden ?? 0) - (b._orden ?? 0));
     } else {
       // Más recientes: ordenar por ID descendente si existe
       resultado.sort((a, b) => {
@@ -1159,6 +1163,8 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
             this.datos = this.ordenarPlatosPAE(
               crudos.map(plato => this.enriquecerPlatoConReceta(plato))
             );
+          } else if (this.tabActual === 'secciones_menu') {
+            this.datos = this.procesarSeccionesOficiales(crudos);
           } else {
             this.datos = crudos;
           }
@@ -1193,10 +1199,23 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
         if (fuente === 'unidades_medida') {
           this.unidadesMedidaCompletas = items;
         }
-        this.opciones[fuente] = items.map(r => ({
-          id: r[cfg.id] ?? r.id,
-          label: cfg.etiqueta(r)
-        }));
+        if (fuente === 'secciones_menu') {
+          // Filtrar únicamente los 3 momentos oficiales del PAE para listas de selección
+          const oficialesNombres = ['desayuno', 'almuerzo', 'merienda'];
+          const filtrados = items.filter(r => {
+            const nom = (cfg.etiqueta(r) || '').trim().toLowerCase();
+            return oficialesNombres.includes(nom);
+          });
+          this.opciones[fuente] = filtrados.map(r => ({
+            id: r[cfg.id] ?? r.id,
+            label: cfg.etiqueta(r)
+          }));
+        } else {
+          this.opciones[fuente] = items.map(r => ({
+            id: r[cfg.id] ?? r.id,
+            label: cfg.etiqueta(r)
+          }));
+        }
         if (this.tabActual === 'menus' && this.datos.length > 0 && fuente === 'secciones_menu') {
           this.datos = this.datos.map(plato => this.enriquecerPlatoConReceta(plato));
         }
@@ -1230,6 +1249,67 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
     return [];
   }
 
+  /**
+   * Catálogo canónico e inmutable del Programa de Alimentación Escolar (PAE):
+   * Únicamente Desayuno, Almuerzo y Merienda con sus respectivas jornadas asignadas.
+   */
+  private procesarSeccionesOficiales(crudos: any[]): any[] {
+    const oficiales = [
+      {
+        nombreBuscado: 'desayuno',
+        nombre_seccion: 'Desayuno',
+        jornada_display: 'Mañana (aplica también para Jornada Única)',
+        id_fallback: 1,
+        _orden: 1
+      },
+      {
+        nombreBuscado: 'almuerzo',
+        nombre_seccion: 'Almuerzo',
+        jornada_display: 'Jornada Única',
+        id_fallback: 2,
+        _orden: 2
+      },
+      {
+        nombreBuscado: 'merienda',
+        nombre_seccion: 'Merienda',
+        jornada_display: 'Tarde',
+        id_fallback: 3,
+        _orden: 3
+      }
+    ];
+
+    const excluidas = ['prueba1', 'prueba2', 'sena'];
+
+    const resultado: any[] = oficiales.map(oficial => {
+      const coincidencia = crudos.find(c => {
+        const nom = (c.nombre_seccion || c.nombre || '').trim().toLowerCase();
+        return nom === oficial.nombreBuscado;
+      });
+
+      return {
+        ...(coincidencia || {}),
+        id_seccion: coincidencia?.id_seccion ?? coincidencia?.id ?? oficial.id_fallback,
+        nombre_seccion: oficial.nombre_seccion,
+        jornada_display: oficial.jornada_display,
+        id_jornada: coincidencia?.id_jornada ?? (oficial.nombreBuscado === 'merienda' ? 5 : 3),
+        _orden: oficial._orden
+      };
+    });
+
+    // Incluir cualquier otra sección registrada en el backend excluyendo las de prueba
+    crudos.forEach(c => {
+      const nom = (c.nombre_seccion || c.nombre || '').trim().toLowerCase();
+      if (!excluidas.includes(nom) && !['desayuno', 'almuerzo', 'merienda'].includes(nom)) {
+        resultado.push({
+          ...c,
+          _orden: 99
+        });
+      }
+    });
+
+    return resultado;
+  }
+
 
   // ============================================================
   // LECTURA DE CELDAS
@@ -1247,6 +1327,14 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
   }
 
   valorCelda(item: any, campo: CampoConfig): string {
+    if (this.tabActual === 'secciones_menu' && campo.name === 'id_jornada') {
+      const nom = (item?.nombre_seccion || '').trim().toLowerCase();
+      if (nom === 'desayuno') return 'Mañana (aplica también para Jornada Única)';
+      if (nom === 'almuerzo') return 'Jornada Única';
+      if (nom === 'merienda') return 'Tarde';
+      if (item?.jornada_display) return item.jornada_display;
+    }
+
     const valor = item?.[campo.name];
 
     if (campo.type === 'select') {
@@ -1836,9 +1924,10 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
   private obtenerCatalogoComponentesLocal(): Record<string, ComponentePlatoReceta> {
     try {
       const raw = localStorage.getItem(this.STORAGE_COMP_CATALOGO_KEY);
-      return raw ? JSON.parse(raw) : {};
+      const guardado = raw ? JSON.parse(raw) : {};
+      return { ...CATALOGO_PREPARACIONES_PAE, ...guardado };
     } catch {
-      return {};
+      return { ...CATALOGO_PREPARACIONES_PAE };
     }
   }
 
@@ -1862,35 +1951,38 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
            nombre.toLowerCase().startsWith(`menu ${m.numero_menu}:`)
     );
 
-    // Resolver nombre de sección desde id_seccion de la BD si no hay guardado
+    // Resolver nombre de sección desde plantilla o BD
     let secciones: string[] = [];
-    if (guardado?.secciones && guardado.secciones.length > 0) {
-      secciones = [...guardado.secciones];
-    } else if (plantillaCoincidente) {
+    if (plantillaCoincidente) {
       secciones = [...plantillaCoincidente.secciones];
+      if (guardado?.secciones && guardado.secciones.length > 0 && guardado.secciones.length < 3) {
+        secciones = [...guardado.secciones];
+      }
+    } else if (guardado?.secciones && guardado.secciones.length > 0) {
+      secciones = [...guardado.secciones];
     } else if (plato?.id_seccion) {
       const secOp = this.opciones['secciones_menu']?.find(s => Number(s.id) === Number(plato.id_seccion));
       const secNombre = secOp?.label || 'Almuerzo';
-      if (['Desayuno', 'Almuerzo', 'Merienda'].includes(secNombre)) {
-        secciones = [secNombre];
-      } else {
-        secciones = ['Desayuno', 'Almuerzo'];
-      }
+      secciones = ['Desayuno', 'Almuerzo', 'Merienda'].includes(secNombre) ? [secNombre] : ['Almuerzo'];
     } else {
-      secciones = ['Desayuno', 'Almuerzo'];
+      secciones = ['Almuerzo'];
     }
 
     // Construir componentes
     let componentes: ComponentePlatoReceta[] = [];
     if (guardado?.componentes && guardado.componentes.length > 0) {
       componentes = guardado.componentes.map(c => {
-        const delCatalogo = c.ingredientes.length === 0 ? this.buscarComponenteEnCatalogo(c.nombre_componente) : null;
+        const delCatalogo = (!c.ingredientes || c.ingredientes.length === 0 || !c.pasos || !c.pasos.some(p => p.descripcion_paso?.trim()))
+          ? this.buscarComponenteEnCatalogo(c.nombre_componente)
+          : null;
         return {
           ...c,
-          ingredientes: c.ingredientes.length > 0 ? c.ingredientes : (delCatalogo?.ingredientes || []),
-          pasos: c.pasos && c.pasos.some(p => p.descripcion_paso?.trim())
+          ingredientes: (c.ingredientes && c.ingredientes.length > 0)
+            ? c.ingredientes
+            : (delCatalogo?.ingredientes ? delCatalogo.ingredientes.map(i => ({ ...i })) : []),
+          pasos: (c.pasos && c.pasos.some(p => p.descripcion_paso?.trim()))
             ? c.pasos
-            : (delCatalogo?.pasos || c.pasos || [])
+            : (delCatalogo?.pasos ? delCatalogo.pasos.map((p, idx) => ({ numero_paso: idx + 1, descripcion_paso: p.descripcion_paso })) : [{ numero_paso: 1, descripcion_paso: '' }])
         };
       });
     } else if (plantillaCoincidente) {

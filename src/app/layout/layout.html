@@ -564,8 +564,8 @@
         <span class="modern-nav-text">Gramajes</span>
       </a>
 
-      <!-- MENÚ POR SEDE (Administrador / Jefa de Manipuladoras) -->
-      <a routerLink="menus" routerLinkActive="active" class="modern-nav-item" title="Menú">
+      <!-- MENÚ POR SEDE (Exclusivo para Supervisor / Super Admin / Jefa de Manipuladoras - no visible para Administrador) -->
+      <a *ngIf="!esAdministrador" routerLink="menus" routerLinkActive="active" class="modern-nav-item" title="Menú">
         <span class="material-symbols-outlined modern-nav-icon" aria-hidden="true">restaurant_menu</span>
         <span class="modern-nav-text">Menú</span>
       </a>
