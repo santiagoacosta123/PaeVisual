@@ -529,7 +529,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
   // ESTADO Y CATÁLOGO DE MENÚS / PLATOS (CICLO PAE 4 SEMANAS)
   // ============================================================
   private readonly STORAGE_RECETARIO_KEY = 'sirae_recetario_menus_v1';
-  private readonly STORAGE_COMP_CATALOGO_KEY = 'sirae_catalogo_componentes_pae_v1';
+  private readonly STORAGE_COMP_CATALOGO_KEY = 'sirae_catalogo_componentes_pae_v2';
 
   filtroSemanaMenu: string = 'TODAS';
   filtroSeccionMenu: string = 'TODAS';
@@ -1925,7 +1925,13 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
     try {
       const raw = localStorage.getItem(this.STORAGE_COMP_CATALOGO_KEY);
       const guardado = raw ? JSON.parse(raw) : {};
-      return { ...CATALOGO_PREPARACIONES_PAE, ...guardado };
+      const res: Record<string, ComponentePlatoReceta> = { ...CATALOGO_PREPARACIONES_PAE };
+      for (const [k, v] of Object.entries(guardado)) {
+        if (v && typeof v === 'object' && Array.isArray((v as any).ingredientes) && (v as any).ingredientes.length > 0) {
+          res[k] = v as any;
+        }
+      }
+      return res;
     } catch {
       return { ...CATALOGO_PREPARACIONES_PAE };
     }
@@ -1935,7 +1941,13 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
     const clave = (nombreComponente || '').trim().toLowerCase();
     if (!clave) return null;
     const cat = this.obtenerCatalogoComponentesLocal();
-    return cat[clave] || null;
+    if (cat[clave]) return cat[clave];
+    for (const [k, v] of Object.entries(cat)) {
+      if (k === clave || k.includes(clave) || clave.includes(k)) {
+        return v;
+      }
+    }
+    return null;
   }
 
   private enriquecerPlatoConReceta(plato: any): any {
@@ -1945,11 +1957,11 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
     const guardado = (id ? mapa[`id_${id}`] : null) || (nombre ? mapa[`nombre_${nombre.toLowerCase()}`] : null);
 
     // Detectar si coincide con alguno de los 20 menús de la minuta oficial PAE
-    const plantillaCoincidente = this.MINUTA_PAE_OFICIAL.find(
-      m => m.nombre_plato.toLowerCase() === nombre.toLowerCase() ||
-           nombre.toLowerCase().startsWith(`menú ${m.numero_menu}:`) ||
-           nombre.toLowerCase().startsWith(`menu ${m.numero_menu}:`)
-    );
+    const nombreLimpio = nombre.toLowerCase().replace(/^men[uú]\s*\d+\s*:\s*/i, '').trim();
+    const plantillaCoincidente = this.MINUTA_PAE_OFICIAL.find(m => {
+      const mNorm = m.nombre_plato.toLowerCase().replace(/^men[uú]\s*\d+\s*:\s*/i, '').trim();
+      return mNorm === nombreLimpio || nombreLimpio.includes(mNorm) || mNorm.includes(nombreLimpio);
+    });
 
     // Resolver nombre de sección desde plantilla o BD
     let secciones: string[] = [];
@@ -1970,9 +1982,12 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
 
     // Construir componentes
     let componentes: ComponentePlatoReceta[] = [];
-    if (guardado?.componentes && guardado.componentes.length > 0) {
-      componentes = guardado.componentes.map(c => {
-        const delCatalogo = (!c.ingredientes || c.ingredientes.length === 0 || !c.pasos || !c.pasos.some(p => p.descripcion_paso?.trim()))
+    const guardadoTieneIngredientes = guardado?.componentes && guardado.componentes.length > 0 &&
+      guardado.componentes.some((c: any) => c.ingredientes && c.ingredientes.length > 0);
+
+    if (guardadoTieneIngredientes) {
+      componentes = guardado.componentes.map((c: any) => {
+        const delCatalogo = (!c.ingredientes || c.ingredientes.length === 0 || !c.pasos || !c.pasos.some((p: any) => p.descripcion_paso?.trim()))
           ? this.buscarComponenteEnCatalogo(c.nombre_componente)
           : null;
         return {
@@ -1980,15 +1995,28 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
           ingredientes: (c.ingredientes && c.ingredientes.length > 0)
             ? c.ingredientes
             : (delCatalogo?.ingredientes ? delCatalogo.ingredientes.map(i => ({ ...i })) : []),
-          pasos: (c.pasos && c.pasos.some(p => p.descripcion_paso?.trim()))
+          pasos: (c.pasos && c.pasos.some((p: any) => p.descripcion_paso?.trim()))
             ? c.pasos
             : (delCatalogo?.pasos ? delCatalogo.pasos.map((p, idx) => ({ numero_paso: idx + 1, descripcion_paso: p.descripcion_paso })) : [{ numero_paso: 1, descripcion_paso: '' }])
         };
       });
     } else if (plantillaCoincidente) {
-      componentes = plantillaCoincidente.componentes.map(c =>
-        this.crearComponenteVacio(c.tipo_componente, c.nombre_componente)
-      );
+      componentes = plantillaCoincidente.componentes.map(c => {
+        const delCatalogo = this.buscarComponenteEnCatalogo(c.nombre_componente);
+        return {
+          id_temporal: 'comp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+          tipo_componente: delCatalogo?.tipo_componente || c.tipo_componente,
+          nombre_componente: delCatalogo?.nombre_componente || c.nombre_componente,
+          ingredientes: (delCatalogo?.ingredientes && delCatalogo.ingredientes.length > 0)
+            ? delCatalogo.ingredientes.map(i => ({ ...i }))
+            : [],
+          pasos: (delCatalogo?.pasos && delCatalogo.pasos.length > 0 && delCatalogo.pasos.some(p => p.descripcion_paso?.trim()))
+            ? delCatalogo.pasos.map((p, idx) => ({ numero_paso: idx + 1, descripcion_paso: p.descripcion_paso }))
+            : [{ numero_paso: 1, descripcion_paso: `Preparar ${c.nombre_componente} según lineamientos PAE.` }],
+          ingredienteTempId: null,
+          observacionTemp: ''
+        };
+      });
     } else if (plato?.componente) {
       const partes = String(plato.componente).split(/\||,/).map(s => s.trim()).filter(Boolean);
       componentes = partes.map(parte => {
