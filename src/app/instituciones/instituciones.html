@@ -1,131 +1,274 @@
-
 <style>
-/* Estilos de Instituciones y Sedes: misma línea visual SIRAE */
-.fx-roboto, .fx-roboto *:not(.material-symbols-outlined) { font-family: 'Roboto', sans-serif; }
-.fx-panel { position: relative; background: #fff; border-radius: 24px; border: 1px solid #F1F5F9; box-shadow: 0 10px 30px -18px rgba(15, 23, 42, .18); }
-.ico-naranja { background: linear-gradient(135deg, #faa911 0%, #e69a0c 100%); color: #fff; }
-.ico-suave { background: #FFF4DC; color: #faa911; }
-.pill-on { background: linear-gradient(135deg, #faa911, #e69a0c); color: #fff; box-shadow: 0 6px 14px -6px rgba(250, 169, 17, .7); }
-.fx-input:focus { border-color: #faa911; box-shadow: 0 0 0 3px rgba(250, 169, 17, .18); }
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
-/* Tarjeta de Sede */
-.sede-card { background: #fff; border-radius: 24px; border: 1px solid #F1F5F9; overflow: hidden; box-shadow: 0 8px 24px -14px rgba(15, 23, 42, .12); transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease; }
-.sede-card:hover { transform: translateY(-4px); box-shadow: 0 18px 34px -14px rgba(250, 169, 17, .28); border-color: #FDE3A7; }
+/* =====================================================================
+   SIRAE · Instituciones y Sedes — Ámbar #F4B41F + Verde #168A43
+   ===================================================================== */
+.fx-roboto, .fx-roboto *:not(.material-symbols-outlined) { font-family: 'Plus Jakarta Sans', 'Roboto', system-ui, sans-serif; }
+.fx-roboto {
+  --a: #F4B41F;
+  --a-light: #FFCB4D;
+  --a-dark: #B87A00;
+  --a-soft: #FFF8E6;
+  --a-mid: #FFE9A8;
+  --g: #168A43;
+  --g-soft: #E8F7EE;
+  --ink: #0F172A;
+  --mute: #64748B;
+  --line: #E7EAF0;
+  --shadow-sm: 0 2px 10px rgba(15, 23, 42, .05);
+  --shadow-a: 0 12px 28px -10px rgba(244, 180, 31, .55);
+}
 
-/* Tarjeta de ingrediente */
-.prod-card { position: relative; background: #fff; border-radius: 24px; padding: 60px 16px 16px; text-align: center; box-shadow: 0 8px 24px -14px rgba(15, 23, 42, .12); border: 1px solid #F8FAFC; transition: transform .25s ease, box-shadow .25s ease; }
-.prod-card:hover { transform: translateY(-5px); box-shadow: 0 18px 32px -12px rgba(250, 169, 17, .28); }
-.prod-img { position: absolute; top: -40px; left: 50%; transform: translateX(-50%); width: 90px; height: 90px; border-radius: 9999px; display: flex; align-items: center; justify-content: center; font-size: 46px; line-height: 1; overflow: hidden; border: 5px solid #fff; background: radial-gradient(circle at 30% 25%, #fff, #FFEFD6 72%); box-shadow: 0 10px 22px -8px rgba(250, 169, 17, .4); transition: transform .35s cubic-bezier(.2, .9, .3, 1.2); }
-.prod-card:hover .prod-img { transform: translateX(-50%) scale(1.06); }
-.prod-emoji { display: inline-block; animation: fxFloat 4s ease-in-out infinite; }
+.ico-naranja { background: linear-gradient(135deg, var(--a-light) 0%, var(--a) 100%); color: #2B1D00; }
+.ico-suave { background: var(--a-soft); color: var(--a-dark); }
 
+.fx-up { animation: fxUp .45s cubic-bezier(.22, 1, .36, 1) both; }
+@keyframes fxUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 
-/* Carrusel de productos por categoría */
-.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
-.no-scrollbar::-webkit-scrollbar { display: none; }
-.item-card { flex: 0 0 auto; width: 270px; scroll-snap-align: start; position: relative; display: flex; align-items: center; gap: 12px; background: #fff; border-radius: 20px; border: 1px solid #F8FAFC; padding: 14px 16px; box-shadow: 0 6px 18px -12px rgba(15, 23, 42, .2); transition: transform .25s ease, box-shadow .25s ease; }
-.item-card:hover { transform: translateY(-3px); box-shadow: 0 14px 26px -12px rgba(250, 169, 17, .28); }
-.item-img { width: 56px; height: 56px; flex: none; border-radius: 9999px; display: flex; align-items: center; justify-content: center; font-size: 28px; overflow: hidden; background: radial-gradient(circle at 30% 25%, #fff, #FFEFD6 72%); box-shadow: 0 6px 14px -6px rgba(250, 169, 17, .4); }
+/* ---------- Portada "Mis sedes" ---------- */
+.ms-hero {
+  position: relative; overflow: hidden; isolation: isolate;
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px 24px;
+  min-height: 156px; padding: 24px 30px 24px 316px;
+  border-radius: 26px; border: 1px solid #F2E3B5; border-bottom: 4px solid var(--a);
+  background: linear-gradient(110deg, #FFF3C9 0%, #FFFDF6 52%, #FFEDB0 100%);
+  box-shadow: 0 22px 40px -28px rgba(71, 52, 15, .6);
+}
+.ms-hero::after {
+  content: ''; position: absolute; z-index: -1; right: -90px; bottom: -130px;
+  width: 340px; height: 340px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(244, 180, 31, .32), transparent 68%);
+  pointer-events: none;
+}
+.ms-hero-edge, .ms-hero-foto { position: absolute; top: 0; bottom: 0; left: 0; z-index: -1; }
+.ms-hero-edge {
+  width: 300px; background: linear-gradient(135deg, var(--a-light), var(--a));
+  clip-path: polygon(0 0, 100% 0, 84% 100%, 0 100%);
+}
+.ms-hero-foto { width: 284px; clip-path: polygon(0 0, 100% 0, 84% 100%, 0 100%); background: #FBE7A6; }
+.ms-hero-foto img { width: 100%; height: 100%; object-fit: cover; object-position: center 58%; display: block; }
+.ms-hero-ico {
+  width: 60px; height: 60px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 20px; background: var(--a); color: #2B1D00;
+  box-shadow: var(--shadow-a);
+}
+.ms-hero-tit { margin: 0; font-size: clamp(28px, 3.2vw, 40px); font-weight: 800; letter-spacing: -.03em; line-height: 1.05; color: var(--ink); }
+.ms-hero-sub { margin: 6px 0 0; font-size: 15px; font-weight: 600; line-height: 1.35; color: #475569; overflow-wrap: anywhere; }
+.ms-chip {
+  display: inline-flex; align-items: center; gap: 8px; padding: 9px 16px; border-radius: 99px;
+  background: rgba(255, 255, 255, .85); border: 1px solid #F0D98A; backdrop-filter: blur(6px);
+  font-size: 13px; font-weight: 800; color: #6B4800; white-space: nowrap; box-shadow: var(--shadow-sm);
+}
+.ms-chip .material-symbols-outlined { font-size: 19px; color: var(--a-dark); }
+@media (max-width: 860px) {
+  .ms-hero { padding: 142px 20px 20px; }
+  .ms-hero-edge, .ms-hero-foto { width: 100%; bottom: auto; clip-path: polygon(0 0, 100% 0, 100% 80%, 0 100%); }
+  .ms-hero-edge { height: 128px; }
+  .ms-hero-foto { height: 120px; }
+}
 
-/* Animaciones */
-@keyframes fxUp { from { opacity: 0; transform: translateY(14px) scale(.99); } to { opacity: 1; transform: none; } }
-@keyframes fxFloat { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-4px) rotate(3deg); } }
-.fx-up { animation: fxUp .4s cubic-bezier(.2, .8, .2, 1) both; }
+/* ---------- Datos de la institución ---------- */
+.ms-info { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.ms-info-item {
+  display: flex; align-items: center; gap: 12px; min-width: 0; padding: 14px 16px;
+  border-radius: 18px; background: #fff; border: 1px solid var(--line); box-shadow: var(--shadow-sm);
+  transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+}
+.ms-info-item:hover { transform: translateY(-2px); border-color: #F0D98A; box-shadow: 0 14px 26px -16px rgba(244, 180, 31, .5); }
+.ms-info-ico {
+  width: 42px; height: 42px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  border-radius: 13px; background: var(--a-soft); color: var(--a-dark); font-size: 22px;
+}
+.ms-info-ico.ok { background: var(--g-soft); color: var(--g); }
+.ms-info dt { margin: 0; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--mute); }
+.ms-info dd { margin: 2px 0 0; font-size: 14px; font-weight: 800; color: var(--ink); overflow-wrap: anywhere; }
 
-/* Vista Mis sedes */
-.mis-sedes .sedes-portada {
-  isolation: isolate;
-  border-radius: 16px;
-  background:
-    radial-gradient(ellipse 44% 140% at 102% 110%, rgba(255, 206, 45, .37) 0 48%, transparent 49%),
-    radial-gradient(ellipse 42% 130% at 99% 111%, rgba(255, 224, 109, .37) 0 60%, transparent 61%),
-    linear-gradient(105deg, #fff8de 0%, #fffdf5 58%, #fff2c1 100%);
-  border: 1px solid #f0e4c5;
-  border-bottom: 4px solid #f4b41f;
-  box-shadow: 0 14px 28px -23px #47340f;
+/* ---------- Buscador y filtros ---------- */
+.ms-controles {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;
+  margin-bottom: 20px; padding: 12px; border-radius: 20px; background: #fff;
+  border: 1px solid var(--line); box-shadow: var(--shadow-sm);
 }
-.mis-sedes .sedes-portada-foto {
-  background: #f4b41f;
-  overflow: hidden;
-  border-right: 8px solid #f4b41f;
-  border-bottom-right-radius: 54% 100%;
+.ms-input {
+  width: 100%; min-height: 44px; border-radius: 14px; border: 1.5px solid var(--line); background: #F8FAFC;
+  padding: 0 16px 0 46px; font-size: 13.5px; font-weight: 500; color: #1E293B; outline: none;
+  transition: border-color .15s, box-shadow .15s, background .15s;
 }
-.mis-sedes .sedes-portada-foto img {
-  object-fit: cover;
-  object-position: center 58%;
+.ms-input::placeholder { color: #94A3B8; }
+.ms-input:focus { background: #fff; border-color: var(--a); box-shadow: 0 0 0 4px rgba(244, 180, 31, .2); }
+.ms-select {
+  min-height: 44px; border-radius: 14px; border: 1.5px solid var(--line); background: #F8FAFC; cursor: pointer;
+  padding: 0 16px; font-size: 13.5px; font-weight: 700; color: #334155; outline: none;
+  transition: border-color .15s, box-shadow .15s;
 }
-.mis-sedes .sedes-cuadricula {
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 350px), 350px));
+.ms-select:focus { background: #fff; border-color: var(--a); box-shadow: 0 0 0 4px rgba(244, 180, 31, .2); }
+.ms-count {
+  display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 99px;
+  background: var(--a-soft); color: #7A5200; font-size: 12.5px; font-weight: 800;
 }
-.mis-sedes .sede-card {
-  min-height: 290px;
-  border-radius: 12px;
-  border-color: #f6df9f;
+
+/* ---------- Tarjeta de sede ---------- */
+.ms-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); gap: 20px; }
+.ms-card {
+  position: relative; display: flex; flex-direction: column; overflow: hidden; cursor: pointer;
+  border-radius: 22px; background: #fff; border: 1.5px solid #F1E6C3;
+  box-shadow: 0 8px 24px -16px rgba(15, 23, 42, .25);
+  transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
 }
-.mis-sedes .sedes-foto-tarjeta {
-  height: 154px;
-  width: 100%;
-  object-fit: cover;
+.ms-card:hover { transform: translateY(-5px); border-color: #F0CF73; box-shadow: 0 24px 40px -20px rgba(244, 180, 31, .6); }
+.ms-card:focus-within { border-color: var(--a); }
+.ms-card-foto { position: relative; height: 172px; overflow: hidden; background: #F3F5F8; }
+.ms-card-foto img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .5s ease; }
+.ms-card:hover .ms-card-foto img { transform: scale(1.07); }
+.ms-card-foto::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0) 40%, rgba(15, 23, 42, .6) 100%);
 }
-.mis-sedes .sedes-entrega { background: #f4b41f; }
-.mis-sedes .sedes-entrega:hover { background: #eeb016; }
-.mis-sedes .sedes-controles :is(input, select):focus {
-  border-color: #d59608;
-  box-shadow: 0 0 0 3px rgb(244 180 31 / 25%);
+.ms-dane {
+  position: absolute; z-index: 1; left: 12px; bottom: 12px;
+  display: inline-flex; align-items: center; gap: 5px; padding: 5px 11px; border-radius: 99px;
+  background: rgba(255, 255, 255, .92); color: #3B2A00; font-size: 11px; font-weight: 800;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .2);
 }
-.mis-sedes button:focus-visible {
-  outline: 2px solid #9a6500;
-  outline-offset: 3px;
+.ms-dane .material-symbols-outlined { font-size: 14px; color: var(--a-dark); }
+.ms-card-body { display: flex; flex: 1; flex-direction: column; gap: 12px; padding: 16px 18px 18px; }
+.ms-nombre {
+  margin: 0; font-size: 19px; font-weight: 800; line-height: 1.2; letter-spacing: -.01em; color: var(--ink);
 }
-@media (max-width: 767px) {
-  .mis-sedes .sedes-portada-foto {
-    height: 100px;
-    border-right-width: 6px;
-    border-bottom-width: 4px;
-    border-bottom-right-radius: 38% 80%;
-  }
+.ms-nombre button { background: none; border: 0; padding: 0; text-align: left; font: inherit; color: inherit; cursor: pointer; overflow-wrap: anywhere; transition: color .15s; }
+.ms-nombre button:hover { color: var(--a-dark); }
+.ms-dir { display: flex; align-items: flex-start; gap: 6px; margin: 0; font-size: 12.5px; font-weight: 500; line-height: 1.4; color: var(--mute); }
+.ms-dir .material-symbols-outlined { font-size: 17px; color: var(--a-dark); flex-shrink: 0; }
+.ms-cta {
+  display: flex; align-items: center; gap: 10px; width: 100%; min-height: 46px; margin-top: auto; padding: 0 16px;
+  border: 0; border-radius: 14px; cursor: pointer; text-align: left;
+  background: linear-gradient(135deg, var(--a-light), var(--a)); color: #2B1D00;
+  font-size: 14px; font-weight: 800; box-shadow: 0 8px 18px -10px rgba(244, 180, 31, .8);
+  transition: filter .15s, box-shadow .15s;
 }
+.ms-cta:hover { filter: brightness(1.04); box-shadow: 0 12px 22px -10px rgba(244, 180, 31, .9); }
+.ms-cta .arrow { transition: transform .2s ease; }
+.ms-cta:hover .arrow { transform: translateX(4px); }
+.fx-roboto button:focus-visible, .fx-roboto input:focus-visible, .fx-roboto select:focus-visible { outline: 2px solid #9A6500; outline-offset: 3px; }
+
+/* ---------- Estado vacío ---------- */
+.ms-vacio {
+  display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center;
+  padding: 56px 24px; border-radius: 26px; background: #fff; border: 2px dashed #EEDDA5;
+}
+.ms-vacio-ico {
+  width: 68px; height: 68px; display: flex; align-items: center; justify-content: center;
+  border-radius: 22px; background: var(--a-soft); color: var(--a-dark);
+}
+.ms-btn-p {
+  display: inline-flex; align-items: center; gap: 6px; border: 0; border-radius: 99px; padding: 10px 20px; cursor: pointer;
+  background: linear-gradient(135deg, var(--a-light), var(--a)); color: #2B1D00; font-size: 13px; font-weight: 800;
+  box-shadow: 0 8px 18px -10px rgba(244, 180, 31, .8); transition: filter .15s;
+}
+.ms-btn-p:hover { filter: brightness(1.05); }
+.ms-btn-s {
+  display: inline-flex; align-items: center; gap: 6px; border-radius: 99px; padding: 10px 20px; cursor: pointer;
+  border: 1.5px solid #E2E8F0; background: #fff; color: #334155; font-size: 13px; font-weight: 700; transition: background .15s;
+}
+.ms-btn-s:hover { background: #F8FAFC; }
+
+/* ---------- Selección de institución ---------- */
+.ms-inst {
+  display: flex; align-items: center; gap: 14px; width: 100%; padding: 16px 18px; cursor: pointer; text-align: left;
+  border-radius: 20px; background: #fff; border: 1.5px solid #F1E6C3; box-shadow: var(--shadow-sm);
+  transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
+}
+.ms-inst:hover { transform: translateY(-3px); border-color: #F0CF73; box-shadow: 0 18px 32px -18px rgba(244, 180, 31, .6); }
+.ms-inst .go { margin-left: auto; color: #CBD5E1; transition: transform .2s ease, color .2s ease; }
+.ms-inst:hover .go { transform: translateX(3px); color: var(--a-dark); }
+
+/* ---------- Detalle ---------- */
+.ms-back {
+  display: inline-flex; align-items: center; gap: 4px; margin-bottom: 16px; padding: 7px 14px 7px 8px; border: 0; border-radius: 99px;
+  background: var(--a-soft); color: #7A5200; font-size: 12.5px; font-weight: 800; cursor: pointer; transition: background .15s;
+}
+.ms-back:hover { background: var(--a-mid); }
+.ms-det-head {
+  position: relative; overflow: hidden; display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 16px;
+  margin-bottom: 24px; padding: 24px; border-radius: 26px; background: #fff; border: 1px solid var(--line);
+  border-top: 5px solid var(--a); box-shadow: var(--shadow-sm);
+}
+.ms-tag {
+  display: inline-flex; align-items: center; gap: 5px; padding: 5px 11px; border-radius: 10px;
+  background: #F1F5F9; color: #475569; font-size: 12px; font-weight: 600;
+}
+.ms-tag .material-symbols-outlined { font-size: 15px; color: var(--a-dark); }
+.ms-card2 {
+  display: flex; flex-direction: column; justify-content: space-between; padding: 20px; border-radius: 22px;
+  background: #fff; border: 1.5px solid #F1E6C3; box-shadow: 0 8px 24px -16px rgba(15, 23, 42, .22);
+  transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+}
+.ms-card2:hover { transform: translateY(-4px); border-color: #F0CF73; box-shadow: 0 22px 38px -20px rgba(244, 180, 31, .55); }
+.ms-card2.ms-card-sel { border-color: var(--a); box-shadow: 0 0 0 4px rgba(244, 180, 31, .2), 0 14px 30px -18px rgba(244, 180, 31, .6); }
+.ms-datos { display: flex; flex-direction: column; gap: 9px; margin-top: 14px; padding: 14px; border-radius: 16px; background: #FAFAF7; border: 1px solid #F3EFE0; }
+.ms-dato { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 12.5px; }
+.ms-dato span:first-child { display: inline-flex; align-items: center; gap: 5px; font-weight: 700; color: #94A3B8; }
+.ms-dato span:first-child .material-symbols-outlined { font-size: 16px; color: var(--a-dark); }
+.ms-dato span:last-child { font-weight: 700; color: #334155; text-align: right; }
+
 @media (prefers-reduced-motion: reduce) {
-  .mis-sedes .sede-card { animation: none; transition: none; }
-  .mis-sedes .sede-card:hover { transform: none; }
+  .fx-up { animation: none; }
+  .ms-card, .ms-card2, .ms-inst, .ms-info-item, .ms-card-foto img, .ms-cta .arrow { transition: none; }
+  .ms-card:hover, .ms-card2:hover, .ms-inst:hover, .ms-info-item:hover { transform: none; }
 }
 </style>
 
 <div class="fx-roboto flex w-full flex-col gap-6">
 
+  <!-- ===================================================== -->
+  <!--  SELECCIÓN DE INSTITUCIÓN                             -->
+  <!-- ===================================================== -->
   <section *ngIf="!seleccionada && !institucionActiva && puedeSeleccionarInstitucion"
-    class="w-full rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
-    <header class="mb-6">
-      <h1 class="m-0 text-xl font-black tracking-tight text-slate-900">Instituciones</h1>
-      <p class="mt-1 text-sm font-medium text-slate-500">Selecciona una institución para consultar sus sedes e inventario.</p>
+    class="w-full rounded-[26px] border border-slate-100 bg-white p-6 shadow-sm sm:p-8">
+    <header class="mb-6 flex items-center gap-4">
+      <span class="ico-naranja flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl shadow-md" aria-hidden="true">
+        <span class="material-symbols-outlined text-[28px]">apartment</span>
+      </span>
+      <div>
+        <h1 class="m-0 text-2xl font-extrabold tracking-tight text-slate-900">Instituciones</h1>
+        <p class="m-0 mt-1 text-sm font-medium text-slate-500">Selecciona una institución para consultar sus sedes e inventario.</p>
+      </div>
     </header>
 
-    <div *ngIf="cargando" class="py-8 text-center text-sm font-semibold text-slate-500">
-      Cargando instituciones...
+    <div *ngIf="cargando" class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3" aria-live="polite">
+      <div *ngFor="let n of [1, 2, 3]" class="h-[86px] animate-pulse rounded-[20px] bg-slate-100"></div>
     </div>
 
-    <div *ngIf="errorInstituciones" class="mb-4 rounded-xl bg-rose-50 p-4 text-sm font-semibold text-rose-700">
+    <div *ngIf="errorInstituciones" class="mb-4 flex flex-wrap items-center gap-2 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm font-semibold text-rose-700" role="alert">
+      <span class="material-symbols-outlined text-[20px]">error</span>
       {{ errorInstituciones }}
-      <button type="button" (click)="sincronizarServidor()" class="ml-2 underline">Reintentar</button>
+      <button type="button" (click)="sincronizarServidor()" class="ml-2 cursor-pointer underline">Reintentar</button>
     </div>
 
-    <div *ngIf="!cargando && institucionesSupervisor.length === 0 && !errorInstituciones"
-      class="py-8 text-center text-sm font-semibold text-slate-500">
-      No hay instituciones registradas para mostrar.
+    <div *ngIf="!cargando && institucionesSupervisor.length === 0 && !errorInstituciones" class="ms-vacio">
+      <span class="ms-vacio-ico"><span class="material-symbols-outlined text-[34px]">domain_disabled</span></span>
+      <p class="m-0 text-sm font-bold text-slate-700">No hay instituciones registradas para mostrar.</p>
     </div>
 
     <div *ngIf="institucionesSupervisor.length > 0" class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-      <button *ngFor="let institucion of institucionesSupervisor"
+      <button *ngFor="let institucion of institucionesSupervisor; let i = index"
         type="button"
         (click)="seleccionarInstitucion(institucion)"
-        class="sede-card flex cursor-pointer items-center gap-4 text-left">
+        class="ms-inst fx-up"
+        [style.animation-delay]="(i % 12) * 45 + 'ms'">
         <span class="ico-suave flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl">
-          <span class="material-symbols-outlined text-[24px]">apartment</span>
+          <span class="material-symbols-outlined text-[26px]">apartment</span>
         </span>
         <span class="min-w-0">
-          <span class="block truncate font-bold text-slate-900">{{ institucion.nombre_institucion }}</span>
-          <span class="block text-xs text-slate-500">{{ institucion.sedes?.length ?? 0 }} sedes</span>
+          <span class="block truncate text-[15px] font-extrabold text-slate-900">{{ institucion.nombre_institucion }}</span>
+          <span class="mt-0.5 inline-flex items-center gap-1 text-xs font-semibold text-slate-500">
+            <span class="material-symbols-outlined text-[15px] text-[#B87A00]">domain</span>
+            {{ institucion.sedes?.length ?? 0 }} sedes
+          </span>
         </span>
+        <span class="go material-symbols-outlined">arrow_forward</span>
       </button>
     </div>
   </section>
@@ -136,39 +279,30 @@
   <!-- ===================================================== -->
   <section *ngIf="!seleccionada && institucionActiva as institucion" class="mis-sedes w-full" aria-labelledby="titulo-mis-sedes">
 
-    <header class="sedes-portada relative mb-4 grid overflow-hidden md:min-h-[145px] md:grid-cols-[minmax(150px,26%)_minmax(0,1fr)]">
-      <div class="sedes-portada-foto relative min-w-0" aria-hidden="true">
-        <img [src]="imagenInstitucion(institucion, 0) || '/instuucion.png'" alt="" class="absolute inset-0 block h-full w-full" fetchpriority="high" />
+    <!-- Portada -->
+    <header class="ms-hero mb-5">
+      <span class="ms-hero-edge" aria-hidden="true"></span>
+      <div class="ms-hero-foto" aria-hidden="true">
+        <img [src]="imagenInstitucion(institucion, 0) || '/instuucion.png'" alt="" fetchpriority="high" />
       </div>
 
-      <div class="relative flex min-w-0 flex-col justify-center gap-3 px-4 py-3 sm:px-5 lg:flex-row lg:items-center lg:justify-between">
-        <div class="flex min-w-0 items-center gap-3 sm:gap-4">
-          <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#f4b41f] text-[#262008] sm:h-14 sm:w-14" aria-hidden="true">
-            <span class="material-symbols-outlined text-[27px] sm:text-[32px]">school</span>
-          </span>
-          <div class="min-w-0 border-l border-[#e9b84b]/70 pl-3 sm:pl-4">
-            <h1 id="titulo-mis-sedes" class="m-0 text-3xl font-black leading-none tracking-tight text-slate-900 lg:text-4xl">Mis sedes</h1>
-            <p class="m-0 mt-2 break-words text-sm font-semibold leading-snug text-slate-600 sm:text-base">
-              {{ institucion.nombre_institucion }}
-            </p>
-          </div>
-        </div>
-
-        <div class="flex shrink-0 flex-wrap items-center gap-2">
-          <button type="button" (click)="irACambiarInstitucion()"
-            class="inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-xl border border-[#e8ad24] bg-white px-3.5 py-2 text-xs font-bold text-slate-900 transition hover:bg-amber-50 sm:text-sm">
-            <span class="material-symbols-outlined text-[18px]" aria-hidden="true">swap_horiz</span>
-            Cambiar institución
-          </button>
-          <button type="button" (click)="sincronizarServidor()" title="Actualizar lista" aria-label="Actualizar lista"
-            class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-slate-200 bg-white text-slate-900 shadow-sm transition hover:bg-amber-50">
-            <span class="material-symbols-outlined text-[20px]" [class.animate-spin]="cargando" aria-hidden="true">refresh</span>
-          </button>
+      <div class="flex min-w-0 items-center gap-4">
+        <span class="ms-hero-ico" aria-hidden="true">
+          <span class="material-symbols-outlined text-[32px]">school</span>
+        </span>
+        <div class="min-w-0 border-l-2 border-[#E9B84B]/70 pl-4">
+          <h1 id="titulo-mis-sedes" class="ms-hero-tit">Mis sedes</h1>
+          <p class="ms-hero-sub">{{ institucion.nombre_institucion }}</p>
         </div>
       </div>
+
+      <span class="ms-chip" aria-live="polite">
+        <span class="material-symbols-outlined" aria-hidden="true">domain</span>
+        {{ sedes.length }} {{ sedes.length === 1 ? 'sede' : 'sedes' }}
+      </span>
     </header>
 
-    <!-- Datos disponibles de la institución activa -->
+    <!-- Datos de la institución activa -->
     <ng-container *ngFor="let asignado of [$any(institucion).administrador_asignado]">
       <ng-container *ngIf="{
         administrador: asignado?.nombre_completo || asignado?.full_name ||
@@ -176,74 +310,87 @@
           (asignado?.charAt && (asignado * 1) !== (asignado * 1) ? asignado : '')
       } as datos">
       <dl *ngIf="institucion.estado || institucion.nit || datos.administrador || institucion.representante_legal || institucion.telefono"
-        class="m-0 mb-4 grid grid-cols-2 gap-x-3 gap-y-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm sm:grid-cols-3 lg:grid-cols-5 lg:gap-0 lg:divide-x lg:divide-slate-200 lg:px-0">
-        <div *ngIf="institucion.estado as estado" class="min-w-0 lg:px-4">
-          <dt class="text-xs font-medium text-slate-500">Estado</dt>
-          <dd class="m-0 mt-1 inline-flex items-center gap-1.5 text-sm font-bold" [ngClass]="estado === 'ACTIVO' ? 'text-emerald-800' : 'text-slate-900'">
-            <span [class.bg-emerald-600]="estado === 'ACTIVO'" [class.bg-slate-400]="estado !== 'ACTIVO'"
-              class="h-2 w-2 rounded-full" aria-hidden="true"></span>
-            {{ estado === 'ACTIVO' ? 'Activo' : (estado === 'INACTIVO' ? 'Inactivo' : estado) }}
-          </dd>
+        class="ms-info m-0">
+        <div *ngIf="institucion.estado as estado" class="ms-info-item">
+          <span class="ms-info-ico material-symbols-outlined" [class.ok]="estado === 'ACTIVO'" aria-hidden="true">verified</span>
+          <div class="min-w-0">
+            <dt>Estado</dt>
+            <dd class="inline-flex items-center gap-1.5" [ngClass]="estado === 'ACTIVO' ? 'text-emerald-800' : 'text-slate-900'">
+              <span [class.bg-emerald-600]="estado === 'ACTIVO'" [class.bg-slate-400]="estado !== 'ACTIVO'"
+                class="h-2 w-2 rounded-full" aria-hidden="true"></span>
+              {{ estado === 'ACTIVO' ? 'Activo' : (estado === 'INACTIVO' ? 'Inactivo' : estado) }}
+            </dd>
+          </div>
         </div>
-        <div *ngIf="institucion.nit as nit" class="min-w-0 lg:px-4">
-          <dt class="text-xs font-medium text-slate-500">NIT / Código</dt>
-          <dd class="m-0 mt-1 break-words text-sm font-bold text-slate-900">{{ nit }}</dd>
+        <div *ngIf="institucion.nit as nit" class="ms-info-item">
+          <span class="ms-info-ico material-symbols-outlined" aria-hidden="true">badge</span>
+          <div class="min-w-0"><dt>NIT / Código</dt><dd>{{ nit }}</dd></div>
         </div>
-        <div *ngIf="datos.administrador" class="min-w-0 lg:px-4">
-          <dt class="text-xs font-medium text-slate-500">Administrador</dt>
-          <dd class="m-0 mt-1 break-words text-sm font-bold text-slate-900">{{ datos.administrador }}</dd>
+        <div *ngIf="datos.administrador" class="ms-info-item">
+          <span class="ms-info-ico material-symbols-outlined" aria-hidden="true">manage_accounts</span>
+          <div class="min-w-0"><dt>Administrador</dt><dd>{{ datos.administrador }}</dd></div>
         </div>
-        <div *ngIf="institucion.representante_legal as representante" class="min-w-0 lg:px-4">
-          <dt class="text-xs font-medium text-slate-500">Representante legal</dt>
-          <dd class="m-0 mt-1 break-words text-sm font-bold text-slate-900">{{ representante }}</dd>
+        <div *ngIf="institucion.representante_legal as representante" class="ms-info-item">
+          <span class="ms-info-ico material-symbols-outlined" aria-hidden="true">person</span>
+          <div class="min-w-0"><dt>Representante legal</dt><dd>{{ representante }}</dd></div>
         </div>
-        <div *ngIf="institucion.telefono as telefono" class="min-w-0 lg:px-4">
-          <dt class="text-xs font-medium text-slate-500">Teléfono</dt>
-          <dd class="m-0 mt-1 break-words text-sm font-bold text-slate-900">{{ telefono }}</dd>
+        <div *ngIf="institucion.telefono as telefono" class="ms-info-item">
+          <span class="ms-info-ico material-symbols-outlined" aria-hidden="true">call</span>
+          <div class="min-w-0"><dt>Teléfono</dt><dd>{{ telefono }}</dd></div>
         </div>
       </dl>
       </ng-container>
     </ng-container>
 
     <!-- Buscador y filtro -->
-    <div class="sedes-controles mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div class="sedes-controles ms-controles">
       <div class="flex flex-1 flex-col gap-3 sm:flex-row">
-        <div class="relative w-full sm:w-96">
-          <span class="material-symbols-outlined pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[19px] text-slate-400">search</span>
+        <div class="relative w-full sm:max-w-md sm:flex-1">
+          <span class="material-symbols-outlined pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[20px] text-[#B87A00]">search</span>
           <input type="search" [(ngModel)]="textoBusqueda" placeholder="Buscar por nombre, código DANE o dirección" autocomplete="off"
-            aria-label="Buscar sede"
-            class="fx-input w-full rounded-full border border-slate-200 bg-white min-h-11 py-2.5 pl-11 pr-4 text-sm font-medium text-slate-800 outline-none" />
+            aria-label="Buscar sede" class="ms-input" />
         </div>
-        <select [(ngModel)]="filtroEstado" aria-label="Filtrar por estado"
-          class="fx-input cursor-pointer rounded-full border border-slate-200 bg-white min-h-11 px-4 py-2.5 text-sm font-semibold text-slate-700 outline-none">
+        <select [(ngModel)]="filtroEstado" aria-label="Filtrar por estado" class="ms-select">
           <option *ngFor="let e of opcionesEstado" [ngValue]="e">{{ e === 'Todos' ? 'Todos los estados' : (e === 'ACTIVO' ? 'Activas' : 'Inactivas') }}</option>
         </select>
       </div>
 
-      <span class="text-sm font-semibold text-slate-600">
+      <span class="ms-count" aria-live="polite">
+        <span class="material-symbols-outlined text-[17px]" aria-hidden="true">location_city</span>
         {{ filtradas.length }} {{ filtradas.length === 1 ? 'sede disponible' : 'sedes disponibles' }}
       </span>
     </div>
 
-    <!-- Indicador de carga cuando no hay nada aún -->
-    <div *ngIf="cargando && sedes.length === 0" class="py-12 text-center text-xs font-semibold text-slate-500">
-      <div class="inline-block h-6 w-6 animate-spin rounded-full border-2 border-[#faa911] border-t-transparent"></div>
-      <p class="mt-2 text-xs text-slate-400">Cargando tus sedes...</p>
+    <!-- Carga inicial (esqueletos) -->
+    <div *ngIf="cargando && sedes.length === 0" class="ms-grid" aria-live="polite">
+      <div *ngFor="let n of [1, 2, 3]" class="overflow-hidden rounded-[22px] border border-slate-100 bg-white">
+        <div class="h-[172px] animate-pulse bg-slate-100"></div>
+        <div class="space-y-3 p-5">
+          <div class="h-5 w-3/4 animate-pulse rounded-lg bg-slate-100"></div>
+          <div class="h-4 w-1/2 animate-pulse rounded-lg bg-slate-100"></div>
+          <div class="h-11 animate-pulse rounded-xl bg-slate-100"></div>
+        </div>
+      </div>
     </div>
 
     <!-- Tarjetas de las sedes filtradas -->
-    <div *ngIf="filtradas.length > 0" class="sedes-cuadricula grid gap-5">
-      <article *ngFor="let sede of filtradas; trackBy: trackSede"
+    <div *ngIf="filtradas.length > 0" class="sedes-cuadricula ms-grid">
+      <article *ngFor="let sede of filtradas; trackBy: trackSede; let i = index"
         (click)="seleccionarSede(sede)"
-        class="sede-card fx-up group flex cursor-pointer flex-col">
-        <img [src]="imagenDe(sedes.indexOf(sede) >= 0 ? sedes.indexOf(sede) : 0)" [alt]="sede.nombre_sede"
-          class="sedes-foto-tarjeta block bg-slate-100" loading="lazy" />
+        class="ms-card fx-up group"
+        [style.animation-delay]="(i % 12) * 45 + 'ms'">
 
-        <div class="flex flex-1 flex-col gap-2.5 px-4 py-3">
-          <div class="flex flex-wrap items-center justify-between gap-2">
-            <h3 class="m-0 min-w-0 text-lg font-black leading-tight tracking-tight text-slate-900 sm:text-xl">
-              <button type="button" (click)="seleccionarSede(sede); $event.stopPropagation()"
-                class="cursor-pointer break-words rounded-sm text-left transition-colors hover:text-amber-800">
+        <div class="ms-card-foto">
+          <img [src]="imagenDe(sedes.indexOf(sede) >= 0 ? sedes.indexOf(sede) : 0)" [alt]="sede.nombre_sede" loading="lazy" />
+          <span *ngIf="sede.codigo_dane" class="ms-dane">
+            <span class="material-symbols-outlined" aria-hidden="true">tag</span>DANE {{ sede.codigo_dane }}
+          </span>
+        </div>
+
+        <div class="ms-card-body">
+          <div class="flex flex-wrap items-start justify-between gap-2">
+            <h3 class="ms-nombre min-w-0 flex-1">
+              <button type="button" (click)="seleccionarSede(sede); $event.stopPropagation()">
                 {{ sede.nombre_sede }}
               </button>
             </h3>
@@ -254,20 +401,24 @@
             </span>
           </div>
 
-          <button type="button" (click)="irAEntregas(sede); $event.stopPropagation()"
-            class="sedes-entrega mt-auto flex min-h-11 w-full cursor-pointer items-center gap-2.5 rounded-xl px-4 py-2.5 text-left text-sm font-extrabold text-[#262008] transition">
-            <span class="material-symbols-outlined text-[20px]" aria-hidden="true">local_shipping</span>
+          <p *ngIf="sede.direccion" class="ms-dir">
+            <span class="material-symbols-outlined" aria-hidden="true">location_on</span>
+            <span>{{ sede.direccion }}</span>
+          </p>
+
+          <button type="button" (click)="irAEntregas(sede); $event.stopPropagation()" class="sedes-entrega ms-cta">
+            <span class="material-symbols-outlined text-[22px]" aria-hidden="true">local_shipping</span>
             <span class="flex-1">Registrar entrega</span>
-            <span class="material-symbols-outlined text-[20px]" aria-hidden="true">arrow_forward</span>
+            <span class="arrow material-symbols-outlined text-[22px]" aria-hidden="true">arrow_forward</span>
           </button>
         </div>
       </article>
     </div>
 
     <!-- Sin resultados -->
-    <div *ngIf="!cargando && filtradas.length === 0" class="flex flex-col items-center gap-3 rounded-3xl border border-slate-100 bg-white py-14 text-center">
-      <span class="material-symbols-outlined text-[36px] text-slate-300">search_off</span>
-      <p class="m-0 text-xs font-bold text-slate-700">
+    <div *ngIf="!cargando && filtradas.length === 0" class="ms-vacio">
+      <span class="ms-vacio-ico"><span class="material-symbols-outlined text-[34px]">search_off</span></span>
+      <p class="m-0 text-sm font-bold text-slate-700">
         <span *ngIf="!institucionActiva">
           No has seleccionado ninguna institución educativa.
         </span>
@@ -278,13 +429,13 @@
           Ninguna sede coincide con tu búsqueda.
         </span>
       </p>
-      <div class="flex gap-2">
-        <button *ngIf="!institucionActiva" type="button" (click)="irACambiarInstitucion()"
-          class="cursor-pointer rounded-full bg-[#faa911] px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-[#e69a0c] transition">
+      <div class="flex flex-wrap justify-center gap-2">
+        <button *ngIf="!institucionActiva" type="button" (click)="irACambiarInstitucion()" class="ms-btn-p">
+          <span class="material-symbols-outlined text-[18px]">swap_horiz</span>
           Seleccionar Institución
         </button>
-        <button *ngIf="hayFiltros" type="button" (click)="limpiarFiltros()"
-          class="cursor-pointer rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition">
+        <button *ngIf="hayFiltros" type="button" (click)="limpiarFiltros()" class="ms-btn-s">
+          <span class="material-symbols-outlined text-[18px]">filter_alt_off</span>
           Limpiar filtros
         </button>
       </div>
@@ -298,21 +449,20 @@
   <section *ngIf="seleccionada as sede" class="w-full">
 
     <!-- Volver: solo si la institución tiene lista de sedes -->
-    <button *ngIf="!sinSedes" type="button" (click)="volver()"
-      class="mb-4 inline-flex cursor-pointer items-center gap-1.5 text-xs font-bold text-[#e69a0c] hover:text-[#e69a0c] transition">
-      <span class="material-symbols-outlined text-[18px]">chevron_left</span>
+    <button *ngIf="!sinSedes" type="button" (click)="volver()" class="ms-back">
+      <span class="material-symbols-outlined text-[20px]">chevron_left</span>
       Volver a mis sedes
     </button>
 
-    <!-- Encabezado de la Institución -->
-    <header class="mb-6 flex flex-col justify-between gap-4 rounded-3xl border border-slate-100 bg-white p-6 shadow-sm sm:flex-row sm:items-start">
-      <div class="flex items-start gap-4">
-        <div class="ico-naranja flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl shadow-md">
-          <span class="material-symbols-outlined text-[28px]">school</span>
+    <!-- Encabezado de la institución -->
+    <header class="ms-det-head">
+      <div class="flex min-w-0 items-start gap-4">
+        <div class="ico-naranja flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl shadow-md">
+          <span class="material-symbols-outlined text-[32px]">school</span>
         </div>
-        <div>
+        <div class="min-w-0">
           <div class="flex flex-wrap items-center gap-2">
-            <h1 class="m-0 text-2xl font-black tracking-tight text-slate-900">
+            <h1 class="m-0 text-2xl font-extrabold tracking-tight text-slate-900">
               {{ institucionSeleccionada?.nombre_institucion || sede.nombre_institucion || 'Institución educativa' }}
             </h1>
             <span [ngClass]="claseEstado(institucionSeleccionada?.estado || 'ACTIVO')"
@@ -321,41 +471,40 @@
             </span>
           </div>
 
-          <p class="m-0 mt-1 text-xs font-medium text-slate-500">
+          <p class="m-0 mt-1 text-sm font-medium text-slate-500">
             Sedes educativas pertenecientes a esta institución
           </p>
 
-          <div class="mt-3 flex flex-wrap gap-2 text-xs">
-            <span *ngIf="institucionSeleccionada?.nit" class="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2.5 py-1 text-slate-600 font-medium">
-              <span class="material-symbols-outlined text-[14px]">pin</span> NIT: <strong>{{ institucionSeleccionada?.nit }}</strong>
+          <div class="mt-3 flex flex-wrap gap-2">
+            <span *ngIf="institucionSeleccionada?.nit" class="ms-tag">
+              <span class="material-symbols-outlined">pin</span> NIT: <strong>{{ institucionSeleccionada?.nit }}</strong>
             </span>
-            <span *ngIf="institucionSeleccionada?.representante_legal" class="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2.5 py-1 text-slate-600 font-medium">
-              <span class="material-symbols-outlined text-[14px]">person</span> {{ institucionSeleccionada?.representante_legal }}
+            <span *ngIf="institucionSeleccionada?.representante_legal" class="ms-tag">
+              <span class="material-symbols-outlined">person</span> {{ institucionSeleccionada?.representante_legal }}
             </span>
-            <span *ngIf="institucionSeleccionada?.telefono" class="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2.5 py-1 text-slate-600 font-medium">
-              <span class="material-symbols-outlined text-[14px]">call</span> {{ institucionSeleccionada?.telefono }}
+            <span *ngIf="institucionSeleccionada?.telefono" class="ms-tag">
+              <span class="material-symbols-outlined">call</span> {{ institucionSeleccionada?.telefono }}
             </span>
-            <span *ngIf="institucionSeleccionada?.correo_contacto" class="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2.5 py-1 text-slate-600 font-medium">
-              <span class="material-symbols-outlined text-[14px]">mail</span> {{ institucionSeleccionada?.correo_contacto }}
+            <span *ngIf="institucionSeleccionada?.correo_contacto" class="ms-tag">
+              <span class="material-symbols-outlined">mail</span> {{ institucionSeleccionada?.correo_contacto }}
             </span>
           </div>
         </div>
       </div>
 
-      <div class="flex items-center gap-2 self-end sm:self-auto">
-        <span class="rounded-2xl border border-amber-200 bg-amber-50 px-3.5 py-1.5 text-xs font-bold text-amber-900">
-          {{ sedesDeInstitucion.length }} {{ sedesDeInstitucion.length === 1 ? 'sede registrada' : 'sedes registradas' }}
-        </span>
-      </div>
+      <span class="ms-chip">
+        <span class="material-symbols-outlined" aria-hidden="true">domain</span>
+        {{ sedesDeInstitucion.length }} {{ sedesDeInstitucion.length === 1 ? 'sede registrada' : 'sedes registradas' }}
+      </span>
     </header>
 
     <!-- Título de sección -->
-    <div class="mb-5 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+    <div class="mb-5 flex items-center gap-3">
+      <span class="ico-suave flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl" aria-hidden="true">
+        <span class="material-symbols-outlined text-[24px]">domain</span>
+      </span>
       <div>
-        <h2 class="m-0 text-lg font-black text-slate-900 flex items-center gap-2">
-          <span class="material-symbols-outlined text-[#faa911] text-[22px]">domain</span>
-          Sedes de la institución
-        </h2>
+        <h2 class="m-0 text-lg font-extrabold text-slate-900">Sedes de la institución</h2>
         <p class="m-0 text-xs font-medium text-slate-500">
           Listado de sedes disponibles para <strong>{{ institucionSeleccionada?.nombre_institucion || sede.nombre_institucion }}</strong>
         </p>
@@ -363,39 +512,35 @@
     </div>
 
     <!-- Indicador de carga -->
-    <div *ngIf="cargandoSedesInstitucion" class="py-12 text-center text-xs font-semibold text-slate-500">
-      <div class="inline-block h-6 w-6 animate-spin rounded-full border-2 border-[#faa911] border-t-transparent"></div>
-      <p class="mt-2 text-xs text-slate-400">Cargando sedes de la institución...</p>
+    <div *ngIf="cargandoSedesInstitucion" class="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3" aria-live="polite">
+      <div *ngFor="let n of [1, 2, 3]" class="h-[300px] animate-pulse rounded-[22px] bg-slate-100"></div>
     </div>
 
     <!-- Sin sedes asociadas -->
-    <div *ngIf="!cargandoSedesInstitucion && sedesDeInstitucion.length === 0"
-      class="flex flex-col items-center gap-3 rounded-3xl border border-dashed border-slate-200 bg-white py-14 px-6 text-center shadow-sm">
-      <div class="ico-suave flex h-14 w-14 items-center justify-center rounded-2xl shadow-sm">
-        <span class="material-symbols-outlined text-[32px] text-[#faa911]">domain_disabled</span>
-      </div>
-      <h3 class="m-0 text-base font-bold text-slate-800">No se encontraron sedes para esta institución</h3>
-      <p class="m-0 max-w-md text-xs text-slate-500">
+    <div *ngIf="!cargandoSedesInstitucion && sedesDeInstitucion.length === 0" class="ms-vacio">
+      <span class="ms-vacio-ico"><span class="material-symbols-outlined text-[34px]">domain_disabled</span></span>
+      <h3 class="m-0 text-base font-extrabold text-slate-800">No se encontraron sedes para esta institución</h3>
+      <p class="m-0 max-w-md text-sm text-slate-500">
         Esta institución no tiene sedes educativas registradas actualmente.
       </p>
     </div>
 
-    <!-- Cuadrícula de Sedes de la institución -->
+    <!-- Cuadrícula de sedes de la institución -->
     <div *ngIf="!cargandoSedesInstitucion && sedesDeInstitucion.length > 0"
       class="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-      <article *ngFor="let s of sedesDeInstitucion; trackBy: trackSede"
-        class="sede-card fx-up flex flex-col justify-between"
-        [class.ring-2]="s.id_sede === sede.id_sede"
-        [class.ring-[#faa911]]="s.id_sede === sede.id_sede">
+      <article *ngFor="let s of sedesDeInstitucion; trackBy: trackSede; let i = index"
+        class="ms-card2 fx-up"
+        [class.ms-card-sel]="s.id_sede === sede.id_sede"
+        [style.animation-delay]="(i % 12) * 45 + 'ms'">
         <div>
           <!-- Cabecera de la tarjeta -->
           <div class="flex items-start justify-between">
             <div class="ico-suave flex h-12 w-12 items-center justify-center rounded-2xl shadow-sm">
-              <span class="material-symbols-outlined text-[24px]">domain</span>
+              <span class="material-symbols-outlined text-[26px]">domain</span>
             </div>
             <div class="flex items-center gap-1.5">
               <span *ngIf="s.id_sede === sede.id_sede"
-                class="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-900 border border-amber-300">
+                class="rounded-full border border-amber-300 bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-900">
                 Seleccionada
               </span>
               <span [ngClass]="claseEstado(s.estado)" class="rounded-full border px-2.5 py-0.5 text-[11px] font-bold">
@@ -405,47 +550,43 @@
           </div>
 
           <!-- Nombre de la sede -->
-          <h3 class="m-0 mt-4 text-lg font-black leading-tight text-slate-900">{{ s.nombre_sede }}</h3>
+          <h3 class="m-0 mt-4 text-lg font-extrabold leading-tight text-slate-900">{{ s.nombre_sede }}</h3>
 
           <!-- Institución a la que pertenece -->
           <p class="m-0 mt-1 flex items-center gap-1.5 text-xs font-medium text-slate-500">
-            <span class="material-symbols-outlined text-[15px] text-[#faa911]">school</span>
+            <span class="material-symbols-outlined text-[16px] text-[#B87A00]">school</span>
             <span class="truncate">{{ s.nombre_institucion || institucionSeleccionada?.nombre_institucion || 'Institución educativa' }}</span>
           </p>
 
           <!-- Datos de la sede -->
-          <div class="mt-4 space-y-2 rounded-2xl bg-slate-50 p-3.5 text-xs">
-            <div class="flex items-center justify-between">
-              <span class="text-[11px] font-bold text-slate-400">Código DANE:</span>
-              <span class="font-mono font-bold text-slate-800">{{ s.codigo_dane || '—' }}</span>
+          <div class="ms-datos">
+            <div class="ms-dato">
+              <span><span class="material-symbols-outlined">tag</span>Código DANE</span>
+              <span class="font-mono">{{ s.codigo_dane || '—' }}</span>
             </div>
-            <div class="flex items-start justify-between gap-2">
-              <span class="text-[11px] font-bold text-slate-400">Dirección:</span>
-              <span class="font-medium text-slate-700 text-right truncate max-w-[170px]" [title]="s.direccion">
-                {{ s.direccion || '—' }}
-              </span>
+            <div class="ms-dato">
+              <span><span class="material-symbols-outlined">location_on</span>Dirección</span>
+              <span class="max-w-[170px] truncate" [title]="s.direccion">{{ s.direccion || '—' }}</span>
             </div>
-            <div class="flex items-center justify-between">
-              <span class="text-[11px] font-bold text-slate-400">Teléfono:</span>
-              <span class="font-medium text-slate-700">{{ s.telefono || '—' }}</span>
+            <div class="ms-dato">
+              <span><span class="material-symbols-outlined">call</span>Teléfono</span>
+              <span>{{ s.telefono || '—' }}</span>
             </div>
-            <div *ngIf="s.matriculados" class="flex items-center justify-between border-t border-slate-200/60 pt-1.5 mt-1">
-              <span class="text-[11px] font-bold text-slate-400">Estudiantes:</span>
-              <span class="font-bold text-slate-700">{{ s.matriculados }} matriculados</span>
+            <div *ngIf="s.matriculados" class="ms-dato border-t border-[#EFE7CC] pt-2">
+              <span><span class="material-symbols-outlined">groups</span>Estudiantes</span>
+              <span>{{ s.matriculados }} matriculados</span>
             </div>
           </div>
         </div>
 
-        <!-- Botones de Acción -->
-        <div class="mt-5 flex gap-2 border-t border-slate-100 pt-4">
-          <button type="button" (click)="seleccionarSede(s)"
-            class="flex-1 flex cursor-pointer items-center justify-center gap-1.5 rounded-full bg-[#faa911] px-3.5 py-2 text-xs font-bold text-white transition hover:bg-[#e69a0c] shadow-sm">
-            <span class="material-symbols-outlined text-[16px]">location_on</span>
+        <!-- Botones de acción -->
+        <div class="mt-5 flex flex-wrap gap-2 border-t border-slate-100 pt-4">
+          <button type="button" (click)="seleccionarSede(s)" class="ms-btn-p flex-1 justify-center">
+            <span class="material-symbols-outlined text-[18px]">location_on</span>
             {{ s.esInstitucion ? 'Trabajar en la institución' : 'Trabajar en esta sede' }}
           </button>
-          <button type="button" (click)="irAEntregas(s)"
-            class="flex-1 flex cursor-pointer items-center justify-center gap-1.5 rounded-full border border-[#faa911] bg-amber-50 px-3.5 py-2 text-xs font-bold text-amber-900 transition hover:bg-amber-100 shadow-sm">
-            <span class="material-symbols-outlined text-[16px]">local_shipping</span>
+          <button type="button" (click)="irAEntregas(s)" class="ms-btn-s flex-1 justify-center !border-[#F0CF73] !bg-[#FFF8E6] !text-[#7A5200]">
+            <span class="material-symbols-outlined text-[18px]">local_shipping</span>
             Entregas
           </button>
         </div>

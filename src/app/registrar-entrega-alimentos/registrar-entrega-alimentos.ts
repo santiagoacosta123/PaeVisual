@@ -1,4 +1,3 @@
-
 import { ChangeDetectorRef, Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -1509,7 +1508,10 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     const sigueEnLaVista = () => idInstitucionVista === this.idInstitucion && idSede === this.idSede;
     const fechaRegistro = new Date().toISOString();
     const lote = fechaRegistro;
-    const datosEnvio = (sel: FilaEntrega, cantidad: number, unidad: string): EnvioConfirmado => ({
+    // Generar código formal de Factura / Remisión para que los productos viajen agrupados
+    const codigoFactura = `FAC-${hoy.replace(/-/g, '')}-${String(Date.now()).slice(-4)}`;
+
+    const datosEnvio = (sel: FilaEntrega, cantidad: number, unidad: string, docFactura: string = codigoFactura): EnvioConfirmado => ({
       id_temporal: --this.idEnvioTemporal,
       id_institucion: datos.id_institucion!,
       id_sede: datos.id_sede,
@@ -1526,14 +1528,22 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       responsable,
       created_at: fechaRegistro,
       lote_registro: lote,
+      documento_entrega: docFactura,
     });
     const calculo = this.calculoAbastecimiento;
     if (idSede != null && calculo) {
       const envios = items.map(sel => datosEnvio(
-        sel, this.cantidadEnviarDe(sel), this.normalizarUnidad(sel.unidad) || 'Kg',
+        sel, this.cantidadEnviarDe(sel), this.normalizarUnidad(sel.unidad) || 'Kg', codigoFactura,
       ));
       const payload: DespachoLotePayload = {
         id_sede: idSede,
+        sede: idSede,
+        id_institucion: datos.id_institucion,
+        institucion: datos.id_institucion,
+        institucion_nombre: this.nombreInstitucion,
+        codigo_documento: codigoFactura,
+        numero_factura: codigoFactura,
+        documento_entrega: codigoFactura,
         fecha_entrega: hoy,
         id_contrato: calculo.contrato?.id_contrato ?? undefined,
         dias_perecederos: calculo.periodicidad?.dias_perecederos ?? undefined,
@@ -1543,7 +1553,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
         autorizacion_exceso: this.autorizacionExceso,
         autorizado_por: this.autorizacionExceso ? this.autorizadoPor.trim() : '',
         justificacion_exceso: this.autorizacionExceso ? this.justificacionExceso.trim() : '',
-        observaciones: `Responsable: ${responsable}`,
+        observaciones: `Factura: ${codigoFactura} | Responsable: ${responsable} | Destino: ${destino}`,
         frecuencia: items[0]?.frecuencia || 'Semanal',
         items: envios.map(({ id_ingrediente, cantidad, unidad, id_tipo_mercado, fecha_vencimiento }) => ({
           id_ingrediente, cantidad, unidad, id_tipo_mercado, fecha_vencimiento,
@@ -1554,10 +1564,11 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
         next: respuesta => {
           this.guardandoEnvio = false;
           const despachos = respuesta.despachos ?? [];
+          const docDefinitivo = respuesta.codigo_documento || codigoFactura;
           const confirmados = envios.map((envio, i) => ({
             ...envio,
             id: Number(despachos[i]?.id_entrega) || undefined,
-            documento_entrega: respuesta.codigo_documento,
+            documento_entrega: docDefinitivo,
             id_calculo_entrega: respuesta.id_calculo_entrega,
           }));
           this.incorporarEnviosConfirmados(confirmados, sigueEnLaVista());
@@ -1569,10 +1580,8 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
             this.actualizarCalculoAbastecimiento();
           }
           void this.alertas.success(
-            'Envío registrado',
-            respuesta.codigo_documento
-              ? `Documento ${respuesta.codigo_documento} · ${destino}`
-              : `Se registró el envío a ${destino}.`,
+            'Factura de envío registrada',
+            `Factura / Remisión ${docDefinitivo} · ${destino} (${items.length} productos)`,
           );
           this.cdr.markForCheck();
         },
@@ -1590,10 +1599,29 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       const cantidad = this.cantidadEnviarDe(sel);
       const unidad = this.normalizarUnidad(sel.unidad) || 'Kg';
       return this.entregasService.registrar({
-        id_ingrediente: sel.idIngrediente!, id_tipo_mercado: sel.idTipoMercado!, ...datos,
-        fecha_entrega: hoy, fecha_salida: hoy, fecha_vencimiento: sel.fechaVencimiento,
-        cantidad, frecuencia: sel.frecuencia, unidad, destino, responsable,
-        observaciones: `Responsable: ${responsable}`,
+        id_ingrediente: sel.idIngrediente!,
+        ingrediente: sel.idIngrediente!,
+        id_tipo_mercado: sel.idTipoMercado!,
+        tipo_mercado: sel.idTipoMercado!,
+        id_institucion: datos.id_institucion!,
+        institucion: datos.id_institucion!,
+        institucion_nombre: this.nombreInstitucion,
+        id_sede: datos.id_sede,
+        sede: datos.id_sede,
+        sede_nombre: this.nombreSede,
+        fecha_entrega: hoy,
+        fecha_salida: hoy,
+        fecha_vencimiento: sel.fechaVencimiento,
+        cantidad,
+        frecuencia: sel.frecuencia,
+        unidad,
+        destino,
+        responsable,
+        documento_entrega: codigoFactura,
+        codigo_documento: codigoFactura,
+        numero_factura: codigoFactura,
+        lote_registro: lote,
+        observaciones: `Factura: ${codigoFactura} | Responsable: ${responsable} | Destino: ${destino}`,
       } as any).pipe(
         map((resp: any) => ({ ok: true, sel, cantidad, unidad, motivo: '', idResp: (resp?.id ?? resp?.id_entrega) as any })),
         catchError(error => {
@@ -1610,7 +1638,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       const fallidos = resultados.filter(r => !r.ok);
 
       const confirmados = exitosos.map(r => ({
-        ...datosEnvio(r.sel, r.cantidad, r.unidad),
+        ...datosEnvio(r.sel, r.cantidad, r.unidad, codigoFactura),
         id: Number(r.idResp) || undefined,
       }));
       this.incorporarEnviosConfirmados(confirmados, sigueEnLaVista());
@@ -1627,7 +1655,10 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
         this.errorEnvioPanel = `Se enviaron ${exitosos.length} producto(s). No se pudo enviar: ${fallidos.map(r => `${r.sel.ingrediente} (${r.motivo})`).join('; ')}.`;
         void this.alertas.error('Envío incompleto', this.errorEnvioPanel);
       } else {
-        void this.alertas.success('Envío registrado', `${exitosos.length} producto(s) enviados a ${destino}, con entrega el ${this.fechaCorta(hoy)}.`);
+        void this.alertas.success(
+          'Factura de envío registrada',
+          `Factura / Remisión ${codigoFactura} · ${exitosos.length} producto(s) enviados a ${destino}, con entrega el ${this.fechaCorta(hoy)}.`,
+        );
       }
       this.cdr.markForCheck();
     });
@@ -1646,6 +1677,60 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       ...this.enviosPendientes.filter(envio => envio.id != null && !ids.has(envio.id)),
     ];
     this.guardarCache(this.claveEnviosPendientes, this.enviosPendientes);
+
+    // Sincronizar automáticamente hacia la vista de la Institución (Recepción de Entregas) y Sedes
+    try {
+      const localesExistentes = JSON.parse(localStorage.getItem('sirae_entregas_locales') || '[]');
+      const arrayLocales = Array.isArray(localesExistentes) ? localesExistentes : [];
+      const nuevosParaInstitucion = envios.map(e => ({
+        id: e.id,
+        idIngrediente: e.id_ingrediente,
+        id_ingrediente: e.id_ingrediente,
+        idTipoMercado: e.id_tipo_mercado,
+        id_tipo_mercado: e.id_tipo_mercado,
+        idInstitucion: e.id_institucion,
+        id_institucion: e.id_institucion,
+        institucion: e.id_institucion,
+        institucionNombre: this.nombreInstitucion,
+        institucion_nombre: this.nombreInstitucion,
+        idSede: e.id_sede,
+        id_sede: e.id_sede,
+        sede: e.id_sede,
+        sedeNombre: this.nombreSede,
+        sede_nombre: this.nombreSede,
+        ingrediente: e.ingrediente_nombre,
+        ingrediente_nombre: e.ingrediente_nombre,
+        tipoMercado: e.id_tipo_mercado === 1 ? 'Perecederos' : 'Granos',
+        frecuencia: e.frecuencia,
+        cantidad: e.cantidad,
+        unidad: e.unidad,
+        fechaRecepcion: e.fecha_entrega,
+        fecha_entrega: e.fecha_entrega,
+        fechaVencimiento: e.fecha_vencimiento,
+        fecha_vencimiento: e.fecha_vencimiento,
+        estado: 'EN_TRANSITO',
+        documentoEntrega: e.documento_entrega,
+        documento_entrega: e.documento_entrega,
+        numeroFactura: e.documento_entrega,
+        numero_factura: e.documento_entrega,
+        loteRegistro: e.lote_registro,
+        lote_registro: e.lote_registro,
+        destino: e.destino,
+        responsable: e.responsable,
+        observaciones: `Factura: ${e.documento_entrega || ''} | Responsable: ${e.responsable}`,
+      }));
+      // Guardar con deduplicación por id o combinación única
+      const idSetLocales = new Set(nuevosParaInstitucion.map(n => n.id).filter(id => id != null));
+      const localesLimpias = arrayLocales.filter((l: any) => l.id == null || !idSetLocales.has(l.id));
+      localStorage.setItem('sirae_entregas_locales', JSON.stringify([...nuevosParaInstitucion, ...localesLimpias]));
+
+      const enviosInstRaw = JSON.parse(localStorage.getItem('sirae_envios_institucion') || '[]');
+      const arrayEnviosInst = Array.isArray(enviosInstRaw) ? enviosInstRaw : [];
+      localStorage.setItem('sirae_envios_institucion', JSON.stringify([...envios, ...arrayEnviosInst]));
+    } catch (e) {
+      console.warn('Error sincronizando envíos locales para la institución:', e);
+    }
+
     if (!vistaActiva) return;
     this.aplicarHistorial([
       ...envios,
