@@ -358,14 +358,21 @@
                     <!-- ACCIONES: Cambiar Menú o Cancelar Entrega -->
                     <div *ngIf="esSupervisor || esJefaManipuladoras || esSuperAdmin"
                       class="flex items-center justify-between gap-1 pt-1.5 border-t border-slate-100 text-[10px]">
-                      <button type="button" (click)="abrirModalProgramarMenuDiaMomento(dia, mom)"
-                        class="font-bold text-amber-900 hover:underline cursor-pointer">
-                        Cambiar menú
-                      </button>
-                      <button *ngIf="esJefaManipuladoras || esSuperAdmin" type="button" (click)="abrirModalNovedadMomento(dia, mom, 'CANCELADO')"
-                        class="text-slate-500 hover:text-rose-700 cursor-pointer">
-                        Cancelar entrega
-                      </button>
+                      <ng-container *ngIf="!esJefaManipuladoras || !obtenerAprobacionSemana(semana.numeroSemana).aprobado_supervisor; else semanaBloqueadaTpl">
+                        <button type="button" (click)="abrirModalProgramarMenuDiaMomento(dia, mom)"
+                          class="font-bold text-amber-900 hover:underline cursor-pointer">
+                          Cambiar menú
+                        </button>
+                        <button *ngIf="esJefaManipuladoras || esSuperAdmin" type="button" (click)="abrirModalNovedadMomento(dia, mom, 'CANCELADO')"
+                          class="text-slate-500 hover:text-rose-700 cursor-pointer">
+                          Cancelar entrega
+                        </button>
+                      </ng-container>
+                      <ng-template #semanaBloqueadaTpl>
+                        <span class="text-[10px] text-emerald-800 font-bold flex items-center gap-1">
+                          🔒 Fijado por Supervisor
+                        </span>
+                      </ng-template>
                     </div>
 
                   </div>

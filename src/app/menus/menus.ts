@@ -812,7 +812,17 @@ export class MenusComponent implements OnInit {
       }
     }
 
-    // 2. Si la sede no tiene un contrato restrictivo, maneja normalmente todas sus jornadas
+    // 2. Verificación por sede institucional (ej. Piagua solo Desayuno, Valencia todas las jornadas)
+    const sedeObj = this.sedesInstitucion.find(s => Number(s.id_sede || s.id) === Number(idSede));
+    const nomSede = (sedeObj?.nombre_sede || sedeObj?.nombre || '').toLowerCase();
+    if (nomSede.includes('piagua')) {
+      return ['Desayuno'];
+    }
+    if (nomSede.includes('valencia')) {
+      return ['Desayuno', 'Almuerzo', 'Merienda'];
+    }
+
+    // 3. Por defecto cualquier otra sede sin contrato restrictivo maneja normalmente todas sus jornadas
     return ['Desayuno', 'Almuerzo', 'Merienda'];
   }
 
@@ -1032,7 +1042,17 @@ export class MenusComponent implements OnInit {
       if (k) baseMap.set(k, b);
     }
 
-    for (const p of this.platosEstipuladosPAE || []) {
+    const fuentesPlatos = [
+      ...(this.platosEstipuladosPAE || []),
+      ...(this.platos || []).map(p => ({
+        ...p,
+        nombre_plato: p.nombre_plato || p.nombre || '',
+        secciones: p.secciones || (p.seccion ? [p.seccion] : (p.id_seccion === 1 ? ['Desayuno'] : (p.id_seccion === 3 ? ['Merienda'] : ['Desayuno', 'Almuerzo', 'Merienda'])))
+      })),
+      ...baseMenus
+    ];
+
+    for (const p of fuentesPlatos) {
       const nombreLimpio = this.limpiarNombrePlato(p.nombre_plato);
       if (!nombreLimpio) continue;
 
@@ -1044,7 +1064,7 @@ export class MenusComponent implements OnInit {
         ? [...baseMatch.secciones]
         : (p.secciones && p.secciones.length > 0
             ? p.secciones
-            : (p.seccion ? [p.seccion] : ['Desayuno', 'Almuerzo']));
+            : (p.seccion ? [p.seccion] : ['Desayuno', 'Almuerzo', 'Merienda']));
 
       mapaUnicos.set(claveCanon, {
         ...p,
@@ -1934,6 +1954,16 @@ export class MenusComponent implements OnInit {
   }
 
   abrirModalProgramarMenuDiaMomento(dia: CeldaDiaMinutaSede, momento: 'Desayuno' | 'Almuerzo' | 'Merienda'): void {
+    const numSemana = Math.floor((dia.numeroMenu - 1) / 5) + 1;
+    const aprobacion = this.obtenerAprobacionSemana(numSemana);
+    if (this.esJefaManipuladoras && aprobacion.aprobado_supervisor) {
+      this.sweetAlert.warning(
+        'Minuta Aprobada y Fijada',
+        `La Semana ${numSemana} ya fue formalmente aprobada por el Supervisor PAE (${aprobacion.supervisor_nombre || 'Supervisor'}). La minuta oficial ha quedado fijada y no puede ser modificada por la jefa de cocina.`
+      );
+      return;
+    }
+
     const idSede = Number(this.sedeSeleccionadaId || this.currentUser?.id_sede || (this.sedesInstitucion[0]?.id_sede));
 
     if (!this.sedeManejaMomento(idSede, momento)) {
