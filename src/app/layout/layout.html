@@ -293,14 +293,6 @@
             <span class="superadmin-nav-text">Reportes</span>
           </div>
         </a>
-
-        <!-- MENÚ Y RECETAS PAE -->
-        <a routerLink="/menus" routerLinkActive="active" class="superadmin-nav-item" title="Menú y Recetas PAE">
-          <div class="superadmin-nav-item-left">
-            <span class="material-symbols-outlined superadmin-nav-icon">restaurant_menu</span>
-            <span class="superadmin-nav-text">Menú</span>
-          </div>
-        </a>
       </div>
 
       <!-- SECCIÓN 3: CONFIGURACIÓN Y MAESTROS -->
@@ -566,11 +558,6 @@
         <span class="modern-nav-text">Gramajes</span>
       </a>
 
-      <!-- MENÚ POR SEDE (Exclusivo para Supervisor / Super Admin / Jefa de Manipuladoras - no visible para Administrador) -->
-      <a *ngIf="!esAdministrador" routerLink="menus" routerLinkActive="active" class="modern-nav-item" title="Menú">
-        <span class="material-symbols-outlined modern-nav-icon" aria-hidden="true">restaurant_menu</span>
-        <span class="modern-nav-text">Menú</span>
-      </a>
 
       <!-- USUARIOS -->
       <a routerLink="usuarios" routerLinkActive="active" class="modern-nav-item" title="Usuarios">
