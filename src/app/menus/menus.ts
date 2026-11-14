@@ -1042,7 +1042,17 @@ export class MenusComponent implements OnInit {
       if (k) baseMap.set(k, b);
     }
 
-    for (const p of this.platosEstipuladosPAE || []) {
+    const fuentesPlatos = [
+      ...(this.platosEstipuladosPAE || []),
+      ...(this.platos || []).map(p => ({
+        ...p,
+        nombre_plato: p.nombre_plato || p.nombre || '',
+        secciones: p.secciones || (p.seccion ? [p.seccion] : (p.id_seccion === 1 ? ['Desayuno'] : (p.id_seccion === 3 ? ['Merienda'] : ['Desayuno', 'Almuerzo', 'Merienda'])))
+      })),
+      ...baseMenus
+    ];
+
+    for (const p of fuentesPlatos) {
       const nombreLimpio = this.limpiarNombrePlato(p.nombre_plato);
       if (!nombreLimpio) continue;
 
@@ -1054,7 +1064,7 @@ export class MenusComponent implements OnInit {
         ? [...baseMatch.secciones]
         : (p.secciones && p.secciones.length > 0
             ? p.secciones
-            : (p.seccion ? [p.seccion] : ['Desayuno', 'Almuerzo']));
+            : (p.seccion ? [p.seccion] : ['Desayuno', 'Almuerzo', 'Merienda']));
 
       mapaUnicos.set(claveCanon, {
         ...p,
