@@ -1278,7 +1278,8 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       }
     ];
 
-    const excluidas = ['prueba1', 'prueba2', 'sena'];
+    const excluidas = ['prueba1', 'prueba2', 'sena', 'prueba 1', 'prueba 2', 'test'];
+    const esDePrueba = (nom: string) => excluidas.includes(nom) || nom.includes('prueba') || nom.includes('test');
 
     const resultado: any[] = oficiales.map(oficial => {
       const coincidencia = crudos.find(c => {
@@ -1289,9 +1290,9 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       return {
         ...(coincidencia || {}),
         id_seccion: coincidencia?.id_seccion ?? coincidencia?.id ?? oficial.id_fallback,
-        nombre_seccion: oficial.nombre_seccion,
+        nombre_seccion: coincidencia?.nombre_seccion ?? oficial.nombre_seccion,
         jornada_display: oficial.jornada_display,
-        id_jornada: coincidencia?.id_jornada ?? (oficial.nombreBuscado === 'merienda' ? 5 : 3),
+        id_jornada: coincidencia?.id_jornada?.id_jornada ?? coincidencia?.id_jornada ?? (oficial.nombreBuscado === 'merienda' ? 3 : 1),
         _orden: oficial._orden
       };
     });
@@ -1299,7 +1300,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
     // Incluir cualquier otra sección registrada en el backend excluyendo las de prueba
     crudos.forEach(c => {
       const nom = (c.nombre_seccion || c.nombre || '').trim().toLowerCase();
-      if (!excluidas.includes(nom) && !['desayuno', 'almuerzo', 'merienda'].includes(nom)) {
+      if (!esDePrueba(nom) && !['desayuno', 'almuerzo', 'merienda'].includes(nom)) {
         resultado.push({
           ...c,
           _orden: 99
