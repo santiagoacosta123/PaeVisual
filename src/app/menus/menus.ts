@@ -110,7 +110,8 @@ export class MenusComponent implements OnInit {
   private readonly STORAGE_MINUTA_SEDE_KEY = 'sirae_minutas_por_sede_v1';
   private readonly STORAGE_APROBACIONES_KEY = 'sirae_aprobaciones_minuta_v1';
   private readonly STORAGE_SEDES_MOMENTOS_KEY = 'sirae_sedes_momentos_v1';
-  private readonly STORAGE_PLATOS_CATALOGO_KEY = 'sirae_platos_catalogo_personalizados_v5';
+  private readonly STORAGE_PLATOS_CATALOGO_KEY = 'sirae_platos_catalogo_personalizados_v6';
+  private readonly STORAGE_COMP_CATALOGO_KEY = 'sirae_catalogo_componentes_pae_v2';
 
   pestanaActiva: 'minuta' | 'platos' | 'menus' | 'preparaciones' = 'platos';
 
@@ -866,6 +867,8 @@ export class MenusComponent implements OnInit {
       localStorage.removeItem('sirae_platos_catalogo_personalizados_v2');
       localStorage.removeItem('sirae_platos_catalogo_personalizados_v3');
       localStorage.removeItem('sirae_platos_catalogo_personalizados_v4');
+      localStorage.removeItem('sirae_platos_catalogo_personalizados_v5');
+      localStorage.removeItem('sirae_catalogo_componentes_pae_v1');
       localStorage.removeItem('sirae_catalogo_platos_pae_estipulados_v1');
     } catch {}
 
@@ -1042,20 +1045,31 @@ export class MenusComponent implements OnInit {
     };
   }
 
+  obtenerMenuBasePorNombre(nombrePlato: string): any {
+    const k = this.obtenerClaveCanonicaPlato(nombrePlato);
+    if (!k) return null;
+    const baseMenus = this.getCatalogo20MenusBasePAE();
+    return baseMenus.find(b => this.obtenerClaveCanonicaPlato(b.nombre_plato) === k) || null;
+  }
+
   crearComponentesDesdeMenuPAE(menuBase: any): ComponentePlatoReceta[] {
     const comps: ComponentePlatoReceta[] = [];
     let contador = 1;
 
+    // Si el objeto recibido no trae componentes completos, buscar en la minuta oficial PAE
+    const canon = this.obtenerMenuBasePorNombre(menuBase?.nombre_plato);
+    const fuente = canon || menuBase;
+
     const agregarComp = (tipo: string, nombre: string, defaultIngs: string[] = [], defaultPasos: string[] = []) => {
       if (!nombre || nombre === '—') return;
-      const baseReceta = CATALOGO_PREPARACIONES_PAE[(nombre || '').trim().toLowerCase()];
-      if (baseReceta) {
+      const baseReceta = this.buscarComponenteEnCatalogo(nombre) || CATALOGO_PREPARACIONES_PAE[(nombre || '').trim().toLowerCase()];
+      if (baseReceta && (baseReceta.ingredientes?.length > 0 || baseReceta.pasos?.length > 0)) {
         comps.push({
           id_temporal: 'comp_' + Date.now() + '_' + (contador++),
           tipo_componente: baseReceta.tipo_componente || tipo,
           nombre_componente: baseReceta.nombre_componente || nombre,
-          ingredientes: baseReceta.ingredientes.map(i => ({ ...i })),
-          pasos: baseReceta.pasos.map((p, idx) => ({ numero_paso: idx + 1, descripcion_paso: p.descripcion_paso })),
+          ingredientes: (baseReceta.ingredientes || []).map(i => ({ ...i })),
+          pasos: (baseReceta.pasos || []).map((p, idx) => ({ numero_paso: idx + 1, descripcion_paso: p.descripcion_paso })),
           ingredienteTempId: null,
           observacionTemp: ''
         });
@@ -1079,42 +1093,25 @@ export class MenusComponent implements OnInit {
       });
     };
 
-    if (menuBase.componentes) {
-      if (menuBase.componentes.bebida_leche && menuBase.componentes.bebida_leche !== '—') {
-        const ings = (menuBase.ingredientes || []).filter((i: string) =>
-          i.toLowerCase().includes('leche') || i.toLowerCase().includes('avena') || i.toLowerCase().includes('chocolate') || i.toLowerCase().includes('panela') || i.toLowerCase().includes('quinua') || i.toLowerCase().includes('yogurt')
-        );
-        const pasos = (menuBase.pasos || []).filter((p: string) =>
-          p.toLowerCase().includes('bebida') || p.toLowerCase().includes('leche') || p.toLowerCase().includes('avena') || p.toLowerCase().includes('chocolate') || p.toLowerCase().includes('jugo') || p.toLowerCase().includes('colada')
-        );
-        agregarComp('Bebida con leche', menuBase.componentes.bebida_leche, ings, pasos);
+    if (fuente.componentes) {
+      if (fuente.componentes.bebida_leche && fuente.componentes.bebida_leche !== '—') {
+        agregarComp('Bebida con leche', fuente.componentes.bebida_leche);
       }
 
-      if (menuBase.componentes.proteico && menuBase.componentes.proteico !== '—') {
-        const ings = (menuBase.ingredientes || []).filter((i: string) =>
-          i.toLowerCase().includes('huevo') || i.toLowerCase().includes('pollo') || i.toLowerCase().includes('carne') || i.toLowerCase().includes('cerdo') || i.toLowerCase().includes('lenteja') || i.toLowerCase().includes('frijol') || i.toLowerCase().includes('queso')
-        );
-        const pasos = (menuBase.pasos || []).filter((p: string) =>
-          p.toLowerCase().includes('huevo') || p.toLowerCase().includes('pollo') || p.toLowerCase().includes('carne') || p.toLowerCase().includes('cerdo') || p.toLowerCase().includes('lenteja') || p.toLowerCase().includes('frijol')
-        );
-        agregarComp('Alimento proteico', menuBase.componentes.proteico, ings, pasos);
+      if (fuente.componentes.proteico && fuente.componentes.proteico !== '—') {
+        agregarComp('Alimento proteico', fuente.componentes.proteico);
       }
 
-      if (menuBase.componentes.cereal && menuBase.componentes.cereal !== '—') {
-        const ings = (menuBase.ingredientes || []).filter((i: string) =>
-          i.toLowerCase().includes('arroz') || i.toLowerCase().includes('arepa') || i.toLowerCase().includes('pasta') || i.toLowerCase().includes('fideos') || i.toLowerCase().includes('papa') || i.toLowerCase().includes('hojaldra') || i.toLowerCase().includes('galleta') || i.toLowerCase().includes('torta')
-        );
-        const pasos = (menuBase.pasos || []).filter((p: string) =>
-          p.toLowerCase().includes('arroz') || p.toLowerCase().includes('arepa') || p.toLowerCase().includes('pasta') || p.toLowerCase().includes('papa')
-        );
-        agregarComp('Cereal acompañante', menuBase.componentes.cereal, ings, pasos);
+      if (fuente.componentes.cereal && fuente.componentes.cereal !== '—') {
+        agregarComp('Cereal acompañante', fuente.componentes.cereal);
       }
 
-      if (menuBase.componentes.fruta && menuBase.componentes.fruta !== '—') {
-        const ings = (menuBase.ingredientes || []).filter((i: string) =>
-          i.toLowerCase().includes('fruta') || i.toLowerCase().includes('banano') || i.toLowerCase().includes('papaya') || i.toLowerCase().includes('mango') || i.toLowerCase().includes('manzana') || i.toLowerCase().includes('mandarina') || i.toLowerCase().includes('guayaba')
-        );
-        agregarComp('Fruta', menuBase.componentes.fruta, ings, ['Lavar, desinfectar y porcionar la fruta fresca.']);
+      if (fuente.componentes.fruta && fuente.componentes.fruta !== '—') {
+        agregarComp('Fruta', fuente.componentes.fruta, [fuente.componentes.fruta], ['Lavar, desinfectar y porcionar la fruta fresca.']);
+      }
+
+      if (fuente.componentes.agua && fuente.componentes.agua !== '—') {
+        agregarComp('Agua', fuente.componentes.agua, ['Agua potable'], ['Servir agua potable fresca en vasos limpios.']);
       }
     }
 
@@ -1129,15 +1126,26 @@ export class MenusComponent implements OnInit {
     this.modoEdicionReceta = true;
     this.platoRecetaSeleccionado = plato;
 
-    const compsExistentes = plato.componentes_estructurados && plato.componentes_estructurados.length > 0
-      ? JSON.parse(JSON.stringify(plato.componentes_estructurados))
-      : this.crearComponentesDesdeMenuPAE(plato);
+    const baseCanon = this.obtenerMenuBasePorNombre(plato.nombre_plato);
+    let compsExistentes: ComponentePlatoReceta[] = [];
+
+    const tieneCompsValidos = Array.isArray(plato.componentes_estructurados) &&
+      plato.componentes_estructurados.length > 0 &&
+      plato.componentes_estructurados.some((c: any) => c.ingredientes && c.ingredientes.length > 0);
+
+    if (tieneCompsValidos) {
+      compsExistentes = JSON.parse(JSON.stringify(plato.componentes_estructurados));
+    } else {
+      compsExistentes = this.crearComponentesDesdeMenuPAE(baseCanon || plato);
+    }
 
     this.menuRecetaForm = {
       id_plato: plato.id_plato,
-      numero_menu: plato.numeroMenu,
+      numero_menu: plato.numeroMenu || baseCanon?.numeroMenu,
       nombre_plato: this.limpiarNombrePlato(plato.nombre_plato),
-      secciones: plato.secciones || ['Desayuno', 'Almuerzo'],
+      secciones: (plato.secciones && plato.secciones.length > 0 && plato.secciones.length < 3)
+        ? plato.secciones
+        : (baseCanon?.secciones || ['Desayuno', 'Almuerzo']),
       componentes: compsExistentes
     };
 
@@ -1199,9 +1207,15 @@ export class MenusComponent implements OnInit {
 
   private obtenerCatalogoComponentesLocal(): Record<string, ComponentePlatoReceta> {
     try {
-      const raw = localStorage.getItem('sirae_catalogo_componentes_pae_v1');
+      const raw = localStorage.getItem(this.STORAGE_COMP_CATALOGO_KEY);
       const guardado = raw ? JSON.parse(raw) : {};
-      return { ...CATALOGO_PREPARACIONES_PAE, ...guardado };
+      const res: Record<string, ComponentePlatoReceta> = { ...CATALOGO_PREPARACIONES_PAE };
+      for (const [k, v] of Object.entries(guardado)) {
+        if (v && typeof v === 'object' && Array.isArray((v as any).ingredientes) && (v as any).ingredientes.length > 0) {
+          res[k] = v as any;
+        }
+      }
+      return res;
     } catch {
       return { ...CATALOGO_PREPARACIONES_PAE };
     }
@@ -1211,7 +1225,13 @@ export class MenusComponent implements OnInit {
     const clave = (nombreComponente || '').trim().toLowerCase();
     if (!clave) return null;
     const cat = this.obtenerCatalogoComponentesLocal();
-    return cat[clave] || null;
+    if (cat[clave]) return cat[clave];
+    for (const [k, v] of Object.entries(cat)) {
+      if (k === clave || k.includes(clave) || clave.includes(k)) {
+        return v;
+      }
+    }
+    return null;
   }
 
   onNombreComponenteChange(comp: ComponentePlatoReceta): void {
@@ -1518,7 +1538,7 @@ export class MenusComponent implements OnInit {
           };
         }
       }
-      localStorage.setItem('sirae_catalogo_componentes_pae_v1', JSON.stringify(catComp));
+      localStorage.setItem(this.STORAGE_COMP_CATALOGO_KEY, JSON.stringify(catComp));
     } catch (e) {
       console.warn('No se pudo guardar catálogo de componentes:', e);
     }
@@ -1540,8 +1560,12 @@ export class MenusComponent implements OnInit {
           id_seccion: idSeccionPrincipal
         });
 
-    req.pipe(catchError(() => of(null))).subscribe(() => {
+    req.pipe(catchError(() => of(null))).subscribe((respPlato: any) => {
       this.guardandoReceta = false;
+      const platoIdFinal = Number(respPlato?.id_plato || platoActualizado.id_plato);
+      if (platoIdFinal) {
+        this.sincronizarRecetaYPasosEnBackend(platoIdFinal, platoActualizado);
+      }
     });
 
     this.sweetAlert.success(
@@ -1549,6 +1573,85 @@ export class MenusComponent implements OnInit {
       `La receta y momentos del plato "${nombre}" han sido guardados.`
     );
     this.cerrarModalRecetaPlato();
+  }
+
+  /** Guarda los ingredientes y pasos del plato en las tablas receta_componente y pasos_preparacion de PostgreSQL. */
+  private sincronizarRecetaYPasosEnBackend(idPlato: number, plato: any): void {
+    if (!idPlato || !plato) return;
+
+    // 1. Sincronizar ingredientes en /api/receta_componente/
+    const idsIngredientes = new Set<number>();
+    for (const comp of plato.componentes_estructurados || []) {
+      for (const ing of comp.ingredientes || []) {
+        if (ing.id_ingrediente) {
+          idsIngredientes.add(Number(ing.id_ingrediente));
+        }
+      }
+    }
+
+    if (idsIngredientes.size > 0) {
+      this.http.get<any[]>(`${this.apiUrl}/receta_componente/`).pipe(catchError(() => of([]))).subscribe((resRc: any) => {
+        const listaRc = Array.isArray(resRc) ? resRc : (resRc?.results || []);
+        const yaRegistrados = new Set<number>(
+          listaRc
+            .filter((rc: any) => {
+              const pId = typeof rc.id_plato === 'object' ? (rc.id_plato?.id_plato || rc.id_plato?.id) : rc.id_plato;
+              return Number(pId) === Number(idPlato);
+            })
+            .map((rc: any) => {
+              const ingId = typeof rc.id_ingrediente === 'object' ? (rc.id_ingrediente?.id_ingrediente || rc.id_ingrediente?.id) : rc.id_ingrediente;
+              return Number(ingId);
+            })
+        );
+
+        idsIngredientes.forEach(idIng => {
+          if (!yaRegistrados.has(idIng)) {
+            this.http.post<any>(`${this.apiUrl}/receta_componente/`, {
+              id_plato: idPlato,
+              id_ingrediente: idIng,
+              id_gramaje: null
+            }).pipe(catchError(() => of(null))).subscribe();
+          }
+        });
+      });
+    }
+
+    // 2. Sincronizar pasos de preparación en /api/pasos_preparacion/
+    this.http.get<any[]>(`${this.apiUrl}/pasos_preparacion/`).pipe(catchError(() => of([]))).subscribe((resPasos: any) => {
+      const listaPasos = Array.isArray(resPasos) ? resPasos : (resPasos?.results || []);
+      const viejos = listaPasos.filter((p: any) => {
+        const pId = typeof p.id_plato === 'object' ? (p.id_plato?.id_plato || p.id_plato?.id) : p.id_plato;
+        return Number(pId) === Number(idPlato);
+      });
+
+      const registrarNuevos = () => {
+        let contador = 1;
+        for (const comp of plato.componentes_estructurados || []) {
+          for (const paso of comp.pasos || []) {
+            const texto = (paso.descripcion_paso || '').trim();
+            if (!texto) continue;
+            this.http.post<any>(`${this.apiUrl}/pasos_preparacion/`, {
+              id_plato: idPlato,
+              numero_paso: contador++,
+              descripcion_paso: `[${comp.nombre_componente}] ${texto}`
+            }).pipe(catchError(() => of(null))).subscribe();
+          }
+        }
+      };
+
+      if (viejos.length > 0) {
+        const borrarObs = viejos.map((v: any) => {
+          const idP = v.id_paso_preparacion || v.id_paso || v.id;
+          return this.http.delete<any>(`${this.apiUrl}/pasos_preparacion/${idP}/`).pipe(catchError(() => of(null)));
+        });
+        forkJoin(borrarObs).subscribe({
+          next: () => registrarNuevos(),
+          error: () => registrarNuevos()
+        });
+      } else {
+        registrarNuevos();
+      }
+    });
   }
 
   // ============================================================
@@ -1612,6 +1715,16 @@ export class MenusComponent implements OnInit {
             }
           }
         }
+
+        // Notificar al móvil de la Jefa de la Sede
+        const formData = new FormData();
+        formData.append('titulo', `Minuta Semana ${semana} Aprobada por Supervisor`);
+        formData.append(
+          'mensaje',
+          `El Supervisor PAE (${nombreSup}) ha aprobado la programación de la Semana ${semana} para la sede ${this.sedeActualObj?.nombre_sede || 'asignada'}. La minuta oficial ha quedado fijada.`
+        );
+        this.http.post(`${this.apiUrl}/notificaciones/enviar/`, formData)
+          .pipe(catchError(() => of(null))).subscribe();
 
         this.sweetAlert.success('Minuta Aprobada', `La Semana ${semana} ha sido formalmente aprobada por el Supervisor PAE.`);
         this.cdr.detectChanges();
@@ -1700,6 +1813,16 @@ export class MenusComponent implements OnInit {
           estado: 'Rechazado'
         }).pipe(catchError(() => of(null))).subscribe();
       }
+
+      // Enviar notificación a la Jefa de la Sede con el motivo del rechazo
+      const formData = new FormData();
+      formData.append('titulo', `Plato devuelto por Supervisor - ${momento}`);
+      formData.append(
+        'mensaje',
+        `El plato "${item.nombre_plato}" del ${dia.diaSemana} (${momento}) fue devuelto por el supervisor para la sede ${this.sedeActualObj?.nombre_sede || 'asignada'}. Motivo: ${motivo.trim()}. Debes ingresar a la app y cambiar este plato.`
+      );
+      this.http.post(`${this.apiUrl}/notificaciones/enviar/`, formData)
+        .pipe(catchError(() => of(null))).subscribe();
     }
 
     this.mostrarModalRechazoSupervisor = false;
