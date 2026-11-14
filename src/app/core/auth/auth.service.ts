@@ -70,7 +70,10 @@ export interface PasswordResetTokenResponse {
   providedIn: 'root'
 })
 export class AuthService {
-  private apiBaseUrl = environment.apiUrl;
+  private apiBaseUrl = environment.apiUrl.replace(/\/+$/, '');
+  private get apiUrl(): string {
+    return this.apiBaseUrl.endsWith('/api') ? this.apiBaseUrl : `${this.apiBaseUrl}/api`;
+  }
   private readonly ACCESS_TOKEN = 'access_token';
   private readonly REFRESH_TOKEN = 'refresh_token';
   private readonly USUARIO = 'usuario';
@@ -214,7 +217,7 @@ export class AuthService {
     const correo = (credenciales.correo ?? '').trim();
     const clave = (credenciales.clave ?? '').trim();
 
-    return this.http.post<LoginResponse>(`${this.apiBaseUrl}/auth/login/`, {
+    return this.http.post<LoginResponse>(`${this.apiUrl}/auth/login/`, {
       correo,
       clave,
       password: clave,
@@ -270,7 +273,7 @@ export class AuthService {
   }
 
   recuperarContrasena(data: { correo: string }): Observable<PasswordResetResponse> {
-    return this.http.post<PasswordResetResponse>(`${this.apiBaseUrl}/auth/recuperar-password/`, data);
+    return this.http.post<PasswordResetResponse>(`${this.apiUrl}/auth/recuperar-password/`, data);
   }
 
   confirmarRecuperacionCodigo(data: {
@@ -280,14 +283,14 @@ export class AuthService {
     confirmar_password: string;
   }): Observable<PasswordResetResponse> {
     return this.http.post<PasswordResetResponse>(
-      `${this.apiBaseUrl}/auth/confirmar-recuperacion-password/`,
+      `${this.apiUrl}/auth/confirmar-recuperacion-password/`,
       data
     );
   }
 
   validarTokenRecuperacion(token: string): Observable<PasswordResetTokenResponse> {
     return this.http.post<PasswordResetTokenResponse>(
-      `${this.apiBaseUrl}/auth/password-reset/validar-token/`,
+      `${this.apiUrl}/auth/password-reset/validar-token/`,
       { token }
     );
   }
@@ -298,7 +301,7 @@ export class AuthService {
     confirmar_password: string;
   }): Observable<PasswordResetResponse> {
     return this.http.post<PasswordResetResponse>(
-      `${this.apiBaseUrl}/auth/password-reset/confirmar/`,
+      `${this.apiUrl}/auth/password-reset/confirmar/`,
       data
     );
   }
@@ -309,7 +312,7 @@ export class AuthService {
     confirmar_password: string;
   }): Observable<PasswordResetResponse> {
     return this.http.post<PasswordResetResponse>(
-      `${this.apiBaseUrl}/auth/cambiar-password/`,
+      `${this.apiUrl}/auth/cambiar-password/`,
       data
     );
   }
@@ -318,7 +321,7 @@ export class AuthService {
    * Criterio 1: Obtiene los datos actualizados del perfil desde el endpoint /api/usuarios/me/.
    */
   obtenerPerfil(): Observable<AuthenticatedUser> {
-    return this.http.get<AuthenticatedUser>(`${this.apiBaseUrl}/usuarios/me/`).pipe(
+    return this.http.get<AuthenticatedUser>(`${this.apiUrl}/usuarios/me/`).pipe(
       tap((usuarioPerfil) => {
         if (usuarioPerfil && this.estaDisponibleStorage()) {
           const usuarioActual = this.obtenerUsuario();
@@ -338,7 +341,7 @@ export class AuthService {
    */
   actualizarPerfil(data: { nombre: string; apellido: string; correo?: string }): Observable<AuthenticatedUser> {
     return this.http.patch<AuthenticatedUser>(
-      `${this.apiBaseUrl}/usuarios/me/`,
+      `${this.apiUrl}/usuarios/me/`,
       {
         nombre: (data.nombre ?? '').trim(),
         apellido: (data.apellido ?? '').trim(),
@@ -565,7 +568,7 @@ export class AuthService {
       headers['Authorization'] = `Bearer ${access}`;
     }
     const payload = refresh ? { refresh } : {};
-    return this.http.post(`${this.apiBaseUrl}/auth/logout/`, payload, { headers });
+    return this.http.post(`${this.apiUrl}/auth/logout/`, payload, { headers });
   }
 
   cerrarSesion(): void {
@@ -606,7 +609,7 @@ export class AuthService {
       return of(false);
     }
 
-    return this.http.get<{ valido?: boolean; usuario?: any }>(`${this.apiBaseUrl}/auth/verify/`).pipe(
+    return this.http.get<{ valido?: boolean; usuario?: any }>(`${this.apiUrl}/auth/verify/`).pipe(
       map((resp) => {
         if (resp && resp.usuario) {
           const usuarioSanitizado = this.sanitizarDatosUsuario(resp.usuario);

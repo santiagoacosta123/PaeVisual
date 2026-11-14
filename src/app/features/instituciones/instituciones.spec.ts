@@ -38,7 +38,7 @@ describe('InstitucionesComponent', () => {
     http = TestBed.inject(HttpTestingController);
     fixture.detectChanges();   // dispara ngOnInit: lista de instituciones e ingredientes
     http.expectOne(urlIngredientes).flush([
-      { nombre: 'Pollo', imagen: 'http://127.0.0.1:8000/media/ingredientes/pollo_3d.png' },
+      { nombre: 'Pollo', imagen: 'https://backend-sirae-t9zi.onrender.com/media/ingredientes/pollo_3d.png' },
     ]);
   });
 
