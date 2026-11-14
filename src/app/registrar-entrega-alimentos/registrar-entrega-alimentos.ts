@@ -188,26 +188,22 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
 
     this.institucionActiva = this.authService.obtenerInstitucionActiva();
     this.idInstitucion = this.institucionActiva?.id_institucion ?? this.authService.obtenerUsuario()?.id_institucion ?? null;
+    const sedeActual = this.authService.obtenerSedeActiva();
+    this.idSede = sedeActual?.id_sede ?? null;
 
     this.subInstitucion = this.authService.institucionActiva$.subscribe(institucion => {
-      const anterior = this.idInstitucion;
       this.institucionActiva = institucion;
       this.idInstitucion = institucion?.id_institucion ?? this.authService.obtenerUsuario()?.id_institucion ?? null;
-      if (anterior !== this.idInstitucion) {
-        this.cargarHistorial();
-        this.actualizarCalculoAbastecimiento();
-      }
+      this.cargarHistorial();
+      this.actualizarCalculoAbastecimiento();
       this.cdr.markForCheck();
     });
 
     this.subSede = this.authService.sedeActiva$.subscribe(sede => {
-      const nuevaSede = sede?.id_sede ?? null;
-      if (nuevaSede !== this.idSede) {
-        this.idSede = nuevaSede;
-        this.cargarHistorial();
-        this.actualizarCalculoAbastecimiento();
-        this.cdr.markForCheck();
-      }
+      this.idSede = sede?.id_sede ?? null;
+      this.cargarHistorial();
+      this.actualizarCalculoAbastecimiento();
+      this.cdr.markForCheck();
     });
 
     this.subRuta = this.route.queryParamMap.subscribe(params => {
@@ -238,6 +234,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
 
     this.cargarHistorial();
     this.cargarCatalogos();
+    this.actualizarCalculoAbastecimiento();
   }
 
   ngOnDestroy(): void {
@@ -571,9 +568,6 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
   // ===== NUEVO: también refresca el modal de detalle si está abierto =====
   private reconstruirHistorial(): void {
     this.historial = this.entregasRaw.map(i => this.aFila(i));
-    this.seleccionados = this.seleccionados
-      .map(s => this.ultimaEntradaDe(s.idIngrediente))
-      .filter((e): e is FilaEntrega => !!e);
 
     if (this.detalleEntrada) {
       const actual = this.gruposEntradas.find(g => g.clave === this.detalleEntrada!.clave);
@@ -1265,7 +1259,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
 
     const ultima = this.ultimaEntradaDe(p.id);
     const fechaHoy = this.fechaHoy();
-    this.seleccionados.push({
+    const item: FilaEntrega = {
       ...ultima,
       idIngrediente: p.id,
       idTipoMercado: this.idTipoMercadoDeProducto(p),
@@ -1277,7 +1271,25 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       unidad: p.unidad || ultima?.unidad || 'Kg',
       fechaRecepcion: ultima?.fechaRecepcion || fechaHoy,
       fechaVencimiento: this.fechaVencimientoParaEnvio(p, ultima?.fechaVencimiento),
-    });
+    };
+    this.seleccionados.push(item);
+
+    // Sugerir automáticamente la cantidad según cupos y gramajes calculados
+    const calc = this.calculoAbastecimiento?.productos_sugeridos?.find(itemCalc => itemCalc.id_ingrediente === p.id);
+    let sugerida = 0;
+    if (calc && Number(calc.cantidad_sugerida_despacho) > 0) {
+      sugerida = Number(calc.cantidad_sugerida_despacho);
+    } else if (calc && Number(calc.cantidad_total_requerida) > 0) {
+      sugerida = Number(calc.cantidad_total_requerida);
+    } else {
+      sugerida = 1;
+    }
+    const disponible = this.totalDisponible(p);
+    if (disponible > 0 && sugerida > disponible) {
+      sugerida = disponible;
+    }
+    this.fijarCantidadEnviar(item, Math.max(1, Math.round(sugerida * 100) / 100));
+    this.cdr.markForCheck();
   }
 
   private quitarPorProducto(p: ProductoCatalogo): void {
@@ -1313,9 +1325,23 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     const s = this.swipeInicio;
     const dx = this.swipeDx;
     this.cancelarDeslizar();
-    if (!s?.activo) return;
-    if (dx >= this.umbralSwipe) { this.mostrarHistorialEnvios = false; this.agregarSeleccionado(p); }
-    else if (dx <= -this.umbralSwipe) this.quitarPorProducto(p);
+    if (!s) return;
+    if (s.activo) {
+      if (dx >= this.umbralSwipe) {
+        this.mostrarHistorialEnvios = false;
+        this.agregarSeleccionado(p);
+      } else if (dx <= -this.umbralSwipe) {
+        this.quitarPorProducto(p);
+      }
+    } else {
+      // Tap / clic directo sobre la tarjeta del alimento
+      if (this.tarjetaActiva(p)) {
+        this.quitarPorProducto(p);
+      } else {
+        this.mostrarHistorialEnvios = false;
+        this.agregarSeleccionado(p);
+      }
+    }
   }
 
   cancelarDeslizar(): void { this.swipeInicio = null; this.swipeId = null; this.swipeDx = 0; }
@@ -1330,22 +1356,49 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
   cargandoSoporte = false;
   soporteSeleccionado: CalculoEntregaSoporte | null = null;
 
+  get sedeEfectivaId(): number | null {
+    if (this.idSede != null && this.idSede > 0) return this.idSede;
+    const sActiva = this.authService.obtenerSedeActiva();
+    if (sActiva?.id_sede && Number(sActiva.id_sede) > 0) return Number(sActiva.id_sede);
+    const primera = this.institucionActiva?.sedes?.[0];
+    if (primera) {
+      const id = Number(primera.id_sede ?? (primera as any).id);
+      return Number.isFinite(id) && id > 0 ? id : null;
+    }
+    return null;
+  }
+
   private actualizarCalculoAbastecimiento(): void {
     this.subCalculoAbastecimiento?.unsubscribe();
-    this.calculoAbastecimiento = null;
     this.limpiarAutorizacionExceso();
-    if (this.idSede == null) return;
+    const targetSede = this.sedeEfectivaId;
+    if (targetSede == null && this.idInstitucion == null) return;
 
     this.subCalculoAbastecimiento = this.entregasService.calcularMercado({
-      id_sede: this.idSede,
+      id_sede: targetSede,
       id_institucion: this.idInstitucion,
       id_jornada: null,
       dias_perecederos: null,
       dias_no_perecederos: null,
       incluir_todos_gramajes: false,
     }).subscribe({
-      next: calculo => {
-        this.calculoAbastecimiento = calculo;
+      next: (calculo: any) => {
+        const respuesta: CalculoAbastecimientoResponse | null = Array.isArray(calculo) ? (calculo[0] ?? null) : calculo;
+        this.calculoAbastecimiento = respuesta;
+        // Asignar cantidad sugerida automáticamente a productos ya en el panel si están en cero o por defecto
+        for (const sel of this.seleccionados) {
+          if (sel.idIngrediente != null && this.cantidadEnviarDe(sel) <= 1) {
+            const pCalc = respuesta?.productos_sugeridos?.find(item => item.id_ingrediente === sel.idIngrediente);
+            if (pCalc) {
+              let cant = Number(pCalc.cantidad_sugerida_despacho ?? pCalc.cantidad_total_requerida ?? 0);
+              if (cant > 0) {
+                const disp = this.disponibleDe(sel);
+                if (disp > 0) cant = Math.min(cant, disp);
+                this.fijarCantidadEnviar(sel, Math.round(cant * 100) / 100);
+              }
+            }
+          }
+        }
         this.cdr.markForCheck();
       },
       error: error => {
