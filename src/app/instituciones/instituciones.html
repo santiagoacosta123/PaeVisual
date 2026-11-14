@@ -26,7 +26,7 @@
 .fx-up { animation: fxUp .45s cubic-bezier(.22, 1, .36, 1) both; }
 @keyframes fxUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 
-/* ---------- Portada "Mis sedes" ---------- */
+/* ---------- Portada "Sedes de la institución" ---------- */
 .ms-hero {
   position: relative; overflow: hidden; isolation: isolate;
   display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px 24px;
@@ -104,10 +104,6 @@
   transition: border-color .15s, box-shadow .15s;
 }
 .ms-select:focus { background: #fff; border-color: var(--a); box-shadow: 0 0 0 4px rgba(244, 180, 31, .2); }
-.ms-count {
-  display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 99px;
-  background: var(--a-soft); color: #7A5200; font-size: 12.5px; font-weight: 800;
-}
 
 /* ---------- Tarjeta de sede ---------- */
 .ms-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); gap: 20px; }
@@ -291,7 +287,7 @@
           <span class="material-symbols-outlined text-[32px]">school</span>
         </span>
         <div class="min-w-0 border-l-2 border-[#E9B84B]/70 pl-4">
-          <h1 id="titulo-mis-sedes" class="ms-hero-tit">Mis sedes</h1>
+          <h1 id="titulo-mis-sedes" class="ms-hero-tit">Sedes de la institución</h1>
           <p class="ms-hero-sub">{{ institucion.nombre_institucion }}</p>
         </div>
       </div>
@@ -354,11 +350,6 @@
           <option *ngFor="let e of opcionesEstado" [ngValue]="e">{{ e === 'Todos' ? 'Todos los estados' : (e === 'ACTIVO' ? 'Activas' : 'Inactivas') }}</option>
         </select>
       </div>
-
-      <span class="ms-count" aria-live="polite">
-        <span class="material-symbols-outlined text-[17px]" aria-hidden="true">location_city</span>
-        {{ filtradas.length }} {{ filtradas.length === 1 ? 'sede disponible' : 'sedes disponibles' }}
-      </span>
     </div>
 
     <!-- Carga inicial (esqueletos) -->

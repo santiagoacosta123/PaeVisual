@@ -264,7 +264,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
 
   // Una sola función de seguimiento para todas las listas de la plantilla
   trackPor(_: number, x: any): any {
-    return x.clave ?? x.iso ?? x.codigo ?? x.producto?.id ?? x.id ?? x.nombre
+    return x.idIngrediente ?? x.producto?.id ?? x.clave ?? x.iso ?? x.codigo ?? x.id ?? x.nombre
       ?? `${x.ingrediente}-${x.fechaRecepcion}-${x.cantidad}`;
   }
 
@@ -568,6 +568,22 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
   // ===== NUEVO: también refresca el modal de detalle si está abierto =====
   private reconstruirHistorial(): void {
     this.historial = this.entregasRaw.map(i => this.aFila(i));
+    this.seleccionados = this.seleccionados.map(s => {
+      if (s.idIngrediente == null) return s;
+      const p = this.catalogoMenu.find(item => item.id === s.idIngrediente);
+      const ultima = this.ultimaEntradaDe(s.idIngrediente);
+      return {
+        ...s,
+        ...(p ? {
+          ingrediente: p.nombre,
+          tipoMercado: p.tipoMercado ?? ultima?.tipoMercado ?? s.tipoMercado,
+          categoria: this.esPerecedero(p) ? 'Perecederos' : 'Granos',
+          unidad: p.unidad || s.unidad,
+          cantidad: this.totalDisponible(p),
+        } : {}),
+        fechaVencimiento: p ? this.fechaVencimientoParaEnvio(p, ultima?.fechaVencimiento ?? s.fechaVencimiento) : s.fechaVencimiento,
+      };
+    });
 
     if (this.detalleEntrada) {
       const actual = this.gruposEntradas.find(g => g.clave === this.detalleEntrada!.clave);
@@ -1250,6 +1266,13 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
   swipeDx = 0;
   private swipeInicio: { id: number; x: number; y: number; activo: boolean } | null = null;
 
+  esPerecederoFila(fila: FilaEntrega): boolean {
+    if (fila.categoria === 'Perecederos') return true;
+    if (fila.categoria === 'Granos') return false;
+    const p = this.catalogoMenu.find(c => c.id === fila.idIngrediente);
+    return p ? this.esPerecedero(p) : false;
+  }
+
   private agregarSeleccionado(p: ProductoCatalogo): void {
     if (this.tarjetaActiva(p)) return;
     if (this.totalDisponible(p) <= 0) {
@@ -1257,15 +1280,36 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       return;
     }
 
+    const esNuevoPerecedero = this.esPerecedero(p);
+    const tienePerecederos = this.seleccionados.some(s => this.esPerecederoFila(s));
+    const tieneNoPerecederos = this.seleccionados.some(s => !this.esPerecederoFila(s));
+
+    if (esNuevoPerecedero && tieneNoPerecederos) {
+      void this.alertas.warning(
+        'Tipo de mercado diferente',
+        'No se pueden combinar productos perecederos con no perecederos en un mismo despacho. Debes despacharlos por separado.',
+      );
+      return;
+    }
+
+    if (!esNuevoPerecedero && tienePerecederos) {
+      void this.alertas.warning(
+        'Tipo de mercado diferente',
+        'No se pueden combinar productos no perecederos con productos perecederos en un mismo despacho. Debes despacharlos por separado.',
+      );
+      return;
+    }
+
     const ultima = this.ultimaEntradaDe(p.id);
     const fechaHoy = this.fechaHoy();
     const item: FilaEntrega = {
       ...ultima,
+      id: undefined,
       idIngrediente: p.id,
       idTipoMercado: this.idTipoMercadoDeProducto(p),
       ingrediente: p.nombre,
       tipoMercado: p.tipoMercado ?? ultima?.tipoMercado ?? this.nombreTipo(p),
-      categoria: this.esPerecedero(p) ? 'Perecederos' : 'Granos',
+      categoria: esNuevoPerecedero ? 'Perecederos' : 'Granos',
       frecuencia: ultima?.frecuencia || 'Cada 8 días',
       cantidad: this.totalDisponible(p),
       unidad: p.unidad || ultima?.unidad || 'Kg',
@@ -1321,10 +1365,15 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     this.swipeDx = Math.max(-120, Math.min(120, dx));
   }
 
-  alTerminarDeslizar(p: ProductoCatalogo): void {
+  alTerminarDeslizar(ev: PointerEvent, p: ProductoCatalogo): void {
     const s = this.swipeInicio;
     const dx = this.swipeDx;
-    this.cancelarDeslizar();
+    try {
+      if ((ev?.currentTarget as HTMLElement)?.hasPointerCapture?.(ev.pointerId)) {
+        (ev.currentTarget as HTMLElement).releasePointerCapture(ev.pointerId);
+      }
+    } catch {}
+    this.cancelarDeslizar(ev);
     if (!s) return;
     if (s.activo) {
       if (dx >= this.umbralSwipe) {
@@ -1334,7 +1383,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
         this.quitarPorProducto(p);
       }
     } else {
-      // Tap / clic directo sobre la tarjeta del alimento
+      // Click o toque sin arrastre agrega o quita directamente
       if (this.tarjetaActiva(p)) {
         this.quitarPorProducto(p);
       } else {
@@ -1344,7 +1393,18 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     }
   }
 
-  cancelarDeslizar(): void { this.swipeInicio = null; this.swipeId = null; this.swipeDx = 0; }
+  cancelarDeslizar(ev?: PointerEvent): void {
+    if (ev) {
+      try {
+        if ((ev.currentTarget as HTMLElement)?.hasPointerCapture?.(ev.pointerId)) {
+          (ev.currentTarget as HTMLElement).releasePointerCapture(ev.pointerId);
+        }
+      } catch {}
+    }
+    this.swipeInicio = null;
+    this.swipeId = null;
+    this.swipeDx = 0;
+  }
 
   private calculoAbastecimiento: CalculoAbastecimientoResponse | null = null;
   private subCalculoAbastecimiento?: Subscription;
@@ -1516,6 +1576,11 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     this.errorEnvioPanel = '';
 
     if (!items.length) return fallo('Escribe la cantidad a enviar de al menos un producto.');
+    const tienePerDespacho = items.some(s => this.esPerecederoFila(s));
+    const tieneNoPerDespacho = items.some(s => !this.esPerecederoFila(s));
+    if (tienePerDespacho && tieneNoPerDespacho) {
+      return fallo('No se pueden combinar productos perecederos con no perecederos en un mismo despacho. Debes despacharlos por separado.');
+    }
     const excedidos = items.filter(s => this.cantidadEnviarDe(s) > this.disponibleDe(s));
     if (excedidos.length) return fallo(`No puedes enviar más de lo disponible: ${excedidos.map(s => s.ingrediente).join(', ')}.`);
     const excesosCalculo = this.itemsConExcesoCalculo;
@@ -1927,9 +1992,22 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     if (i >= 0) { this.entradaFilas.splice(i, 1); return; }
     if (this.yaRegistrado(id)) { this.errorEntrada = `${this.nombreIngrediente(id)} ya está registrado ese día y no se puede repetir.`; return; }
     const producto = this.catalogoMenu.find(p => p.id === id);
+    const esNuevoPerecedero = producto ? this.esPerecedero(producto) : false;
+    const tienePer = this.entradaFilas.some(f => f.perecedero);
+    const tieneNoPer = this.entradaFilas.some(f => !f.perecedero);
+
+    if (esNuevoPerecedero && tieneNoPer) {
+      void this.alertas.warning('Tipo de mercado diferente', 'No se pueden combinar productos perecederos con no perecederos en un mismo registro. Debes registrarlos por separado.');
+      return;
+    }
+    if (!esNuevoPerecedero && tienePer) {
+      void this.alertas.warning('Tipo de mercado diferente', 'No se pueden combinar productos no perecederos con perecederos en un mismo registro. Debes registrarlos por separado.');
+      return;
+    }
+
     this.entradaFilas.push({
       idIngrediente: id, cantidad: null,
-      unidad: producto?.unidad ?? 'Kg', perecedero: producto ? this.esPerecedero(producto) : false,
+      unidad: producto?.unidad ?? 'Kg', perecedero: esNuevoPerecedero,
     });
   }
 
@@ -2043,6 +2121,13 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     if (!this.entradaDestino.trim()) return error('Elige el destino.');
     if (!this.entradaResponsable.trim()) return error('Escribe quién hizo el registro (responsable).');
     if (!filas.length) return error('Toca los productos que entran para agregarlos.');
+
+    // Validación estricta: No combinar productos perecederos con no perecederos en la entrada manual
+    const tienePerEntrada = filas.some(f => f.perecedero);
+    const tieneNoPerEntrada = filas.some(f => !f.perecedero);
+    if (tienePerEntrada && tieneNoPerEntrada) {
+      return error('No se pueden combinar productos perecederos con no perecederos en un mismo registro. Debes registrarlos por separado.');
+    }
     const repetidos = filas.filter(f => this.yaRegistrado(f.idIngrediente));
     if (repetidos.length) return error(`Ya están registrados ese día y no se pueden repetir: ${repetidos.map(f => this.nombreIngrediente(f.idIngrediente)).join(', ')}.`);
     if (sinCantidad.length) return error(`Escribe la cantidad de: ${sinCantidad.map(f => this.nombreIngrediente(f.idIngrediente)).join(', ')}.`);
