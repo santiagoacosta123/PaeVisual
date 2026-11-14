@@ -812,7 +812,17 @@ export class MenusComponent implements OnInit {
       }
     }
 
-    // 2. Si la sede no tiene un contrato restrictivo, maneja normalmente todas sus jornadas
+    // 2. Verificación por sede institucional (ej. Piagua solo Desayuno, Valencia todas las jornadas)
+    const sedeObj = this.sedesInstitucion.find(s => Number(s.id_sede || s.id) === Number(idSede));
+    const nomSede = (sedeObj?.nombre_sede || sedeObj?.nombre || '').toLowerCase();
+    if (nomSede.includes('piagua')) {
+      return ['Desayuno'];
+    }
+    if (nomSede.includes('valencia')) {
+      return ['Desayuno', 'Almuerzo', 'Merienda'];
+    }
+
+    // 3. Por defecto cualquier otra sede sin contrato restrictivo maneja normalmente todas sus jornadas
     return ['Desayuno', 'Almuerzo', 'Merienda'];
   }
 
