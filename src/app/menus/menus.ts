@@ -488,10 +488,13 @@ export class MenusComponent implements OnInit {
   // ============================================================
 
   get momentosVisibles(): ('Desayuno' | 'Almuerzo' | 'Merienda')[] {
+    const permitidos = this.obtenerMomentosDeSede(this.sedeSeleccionadaId) as ('Desayuno' | 'Almuerzo' | 'Merienda')[];
     if (this.filtroSeccionMinuta && this.filtroSeccionMinuta !== 'TODAS') {
-      return [this.filtroSeccionMinuta as 'Desayuno' | 'Almuerzo' | 'Merienda'];
+      return permitidos.includes(this.filtroSeccionMinuta as any)
+        ? [this.filtroSeccionMinuta as any]
+        : permitidos;
     }
-    return ['Desayuno', 'Almuerzo', 'Merienda'];
+    return permitidos.length > 0 ? permitidos : ['Desayuno'];
   }
 
   crearMomentoVacio(momento: 'Desayuno' | 'Almuerzo' | 'Merienda'): MomentoDiaMinuta {
@@ -763,19 +766,23 @@ export class MenusComponent implements OnInit {
   // CONFIGURACIÓN DE MOMENTOS (SECCIONES) POR SEDE
   // ============================================================
   obtenerMomentosDeSede(idSede: number | null): string[] {
-    if (!idSede) return ['Desayuno', 'Almuerzo', 'Merienda'];
+    if (!idSede) return ['Desayuno'];
     try {
       const raw = localStorage.getItem(this.STORAGE_SEDES_MOMENTOS_KEY);
       const mapa = raw ? JSON.parse(raw) : {};
-      if (mapa[String(idSede)] && Array.isArray(mapa[String(idSede)])) {
-        const list = mapa[String(idSede)];
-        if (!list.includes('Merienda')) list.push('Merienda');
-        return list;
+      if (mapa[String(idSede)] && Array.isArray(mapa[String(idSede)]) && mapa[String(idSede)].length > 0) {
+        return mapa[String(idSede)];
       }
     } catch (e) {
       console.error('Error al leer momentos de la sede:', e);
     }
-    return ['Desayuno', 'Almuerzo', 'Merienda'];
+    // Por directriz del usuario: por defecto una sede maneja 'Desayuno', a menos que el supervisor configure otros
+    return ['Desayuno'];
+  }
+
+  obtenerOpcionesFiltroMomentoSede(idSede: number | null): string[] {
+    const permitidos = this.obtenerMomentosDeSede(idSede);
+    return ['TODAS', ...permitidos];
   }
 
   sedeManejaMomento(idSede: number | null, momento: string): boolean {
@@ -788,7 +795,7 @@ export class MenusComponent implements OnInit {
     const idx = momentosActuales.indexOf(momento);
     if (idx >= 0) {
       if (momentosActuales.length <= 1) {
-        this.sweetAlert.warning('Momento requerido', 'La sede debe manejar al menos un momento de menú (Desayuno, Almuerzo o Merienda).');
+        this.sweetAlert.warning('Momento requerido', 'La sede debe manejar al menos un momento de menú (ej. Desayuno).');
         return;
       }
       momentosActuales.splice(idx, 1);
@@ -802,8 +809,8 @@ export class MenusComponent implements OnInit {
       mapa[String(idSede)] = momentosActuales;
       localStorage.setItem(this.STORAGE_SEDES_MOMENTOS_KEY, JSON.stringify(mapa));
       this.sweetAlert.success(
-        'Configuración de Sede actualizada',
-        `Esta sede ahora maneja: ${momentosActuales.join(', ')}.`
+        'Modalidad de Sede Actualizada',
+        `Esta sede ahora atenderá: ${momentosActuales.join(', ')}.`
       );
       this.cdr.detectChanges();
     } catch (e) {
@@ -1892,6 +1899,15 @@ export class MenusComponent implements OnInit {
 
   abrirModalProgramarMenuDiaMomento(dia: CeldaDiaMinutaSede, momento: 'Desayuno' | 'Almuerzo' | 'Merienda'): void {
     const idSede = Number(this.sedeSeleccionadaId || this.currentUser?.id_sede || (this.sedesInstitucion[0]?.id_sede));
+
+    if (!this.sedeManejaMomento(idSede, momento)) {
+      this.sweetAlert.warning(
+        'Momento no autorizado en esta sede',
+        `Esta sede únicamente atiende: ${this.obtenerMomentosDeSede(idSede).join(', ')}. No es posible programar ${momento}.`
+      );
+      return;
+    }
+
     const seccionId = (momento === 'Desayuno' ? 1 : momento === 'Merienda' ? 3 : 2);
     const mObj = dia.momentos[momento];
 
@@ -1914,6 +1930,15 @@ export class MenusComponent implements OnInit {
       ingredientes: [...(mObj?.ingredientes || [])],
       pasos: [...(mObj?.pasos || [])]
     };
+
+    if (!this.programarDiaForm.nombre_plato) {
+      const disponibles = this.obtenerPlatosParaProgramar(seccionId, dia.numeroMenu);
+      const primeroValido = disponibles.find(p => !p.bloqueadoPorRotacion);
+      if (primeroValido) {
+        this.programarDiaForm.nombre_plato = primeroValido.nombre_plato;
+        this.onPlatoSeleccionadoEnSelect();
+      }
+    }
 
     this.mostrarModalProgramarDia = true;
     this.consultarSugerenciasIAParaSede();
@@ -2133,6 +2158,129 @@ export class MenusComponent implements OnInit {
   }
 
   // ============================================================
+  // PROGRAMACIÓN DEL CICLO Y REGLAS DE ROTACIÓN DE MENÚS
+  // ============================================================
+
+  obtenerTodasCeldasMinutaSede(): CeldaDiaMinutaSede[] {
+    const sem = this.semanasMinutaSedeActual;
+    const celdas: CeldaDiaMinutaSede[] = [];
+    for (const s of sem) {
+      if (Array.isArray(s.dias)) {
+        celdas.push(...s.dias);
+      }
+    }
+    return celdas;
+  }
+
+  get resumenProgramacionCicloSede(): {
+    totalDias: number;
+    diasProgramados: number;
+    porcentaje: number;
+    listaDias: {
+      numeroMenu: number;
+      semana: number;
+      diaSemana: string;
+      fecha: string;
+      programado: boolean;
+      momentos: {
+        momento: string;
+        nombre_plato: string;
+        estado: string;
+      }[];
+    }[];
+  } {
+    const idSede = Number(this.sedeSeleccionadaId);
+    const momentosSede = this.obtenerMomentosDeSede(idSede);
+    const celdas = this.obtenerTodasCeldasMinutaSede();
+
+    const listaDias = celdas.map(c => {
+      const momentosValidos = momentosSede.map(m => {
+        const item = c.momentos[m as 'Desayuno' | 'Almuerzo' | 'Merienda'];
+        return {
+          momento: m,
+          nombre_plato: item?.tiene_menu_registrado && item.nombre_plato ? item.nombre_plato : '',
+          estado: item?.tiene_menu_registrado ? item.estado_aprobacion : 'PENDIENTE'
+        };
+      });
+
+      const programado = momentosValidos.some(m => !!m.nombre_plato);
+
+      return {
+        numeroMenu: c.numeroMenu,
+        semana: c.semana,
+        diaSemana: c.diaSemana,
+        fecha: c.fecha,
+        programado,
+        momentos: momentosValidos
+      };
+    });
+
+    const programados = listaDias.filter(d => d.programado).length;
+
+    return {
+      totalDias: 20,
+      diasProgramados: programados,
+      porcentaje: Math.round((programados / 20) * 100),
+      listaDias
+    };
+  }
+
+  irADiaYProgramar(semana: number, numeroMenu: number): void {
+    this.semanaSeleccionada = semana;
+    const celdas = this.obtenerTodasCeldasMinutaSede();
+    const celda = celdas.find(c => c.numeroMenu === numeroMenu);
+    if (celda) {
+      const momentosSede = this.obtenerMomentosDeSede(this.sedeSeleccionadaId);
+      const primerMomento = (momentosSede[0] || 'Desayuno') as 'Desayuno' | 'Almuerzo' | 'Merienda';
+      this.abrirModalProgramarMenuDiaMomento(celda, primerMomento);
+    }
+  }
+
+  obtenerPlatoDiaAnterior(numeroMenu: number, momento: string): string | null {
+    if (numeroMenu <= 1) return null;
+    const numDiaAyer = numeroMenu - 1;
+    const celdas = this.obtenerTodasCeldasMinutaSede();
+    const celdaAyer = celdas.find(c => c.numeroMenu === numDiaAyer);
+    if (!celdaAyer) return null;
+    const momKey = (momento === 'Desayuno' || momento === 'Merienda') ? momento : 'Almuerzo';
+    const momObj = celdaAyer.momentos[momKey];
+    if (momObj && momObj.tiene_menu_registrado && momObj.nombre_plato && momObj.estado_aprobacion !== 'CANCELADO' && momObj.estado_aprobacion !== 'SIN_SERVICIO') {
+      return momObj.nombre_plato.trim();
+    }
+    return null;
+  }
+
+  esPlatoBloqueadoPorRotacion(nombrePlato: string, numeroMenu: number, momento: string): boolean {
+    const platoAyer = this.obtenerPlatoDiaAnterior(numeroMenu, momento);
+    if (!platoAyer || !nombrePlato) return false;
+    const k1 = this.obtenerClaveCanonicaPlato(nombrePlato);
+    const k2 = this.obtenerClaveCanonicaPlato(platoAyer);
+    return k1 === k2;
+  }
+
+  obtenerPlatosParaProgramar(idSeccion: number, numeroMenu: number): any[] {
+    const momentoCanon: 'Desayuno' | 'Almuerzo' | 'Merienda' =
+      idSeccion === 1 ? 'Desayuno' : (idSeccion === 3 ? 'Merienda' : 'Almuerzo');
+
+    let platos = this.catalogoPlatosVista;
+
+    // Filtrar platos compatibles con este momento (si el plato estipula secciones específicas)
+    platos = platos.filter(p => {
+      const secs = p.secciones || [];
+      if (secs.length === 0) return true;
+      return secs.some((s: string) => s.toLowerCase() === momentoCanon.toLowerCase());
+    });
+
+    const platoAyer = this.obtenerPlatoDiaAnterior(numeroMenu, momentoCanon);
+
+    return platos.map(p => ({
+      ...p,
+      bloqueadoPorRotacion: platoAyer ? this.esPlatoBloqueadoPorRotacion(p.nombre_plato, numeroMenu, momentoCanon) : false,
+      platoAyer
+    }));
+  }
+
+  // ============================================================
   // PROGRAMACIÓN DEL MENÚ DEL DÍA (ESTIPULADO PAE O SUGERENCIA IA)
   // ============================================================
 
@@ -2296,7 +2444,8 @@ export class MenusComponent implements OnInit {
   }
 
   onPlatoSeleccionadoEnSelect(): void {
-    const plato = this.platosEstipuladosPAE.find(p => p.nombre_plato === this.programarDiaForm.nombre_plato);
+    const plato = this.platosEstipuladosPAE.find(p => p.nombre_plato === this.programarDiaForm.nombre_plato)
+      || this.catalogoPlatosVista.find(p => p.nombre_plato === this.programarDiaForm.nombre_plato);
     if (plato) {
       this.seleccionarOpcionParaDia(plato, 0);
     }
@@ -2346,6 +2495,25 @@ export class MenusComponent implements OnInit {
     const jornadaNombre = this.jornadas.length > 0
       ? this.getNombreJornada(Number(this.programarDiaForm.id_jornada || this.jornadas[0].id_jornada))
       : 'Jornada Mañana';
+
+    // 1. Validar que la sede maneje el momento seleccionado
+    if (!this.sedeManejaMomento(idSede, momentoCanon)) {
+      this.sweetAlert.warning(
+        'Momento no autorizado en esta sede',
+        `Esta sede únicamente atiende: ${this.obtenerMomentosDeSede(idSede).join(', ')}. No es posible programar ${momentoCanon}.`
+      );
+      return;
+    }
+
+    // 2. Validar regla de rotación (no repetir el plato del día anterior)
+    const platoAyer = this.obtenerPlatoDiaAnterior(numMenu, momentoCanon);
+    if (platoAyer && this.esPlatoBloqueadoPorRotacion(this.programarDiaForm.nombre_plato, numMenu, momentoCanon)) {
+      this.sweetAlert.warning(
+        'Regla de Rotación PAE',
+        `El plato "${this.programarDiaForm.nombre_plato}" fue servido el día anterior (Menú #${numMenu - 1}: ${platoAyer}). La normativa PAE exige rotación de menú para no repetir platos consecutivos. Por favor selecciona otro plato.`
+      );
+      return;
+    }
 
     // 1. Guardar inmediatamente en la minuta de la sede por momento (Desayuno, Almuerzo o Merienda)
     this.guardarMomentoEnMinutaLocalSede(idSede, numMenu, momentoCanon, {

@@ -68,6 +68,32 @@
           </div>
         </button>
       </div>
+
+      <!-- Configuración de Momentos PAE que atiende la sede activa (Desayuno / Almuerzo / Merienda) -->
+      <div class="flex items-center justify-between flex-wrap gap-2 pt-2.5 border-t border-slate-100">
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="text-xs font-bold text-slate-700 flex items-center gap-1">
+            <span class="material-symbols-outlined text-amber-600 text-sm">restaurant</span>
+            <span>Momentos que atiende esta sede:</span>
+          </span>
+          <div class="inline-flex items-center gap-1.5">
+            <button *ngFor="let mom of ['Desayuno', 'Almuerzo', 'Merienda']"
+              type="button"
+              (click)="toggleMomentoEnSede(sedeSeleccionadaId, mom)"
+              [ngClass]="sedeManejaMomento(sedeSeleccionadaId, mom)
+                ? 'bg-amber-100 text-amber-950 font-bold border-amber-300 shadow-2xs'
+                : 'bg-slate-50 text-slate-400 line-through border-slate-200 hover:bg-slate-100'"
+              class="px-2.5 py-1 rounded-lg text-xs border transition cursor-pointer flex items-center gap-1"
+              [title]="'Haz clic para habilitar o deshabilitar ' + mom + ' en esta sede'">
+              <span>{{ sedeManejaMomento(sedeSeleccionadaId, mom) ? '✔' : '✕' }}</span>
+              <span>{{ mom }}</span>
+            </button>
+          </div>
+        </div>
+        <span class="text-[11px] text-slate-500 italic">
+          * Si la sede solo maneja Desayunos, mantén activo únicamente "Desayuno" para bloquear Almuerzos y Meriendas.
+        </span>
+      </div>
     </div>
   </header>
 
@@ -75,6 +101,55 @@
   <!-- VISTA 1: MINUTA SEMANAL DE LA SEDE (CON APROBACIÓN DE JEFA Y SUPERVISOR) -->
   <!-- ===================================================================== -->
   <div *ngIf="pestanaActiva === 'minuta'" class="flex flex-col gap-4">
+
+    <!-- RESUMEN GENERAL DE PROGRAMACIÓN DE MENÚS (CICLO DE 20 DÍAS) -->
+    <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs flex flex-col gap-3">
+      <div class="flex items-center justify-between flex-wrap gap-2">
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="text-xs font-extrabold uppercase tracking-wide text-slate-900 flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-amber-600 text-base">calendar_month</span>
+            <span>Programación del Ciclo ({{ sedeActualObj?.nombre_sede || 'Sede' }}):</span>
+          </span>
+          <span class="px-2 py-0.5 rounded-full text-[11px] font-black bg-amber-100 text-amber-950 border border-amber-300">
+            {{ resumenProgramacionCicloSede.diasProgramados }} de 20 días configurados ({{ resumenProgramacionCicloSede.porcentaje }}%)
+          </span>
+        </div>
+        <span class="text-[11px] text-slate-500 font-semibold">
+          Haz clic en cualquier día para programar o revisar su menú
+        </span>
+      </div>
+
+      <!-- Barra de progreso visual -->
+      <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+        <div class="bg-amber-400 h-full transition-all duration-300 rounded-full"
+          [style.width.%]="resumenProgramacionCicloSede.porcentaje"></div>
+      </div>
+
+      <!-- Cuadrícula interactiva de los 20 Menús del ciclo -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-10 gap-2">
+        <div *ngFor="let dia of resumenProgramacionCicloSede.listaDias"
+          (click)="irADiaYProgramar(dia.semana, dia.numeroMenu)"
+          class="p-2 rounded-xl border text-left cursor-pointer transition flex flex-col gap-1 hover:shadow-xs"
+          [ngClass]="dia.programado
+            ? 'bg-emerald-50/60 border-emerald-200 hover:border-emerald-400'
+            : 'bg-slate-50/70 border-slate-200 hover:border-amber-300'"
+          [title]="'Semana ' + dia.semana + ' • ' + dia.diaSemana + ' • Menú ' + dia.numeroMenu">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-black uppercase tracking-tight"
+              [ngClass]="dia.programado ? 'text-emerald-900' : 'text-slate-500'">
+              M{{ dia.numeroMenu }} · {{ dia.diaSemana.substring(0, 3) }}
+            </span>
+            <span class="text-[10px]">
+              {{ dia.programado ? '✔' : '⏳' }}
+            </span>
+          </div>
+          <div class="text-[10.5px] font-bold leading-tight truncate"
+            [ngClass]="dia.programado ? 'text-slate-900' : 'text-slate-400 italic'">
+            {{ dia.programado ? (dia.momentos[0]?.nombre_plato || 'Configurado') : 'Sin asignar' }}
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- SELECTOR DE SEMANAS (1 A 4) Y FILTROS -->
     <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs flex flex-wrap items-center justify-between gap-3">
@@ -101,7 +176,7 @@
         <span class="text-xs font-bold text-slate-700 mr-1">
           Momento:
         </span>
-        <button *ngFor="let sec of ['TODAS', 'Desayuno', 'Almuerzo', 'Merienda']" type="button"
+        <button *ngFor="let sec of obtenerOpcionesFiltroMomentoSede(sedeSeleccionadaId)" type="button"
           (click)="filtroSeccionMinuta = $any(sec)" [ngClass]="filtroSeccionMinuta === sec
             ? 'bg-amber-100 text-amber-950 border-amber-300 font-bold'
             : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200 font-medium'"
@@ -280,14 +355,14 @@
                       </button>
                     </div>
 
-                    <!-- ACCIONES DE LA JEFA: Cambiar Menú o Cancelar Entrega -->
-                    <div *ngIf="esJefaManipuladoras || esSuperAdmin"
+                    <!-- ACCIONES: Cambiar Menú o Cancelar Entrega -->
+                    <div *ngIf="esSupervisor || esJefaManipuladoras || esSuperAdmin"
                       class="flex items-center justify-between gap-1 pt-1.5 border-t border-slate-100 text-[10px]">
                       <button type="button" (click)="abrirModalProgramarMenuDiaMomento(dia, mom)"
                         class="font-bold text-amber-900 hover:underline cursor-pointer">
                         Cambiar menú
                       </button>
-                      <button type="button" (click)="abrirModalNovedadMomento(dia, mom, 'CANCELADO')"
+                      <button *ngIf="esJefaManipuladoras || esSuperAdmin" type="button" (click)="abrirModalNovedadMomento(dia, mom, 'CANCELADO')"
                         class="text-slate-500 hover:text-rose-700 cursor-pointer">
                         Cancelar entrega
                       </button>
@@ -341,22 +416,22 @@
                   <div *ngIf="!dia.momentos[mom].tiene_menu_registrado && dia.momentos[mom].estado_aprobacion !== 'CANCELADO' && dia.momentos[mom].estado_aprobacion !== 'SIN_SERVICIO'"
                     class="bg-slate-50/70 border border-dashed border-slate-300 rounded-xl p-3 flex flex-col items-center justify-center gap-1.5 text-center min-h-[85px]">
                     
-                    <!-- Para la Jefa: Botón para elegir plato o marcar sin servicio -->
-                    <div *ngIf="esJefaManipuladoras || esSuperAdmin" class="flex flex-col items-center gap-1 w-full">
+                    <!-- Botón para elegir plato o marcar sin servicio -->
+                    <div *ngIf="esSupervisor || esJefaManipuladoras || esSuperAdmin" class="flex flex-col items-center gap-1 w-full">
                       <button type="button" (click)="abrirModalProgramarMenuDiaMomento(dia, mom)"
                         class="w-full py-1.5 px-2 rounded-lg text-xs font-bold bg-amber-50 hover:bg-amber-100 text-amber-950 border border-amber-300 cursor-pointer transition">
                         + Asignar {{ mom }}
                       </button>
-                      <button type="button" (click)="abrirModalNovedadMomento(dia, mom, 'SIN_SERVICIO')"
+                      <button *ngIf="esJefaManipuladoras || esSuperAdmin" type="button" (click)="abrirModalNovedadMomento(dia, mom, 'SIN_SERVICIO')"
                         class="text-[9.5px] text-slate-500 hover:text-slate-700 cursor-pointer mt-0.5">
                         Sin clase (No aplica)
                       </button>
                     </div>
 
-                    <!-- Para el Supervisor: Mensaje sutil de solo lectura -->
-                    <div *ngIf="esSupervisor && !esJefaManipuladoras && !esSuperAdmin" class="flex flex-col items-center gap-0.5">
+                    <!-- Mensaje sutil de solo lectura si no tiene permisos -->
+                    <div *ngIf="!esSupervisor && !esJefaManipuladoras && !esSuperAdmin" class="flex flex-col items-center gap-0.5">
                       <span class="text-xs font-semibold text-slate-500">Sin asignar</span>
-                      <span class="text-[10px] text-slate-400">Pendiente por la Jefa</span>
+                      <span class="text-[10px] text-slate-400">Pendiente de programación</span>
                     </div>
 
                   </div>
@@ -1058,17 +1133,33 @@
         </div>
       </div>
 
+      <!-- Alerta informativa de la Regla de Rotación PAE (Día Anterior) -->
+      <div *ngIf="obtenerPlatoDiaAnterior(programarDiaForm.numero_menu_ciclo, programarDiaForm.id_seccion === 1 ? 'Desayuno' : (programarDiaForm.id_seccion === 3 ? 'Merienda' : 'Almuerzo')) as platoAyer"
+        class="p-3 rounded-xl bg-amber-50/80 border border-amber-200 text-xs text-amber-950 flex flex-col gap-1">
+        <div class="flex items-center gap-1.5 font-bold">
+          <span class="material-symbols-outlined text-amber-700 text-base">rule</span>
+          <span>Regla de Rotación PAE activa:</span>
+        </div>
+        <p class="m-0 text-slate-700 leading-relaxed">
+          El día anterior (Menú {{ programarDiaForm.numero_menu_ciclo - 1 }}) se programó:
+          <strong class="text-rose-700">{{ platoAyer }}</strong>.
+          Por lineamiento PAE de variedad nutricional, este plato queda inhabilitado para no repetirse en días consecutivos.
+        </p>
+      </div>
+
       <!-- Plato a Programar -->
       <div class="flex flex-col gap-1.5">
         <label class="text-xs font-bold text-slate-700">
-          Plato o Menú estipulado para este día
+          Plato o Menú estipulado para este día ({{ programarDiaForm.id_seccion === 1 ? 'Desayuno' : (programarDiaForm.id_seccion === 3 ? 'Merienda' : 'Almuerzo') }})
         </label>
         <select [(ngModel)]="programarDiaForm.nombre_plato"
           (change)="onPlatoSeleccionadoEnSelect()"
           class="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-amber-400 bg-white font-semibold">
           <option value="">-- Elige un plato del catálogo PAE --</option>
-          <option *ngFor="let p of catalogoPlatosVista" [value]="p.nombre_plato">
-            {{ p.nombre_plato }} ({{ p.secciones?.join(', ') }})
+          <option *ngFor="let p of obtenerPlatosParaProgramar(programarDiaForm.id_seccion, programarDiaForm.numero_menu_ciclo)"
+            [value]="p.nombre_plato"
+            [disabled]="p.bloqueadoPorRotacion">
+            {{ p.nombre_plato }} {{ p.bloqueadoPorRotacion ? '— ⛔ No disponible (servido el día anterior)' : (p.secciones?.length ? ' (' + p.secciones.join(', ') + ')' : '') }}
           </option>
         </select>
       </div>
