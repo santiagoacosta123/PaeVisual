@@ -182,6 +182,7 @@ export class MenusComponent implements OnInit {
   // Catálogos para selects
   jornadas: any[] = [];
   contratos: any[] = [];
+  contratosSeccionesMenu: any[] = [];
   seccionesMenu: any[] = [
     { id_seccion: 1, nombre_seccion: 'Desayuno' },
     { id_seccion: 2, nombre_seccion: 'Almuerzo' },
@@ -320,13 +321,14 @@ export class MenusComponent implements OnInit {
       usuarios: this.http.get<any>(`${this.apiUrl}/usuarios/`).pipe(catchError(() => of([]))),
       jornadas: this.http.get<any>(`${this.apiUrl}/jornadas/`).pipe(catchError(() => of([]))),
       contratos: this.http.get<any>(`${this.apiUrl}/contratos/`).pipe(catchError(() => of([]))),
+      contratosSecciones: this.http.get<any>(`${this.apiUrl}/contratos-secciones-menu/`).pipe(catchError(() => of([]))),
       secciones: this.http.get<any>(`${this.apiUrl}/secciones-menu/`).pipe(catchError(() => of([]))),
       platos: this.http.get<any>(`${this.apiUrl}/platos/`).pipe(catchError(() => of([]))),
       menus: this.http.get<any>(`${this.apiUrl}/menus/`).pipe(catchError(() => of([]))),
       detalles: this.http.get<any>(`${this.apiUrl}/detalle-platos/`).pipe(catchError(() => of([]))),
       preparaciones: this.http.get<any>(`${this.apiUrl}/preparaciones-asignadas/`).pipe(catchError(() => of([]))),
       ingredientes: this.http.get<any>(`${this.apiUrl}/ingredientes/`).pipe(catchError(() => of([])))
-    }).subscribe(({ sedes, usuarios, jornadas, contratos, secciones, platos, menus, detalles, preparaciones, ingredientes }) => {
+    }).subscribe(({ sedes, usuarios, jornadas, contratos, contratosSecciones, secciones, platos, menus, detalles, preparaciones, ingredientes }) => {
       const listaSedes = Array.isArray(sedes) ? sedes : (sedes?.results || []);
       const listaUsuarios = Array.isArray(usuarios) ? usuarios : (usuarios?.results || []);
 
@@ -381,6 +383,7 @@ export class MenusComponent implements OnInit {
 
       this.jornadas = Array.isArray(jornadas) ? jornadas : (jornadas?.results || []);
       this.contratos = Array.isArray(contratos) ? contratos : (contratos?.results || []);
+      this.contratosSeccionesMenu = Array.isArray(contratosSecciones) ? contratosSecciones : (contratosSecciones?.results || []);
       const secApi = Array.isArray(secciones) ? secciones : (secciones?.results || []);
       if (secApi.length > 0) {
         this.seccionesMenu = secApi;
@@ -766,7 +769,7 @@ export class MenusComponent implements OnInit {
   // CONFIGURACIÓN DE MOMENTOS (SECCIONES) POR SEDE
   // ============================================================
   obtenerMomentosDeSede(idSede: number | null): string[] {
-    if (!idSede) return ['Desayuno'];
+    if (!idSede) return ['Desayuno', 'Almuerzo', 'Merienda'];
     try {
       const raw = localStorage.getItem(this.STORAGE_SEDES_MOMENTOS_KEY);
       const mapa = raw ? JSON.parse(raw) : {};
@@ -776,8 +779,41 @@ export class MenusComponent implements OnInit {
     } catch (e) {
       console.error('Error al leer momentos de la sede:', e);
     }
-    // Por directriz del usuario: por defecto una sede maneja 'Desayuno', a menos que el supervisor configure otros
-    return ['Desayuno'];
+
+    // 1. Consultar el contrato configurado específicamente para esta sede
+    const contratosSede = (this.contratos || []).filter(c => {
+      const cSede = typeof c.id_sede === 'object' ? (c.id_sede?.id_sede || c.id_sede?.id) : c.id_sede;
+      return Number(cSede) === Number(idSede);
+    });
+
+    if (contratosSede.length > 0) {
+      const idsContratos = contratosSede.map(c => Number(c.id_contrato || c.id));
+      const rels = (this.contratosSeccionesMenu || []).filter(rel => {
+        const relContratoId = typeof rel.id_contrato === 'object'
+          ? (rel.id_contrato?.id_contrato || rel.id_contrato?.id)
+          : rel.id_contrato;
+        return idsContratos.includes(Number(relContratoId));
+      });
+
+      if (rels.length > 0) {
+        const momentosContrato: string[] = [];
+        for (const r of rels) {
+          const secId = typeof r.id_seccion === 'object'
+            ? (r.id_seccion?.id_seccion || r.id_seccion?.id)
+            : r.id_seccion;
+          const secNom = this.getNombreSeccion(Number(secId));
+          if (secNom && !momentosContrato.includes(secNom)) {
+            momentosContrato.push(secNom);
+          }
+        }
+        if (momentosContrato.length > 0) {
+          return momentosContrato;
+        }
+      }
+    }
+
+    // 2. Si la sede no tiene un contrato restrictivo, maneja normalmente todas sus jornadas
+    return ['Desayuno', 'Almuerzo', 'Merienda'];
   }
 
   obtenerOpcionesFiltroMomentoSede(idSede: number | null): string[] {
