@@ -338,7 +338,7 @@ export class EntregasService {
 
   // HU 5: Calcular automáticamente cantidades requeridas por sede, jornada, grado, gramaje y menú
   calcularMercado(params: {
-    id_sede: number;
+    id_sede?: number | null;
     id_institucion?: number | null;
     id_jornada?: number | null;
     id_contrato?: number | null;
@@ -348,8 +348,9 @@ export class EntregasService {
     id_grado?: number | null;
     id_grupo_gramaje?: number | null;
     incluir_todos_gramajes?: boolean;
-  }): Observable<CalculoAbastecimientoResponse> {
-    let httpParams = new HttpParams().set('id_sede', String(params.id_sede));
+  }): Observable<CalculoAbastecimientoResponse | CalculoAbastecimientoResponse[]> {
+    let httpParams = new HttpParams();
+    if (params.id_sede != null) httpParams = httpParams.set('id_sede', String(params.id_sede));
     if (params.id_institucion != null) httpParams = httpParams.set('id_institucion', String(params.id_institucion));
     if (params.id_jornada != null) httpParams = httpParams.set('id_jornada', String(params.id_jornada));
     if (params.id_contrato != null) httpParams = httpParams.set('id_contrato', String(params.id_contrato));
@@ -360,7 +361,7 @@ export class EntregasService {
     if (params.id_grupo_gramaje != null) httpParams = httpParams.set('id_grupo_gramaje', String(params.id_grupo_gramaje));
     if (params.incluir_todos_gramajes) httpParams = httpParams.set('incluir_todos_gramajes', 'true');
 
-    return this.http.get<CalculoAbastecimientoResponse>(`${this.apiUrl}calcular-mercado/`, {
+    return this.http.get<CalculoAbastecimientoResponse | CalculoAbastecimientoResponse[]>(`${this.apiUrl}calcular-mercado/`, {
       ...this.getHeaders(),
       params: httpParams,
     });

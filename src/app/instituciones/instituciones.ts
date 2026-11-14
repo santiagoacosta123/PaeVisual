@@ -210,7 +210,7 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
   private readonly claveEnvios = 'sirae_envios_institucion';
   private readonly origenServidor = /^https?:/i.test(environment.apiUrl)
     ? environment.apiUrl.replace(/\/api\/?$/, '')
-    : 'https://backend-sirae-t9zi.onrender.com';
+    : 'https://backend-sirae-pyim.onrender.com';
 
   private imagenesIngredientes = new Map<string, string>();
   private imagenesFallidas = new Set<string>();
