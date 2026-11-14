@@ -1097,40 +1097,29 @@
   <!-- MODAL: PROGRAMAR MENÚ DEL DÍA PARA LA SEDE                            -->
   <!-- ===================================================================== -->
   <div *ngIf="mostrarModalProgramarDia"
-    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
-    <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 flex flex-col gap-4">
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-4xl max-h-[92vh] overflow-y-auto p-6 flex flex-col gap-5">
       
+      <!-- Encabezado Modal -->
       <div class="flex items-center justify-between pb-3 border-b border-slate-100">
         <div>
-          <h3 class="text-base font-extrabold text-slate-900 m-0">
-            Programar Menú del Día — Menú {{ programarDiaForm.numero_menu_ciclo }}
-          </h3>
-          <p class="text-xs text-slate-500 m-0 mt-0.5">
-            Sede: {{ sedeActualObj?.nombre_sede || sedeActualObj?.nombre || 'Sede seleccionada' }}
+          <div class="flex items-center gap-2">
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
+              Menú Ciclo #{{ programarDiaForm.numero_menu_ciclo }}
+            </span>
+            <h3 class="text-base font-extrabold text-slate-900 m-0">
+              Programar Menú del Día con IA & Inventario
+            </h3>
+          </div>
+          <p class="text-xs text-slate-500 m-0 mt-1">
+            Sede: <strong class="text-slate-700">{{ sedeActualObj?.nombre_sede || sedeActualObj?.nombre || 'Sede seleccionada' }}</strong>
+            • Fecha: <strong class="text-slate-700">{{ programarDiaForm.fecha }}</strong>
           </p>
         </div>
         <button type="button" (click)="mostrarModalProgramarDia = false"
-          class="text-slate-400 hover:text-slate-600 text-sm font-bold p-1 cursor-pointer">
+          class="text-slate-400 hover:text-slate-700 text-base font-bold p-1 cursor-pointer transition">
           ✕
         </button>
-      </div>
-
-      <!-- Momento que maneja esta sede -->
-      <div class="flex flex-col gap-1.5">
-        <label class="text-xs font-bold text-slate-700">
-          Momento de entrega en la sede
-        </label>
-        <div class="flex flex-wrap gap-2">
-          <button *ngFor="let mom of obtenerMomentosDeSede(sedeSeleccionadaId)"
-            type="button"
-            (click)="programarDiaForm.id_seccion = (mom === 'Desayuno' ? 1 : (mom === 'Merienda' ? 3 : 2))"
-            [ngClass]="(programarDiaForm.id_seccion === 1 && mom === 'Desayuno') || (programarDiaForm.id_seccion === 2 && mom === 'Almuerzo') || (programarDiaForm.id_seccion === 3 && mom === 'Merienda')
-              ? 'bg-[#fac94b] text-slate-950 font-bold border-amber-400 shadow-2xs'
-              : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200 font-medium'"
-            class="px-3.5 py-1.5 rounded-xl text-xs border transition cursor-pointer">
-            {{ mom }}
-          </button>
-        </div>
       </div>
 
       <!-- Alerta informativa de la Regla de Rotación PAE (Día Anterior) -->
@@ -1147,44 +1136,298 @@
         </p>
       </div>
 
-      <!-- Plato a Programar -->
-      <div class="flex flex-col gap-1.5">
-        <label class="text-xs font-bold text-slate-700">
-          Plato o Menú estipulado para este día ({{ programarDiaForm.id_seccion === 1 ? 'Desayuno' : (programarDiaForm.id_seccion === 3 ? 'Merienda' : 'Almuerzo') }})
-        </label>
-        <select [(ngModel)]="programarDiaForm.nombre_plato"
-          (change)="onPlatoSeleccionadoEnSelect()"
-          class="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-amber-400 bg-white font-semibold">
-          <option value="">-- Elige un plato del catálogo PAE --</option>
-          <option *ngFor="let p of obtenerPlatosParaProgramar(programarDiaForm.id_seccion, programarDiaForm.numero_menu_ciclo)"
-            [value]="p.nombre_plato"
-            [disabled]="p.bloqueadoPorRotacion">
-            {{ p.nombre_plato }} {{ p.bloqueadoPorRotacion ? '— ⛔ No disponible (servido el día anterior)' : (p.secciones?.length ? ' (' + p.secciones.join(', ') + ')' : '') }}
-          </option>
-        </select>
+      <!-- Parámetros del Menú: Momento y Raciones de Niños -->
+      <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+        
+        <!-- Momento de Entrega -->
+        <div class="sm:col-span-5 flex flex-col gap-1.5">
+          <label class="text-xs font-bold text-slate-700">
+            Momento de Entrega (Jornada)
+          </label>
+          <div class="flex flex-wrap gap-1.5">
+            <button *ngFor="let mom of obtenerMomentosDeSede(sedeSeleccionadaId)"
+              type="button"
+              (click)="cambiarMomentoEnModal(mom)"
+              [ngClass]="(programarDiaForm.id_seccion === 1 && mom === 'Desayuno') || (programarDiaForm.id_seccion === 2 && mom === 'Almuerzo') || (programarDiaForm.id_seccion === 3 && mom === 'Merienda')
+                ? 'bg-[#fac94b] text-slate-950 font-bold border-amber-400 shadow-2xs'
+                : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200 font-medium'"
+              class="px-3 py-1.5 rounded-lg text-xs border transition cursor-pointer">
+              {{ mom }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Raciones / Niños Presentes -->
+        <div class="sm:col-span-4 flex flex-col gap-1.5">
+          <label class="text-xs font-bold text-slate-700">
+            Niños / Raciones a Preparar
+          </label>
+          <div class="flex items-center gap-2">
+            <input type="number" min="1" max="2000"
+              [(ngModel)]="programarDiaForm.ninos_presentes"
+              (keyup.enter)="consultarSugerenciasIAParaSede()"
+              class="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-300 focus:outline-none focus:border-amber-400 font-bold text-slate-800 bg-white" />
+            <button type="button"
+              (click)="consultarSugerenciasIAParaSede()"
+              title="Recalcular gramajes para esta cantidad de niños"
+              class="px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-400 hover:bg-amber-500 text-slate-950 transition cursor-pointer whitespace-nowrap shadow-2xs">
+              Recalcular
+            </button>
+          </div>
+        </div>
+
+        <!-- Preferencia o filtro IA -->
+        <div class="sm:col-span-3 flex flex-col gap-1.5">
+          <label class="text-xs font-bold text-slate-700">
+            Preferencia IA (Opcional)
+          </label>
+          <input type="text"
+            [(ngModel)]="preferenciaIA"
+            (keyup.enter)="consultarSugerenciasIAParaSede()"
+            placeholder="Ej: Con queso, frutas..."
+            class="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-300 focus:outline-none focus:border-amber-400 bg-white text-slate-800" />
+        </div>
+
       </div>
 
-      <!-- Componentes automáticos del plato seleccionado -->
-      <div *ngIf="programarDiaForm.nombre_plato" class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex flex-col gap-2">
-        <span class="text-xs font-bold text-slate-800">Componentes del plato:</span>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-700">
-          <div><span class="font-semibold text-slate-900">Bebida con leche:</span> {{ programarDiaForm.bebida_leche || '—' }}</div>
-          <div><span class="font-semibold text-slate-900">Alimento proteico:</span> {{ programarDiaForm.proteico || '—' }}</div>
-          <div><span class="font-semibold text-slate-900">Cereal acompañante:</span> {{ programarDiaForm.cereal || '—' }}</div>
-          <div><span class="font-semibold text-slate-900">Fruta:</span> {{ programarDiaForm.fruta || '—' }}</div>
+      <!-- Pestañas de Selección de Fuente (IA vs Oficial PAE) -->
+      <div class="flex items-center justify-between flex-wrap gap-2 pt-1 border-b border-slate-200">
+        <div class="flex gap-2">
+          <button type="button"
+            (click)="modoFuenteEleccion = 'IA_INVENTARIO'"
+            [ngClass]="modoFuenteEleccion === 'IA_INVENTARIO' ? 'border-amber-500 text-amber-700 font-bold border-b-2' : 'text-slate-500 hover:text-slate-800'"
+            class="pb-2 text-xs transition cursor-pointer flex items-center gap-1.5">
+            <span>✨ Sugerencias IA Inteligentes</span>
+            <span class="px-1.5 py-0.2 rounded-full text-[10px] bg-amber-100 text-amber-800 font-bold">
+              {{ platosGeneradosIA.length }}
+            </span>
+          </button>
+          <button type="button"
+            (click)="modoFuenteEleccion = 'PAE_ESTIPULADO'"
+            [ngClass]="modoFuenteEleccion === 'PAE_ESTIPULADO' ? 'border-amber-500 text-amber-700 font-bold border-b-2' : 'text-slate-500 hover:text-slate-800'"
+            class="pb-2 text-xs transition cursor-pointer flex items-center gap-1.5">
+            <span>📋 Menús Oficiales PAE (Ciclo 20)</span>
+            <span class="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-100 text-slate-700 font-bold">
+              {{ platosEstipuladosPAE.length }}
+            </span>
+          </button>
+          <button type="button"
+            (click)="modoFuenteEleccion = 'TODOS'"
+            [ngClass]="modoFuenteEleccion === 'TODOS' ? 'border-amber-500 text-amber-700 font-bold border-b-2' : 'text-slate-500 hover:text-slate-800'"
+            class="pb-2 text-xs transition cursor-pointer flex items-center gap-1.5">
+            <span>Todas las Opciones</span>
+            <span class="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-100 text-slate-700 font-bold">
+              {{ opcionesSugeridasIA.length }}
+            </span>
+          </button>
+        </div>
+
+        <button type="button"
+          (click)="consultarSugerenciasIAParaSede()"
+          [disabled]="cargandoSugerenciasIA"
+          class="text-xs text-amber-600 hover:text-amber-700 font-semibold flex items-center gap-1 cursor-pointer">
+          <span [class.animate-spin]="cargandoSugerenciasIA">🔄</span> Actualizar propuestas
+        </button>
+      </div>
+
+      <!-- Estado de Carga -->
+      <div *ngIf="cargandoSugerenciasIA" class="py-8 flex flex-col items-center justify-center gap-2 text-slate-500 text-xs">
+        <div class="w-6 h-6 border-2 border-amber-400 border-t-transparent rounded-full animate-spin"></div>
+        <span>Consultando IA, analizando inventario de la sede y calculando gramajes para {{ programarDiaForm.ninos_presentes }} niños...</span>
+      </div>
+
+      <!-- Tarjetas de Opciones Sugeridas -->
+      <div *ngIf="!cargandoSugerenciasIA" class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-56 overflow-y-auto pr-1">
+        <div *ngFor="let opc of opcionesFiltradasModalProgramar; let idx = index"
+          (click)="seleccionarOpcionParaDia(opc, idx)"
+          [ngClass]="programarDiaForm.nombre_plato === opc.nombre_plato
+            ? 'border-amber-400 bg-amber-50/40 ring-2 ring-amber-300'
+            : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/50'"
+          class="p-3 rounded-xl border transition cursor-pointer flex flex-col justify-between gap-2 shadow-2xs">
+          
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <span *ngIf="opc.origen === 'SUGERENCIA_IA' || opc.origen === 'IA_INVENTARIO'"
+                class="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 mb-1">
+                ✨ Propuesta IA Innovadora
+              </span>
+              <span *ngIf="opc.origen === 'PAE_ESTIPULADO'"
+                class="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200 mb-1">
+                📋 Menú Oficial PAE
+              </span>
+              <h4 class="text-xs font-bold text-slate-900 m-0">
+                {{ opc.nombre_plato }}
+              </h4>
+            </div>
+            <span *ngIf="opc.viable_con_inventario !== undefined"
+              [ngClass]="opc.viable_con_inventario ? 'text-emerald-700 bg-emerald-50' : 'text-amber-700 bg-amber-50'"
+              class="px-2 py-0.5 rounded text-[10px] font-semibold whitespace-nowrap">
+              {{ opc.viable_con_inventario ? '✓ Stock OK' : '⚠️ Stock Limitado' }}
+            </span>
+          </div>
+
+          <p class="text-[11px] text-slate-600 m-0 line-clamp-2">
+            {{ opc.componente || 'Bebida con leche, Alimento proteico, Cereal acompañante, Fruta' }}
+          </p>
+
+          <div class="flex items-center justify-between text-[10px] text-slate-500 pt-1 border-t border-slate-100">
+            <span>{{ opc.ingredientes?.length || 0 }} ingredientes calculados</span>
+            <span class="font-bold text-amber-600">
+              {{ programarDiaForm.nombre_plato === opc.nombre_plato ? '● Seleccionado' : 'Click para elegir' }}
+            </span>
+          </div>
+
+        </div>
+
+        <div *ngIf="opcionesFiltradasModalProgramar.length === 0" class="col-span-full py-6 text-center text-xs text-slate-500">
+          No hay opciones para el filtro seleccionado.
         </div>
       </div>
 
-      <!-- Botones de Acción -->
-      <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-        <button type="button" (click)="mostrarModalProgramarDia = false"
-          class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition cursor-pointer">
-          Cancelar
-        </button>
-        <button type="button" (click)="guardarProgramacionDiaSede()"
-          class="px-5 py-2 rounded-xl text-xs font-bold bg-[#fac94b] hover:bg-amber-400 text-slate-950 border border-amber-400 transition cursor-pointer shadow-2xs">
-          Guardar Menú del Día
-        </button>
+      <!-- Ficha Detallada del Menú Seleccionado -->
+      <div *ngIf="programarDiaForm.nombre_plato" class="p-4 rounded-xl bg-slate-50 border border-slate-200 flex flex-col gap-3">
+        
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <div>
+            <span class="text-[11px] uppercase tracking-wider font-extrabold text-amber-700">
+              Menú Seleccionado para Programar
+            </span>
+            <h4 class="text-sm font-extrabold text-slate-900 m-0 mt-0.5">
+              {{ programarDiaForm.nombre_plato }}
+            </h4>
+          </div>
+          <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300">
+            {{ programarDiaForm.ninos_presentes }} Raciones Calculadas
+          </span>
+        </div>
+
+        <!-- Componentes Nutricionales -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+          <div class="p-2 rounded-lg bg-white border border-slate-200">
+            <span class="text-[10px] font-bold text-slate-400 block uppercase">Bebida con leche</span>
+            <span class="font-semibold text-slate-800">{{ programarDiaForm.bebida_leche || '—' }}</span>
+          </div>
+          <div class="p-2 rounded-lg bg-white border border-slate-200">
+            <span class="text-[10px] font-bold text-slate-400 block uppercase">Alimento Proteico</span>
+            <span class="font-semibold text-slate-800">{{ programarDiaForm.proteico || '—' }}</span>
+          </div>
+          <div class="p-2 rounded-lg bg-white border border-slate-200">
+            <span class="text-[10px] font-bold text-slate-400 block uppercase">Cereal / Acompañante</span>
+            <span class="font-semibold text-slate-800">{{ programarDiaForm.cereal || '—' }}</span>
+          </div>
+          <div class="p-2 rounded-lg bg-white border border-slate-200">
+            <span class="text-[10px] font-bold text-slate-400 block uppercase">Fruta Fresca</span>
+            <span class="font-semibold text-slate-800">{{ programarDiaForm.fruta || '—' }}</span>
+          </div>
+        </div>
+
+        <!-- Tabla de Ingredientes y Proyección de Inventario -->
+        <div *ngIf="programarDiaForm.ingredientes && programarDiaForm.ingredientes.length > 0" class="flex flex-col gap-1.5 mt-1">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-800">
+              Ingredientes, Porciones y Descuento Proyectado en Inventario
+            </span>
+            <span class="text-[11px] text-slate-500">
+              Gramajes oficiales para {{ programarDiaForm.ninos_presentes }} niños de Primaria
+            </span>
+          </div>
+
+          <div class="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+            <table class="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr class="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+                  <th class="p-2.5">Ingrediente</th>
+                  <th class="p-2.5 text-center">Ración / Niño</th>
+                  <th class="p-2.5 text-center bg-amber-50/70 text-amber-900 font-extrabold">Total Necesario</th>
+                  <th class="p-2.5 text-center">Stock Actual</th>
+                  <th class="p-2.5 text-center text-blue-700">Stock Proyectado</th>
+                  <th class="p-2.5 text-center">Estado</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                <tr *ngFor="let ing of programarDiaForm.ingredientes" class="hover:bg-slate-50">
+                  
+                  <!-- Caso 1: Ingrediente estructurado con cálculos IA -->
+                  <ng-container *ngIf="esIngredienteEstructurado(ing)">
+                    <td class="p-2.5 font-medium text-slate-900">
+                      {{ $any(ing).nombre_ingrediente }}
+                    </td>
+                    <td class="p-2.5 text-center text-slate-600 font-mono text-[11px]">
+                      {{ $any(ing).cantidad_por_nino }}
+                    </td>
+                    <td class="p-2.5 text-center font-bold text-amber-800 bg-amber-50/50 font-mono text-[11px]">
+                      {{ $any(ing).cantidad_total }}
+                    </td>
+                    <td class="p-2.5 text-center text-slate-600 font-mono text-[11px]">
+                      {{ $any(ing).stock_actual }} {{ $any(ing).unidad }}
+                    </td>
+                    <td class="p-2.5 text-center font-bold text-blue-800 font-mono text-[11px]">
+                      {{ $any(ing).stock_restante_proyectado }} {{ $any(ing).unidad }}
+                      <span class="text-[10px] text-rose-500 block">(-{{ $any(ing).cantidad_total_valor }} {{ $any(ing).unidad }})</span>
+                    </td>
+                    <td class="p-2.5 text-center">
+                      <span *ngIf="$any(ing).alcanza !== false" class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                        ✓ Alcanza
+                      </span>
+                      <span *ngIf="$any(ing).alcanza === false" class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800">
+                        ⚠️ Insuficiente
+                      </span>
+                    </td>
+                  </ng-container>
+
+                  <!-- Caso 2: Ingrediente simple en texto -->
+                  <ng-container *ngIf="!esIngredienteEstructurado(ing)">
+                    <td colspan="6" class="p-2.5 text-slate-700">
+                      • {{ ing }}
+                    </td>
+                  </ng-container>
+
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Control de Descuento de Inventario -->
+          <div class="flex items-center justify-between flex-wrap gap-2 pt-2">
+            <label class="flex items-center gap-2 cursor-pointer text-xs text-slate-700 select-none">
+              <input type="checkbox"
+                [(ngModel)]="descontarInventarioAlProgramar"
+                class="w-4 h-4 text-amber-500 rounded border-slate-300 focus:ring-amber-400 cursor-pointer" />
+              <span>
+                <strong>Descontar automáticamente de inventario</strong> al guardar la programación del día
+              </span>
+            </label>
+
+            <button type="button"
+              (click)="descontarInventarioSeleccionado()"
+              [disabled]="descontandoInventario"
+              class="px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 transition cursor-pointer flex items-center gap-1.5">
+              <span [class.animate-spin]="descontandoInventario">⚡</span>
+              {{ descontandoInventario ? 'Descontando de bodega...' : 'Descontar de Inventario Ahora' }}
+            </button>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Botones de Acción al Pie -->
+      <div class="flex items-center justify-between gap-2 pt-3 border-t border-slate-100">
+        <span class="text-xs text-slate-400">
+          * Los ingredientes se descontarán de la sede seleccionada.
+        </span>
+        <div class="flex items-center gap-2">
+          <button type="button" (click)="mostrarModalProgramarDia = false"
+            class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition cursor-pointer">
+            Cancelar
+          </button>
+          <button type="button" (click)="guardarProgramacionDiaSede()"
+            [disabled]="guardandoMenuDia"
+            class="px-5 py-2 rounded-xl text-xs font-bold bg-[#fac94b] hover:bg-amber-400 text-slate-950 border border-amber-400 transition cursor-pointer shadow-2xs flex items-center gap-1.5">
+            <span *ngIf="guardandoMenuDia" class="w-3.5 h-3.5 border-2 border-slate-900 border-t-transparent rounded-full animate-spin"></span>
+            <span>{{ guardandoMenuDia ? 'Guardando...' : 'Guardar Menú del Día' }}</span>
+          </button>
+        </div>
       </div>
 
     </div>
