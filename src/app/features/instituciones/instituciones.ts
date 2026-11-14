@@ -199,10 +199,10 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
 
   // Catálogo de ingredientes del servidor: solo se usa como respaldo para productos que no estén en ARCHIVOS_IMAGEN
   private readonly urlIngredientes = `${environment.apiUrl}/ingredientes/`;
-  // Raíz del servidor (apiUrl sin el "/api" final), p. ej. https://backend-sirae-t9zi.onrender.com
+  // Raíz del servidor (apiUrl sin el "/api" final), p. ej. https://backend-sirae-pyim.onrender.com
   private readonly origenServidor = /^https?:/i.test(environment.apiUrl)
     ? environment.apiUrl.replace(/\/api\/?$/, '')
-    : 'https://backend-sirae-t9zi.onrender.com';
+    : 'https://backend-sirae-pyim.onrender.com';
   private imagenesIngredientes = new Map<string, string>();   // nombre normalizado -> URL
   private imagenesFallidas = new Set<string>();
 
