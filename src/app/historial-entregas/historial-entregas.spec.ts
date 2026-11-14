@@ -168,6 +168,8 @@ describe('HistorialEntregas', () => {
     component.alternarGrupoFecha('2026-10-10');
     fixture.detectChanges();
 
+
+
     expect(component.grupoEstaExpandido('2026-10-10')).toBe(true);
     expect(fixture.nativeElement.textContent).toContain('Arroz');
     expect(fixture.nativeElement.textContent).toContain('Lentejas');

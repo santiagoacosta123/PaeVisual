@@ -16,6 +16,8 @@ export interface Entrega {
   idContrato?: number;
   idCalculoEntrega?: number;
   documentoEntrega?: string;
+  numeroFactura?: string;
+  loteRegistro?: string;
   cantidadRequeridaCalculo?: number | null;
   superaCalculo?: boolean;
   autorizadoPor?: string;
@@ -33,6 +35,7 @@ export interface Entrega {
   motivoRechazo?: string;
   usuarioReceptorNombre?: string;
   observaciones?: string;
+  destino?: string;
 }
 
 export interface IngredienteOpcion {
@@ -48,8 +51,14 @@ export interface TipoMercadoOpcion {
 export interface EntregaPayload {
   id_ingrediente: number;
   id_tipo_mercado: number;
+  ingrediente?: number;
+  tipo_mercado?: number;
   id_institucion?: number;
+  institucion?: number;
+  institucion_nombre?: string;
   id_sede?: number;
+  sede?: number;
+  sede_nombre?: string;
   fecha_entrega: string;
   fecha_salida?: string;
   fecha_vencimiento: string;
@@ -63,6 +72,10 @@ export interface EntregaPayload {
   autorizacion_exceso?: boolean;
   autorizado_por?: string;
   justificacion_exceso?: string;
+  documento_entrega?: string;
+  codigo_documento?: string;
+  numero_factura?: string;
+  lote_registro?: string;
 }
 
 export interface FaltanteConfiguracion {
@@ -165,6 +178,13 @@ export interface DespachoLoteItemPayload {
 
 export interface DespachoLotePayload {
   id_sede: number;
+  sede?: number;
+  id_institucion?: number;
+  institucion?: number;
+  institucion_nombre?: string;
+  codigo_documento?: string;
+  numero_factura?: string;
+  documento_entrega?: string;
   fecha_entrega: string;
   fecha_vencimiento?: string;
   id_tipo_mercado?: number;
@@ -399,17 +419,62 @@ export class EntregasService {
       if (matchUni) uni = matchUni[1].trim();
     }
 
+    // Extracción tolerante y segura de Institución
+    const rawInst = item.id_institucion
+      ?? (typeof item.institucion === 'object' && item.institucion ? (item.institucion.id_institucion ?? item.institucion.id) : item.institucion);
+    const idInst = rawInst != null && !Number.isNaN(Number(rawInst)) ? Number(rawInst) : undefined;
+
+    let instNombre = String(
+      item.institucion_nombre
+      ?? (typeof item.institucion === 'object' ? (item.institucion?.nombre_institucion ?? item.institucion?.nombre) : '')
+      ?? ''
+    ).trim();
+    if (!instNombre && typeof item.destino === 'string' && item.destino) {
+      instNombre = item.destino.split(' - ')[0].trim();
+    }
+
+    // Extracción tolerante y segura de Sede
+    const rawSede = item.id_sede
+      ?? (typeof item.sede === 'object' && item.sede ? (item.sede.id_sede ?? item.sede.id) : item.sede);
+    const idSede = rawSede != null && !Number.isNaN(Number(rawSede)) ? Number(rawSede) : undefined;
+
+    let sedeNombre = String(
+      item.sede_nombre
+      ?? (typeof item.sede === 'object' ? (item.sede?.nombre_sede ?? item.sede?.nombre) : '')
+      ?? ''
+    ).trim();
+    if (!sedeNombre && typeof item.destino === 'string' && item.destino.includes(' - ')) {
+      sedeNombre = item.destino.split(' - ').slice(1).join(' - ').trim();
+    }
+
+    // Extracción de Documento de Entrega / Factura / Remisión
+    let docEntrega = String(
+      item.documento_entrega
+      ?? item.documentoEntrega
+      ?? item.codigo_documento
+      ?? item.numero_factura
+      ?? item.factura
+      ?? ''
+    ).trim();
+    if (!docEntrega && obs) {
+      const matchDoc = obs.match(/(?:Factura|Remisi[oó]n|Doc(?:umento)?(?:\s*Entrega)?)\s*:\s*([^|;,\n]+)/i);
+      if (matchDoc) docEntrega = matchDoc[1].trim();
+    }
+    const loteRegistro = String(item.lote_registro ?? item.loteRegistro ?? docEntrega ?? '').trim();
+
     return {
       id: Number(item.id_entrega ?? item.id),
       idIngrediente: idIng,
       idTipoMercado: idTipo,
-      idInstitucion: item.id_institucion ? Number(item.id_institucion) : undefined,
-      institucionNombre: String(item.institucion_nombre ?? item.institucion?.nombre_institucion ?? ''),
-      idSede: item.id_sede ? Number(item.id_sede) : undefined,
-      sedeNombre: String(item.sede_nombre ?? item.sede?.nombre_sede ?? ''),
+      idInstitucion: idInst,
+      institucionNombre: instNombre,
+      idSede: idSede,
+      sedeNombre: sedeNombre,
       idContrato: item.id_contrato ? Number(item.id_contrato) : undefined,
       idCalculoEntrega: item.id_calculo_entrega ? Number(item.id_calculo_entrega) : undefined,
-      documentoEntrega: item.documento_entrega || '',
+      documentoEntrega: docEntrega,
+      numeroFactura: docEntrega,
+      loteRegistro: loteRegistro,
       cantidadRequeridaCalculo:
         item.cantidad_requerida_calculo != null ? Number(item.cantidad_requerida_calculo) : null,
       superaCalculo: Boolean(item.supera_calculo),
