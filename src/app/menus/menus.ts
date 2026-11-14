@@ -1954,6 +1954,16 @@ export class MenusComponent implements OnInit {
   }
 
   abrirModalProgramarMenuDiaMomento(dia: CeldaDiaMinutaSede, momento: 'Desayuno' | 'Almuerzo' | 'Merienda'): void {
+    const numSemana = Math.floor((dia.numeroMenu - 1) / 5) + 1;
+    const aprobacion = this.obtenerAprobacionSemana(numSemana);
+    if (this.esJefaManipuladoras && aprobacion.aprobado_supervisor) {
+      this.sweetAlert.warning(
+        'Minuta Aprobada y Fijada',
+        `La Semana ${numSemana} ya fue formalmente aprobada por el Supervisor PAE (${aprobacion.supervisor_nombre || 'Supervisor'}). La minuta oficial ha quedado fijada y no puede ser modificada por la jefa de cocina.`
+      );
+      return;
+    }
+
     const idSede = Number(this.sedeSeleccionadaId || this.currentUser?.id_sede || (this.sedesInstitucion[0]?.id_sede));
 
     if (!this.sedeManejaMomento(idSede, momento)) {
