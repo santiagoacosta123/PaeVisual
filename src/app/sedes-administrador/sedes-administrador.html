@@ -137,7 +137,11 @@
             {{ mensajeGuardado }}
           </div>
 
-          <div class="space-y-4">
+          <div *ngIf="detalle.jornadas.length === 0" class="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-center text-sm font-semibold text-amber-800">
+            Esta sede no tiene contratos con jornadas asignadas en este momento. Registra un contrato para asociar sus jornadas y cupos operativos.
+          </div>
+
+          <div *ngIf="detalle.jornadas.length > 0" class="space-y-4">
             <div *ngFor="let jornada of detalle.jornadas" class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
               <div class="flex flex-wrap items-center justify-between gap-3">
                 <label class="flex items-center gap-3 text-sm font-bold text-slate-800">
@@ -171,7 +175,7 @@
                 <div class="rounded-xl border border-dashed border-slate-200 bg-white p-3">
                   <div class="mb-2 flex justify-between gap-2 text-xs font-bold uppercase tracking-wide text-slate-500">
                     <span>Distribución por grado</span>
-                    <span>{{ (jornada.grados || []).reduce((sum, grado) => sum + (grado.cupos || 0), 0) }} / {{ jornada.cupos || 0 }}</span>
+                    <span>{{ calcularSumaGrados(jornada) }} / {{ jornada.cupos || 0 }}</span>
                   </div>
                   <div *ngIf="(jornada.grados || []).length > 0; else noGrados" class="grid gap-3 sm:grid-cols-2">
                     <label *ngFor="let grado of jornada.grados" class="block rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm font-medium text-slate-700">

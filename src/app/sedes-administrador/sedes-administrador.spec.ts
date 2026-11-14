@@ -181,4 +181,95 @@ describe('SedesAdministradorComponent', () => {
     );
     expect(component.mensajeGuardado).toContain('Configuración guardada correctamente');
   });
+
+  it('does not display unassigned catalog jornadas when only Mañana is authorized for the sede', () => {
+    get.mockImplementation((url: string) => {
+      if (url.includes('/jornadas/')) {
+        return of([
+          { id_jornada: 2, nombre_jornada: 'Mañana', estado: 'ACTIVA' },
+          { id_jornada: 3, nombre_jornada: 'Tarde', estado: 'ACTIVA' },
+          { id_jornada: 4, nombre_jornada: 'Jornada Única', estado: 'ACTIVA' },
+        ]);
+      }
+      if (url.includes('/grados/')) {
+        return of([{ id_grado: 1, nombre_grado: 'Primero', estado: 'ACTIVO' }]);
+      }
+      if (url.includes('/sedes/11/configuracion/')) {
+        return of({
+          sede: sedes[0],
+          cupos_totales: 50,
+          jornadas: [{
+            id_jornada: 2,
+            nombre_jornada: 'Mañana',
+            cupos: 50,
+            habilitada: true,
+            secciones: [{ id_seccion: 1, nombre_seccion: 'Desayuno', estado: 'ACTIVA' }],
+            grados: [{ id_grado: 1, nombre_grado: 'Primero', cupos: 0 }],
+          }],
+        });
+      }
+      return of(sedes);
+    });
+
+    component.ngOnInit();
+    component.seleccionarSede(sedes[0]);
+
+    // Debe contener únicamente la jornada Mañana autorizada por el contrato, NO la tarde ni única
+    expect(component.configuracion?.jornadas.length).toBe(1);
+    expect(component.configuracion?.jornadas[0].nombre_jornada).toBe('Mañana');
+    expect(component.configuracion?.jornadas.some(j => j.nombre_jornada === 'Tarde')).toBe(false);
+  });
+
+  it('allows assigning cupos to grades and auto-adjusts jornada cupos without resetting to zero', () => {
+    get.mockImplementation((url: string) => {
+      if (url.includes('/jornadas/')) {
+        return of([{ id_jornada: 2, nombre_jornada: 'Mañana', estado: 'ACTIVA' }]);
+      }
+      if (url.includes('/grados/')) {
+        return of([
+          { id_grado: 1, nombre_grado: 'Primero', estado: 'ACTIVO' },
+          { id_grado: 2, nombre_grado: 'Segundo', estado: 'ACTIVO' },
+        ]);
+      }
+      if (url.includes('/sedes/11/configuracion/')) {
+        return of({
+          sede: sedes[0],
+          cupos_totales: 50,
+          jornadas: [{
+            id_jornada: 2,
+            nombre_jornada: 'Mañana',
+            cupos: 0,
+            habilitada: true,
+            secciones: [],
+            grados: [
+              { id_grado: 1, nombre_grado: 'Primero', cupos: 0 },
+              { id_grado: 2, nombre_grado: 'Segundo', cupos: 0 },
+            ],
+          }],
+        });
+      }
+      return of(sedes);
+    });
+
+    component.ngOnInit();
+    component.seleccionarSede(sedes[0]);
+
+    const jornada = component.configuracion!.jornadas[0];
+    const grado1 = jornada.grados[0];
+    const grado2 = jornada.grados[1];
+
+    // jornada.cupos se inicializa automáticamente en 50 porque es la única jornada y tiene 50 cupos en contrato
+    expect(jornada.cupos).toBe(50);
+
+    // Asignar 30 al grado 1: no debe quedar en 0, debe quedar en 30
+    component.actualizarCupoGrado(jornada, grado1, '30');
+    expect(grado1.cupos).toBe(30);
+    expect(jornada.cupos).toBe(50);
+
+    // Asignar 20 al grado 2: debe quedar en 20
+    component.actualizarCupoGrado(jornada, grado2, '20');
+    expect(grado2.cupos).toBe(20);
+    expect(jornada.cupos).toBe(50);
+    expect(component.calcularSumaGrados(jornada)).toBe(50);
+  });
 });
