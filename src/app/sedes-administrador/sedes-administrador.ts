@@ -201,22 +201,21 @@ export class SedesAdministradorComponent implements OnInit, OnDestroy {
   }
 
   private sincronizarJornadasConfiguradas(): void {
-    if (!this.configuracion || this.jornadasDisponibles.length === 0) {
+    if (!this.configuracion) {
       return;
     }
 
     const jornadasActuales = this.configuracion.jornadas ?? [];
-    const mapaJornadas = new Map(jornadasActuales.map(jornada => [jornada.id_jornada, jornada]));
+    if (jornadasActuales.length === 0) {
+      return;
+    }
 
-    this.configuracion.jornadas = this.jornadasDisponibles.map(jornadaCatalogo => {
-      const jornadaActual = mapaJornadas.get(jornadaCatalogo.id_jornada) ?? {
-        id_jornada: jornadaCatalogo.id_jornada,
-        nombre_jornada: jornadaCatalogo.nombre_jornada,
-        cupos: 0,
-        habilitada: false,
-        secciones: [],
-        grados: [],
-      };
+    const mapaCatalogo = new Map(this.jornadasDisponibles.map(j => [j.id_jornada, j]));
+
+    // Mantener ÚNICAMENTE las jornadas autorizadas para esta sede
+    this.configuracion.jornadas = jornadasActuales.map(jornadaActual => {
+      const jornadaCatalogo = mapaCatalogo.get(jornadaActual.id_jornada);
+      const nombre = jornadaCatalogo?.nombre_jornada || jornadaActual.nombre_jornada;
 
       const gradosGuardados = jornadaActual.grados ?? [];
       const cuposPorGrado = new Map(gradosGuardados.map(g => [g.id_grado, Number(g.cupos || 0)]));
@@ -239,11 +238,17 @@ export class SedesAdministradorComponent implements OnInit, OnDestroy {
         }
       }
 
+      let cuposJornada = Number(jornadaActual.cupos || 0);
+      if (cuposJornada === 0 && jornadasActuales.length === 1 && (this.configuracion?.cupos_totales || 0) > 0) {
+        cuposJornada = Number(this.configuracion?.cupos_totales || 0);
+      }
+
       return {
         ...jornadaActual,
-        nombre_jornada: jornadaCatalogo.nombre_jornada,
+        nombre_jornada: nombre,
+        cupos: cuposJornada,
         grados: gradosCombinados,
-        habilitada: Boolean(jornadaActual.habilitada || jornadaActual.cupos > 0 || jornadaActual.secciones?.length),
+        habilitada: Boolean(jornadaActual.habilitada || cuposJornada > 0 || (jornadaActual.secciones && jornadaActual.secciones.length > 0)),
       };
     });
   }
@@ -294,69 +299,106 @@ export class SedesAdministradorComponent implements OnInit, OnDestroy {
 
   private normalizarJornadas(jornadas: JornadaConfigurada[]): JornadaConfigurada[] {
     if (!jornadas || jornadas.length === 0) {
-      return this.jornadasDisponibles.map(jornada => ({
-        id_jornada: jornada.id_jornada,
-        nombre_jornada: jornada.nombre_jornada,
-        cupos: 0,
-        habilitada: false,
-        secciones: [],
-        grados: this.gradosDisponibles.map(grado => ({
-          id_grado: grado.id_grado,
-          nombre_grado: grado.nombre_grado,
-          cupos: 0,
-        })),
-      }));
+      return [];
     }
 
-    return jornadas.map(jornada => ({
-      ...jornada,
-      cupos: Number(jornada.cupos || 0),
-      habilitada: Boolean(jornada.habilitada || jornada.cupos > 0),
-      secciones: jornada.secciones ?? [],
-      grados: (jornada.grados ?? []).map(grado => ({
-        id_grado: grado.id_grado,
-        nombre_grado: grado.nombre_grado,
-        cupos: Number(grado.cupos || 0),
-      })),
-    }));
+    const autorizadas = jornadas.filter((j, index, self) => index === self.findIndex(t => t.id_jornada === j.id_jornada));
+
+    return autorizadas.map(jornada => {
+      let cupos = Number(jornada.cupos || 0);
+      if (cupos === 0 && autorizadas.length === 1 && (this.configuracion?.cupos_totales || 0) > 0) {
+        cupos = Number(this.configuracion?.cupos_totales || 0);
+      }
+
+      return {
+        ...jornada,
+        cupos,
+        habilitada: Boolean(jornada.habilitada || cupos > 0 || (jornada.secciones && jornada.secciones.length > 0)),
+        secciones: jornada.secciones ?? [],
+        grados: (jornada.grados ?? []).map(grado => ({
+          id_grado: grado.id_grado,
+          nombre_grado: grado.nombre_grado,
+          cupos: Number(grado.cupos || 0),
+        })),
+      };
+    });
   }
 
   toggleJornada(jornada: JornadaConfigurada): void {
     jornada.habilitada = !jornada.habilitada;
     if (!jornada.habilitada) {
       jornada.cupos = 0;
-      jornada.grados = jornada.grados.map(grado => ({ ...grado, cupos: 0 }));
+      jornada.grados = (jornada.grados || []).map(grado => ({ ...grado, cupos: 0 }));
+    } else if (jornada.cupos === 0 && this.cuposPendientes > 0) {
+      jornada.cupos = this.cuposPendientes;
     }
     this.errorValidacion = '';
     this.mensajeGuardado = '';
   }
 
-  actualizarCupoJornada(jornada: JornadaConfigurada, valor: string): void {
+  actualizarCupoJornada(jornada: JornadaConfigurada, valor: string | number): void {
     const numero = Number(valor || 0);
-    jornada.cupos = Number.isFinite(numero) ? Math.max(0, Math.trunc(numero)) : 0;
-    if (jornada.habilitada && jornada.cupos > 0) {
-      const sumaActual = jornada.grados.reduce((sum, grado) => sum + Number(grado.cupos || 0), 0);
-      if (sumaActual > jornada.cupos) {
-        jornada.grados = jornada.grados.map(grado => ({
+    const cuposAutorizados = Number(this.configuracion?.cupos_totales || 0);
+    const nuevoValor = Number.isFinite(numero) ? Math.max(0, Math.trunc(numero)) : 0;
+
+    if (cuposAutorizados > 0 && nuevoValor > cuposAutorizados) {
+      jornada.cupos = cuposAutorizados;
+      this.errorValidacion = `No puedes asignar más de los ${cuposAutorizados} cupos autorizados para la sede.`;
+    } else {
+      jornada.cupos = nuevoValor;
+      this.errorValidacion = '';
+    }
+
+    const sumaActual = (jornada.grados || []).reduce((sum, grado) => sum + Number(grado.cupos || 0), 0);
+    if (sumaActual > jornada.cupos) {
+      let restante = jornada.cupos;
+      jornada.grados = (jornada.grados || []).map(grado => {
+        const c = Math.min(Number(grado.cupos || 0), restante);
+        restante = Math.max(0, restante - c);
+        return {
           ...grado,
-          cupos: Math.min(Number(grado.cupos || 0), Math.max(0, jornada.cupos)),
-        }));
+          cupos: c,
+        };
+      });
+    }
+    this.mensajeGuardado = '';
+  }
+
+  actualizarCupoGrado(jornada: JornadaConfigurada, grado: GradoCupo, valor: string | number): void {
+    const numero = Number(valor || 0);
+    const cupoDeseado = Number.isFinite(numero) ? Math.max(0, Math.trunc(numero)) : 0;
+    grado.cupos = cupoDeseado;
+
+    const otrosGrados = (jornada.grados || []).filter(g => g.id_grado !== grado.id_grado);
+    const sumaOtros = otrosGrados.reduce((sum, g) => sum + Number(g.cupos || 0), 0);
+    const nuevaSuma = sumaOtros + cupoDeseado;
+    const cuposAutorizados = Number(this.configuracion?.cupos_totales || 0);
+
+    if (nuevaSuma > (jornada.cupos || 0)) {
+      if (cuposAutorizados > 0 && nuevaSuma <= cuposAutorizados) {
+        // Auto-incrementar los cupos de la jornada si está dentro de lo autorizado para la sede
+        jornada.cupos = nuevaSuma;
+        this.errorValidacion = '';
+      } else if (cuposAutorizados > 0 && nuevaSuma > cuposAutorizados) {
+        const maxPermitido = Math.max(0, cuposAutorizados - sumaOtros);
+        grado.cupos = maxPermitido;
+        jornada.cupos = cuposAutorizados;
+        this.errorValidacion = `La suma de cupos por grado supera el total autorizado de la sede (${cuposAutorizados} cupos).`;
+        return;
+      } else if (jornada.cupos > 0) {
+        const exceso = nuevaSuma - jornada.cupos;
+        grado.cupos = Math.max(0, cupoDeseado - exceso);
+        this.errorValidacion = `La suma de cupos por grado supera los ${jornada.cupos} cupos asignados a la jornada.`;
+        return;
       }
     }
+
     this.errorValidacion = '';
     this.mensajeGuardado = '';
   }
 
-  actualizarCupoGrado(jornada: JornadaConfigurada, grado: GradoCupo, valor: string): void {
-    const numero = Number(valor || 0);
-    grado.cupos = Number.isFinite(numero) ? Math.max(0, Math.trunc(numero)) : 0;
-    const sumaTotal = jornada.grados.reduce((sum, item) => sum + Number(item.cupos || 0), 0);
-    if (sumaTotal > (jornada.cupos || 0)) {
-      const exceso = sumaTotal - (jornada.cupos || 0);
-      grado.cupos = Math.max(0, grado.cupos - exceso);
-    }
-    this.errorValidacion = '';
-    this.mensajeGuardado = '';
+  calcularSumaGrados(jornada: JornadaConfigurada): number {
+    return (jornada.grados || []).reduce((sum, grado) => sum + Number(grado.cupos || 0), 0);
   }
 
   validarConfiguracion(): string | null {

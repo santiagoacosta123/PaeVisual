@@ -23,6 +23,8 @@ interface GrupoEntregasDia {
   novedades: number;
 }
 
+type FiltroEstado = 'TODAS' | 'POR_RECIBIR' | 'RECIBIDA' | 'CON_NOVEDAD';
+
 @Component({
   selector: 'app-historial-entregas',
   standalone: true,
@@ -31,10 +33,13 @@ interface GrupoEntregasDia {
   templateUrl: './historial-entregas.html',
 })
 export class HistorialEntregas implements OnInit {
+  // Lista visible (ya filtrada por institución del usuario)
   entregas: Entrega[] = [];
+  // Lista completa SIN filtrar por institución (fuente de verdad)
+  private entregasOrigen: Entrega[] = [];
+
   ingredientes: IngredienteOpcion[] = [];
   tiposMercado: TipoMercadoOpcion[] = [];
-  filtroTexto = '';
   cargando = true;
   cargandoCatalogos = false;
   guardando = false;
@@ -42,6 +47,23 @@ export class HistorialEntregas implements OnInit {
   crudAbierto = false;
   editandoId: number | null = null;
   private catalogosCargados = false;
+  private gruposInicializados = false;
+
+  // Búsqueda: al escribir, se expanden los grupos automáticamente
+  private _filtroTexto = '';
+  get filtroTexto(): string {
+    return this._filtroTexto;
+  }
+  set filtroTexto(valor: string) {
+    this._filtroTexto = valor ?? '';
+    if (this._filtroTexto.trim()) {
+      this.expandirGrupos();
+    }
+  }
+
+  // Memoización de getters (evita reordenar/agrupar en cada ciclo de detección)
+  private cacheFiltradas: { src: Entrega[]; estado: string; texto: string; res: Entrega[] } | null = null;
+  private cacheGrupos: { src: Entrega[]; res: GrupoEntregasDia[] } | null = null;
 
   // Roles de usuario y contexto
   esAdministrador = false;
@@ -53,7 +75,7 @@ export class HistorialEntregas implements OnInit {
   idsSedesPropias = new Set<number>();
 
   // Filtros avanzados
-  filtroEstado: 'TODAS' | 'POR_RECIBIR' | 'RECIBIDA' | 'CON_NOVEDAD' = 'TODAS';
+  filtroEstado: FiltroEstado = 'TODAS';
 
   // Modal de Recepción y Control de Calidad (Administrador)
   modalRecepcionAbierto = false;
@@ -73,6 +95,11 @@ export class HistorialEntregas implements OnInit {
 
   crudForm = this.formularioVacio();
 
+  // Quién puede Recibir / Rechazar entregas en tránsito
+  get puedeGestionarRecepcion(): boolean {
+    return this.esAdministrador || this.esSuperAdmin;
+  }
+
   constructor(
     public entregasService: EntregasService,
     private alertas: SweetAlertService,
@@ -85,7 +112,8 @@ export class HistorialEntregas implements OnInit {
     const rol = user?.rol;
     this.esSuperAdmin = this.authService.esSuperAdministrador(rol);
     this.esSupervisor = this.authService.esSupervisor(rol);
-    this.esAdministrador = (this.authService.esAdministrador(rol) || rol === 'admin' || rol === 'administrador') && !this.esSuperAdmin;
+    this.esAdministrador =
+      (this.authService.esAdministrador(rol) || rol === 'admin' || rol === 'administrador') && !this.esSuperAdmin;
     this.institucionNombreUsuario = user?.institucion_nombre || user?.institucion || '';
     this.institucionIdUsuario = user?.id_institucion ? Number(user.id_institucion) : null;
 
@@ -94,31 +122,44 @@ export class HistorialEntregas implements OnInit {
       this.cargarSedesInstitucion(this.institucionIdUsuario);
     }
 
-    // 1. Carga inmediata de entregas desde caché local (0 ms de espera)
+    // 1. Carga inmediata desde caché local
     const cacheadas = this.leerCacheEntregas();
     if (cacheadas.length > 0) {
-      this.entregas = this.filtrarPorInstitucionUsuario(cacheadas);
+      this.entregasOrigen = cacheadas;
+      this.aplicarFiltroInstitucion();
       this.cargando = false;
+      this.expandirGruposIniciales();
     }
 
     // 2. Consulta de datos actualizados al backend en segundo plano
     this.cargarHistorial();
   }
 
+  // =========================================================================
+  // CARGA DE DATOS
+  // =========================================================================
+
+  private aplicarFiltroInstitucion(): void {
+    this.entregas = this.filtrarPorInstitucionUsuario(this.entregasOrigen);
+  }
+
   private cargarSedesInstitucion(idInst: number): void {
-    this.http.get<any>(`${environment.apiUrl}/sedes/?id_institucion=${idInst}`).pipe(
-      timeout(6000),
-      catchError(() => of([]))
-    ).subscribe((res) => {
-      const lista = Array.isArray(res) ? res : (Array.isArray(res?.results) ? res.results : []);
-      this.idsSedesPropias = new Set(
-        lista.map((s: any) => Number(s.id_sede ?? s.id)).filter((id: number) => !isNaN(id))
-      );
-      this.tieneSedes = this.idsSedesPropias.size > 0;
-      // Re-filtrar con la validación de sedes actualizada
-      this.entregas = this.filtrarPorInstitucionUsuario(this.entregas);
-      this.guardarCacheEntregas(this.entregas);
-    });
+    this.http
+      .get<any>(`${environment.apiUrl}/sedes/?id_institucion=${idInst}`)
+      .pipe(
+        timeout(6000),
+        catchError(() => of([])),
+      )
+      .subscribe((res) => {
+        const lista = Array.isArray(res) ? res : Array.isArray(res?.results) ? res.results : [];
+        this.idsSedesPropias = new Set<number>(
+          lista.map((s: any) => Number(s.id_sede ?? s.id)).filter((id: number) => !isNaN(id)),
+        );
+        this.tieneSedes = this.idsSedesPropias.size > 0;
+        // Re-filtra desde la lista completa, no desde la ya filtrada
+        this.aplicarFiltroInstitucion();
+        this.expandirGruposIniciales();
+      });
   }
 
   cargarHistorial(): void {
@@ -128,21 +169,23 @@ export class HistorialEntregas implements OnInit {
     this.errorMensaje = '';
     this.entregasService.cargar().subscribe({
       next: (entregas) => {
-        const unificadas = this.combinarConEntregasLocales(entregas);
-        this.entregas = this.filtrarPorInstitucionUsuario(unificadas);
-        this.guardarCacheEntregas(this.entregas);
+        this.entregasOrigen = this.combinarConEntregasLocales(entregas);
+        this.aplicarFiltroInstitucion();
+        this.guardarCacheEntregas(this.entregasOrigen);
         this.cargando = false;
+        this.expandirGruposIniciales();
       },
       error: (error) => {
         console.error('Error al consultar historial de entregas:', error);
-        const unificadas = this.combinarConEntregasLocales(this.entregas.length ? this.entregas : []);
-        this.entregas = this.filtrarPorInstitucionUsuario(unificadas);
+        this.entregasOrigen = this.combinarConEntregasLocales(this.entregasOrigen);
+        this.aplicarFiltroInstitucion();
         this.cargando = false;
-        this.errorMensaje = error?.status === 401
-          ? 'La sesión expiró o no es válida. Inicia sesión nuevamente para consultar el historial.'
-          : error?.status === 403
-            ? 'Tu usuario no tiene permiso para consultar el historial.'
-            : '';
+        this.errorMensaje =
+          error?.status === 401
+            ? 'La sesión expiró o no es válida. Inicia sesión nuevamente para consultar el historial.'
+            : error?.status === 403
+              ? 'Tu usuario no tiene permiso para consultar el historial.'
+              : '';
         if (this.errorMensaje) {
           void this.alertas.error('No se pudo cargar el historial', this.errorMensaje);
         }
@@ -156,14 +199,13 @@ export class HistorialEntregas implements OnInit {
       if (raw) {
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          const combinadas = this.combinarConEntregasLocales(parsed);
-          return this.filtrarPorInstitucionUsuario(combinadas);
+          return this.combinarConEntregasLocales(parsed);
         }
       }
     } catch (e) {
       console.warn('Error leyendo caché de entregas:', e);
     }
-    return this.filtrarPorInstitucionUsuario(this.combinarConEntregasLocales([]));
+    return this.combinarConEntregasLocales([]);
   }
 
   private guardarCacheEntregas(lista: Entrega[]): void {
@@ -197,13 +239,18 @@ export class HistorialEntregas implements OnInit {
 
       // 2. Filtrar por nombre de institución si está especificado y no es genérico
       const entInstNombre = norm(entrega.institucionNombre);
-      if (miInstNombre && entInstNombre && entInstNombre !== 'institucion asignada' && entInstNombre !== 'institucion educativa') {
+      if (
+        miInstNombre &&
+        entInstNombre &&
+        entInstNombre !== 'institucion asignada' &&
+        entInstNombre !== 'institucion educativa'
+      ) {
         if (!entInstNombre.includes(miInstNombre) && !miInstNombre.includes(entInstNombre)) {
           return false;
         }
       }
 
-      // 3. Filtrar si en observaciones se menciona explícitamente OTRA institución (ej: "Institución: Liceo de Occidente")
+      // 3. Filtrar si en observaciones se menciona explícitamente OTRA institución
       const obs = norm(entrega.observaciones);
       if (obs.includes('institucion:') || obs.includes('institucion :')) {
         const match = obs.match(/institucion\s*:\s*([^|]+)/i);
@@ -215,14 +262,14 @@ export class HistorialEntregas implements OnInit {
         }
       }
 
-      // 4. Si la institución del administrador NO tiene sedes (ej: Institución Educativa La Normal):
-      // No debe mostrar ninguna entrega con sede asignada (idSede o sedeNombre)
+      // 4. Sedes
       if (!this.tieneSedes) {
+        // Institución sin sedes: no mostrar entregas con sede asignada
         if (entrega.idSede != null || (entrega.sedeNombre && entrega.sedeNombre.trim() !== '')) {
           return false;
         }
       } else if (this.idsSedesPropias.size > 0 && entrega.idSede != null) {
-        // Si maneja sedes, solo sedes que pertenezcan a esta institución
+        // Institución con sedes: solo las que le pertenecen
         if (!this.idsSedesPropias.has(Number(entrega.idSede))) {
           return false;
         }
@@ -232,14 +279,17 @@ export class HistorialEntregas implements OnInit {
     });
   }
 
+  // Combina servidor + locales. NO filtra por institución (eso lo hace aplicarFiltroInstitucion).
   private combinarConEntregasLocales(servidor: Entrega[]): Entrega[] {
     let recepciones: Record<string, any> = {};
     try {
       recepciones = JSON.parse(localStorage.getItem('sirae_recepciones_admin') || '{}');
-    } catch { recepciones = {}; }
+    } catch {
+      recepciones = {};
+    }
 
     // Sincronizar estado de recepciones para las del servidor
-    const servidorActualizado = servidor.map(e => {
+    const servidorActualizado = servidor.map((e) => {
       const idKey = e.id != null ? `id:${e.id}` : '';
       const compKey = `${(e.ingrediente || '').toLowerCase().trim()}|${e.fechaRecepcion}|${e.cantidad}`;
       const rec = (idKey && recepciones[idKey]) || recepciones[compKey];
@@ -250,7 +300,7 @@ export class HistorialEntregas implements OnInit {
           cantidadRecibida: rec.cantidad_recibida != null ? Number(rec.cantidad_recibida) : e.cantidadRecibida,
           cantidadRechazada: rec.cantidad_rechazada != null ? Number(rec.cantidad_rechazada) : e.cantidadRechazada,
           motivoRechazo: rec.motivo_rechazo || e.motivoRechazo,
-          usuarioReceptorNombre: rec.usuario_receptor_nombre || e.usuarioReceptorNombre
+          usuarioReceptorNombre: rec.usuario_receptor_nombre || e.usuarioReceptorNombre,
         };
       }
       return e;
@@ -260,44 +310,55 @@ export class HistorialEntregas implements OnInit {
     try {
       locales = JSON.parse(localStorage.getItem('sirae_entregas_locales') || '[]');
       if (!Array.isArray(locales)) locales = [];
-    } catch { locales = []; }
+    } catch {
+      locales = [];
+    }
 
-    const idSet = new Set(servidorActualizado.map(e => e.id).filter(id => id != null));
-    const clavesSet = new Set(servidorActualizado.map(e => `${(e.ingrediente || '').toLowerCase().trim()}|${e.fechaRecepcion}|${e.cantidad}`));
+    const idSet = new Set(servidorActualizado.map((e) => e.id).filter((id) => id != null));
+    const clavesSet = new Set(
+      servidorActualizado.map((e) => `${(e.ingrediente || '').toLowerCase().trim()}|${e.fechaRecepcion}|${e.cantidad}`),
+    );
 
-    const localesFiltradas: Entrega[] = locales.filter(l => {
-      if (l.id != null && idSet.has(l.id)) return false;
-      const k = `${(l.ingrediente || '').toLowerCase().trim()}|${l.fechaRecepcion}|${l.cantidad}`;
-      return !clavesSet.has(k);
-    }).map(l => {
-      const idKey = l.id != null ? `id:${l.id}` : '';
-      const compKey = `${(l.ingrediente || '').toLowerCase().trim()}|${l.fechaRecepcion}|${l.cantidad}`;
-      const rec = (idKey && recepciones[idKey]) || recepciones[compKey];
-      return {
-        id: l.id,
-        idIngrediente: l.idIngrediente,
-        idTipoMercado: l.idTipoMercado,
-        idInstitucion: l.idInstitucion,
-        institucionNombre: l.institucionNombre || l.destino || (this.esAdministrador ? this.institucionNombreUsuario : 'Institución asignada'),
-        idSede: l.idSede,
-        sedeNombre: l.sedeNombre,
-        ingrediente: l.ingrediente,
-        tipoMercado: l.tipoMercado || 'Perecederos',
-        frecuencia: l.frecuencia || 'Semanal',
-        cantidad: l.cantidad,
-        unidad: l.unidad || 'Kg',
-        fechaRecepcion: l.fechaRecepcion,
-        fechaVencimiento: l.fechaVencimiento || l.fechaRecepcion,
-        estado: (rec?.estado || l.estado || 'EN_TRANSITO').toUpperCase(),
-        cantidadRecibida: rec?.cantidad_recibida != null ? Number(rec.cantidad_recibida) : (l.cantidadRecibida ?? null),
-        cantidadRechazada: rec?.cantidad_rechazada != null ? Number(rec.cantidad_rechazada) : (l.cantidadRechazada ?? null),
-        motivoRechazo: rec?.motivo_rechazo || l.motivoRechazo || '',
-        usuarioReceptorNombre: rec?.usuario_receptor_nombre || l.usuarioReceptorNombre || '',
-        observaciones: l.observaciones || (l.responsable ? `Responsable: ${l.responsable}` : '')
-      };
-    });
+    const localesFiltradas: Entrega[] = locales
+      .filter((l) => {
+        if (l.id != null && idSet.has(l.id)) return false;
+        const k = `${(l.ingrediente || '').toLowerCase().trim()}|${l.fechaRecepcion}|${l.cantidad}`;
+        return !clavesSet.has(k);
+      })
+      .map((l) => {
+        const idKey = l.id != null ? `id:${l.id}` : '';
+        const compKey = `${(l.ingrediente || '').toLowerCase().trim()}|${l.fechaRecepcion}|${l.cantidad}`;
+        const rec = (idKey && recepciones[idKey]) || recepciones[compKey];
+        return {
+          id: l.id,
+          idIngrediente: l.idIngrediente,
+          idTipoMercado: l.idTipoMercado,
+          idInstitucion: l.idInstitucion,
+          institucionNombre:
+            l.institucionNombre ||
+            l.destino ||
+            (this.esAdministrador ? this.institucionNombreUsuario : 'Institución asignada'),
+          idSede: l.idSede,
+          sedeNombre: l.sedeNombre,
+          ingrediente: l.ingrediente,
+          tipoMercado: l.tipoMercado || 'Perecederos',
+          frecuencia: l.frecuencia || 'Semanal',
+          cantidad: l.cantidad,
+          unidad: l.unidad || 'Kg',
+          fechaRecepcion: l.fechaRecepcion,
+          fechaVencimiento: l.fechaVencimiento || l.fechaRecepcion,
+          estado: (rec?.estado || l.estado || 'EN_TRANSITO').toUpperCase(),
+          cantidadRecibida:
+            rec?.cantidad_recibida != null ? Number(rec.cantidad_recibida) : (l.cantidadRecibida ?? null),
+          cantidadRechazada:
+            rec?.cantidad_rechazada != null ? Number(rec.cantidad_rechazada) : (l.cantidadRechazada ?? null),
+          motivoRechazo: rec?.motivo_rechazo || l.motivoRechazo || '',
+          usuarioReceptorNombre: rec?.usuario_receptor_nombre || l.usuarioReceptorNombre || '',
+          observaciones: l.observaciones || (l.responsable ? `Responsable: ${l.responsable}` : ''),
+        };
+      });
 
-    return this.filtrarPorInstitucionUsuario([...localesFiltradas, ...servidorActualizado]);
+    return [...localesFiltradas, ...servidorActualizado];
   }
 
   // SP-249: Exportar historial de entregas a Excel
@@ -315,9 +376,13 @@ export class HistorialEntregas implements OnInit {
       error: (error) => {
         console.error('Error al exportar Excel:', error);
         void this.alertas.error('No se pudo exportar', 'Ocurrió un error al generar el archivo Excel.');
-      }
+      },
     });
   }
+
+  // =========================================================================
+  // CRUD (SUPER ADMIN)
+  // =========================================================================
 
   toggleCrud(): void {
     this.crudAbierto = !this.crudAbierto;
@@ -387,9 +452,19 @@ export class HistorialEntregas implements OnInit {
   }
 
   guardarDesdeCrud(): void {
-    const { idIngrediente, idTipoMercado, frecuencia, cantidad, unidad, fechaRecepcion, fechaVencimiento } = this.crudForm;
-    if (!idIngrediente || !idTipoMercado || !frecuencia || cantidad == null || cantidad <= 0
-      || !unidad || !fechaRecepcion || !fechaVencimiento) {
+    const { idIngrediente, idTipoMercado, frecuencia, cantidad, unidad, fechaRecepcion } = this.crudForm;
+    // El formulario HTML no tiene campo de vencimiento: por defecto = fecha de entrega
+    const fechaVencimiento = this.crudForm.fechaVencimiento || fechaRecepcion;
+
+    if (
+      !idIngrediente ||
+      !idTipoMercado ||
+      !frecuencia ||
+      cantidad == null ||
+      cantidad <= 0 ||
+      !unidad ||
+      !fechaRecepcion
+    ) {
       void this.alertas.warning('Revisa el formulario', 'Completa todos los campos obligatorios con valores válidos.');
       return;
     }
@@ -443,92 +518,108 @@ export class HistorialEntregas implements OnInit {
       void this.alertas.error('No se puede eliminar', 'La entrega no tiene un identificador válido.');
       return;
     }
-    this.alertas.confirm(
-      '¿Eliminar esta entrega?',
-      `Se eliminará el registro de ${entrega.ingrediente}. Esta acción no se puede deshacer.`,
-      'Sí, eliminar',
-    ).then(result => {
-      if (!result.isConfirmed) return;
+    this.alertas
+      .confirm(
+        '¿Eliminar esta entrega?',
+        `Se eliminará el registro de ${entrega.ingrediente}. Esta acción no se puede deshacer.`,
+        'Sí, eliminar',
+      )
+      .then((result) => {
+        if (!result.isConfirmed) return;
 
-      this.entregasService.eliminar(entrega.id!).subscribe({
-        next: () => {
-          void this.alertas.success('Entrega eliminada', 'El registro se eliminó correctamente.');
-          this.cargarHistorial();
-        },
-        error: (error) => {
-          console.error('Error al eliminar entrega:', error);
-          void this.alertas.error(
-            'No se pudo eliminar la entrega',
-            error.status === 401
-              ? 'La sesión expiró. Inicia sesión nuevamente.'
-              : error.status === 403
-                ? 'Tu usuario no tiene permiso para eliminar entregas.'
-                : 'Intenta nuevamente más tarde.',
-          );
-        },
+        this.entregasService.eliminar(entrega.id!).subscribe({
+          next: () => {
+            void this.alertas.success('Entrega eliminada', 'El registro se eliminó correctamente.');
+            this.cargarHistorial();
+          },
+          error: (error) => {
+            console.error('Error al eliminar entrega:', error);
+            void this.alertas.error(
+              'No se pudo eliminar la entrega',
+              error.status === 401
+                ? 'La sesión expiró. Inicia sesión nuevamente.'
+                : error.status === 403
+                  ? 'Tu usuario no tiene permiso para eliminar entregas.'
+                  : 'Intenta nuevamente más tarde.',
+            );
+          },
+        });
       });
-    });
   }
+
+  // =========================================================================
+  // FILTROS Y AGRUPACIÓN (memoizados)
+  // =========================================================================
 
   get entregasFiltradas(): Entrega[] {
     const texto = this.filtroTexto.trim().toLocaleLowerCase();
-    const filtradas = this.entregas.filter((entrega) => {
-      const st = (entrega.estado || 'EN_TRANSITO').toUpperCase();
+    const c = this.cacheFiltradas;
+    if (c && c.src === this.entregas && c.estado === this.filtroEstado && c.texto === texto) {
+      return c.res;
+    }
 
-      if (this.filtroEstado === 'POR_RECIBIR' && !(st === 'EN_TRANSITO' || st === 'PENDIENTE' || st === 'EN_PROCESO')) {
-        return false;
-      }
-      if (this.filtroEstado === 'RECIBIDA' && st !== 'RECIBIDA') {
-        return false;
-      }
-      if (this.filtroEstado === 'CON_NOVEDAD' && !(st === 'CON_NOVEDAD' || st === 'RECHAZADA')) {
-        return false;
-      }
+    const res = this.entregas
+      .filter((entrega) => {
+        const st = (entrega.estado || 'EN_TRANSITO').toUpperCase();
 
-      if (!texto) return true;
-      return [
-        entrega.ingrediente,
-        entrega.tipoMercado,
-        entrega.frecuencia,
-        entrega.unidad,
-        entrega.institucionNombre,
-        entrega.sedeNombre,
-        entrega.observaciones,
-        this.estadoEntrega(entrega),
-      ].some(valor => (valor || '').toLocaleLowerCase().includes(texto));
-    });
+        if (
+          this.filtroEstado === 'POR_RECIBIR' &&
+          !(st === 'EN_TRANSITO' || st === 'PENDIENTE' || st === 'EN_PROCESO')
+        ) {
+          return false;
+        }
+        if (this.filtroEstado === 'RECIBIDA' && st !== 'RECIBIDA') return false;
+        if (this.filtroEstado === 'CON_NOVEDAD' && !(st === 'CON_NOVEDAD' || st === 'RECHAZADA')) return false;
 
-    return filtradas.sort((a, b) => {
-      const fA = a.fechaRecepcion || '';
-      const fB = b.fechaRecepcion || '';
-      const comp = fB.localeCompare(fA);
-      if (comp !== 0) return comp;
-      return (Number(b.id) || 0) - (Number(a.id) || 0);
-    });
+        if (!texto) return true;
+        return [
+          entrega.ingrediente,
+          entrega.tipoMercado,
+          entrega.frecuencia,
+          entrega.unidad,
+          entrega.institucionNombre,
+          entrega.sedeNombre,
+          entrega.observaciones,
+          this.estadoEntrega(entrega),
+        ].some((valor) => (valor || '').toLocaleLowerCase().includes(texto));
+      })
+      .sort((a, b) => {
+        const comp = (b.fechaRecepcion || '').localeCompare(a.fechaRecepcion || '');
+        return comp !== 0 ? comp : (Number(b.id) || 0) - (Number(a.id) || 0);
+      });
+
+    this.cacheFiltradas = { src: this.entregas, estado: this.filtroEstado, texto, res };
+    return res;
   }
 
   get gruposPorFecha(): GrupoEntregasDia[] {
-    const grupos = new Map<string, Entrega[]>();
-    for (const entrega of this.entregasFiltradas) {
-      const fecha = entrega.fechaRecepcion?.slice(0, 10) || 'sin-fecha';
-      const entregasDelDia = grupos.get(fecha) || [];
-      entregasDelDia.push(entrega);
-      grupos.set(fecha, entregasDelDia);
+    const filtradas = this.entregasFiltradas;
+    if (this.cacheGrupos && this.cacheGrupos.src === filtradas) {
+      return this.cacheGrupos.res;
     }
 
-    return Array.from(grupos, ([fecha, entregas]) => ({
+    const mapa = new Map<string, Entrega[]>();
+    for (const entrega of filtradas) {
+      const fecha = entrega.fechaRecepcion?.slice(0, 10) || 'sin-fecha';
+      const lista = mapa.get(fecha) ?? [];
+      lista.push(entrega);
+      mapa.set(fecha, lista);
+    }
+
+    const esPendiente = (e: Entrega) =>
+      ['EN_TRANSITO', 'PENDIENTE', 'EN_PROCESO'].includes((e.estado || 'EN_TRANSITO').toUpperCase());
+    const esNovedad = (e: Entrega) => ['CON_NOVEDAD', 'RECHAZADA'].includes((e.estado || '').toUpperCase());
+
+    const res: GrupoEntregasDia[] = Array.from(mapa, ([fecha, entregas]) => ({
       fecha,
       entregas,
-      pendientes: entregas.filter(entrega => {
-        const estado = (entrega.estado || 'EN_TRANSITO').toUpperCase();
-        return estado === 'EN_TRANSITO' || estado === 'PENDIENTE' || estado === 'EN_PROCESO';
-      }).length,
-      recibidas: entregas.filter(entrega => (entrega.estado || '').toUpperCase() === 'RECIBIDA').length,
-      novedades: entregas.filter(entrega => {
-        const estado = (entrega.estado || '').toUpperCase();
-        return estado === 'CON_NOVEDAD' || estado === 'RECHAZADA';
-      }).length,
+      pendientes: entregas.filter(esPendiente).length,
+      recibidas: entregas.filter((e) => (e.estado || '').toUpperCase() === 'RECIBIDA').length,
+      novedades: entregas.filter(esNovedad).length,
     }));
+
+    this.cacheGrupos = { src: filtradas, res };
+    return res;
   }
 
   alternarGrupoFecha(fecha: string): void {
@@ -546,18 +637,31 @@ export class HistorialEntregas implements OnInit {
   }
 
   expandirGrupos(): void {
-    this.gruposExpandidos = new Set(this.gruposPorFecha.map(grupo => grupo.fecha));
+    this.gruposExpandidos = new Set(this.gruposPorFecha.map((grupo) => grupo.fecha));
   }
 
   contraerGrupos(): void {
     this.gruposExpandidos = new Set();
   }
 
+  // En la primera carga abre los días con entregas por recibir (o el más reciente)
+  private expandirGruposIniciales(): void {
+    if (this.gruposInicializados || this.entregas.length === 0) return;
+    this.gruposInicializados = true;
+    const grupos = this.gruposPorFecha;
+    const abiertos = grupos.filter((g) => g.pendientes > 0).map((g) => g.fecha);
+    this.gruposExpandidos = new Set(abiertos.length ? abiertos : grupos.slice(0, 1).map((g) => g.fecha));
+  }
+
   formatoFecha(fecha: string | null | undefined): string {
     const [anio, mes, dia] = (fecha || '').slice(0, 10).split('-').map(Number);
     if (!anio || !mes || !dia) return 'Fecha no disponible';
     const fechaValidada = new Date(anio, mes - 1, dia);
-    if (fechaValidada.getFullYear() !== anio || fechaValidada.getMonth() !== mes - 1 || fechaValidada.getDate() !== dia) {
+    if (
+      fechaValidada.getFullYear() !== anio ||
+      fechaValidada.getMonth() !== mes - 1 ||
+      fechaValidada.getDate() !== dia
+    ) {
       return 'Fecha no disponible';
     }
     return `${String(dia).padStart(2, '0')}/${String(mes).padStart(2, '0')}/${anio}`;
@@ -566,16 +670,16 @@ export class HistorialEntregas implements OnInit {
   contarEstado(tipo: string): number {
     if (tipo === 'TODAS') return this.entregas.length;
     if (tipo === 'POR_RECIBIR') {
-      return this.entregas.filter(e => {
+      return this.entregas.filter((e) => {
         const st = (e.estado || 'EN_TRANSITO').toUpperCase();
         return st === 'EN_TRANSITO' || st === 'PENDIENTE' || st === 'EN_PROCESO';
       }).length;
     }
     if (tipo === 'RECIBIDA') {
-      return this.entregas.filter(e => (e.estado || '').toUpperCase() === 'RECIBIDA').length;
+      return this.entregas.filter((e) => (e.estado || '').toUpperCase() === 'RECIBIDA').length;
     }
     if (tipo === 'CON_NOVEDAD') {
-      return this.entregas.filter(e => {
+      return this.entregas.filter((e) => {
         const st = (e.estado || '').toUpperCase();
         return st === 'CON_NOVEDAD' || st === 'RECHAZADA';
       }).length;
@@ -583,16 +687,17 @@ export class HistorialEntregas implements OnInit {
     return 0;
   }
 
-  cambiarFiltroEstado(nuevo: 'TODAS' | 'POR_RECIBIR' | 'RECIBIDA' | 'CON_NOVEDAD'): void {
+  cambiarFiltroEstado(nuevo: FiltroEstado): void {
     this.filtroEstado = nuevo;
+    this.expandirGrupos(); // al filtrar por estado se ven directamente los resultados
   }
 
   get vencidas(): number {
-    return this.entregas.filter(entrega => this.estado(entrega) === 'Vencido').length;
+    return this.entregas.filter((entrega) => this.estado(entrega) === 'Vencido').length;
   }
 
   get porVencer(): number {
-    return this.entregas.filter(entrega => this.estado(entrega) === 'Próximo a vencer').length;
+    return this.entregas.filter((entrega) => this.estado(entrega) === 'Próximo a vencer').length;
   }
 
   estado(entrega: Entrega): string {
@@ -659,7 +764,9 @@ export class HistorialEntregas implements OnInit {
       const key = 'sirae_recepciones_admin';
       const recepciones = JSON.parse(localStorage.getItem(key) || '{}');
       const receptor = this.authService.obtenerUsuario();
-      const nombreReceptor = receptor ? `${receptor.nombre || ''} ${receptor.apellido || ''}`.trim() || receptor.correo : 'Administrador';
+      const nombreReceptor = receptor
+        ? `${receptor.nombre || ''} ${receptor.apellido || ''}`.trim() || receptor.correo
+        : 'Administrador';
 
       const datos = {
         id: entrega.id,
@@ -668,7 +775,7 @@ export class HistorialEntregas implements OnInit {
         cantidad_rechazada: rech,
         motivo_rechazo: motivo,
         usuario_receptor_nombre: nombreReceptor,
-        fecha: new Date().toISOString()
+        fecha: new Date().toISOString(),
       };
 
       if (entrega.id != null) {
@@ -706,54 +813,59 @@ export class HistorialEntregas implements OnInit {
     const entregaId: number = entregaRef.id;
     const rec = Number(this.formRecepcion.cantidadRecibida);
     const rech = Number(this.formRecepcion.cantidadRechazada);
+    // Se guarda antes del subscribe: el modal puede cerrarse antes de que responda el servidor
+    const motivo = this.formRecepcion.motivoRechazo.trim();
 
     if (isNaN(rec) || rec < 0 || isNaN(rech) || rech < 0) {
       void this.alertas.warning('Cantidades inválidas', 'Las cantidades deben ser números positivos.');
       return;
     }
 
-    if (rech > 0 && !this.formRecepcion.motivoRechazo.trim()) {
+    if (rech > 0 && !motivo) {
       void this.alertas.warning(
         'Motivo requerido',
-        'Has reportado productos dañados o rechazados. Por favor especifica el motivo (ej: tomates magullados o empaque averiado).'
+        'Has reportado productos dañados o rechazados. Por favor especifica el motivo (ej: tomates magullados o empaque averiado).',
       );
       return;
     }
 
-    const estado = rech > 0 && rec > 0 ? 'CON_NOVEDAD' : (rech > 0 ? 'RECHAZADA' : 'RECIBIDA');
+    const estado = rech > 0 && rec > 0 ? 'CON_NOVEDAD' : rech > 0 ? 'RECHAZADA' : 'RECIBIDA';
     this.procesandoRecepcion = true;
 
-    this.entregasService.confirmarRecepcion(entregaId, {
-      cantidad_recibida: rec,
-      cantidad_rechazada: rech,
-      motivo_rechazo: this.formRecepcion.motivoRechazo.trim(),
-    }).subscribe({
-      next: (res) => {
-        this.procesandoRecepcion = false;
-        this.guardarRecepcionLocal(entregaRef, rec, rech, this.formRecepcion.motivoRechazo.trim(), estado);
-        this.cerrarModalRecepcion();
-        const unidad = entregaRef?.unidad || 'unidades';
-        const msj = rech > 0
-          ? (rec === 0
-              ? `Se reportaron ${rech} ${unidad} rechazadas en control de calidad.`
-              : `Se recibieron ${rec} ${unidad} en buen estado y se reportaron ${rech} ${unidad} con novedad/avería. El inventario ha sido acreditado.`)
-          : `Se recibieron exitosamente los ${rec} ${unidad}. El inventario ha sido acreditado.`;
-        void this.alertas.success('Recepción confirmada', msj);
-        this.cargarHistorial();
-      },
-      error: (err) => {
-        console.error('Error al confirmar recepción de entrega:', err);
-        this.procesandoRecepcion = false;
-        void this.alertas.error(
-          'No se pudo confirmar la entrega',
-          err?.status === 401
-            ? 'La sesión expiró. Inicia sesión nuevamente.'
-            : err?.status === 403
-              ? 'Tu usuario no tiene permiso para registrar la recepción.'
-              : 'El servidor no registró la recepción. Revisa la conexión e inténtalo nuevamente.',
-        );
-      },
-    });
+    this.entregasService
+      .confirmarRecepcion(entregaId, {
+        cantidad_recibida: rec,
+        cantidad_rechazada: rech,
+        motivo_rechazo: motivo,
+      })
+      .subscribe({
+        next: () => {
+          this.procesandoRecepcion = false;
+          this.guardarRecepcionLocal(entregaRef, rec, rech, motivo, estado);
+          this.cerrarModalRecepcion();
+          const unidad = entregaRef.unidad || 'unidades';
+          const msj =
+            rech > 0
+              ? rec === 0
+                ? `Se reportaron ${rech} ${unidad} rechazadas en control de calidad.`
+                : `Se recibieron ${rec} ${unidad} en buen estado y se reportaron ${rech} ${unidad} con novedad/avería. El inventario ha sido acreditado.`
+              : `Se recibieron exitosamente los ${rec} ${unidad}. El inventario ha sido acreditado.`;
+          void this.alertas.success('Recepción confirmada', msj);
+          this.cargarHistorial();
+        },
+        error: (err) => {
+          console.error('Error al confirmar recepción de entrega:', err);
+          this.procesandoRecepcion = false;
+          void this.alertas.error(
+            'No se pudo confirmar la entrega',
+            err?.status === 401
+              ? 'La sesión expiró. Inicia sesión nuevamente.'
+              : err?.status === 403
+                ? 'Tu usuario no tiene permiso para registrar la recepción.'
+                : 'El servidor no registró la recepción. Revisa la conexión e inténtalo nuevamente.',
+          );
+        },
+      });
   }
 
   verDetalleNovedad(entrega: Entrega): void {
@@ -770,9 +882,12 @@ export class HistorialEntregas implements OnInit {
   estadoEntrega(entrega: Entrega): string {
     const e = (entrega.estado || 'EN_TRANSITO').toUpperCase();
     switch (e) {
-      case 'RECIBIDA': return 'Recibida OK';
-      case 'CON_NOVEDAD': return 'Con Novedad';
-      case 'RECHAZADA': return 'Rechazada';
+      case 'RECIBIDA':
+        return 'Recibida OK';
+      case 'CON_NOVEDAD':
+        return 'Con Novedad';
+      case 'RECHAZADA':
+        return 'Rechazada';
       case 'EN_TRANSITO':
       default:
         return 'En tránsito';
@@ -797,9 +912,12 @@ export class HistorialEntregas implements OnInit {
   iconoEstadoEntrega(entrega: Entrega): string {
     const e = (entrega.estado || 'EN_TRANSITO').toUpperCase();
     switch (e) {
-      case 'RECIBIDA': return 'check_circle';
-      case 'CON_NOVEDAD': return 'warning';
-      case 'RECHAZADA': return 'cancel';
+      case 'RECIBIDA':
+        return 'check_circle';
+      case 'CON_NOVEDAD':
+        return 'warning';
+      case 'RECHAZADA':
+        return 'cancel';
       case 'EN_TRANSITO':
       default:
         return 'local_shipping';

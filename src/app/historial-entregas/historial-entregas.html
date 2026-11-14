@@ -1,16 +1,739 @@
+<style>
+  /* =========================================================
+     HISTORIAL DE ENTREGAS — CSS COMPLETO (autocontenido)
+     ========================================================= */
+
+  @keyframes he-spin { to { transform: rotate(360deg); } }
+  .animate-spin { animation: he-spin 1s linear infinite; }
+
+  /* ---------- Layout general ---------- */
+  .he-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    width: 100%;
+    font-family: inherit;
+    color: #0f172a;
+  }
+
+  /* ---------- Cabecera ---------- */
+  .he-page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .he-page-header-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+  }
+
+  .he-page-icon-badge {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: #fef3c7;
+    border: 1px solid #fde68a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .he-page-title-box { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+
+  .he-title-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .he-page-title {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.2;
+  }
+
+  .he-institution-pill {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #92400e;
+    background: #fef3c7;
+    border: 1px solid #fde68a;
+    padding: 3px 10px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  .he-page-subtitle {
+    margin: 0;
+    font-size: 13px;
+    color: #64748b;
+  }
+
+  .he-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  /* ---------- Botones base ---------- */
+  .he-btn-refresh,
+  .he-btn-cancel,
+  .he-btn-confirm {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 36px;
+    padding: 0 16px;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background .15s ease, border-color .15s ease, opacity .15s ease;
+  }
+
+  .he-btn-refresh,
+  .he-btn-cancel {
+    background: #ffffff;
+    color: #334155;
+    border: 1px solid #e2e8f0;
+  }
+
+  .he-btn-refresh:hover:not(:disabled),
+  .he-btn-cancel:hover:not(:disabled) {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+  }
+
+  .he-btn-confirm {
+    background: #fac94b;
+    color: #0f172a;
+    border: 1px solid #f2b925;
+  }
+
+  .he-btn-confirm:hover:not(:disabled) { background: #f7bf2e; }
+
+  .he-btn-refresh:disabled,
+  .he-btn-cancel:disabled,
+  .he-btn-confirm:disabled {
+    opacity: .6;
+    cursor: not-allowed;
+  }
+
+  /* ---------- Formularios ---------- */
+  .he-form-group { display: flex; flex-direction: column; gap: 5px; }
+
+  .he-form-label {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #475569;
+  }
+
+  .he-form-input,
+  .he-form-textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0 12px;
+    height: 38px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: #ffffff;
+    font-family: inherit;
+    font-size: 13px;
+    color: #0f172a;
+    outline: none;
+    transition: border-color .15s ease, box-shadow .15s ease;
+  }
+
+  .he-form-textarea {
+    height: auto;
+    padding: 10px 12px;
+    resize: vertical;
+  }
+
+  .he-form-input:focus,
+  .he-form-textarea:focus {
+    border-color: #f59e0b;
+    box-shadow: 0 0 0 3px rgba(250, 201, 75, .3);
+  }
+
+  .he-form-input[readonly] { background: #f8fafc; color: #64748b; }
+
+  .he-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  /* ---------- Card principal ---------- */
+  .he-table-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, .04);
+  }
+
+  /* ---------- Filtros ---------- */
+  .he-filters-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .he-status-pills-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .he-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 34px;
+    padding: 0 14px;
+    border-radius: 999px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    color: #334155;
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background .15s ease, border-color .15s ease;
+  }
+
+  .he-status-pill:hover { background: #f8fafc; }
+
+  .he-pill-count {
+    min-width: 22px;
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: #f1f5f9;
+    color: #475569;
+    font-size: 11.5px;
+    font-weight: 800;
+    text-align: center;
+  }
+
+  .he-status-pill.active {
+    background: #fac94b;
+    border-color: #f2b925;
+    color: #0f172a;
+  }
+  .he-status-pill.active .he-pill-count { background: rgba(255, 255, 255, .6); color: #0f172a; }
+
+  .he-status-pill.por-recibir.active { background: #fef3c7; border-color: #fcd34d; color: #92400e; }
+  .he-status-pill.recibida.active    { background: #d1fae5; border-color: #6ee7b7; color: #047857; }
+  .he-status-pill.con-novedad.active { background: #fee2e2; border-color: #fca5a5; color: #b91c1c; }
+
+  /* ---------- Buscador ---------- */
+  .he-controls-right { display: flex; align-items: center; gap: 10px; }
+
+  .he-search-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 280px;
+    max-width: 100%;
+  }
+
+  .he-search-icon {
+    position: absolute;
+    left: 12px;
+    font-size: 18px;
+    color: #94a3b8;
+    pointer-events: none;
+  }
+
+  .he-search-input {
+    width: 100%;
+    box-sizing: border-box;
+    height: 38px;
+    padding: 0 34px 0 38px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: #ffffff;
+    font-family: inherit;
+    font-size: 13px;
+    color: #0f172a;
+    outline: none;
+  }
+
+  .he-search-input:focus {
+    border-color: #f59e0b;
+    box-shadow: 0 0 0 3px rgba(250, 201, 75, .3);
+  }
+
+  .he-search-clear {
+    position: absolute;
+    right: 8px;
+    width: 22px;
+    height: 22px;
+    border: none;
+    border-radius: 50%;
+    background: #f1f5f9;
+    color: #64748b;
+    font-size: 11px;
+    cursor: pointer;
+  }
+
+  .he-search-clear:hover { background: #e2e8f0; }
+
+  /* ---------- Controles de grupos ---------- */
+  .he-groups-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .he-groups-caption {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #64748b;
+  }
+
+  .he-groups-caption .material-symbols-outlined { font-size: 18px; color: #b45309; }
+
+  .he-groups-control-actions { display: flex; align-items: center; gap: 14px; }
+
+  .he-groups-control-actions button {
+    background: none;
+    border: none;
+    padding: 0;
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #92400e;
+    cursor: pointer;
+  }
+
+  .he-groups-control-actions button:hover { text-decoration: underline; }
+
+  /* ---------- Tabla (compacta) ---------- */
+  .he-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+  }
+
+  .he-data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+  }
+
+  .he-data-table thead th {
+    padding: 9px 14px;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: #64748b;
+    white-space: nowrap;
+  }
+
+  .he-data-table tbody td {
+    padding: 8px 14px;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+    color: #334155;
+  }
+
+  .he-data-table tbody tr:last-child td { border-bottom: none; }
+
+  .he-data-table tbody tr:not(.he-day-group-row):hover td { background: #fafafa; }
+
+  .he-primary-name { font-weight: 700; color: #0f172a; line-height: 1.25; }
+
+  .he-sub-name {
+    margin-top: 1px;
+    font-size: 11px;
+    color: #94a3b8;
+    max-width: 220px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Destino en una sola línea */
+  .he-td-destino {
+    max-width: 200px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 12px;
+  }
+
+  /* ---------- Estados vacíos ---------- */
+  .he-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 36px 16px;
+    font-size: 13px;
+    color: #64748b;
+  }
+
+  .he-empty-icon { font-size: 34px; color: #cbd5e1; }
+
+  /* ---------- Tipo de mercado ---------- */
+  .he-tag-market {
+    display: inline-block;
+    padding: 2px 9px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .he-tag-market.grano      { background: #fef3c7; color: #92400e; }
+  .he-tag-market.perecedero { background: #ecfdf5; color: #047857; }
+
+  /* ---------- Badges de estado ---------- */
+  .he-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 9px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .he-status-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+  .he-status-badge.transito { background: #fef3c7; color: #92400e; }
+  .he-status-badge.transito .he-status-dot { background: #d97706; }
+  .he-status-badge.recibida { background: #d1fae5; color: #047857; }
+  .he-status-badge.novedad  { background: #fee2e2; color: #b91c1c; }
+
+  /* ---------- Acciones por fila ---------- */
+  .he-delivery-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .he-btn-receive,
+  .he-btn-reject,
+  .he-btn-view-detail {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 26px;
+    padding: 0 10px;
+    border-radius: 7px;
+    background: #ffffff;
+    font-family: inherit;
+    font-size: 11.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background .15s ease;
+  }
+
+  .he-btn-receive { color: #047857; border: 1px solid #34d399; }
+  .he-btn-receive:hover { background: #ecfdf5; }
+
+  .he-btn-reject { color: #b91c1c; border: 1px solid #fca5a5; }
+  .he-btn-reject:hover { background: #fef2f2; }
+
+  .he-btn-view-detail { color: #92400e; border: 1px solid #fcd34d; }
+  .he-btn-view-detail:hover { background: #fffbeb; }
+
+  .he-text-accredited {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #047857;
+  }
+
+  /* =========================================================
+     CABECERA DE DÍA (desplegable)
+     ========================================================= */
+  .he-data-table .he-day-group-row > td {
+    padding: 0;
+    background: #ffffff;
+    border-bottom: 1px solid #f1f5f9;
+    border-left: 3px solid transparent;
+    transition: background .15s ease, border-color .15s ease;
+  }
+
+  .he-data-table .he-day-group-row:hover > td { background: #f8fafc; }
+
+  /* Día abierto: resaltado ámbar */
+  .he-data-table .he-day-group-row:has([aria-expanded="true"]) > td {
+    background: #fffbeb;
+    border-left-color: #f59e0b;
+    border-bottom-color: #fde68a;
+  }
+
+  .he-day-group-toggle {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    font-family: inherit;
+    flex-wrap: wrap;
+  }
+
+  .he-day-group-toggle:focus-visible {
+    outline: 2px solid #f59e0b;
+    outline-offset: -2px;
+  }
+
+  /* Chevron en círculo que rota al abrir */
+  .he-day-group-chevron {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #f1f5f9;
+    color: #64748b;
+    font-size: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: transform .2s ease, background .15s ease, color .15s ease;
+  }
+
+  .he-day-group-toggle[aria-expanded="true"] .he-day-group-chevron {
+    transform: rotate(180deg);
+    background: #fde68a;
+    color: #92400e;
+  }
+
+  .he-day-group-date {
+    font-size: 13px;
+    font-weight: 800;
+    color: #0f172a;
+  }
+
+  .he-day-group-count {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #64748b;
+    background: #f1f5f9;
+    padding: 2px 9px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  .he-day-group-toggle[aria-expanded="true"] .he-day-group-count {
+    background: #fde68a;
+    color: #92400e;
+  }
+
+  .he-day-group-pending,
+  .he-day-group-received,
+  .he-day-group-issues {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11.5px;
+    font-weight: 700;
+    padding: 2px 9px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  .he-day-group-pending  { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+  .he-day-group-received { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+  .he-day-group-issues   { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+
+  .he-day-group-pending .material-symbols-outlined,
+  .he-day-group-received .material-symbols-outlined,
+  .he-day-group-issues .material-symbols-outlined { font-size: 14px; }
+
+  /* Entregas del día: sangría con línea lateral para mostrar que pertenecen al grupo */
+  .he-data-table .he-group-item > td:first-child {
+    border-left: 3px solid #fde68a;
+    padding-left: 22px;
+  }
+
+  /* ---------- Modales ---------- */
+  .he-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: rgba(15, 23, 42, .45);
+  }
+
+  .he-modal-card {
+    width: 100%;
+    max-width: 520px;
+    max-height: 90vh;
+    overflow-y: auto;
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 20px 50px rgba(15, 23, 42, .25);
+  }
+
+  .he-modal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 18px 20px;
+    border-bottom: 1px solid #f1f5f9;
+  }
+
+  .he-modal-header-left { display: flex; align-items: center; gap: 12px; }
+
+  .he-modal-icon-badge {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #d1fae5;
+    border: 1px solid #6ee7b7;
+    color: #047857;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .he-modal-title { margin: 0; font-size: 15px; font-weight: 800; color: #0f172a; }
+  .he-modal-sub   { margin: 2px 0 0; font-size: 12px; color: #64748b; }
+
+  .he-modal-close {
+    width: 30px;
+    height: 30px;
+    border: none;
+    border-radius: 50%;
+    background: #f1f5f9;
+    color: #475569;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+
+  .he-modal-close:hover { background: #e2e8f0; }
+
+  .he-modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 18px 20px;
+  }
+
+  .he-info-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 14px;
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: 10px;
+  }
+
+  .he-info-label {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: #92400e;
+  }
+
+  .he-info-value { margin-top: 2px; font-size: 14px; font-weight: 800; color: #0f172a; }
+
+  .he-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 14px 20px;
+    border-top: 1px solid #f1f5f9;
+  }
+
+  /* ---------- Aviso guía (qué hacer) ---------- */
+  .he-hint-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+    padding: 14px 18px;
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-left: 4px solid #f59e0b;
+    border-radius: 12px;
+  }
+
+  .he-hint-text { display: flex; align-items: flex-start; gap: 10px; min-width: 0; }
+  .he-hint-text .material-symbols-outlined { font-size: 22px; color: #b45309; flex-shrink: 0; }
+  .he-hint-title { margin: 0; font-size: 13.5px; font-weight: 800; color: #92400e; }
+  .he-hint-desc  { margin: 2px 0 0; font-size: 12.5px; color: #78350f; line-height: 1.45; }
+
+  .he-hint-banner.info {
+    background: #f8fafc;
+    border-color: #e2e8f0;
+    border-left-color: #94a3b8;
+  }
+  .he-hint-banner.info .he-hint-title { color: #334155; }
+  .he-hint-banner.info .he-hint-desc  { color: #64748b; }
+  .he-hint-banner.info .he-hint-text .material-symbols-outlined { color: #64748b; }
+
+  @media (max-width: 720px) {
+    .he-form-grid { grid-template-columns: 1fr; }
+    .he-search-box { width: 100%; }
+  }
+</style>
+
 <div class="he-layout">
 
   <!-- =========================================================
-       CABECERA DE LA PÁGINA (ESTILO SUPER ADMINISTRADOR)
+       CABECERA DE LA PÁGINA
        ========================================================= -->
   <header class="he-page-header">
+
     <div class="he-page-header-left">
-      <!-- Ícono circular idéntico al de Banco de Datos y Facturas Compra -->
       <div class="he-page-icon-badge" aria-hidden="true">
         <span class="material-symbols-outlined" style="font-size: 24px; color: #b45309;">local_shipping</span>
       </div>
 
-      <!-- Título, píldora institucional y descripción -->
       <div class="he-page-title-box">
         <div class="he-title-row">
           <h1 class="he-page-title">Historial de Entregas</h1>
@@ -18,15 +741,28 @@
             {{ institucionNombreUsuario }}
           </span>
         </div>
-        <p class="he-page-subtitle">Inspecciona y confirma los alimentos despachados por el supervisor para el inventario escolar.</p>
+        <p class="he-page-subtitle">
+          Inspecciona y confirma los alimentos despachados por el supervisor para el inventario escolar.
+        </p>
       </div>
     </div>
 
-    <!-- Acciones de Cabecera: Solo botón Actualizar -->
     <div class="he-header-actions">
-      <button type="button" class="he-btn-refresh" (click)="cargarHistorial()" [disabled]="cargando" title="Actualizar entregas">
+      <button
+        type="button"
+        class="he-btn-refresh"
+        (click)="cargarHistorial()"
+        [disabled]="cargando"
+        title="Actualizar entregas"
+      >
         <span class="material-symbols-outlined" style="font-size: 18px;" [class.animate-spin]="cargando">refresh</span>
         <span>{{ cargando ? 'Actualizando...' : 'Actualizar' }}</span>
+      </button>
+
+      <!-- Exportar a Excel -->
+      <button type="button" class="he-btn-refresh" (click)="exportarExcel()" title="Exportar historial a Excel">
+        <span class="material-symbols-outlined" style="font-size: 18px;">download</span>
+        <span>Exportar</span>
       </button>
 
       <!-- Botón CRUD manual exclusivo para Super Administrador -->
@@ -35,41 +771,109 @@
         <span>{{ crudAbierto ? 'Cerrar' : 'Añadir entrega' }}</span>
       </button>
     </div>
+
   </header>
 
+
   <!-- =========================================================
-       FORMULARIO CRUD (Solo visible si Super Admin abre el panel)
+       AVISO GUÍA: QUÉ PUEDES HACER
        ========================================================= -->
-  <div *ngIf="crudAbierto && esSuperAdmin" style="background:#fffcf0; border:1px solid #f2ead0; border-radius:14px; padding:18px 22px; display:flex; flex-direction:column; gap:14px;">
+
+  <!-- Administrador / Super Admin con entregas pendientes -->
+  <div
+    *ngIf="puedeGestionarRecepcion && !cargando && contarEstado('POR_RECIBIR') > 0"
+    class="he-hint-banner"
+  >
+    <div class="he-hint-text">
+      <span class="material-symbols-outlined" aria-hidden="true">inventory_2</span>
+      <div>
+        <p class="he-hint-title">
+          Tienes {{ contarEstado('POR_RECIBIR') }}
+          {{ contarEstado('POR_RECIBIR') === 1 ? 'entrega pendiente' : 'entregas pendientes' }} por recibir
+        </p>
+        <p class="he-hint-desc">
+          Abre el día para ver las entregas, revisa el estado físico de los alimentos y pulsa
+          <strong>Recibir</strong> para acreditarlos al inventario, o <strong>Rechazar</strong> si llegaron en mal estado.
+        </p>
+      </div>
+    </div>
+    <button
+      *ngIf="filtroEstado !== 'POR_RECIBIR'"
+      type="button"
+      class="he-btn-confirm"
+      (click)="cambiarFiltroEstado('POR_RECIBIR')"
+    >
+      Ver pendientes
+    </button>
+  </div>
+
+  <!-- Sin pendientes, o usuario que solo consulta (supervisor) -->
+  <div
+    *ngIf="!cargando && (!puedeGestionarRecepcion || contarEstado('POR_RECIBIR') === 0)"
+    class="he-hint-banner info"
+  >
+    <div class="he-hint-text">
+      <span class="material-symbols-outlined" aria-hidden="true">info</span>
+      <div>
+        <p class="he-hint-title">
+          {{ puedeGestionarRecepcion ? 'No tienes entregas pendientes por recibir' : 'Consulta del historial de entregas' }}
+        </p>
+        <p class="he-hint-desc">
+          Usa las pestañas para filtrar por estado, el buscador para encontrar un alimento y haz clic en cada día
+          para ver sus entregas.
+        </p>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- =========================================================
+       FORMULARIO CRUD (solo Super Admin)
+       ========================================================= -->
+  <div
+    *ngIf="crudAbierto && esSuperAdmin"
+    style="background:#fffcf0; border:1px solid #f2ead0; border-radius:14px; padding:18px 22px; display:flex; flex-direction:column; gap:14px;"
+  >
+
     <div style="display:flex; justify-content:space-between; align-items:center;">
       <h2 id="crudFormTitle" style="margin:0; font-size:14px; font-weight:800; color:#0f172a;">
         {{ editandoId ? 'Editar entrega' : 'Crear nueva entrega' }}
       </h2>
-      <button *ngIf="editandoId" type="button" (click)="cancelarEdicion()" class="he-btn-cancel" style="height:30px; padding:0 12px; font-size:11.5px;">
+      <button
+        *ngIf="editandoId"
+        type="button"
+        class="he-btn-cancel"
+        style="height:30px; padding:0 12px; font-size:11.5px;"
+        (click)="cancelarEdicion()"
+      >
         Cancelar edición
       </button>
     </div>
 
-    <form (ngSubmit)="guardarDesdeCrud()" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:12px;">
+    <form
+      (ngSubmit)="guardarDesdeCrud()"
+      style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:12px;"
+    >
+
       <div class="he-form-group">
-        <label class="he-form-label">Ingrediente *</label>
-        <select [(ngModel)]="crudForm.idIngrediente" name="crudIngrediente" required class="he-form-input">
+        <label class="he-form-label" for="crud-ingrediente">Ingrediente *</label>
+        <select [(ngModel)]="crudForm.idIngrediente" id="crud-ingrediente" name="crudIngrediente" required class="he-form-input">
           <option [ngValue]="null">Seleccionar...</option>
           <option *ngFor="let ing of ingredientes" [ngValue]="ing.id">{{ ing.nombre }}</option>
         </select>
       </div>
 
       <div class="he-form-group">
-        <label class="he-form-label">Tipo de Mercado *</label>
-        <select [(ngModel)]="crudForm.idTipoMercado" name="crudTipoMercado" required class="he-form-input">
+        <label class="he-form-label" for="crud-tipo-mercado">Tipo de Mercado *</label>
+        <select [(ngModel)]="crudForm.idTipoMercado" id="crud-tipo-mercado" name="crudTipoMercado" required class="he-form-input">
           <option [ngValue]="null">Seleccionar...</option>
           <option *ngFor="let tm of tiposMercado" [ngValue]="tm.id">{{ tm.nombre }}</option>
         </select>
       </div>
 
       <div class="he-form-group">
-        <label class="he-form-label">Frecuencia *</label>
-        <select [(ngModel)]="crudForm.frecuencia" name="crudFrecuencia" required class="he-form-input">
+        <label class="he-form-label" for="crud-frecuencia">Frecuencia *</label>
+        <select [(ngModel)]="crudForm.frecuencia" id="crud-frecuencia" name="crudFrecuencia" required class="he-form-input">
           <option value="Semanal">Semanal</option>
           <option value="Quincenal">Quincenal</option>
           <option value="Mensual">Mensual</option>
@@ -77,18 +881,61 @@
       </div>
 
       <div class="he-form-group">
-        <label class="he-form-label">Cantidad *</label>
-        <input [(ngModel)]="crudForm.cantidad" name="crudCantidad" type="number" step="0.01" min="0.01" required class="he-form-input" placeholder="0.00" />
+        <label class="he-form-label" for="crud-cantidad">Cantidad *</label>
+        <input
+          [(ngModel)]="crudForm.cantidad"
+          id="crud-cantidad" name="crudCantidad"
+          type="number"
+          step="0.01"
+          min="0.01"
+          required
+          class="he-form-input"
+          placeholder="0.00"
+        />
       </div>
 
       <div class="he-form-group">
-        <label class="he-form-label">Unidad *</label>
-        <input [(ngModel)]="crudForm.unidad" name="crudUnidad" type="text" required class="he-form-input" placeholder="Kg" />
+        <label class="he-form-label" for="crud-unidad">Unidad *</label>
+        <input
+          [(ngModel)]="crudForm.unidad"
+          id="crud-unidad" name="crudUnidad"
+          type="text"
+          required
+          class="he-form-input"
+          placeholder="Kg"
+        />
       </div>
 
       <div class="he-form-group">
-        <label class="he-form-label">Fecha Entrega *</label>
-        <input [(ngModel)]="crudForm.fechaRecepcion" name="crudFecha" type="date" required class="he-form-input" />
+        <label class="he-form-label" for="crud-fecha">Fecha Entrega *</label>
+        <input
+          [(ngModel)]="crudForm.fechaRecepcion"
+          id="crud-fecha" name="crudFecha"
+          type="date"
+          required
+          class="he-form-input"
+        />
+      </div>
+
+      <div class="he-form-group">
+        <label class="he-form-label" for="crud-fecha-venc">Fecha Vencimiento</label>
+        <input
+          [(ngModel)]="crudForm.fechaVencimiento"
+          id="crud-fecha-venc" name="crudFechaVencimiento"
+          type="date"
+          class="he-form-input"
+        />
+      </div>
+
+      <div class="he-form-group" style="grid-column: 1 / -1;">
+        <label class="he-form-label" for="crud-observaciones">Observaciones</label>
+        <input
+          [(ngModel)]="crudForm.observaciones"
+          id="crud-observaciones" name="crudObservaciones"
+          type="text"
+          class="he-form-input"
+          placeholder="Opcional"
+        />
       </div>
 
       <div class="he-form-group" style="grid-column: 1 / -1; display:flex; justify-content:flex-end;">
@@ -96,35 +943,56 @@
           <span>{{ guardando ? 'Guardando...' : (editandoId ? 'Actualizar' : 'Guardar') }}</span>
         </button>
       </div>
+
     </form>
   </div>
 
+
   <!-- =========================================================
-       CARD PRINCIPAL DE DATOS Y TABLA
+       CARD PRINCIPAL: FILTROS Y TABLA
        ========================================================= -->
   <main class="he-table-card">
 
-    <!-- Barra de Filtros y Búsqueda -->
+    <!-- ---------- Barra de filtros y búsqueda ---------- -->
     <div class="he-filters-bar">
-      
-      <!-- Pestañas de Estado con Contador -->
+
       <div class="he-status-pills-row">
-        <button type="button" class="he-status-pill" [class.active]="filtroEstado === 'TODAS'" (click)="cambiarFiltroEstado('TODAS')">
+        <button
+          type="button"
+          class="he-status-pill"
+          [class.active]="filtroEstado === 'TODAS'"
+          (click)="cambiarFiltroEstado('TODAS')"
+        >
           <span>Todas</span>
           <span class="he-pill-count">{{ contarEstado('TODAS') }}</span>
         </button>
 
-        <button type="button" class="he-status-pill por-recibir" [class.active]="filtroEstado === 'POR_RECIBIR'" (click)="cambiarFiltroEstado('POR_RECIBIR')">
+        <button
+          type="button"
+          class="he-status-pill por-recibir"
+          [class.active]="filtroEstado === 'POR_RECIBIR'"
+          (click)="cambiarFiltroEstado('POR_RECIBIR')"
+        >
           <span>Por Recibir</span>
           <span class="he-pill-count">{{ contarEstado('POR_RECIBIR') }}</span>
         </button>
 
-        <button type="button" class="he-status-pill recibida" [class.active]="filtroEstado === 'RECIBIDA'" (click)="cambiarFiltroEstado('RECIBIDA')">
+        <button
+          type="button"
+          class="he-status-pill recibida"
+          [class.active]="filtroEstado === 'RECIBIDA'"
+          (click)="cambiarFiltroEstado('RECIBIDA')"
+        >
           <span>Recibidas</span>
           <span class="he-pill-count">{{ contarEstado('RECIBIDA') }}</span>
         </button>
 
-        <button type="button" class="he-status-pill con-novedad" [class.active]="filtroEstado === 'CON_NOVEDAD'" (click)="cambiarFiltroEstado('CON_NOVEDAD')">
+        <button
+          type="button"
+          class="he-status-pill con-novedad"
+          [class.active]="filtroEstado === 'CON_NOVEDAD'"
+          (click)="cambiarFiltroEstado('CON_NOVEDAD')"
+        >
           <span>Con Novedad</span>
           <span class="he-pill-count">{{ contarEstado('CON_NOVEDAD') }}</span>
         </button>
@@ -137,6 +1005,7 @@
           <input
             type="text"
             [(ngModel)]="filtroTexto"
+            name="filtroTexto"
             placeholder="Buscar alimento, responsable..."
             class="he-search-input"
           />
@@ -154,6 +1023,7 @@
 
     </div>
 
+    <!-- ---------- Controles expandir / contraer grupos ---------- -->
     <div *ngIf="gruposPorFecha.length > 1" class="he-groups-controls">
       <span class="he-groups-caption">
         <span class="material-symbols-outlined" aria-hidden="true">calendar_month</span>
@@ -165,12 +1035,12 @@
       </div>
     </div>
 
-    <!-- Tabla de Entregas -->
+    <!-- ---------- Tabla de entregas ---------- -->
     <div class="he-table-wrapper">
       <table class="he-data-table">
+
         <thead>
           <tr>
-            <th>Fecha</th>
             <th>Alimento / Insumo</th>
             <th>Destino</th>
             <th style="text-align: center;">Tipo</th>
@@ -179,10 +1049,12 @@
             <th style="text-align: right;">Acciones</th>
           </tr>
         </thead>
+
         <tbody>
-          <!-- Spinner de carga inicial si la lista está vacía -->
+
+          <!-- Spinner de carga inicial -->
           <tr *ngIf="cargando && entregas.length === 0">
-            <td colspan="7">
+            <td colspan="6">
               <div class="he-empty-state">
                 <span class="material-symbols-outlined animate-spin he-empty-icon" style="color: #fac94b;">progress_activity</span>
                 <span>Sincronizando entregas con el servidor...</span>
@@ -190,9 +1062,9 @@
             </td>
           </tr>
 
-          <!-- Empty state si no hay resultados -->
+          <!-- Sin resultados -->
           <tr *ngIf="!cargando && entregasFiltradas.length === 0">
-            <td colspan="7">
+            <td colspan="6">
               <div class="he-empty-state">
                 <span class="material-symbols-outlined he-empty-icon">inbox</span>
                 <span style="font-weight: 700; color: #0f172a;">No hay entregas para mostrar</span>
@@ -201,18 +1073,19 @@
             </td>
           </tr>
 
+          <!-- Grupos por fecha -->
           <ng-container *ngFor="let grupo of gruposPorFecha">
+
+            <!-- Fila cabecera del día -->
             <tr class="he-day-group-row">
-              <td colspan="7">
+              <td colspan="6">
                 <button
                   type="button"
                   class="he-day-group-toggle"
                   [attr.aria-expanded]="grupoEstaExpandido(grupo.fecha)"
                   (click)="alternarGrupoFecha(grupo.fecha)"
                 >
-                  <span class="material-symbols-outlined he-day-group-chevron" aria-hidden="true">
-                    {{ grupoEstaExpandido(grupo.fecha) ? 'expand_less' : 'expand_more' }}
-                  </span>
+                  <span class="material-symbols-outlined he-day-group-chevron" aria-hidden="true">expand_more</span>
                   <span class="he-day-group-date">{{ formatoFecha(grupo.fecha) }}</span>
                   <span class="he-day-group-count">
                     {{ grupo.entregas.length }} {{ grupo.entregas.length === 1 ? 'entrega' : 'entregas' }}
@@ -233,12 +1106,11 @@
               </td>
             </tr>
 
+            <!-- Filas de entregas del día -->
             <ng-container *ngIf="grupoEstaExpandido(grupo.fecha)">
-              <tr *ngFor="let entrega of grupo.entregas">
-                <td style="font-weight: 600; color: #0f172a; white-space: nowrap;">
-                  {{ formatoFecha(entrega.fechaRecepcion) }}
-                </td>
+              <tr *ngFor="let entrega of grupo.entregas" class="he-group-item">
 
+                <!-- Alimento / Insumo -->
                 <td>
                   <div class="he-primary-name">{{ entrega.ingrediente }}</div>
                   <div *ngIf="entrega.observaciones" class="he-sub-name" [title]="entrega.observaciones">
@@ -246,43 +1118,67 @@
                   </div>
                 </td>
 
-                <td>
-                  <span style="font-weight: 600; color: #334155;">{{ entrega.institucionNombre || institucionNombreUsuario || 'Institución asignada' }}</span>
+                <!-- Destino -->
+                <td
+                  class="he-td-destino"
+                  [title]="entrega.institucionNombre || institucionNombreUsuario || 'Institución asignada'"
+                >
+                  <span style="font-weight: 600; color: #334155;">
+                    {{ entrega.institucionNombre || institucionNombreUsuario || 'Institución asignada' }}
+                  </span>
                   <span *ngIf="tieneSedes && entrega.sedeNombre" style="display:block; font-size:11.5px; color:#b45309;">
                     {{ entrega.sedeNombre }}
                   </span>
                 </td>
 
+                <!-- Tipo de mercado -->
                 <td style="text-align: center;">
                   <span class="he-tag-market" [ngClass]="entrega.tipoMercado === 'Granos' ? 'grano' : 'perecedero'">
                     {{ entrega.tipoMercado }}
                   </span>
                 </td>
 
+                <!-- Cantidad -->
                 <td style="text-align: center; white-space: nowrap;">
                   <strong style="color: #0f172a; font-weight: 800;">{{ entrega.cantidad }}</strong>
                   <span style="font-size: 11.5px; color: #64748b; margin-left: 3px;">{{ entrega.unidad || 'Kg' }}</span>
                 </td>
 
+                <!-- Estado -->
                 <td style="text-align: center;">
-                  <span *ngIf="['EN_TRANSITO', 'PENDIENTE', 'EN_PROCESO'].includes((entrega.estado || 'EN_TRANSITO').toUpperCase())" class="he-status-badge transito">
+                  <span
+                    *ngIf="['EN_TRANSITO', 'PENDIENTE', 'EN_PROCESO'].includes((entrega.estado || 'EN_TRANSITO').toUpperCase())"
+                    class="he-status-badge transito"
+                  >
                     <span class="he-status-dot"></span>
                     <span>En tránsito</span>
                   </span>
 
-                  <span *ngIf="(entrega.estado || '').toUpperCase() === 'RECIBIDA'" class="he-status-badge recibida">
+                  <span
+                    *ngIf="(entrega.estado || '').toUpperCase() === 'RECIBIDA'"
+                    class="he-status-badge recibida"
+                  >
                     <span class="he-status-dot"></span>
                     <span>Recibida OK</span>
                   </span>
 
-                  <span *ngIf="(entrega.estado || '').toUpperCase() === 'CON_NOVEDAD' || (entrega.estado || '').toUpperCase() === 'RECHAZADA'" class="he-status-badge novedad">
+                  <span
+                    *ngIf="(entrega.estado || '').toUpperCase() === 'CON_NOVEDAD' || (entrega.estado || '').toUpperCase() === 'RECHAZADA'"
+                    class="he-status-badge novedad"
+                  >
                     <span class="he-status-dot"></span>
                     <span>{{ (entrega.estado || '').toUpperCase() === 'RECHAZADA' ? 'Rechazada' : 'Con Novedad' }}</span>
                   </span>
                 </td>
 
+                <!-- Acciones -->
                 <td style="text-align: right; white-space: nowrap;">
-                  <div *ngIf="esAdministrador && ['EN_TRANSITO', 'PENDIENTE', 'EN_PROCESO'].includes((entrega.estado || 'EN_TRANSITO').toUpperCase())" class="he-delivery-actions">
+
+                  <!-- Administrador: Recibir / Rechazar -->
+                  <div
+                    *ngIf="puedeGestionarRecepcion && ['EN_TRANSITO', 'PENDIENTE', 'EN_PROCESO'].includes((entrega.estado || 'EN_TRANSITO').toUpperCase())"
+                    class="he-delivery-actions"
+                  >
                     <button
                       type="button"
                       class="he-btn-receive"
@@ -301,11 +1197,13 @@
                     </button>
                   </div>
 
+                  <!-- Acreditada -->
                   <span *ngIf="(entrega.estado || '').toUpperCase() === 'RECIBIDA'" class="he-text-accredited">
                     <span class="material-symbols-outlined" style="font-size: 15px;">check_circle</span>
                     <span>Acreditada</span>
                   </span>
 
+                  <!-- Ver novedad -->
                   <button
                     *ngIf="(entrega.estado || '').toUpperCase() === 'CON_NOVEDAD' || (entrega.estado || '').toUpperCase() === 'RECHAZADA'"
                     type="button"
@@ -315,23 +1213,37 @@
                     Ver novedad
                   </button>
 
+                  <!-- Editar / Eliminar (Super Admin) -->
                   <div *ngIf="esSuperAdmin" style="display:inline-flex; align-items:center; gap:6px; margin-left:8px;">
-                    <button type="button" (click)="editar(entrega)" title="Editar entrega" style="background:none; border:none; cursor:pointer; color:#64748b; padding:2px;">
+                    <button
+                      type="button"
+                      title="Editar entrega"
+                      style="background:none; border:none; cursor:pointer; color:#64748b; padding:2px;"
+                      (click)="editar(entrega)"
+                    >
                       <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
                     </button>
-                    <button type="button" (click)="eliminar(entrega)" title="Eliminar entrega" style="background:none; border:none; cursor:pointer; color:#ef4444; padding:2px;">
+                    <button
+                      type="button"
+                      title="Eliminar entrega"
+                      style="background:none; border:none; cursor:pointer; color:#ef4444; padding:2px;"
+                      (click)="eliminar(entrega)"
+                    >
                       <span class="material-symbols-outlined" style="font-size:17px;">delete</span>
                     </button>
                   </div>
+
                 </td>
               </tr>
             </ng-container>
+
           </ng-container>
         </tbody>
+
       </table>
     </div>
 
-    <!-- Pie de tabla informativo -->
+    <!-- ---------- Pie de tabla informativo ---------- -->
     <div style="display:flex; justify-content:space-between; align-items:center; font-size:12px; color:#64748b; padding-top:4px;">
       <span>Mostrando {{ entregasFiltradas.length }} de {{ entregas.length }} entrega(s)</span>
       <span>SIRAE PAE &bull; Control Institucional</span>
@@ -339,18 +1251,23 @@
 
   </main>
 
+
   <!-- =========================================================
-       MODAL DE CONTROL DE CALIDAD Y RECEPCIÓN TÉCNICA
+       MODAL: CONTROL DE CALIDAD Y RECEPCIÓN TÉCNICA
        ========================================================= -->
-  <div *ngIf="modalRecepcionAbierto && entregaSeleccionada" class="he-modal-backdrop" (click)="cerrarModalRecepcion()">
-    <div class="he-modal-card" (click)="$event.stopPropagation()">
+  <div *ngIf="modalRecepcionAbierto && entregaSeleccionada" class="he-modal-backdrop" role="presentation"
+       (click)="$event.target === $event.currentTarget && cerrarModalRecepcion()">
+    <div class="he-modal-card" role="dialog" aria-modal="true">
+
       <div class="he-modal-header">
         <div class="he-modal-header-left">
           <div class="he-modal-icon-badge">
             <span class="material-symbols-outlined" style="font-size: 20px;">task_alt</span>
           </div>
           <div>
-            <h3 class="he-modal-title">{{ modoRechazoDirecto ? 'Rechazar entrega' : 'Control de Calidad y Recepción' }}</h3>
+            <h3 class="he-modal-title">
+              {{ modoRechazoDirecto ? 'Rechazar entrega' : 'Control de Calidad y Recepción' }}
+            </h3>
             <p class="he-modal-sub">
               {{ modoRechazoDirecto ? 'Confirma el rechazo total e indica el motivo.' : 'Inspecciona el estado físico del insumo antes de acreditarlo.' }}
             </p>
@@ -362,6 +1279,7 @@
       </div>
 
       <div class="he-modal-body">
+
         <div class="he-info-banner">
           <div>
             <div class="he-info-label">Alimento / Insumo</div>
@@ -375,9 +1293,10 @@
 
         <div class="he-form-grid">
           <div class="he-form-group">
-            <label class="he-form-label">Cant. Conforme (Buen estado)</label>
+            <label class="he-form-label" for="rec-conforme">Cant. Conforme (Buen estado)</label>
             <input
               type="number"
+              id="rec-conforme" name="cantidadRecibida"
               [(ngModel)]="formRecepcion.cantidadRecibida"
               (input)="onCambioCantidades('recibida')"
               [readonly]="modoRechazoDirecto"
@@ -389,9 +1308,10 @@
           </div>
 
           <div class="he-form-group">
-            <label class="he-form-label">Cant. Dañada / Rechazada</label>
+            <label class="he-form-label" for="rec-rechazada">Cant. Dañada / Rechazada</label>
             <input
               type="number"
+              id="rec-rechazada" name="cantidadRechazada"
               [(ngModel)]="formRecepcion.cantidadRechazada"
               (input)="onCambioCantidades('rechazada')"
               [readonly]="modoRechazoDirecto"
@@ -405,14 +1325,16 @@
         </div>
 
         <div *ngIf="formRecepcion.cantidadRechazada > 0" class="he-form-group">
-          <label class="he-form-label" style="color: #991b1b;">Motivo del rechazo / Avería *</label>
+          <label class="he-form-label" for="rec-motivo" style="color: #991b1b;">Motivo del rechazo / Avería *</label>
           <textarea
+            id="rec-motivo" name="motivoRechazo"
             [(ngModel)]="formRecepcion.motivoRechazo"
             rows="2"
             placeholder="Especifica el motivo (ej: empaque roto, producto golpeado o magullado)..."
             class="he-form-textarea"
           ></textarea>
         </div>
+
       </div>
 
       <div class="he-modal-footer">
@@ -424,14 +1346,18 @@
           <span>{{ procesandoRecepcion ? 'Procesando...' : (modoRechazoDirecto ? 'Confirmar rechazo' : 'Confirmar e ingresar') }}</span>
         </button>
       </div>
+
     </div>
   </div>
 
+
   <!-- =========================================================
-       MODAL DETALLE DE NOVEDAD
+       MODAL: DETALLE DE NOVEDAD
        ========================================================= -->
-  <div *ngIf="modalDetalleAbierto && entregaDetalle" class="he-modal-backdrop" (click)="cerrarModalDetalle()">
-    <div class="he-modal-card" (click)="$event.stopPropagation()">
+  <div *ngIf="modalDetalleAbierto && entregaDetalle" class="he-modal-backdrop" role="presentation"
+       (click)="$event.target === $event.currentTarget && cerrarModalDetalle()">
+    <div class="he-modal-card" role="dialog" aria-modal="true">
+
       <div class="he-modal-header">
         <div class="he-modal-header-left">
           <div class="he-modal-icon-badge" style="background:#fee2e2; border-color:#fca5a5; color:#991b1b;">
@@ -448,6 +1374,7 @@
       </div>
 
       <div class="he-modal-body">
+
         <div class="he-info-banner">
           <div>
             <div class="he-info-label">Alimento</div>
@@ -455,7 +1382,7 @@
           </div>
           <div style="text-align: right;">
             <div class="he-info-label">Fecha de Entrega</div>
-            <div class="he-info-value">{{ entregaDetalle.fechaRecepcion | date:'dd/MM/yyyy' }}</div>
+            <div class="he-info-value">{{ formatoFecha(entregaDetalle.fechaRecepcion) }}</div>
           </div>
         </div>
 
@@ -475,14 +1402,19 @@
           </div>
         </div>
 
-        <div *ngIf="entregaDetalle.motivoRechazo" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px;">
+        <div
+          *ngIf="entregaDetalle.motivoRechazo"
+          style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px;"
+        >
           <div style="font-size:11.5px; font-weight:700; color:#475569; text-transform:uppercase;">Motivo Reportado</div>
           <p style="margin:4px 0 0 0; font-size:13px; color:#0f172a;">{{ entregaDetalle.motivoRechazo }}</p>
         </div>
 
         <div *ngIf="entregaDetalle.usuarioReceptorNombre" style="font-size:12px; color:#64748b;">
-          Recibido e inspeccionado por: <strong style="color:#0f172a;">{{ entregaDetalle.usuarioReceptorNombre }}</strong>
+          Recibido e inspeccionado por:
+          <strong style="color:#0f172a;">{{ entregaDetalle.usuarioReceptorNombre }}</strong>
         </div>
+
       </div>
 
       <div class="he-modal-footer">
@@ -490,6 +1422,7 @@
           Entendido
         </button>
       </div>
+
     </div>
   </div>
 

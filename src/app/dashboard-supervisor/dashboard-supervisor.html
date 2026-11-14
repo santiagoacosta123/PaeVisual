@@ -1,10 +1,7 @@
 
-
 <style>
-
 /* ---------- 1. Variables y base ---------- */
 :host { display: block; }
-
 .sd,
 .sg1 {
   --g900: #111827;
@@ -25,63 +22,91 @@
   color: var(--ink);
   width: 100%;
 }
-
 .sd *, .sg1 * { box-sizing: border-box; }
 .sd h1, .sd h2, .sd h3, .sd p,
 .sg1 h1, .sg1 h2, .sg1 h3, .sg1 p { margin: 0; }
 .sd ul, .sg1 ul { margin: 0; padding: 0; list-style: none; }
-
 .sd {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
-
 .sd .material-symbols-outlined { line-height: 1; }
-
 /* ---------- 2. Tonos de estado ---------- */
 .t-ok     { background: #dcfce7; color: #15803d; }
 .t-warn   { background: #fef3c7; color: #b45309; }
 .t-info   { background: #dbeafe; color: #1d4ed8; }
 .t-danger { background: #fee2e2; color: #b91c1c; }
-
 /* ---------- 3. Encabezado ---------- */
-.sd-top {
-  display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(280px, 0.9fr);
-  gap: 14px;
-  align-items: stretch;
-}
-
 .sd-hero {
   position: relative;
+  isolation: isolate;
   overflow: hidden;
-  min-height: 170px;
+  display: grid;
+  grid-template-columns: minmax(0, clamp(185px, 26%, 340px)) minmax(0, 1fr);
+  align-items: stretch;
+  min-height: 144px;
+  border: 1px solid #f5e3ad;
+  border-bottom: 4px solid #f4b41f;
   border-radius: 22px;
-  border: 1px solid var(--line);
-  background: linear-gradient(110deg, #fff3c4 0%, #fffbef 55%, #ffffff 100%);
+  background: linear-gradient(112deg, #fffdf6, #fff3cc);
+  box-shadow: var(--card-shadow);
 }
-
+.sd-hero::after {
+  position: absolute;
+  z-index: -1;
+  right: -72px;
+  bottom: -88px;
+  width: min(42%, 410px);
+  height: 150px;
+  border-radius: 100% 0 0 0;
+  background: #ffe284;
+  box-shadow: 0 -14px 0 #ffedac;
+  content: '';
+  pointer-events: none;
+}
+.sd-hero__art {
+  position: relative;
+  overflow: hidden;
+  min-height: 112px;
+  border-right: 9px solid #f4b41f;
+  border-bottom: 5px solid #f4b41f;
+  border-bottom-right-radius: 100% 100%;
+  background: #e4f7ef;
+}
 .sd-hero__photo {
   position: absolute;
-  inset: 0 0 0 auto;
-  width: 52%;
-  background: url('/cocineras.jpg') center / cover no-repeat;
-  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 38%);
-          mask-image: linear-gradient(90deg, transparent 0%, #000 38%);
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 68% center;
 }
-
 .sd-hero__body {
-  position: relative;
-  z-index: 1;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-content: center;
+  align-items: center;
+  gap: clamp(10px, 1.7vw, 20px);
+  min-width: 0;
+  padding: 14px clamp(14px, 2vw, 28px);
+}
+.sd-hero__copy {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 8px;
-  max-width: 60%;
-  padding: 18px 24px;
+  gap: 6px;
 }
-
+.sd-hero__icon {
+  display: grid;
+  width: clamp(38px, 5vw, 58px);
+  aspect-ratio: 1;
+  place-items: center;
+  border-radius: 50%;
+  background: #e8a510;
+  color: #fff;
+}
+.sd-hero__icon .material-symbols-outlined { font-size: 26px; }
 .sd-pill {
   display: inline-flex;
   align-items: center;
@@ -93,31 +118,26 @@
   font-size: 12px;
   font-weight: 800;
 }
-
 .sd-pill .material-symbols-outlined { font-size: 16px; }
-
 .sd-hero h1 {
+  color: #17372d;
   font-size: clamp(21px, 2.2vw, 27px);
   font-weight: 900;
   line-height: 1.1;
   letter-spacing: -0.02em;
 }
-
 .sd-hero h1 em { font-style: normal; color: var(--g500); }
-
 .sd-hero p {
   font-size: 12.5px;
   line-height: 1.45;
   color: #4b5563;
 }
-
 .sd-hero__actions {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 2px;
 }
-
 .sd-btn {
   display: inline-flex;
   align-items: center;
@@ -133,151 +153,14 @@
   cursor: pointer;
   transition: background 0.2s ease, transform 0.2s ease;
 }
-
 .sd-btn:hover { background: var(--amber); transform: translateY(-1px); }
 .sd-btn .material-symbols-outlined { font-size: 16px; }
-
 .sd-btn--ghost {
   background: rgba(255, 255, 255, 0.9);
   border-color: var(--line);
 }
-
 .sd-btn--ghost:hover { background: var(--g100); border-color: var(--amber); }
-
-.sd-btn:focus-visible,
-.sd-chip-btn:focus-visible { outline: 3px solid var(--g500); outline-offset: 2px; }
-
-/* Tarjeta de institución (datos, cambiar y sedes) */
-.sd-inst {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 14px 16px;
-  border-radius: 22px;
-  border: 1px solid var(--line);
-  background: linear-gradient(160deg, #fffbef 0%, #ffffff 100%);
-  box-shadow: var(--card-shadow);
-}
-
-.sd-inst__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.sd-inst__tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 4px 10px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: #fff;
-  font-size: 11.5px;
-  font-weight: 800;
-  color: var(--g700);
-}
-
-.sd-inst__tag .material-symbols-outlined { font-size: 15px; color: var(--amber); }
-
-.sd-inst__name { display: flex; align-items: center; gap: 10px; }
-
-.sd-inst__ic {
-  display: grid;
-  place-items: center;
-  width: 38px;
-  height: 38px;
-  flex-shrink: 0;
-  border-radius: 11px;
-  background: var(--yellow);
-  color: var(--g800);
-}
-
-.sd-inst__ic .material-symbols-outlined { font-size: 21px; }
-.sd-inst__name h2 { font-size: 15px; font-weight: 900; line-height: 1.2; }
-
-.sd-inst__data {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px 14px;
-}
-
-.sd-inst__data div { min-width: 0; }
-
-.sd-inst__data small {
-  display: block;
-  font-size: 10.5px;
-  font-weight: 700;
-  color: var(--mute);
-}
-
-.sd-inst__data strong {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 12.5px;
-  font-weight: 800;
-}
-
-.sd-inst__sedes-h {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 6px;
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.sd-inst__n {
-  display: inline-grid;
-  place-items: center;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 6px;
-  border-radius: 999px;
-  background: var(--g100);
-  color: var(--g700);
-  font-size: 11px;
-  font-weight: 800;
-}
-
-.sd-inst__list { display: flex; flex-wrap: wrap; gap: 6px; }
-
-.sd-inst__list li {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 10px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: #fff;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.sd-inst__list .material-symbols-outlined { font-size: 15px; color: var(--amber); }
-
-.sd-chip-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: #fff;
-  color: var(--ink);
-  font: inherit;
-  font-size: 12px;
-  font-weight: 800;
-  cursor: pointer;
-  transition: background 0.2s ease, border-color 0.2s ease;
-}
-
-.sd-chip-btn:hover { background: var(--g100); border-color: var(--amber); }
-.sd-chip-btn .material-symbols-outlined { font-size: 16px; }
-
+.sd-btn:focus-visible { outline: 3px solid var(--g500); outline-offset: 2px; }
 .sd-link {
   border: none;
   background: none;
@@ -290,9 +173,7 @@
   cursor: pointer;
   white-space: nowrap;
 }
-
 .sd-link:hover { background: var(--g100); }
-
 /* ---------- 4. Filtros ---------- */
 .sd-bar {
   display: flex;
@@ -305,9 +186,7 @@
   border-radius: 18px;
   background: #fff;
 }
-
 .sd-bar__l { display: flex; align-items: center; gap: 12px; }
-
 .sd-bar__ic {
   display: grid;
   place-items: center;
@@ -317,12 +196,9 @@
   background: var(--g100);
   color: var(--g600);
 }
-
 .sd-bar__l h2 { font-size: 15px; font-weight: 900; }
 .sd-bar__l p { font-size: 12px; color: var(--mute); }
-
 .sd-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
-
 .sd-select {
   display: flex;
   align-items: center;
@@ -332,7 +208,6 @@
   border-radius: 12px;
   background: var(--g50);
 }
-
 .sd-select label {
   display: flex;
   align-items: center;
@@ -341,9 +216,7 @@
   font-weight: 700;
   color: var(--g700);
 }
-
 .sd-select label .material-symbols-outlined { font-size: 16px; }
-
 .sd-select select {
   max-width: 200px;
   border: none;
@@ -355,7 +228,6 @@
   font-weight: 700;
   color: var(--ink);
 }
-
 .sd-pills {
   display: inline-flex;
   gap: 4px;
@@ -364,7 +236,6 @@
   border-radius: 12px;
   background: var(--g50);
 }
-
 .sd-pills button {
   padding: 6px 12px;
   border: none;
@@ -377,23 +248,19 @@
   cursor: pointer;
   transition: all 0.2s ease;
 }
-
 .sd-pills button:hover { color: var(--ink); }
-
 .sd-pills button.on {
   background: var(--yellow);
   color: var(--g800);
   font-weight: 800;
   box-shadow: 0 4px 10px -4px rgba(245, 163, 0, 0.7);
 }
-
 /* ---------- 5. KPIs ---------- */
 .sd-kpis {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
 }
-
 .sd-kpi {
   display: flex;
   align-items: center;
@@ -405,9 +272,7 @@
   box-shadow: var(--card-shadow);
   transition: transform 0.2s ease;
 }
-
 .sd-kpi:hover { transform: translateY(-2px); }
-
 .sd-kpi__ic {
   display: grid;
   place-items: center;
@@ -416,10 +281,8 @@
   flex-shrink: 0;
   border-radius: 50%;
 }
-
 .sd-kpi__ic .material-symbols-outlined { font-size: 26px; }
 .sd-kpi__tx { min-width: 0; }
-
 .sd-kpi__v {
   font-size: 26px;
   font-weight: 900;
@@ -427,10 +290,8 @@
   letter-spacing: -0.02em;
   color: var(--g800);
 }
-
 .sd-kpi__l { margin-top: 2px; font-size: 12.5px; font-weight: 700; color: var(--ink); }
 .sd-kpi__h { font-size: 11.5px; color: var(--mute); }
-
 /* ---------- 6. Tarjetas y gráficos ---------- */
 .sd-row3 {
   display: grid;
@@ -438,14 +299,7 @@
   gap: 16px;
   align-items: stretch;
 }
-
-.sd-row2 {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-  align-items: stretch;
-}
-
+.sd-row2 { min-width: 0; }
 .sd-card {
   min-width: 0;
   padding: 18px;
@@ -454,9 +308,7 @@
   background: #fff;
   box-shadow: var(--card-shadow);
 }
-
 .sd-ch { display: flex; align-items: center; gap: 10px; }
-
 .sd-ch__ic {
   display: grid;
   place-items: center;
@@ -467,10 +319,8 @@
   background: var(--yellow);
   color: var(--g800);
 }
-
 .sd-ch__ic .material-symbols-outlined { font-size: 20px; }
 .sd-ch__t { flex: 1; min-width: 0; }
-
 .sd-ch__t h3 {
   display: flex;
   align-items: center;
@@ -479,9 +329,7 @@
   font-weight: 800;
   line-height: 1.2;
 }
-
 .sd-ch__t p { margin-top: 2px; font-size: 11.5px; color: var(--mute); }
-
 .sd-tag {
   display: inline-flex;
   align-items: center;
@@ -494,7 +342,6 @@
   color: var(--g700);
   white-space: nowrap;
 }
-
 .sd-quality {
   display: grid;
   grid-template-columns: 180px minmax(0, 1fr);
@@ -502,10 +349,8 @@
   gap: 18px;
   margin-top: 14px;
 }
-
 .sd-donut { position: relative; width: 100%; height: 180px; }
 .sd-donut--sm { width: 170px; height: 170px; flex-shrink: 0; }
-
 .sd-donut__c {
   position: absolute;
   inset: 0;
@@ -515,26 +360,19 @@
   justify-content: center;
   pointer-events: none;
 }
-
 .sd-donut__c strong { font-size: 24px; font-weight: 900; line-height: 1; color: var(--g800); }
 .sd-donut__c span { margin-top: 3px; font-size: 12px; font-weight: 600; color: var(--mute); }
-
 .sd-legend { display: flex; flex-direction: column; gap: 10px; }
-
 .sd-legend li { display: flex; align-items: center; gap: 8px; font-size: 12.5px; }
 .sd-legend__t { flex: 1; color: #374151; font-weight: 500; }
 .sd-legend strong { font-weight: 800; }
 .sd-pct { font-size: 11.5px; font-weight: 600; color: var(--mute); }
-
 .sd-dot { width: 11px; height: 11px; flex-shrink: 0; border-radius: 50%; }
 .sd-dot--perecedero { background: #3b82f6; }
 .sd-dot--no-perecedero { background: #f59e0b; }
-
 .sd-bars { position: relative; height: 200px; margin-top: 12px; }
-
 /* ---------- 7. Últimas entregas ---------- */
 .sd-table-wrap { margin-top: 10px; overflow-x: auto; }
-
 .sd-table {
   width: 100%;
   min-width: 560px;
@@ -542,7 +380,6 @@
   font-size: 12px;
   text-align: left;
 }
-
 .sd-table th {
   padding: 8px 6px;
   font-size: 11px;
@@ -550,18 +387,14 @@
   color: var(--mute);
   border-bottom: 1px solid var(--line);
 }
-
 .sd-table td {
   padding: 9px 6px;
   border-bottom: 1px solid #f3efe0;
   vertical-align: middle;
 }
-
 .sd-table tbody tr:last-child td { border-bottom: none; }
 .sd-table tbody tr:hover { background: var(--g50); }
-
 .sd-cell { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; }
-
 .sd-circ {
   display: grid;
   place-items: center;
@@ -570,9 +403,7 @@
   flex-shrink: 0;
   border-radius: 50%;
 }
-
 .sd-circ .material-symbols-outlined { font-size: 16px; }
-
 .sd-avatar {
   display: grid;
   place-items: center;
@@ -585,67 +416,11 @@
   font-size: 10px;
   font-weight: 800;
 }
-
 .sd-detalle { color: #374151; }
 .sd-empty-row { padding: 24px 8px !important; text-align: center; color: var(--mute); }
-
-/* ---------- 8. Alertas ---------- */
-.sd-count {
-  display: inline-grid;
-  place-items: center;
-  min-width: 22px;
-  height: 22px;
-  padding: 0 7px;
-  border-radius: 999px;
-  background: #ef4444;
-  color: #fff;
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.sd-card--alert { background: linear-gradient(160deg, #fffbef 0%, #ffffff 80%); }
-
-.sd-alerts { display: flex; flex-direction: column; margin-top: 8px; }
-
-.sd-alerts li {
-  display: grid;
-  grid-template-columns: 30px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 10px;
-  padding: 9px 0;
-  border-bottom: 1px solid #f3efe0;
-}
-
-.sd-alerts li:last-child { border-bottom: none; }
-.sd-alerts li.sd-empty { display: block; padding: 18px 0; text-align: center; }
-
-.sd-alerts__tx { min-width: 0; }
-
-.sd-alerts__tx strong,
-.sd-alerts__tx small {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.sd-alerts__tx strong { font-size: 12.5px; font-weight: 800; }
-.sd-alerts__tx small { font-size: 11.5px; color: var(--mute); }
-
-.sd-state {
-  padding: 3px 9px;
-  border-radius: 999px;
-  font-size: 10.5px;
-  font-weight: 800;
-  white-space: nowrap;
-}
-
-.sd-empty { font-size: 12px; color: var(--mute); }
-
-/* ---------- 9. Composición de alimentos (dentro de la fila de alertas) ---------- */
+/* ---------- Composición de alimentos ---------- */
 .sd-comp { display: flex; align-items: center; gap: 28px; margin-top: 12px; }
 .sd-comp .sd-legend { flex: 1; }
-
 /* ---------- 10. Paso 1: elegir institución ---------- */
 /* =========================================================================
    PASO 1: ELEGIR INSTITUCIÓN
@@ -655,7 +430,6 @@
   flex-direction: column;
   gap: 22px;
 }
-
 .sg1-hero {
   position: relative;
   overflow: hidden;
@@ -669,7 +443,6 @@
   color: var(--g800);
   border: 1px solid var(--line);
 }
-
 .sg1-hero::before {
   content: '';
   position: absolute;
@@ -681,7 +454,6 @@
   background: rgba(255, 208, 58, 0.22);
   pointer-events: none;
 }
-
 .sg1-hero__text {
   position: relative;
   z-index: 1;
@@ -689,21 +461,18 @@
   flex-direction: column;
   gap: 4px;
 }
-
 .sg1-hero h1 {
   font-size: clamp(20px, 2.4vw, 26px);
   font-weight: 900;
   line-height: 1.08;
   letter-spacing: -0.02em;
 }
-
 .sg1-hero p {
   max-width: 460px;
   font-size: 13px;
   line-height: 1.45;
   color: #4b5563;
 }
-
 .sg1-logo {
   position: relative;
   z-index: 1;
@@ -711,7 +480,6 @@
   height: 84px;
   margin-right: 8px;
 }
-
 .sg1-logo div {
   position: absolute;
   inset: 0;
@@ -721,43 +489,36 @@
   background: #fff;
   box-shadow: 0 0 0 5px rgba(255, 208, 58, 0.45), 0 12px 20px -12px rgba(0, 0, 0, 0.5);
 }
-
 .sg1-logo img {
   display: block;
   width: 76%;
   height: auto;
 }
-
 .sg1-wrap {
   display: flex;
   flex-direction: column;
   gap: 14px;
 }
-
 .sg1-head {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 12px;
 }
-
 .sg1-head h2 {
   font-size: 22px;
   font-weight: 900;
 }
-
 .sg1-head p {
   font-size: 12px;
   font-weight: 500;
   color: var(--mute);
 }
-
 .sg1-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 18px;
 }
-
 .sg1-card {
   display: flex;
   flex-direction: column;
@@ -768,25 +529,21 @@
   border: 1px solid var(--line);
   transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
-
 .sg1-card:hover {
   transform: translateY(-4px);
   border-color: var(--g500);
   box-shadow: 0 22px 34px -26px rgba(245, 163, 0, 0.9);
 }
-
 .sg1-card:focus-visible {
   outline: 3px solid var(--g500);
   outline-offset: 2px;
 }
-
 .sg1-card img {
   display: block;
   width: 100%;
   height: 160px;
   object-fit: cover;
 }
-
 .sg1-card__body {
   display: flex;
   flex: 1;
@@ -794,13 +551,11 @@
   gap: 16px;
   padding: 20px;
 }
-
 .sg1-card h3 {
   font-size: 17px;
   font-weight: 800;
   line-height: 1.25;
 }
-
 .sg1-btn {
   display: inline-flex;
   align-items: center;
@@ -819,11 +574,9 @@
   cursor: pointer;
   transition: background 0.2s ease;
 }
-
 .sg1-btn:hover {
   background: var(--amber);
 }
-
 .sg1-state {
   display: flex;
   flex-direction: column;
@@ -835,23 +588,19 @@
   border: 1px dashed var(--g500);
   background: var(--g50);
 }
-
 .sg1-state--solid {
   border-style: solid;
 }
-
 .sg1-state h3 {
   font-size: 16px;
   font-weight: 800;
 }
-
 .sg1-state p {
   max-width: 420px;
   font-size: 12px;
   line-height: 1.5;
   color: var(--mute);
 }
-
 .sg1-error {
   padding: 14px 18px;
   border-radius: 16px;
@@ -861,7 +610,6 @@
   font-size: 12px;
   font-weight: 600;
 }
-
 .sg1-error button {
   margin-left: 8px;
   border: 0;
@@ -872,65 +620,51 @@
   color: inherit;
   cursor: pointer;
 }
-
 .sg1-spin {
   animation: sg1spin 1s linear infinite;
 }
-
 @keyframes sg1spin {
   to { transform: rotate(360deg); }
 }
-
 /* ---------- Utilidades de estado (antes eran estilos en línea) ---------- */
 .sg1-state__icon        { font-size: 34px; color: var(--amber); }
 .sg1-state__icon--lg    { font-size: 40px; color: var(--deep); }
 .sg1-btn--auto          { width: auto; }
 .sg1-btn .material-symbols-outlined { font-size: 18px; }
-
-
-
 /* ---------- 11. Responsive ---------- */
 @media (max-width: 1180px) {
 }
-
 @media (max-width: 1000px) {
   .sd-row3 { grid-template-columns: 1fr; }
-  .sd-top { grid-template-columns: 1fr; }
   .sd-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .sd-row2 { grid-template-columns: 1fr; }
 }
-
 @media (max-width: 720px) {
-  .sd-hero { min-height: 0; }
-  .sd-hero__photo { display: none; }
-  .sd-hero__body { max-width: 100%; padding: 20px; }
+  .sd-hero { grid-template-columns: minmax(0, 1fr); }
+  .sd-hero__art { width: min(75%, 340px); }
+  .sd-hero__photo { object-fit: contain; object-position: left top; }
+  .sd-hero__body { align-items: start; }
+  .sd-hero::after { opacity: .55; }
   .sd-quality { grid-template-columns: 1fr; }
   .sd-comp { flex-direction: column; align-items: stretch; }
   .sd-bar { flex-direction: column; align-items: stretch; }
   .sd-filters { flex-direction: column; align-items: stretch; }
   .sd-pills { justify-content: center; }
 }
-
 @media (max-width: 520px) {
   .sd-kpis { grid-template-columns: 1fr; }
 }
-
 @media (prefers-reduced-motion: reduce) {
   .sd-btn, .sd-kpi, .sg1-card, .sg1-spin { transition: none; animation: none; }
 }
-
 @media (max-width: 620px) {
   .sg1-hero { padding: 16px 20px; gap: 14px; }
   .sg1-logo { width: 68px; height: 68px; }
 }
 </style>
-
-
 <!-- ======================================================================= -->
 <!-- A. PASO 1 · ELEGIR INSTITUCIÓN                                          -->
 <!-- ======================================================================= -->
 <section *ngIf="!institucionActiva" class="sg1">
-
   <!-- Encabezado -->
   <header class="sg1-hero">
     <div class="sg1-hero__text">
@@ -941,26 +675,22 @@
       <div><img src="/sirae-logo-dark.png" alt="Logo SIRAE" /></div>
     </div>
   </header>
-
   <!-- Estado: cargando -->
   <div *ngIf="cargando && instituciones.length === 0" class="sg1-state sg1-state--solid">
     <span class="material-symbols-outlined sg1-spin sg1-state__icon">progress_activity</span>
     <p>Cargando tus instituciones...</p>
   </div>
-
   <!-- Estado: error -->
   <div *ngIf="errorMensaje" role="alert" class="sg1-error">
     {{ errorMensaje }}
     <button type="button" (click)="cargarInstitucionesServidor()">Reintentar</button>
   </div>
-
   <!-- Listado de instituciones -->
   <div *ngIf="instituciones.length > 0" class="sg1-wrap">
     <div class="sg1-head">
       <h2>Tus instituciones ({{ instituciones.length }})</h2>
       <p>Toca una para continuar</p>
     </div>
-
     <div class="sg1-grid">
       <article
         *ngFor="let inst of instituciones; let i = index; trackBy: trackInstitucion"
@@ -968,9 +698,7 @@
         tabindex="0"
         (click)="seleccionarInstitucion(inst)"
         (keydown.enter)="seleccionarInstitucion(inst)">
-
         <img [src]="imagenDe(i)" [alt]="'Fachada de ' + inst.nombre_institucion" loading="lazy" width="300" height="160" style="width:100%; height:160px; object-fit:cover;" />
-
         <div class="sg1-card__body">
           <h3>{{ inst.nombre_institucion }}</h3>
           <button type="button" class="sg1-btn" (click)="seleccionarInstitucion(inst); $event.stopPropagation()">
@@ -981,7 +709,6 @@
       </article>
     </div>
   </div>
-
   <!-- Estado: sin instituciones asignadas -->
   <div *ngIf="!cargando && instituciones.length === 0 && !errorMensaje" class="sg1-state">
     <span class="material-symbols-outlined sg1-state__icon--lg">domain_disabled</span>
@@ -992,33 +719,27 @@
       Verificar de nuevo
     </button>
   </div>
-
 </section>
-
-
 <!-- ======================================================================= -->
 <!-- B. PASO 2 · INICIO DEL SUPERVISOR (institución ya seleccionada)         -->
 <!-- ======================================================================= -->
 <section *ngIf="institucionActiva as inst" class="sd">
-
   <!-- ===================================================================== -->
-  <!-- 1. ENCABEZADO: banner + institución activa                            -->
+  <!-- 1. Encabezado -->
   <!-- ===================================================================== -->
-  <div class="sd-top">
-
-    <!-- Banner -->
-    <header class="sd-hero">
-      <div class="sd-hero__photo" aria-hidden="true"></div>
-
-      <div class="sd-hero__body">
+  <header class="sd-hero">
+    <div class="sd-hero__art" aria-hidden="true">
+      <img class="sd-hero__photo" src="image%20copy%202.png" width="2172" height="724" alt="" />
+    </div>
+    <div class="sd-hero__body">
+      <span class="sd-hero__icon material-symbols-outlined" aria-hidden="true">monitoring</span>
+      <div class="sd-hero__copy">
         <span class="sd-pill">
           <span class="material-symbols-outlined">waving_hand</span>
           Hola, {{ nombreSupervisor }}
         </span>
-
         <h1>Control y seguimiento del <em>PAE</em></h1>
         <p>Consulta el estado de las entregas, el inventario y la distribución por sedes en tiempo real.</p>
-
         <div class="sd-hero__actions">
           <button type="button" class="sd-btn" (click)="irA('reportes')">
             Ver reportes <span class="material-symbols-outlined">arrow_forward</span>
@@ -1031,54 +752,8 @@
           </button>
         </div>
       </div>
-    </header>
-
-    <!-- Institución activa: datos, cambiar y sedes -->
-    <aside class="sd-inst" aria-label="Institución seleccionada">
-
-      <div class="sd-inst__head">
-        <span class="sd-inst__tag">
-          <span class="material-symbols-outlined">check_circle</span>
-          Institución seleccionada
-        </span>
-        <button type="button" class="sd-chip-btn" (click)="deseleccionarInstitucion()" title="Cambiar institución">
-          <span class="material-symbols-outlined">sync_alt</span> Cambiar
-        </button>
-      </div>
-
-      <div class="sd-inst__name">
-        <span class="sd-inst__ic"><span class="material-symbols-outlined">account_balance</span></span>
-        <h2>{{ inst.nombre_institucion }}</h2>
-      </div>
-
-      <div class="sd-inst__data">
-        <div><small>Estado</small><strong>{{ inst.estado?.trim() || 'No registrado' }}</strong></div>
-        <div><small>NIT / Código</small><strong>{{ inst.nit?.trim() || 'No registrado' }}</strong></div>
-        <div><small>Administrador</small><strong>{{ inst.administrador_asignado?.nombre_completo || 'Sin asignar' }}</strong></div>
-        <div><small>Representante legal</small><strong>{{ inst.representante_legal?.trim() || 'No registrado' }}</strong></div>
-        <div><small>Teléfono</small><strong>{{ inst.telefono?.trim() || 'No registrado' }}</strong></div>
-      </div>
-
-      <div class="sd-inst__sedes">
-        <div class="sd-inst__sedes-h">
-          Sedes disponibles <span class="sd-inst__n">{{ inst.sedes?.length || 0 }}</span>
-        </div>
-
-        <p *ngIf="!inst.sedes || inst.sedes.length === 0" class="sd-empty">Sin sedes registradas</p>
-
-        <ul *ngIf="inst.sedes && inst.sedes.length > 0" class="sd-inst__list">
-          <li *ngFor="let s of inst.sedes">
-            <span class="material-symbols-outlined">location_on</span>
-            {{ s.nombre_sede }}
-          </li>
-        </ul>
-      </div>
-
-    </aside>
-
-  </div>
-
-
+    </div>
+  </header>
   <!-- ===================================================================== -->
   <!-- 2. FILTROS (sede y período)                                           -->
   <!-- ===================================================================== -->
@@ -1090,7 +765,6 @@
         <p>Métricas de recepción, calidad y cobertura de alimentos</p>
       </div>
     </div>
-
     <div class="sd-filters">
       <div class="sd-select">
         <label for="filtroSedeSupervisor">
@@ -1101,7 +775,6 @@
           <option *ngFor="let s of inst.sedes" [value]="s.id_sede">{{ s.nombre_sede }}</option>
         </select>
       </div>
-
       <div class="sd-pills" role="group" aria-label="Filtro de período">
         <button type="button" [class.on]="filtroPeriodo === '30'" (click)="alCambiarFiltroPeriodo('30')">30 días</button>
         <button type="button" [class.on]="filtroPeriodo === '90'" (click)="alCambiarFiltroPeriodo('90')">90 días</button>
@@ -1109,13 +782,10 @@
       </div>
     </div>
   </div>
-
-
   <!-- ===================================================================== -->
   <!-- 3. KPIs                                                               -->
   <!-- ===================================================================== -->
   <div class="sd-kpis">
-
     <article class="sd-kpi">
       <span class="sd-kpi__ic t-ok"><span class="material-symbols-outlined">verified</span></span>
       <div class="sd-kpi__tx">
@@ -1124,7 +794,6 @@
         <div class="sd-kpi__h">{{ recibidasConformes }} entregas conformes</div>
       </div>
     </article>
-
     <article class="sd-kpi">
       <span class="sd-kpi__ic t-warn"><span class="material-symbols-outlined">local_shipping</span></span>
       <div class="sd-kpi__tx">
@@ -1133,7 +802,6 @@
         <div class="sd-kpi__h">{{ enTransito }} en camino a sedes</div>
       </div>
     </article>
-
     <article class="sd-kpi">
       <span class="sd-kpi__ic t-info"><span class="material-symbols-outlined">inventory</span></span>
       <div class="sd-kpi__tx">
@@ -1142,7 +810,6 @@
         <div class="sd-kpi__h">Kg / Litros / Unidades</div>
       </div>
     </article>
-
     <article class="sd-kpi">
       <span class="sd-kpi__ic" [ngClass]="novedadesRechazos > 0 ? 't-danger' : 't-ok'">
         <span class="material-symbols-outlined">{{ novedadesRechazos > 0 ? 'warning' : 'task_alt' }}</span>
@@ -1153,15 +820,11 @@
         <div class="sd-kpi__h">{{ conNovedad }} con novedad · {{ rechazadas }} rechazos</div>
       </div>
     </article>
-
   </div>
-
-
   <!-- ===================================================================== -->
   <!-- 4. CALIDAD · DISTRIBUCIÓN POR SEDES · ÚLTIMAS ENTREGAS                -->
   <!-- ===================================================================== -->
   <div class="sd-row3">
-
     <!-- Calidad y estado de recepción -->
     <article class="sd-card">
       <div class="sd-ch">
@@ -1171,7 +834,6 @@
         </div>
         <span class="sd-tag">{{ etiquetaPeriodo }}</span>
       </div>
-
       <div class="sd-quality">
         <div class="sd-donut">
           <canvas #chartEstadosCanvas></canvas>
@@ -1180,7 +842,6 @@
             <span>Aprobado</span>
           </div>
         </div>
-
         <ul class="sd-legend">
           <li *ngFor="let l of leyendaEstados">
             <span class="sd-dot" [style.background]="l.color"></span>
@@ -1190,7 +851,6 @@
         </ul>
       </div>
     </article>
-
     <!-- Distribución por sedes -->
     <article class="sd-card">
       <div class="sd-ch">
@@ -1200,15 +860,11 @@
         </div>
         <span class="sd-tag">{{ etiquetaPeriodo }}</span>
       </div>
-
       <div class="sd-bars">
         <canvas #chartSedesCanvas></canvas>
       </div>
     </article>
-
   </div>
-
-
   <!-- ===================================================================== -->
   <!-- 4b. ÚLTIMAS ENTREGAS (ancho completo)                                 -->
   <!-- ===================================================================== -->
@@ -1220,7 +876,6 @@
       </div>
       <button type="button" class="sd-link" (click)="irA('entregas')">Ver todas →</button>
     </div>
-
     <div class="sd-table-wrap">
       <table class="sd-table">
         <thead>
@@ -1231,7 +886,6 @@
             <th>Detalle</th>
           </tr>
         </thead>
-
         <tbody>
           <tr *ngFor="let e of ultimasEntregas">
             <td>
@@ -1258,7 +912,6 @@
               {{ e.ingrediente }} · {{ e.cantidad }} {{ e.unidad }} en {{ e.sedeNombre || 'Sede Principal' }}
             </td>
           </tr>
-
           <tr *ngIf="ultimasEntregas.length === 0">
             <td colspan="4" class="sd-empty-row">No hay despachos registrados para este filtro.</td>
           </tr>
@@ -1266,40 +919,9 @@
       </table>
     </div>
   </article>
-
-
   <!-- ===================================================================== -->
-  <!-- 5. ALERTAS Y NOTIFICACIONES · COMPOSICIÓN DE ALIMENTOS                -->
-  <!-- ===================================================================== -->
+  <!-- 5. Composición de alimentos -->
   <div class="sd-row2">
-
-    <!-- Alertas y notificaciones -->
-    <article class="sd-card sd-card--alert">
-      <div class="sd-ch">
-        <span class="sd-ch__ic t-danger"><span class="material-symbols-outlined">notifications_active</span></span>
-        <div class="sd-ch__t">
-          <h3>Alertas y Notificaciones <span class="sd-count">{{ pendientes.length }}</span></h3>
-        </div>
-        <button type="button" class="sd-link" (click)="irA('entregas')">Ver todas →</button>
-      </div>
-
-      <ul class="sd-alerts">
-        <li *ngFor="let p of pendientes | slice:0:4">
-          <span class="sd-circ" [ngClass]="tonoEstado(p.estado)">
-            <span class="material-symbols-outlined">{{ iconoEstado(p.estado) }}</span>
-          </span>
-          <div class="sd-alerts__tx">
-            <strong>{{ p.ingrediente }}</strong>
-            <small>{{ p.sedeNombre || 'Sede Principal' }} · {{ p.cantidad }} {{ p.unidad }}</small>
-          </div>
-          <span class="sd-state" [ngClass]="tonoEstado(p.estado)">{{ etiquetaEstado(p.estado) }}</span>
-        </li>
-
-        <li *ngIf="pendientes.length === 0" class="sd-empty">No hay entregas pendientes. Todo al día.</li>
-      </ul>
-    </article>
-
-    <!-- Composición de alimentos -->
     <article class="sd-card">
       <div class="sd-ch">
         <span class="sd-ch__ic"><span class="material-symbols-outlined">nutrition</span></span>
@@ -1309,12 +931,10 @@
         </div>
         <span class="sd-tag">{{ etiquetaPeriodo }}</span>
       </div>
-
       <div class="sd-comp">
         <div class="sd-donut sd-donut--sm">
           <canvas #chartCategoriasCanvas></canvas>
         </div>
-
         <ul class="sd-legend">
           <li>
             <span class="sd-dot sd-dot--perecedero"></span>
@@ -1329,7 +949,5 @@
         </ul>
       </div>
     </article>
-
   </div>
-
 </section>
