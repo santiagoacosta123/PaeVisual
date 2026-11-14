@@ -218,13 +218,9 @@ export class MenusComponent implements OnInit {
     cereal: '',
     fruta: '',
     agua: 'Agua potable tratada',
-    ingredientes: [] as any[],
-    pasos: [] as any[]
+    ingredientes: [] as string[],
+    pasos: [] as string[]
   };
-
-  opcionSeleccionadaDetalle: any = null;
-  descontarInventarioAlProgramar = true;
-  descontandoInventario = false;
 
   // Modal para ver la Ficha Técnica de Receta de un día de la Minuta
   mostrarModalFichaReceta = false;
@@ -2473,28 +2469,18 @@ export class MenusComponent implements OnInit {
     });
   }
 
-  cambiarMomentoEnModal(mom: string): void {
-    this.programarDiaForm.id_seccion = (mom === 'Desayuno' ? 1 : (mom === 'Merienda' ? 3 : 2));
-    this.consultarSugerenciasIAParaSede();
-  }
-
-  esIngredienteEstructurado(ing: any): boolean {
-    return ing && typeof ing === 'object' && ('nombre_ingrediente' in ing || 'cantidad_por_nino' in ing);
-  }
-
   get opcionesFiltradasModalProgramar(): any[] {
     if (this.modoFuenteEleccion === 'PAE_ESTIPULADO') {
       return this.opcionesSugeridasIA.filter(o => o.origen === 'PAE_ESTIPULADO');
     }
     if (this.modoFuenteEleccion === 'IA_INVENTARIO') {
-      return this.opcionesSugeridasIA.filter(o => o.origen === 'IA_INVENTARIO' || o.origen === 'SUGERENCIA_IA');
+      return this.opcionesSugeridasIA.filter(o => o.origen === 'IA_INVENTARIO');
     }
     return this.opcionesSugeridasIA;
   }
 
   onPlatoSeleccionadoEnSelect(): void {
-    const plato = this.opcionesSugeridasIA.find(p => p.nombre_plato === this.programarDiaForm.nombre_plato)
-      || this.platosEstipuladosPAE.find(p => p.nombre_plato === this.programarDiaForm.nombre_plato)
+    const plato = this.platosEstipuladosPAE.find(p => p.nombre_plato === this.programarDiaForm.nombre_plato)
       || this.catalogoPlatosVista.find(p => p.nombre_plato === this.programarDiaForm.nombre_plato);
     if (plato) {
       this.seleccionarOpcionParaDia(plato, 0);
@@ -2502,11 +2488,10 @@ export class MenusComponent implements OnInit {
   }
 
   seleccionarOpcionParaDia(opcion: any, idx: number): void {
-    this.opcionSeleccionadaDetalle = opcion;
     this.programarDiaForm.opcionSeleccionadaIndex = idx;
     this.programarDiaForm.id_plato = opcion.id_plato || null;
     this.programarDiaForm.nombre_plato = opcion.nombre_plato;
-    this.programarDiaForm.origen_eleccion = (opcion.origen === 'IA_INVENTARIO' || opcion.origen === 'SUGERENCIA_IA') ? 'SUGERENCIA_IA' : 'PAE_ESTIPULADO';
+    this.programarDiaForm.origen_eleccion = opcion.origen === 'IA_INVENTARIO' ? 'SUGERENCIA_IA' : 'PAE_ESTIPULADO';
 
     const det = opcion.componentes_detalle;
     if (det) {
@@ -2526,61 +2511,6 @@ export class MenusComponent implements OnInit {
 
     this.programarDiaForm.ingredientes = Array.isArray(opcion.ingredientes) ? [...opcion.ingredientes] : [];
     this.programarDiaForm.pasos = Array.isArray(opcion.pasos) ? [...opcion.pasos] : [];
-  }
-
-  descontarInventarioSeleccionado(): void {
-    const idSede = Number(this.programarDiaForm.id_sede || this.sedeSeleccionadaId);
-    if (!idSede) {
-      this.sweetAlert.warning('Sede requerida', 'Selecciona la sede para descontar inventario.');
-      return;
-    }
-    if (!this.programarDiaForm.ingredientes || this.programarDiaForm.ingredientes.length === 0) {
-      this.sweetAlert.warning('Sin ingredientes', 'No hay ingredientes calculados para descontar.');
-      return;
-    }
-
-    this.descontandoInventario = true;
-    this.http.post<any>(`${this.apiUrl}/ia/descontar-inventario/`, {
-      id_sede: idSede,
-      id_plato: this.programarDiaForm.id_plato || null,
-      nombre_plato: this.programarDiaForm.nombre_plato,
-      ninos_presentes: Number(this.programarDiaForm.ninos_presentes || 120),
-      ingredientes: this.programarDiaForm.ingredientes
-    }).pipe(catchError((err) => {
-      this.descontandoInventario = false;
-      this.sweetAlert.error('Error al descontar', err?.error?.error || 'No fue posible registrar la salida de inventario.');
-      return of(null);
-    })).subscribe((resp) => {
-      this.descontandoInventario = false;
-      if (resp && resp.status === 'success') {
-        const detalle = (resp.descuentos || []).map((d: any) =>
-          `• ${d.ingrediente}: Se descontaron ${d.cantidad_descontada} ${d.unidad} (Quedan: ${d.stock_restante} ${d.unidad})`
-        ).join('\n');
-
-        this.sweetAlert.success(
-          '¡Inventario Descontado con Éxito!',
-          `${resp.mensaje}\n\n${detalle}`
-        );
-        this.consultarSugerenciasIAParaSede();
-      }
-    });
-  }
-
-  descontarInventarioBackend(idSede: number, nombrePlato: string, ninos: number, ingredientes: any[]): void {
-    this.http.post<any>(`${this.apiUrl}/ia/descontar-inventario/`, {
-      id_sede: idSede,
-      id_plato: this.programarDiaForm.id_plato || null,
-      nombre_plato: nombrePlato,
-      ninos_presentes: ninos,
-      ingredientes: ingredientes
-    }).pipe(catchError((err) => {
-      console.warn('Error al descontar inventario en segundo plano:', err);
-      return of(null);
-    })).subscribe((resp) => {
-      if (resp && resp.status === 'success') {
-        console.log('Descuento de inventario aplicado:', resp);
-      }
-    });
   }
 
   guardarProgramacionDiaSede(): void {
@@ -2643,11 +2573,6 @@ export class MenusComponent implements OnInit {
       ingredientes: this.programarDiaForm.ingredientes,
       pasos: this.programarDiaForm.pasos
     });
-
-    // 1.1 Si está habilitado el descuento automático de inventario, procesarlo
-    if (this.descontarInventarioAlProgramar && Array.isArray(this.programarDiaForm.ingredientes) && this.programarDiaForm.ingredientes.length > 0) {
-      this.descontarInventarioBackend(idSede, this.programarDiaForm.nombre_plato, Number(this.programarDiaForm.ninos_presentes || 120), this.programarDiaForm.ingredientes);
-    }
 
     // 2. Persistir también en el backend (`/api/menus/`) asociado a la sede
     const contratoSede = this.contratos.find(c => {
