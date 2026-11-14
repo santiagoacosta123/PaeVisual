@@ -9,10 +9,10 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const router = inject(Router);
   const token = authService.obtenerToken();
 
-  const backendHost = 'https://backend-sirae-pyim.onrender.com';
+  const backendHost = 'https://backend-sirae-t9zi.onrender.com';
   let normalizedUrl = req.url
     .replace(/^http:\/\/(localhost|127\.0\.0\.1):8000/i, backendHost)
-    .replace(/^https:\/\/backend-sirae-t9zi\.onrender\.com/i, backendHost);
+    .replace(/^https:\/\/backend-sirae-pyim\.onrender\.com/i, backendHost);
 
   if (
     normalizedUrl.startsWith(backendHost) &&
