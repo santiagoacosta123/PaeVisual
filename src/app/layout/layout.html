@@ -123,7 +123,7 @@
           <span class="sv-label">Mis Plantillas</span>
         </a>
 
-        <a routerLink="/menus" routerLinkActive="sv-active" class="sv-link"
+        <a *ngIf="institucionActiva" routerLink="/menus" routerLinkActive="sv-active" class="sv-link"
            aria-label="Menú y Platos PAE">
           <span class="material-symbols-outlined sv-icon">restaurant_menu</span>
           <span class="sv-label">Menú</span>
@@ -611,11 +611,11 @@
         <span class="modern-nav-text">Sedes</span>
       </a>
 
-      <!-- CONSULTA GRAMAJES (Administrador institucional y Jefa de manipuladoras) -->
-      <a *ngIf="esAdministrador || esJefa" routerLink="consulta-gramajes" routerLinkActive="active" class="modern-nav-item" title="Gramajes por Sede y Jornada">
+      <!-- CONSULTA GRAMAJES: módulo no activo, oculto -->
+      <!-- <a *ngIf="esAdministrador || esJefa" routerLink="consulta-gramajes" routerLinkActive="active" class="modern-nav-item" title="Gramajes por Sede y Jornada">
         <span class="material-symbols-outlined modern-nav-icon" aria-hidden="true">scale</span>
         <span class="modern-nav-text">Gramajes</span>
-      </a>
+      </a> -->
 
 
       <!-- USUARIOS -->
