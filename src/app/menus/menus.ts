@@ -1560,8 +1560,12 @@ export class MenusComponent implements OnInit {
           id_seccion: idSeccionPrincipal
         });
 
-    req.pipe(catchError(() => of(null))).subscribe(() => {
+    req.pipe(catchError(() => of(null))).subscribe((respPlato: any) => {
       this.guardandoReceta = false;
+      const platoIdFinal = Number(respPlato?.id_plato || platoActualizado.id_plato);
+      if (platoIdFinal) {
+        this.sincronizarRecetaYPasosEnBackend(platoIdFinal, platoActualizado);
+      }
     });
 
     this.sweetAlert.success(
@@ -1569,6 +1573,85 @@ export class MenusComponent implements OnInit {
       `La receta y momentos del plato "${nombre}" han sido guardados.`
     );
     this.cerrarModalRecetaPlato();
+  }
+
+  /** Guarda los ingredientes y pasos del plato en las tablas receta_componente y pasos_preparacion de PostgreSQL. */
+  private sincronizarRecetaYPasosEnBackend(idPlato: number, plato: any): void {
+    if (!idPlato || !plato) return;
+
+    // 1. Sincronizar ingredientes en /api/receta_componente/
+    const idsIngredientes = new Set<number>();
+    for (const comp of plato.componentes_estructurados || []) {
+      for (const ing of comp.ingredientes || []) {
+        if (ing.id_ingrediente) {
+          idsIngredientes.add(Number(ing.id_ingrediente));
+        }
+      }
+    }
+
+    if (idsIngredientes.size > 0) {
+      this.http.get<any[]>(`${this.apiUrl}/receta_componente/`).pipe(catchError(() => of([]))).subscribe((resRc: any) => {
+        const listaRc = Array.isArray(resRc) ? resRc : (resRc?.results || []);
+        const yaRegistrados = new Set<number>(
+          listaRc
+            .filter((rc: any) => {
+              const pId = typeof rc.id_plato === 'object' ? (rc.id_plato?.id_plato || rc.id_plato?.id) : rc.id_plato;
+              return Number(pId) === Number(idPlato);
+            })
+            .map((rc: any) => {
+              const ingId = typeof rc.id_ingrediente === 'object' ? (rc.id_ingrediente?.id_ingrediente || rc.id_ingrediente?.id) : rc.id_ingrediente;
+              return Number(ingId);
+            })
+        );
+
+        idsIngredientes.forEach(idIng => {
+          if (!yaRegistrados.has(idIng)) {
+            this.http.post<any>(`${this.apiUrl}/receta_componente/`, {
+              id_plato: idPlato,
+              id_ingrediente: idIng,
+              id_gramaje: null
+            }).pipe(catchError(() => of(null))).subscribe();
+          }
+        });
+      });
+    }
+
+    // 2. Sincronizar pasos de preparación en /api/pasos_preparacion/
+    this.http.get<any[]>(`${this.apiUrl}/pasos_preparacion/`).pipe(catchError(() => of([]))).subscribe((resPasos: any) => {
+      const listaPasos = Array.isArray(resPasos) ? resPasos : (resPasos?.results || []);
+      const viejos = listaPasos.filter((p: any) => {
+        const pId = typeof p.id_plato === 'object' ? (p.id_plato?.id_plato || p.id_plato?.id) : p.id_plato;
+        return Number(pId) === Number(idPlato);
+      });
+
+      const registrarNuevos = () => {
+        let contador = 1;
+        for (const comp of plato.componentes_estructurados || []) {
+          for (const paso of comp.pasos || []) {
+            const texto = (paso.descripcion_paso || '').trim();
+            if (!texto) continue;
+            this.http.post<any>(`${this.apiUrl}/pasos_preparacion/`, {
+              id_plato: idPlato,
+              numero_paso: contador++,
+              descripcion_paso: `[${comp.nombre_componente}] ${texto}`
+            }).pipe(catchError(() => of(null))).subscribe();
+          }
+        }
+      };
+
+      if (viejos.length > 0) {
+        const borrarObs = viejos.map((v: any) => {
+          const idP = v.id_paso_preparacion || v.id_paso || v.id;
+          return this.http.delete<any>(`${this.apiUrl}/pasos_preparacion/${idP}/`).pipe(catchError(() => of(null)));
+        });
+        forkJoin(borrarObs).subscribe({
+          next: () => registrarNuevos(),
+          error: () => registrarNuevos()
+        });
+      } else {
+        registrarNuevos();
+      }
+    });
   }
 
   // ============================================================
@@ -1632,6 +1715,16 @@ export class MenusComponent implements OnInit {
             }
           }
         }
+
+        // Notificar al móvil de la Jefa de la Sede
+        const formData = new FormData();
+        formData.append('titulo', `Minuta Semana ${semana} Aprobada por Supervisor`);
+        formData.append(
+          'mensaje',
+          `El Supervisor PAE (${nombreSup}) ha aprobado la programación de la Semana ${semana} para la sede ${this.sedeActualObj?.nombre_sede || 'asignada'}. La minuta oficial ha quedado fijada.`
+        );
+        this.http.post(`${this.apiUrl}/notificaciones/enviar/`, formData)
+          .pipe(catchError(() => of(null))).subscribe();
 
         this.sweetAlert.success('Minuta Aprobada', `La Semana ${semana} ha sido formalmente aprobada por el Supervisor PAE.`);
         this.cdr.detectChanges();
@@ -1720,6 +1813,16 @@ export class MenusComponent implements OnInit {
           estado: 'Rechazado'
         }).pipe(catchError(() => of(null))).subscribe();
       }
+
+      // Enviar notificación a la Jefa de la Sede con el motivo del rechazo
+      const formData = new FormData();
+      formData.append('titulo', `Plato devuelto por Supervisor - ${momento}`);
+      formData.append(
+        'mensaje',
+        `El plato "${item.nombre_plato}" del ${dia.diaSemana} (${momento}) fue devuelto por el supervisor para la sede ${this.sedeActualObj?.nombre_sede || 'asignada'}. Motivo: ${motivo.trim()}. Debes ingresar a la app y cambiar este plato.`
+      );
+      this.http.post(`${this.apiUrl}/notificaciones/enviar/`, formData)
+        .pipe(catchError(() => of(null))).subscribe();
     }
 
     this.mostrarModalRechazoSupervisor = false;
