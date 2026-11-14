@@ -70,8 +70,8 @@ export interface PasswordResetTokenResponse {
   providedIn: 'root'
 })
 export class AuthService {
-  private apiBaseUrl = (environment.apiUrl || 'https://backend-sirae-t9zi.onrender.com')
-    .replace(/^https:\/\/backend-sirae-pyim\.onrender\.com/i, 'https://backend-sirae-t9zi.onrender.com')
+  private apiBaseUrl = (environment.apiUrl || 'https://backend-sirae-pyim.onrender.com/api')
+    .replace(/^https:\/\/backend-sirae-t9zi\.onrender\.com/i, 'https://backend-sirae-pyim.onrender.com')
     .replace(/\/+$/, '');
   private get apiUrl(): string {
     return this.apiBaseUrl.endsWith('/api') ? this.apiBaseUrl : `${this.apiBaseUrl}/api`;
