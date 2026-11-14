@@ -105,6 +105,12 @@
           <span class="sv-label">Inicio</span>
         </a>
 
+        <a *ngIf="institucionActiva && (rolUsuario === 'supervisor' || rolUsuario === 'coordinador' || rolUsuario === 'coordinador pae')" routerLink="/registrar-entrega-alimentos" routerLinkActive="sv-active" class="sv-link"
+           aria-label="Registrar entrega de alimentos">
+          <span class="material-symbols-outlined sv-icon">local_shipping</span>
+          <span class="sv-label">Registrar entrega</span>
+        </a>
+
         <a *ngIf="institucionActiva && tieneSedes" routerLink="/instituciones" routerLinkActive="sv-active" class="sv-link"
            aria-label="Sedes">
           <span class="material-symbols-outlined sv-icon">apartment</span>
@@ -115,12 +121,6 @@
            aria-label="Mis plantillas operativas">
           <span class="material-symbols-outlined sv-icon">analytics</span>
           <span class="sv-label">Mis Plantillas</span>
-        </a>
-
-        <a *ngIf="institucionActiva" routerLink="/consulta-gramajes" routerLinkActive="sv-active" class="sv-link"
-           aria-label="Gramajes por sede y jornada">
-          <span class="material-symbols-outlined sv-icon">scale</span>
-          <span class="sv-label">Gramajes</span>
         </a>
 
         <a routerLink="/menus" routerLinkActive="sv-active" class="sv-link"
@@ -382,14 +382,6 @@
       <div class="superadmin-nav-group">
         <span class="superadmin-group-label">Administración</span>
 
-        <!-- PLANTILLAS -->
-        <a routerLink="/plantillas-maestras" routerLinkActive="active" class="superadmin-nav-item" title="Plantillas Maestras PAE">
-          <div class="superadmin-nav-item-left">
-            <span class="material-symbols-outlined superadmin-nav-icon">design_services</span>
-            <span class="superadmin-nav-text">Plantillas</span>
-          </div>
-        </a>
-
         <!-- BANCO DE DATOS -->
         <a routerLink="banco-datos" routerLinkActive="active" class="superadmin-nav-item" title="Banco de Datos">
           <div class="superadmin-nav-item-left">
@@ -398,27 +390,11 @@
           </div>
         </a>
 
-        <!-- CONSULTA DE GRAMAJES -->
-        <a routerLink="consulta-gramajes" routerLinkActive="active" class="superadmin-nav-item" title="Consulta de Gramajes por Sede y Jornada">
-          <div class="superadmin-nav-item-left">
-            <span class="material-symbols-outlined superadmin-nav-icon">scale</span>
-            <span class="superadmin-nav-text">Consulta Gramajes</span>
-          </div>
-        </a>
-
         <!-- USUARIOS -->
         <a routerLink="usuarios" routerLinkActive="active" class="superadmin-nav-item" title="Usuarios y Roles">
           <div class="superadmin-nav-item-left">
             <span class="material-symbols-outlined superadmin-nav-icon">manage_accounts</span>
             <span class="superadmin-nav-text">Usuarios</span>
-          </div>
-        </a>
-
-        <!-- MENSAJERÍA -->
-        <a routerLink="mensajeria" routerLinkActive="active" class="superadmin-nav-item" title="Mensajería y Chat">
-          <div class="superadmin-nav-item-left">
-            <span class="material-symbols-outlined superadmin-nav-icon">chat</span>
-            <span class="superadmin-nav-text">Mensajería</span>
           </div>
         </a>
       </div>

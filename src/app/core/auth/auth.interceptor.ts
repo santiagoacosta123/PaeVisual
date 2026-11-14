@@ -3,16 +3,18 @@ import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
 import { AuthService } from './auth.service';
+import { environment } from '../../../environments/environment';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
   const router = inject(Router);
   const token = authService.obtenerToken();
 
-  const backendHost = 'https://backend-sirae-t9zi.onrender.com';
+  const apiBase = (environment.apiUrl || 'https://backend-sirae-pyim.onrender.com/api').replace(/\/+$/, '');
+  const backendHost = apiBase.replace(/\/api$/, '');
   let normalizedUrl = req.url
     .replace(/^http:\/\/(localhost|127\.0\.0\.1):8000/i, backendHost)
-    .replace(/^https:\/\/backend-sirae-pyim\.onrender\.com/i, backendHost);
+    .replace(/^https:\/\/backend-sirae-t9zi\.onrender\.com/i, backendHost);
 
   if (
     normalizedUrl.startsWith(backendHost) &&

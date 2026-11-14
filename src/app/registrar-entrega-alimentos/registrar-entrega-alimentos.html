@@ -1830,6 +1830,10 @@
                                     <div class="inv-info">
                                         <h5 [title]="sel.ingrediente">{{ nombreMostrado(sel.ingrediente) }}</h5>
                                         <small>{{ categoriaDe(sel.ingrediente) }} · {{ sel.tipoMercado || (sel.categoria === 'Perecederos' ? 'Perecedero' : 'No perecedero') }}</small>
+                                        <div *ngIf="calculadoDe(sel) as cRow" class="mt-1 flex items-center gap-1 rounded-md bg-amber-50 px-1.5 py-0.5 text-[10.5px] font-bold text-amber-800 border border-amber-200">
+                                            <span class="material-symbols-outlined text-[13px]">calculate</span>
+                                            <span>Sugerido cupos: <b>{{ ((cRow.cantidad_sugerida_despacho > 0 ? cRow.cantidad_sugerida_despacho : cRow.cantidad_total_requerida) | number:'1.0-2') }} {{ sel.unidad }}</b></span>
+                                        </div>
                                     </div>
                                     <button type="button" class="inv-quitar" (click)="quitarSeleccionado(sel)" [attr.aria-label]="'Quitar ' + sel.ingrediente">
                                         <span class="material-symbols-outlined" aria-hidden="true">close</span>
