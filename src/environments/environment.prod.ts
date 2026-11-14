@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://backend-sirae-pyim.onrender.com',
+  apiUrl: 'https://backend-sirae-pyim.onrender.com/api',
 };

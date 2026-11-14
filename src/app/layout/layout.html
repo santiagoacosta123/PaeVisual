@@ -45,7 +45,7 @@
           <span class="sv-label">Gramajes</span>
         </a>
 
-        <a *ngIf="institucionActiva" routerLink="/menus" routerLinkActive="sv-active" class="sv-link"
+        <a routerLink="/menus" routerLinkActive="sv-active" class="sv-link"
            aria-label="Menú y Platos PAE">
           <span class="material-symbols-outlined sv-icon">restaurant_menu</span>
           <span class="sv-label">Menú</span>
@@ -291,6 +291,14 @@
           <div class="superadmin-nav-item-left">
             <span class="material-symbols-outlined superadmin-nav-icon">monitoring</span>
             <span class="superadmin-nav-text">Reportes</span>
+          </div>
+        </a>
+
+        <!-- MENÚ Y RECETAS PAE -->
+        <a routerLink="/menus" routerLinkActive="active" class="superadmin-nav-item" title="Menú y Recetas PAE">
+          <div class="superadmin-nav-item-left">
+            <span class="material-symbols-outlined superadmin-nav-icon">restaurant_menu</span>
+            <span class="superadmin-nav-text">Menú</span>
           </div>
         </a>
       </div>
