@@ -2106,7 +2106,9 @@ export class MenusComponent implements OnInit {
           const matchSec = Number(mb.id_seccion) === idSec;
           const info = String(mb.informacion_nutricional || '');
           const matchDia = info.match(/\[MENU_CICLO:(\d+)\]/);
-          return matchSec && (matchDia ? Number(matchDia[1]) === numMenu : false);
+          const matchCiclo = matchDia ? Number(matchDia[1]) === numMenu : false;
+          const matchFecha = (localSlot?.fecha && mb.fecha === localSlot.fecha) || (fechaDia && mb.fecha === fechaDia);
+          return matchSec && (matchCiclo || matchFecha);
         });
 
         if (menuBackend && !fechaDia.includes('-') && menuBackend.fecha) {
@@ -2146,7 +2148,13 @@ export class MenusComponent implements OnInit {
             ? this.platos.find(p => Number(p.id_plato) === Number(platoDet.id_plato))
             : (menuBackend.id_plato ? this.platos.find(p => Number(p.id_plato) === Number(menuBackend.id_plato)) : null);
 
-          const nombrePlato = platoDet?.nombre_plato || platoCatalogo?.nombre_plato || menuBackend.nombre_plato || `Menú ${numMenu}`;
+          let nombreExtraido = '';
+          const matchJefa = String(menuBackend.informacion_nutricional || '').match(/\[Elegido Jefa\]\s*([^|]+)/i);
+          if (matchJefa && matchJefa[1]) {
+            nombreExtraido = matchJefa[1].trim();
+          }
+
+          const nombrePlato = nombreExtraido || platoDet?.nombre_plato || platoCatalogo?.nombre_plato || menuBackend.nombre_plato || `Menú ${numMenu}`;
           const compTexto = platoDet?.componente || platoCatalogo?.componente || menuBackend.componente_plato || '';
           const infoLimpia = String(menuBackend.informacion_nutricional_limpia || menuBackend.informacion_nutricional || '');
           const esIA = infoLimpia.toUpperCase().includes('IA');

@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
-import { map, tap } from 'rxjs/operators';
+import { catchError, map, tap } from 'rxjs/operators';
 import { environment } from '@env/environment';
 
 export interface AsistenciaDiaria {
@@ -41,7 +41,8 @@ export class AsistenciaDiariaService {
         id_usuario_manipuladora: item['id_usuario_manipuladora'] == null
           ? null
           : Number(item['id_usuario_manipuladora']),
-      })))
+      }))),
+      catchError(() => of([]))
     );
   }
 

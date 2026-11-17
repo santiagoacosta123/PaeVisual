@@ -1105,10 +1105,15 @@ export class Reportes implements OnInit, OnDestroy {
 
     for (const contrato of listaDe(contratos)) {
       const idSede = Number(contrato.id_sede);
-      if (!idSede || !this.contratoVigente(contrato)) continue;
-      if (idInstitucion && Number(contrato.id_institucion) !== idInstitucion && !mapaSedes.has(idSede)) continue;
-      const sede = mapaSedes.get(idSede);
-      if (sede) sede.cupos += Number(contrato.cupos) || 0;
+      if (!this.contratoVigente(contrato)) continue;
+      if (idSede && mapaSedes.has(idSede)) {
+        const sede = mapaSedes.get(idSede)!;
+        sede.cupos = Math.max(sede.cupos, Number(contrato.cupos) || 0);
+      } else if (!idSede && idInstitucion && Number(contrato.id_institucion) === idInstitucion) {
+        for (const [, sede] of mapaSedes) {
+          if (sede.cupos === 0) sede.cupos = Number(contrato.cupos) || 0;
+        }
+      }
     }
 
     const delaInstitucion = (entregas ?? []).filter(e =>

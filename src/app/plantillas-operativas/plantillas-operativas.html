@@ -229,14 +229,14 @@
           </thead>
           <tbody>
             <tr style="font-weight:900; font-size:8px;">
-              <td style="border:1px solid #000; padding:2px 3px; background:#f8fafc;"></td>
-              <td style="border:1px solid #000; padding:2px 3px;">{{ rem.cupos.preescolar }}</td>
-              <td style="border:1px solid #000; padding:2px 3px;">{{ rem.cupos.primaria13 }}</td>
-              <td style="border:1px solid #000; padding:2px 3px;">{{ rem.cupos.primaria45 }}</td>
-              <td style="border:1px solid #000; padding:2px 3px;">{{ rem.cupos.secundaria }}</td>
-              <td style="border:1px solid #000; padding:2px 3px;">{{ rem.cupos.media }}</td>
-              <td style="border:1px solid #000; padding:2px 3px; background:#fff4d1; font-size:9px;">{{ rem.cupos.totalCupos }}</td>
-              <td style="border:1px solid #000; padding:2px 3px; background:#ffe3a3; font-size:9px;">{{ rem.cupos.racionesTotales }}</td>
+              <td style="border:1px solid #000; padding:2px 3px; background:#f8fafc; font-weight:800;">CUPOS AUTORIZADOS</td>
+              <td style="border:1px solid #000; padding:2px 3px;">{{ rem?.cupos?.preescolar ?? 0 }}</td>
+              <td style="border:1px solid #000; padding:2px 3px;">{{ rem?.cupos?.primaria13 ?? 0 }}</td>
+              <td style="border:1px solid #000; padding:2px 3px;">{{ rem?.cupos?.primaria45 ?? 0 }}</td>
+              <td style="border:1px solid #000; padding:2px 3px;">{{ rem?.cupos?.secundaria ?? 0 }}</td>
+              <td style="border:1px solid #000; padding:2px 3px;">{{ rem?.cupos?.media ?? 0 }}</td>
+              <td style="border:1px solid #000; padding:2px 3px; background:#fff4d1; font-size:9px;">{{ rem?.cupos?.totalCupos ?? 0 }}</td>
+              <td style="border:1px solid #000; padding:2px 3px; background:#ffe3a3; font-size:9px;">{{ rem?.cupos?.racionesTotales ?? 0 }}</td>
             </tr>
           </tbody>
         </table>
@@ -548,8 +548,8 @@
             <div class="membrete-meta">
               <span><strong>INSTITUCIÓN:</strong> {{ institucionActiva.nombre_institucion }}</span>
               <span><strong>SEDE:</strong> {{ sedeActiva?.nombre_sede || 'General' }}</span>
-              <span><strong>CUPOS TOTALES:</strong> {{ planillaRemision?.cupos?.totalCupos || 227 }}</span>
-              <span><strong>RACIONES PERIODO:</strong> {{ planillaRemision?.cupos?.racionesTotales || 4540 }}</span>
+              <span><strong>CUPOS TOTALES:</strong> {{ planillaRemision?.cupos?.totalCupos ?? 0 }}</span>
+              <span><strong>RACIONES PERIODO:</strong> {{ planillaRemision?.cupos?.racionesTotales ?? 0 }}</span>
             </div>
           </div>
         </header>

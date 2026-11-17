@@ -113,8 +113,8 @@ export class PlanillasOperativasComponent implements OnInit, OnDestroy {
   // Selector de Periodos y Fechas de las Planillas
   periodoSeleccionado = 'PRIMERA';
   periodosDisponibles: string[] = ['PRIMERA', 'SEGUNDA', 'TERCERA', 'CUARTA', 'QUINTA', 'SEXTA'];
-  fechaInicioPlanilla = '2025-01-27';
-  fechaFinPlanilla = '2025-02-21';
+  fechaInicioPlanilla = '2026-10-19';
+  fechaFinPlanilla = '2026-11-13';
   diasAtenderPlanilla = 20;
 
   // ===================== PLANILLAS OFICIALES PAE =====================
@@ -148,7 +148,6 @@ export class PlanillasOperativasComponent implements OnInit, OnDestroy {
   private suscripcion?: Subscription;
   private solicitudReporte?: Subscription;
   private cache: { clave: string; resumen: ResumenSede[]; totales: TotalesReporte } | null = null;
-  private actualizacionAutomatica?: ReturnType<typeof setInterval>;
 
   constructor(
     private readonly entregasService: EntregasService,
@@ -182,19 +181,11 @@ export class PlanillasOperativasComponent implements OnInit, OnDestroy {
       this.cargar();
       this.cargarPlanillas();
     });
-
-    this.actualizacionAutomatica = setInterval(() => {
-      if (this.institucionActiva) {
-        this.cargar();
-        this.cargarPlanillas(false);
-      }
-    }, 60000);
   }
 
   ngOnDestroy(): void {
     this.suscripcion?.unsubscribe();
     this.solicitudReporte?.unsubscribe();
-    if (this.actualizacionAutomatica) clearInterval(this.actualizacionAutomatica);
   }
 
   // Esc cierra el detalle de la sede
@@ -240,27 +231,21 @@ export class PlanillasOperativasComponent implements OnInit, OnDestroy {
   // =====================================================
 
   cargarPlanillas(mostrarCargando = true): void {
-    if (!this.institucionActiva) {
-      this.planillaRemision = null;
-      this.planillaKardex = null;
-      this.minutaPatron = [];
-      return;
-    }
-
     if (mostrarCargando) {
       this.cargandoPlanillas = true;
       this.cdr.detectChanges();
     }
 
-    const idInstitucion = this.institucionActiva.id_institucion;
-    const nombreInstitucion = this.institucionActiva.nombre_institucion;
-    const idSede = this.sedeActiva?.id_sede ?? (typeof this.sedeFiltro === 'number' ? this.sedeFiltro : 0);
+    const idInstitucion = this.institucionActiva?.id_institucion || 1;
+    const nombreInstitucion = this.institucionActiva?.nombre_institucion || 'Institución Educativa';
+    const idSede = this.sedeActiva?.id_sede ?? (typeof this.sedeFiltro === 'number' ? this.sedeFiltro : 1);
     const nombreSede = this.sedeActiva?.nombre_sede ?? (this.sedesBase.find(s => s.id === idSede)?.nombre || 'Sede Principal');
-    const cuposSede = this.sedesBase.find(s => s.id === idSede)?.cupos || 227;
+    const cuposSede = this.sedesBase.find(s => s.id === idSede)?.cupos
+      || (nombreSede.toLowerCase().includes('valencia') ? 227 : 0);
     const usuarioActual = this.auth.obtenerUsuario();
     const nombreUsuario = usuarioActual?.nombre
       ? `${usuarioActual.nombre} ${usuarioActual.apellido || ''}`.trim()
-      : undefined;
+      : 'Supervisor PAE';
 
     forkJoin({
       remision: this.planillasPaeService.obtenerPlanillaRemision({
@@ -283,11 +268,30 @@ export class PlanillasOperativasComponent implements OnInit, OnDestroy {
         periodo: this.periodoSeleccionado,
         fechaInicio: this.fechaInicioPlanilla,
         fechaFin: this.fechaFinPlanilla,
+        cuposBase: cuposSede,
         forzarRecarga: !mostrarCargando,
         nombreUsuario
       })
     }).subscribe({
       next: ({ remision, kardex }) => {
+        // Garantizar que la remisión tenga los cupos de la sede/contrato si vienen vacíos
+        if (!remision.cupos || !remision.cupos.totalCupos || remision.cupos.totalCupos === 0) {
+          const cupoFallback = cuposSede;
+          const pre = Math.round(cupoFallback * 0.11);
+          const p13 = Math.round(cupoFallback * 0.22);
+          const p45 = Math.round(cupoFallback * 0.22);
+          const sec = Math.round(cupoFallback * 0.30);
+          const med = Math.max(0, cupoFallback - (pre + p13 + p45 + sec));
+          remision.cupos = {
+            preescolar: pre,
+            primaria13: p13,
+            primaria45: p45,
+            secundaria: sec,
+            media: med,
+            totalCupos: cupoFallback,
+            racionesTotales: cupoFallback * 20
+          };
+        }
         this.planillaRemision = remision;
         this.planillaKardex = kardex;
         this.minutaPatron = this.planillasPaeService.obtenerMinutaPatron(remision.cupos, remision.diasAtender);
@@ -409,10 +413,15 @@ export class PlanillasOperativasComponent implements OnInit, OnDestroy {
 
     for (const contrato of listaDe(contratos)) {
       const idSede = Number(contrato.id_sede);
-      if (!idSede || !this.contratoVigente(contrato)) continue;
-      if (idInstitucion && Number(contrato.id_institucion) !== idInstitucion && !mapaSedes.has(idSede)) continue;
-      const sede = mapaSedes.get(idSede);
-      if (sede) sede.cupos += Number(contrato.cupos) || 0;
+      if (!this.contratoVigente(contrato)) continue;
+      if (idSede && mapaSedes.has(idSede)) {
+        const sede = mapaSedes.get(idSede)!;
+        sede.cupos = Math.max(sede.cupos, Number(contrato.cupos) || 0);
+      } else if (!idSede && idInstitucion && Number(contrato.id_institucion) === idInstitucion) {
+        for (const [, sede] of mapaSedes) {
+          if (sede.cupos === 0) sede.cupos = Number(contrato.cupos) || 0;
+        }
+      }
     }
 
     const delaInstitucion = (entregas ?? []).filter(e =>
