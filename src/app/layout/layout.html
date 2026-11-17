@@ -39,27 +39,118 @@
   .sv-link.sv-logout { color: #e53935; }
   .sv-link.sv-logout:hover { background: #fdecea; color: #c62828; }
 
-  /* ---------- Header del supervisor (campana con contador, avatar y popover) ---------- */
-  .svh-badge {
-    position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; padding: 0 5px;
-    display: flex; align-items: center; justify-content: center; box-sizing: border-box;
-    border-radius: 99px; background: #ef4444; color: #fff;
-    font-size: 10px; font-weight: 800; line-height: 1;
-    box-shadow: 0 0 0 2px #fff; pointer-events: none;
+  /* ---------- Header del supervisor (animación solo al acercar el mouse) ---------- */
+  @keyframes svhHoverRipple {
+    0%   { opacity: .75; transform: scale(1); }
+    100% { opacity: 0; transform: scale(1.38); }
   }
+  @keyframes svhBellWiggle {
+    0%, 100% { transform: rotate(0deg); }
+    20% { transform: rotate(14deg); }
+    40% { transform: rotate(-12deg); }
+    60% { transform: rotate(8deg); }
+    80% { transform: rotate(-6deg); }
+  }
+  @keyframes svhDropIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .svh-bar {
+    position: relative;
+    z-index: 50;
+  }
+
+  .svh-notif-btn {
+    position: relative;
+    background: transparent;
+    border: none;
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 50%;
+    transition: background .18s ease, transform .18s ease;
+  }
+  .svh-notif-btn:hover { background: #f8fafc; transform: scale(1.06); }
+  .svh-notif-btn:hover .material-symbols-outlined { animation: svhBellWiggle .55s ease; }
+
+  .svh-notif-dot {
+    position: absolute;
+    top: 7px;
+    right: 8px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #e69a0c;
+    box-shadow: 0 0 0 2px #fff;
+    pointer-events: none;
+  }
+
+  .svh-user-btn {
+    background: transparent;
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+    border-radius: 50%;
+  }
+  .svh-avatar-ring {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px;
+    border-radius: 50%;
+    border: 2px solid #f4b41f;
+    background: #fff;
+    flex: none;
+    transition: transform .24s cubic-bezier(.22, 1, .36, 1), border-color .24s ease, box-shadow .24s ease;
+  }
+  .svh-avatar-ring::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: 50%;
+    border: 2px solid #f4b41f;
+    opacity: 0;
+    transform: scale(1);
+    pointer-events: none;
+  }
+  .svh-user-btn:hover .svh-avatar-ring {
+    transform: scale(1.08);
+    border-color: #e69a0c;
+    box-shadow: 0 6px 16px -4px rgba(244, 180, 31, .45);
+  }
+  .svh-user-btn:hover .svh-avatar-ring::after {
+    animation: svhHoverRipple .6s cubic-bezier(.22, 1, .36, 1) forwards;
+  }
+  .svh-user-btn:active .svh-avatar-ring {
+    transform: scale(.96);
+  }
+
+  .svh-notif-pop {
+    animation: svhDropIn .18s cubic-bezier(.22, 1, .36, 1) both;
+  }
+
   .svh-avatar { position: relative; display: inline-flex; flex: none; }
   .svh-dot {
     position: absolute; right: 0; bottom: 0; width: 11px; height: 11px; box-sizing: border-box;
     border-radius: 50%; background: #22c55e; border: 2px solid #fff;
   }
   .svh-pop {
-    position: absolute; right: 0; top: 52px; z-index: 100; width: 300px; box-sizing: border-box;
-    background: #fff; border: 1px solid #e2e8f0; border-radius: 18px; padding: 16px;
+    position: absolute; right: 0; top: 54px; z-index: 200; width: 290px; box-sizing: border-box;
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 18px; padding: 14px;
     box-shadow: 0 16px 40px -12px rgba(15, 23, 42, .25);
+    animation: svhDropIn .18s cubic-bezier(.22, 1, .36, 1) both;
   }
   .svh-pop-head {
     display: flex; align-items: center; gap: 12px;
-    padding-bottom: 12px; margin-bottom: 8px; border-bottom: 1px solid #f1f5f9;
+    padding: 2px 2px 12px; margin-bottom: 8px; border-bottom: 1px solid #f1f5f9;
   }
   .svh-pop-name { display: block; font-size: 14px; font-weight: 800; color: #0f172a; overflow-wrap: anywhere; }
   .svh-pop-mail { display: block; font-size: 11.5px; color: #64748b; overflow-wrap: anywhere; }
@@ -68,18 +159,62 @@
     border-radius: 99px; background: #fff4d6; color: #8a5a00; font-size: 10.5px; font-weight: 700;
   }
   .svh-role .material-symbols-outlined { font-size: 13px; }
-  .svh-act {
-    display: flex; align-items: center; gap: 10px; width: 100%; box-sizing: border-box;
-    padding: 10px; border: 0; border-radius: 12px; background: none; cursor: pointer;
-    color: #334155; font-family: inherit; font-size: 13px; font-weight: 600; text-align: left; text-decoration: none;
-    transition: background .15s ease, color .15s ease;
+
+  .svh-act-list {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
   }
-  .svh-act:hover { background: #fff7e6; color: #b77900; }
-  .svh-act-ico { font-size: 19px; color: #b77900; }
-  .svh-act-go { margin-left: auto; font-size: 18px; color: #cbd5e1; }
-  .svh-out { color: #e53935; }
-  .svh-out .svh-act-ico { color: #e53935; }
-  .svh-out:hover { background: #fdecea; color: #c62828; }
+  .svh-act {
+    position: relative;
+    display: flex; align-items: center; width: 100%; box-sizing: border-box;
+    padding: 10px 14px; border: 0; border-radius: 11px; background: none; cursor: pointer;
+    color: #334155; font-family: inherit; font-size: 13px; font-weight: 600; text-align: left; text-decoration: none;
+    transition: background .18s ease, color .18s ease, padding-left .18s ease;
+  }
+  .svh-act::before {
+    content: '';
+    position: absolute;
+    left: 8px;
+    width: 3px;
+    height: 14px;
+    border-radius: 99px;
+    background: #e69a0c;
+    opacity: 0;
+    transform: scaleY(.5);
+    transition: opacity .18s ease, transform .18s ease;
+  }
+  .svh-act:hover {
+    background: #fff7e6;
+    color: #b77900;
+    padding-left: 20px;
+  }
+  .svh-act:hover::before {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+  .svh-act-sep {
+    height: 1px;
+    background: #f1f5f9;
+    margin: 5px 4px;
+  }
+  .svh-out {
+    color: #e53935;
+  }
+  .svh-out::before {
+    background: #e53935;
+  }
+  .svh-out:hover {
+    background: #fdecea;
+    color: #c62828;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .svh-user-btn:hover .svh-avatar-ring::after,
+    .svh-notif-btn:hover .material-symbols-outlined,
+    .svh-pop,
+    .svh-notif-pop { animation: none !important; }
+  }
 </style>
 
 
@@ -154,44 +289,32 @@
   <!-- Área Principal Supervisor -->
   <main style="flex:1; min-width:0; max-width:100%; padding:24px 32px; position:relative; overflow-y:auto; overflow-x:hidden; display:flex; flex-direction:column; gap:20px; box-sizing:border-box;">
 
-    <!-- Barra superior Header Supervisor -->
-    <div class="svh-bar" style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px 18px; min-height:68px; padding:10px 18px; border:1px solid #e9edf2; border-bottom:2px solid #f4b41f; border-radius:20px; background:linear-gradient(100deg,#fff9ed 0%,#fff 22%); box-shadow:0 8px 22px -14px rgba(15,23,42,.28);">
-      <div class="svh-left" style="display:flex; align-items:center; gap:12px; flex:1 1 15rem; min-width:0;">
-        <!-- Icono dinámico según la página actual -->
-        <div class="svh-ico" style="display:grid; place-items:center; width:42px; height:42px; flex:0 0 42px; border-radius:13px; background:#f4b41f; color:#17263a; box-shadow:none;">
-          <span class="material-symbols-outlined">{{
-            enInicioSupervisor ? 'space_dashboard'
-            : (tituloEncabezado?.toLowerCase()?.includes('historial') ? 'analytics'
-            : ((tituloEncabezado?.toLowerCase()?.includes('registrar') || tituloEncabezado?.toLowerCase()?.includes('entrega')) ? 'local_shipping'
-            : ((tituloEncabezado?.toLowerCase()?.includes('sede') || tituloEncabezado?.toLowerCase()?.includes('instituc')) ? 'apartment'
-            : 'restaurant')))
-          }}</span>
-        </div>
+    <!-- Barra superior Header Supervisor (fondo blanco limpio, sin difuminado ni iconos en el título) -->
+    <div class="svh-bar" style="position:relative; z-index:50; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px 18px; min-height:68px; padding:10px 22px; border:1px solid #e9edf2; border-radius:20px; background:#fff; box-shadow:0 8px 22px -14px rgba(15,23,42,.18);">
+      <div class="svh-left" style="display:flex; align-items:center; flex:1 1 15rem; min-width:0;">
         <div style="min-width:0;">
           <h1 class="svh-title" style="margin:0; color:#17263a; font-size:17px; line-height:1.25; overflow-wrap:anywhere;">{{ tituloEncabezado }}</h1>
           <span *ngIf="institucionActiva as institucion; else sinInstitucionSupervisor"
             class="svh-sub"
-            style="display:flex; align-items:flex-start; gap:6px; margin-top:2px; color:#475569; font-size:12px; font-weight:600; line-height:1.35; white-space:normal;">
-            <span class="material-symbols-outlined" aria-hidden="true" style="flex:none; color:#b77900; font-size:16px; line-height:1;">account_balance</span>
-            <span style="overflow-wrap:anywhere;">{{ institucion.nombre_institucion }}</span>
+            style="display:block; margin-top:2px; color:#475569; font-size:12px; font-weight:600; line-height:1.35; white-space:normal; overflow-wrap:anywhere;">
+            {{ institucion.nombre_institucion }}
           </span>
           <ng-template #sinInstitucionSupervisor>
             <span class="svh-sub" style="display:block; margin-top:2px; color:#475569; font-size:12px; white-space:normal;">Selecciona una institución para comenzar</span>
           </ng-template>
         </div>
-
       </div>
 
-      <div class="svh-right" style="display:flex; align-items:center; gap:12px; margin-left:auto;">
+      <div class="svh-right" style="display:flex; align-items:center; gap:14px; margin-left:auto;">
         <!-- Notificaciones -->
         <div style="position:relative;" class="dropdown-container">
-          <button type="button" (click)="toggleNotificaciones()" class="notif-btn"
-            style="background:#fff; border:1px solid #f1f5f9; border-radius:50%; width:38px; height:38px; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 6px 16px -8px rgba(15,23,42,.25);">
-            <span class="material-symbols-outlined" style="font-size:19px; color:#555;">notifications</span>
+          <button type="button" (click)="toggleNotificaciones()" class="svh-notif-btn"
+            [attr.aria-label]="'Notificaciones' + (notificacionesNoLeidas > 0 ? ' (' + notificacionesNoLeidas + ' sin leer)' : '')">
+            <span class="material-symbols-outlined" style="font-size:21px; color:#64748b;">notifications</span>
+            <span *ngIf="notificacionesNoLeidas > 0" class="svh-notif-dot" [title]="notificacionesNoLeidas + ' sin leer'"></span>
           </button>
-          <span *ngIf="notificacionesNoLeidas > 0" class="svh-badge">{{ notificacionesNoLeidas }}</span>
 
-          <div *ngIf="mostrarNotificaciones" style="position:absolute; right:0; top:50px; z-index:100; width:300px; background:#fff; border:1px solid #e2e8f0; border-radius:16px; padding:16px; box-shadow:0 10px 25px -5px rgba(0,0,0,0.1);">
+          <div *ngIf="mostrarNotificaciones" class="svh-notif-pop" style="position:absolute; right:0; top:50px; z-index:200; width:300px; background:#fff; border:1px solid #e2e8f0; border-radius:16px; padding:16px; box-shadow:0 10px 25px -5px rgba(0,0,0,0.1);">
             <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; border-bottom:1px solid #f1f5f9; padding-bottom:8px;">
               <span style="font-size:13px; font-weight:700; color:#1e293b;">Notificaciones</span>
               <button type="button" (click)="marcarTodasComoLeidasDesdePanel()" style="background:none; border:none; font-size:11px; color:#d97706; font-weight:600; cursor:pointer;">
@@ -211,21 +334,14 @@
           </div>
         </div>
 
-        <div style="width:1px; height:28px; background:#dce3ec;" aria-hidden="true"></div>
+        <div style="width:1px; height:26px; background:#e2e8f0;" aria-hidden="true"></div>
 
-        <!-- Perfil -->
+        <!-- Perfil: solo bolita circular con animación al pasar el mouse -->
         <div style="position:relative;" class="dropdown-container">
-          <button type="button" (click)="togglePerfil()" class="user-pill-btn"
-            style="background:#fffdf8; border:1px solid #eae4d9; display:flex; align-items:center; gap:10px; cursor:pointer; padding:4px 12px 4px 5px; border-radius:9999px;">
-            <span class="svh-avatar">
-              <img src="administrador.png" alt="Avatar" width="36" height="36" style="width:36px; height:36px; border-radius:50%; object-fit:cover;" />
-              <span class="svh-dot"></span>
+          <button type="button" (click)="togglePerfil()" class="svh-user-btn" [title]="perfil.nombre + ' · Mi cuenta'" aria-label="Menú de perfil">
+            <span class="svh-avatar-ring">
+              <img src="administrador.png" alt="Avatar" width="38" height="38" style="width:38px; height:38px; border-radius:50%; object-fit:cover; display:block;" />
             </span>
-            <div style="text-align:left; display:flex; flex-direction:column;">
-              <span style="font-size:13px; font-weight:700; color:#1a1a1a; line-height:1.2;">{{ perfil.nombre }}</span>
-              <span style="font-size:10.5px; color:#888; font-weight:400;">{{ perfil.rol }}</span>
-            </div>
-            <span class="material-symbols-outlined" style="font-size:17px; color:#888; margin-left:2px;">expand_more</span>
           </button>
 
           <div *ngIf="mostrarPerfil" class="svh-pop">
@@ -242,21 +358,19 @@
                 </div>
               </div>
 
-              <div style="display:flex; flex-direction:column; gap:2px;">
+              <div class="svh-act-list">
                 <a routerLink="/perfil" (click)="cerrarPanel()" class="svh-act">
-                  <span class="material-symbols-outlined svh-act-ico">badge</span> Ver perfil completo
-                  <span class="material-symbols-outlined svh-act-go">chevron_right</span>
+                  Ver perfil completo
                 </a>
                 <button type="button" (click)="irA('editar')" class="svh-act">
-                  <span class="material-symbols-outlined svh-act-ico">person</span> Editar información personal
-                  <span class="material-symbols-outlined svh-act-go">chevron_right</span>
+                  Editar información personal
                 </button>
                 <button type="button" (click)="irA('password')" class="svh-act">
-                  <span class="material-symbols-outlined svh-act-ico">lock</span> Cambiar Contraseña
-                  <span class="material-symbols-outlined svh-act-go">chevron_right</span>
+                  Cambiar Contraseña
                 </button>
+                <div class="svh-act-sep" aria-hidden="true"></div>
                 <button type="button" (click)="cerrarSesion()" class="svh-act svh-out">
-                  <span class="material-symbols-outlined svh-act-ico">logout</span> Cerrar Sesión
+                  Cerrar Sesión
                 </button>
               </div>
             </div>

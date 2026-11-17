@@ -1,27 +1,37 @@
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Roboto:wght@400;500;600;700;800;900&display=swap');
 
 /* =====================================================================
-   SIRAE · Entregas de inventario (RegistrarEntregaAlimentosComponent)
+   SIRAE · Entregas de inventario
+   Paleta equilibrada: #1B3317 · #FAF9F5 · #F5B81F
    ===================================================================== */
 .sirae-root, .modal-fondo {
-  --sirae-dorado: #F5B81F;
-  --sirae-dorado-suave: #FAF5E6;
-  --sirae-dorado-claro: #EBD8A0;
-  --sirae-dorado-oscuro: #956100;
+  --sirae-bosque: #1B3317;
+  --sirae-bosque-oscuro: #142611;
+  --sirae-verde: #2B5424;
+  --sirae-verde-hover: #1B3317;
+  --sirae-verde-claro: #3D7A33;
+  --sirae-lima: #F5B81F;
+  --sirae-lima-hover: #E2A714;
+  --sirae-menta-suave: #EDF4EA;
+  --sirae-menta-borde: #C5DAC0;
   --sirae-crema: #FAF9F5;
-  --sirae-azul: #1E293B;
   --sirae-superficie: #FFFFFF;
-  --sirae-fondo-azul: #F3F5F7;
-  --sirae-borde: #E5E7EB;
-  --sirae-secundario: #64748B;
-  --insumo-verde: #17663D;
-  --insumo-verde-claro: #ECF7F0;
-  --insumo-verde-borde: #C6E6D2;
-  --shadow-sm: 0 2px 10px rgba(30, 41, 59, 0.04);
-  --shadow-md: 0 12px 28px -10px rgba(30, 41, 59, 0.10);
+  --sirae-azul: #1B3317;
+  --sirae-secundario: #5E6B5B;
+  --sirae-borde: #E4E5DE;
+  --sirae-dorado: #F5B81F;
+  --sirae-dorado-suave: #FEF6DC;
+  --sirae-dorado-claro: #F8D87C;
+  --sirae-dorado-oscuro: #7A5600;
+  --insumo-verde: #2B5424;
+  --insumo-verde-claro: #EDF4EA;
+  --insumo-verde-borde: #C5DAC0;
+  --shadow-sm: 0 2px 10px rgba(27, 51, 23, 0.05);
+  --shadow-md: 0 14px 30px -10px rgba(27, 51, 23, 0.14);
   font-family: 'Roboto', Arial, sans-serif;
 }
+
 .sirae-root :not(.material-symbols-outlined),
 .modal-fondo :not(.material-symbols-outlined) {
   font-family: 'Roboto', Arial, sans-serif;
@@ -30,14 +40,22 @@
 .sirae-root {
   position: relative;
   min-height: 100vh;
-  padding: 20px 24px 36px;
+  padding: 16px 22px 36px;
   border-radius: 26px;
   background: var(--sirae-crema);
   color: var(--sirae-azul);
   -webkit-font-smoothing: antialiased;
 }
-.sirae-root h1, .sirae-root h2, .sirae-root h3, .sirae-root h4, .sirae-root h5 { color: var(--sirae-azul); }
-.sirae-root button:focus-visible, .modal-fondo button:focus-visible { outline: 2px solid var(--sirae-dorado); outline-offset: 2px; }
+
+.sirae-root h1, .sirae-root h2, .sirae-root h3, .sirae-root h4, .sirae-root h5 {
+  font-family: 'Plus Jakarta Sans', 'Roboto', Arial, sans-serif;
+  color: var(--sirae-azul);
+}
+
+.sirae-root button:focus-visible, .modal-fondo button:focus-visible {
+  outline: 2px solid var(--sirae-verde);
+  outline-offset: 2px;
+}
 
 .fx-up { animation: fxUp .28s cubic-bezier(.22,1,.36,1) both; }
 @keyframes fxUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
@@ -47,128 +65,138 @@
 .custom-scroll::-webkit-scrollbar { width: 5px; }
 .custom-scroll::-webkit-scrollbar-thumb { background: var(--sirae-borde); border-radius: 99px; }
 
-/* ---------- Barra de navegación superior ---------- */
-.top-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 16px; }
-.seg {
-  display: inline-flex; flex-wrap: wrap; gap: 4px; padding: 4px; max-width: 100%;
-  border: 1px solid var(--sirae-borde); border-radius: 12px; background: var(--sirae-superficie);
-  box-shadow: var(--shadow-sm);
-}
-.seg button {
-  height: 36px; padding: 0 15px; border: 1px solid transparent; border-radius: 9px;
-  display: inline-flex; align-items: center; gap: 7px;
-  background: transparent; color: var(--sirae-secundario); font: inherit; font-size: 13px; font-weight: 600;
-  cursor: pointer; transition: all .15s;
-}
-.seg button:hover:not(.on) { background: var(--sirae-crema); color: var(--sirae-azul); }
-.seg button.on { background: var(--sirae-azul); color: #FFFFFF; font-weight: 700; }
-.entrega-nav-icono { width: 16px; height: 16px; display: block; flex: none; pointer-events: none; }
-
-/* ---------- Hero creativo con arco orgánico a la izquierda (compacto) ---------- */
-.re-hero {
+/* ---------- Hero compacto con velo verde y letras blancas ---------- */
+.hero-shell {
   position: relative;
   overflow: hidden;
-  display: grid;
-  grid-template-columns: minmax(200px, 0.62fr) minmax(0, 1.38fr);
-  align-items: stretch;
-  min-height: 120px;
-  margin-bottom: 20px;
-  border: 1px solid var(--sirae-dorado-claro);
-  border-radius: 20px;
-  background: linear-gradient(115deg, #FFFDF7 0%, #FAF3DD 58%, #F8EBC6 100%);
-  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  padding: 20px 26px;
+  min-height: 112px;
+  margin-bottom: 16px;
+  border-radius: 18px;
+  background-color: var(--sirae-bosque);
+  box-shadow: 0 12px 26px -10px rgba(27, 51, 23, 0.34);
+  color: #FFFFFF;
 }
-.re-hero-main {
-  min-width: 0;
+
+.hero-shell::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(95deg, rgba(27, 51, 23, 0.84) 0%, rgba(43, 84, 36, 0.56) 55%, rgba(27, 51, 23, 0.22) 100%);
+  pointer-events: none;
+}
+
+.hero-bg-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  object-position: center;
+  pointer-events: none;
+  user-select: none;
+}
+
+.re-hero {
+  position: relative;
+  z-index: 2;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: flex-start;
-  gap: 5px;
-  padding: 16px 24px 16px 20px;
+  gap: 4px;
+  min-width: 0;
+  max-width: 620px;
 }
+
 .re-hero-eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 3px 9px;
-  border-radius: 999px;
-  background: var(--sirae-dorado-suave);
-  border: 1px solid var(--sirae-dorado-claro);
   font-size: 9.5px;
   font-weight: 800;
-  letter-spacing: .08em;
+  letter-spacing: .12em;
   text-transform: uppercase;
-  color: var(--sirae-dorado-oscuro);
+  color: #FFFFFF;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
 }
-.re-hero-eyebrow::before {
-  content: '';
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--sirae-dorado);
-}
+
 .re-hero-tit {
   margin: 0;
-  font-size: clamp(20px, 2.2vw, 26px);
-  font-weight: 900;
+  font-family: 'Plus Jakarta Sans', 'Roboto', sans-serif !important;
+  font-size: clamp(22px, 2.2vw, 28px);
+  font-weight: 800;
   line-height: 1.08;
-  letter-spacing: -.025em;
+  letter-spacing: -.02em;
+  color: #FFFFFF !important;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.60);
 }
-.re-hero-tit span { color: var(--sirae-dorado-oscuro); }
+
 .re-hero-sub {
   margin: 0;
-  color: var(--sirae-secundario);
+  color: #FFFFFF;
   font-size: 12.5px;
-  line-height: 1.35;
-  max-width: 470px;
+  line-height: 1.38;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
 }
-.re-hero-actions {
+
+/* ---------- Barra de navegación (arriba de categorías / arriba en historial) ---------- */
+.nav-abasto-bar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
-  margin-top: 2px;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 16px;
 }
-.re-hero-btn {
-  display: inline-flex; align-items: center; gap: 6px; padding: 6px 13px;
-  border: 0; border-radius: 9px;
-  background: var(--sirae-azul); color: #FFFFFF;
-  font: inherit; font-size: 11.5px; font-weight: 700; cursor: pointer; transition: background .15s;
-}
-.re-hero-btn:hover { background: #0F172A; }
-.re-hero-btn .material-symbols-outlined { font-size: 15px; color: var(--sirae-dorado); }
-.re-hero-chip {
-  display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px;
-  border: 1px solid var(--sirae-borde); border-radius: 9px;
-  background: var(--sirae-superficie); color: var(--sirae-azul);
-  font-size: 11.5px; font-weight: 700;
-}
-.re-hero-chip .material-symbols-outlined { font-size: 15px; color: var(--sirae-dorado-oscuro); }
 
-.re-hero-visual {
-  position: relative;
-  min-height: 120px;
-  overflow: hidden;
-  border-bottom-right-radius: 92% 100%;
-  border-right: 4px solid var(--sirae-dorado);
-  border-bottom: 2px solid var(--sirae-dorado);
-  box-shadow: 8px 0 22px -12px rgba(30, 41, 59, 0.16);
+.top-bar-cal {
+  margin-bottom: 14px;
 }
-.re-hero-visual img {
-  position: absolute;
-  inset: 0;
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
+
+.seg {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px;
+  max-width: 100%;
+  border: 1px solid var(--sirae-borde);
+  border-radius: 999px;
+  background: var(--sirae-crema);
+  box-shadow: var(--shadow-sm);
+}
+.seg button {
+  height: 34px;
+  padding: 0 16px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: var(--sirae-secundario);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .16s ease;
+}
+.seg button:hover:not(.on) {
+  background: #FFFFFF;
+  color: var(--sirae-bosque);
+}
+.seg button.on {
+  background: var(--sirae-verde);
+  color: #FFFFFF;
+  font-weight: 800;
+  box-shadow: 0 4px 12px -4px rgba(43, 84, 36, 0.45);
 }
 
 /* ---------- Layout principal ---------- */
-.layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; align-items: start; }
-@media (min-width: 1024px) { .layout { grid-template-columns: minmax(0, 1fr) 340px; } }
-@media (min-width: 1280px) { .layout { grid-template-columns: minmax(0, 1fr) 360px; } }
+.layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; align-items: start; }
+@media (min-width: 1024px) { .layout { grid-template-columns: minmax(0, 1fr) 335px; } }
+@media (min-width: 1280px) { .layout { grid-template-columns: minmax(0, 1fr) 355px; } }
 
 /* ---------- Paneles ---------- */
 .card-panel, .fx-panel, .inv-panel {
@@ -177,393 +205,412 @@
   border-radius: 18px;
   box-shadow: var(--shadow-sm);
 }
-.card-panel { padding: 20px 22px; }
+.card-panel { padding: 18px 20px; }
 
-/* ---------- Títulos de sección limpios ---------- */
+/* ---------- Títulos de sección ---------- */
 .sec-heading {
   display: flex;
-  align-items: center;
+  flex-wrap: wrap;
+  align-items: flex-end;
   justify-content: space-between;
   gap: 10px;
   margin-bottom: 12px;
 }
+.sec-eyebrow {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  color: var(--sirae-verde-claro);
+}
 .sec-heading h3 {
   margin: 0;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 800;
-  letter-spacing: .04em;
-  text-transform: uppercase;
+  letter-spacing: -.015em;
   color: var(--sirae-azul);
 }
-.sec-heading-link {
-  border: 0;
-  background: transparent;
-  color: var(--insumo-verde);
-  font: inherit;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-}
-.sec-heading-link:hover { text-decoration: underline; }
 
-/* ---------- Categorías circulares limpias ---------- */
-.abasto-categorias { margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--sirae-borde); }
+/* ---------- Categorías en tarjetas compactas ---------- */
+.abasto-categorias {
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--sirae-borde);
+}
 .cat-rail { display: flex; align-items: center; gap: 8px; }
 .abasto-flecha {
   display: grid; place-items: center; flex: 0 0 32px; height: 32px; padding: 0;
-  border: 1px solid var(--sirae-borde); border-radius: 50%; background: var(--sirae-superficie); color: var(--sirae-secundario); cursor: pointer;
+  border: 1px solid var(--sirae-borde); border-radius: 50%; background: var(--sirae-crema); color: var(--sirae-bosque); cursor: pointer;
+  box-shadow: var(--shadow-sm);
 }
-.abasto-flecha:hover { background: var(--sirae-crema); color: var(--sirae-azul); }
+.abasto-flecha:hover { background: var(--sirae-verde); border-color: var(--sirae-verde); color: #FFFFFF; }
+
 .cat-grid {
-  flex: 1; min-width: 0; display: grid; grid-auto-flow: column; grid-auto-columns: 88px; gap: 10px;
-  overflow-x: auto; padding: 4px 4px 8px; scroll-behavior: smooth;
+  flex: 1; min-width: 0;
+  display: grid; grid-auto-flow: column; grid-auto-columns: 128px; gap: 10px;
+  overflow-x: auto; padding: 4px 2px 8px; scroll-behavior: smooth;
   scrollbar-width: thin; scrollbar-color: var(--sirae-borde) transparent;
 }
 .cat-grid::-webkit-scrollbar { height: 4px; }
 .cat-grid::-webkit-scrollbar-thumb { border-radius: 99px; background: var(--sirae-borde); }
-.cat2 {
-  display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 4px;
-  border: 0; border-radius: 12px; background: transparent;
-  font: inherit; cursor: pointer; transition: transform .15s ease;
-}
-.cat2:hover { transform: translateY(-2px); }
-.cat2-foto {
-  width: 56px; height: 56px; border-radius: 50%; overflow: hidden;
-  border: 2px solid var(--sirae-borde); background: var(--sirae-crema);
-  display: flex; align-items: center; justify-content: center; font-size: 22px;
-  box-shadow: var(--shadow-sm); transition: border-color .15s, box-shadow .15s;
-}
-.cat2-foto img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.cat2.on .cat2-foto {
-  border-color: var(--sirae-dorado-oscuro);
-  box-shadow: 0 0 0 3px var(--sirae-dorado-suave);
-}
-.cat2-nombre {
-  max-width: 100%; font-size: 11.5px; font-weight: 700; color: var(--sirae-azul);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.cat2.on .cat2-nombre { color: var(--sirae-dorado-oscuro); }
-.cat2-total { font-size: 10.5px; font-weight: 600; color: var(--sirae-secundario); }
 
-/* ---------- Filtros y buscador (colores combinados) ---------- */
+.cat2 {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+  border: 1.5px solid var(--sirae-borde);
+  border-radius: 14px;
+  background: var(--sirae-superficie);
+  box-shadow: var(--shadow-sm);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease, background-color .16s ease;
+}
+.cat2:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--sirae-menta-borde); }
+.cat2.on {
+  border-color: var(--sirae-verde);
+  background: var(--sirae-menta-suave);
+  box-shadow: 0 0 0 3px rgba(43, 84, 36, 0.12);
+}
+.cat2-foto {
+  width: 100%;
+  height: 66px;
+  background: var(--sirae-crema);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  border-bottom: 1px solid var(--sirae-borde);
+}
+.cat2-foto img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .25s ease; }
+.cat2:hover .cat2-foto img { transform: scale(1.05); }
+
+.cat2-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  width: 100%;
+  padding: 7px 9px;
+}
+.cat2-txt { min-width: 0; flex: 1; }
+.cat2-nombre {
+  display: block;
+  max-width: 100%;
+  font-size: 11.5px;
+  font-weight: 800;
+  color: var(--sirae-azul);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cat2.on .cat2-nombre { color: var(--sirae-verde); }
+.cat2-total { display: block; font-size: 10px; font-weight: 600; color: var(--sirae-secundario); }
+
+/* ---------- Filtros y buscador ---------- */
 .prod-bar {
   display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
-  gap: 12px; margin-bottom: 14px;
+  gap: 10px; margin-bottom: 12px;
 }
-.pills { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.pills { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; }
 .pills button {
-  padding: 7px 14px;
+  padding: 6px 13px;
   border: 1px solid var(--sirae-borde);
   border-radius: 999px;
   background: var(--sirae-superficie);
-  display: inline-flex; align-items: center; gap: 6px;
-  color: var(--sirae-secundario); font: inherit; font-size: 12.5px; font-weight: 700;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--sirae-secundario); font: inherit; font-size: 12px; font-weight: 700;
   cursor: pointer; transition: all .18s ease;
 }
-.pills button:focus-visible { outline: 2px solid var(--sirae-dorado); outline-offset: 2px; }
 
-/* Todos */
-.pills button.pill-all {
-  background: var(--sirae-fondo-azul);
-  color: var(--sirae-azul);
-  border-color: var(--sirae-borde);
-}
-.pills button.pill-all:hover:not(.on) {
-  background: #E6EBF0;
-  border-color: #CBD5E1;
-}
-.pills button.pill-all.on {
-  background: var(--sirae-azul);
-  color: #FFFFFF;
-  border-color: var(--sirae-azul);
-  box-shadow: 0 4px 12px -4px rgba(30, 41, 59, 0.30);
-}
+.pills button.pill-all { background: var(--sirae-crema); color: var(--sirae-bosque); border-color: var(--sirae-borde); }
+.pills button.pill-all.on { background: var(--sirae-bosque); color: #FFFFFF; border-color: var(--sirae-bosque); }
 
-/* Perecederos (Verde) */
-.pills button.pill-peco {
-  background: var(--insumo-verde-claro);
-  color: var(--insumo-verde);
-  border-color: var(--insumo-verde-borde);
-}
-.pills button.pill-peco:hover:not(.on) {
-  background: #DDF1E4;
-  border-color: #9DD4B4;
-}
-.pills button.pill-peco.on {
-  background: var(--insumo-verde);
-  color: #FFFFFF;
-  border-color: var(--insumo-verde);
-  box-shadow: 0 4px 12px -4px rgba(23, 102, 61, 0.36);
-}
+.pills button.pill-peco { background: var(--insumo-verde-claro); color: var(--insumo-verde); border-color: var(--insumo-verde-borde); }
+.pills button.pill-peco.on { background: var(--sirae-verde); color: #FFFFFF; border-color: var(--sirae-verde); }
 
-/* No perecederos (Dorado / Ámbar) */
-.pills button.pill-nope {
-  background: var(--sirae-dorado-suave);
-  color: var(--sirae-dorado-oscuro);
-  border-color: var(--sirae-dorado-claro);
-}
-.pills button.pill-nope:hover:not(.on) {
-  background: #F5ECCC;
-  border-color: #DFC070;
-}
-.pills button.pill-nope.on {
-  background: var(--sirae-dorado);
-  color: #FFFFFF;
-  border-color: var(--sirae-dorado);
-  box-shadow: 0 4px 12px -4px rgba(245, 184, 31, 0.42);
-}
+.pills button.pill-nope { background: var(--sirae-dorado-suave); color: var(--sirae-dorado-oscuro); border-color: var(--sirae-dorado-claro); }
+.pills button.pill-nope.on { background: var(--sirae-dorado); color: var(--sirae-bosque); border-color: var(--sirae-dorado); font-weight: 800; }
 
-.entrega-filtro-icono { width: 14px; height: 14px; display: block; flex: none; pointer-events: none; color: inherit; }
-
-.search-box { position: relative; flex: 0 1 260px; min-width: min(100%, 200px); }
+.search-box { position: relative; flex: 0 1 240px; min-width: min(100%, 190px); }
 .search-box input {
-  width: 100%; height: 37px; padding: 0 14px 0 36px;
+  width: 100%; height: 35px; padding: 0 13px 0 34px;
   border: 1px solid var(--sirae-borde); border-radius: 999px;
   background: var(--sirae-crema); color: var(--sirae-azul);
-  font: inherit; font-size: 12.5px; font-weight: 500; outline: none;
+  font: inherit; font-size: 12px; font-weight: 500; outline: none;
   transition: border-color .15s, background .15s, box-shadow .15s;
 }
 .search-box input::placeholder { color: var(--sirae-secundario); }
 .search-box input:focus {
   background: #FFFFFF;
-  border-color: var(--sirae-dorado);
-  box-shadow: 0 0 0 3px rgba(245, 184, 31, 0.16);
+  border-color: var(--sirae-verde);
+  box-shadow: 0 0 0 3px rgba(43, 84, 36, 0.12);
 }
-.search-box .material-symbols-outlined { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 17px; color: var(--sirae-secundario); }
+.search-box .material-symbols-outlined { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); font-size: 16px; color: var(--sirae-secundario); }
 
 .sec-meta {
   display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px;
-  margin-bottom: 12px; font-size: 11.5px; color: var(--sirae-secundario);
+  margin-bottom: 10px; font-size: 11px; color: var(--sirae-secundario);
 }
 .catalogo-seleccionados {
   display: inline-flex; align-items: center; gap: 5px;
   padding: 4px 11px; border-radius: 999px;
-  background: var(--insumo-verde-claro);
-  border: 1px solid var(--insumo-verde-borde);
-  color: var(--insumo-verde);
-  font-size: 11.5px;
-  font-weight: 700;
+  background: var(--sirae-dorado-suave);
+  border: 1px solid var(--sirae-dorado-claro);
+  color: var(--sirae-bosque);
+  font-size: 11px;
+  font-weight: 800;
 }
 
 .sirae-aviso-deslizar {
   display: flex; align-items: center; gap: 8px; margin: 0 0 14px; padding: 8px 12px;
-  border: 1px solid var(--sirae-dorado-claro); border-radius: 10px;
-  background: #FCF9F0; color: var(--sirae-secundario); font-size: 11.5px;
+  border: 1px solid var(--sirae-menta-borde); border-radius: 10px;
+  background: var(--sirae-menta-suave); color: var(--sirae-azul); font-size: 11.5px;
 }
-.sirae-aviso-deslizar .material-symbols-outlined { font-size: 18px; color: var(--sirae-dorado-oscuro); flex-shrink: 0; }
-.sirae-aviso-deslizar strong { color: var(--sirae-azul); }
+.sirae-aviso-deslizar .material-symbols-outlined { font-size: 17px; color: var(--sirae-verde); flex-shrink: 0; }
+.sirae-aviso-deslizar strong { color: var(--sirae-verde); }
 
-/* ---------- Tarjetas de producto compactas (imágenes contenidas y proporcionadas) ---------- */
+/* ---------- Tarjetas de producto limpias con imagen circular ---------- */
 .pc-grid.abasto-vitrina {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 13px;
   scroll-margin-top: 16px;
 }
+
 .pc {
   position: relative;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid var(--sirae-borde);
-  border-radius: 14px;
+  border: 1.5px solid var(--sirae-borde);
+  border-radius: 16px;
   background: var(--sirae-superficie);
   box-shadow: var(--shadow-sm);
   cursor: grab;
   user-select: none; -webkit-user-select: none; touch-action: pan-y;
-  transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+  transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease, background-color .18s ease;
 }
-.pc:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: #CBD5E1; }
+.pc:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--sirae-menta-borde); }
 .pc.arrastrando { transition: none; cursor: grabbing; z-index: 2; transform: none; }
 .pc.activa, .pc.swipe-agregar {
-  border: 1.5px solid var(--insumo-verde);
-  box-shadow: 0 0 0 3px var(--insumo-verde-claro);
+  border-color: var(--sirae-verde);
+  background: #F6FAF5;
+  box-shadow: 0 0 0 3px var(--sirae-menta-suave);
 }
-.pc.swipe-quitar { border-color: var(--sirae-dorado-oscuro); background: var(--sirae-dorado-suave); }
-.pc.sin-stock .pc-foto { opacity: .5; }
+.pc.swipe-quitar { border-color: var(--sirae-dorado); background: var(--sirae-dorado-suave); }
+.pc.sin-stock .pc-foto { opacity: .60; }
 
 .pc-foto {
   position: relative;
   width: 100%;
-  height: 112px;
-  padding: 10px 12px;
+  height: 128px;
+  padding: 14px 10px 10px;
   overflow: hidden;
-  background: var(--sirae-crema);
-  border-bottom: 1px solid #F1F2F4;
+  background: linear-gradient(160deg, #FAF9F5 0%, #EFF5EC 100%);
+  border-bottom: 1px solid #EEF1EA;
   display: flex; align-items: center; justify-content: center;
 }
 .pc-foto img {
   display: block;
-  max-width: 100%;
-  max-height: 100%;
-  width: auto;
-  height: auto;
-  border-radius: 8px;
-  object-fit: contain;
+  width: 98px;
+  height: 98px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: center;
+  border: 3px solid #FFFFFF;
+  background: #FFFFFF;
+  box-shadow: 0 8px 18px -6px rgba(27, 51, 23, 0.20);
   pointer-events: none; -webkit-user-drag: none;
-  transition: transform .25s ease;
+  transition: transform .25s ease, border-color .2s ease;
 }
-.pc:hover .pc-foto img { transform: scale(1.04); }
+.pc:hover .pc-foto img { transform: scale(1.06); }
+.pc.activa .pc-foto img { border-color: var(--sirae-dorado); }
 .pc-foto img[hidden], .pc-foto .pc-sin-foto[hidden] { display: none; }
-.pc-sin-foto { font-size: 30px; opacity: .78; }
+.pc-sin-foto {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 98px;
+  height: 98px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  border: 3px solid #FFFFFF;
+  box-shadow: 0 8px 18px -6px rgba(27, 51, 23, 0.14);
+  font-size: 35px;
+}
 
 .pc-tipo {
   position: absolute; top: 8px; left: 8px; z-index: 2;
-  padding: 2px 7px; border-radius: 6px;
+  padding: 2px 8px; border-radius: 999px;
   font-size: 9px; font-weight: 800; letter-spacing: .03em; text-transform: uppercase;
+  box-shadow: 0 2px 6px rgba(27, 51, 23, 0.06);
 }
-.pc-tipo.peco { background: var(--insumo-verde-claro); color: var(--insumo-verde); border: 1px solid var(--insumo-verde-borde); }
-.pc-tipo.nope { background: var(--sirae-dorado-suave); color: var(--sirae-dorado-oscuro); border: 1px solid var(--sirae-dorado-claro); }
+.pc-tipo.peco { background: #FFFFFF; color: var(--insumo-verde); border: 1px solid var(--insumo-verde-borde); }
+.pc-tipo.nope { background: #FFFFFF; color: var(--sirae-dorado-oscuro); border: 1px solid var(--sirae-dorado-claro); }
 
 .pc-check {
-  position: absolute; top: 8px; right: 8px; z-index: 2; width: 22px; height: 22px;
-  border-radius: 50%; background: var(--insumo-verde); color: #FFFFFF;
+  position: absolute; top: 8px; right: 8px; z-index: 2;
+  width: 23px; height: 23px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1.5px solid var(--sirae-borde);
+  color: transparent;
   display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 2px 6px rgba(23, 102, 61, 0.3);
-  transform: scale(0); transition: transform .2s cubic-bezier(.34,1.56,.64,1);
+  transition: all .2s cubic-bezier(.34,1.56,.64,1);
 }
 .pc-check .material-symbols-outlined { font-size: 14px; font-weight: 800; }
-.pc.activa .pc-check { transform: scale(1); }
+.pc.activa .pc-check {
+  background: var(--sirae-verde);
+  border-color: var(--sirae-verde);
+  color: var(--sirae-dorado);
+  box-shadow: 0 3px 10px rgba(43, 84, 36, 0.32);
+}
 
 .pc-body {
   display: flex; flex-direction: column; flex: 1; gap: 3px;
-  padding: 10px 12px 12px; text-align: left;
+  padding: 10px 12px 13px; text-align: left;
 }
 .pc-nombre {
   margin: 0; font-size: 13px; font-weight: 800; line-height: 1.25; color: var(--sirae-azul);
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
-.pc-categoria { margin: 0; font-size: 10.5px; color: var(--sirae-secundario); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pc-categoria { margin: 0; font-size: 10.5px; font-weight: 500; color: var(--sirae-secundario); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .pc-stock { width: 100%; margin-top: auto; padding-top: 8px; }
-.pc-stock-txt { display: flex; align-items: baseline; justify-content: space-between; gap: 4px; font-size: 10.5px; color: var(--sirae-secundario); }
-.pc-stock-cant { font-weight: 800; color: var(--sirae-azul); font-size: 11px; }
+.pc-stock-txt { display: flex; align-items: baseline; justify-content: space-between; gap: 4px; font-size: 10px; color: var(--sirae-secundario); }
+.pc-stock-cant { font-weight: 800; color: var(--sirae-azul); font-size: 10.5px; }
 .pc.sin-stock .pc-stock-txt, .pc.sin-stock .pc-stock-cant { color: #9F2843; }
-.barra-stock { height: 4px; margin-top: 5px; border-radius: 99px; background: #ECEFF3; overflow: hidden; }
-.barra-stock > span, .barra-stock > span.alto { display: block; height: 100%; border-radius: 99px; background: var(--insumo-verde); transition: width .35s ease; }
+.barra-stock { height: 4px; margin-top: 4px; border-radius: 99px; background: #EAECE6; overflow: hidden; }
+.barra-stock > span, .barra-stock > span.alto { display: block; height: 100%; border-radius: 99px; background: var(--sirae-verde-claro); transition: width .35s ease; }
 .barra-stock > span.medio { background: var(--sirae-dorado); }
 .barra-stock > span.bajo { background: #BE123C; }
 
-.pag-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--sirae-borde); }
+.pag-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--sirae-borde); }
 .pag-btn {
-  min-width: 36px; height: 34px; padding: 0 12px; border-radius: 8px;
+  min-width: 34px; height: 32px; padding: 0 12px; border-radius: 999px;
   border: 1px solid var(--sirae-borde); background: var(--sirae-superficie); color: var(--sirae-azul);
-  font: inherit; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px; cursor: pointer;
+  font: inherit; font-size: 11.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px; cursor: pointer;
 }
-.pag-btn:hover:not(:disabled):not(.pill-on) { background: var(--sirae-crema); }
+.pag-btn:hover:not(:disabled):not(.pill-on) { background: var(--sirae-menta-suave); border-color: var(--sirae-menta-borde); color: var(--sirae-verde); }
 .pag-btn:disabled { opacity: .4; cursor: not-allowed; }
-.pill-on { background: var(--sirae-azul) !important; border-color: var(--sirae-azul) !important; color: #FFFFFF !important; }
+.pill-on { background: var(--sirae-verde) !important; border-color: var(--sirae-verde) !important; color: #FFFFFF !important; }
 
 /* ---------- Panel derecho flotante (Resumen del despacho) ---------- */
 .inv-despacho { display: flex; flex-direction: column; overflow: hidden; }
 .inv-head {
   display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;
-  padding: 16px 18px 12px; border-bottom: 1px solid var(--sirae-borde);
+  padding: 16px 18px 12px;
+  background: linear-gradient(135deg, var(--sirae-bosque) 0%, var(--sirae-verde) 100%);
+  color: #FFFFFF;
 }
-.despacho-rotulo { margin: 0 0 2px; color: var(--sirae-dorado-oscuro); font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
-.inv-head h3 { margin: 0; font-size: 16.5px; font-weight: 800; }
+.despacho-rotulo { margin: 0 0 2px; color: var(--sirae-dorado); font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+.inv-head h3 { margin: 0; font-size: 16px; font-weight: 800; color: #FFFFFF !important; }
 .inv-count {
   min-width: 28px; height: 26px; padding: 0 8px; display: inline-grid; place-items: center;
-  border-radius: 8px;
-  background: var(--sirae-dorado-suave);
-  border: 1px solid var(--sirae-dorado-claro);
-  color: var(--sirae-dorado-oscuro);
-  font-size: 12px; font-weight: 800;
+  border-radius: 999px;
+  background: var(--sirae-dorado);
+  color: #FFFFFF;
+  font-size: 12px; font-weight: 900;
 }
 
-.inv-body { flex: 1 1 auto; min-height: 0; max-height: min(46vh, 360px); padding: 12px 18px 14px; overflow-y: auto; scrollbar-width: thin; }
-.inv-vacio { display: grid; justify-items: center; text-align: center; gap: 5px; padding: 28px 12px; }
+.inv-body { flex: 1 1 auto; min-height: 0; max-height: min(46vh, 360px); padding: 12px 16px; overflow-y: auto; scrollbar-width: thin; }
+.inv-vacio { display: grid; justify-items: center; text-align: center; gap: 5px; padding: 24px 12px; }
 .inv-vacio > .material-symbols-outlined {
-  display: grid; place-items: center; width: 38px; height: 38px; border-radius: 11px;
-  background: var(--insumo-verde-claro); color: var(--insumo-verde); font-size: 20px; margin-bottom: 4px;
+  display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px;
+  background: var(--sirae-menta-suave); color: var(--sirae-verde); font-size: 20px; margin-bottom: 4px;
 }
 .inv-vacio > strong { font-size: 13px; color: var(--sirae-azul); }
-.inv-vacio > p { margin: 0; font-size: 12px; color: var(--sirae-secundario); }
+.inv-vacio > p { margin: 0; font-size: 11.5px; color: var(--sirae-secundario); }
 .inv-lista { display: flex; flex-direction: column; gap: 10px; }
 
 .inv-row { border: 1px solid var(--sirae-borde); border-radius: 13px; background: var(--sirae-superficie); overflow: hidden; }
-.inv-row-main { display: flex; align-items: center; gap: 9px; padding: 9px 10px; }
-.mini-img { display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; border-radius: 10px; background: var(--sirae-fondo-azul); }
+.inv-row-main { display: flex; align-items: center; gap: 9px; padding: 8px 10px; }
+.mini-img { display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; border-radius: 50%; background: var(--sirae-crema); border: 1px solid var(--sirae-borde); }
 .mini-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.inv-thumb { width: 36px; height: 36px; }
+.inv-thumb { width: 38px; height: 38px; }
 .inv-info { flex: 1; min-width: 0; }
-.inv-info h5 { margin: 0; font-size: 13px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.inv-info small, .abasto-stock small { display: block; color: var(--sirae-secundario); font-size: 10.5px; font-weight: 600; }
+.inv-info h5 { margin: 0; font-size: 12.5px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.inv-info small, .abasto-stock small { display: block; color: var(--sirae-secundario); font-size: 10px; font-weight: 600; }
 .inv-quitar {
-  width: 26px; height: 26px; flex: 0 0 26px; border: 1px solid var(--sirae-borde); border-radius: 50%;
+  width: 25px; height: 25px; flex: 0 0 25px; border: 1px solid var(--sirae-borde); border-radius: 50%;
   background: var(--sirae-superficie); color: var(--sirae-secundario); display: grid; place-items: center; cursor: pointer;
 }
 .inv-quitar:hover { background: #FFF0F3; color: #9F2843; border-color: #FECDD3; }
-.inv-quitar .material-symbols-outlined { font-size: 15px; }
+.inv-quitar .material-symbols-outlined { font-size: 14px; }
 
 .abasto-stock {
   display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 8px;
   padding: 6px 10px; background: var(--sirae-crema); border-block: 1px solid var(--sirae-borde);
 }
-.abasto-stock strong { display: block; font-size: 14px; color: var(--sirae-azul); }
-.abasto-stock strong span { font-size: 11px; }
-.abasto-estado { display: inline-flex; align-items: center; gap: 5px; padding: 2px 7px; border-radius: 99px; font-size: 10px; font-weight: 800; }
+.abasto-stock strong { display: block; font-size: 13.5px; color: var(--sirae-azul); }
+.abasto-stock strong span { font-size: 10.5px; }
+.abasto-estado { display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px; border-radius: 99px; font-size: 9.5px; font-weight: 800; }
 .abasto-estado::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 
 .inv-qty { display: grid; gap: 5px; padding: 8px 10px; }
-.inv-qty > span { font-size: 11px; font-weight: 700; color: var(--sirae-secundario); }
+.inv-qty > span { font-size: 10.5px; font-weight: 700; color: var(--sirae-secundario); }
 .inv-stepper { display: flex; align-items: center; gap: 6px; }
 .cant-btn {
-  width: 28px; height: 28px; border: 1px solid var(--sirae-borde); border-radius: 8px;
-  background: var(--sirae-superficie); color: var(--sirae-azul); display: grid; place-items: center; cursor: pointer;
+  width: 27px; height: 27px; border: 1px solid var(--sirae-borde); border-radius: 8px;
+  background: var(--sirae-crema); color: var(--sirae-bosque); display: grid; place-items: center; cursor: pointer;
 }
-.cant-btn:hover { background: var(--sirae-crema); border-color: #CBD5E1; }
+.cant-btn:hover { background: var(--sirae-verde); border-color: var(--sirae-verde); color: #FFFFFF; }
 .inv-input {
-  flex: 1; min-width: 0; height: 30px; padding: 0 6px; border: 1px solid var(--sirae-borde); border-radius: 8px;
-  text-align: center; font: inherit; font-size: 12.5px; font-weight: 800; color: var(--sirae-azul); outline: none;
+  flex: 1; min-width: 0; height: 29px; padding: 0 6px; border: 1px solid var(--sirae-borde); border-radius: 8px;
+  text-align: center; font: inherit; font-size: 12px; font-weight: 800; color: var(--sirae-azul); outline: none;
 }
-.inv-input:focus { border-color: var(--sirae-azul); }
-.inv-unidad { font-size: 11.5px; font-weight: 700; color: var(--sirae-secundario); }
-.inv-error { margin: 0 10px 8px; padding: 6px 9px; border-radius: 8px; background: #FFF0F3; color: #9F2843; font-size: 11px; font-weight: 700; }
+.inv-input:focus { border-color: var(--sirae-verde); }
+.inv-unidad { font-size: 11px; font-weight: 700; color: var(--sirae-secundario); }
+.inv-error { margin: 0 10px 8px; padding: 6px 9px; border-radius: 8px; background: #FFF0F3; color: #9F2843; font-size: 10.5px; font-weight: 700; }
 
-.inv-footer { padding: 14px 18px 16px; border-top: 1px solid var(--sirae-borde); background: var(--sirae-crema); }
-.resumen { display: grid; gap: 10px; margin-bottom: 12px; }
-.resumen-fecha-envio { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 145px); align-items: center; gap: 6px 10px; font-size: 12px; }
+.inv-footer { padding: 12px 16px 14px; border-top: 1px solid var(--sirae-borde); background: var(--sirae-crema); }
+.resumen { display: grid; gap: 8px; margin-bottom: 10px; }
+.resumen-fecha-envio { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 140px); align-items: center; gap: 6px 10px; font-size: 11.5px; }
 .resumen-fecha-envio label { display: flex; align-items: center; gap: 5px; font-weight: 600; color: var(--sirae-secundario); }
-.resumen-fecha-envio label .material-symbols-outlined { font-size: 16px; }
-.resumen-fecha-envio input { height: 35px; }
-.resumen-total { display: flex; align-items: center; justify-content: space-between; padding: 2px 0; font-size: 13.5px; }
+.resumen-fecha-envio label .material-symbols-outlined { font-size: 15px; color: var(--sirae-verde); }
+.resumen-fecha-envio input { height: 34px; }
+.resumen-total { display: flex; align-items: center; justify-content: space-between; padding: 2px 0; font-size: 13px; }
 .resumen-total small { display: block; color: var(--sirae-secundario); font-size: 10px; font-weight: 500; }
-.resumen-total b { font-size: 19px; color: var(--sirae-azul); }
+.resumen-total b { font-size: 18px; color: var(--sirae-bosque); }
 
-/* Botón Confirmar entrega amarillo con blanco */
 .btn-enviar {
-  width: 100%; height: 42px; border: 0; border-radius: 10px;
-  background: var(--sirae-dorado); color: #FFFFFF; font: inherit; font-size: 13.5px; font-weight: 700;
+  width: 100%; height: 40px; border: 0; border-radius: 999px;
+  background: var(--sirae-dorado); color: #FFFFFF; font: inherit; font-size: 13px; font-weight: 800;
   display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;
-  box-shadow: 0 6px 16px -6px rgba(245, 184, 31, 0.55);
+  box-shadow: 0 8px 18px -6px rgba(245, 184, 31, 0.48);
   transition: background .15s, transform .15s;
 }
-.btn-enviar:hover:not(:disabled) { background: #E0A30B; transform: translateY(-1px); }
-.btn-enviar:disabled { background: #E2E8F0; color: #94A3B8; box-shadow: none; cursor: not-allowed; }
+.btn-enviar:hover:not(:disabled) { background: var(--sirae-lima-hover); transform: translateY(-1px); }
+.btn-enviar:disabled { background: #E0E2DB; color: #7F877B; box-shadow: none; cursor: not-allowed; }
 
 /* ---------- Calendario / Historial ---------- */
 .arrow-btn {
-  width: 34px; height: 34px; border: 1px solid var(--sirae-borde); border-radius: 9px;
+  width: 34px; height: 34px; border: 1px solid var(--sirae-borde); border-radius: 999px;
   background: var(--sirae-superficie); color: var(--sirae-secundario); display: grid; place-items: center; cursor: pointer;
 }
-.arrow-btn:hover { background: var(--sirae-crema); color: var(--sirae-azul); }
+.arrow-btn:hover { background: var(--sirae-menta-suave); color: var(--sirae-verde); border-color: var(--sirae-menta-borde); }
 .btn-hoy {
-  border-radius: 99px; border: 1px solid var(--sirae-borde); background: var(--sirae-superficie);
-  padding: 6px 15px; font: inherit; font-size: 12px; font-weight: 700; color: var(--sirae-azul); cursor: pointer;
+  border-radius: 99px; border: 1px solid var(--sirae-menta-borde); background: var(--sirae-menta-suave);
+  padding: 6px 15px; font: inherit; font-size: 12px; font-weight: 800; color: var(--sirae-verde); cursor: pointer;
 }
-.btn-hoy:hover { background: var(--sirae-crema); }
-.entrega-calendario { border: 1px solid var(--sirae-borde) !important; border-radius: 16px !important; }
+.btn-hoy:hover { background: var(--sirae-verde); color: #FFFFFF; border-color: var(--sirae-verde); }
+.entrega-calendario { border: 1px solid var(--sirae-borde) !important; border-radius: 18px !important; }
 .cal-cell {
   display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-height: 90px; padding: 8px;
   border: 0; border-right: 1px solid var(--sirae-borde); border-bottom: 1px solid var(--sirae-borde);
   background: var(--sirae-superficie); text-align: left; cursor: pointer; font: inherit;
 }
 .cal-cell.fuera { background: var(--sirae-crema); }
-.cal-cell.fuera .cal-num { color: var(--sirae-borde); }
-.cal-cell.sel { background: var(--sirae-dorado-suave); outline: 2px solid var(--sirae-dorado-oscuro); outline-offset: -2px; }
+.cal-cell.fuera .cal-num { color: #C4C7BE; }
+.cal-cell.sel { background: var(--sirae-menta-suave); outline: 2px solid var(--sirae-verde); outline-offset: -2px; }
 .cal-num { width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; border-radius: 99px; font-size: 12.5px; font-weight: 700; }
-.cal-num.hoy { background: var(--sirae-azul); color: #FFFFFF; }
+.cal-num.hoy { background: var(--sirae-verde); color: #FFFFFF; }
 .cal-chip { display: inline-flex; align-items: center; gap: 4px; width: 100%; border-radius: 6px; padding: 3px 6px; font-size: 10px; font-weight: 700; line-height: 1.25; }
 .cal-dot { width: 6px; height: 6px; border-radius: 99px; background: currentColor; flex-shrink: 0; }
 .est-ok { background: var(--insumo-verde-claro); color: var(--insumo-verde); }
@@ -572,35 +619,78 @@
 
 /* ---------- Campos y Modales ---------- */
 .campo {
-  width: 100%; border-radius: 9px; border: 1px solid var(--sirae-borde);
-  background: var(--sirae-superficie); padding: 7px 11px; font: inherit; font-size: 12.5px; font-weight: 600;
+  width: 100%; border-radius: 10px; border: 1px solid var(--sirae-borde);
+  background: var(--sirae-superficie); padding: 7px 11px; font: inherit; font-size: 12px; font-weight: 600;
   color: var(--sirae-azul); outline: none;
 }
-.campo:focus, .fx-input:focus { border-color: var(--sirae-dorado) !important; box-shadow: 0 0 0 3px rgba(245, 184, 31, 0.16) !important; }
+.campo:focus, .fx-input:focus { border-color: var(--sirae-verde) !important; box-shadow: 0 0 0 3px rgba(43, 84, 36, 0.12) !important; }
 .campo.invalido { border-color: #E11D48; background: #FFF0F3; }
+
+/* Estilo mejorado del campo de fecha */
+input[type="date"].campo {
+  color-scheme: light;
+  accent-color: var(--sirae-verde);
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--sirae-azul);
+  border-color: var(--sirae-borde);
+  transition: border-color .15s ease, box-shadow .15s ease, background-color .15s ease;
+}
+input[type="date"].campo:hover:not(:disabled) {
+  border-color: var(--sirae-menta-borde);
+  background-color: #FCFDFB;
+}
+input[type="date"].campo::-webkit-datetime-edit {
+  padding: 0 2px;
+}
+input[type="date"].campo::-webkit-datetime-edit-fields-wrapper {
+  padding: 0;
+}
+input[type="date"].campo::-webkit-datetime-edit-text {
+  color: var(--sirae-secundario);
+  padding: 0 2px;
+}
+input[type="date"].campo::-webkit-datetime-edit-day-field:focus,
+input[type="date"].campo::-webkit-datetime-edit-month-field:focus,
+input[type="date"].campo::-webkit-datetime-edit-year-field:focus {
+  background-color: var(--sirae-menta-suave);
+  color: var(--sirae-verde);
+  border-radius: 4px;
+}
+input[type="date"].campo::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  opacity: .85;
+  transition: background-color .15s ease, opacity .15s ease;
+}
+input[type="date"].campo::-webkit-calendar-picker-indicator:hover {
+  background-color: var(--sirae-menta-suave);
+  opacity: 1;
+}
 
 .modal-fondo {
   position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center;
-  background: rgba(30, 41, 59, 0.56); backdrop-filter: blur(5px); padding: 16px;
+  background: rgba(27, 51, 23, 0.52); backdrop-filter: blur(5px); padding: 16px;
 }
 .modal-caja {
   width: 100%; max-height: 92vh; overflow-y: auto; background: var(--sirae-superficie);
-  border: 1px solid var(--sirae-borde); border-radius: 20px; padding: 24px;
-  box-shadow: 0 28px 64px -14px rgba(15, 23, 42, 0.32);
+  border: 1px solid var(--sirae-borde); border-radius: 22px; padding: 24px;
+  box-shadow: 0 28px 64px -14px rgba(27, 51, 23, 0.34);
 }
 .btn-cerrar {
-  width: 36px; height: 36px; border: 0; border-radius: 10px; background: var(--sirae-fondo-azul);
+  width: 36px; height: 36px; border: 0; border-radius: 10px; background: var(--sirae-crema);
   color: var(--sirae-secundario); display: grid; place-items: center; cursor: pointer; flex-shrink: 0;
 }
-.btn-cerrar:hover { background: var(--sirae-borde); color: var(--sirae-azul); }
+.btn-cerrar:hover { background: var(--sirae-verde); color: #FFFFFF; }
 
 :is(.sirae-root, .modal-fondo) .bg-\[\#FFF4D6\] { background-color: var(--sirae-dorado-suave); }
-:is(.sirae-root, .modal-fondo) .bg-\[\#F5B81F\] { background-color: var(--sirae-azul); color: #FFFFFF !important; }
-:is(.sirae-root, .modal-fondo) .bg-\[\#FDE7A6\] { background-color: var(--sirae-fondo-azul); }
-:is(.sirae-root, .modal-fondo) .bg-\[\#E8F7EE\] { background-color: var(--insumo-verde-claro); }
-:is(.sirae-root, .modal-fondo) .text-\[\#15803D\] { color: var(--insumo-verde); }
+:is(.sirae-root, .modal-fondo) .bg-\[\#F5B81F\] { background-color: var(--sirae-dorado); color: #FFFFFF !important; }
+:is(.sirae-root, .modal-fondo) .bg-\[\#FDE7A6\] { background-color: var(--sirae-menta-suave); color: var(--sirae-verde) !important; }
+:is(.sirae-root, .modal-fondo) .bg-\[\#E8F7EE\] { background-color: var(--sirae-menta-suave); }
+:is(.sirae-root, .modal-fondo) .text-\[\#15803D\] { color: var(--sirae-verde); }
 :is(.sirae-root, .modal-fondo) .text-\[\#B45309\] { color: var(--sirae-dorado-oscuro); }
-:is(.sirae-root, .modal-fondo) .border-\[\#F5D27A\] { border-color: var(--sirae-borde); }
+:is(.sirae-root, .modal-fondo) .border-\[\#F5D27A\] { border-color: var(--sirae-dorado-claro); }
 
 @media (min-width: 1024px) {
   .panel-sticky { position: sticky; top: 16px; z-index: 10; align-self: start; }
@@ -608,15 +698,8 @@
   .panel-sticky .fx-panel { overflow-y: auto; }
 }
 @media (max-width: 820px) {
-  .re-hero { grid-template-columns: 1fr; }
-  .re-hero-main { padding: 16px 18px; }
-  .re-hero-visual {
-    min-height: 115px;
-    max-height: 125px;
-    border-right: 0;
-    border-bottom: 3px solid var(--sirae-dorado);
-    border-bottom-right-radius: 0;
-  }
+  .hero-shell { padding: 16px 18px; min-height: auto; }
+  .re-hero { max-width: 100%; }
   .pc-grid.abasto-vitrina { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 }
 @media (max-width: 540px) {
@@ -638,49 +721,39 @@
   </div>
 </ng-template>
 
+<!-- Barra de vistas reutilizable (arriba de categorías en Insumos / arriba en Historial) -->
+<ng-template #barraVistas>
+  <div class="seg" role="group" aria-label="Vista">
+    <button type="button" [class.on]="!mostrarCalendario" (click)="mostrarCalendario = false">
+      Insumos
+    </button>
+    <button type="button" [class.on]="mostrarCalendario" (click)="irACalendario()">
+      Historial
+    </button>
+    <button type="button" (click)="mostrarModalInventario = true" aria-label="Ver inventario de insumos">
+      Ver inventario
+    </button>
+  </div>
+</ng-template>
+
 <div class="sirae-root">
   <div class="relative mx-auto max-w-[1520px]">
 
-    <!-- 1) Selector de vista superior -->
-    <div class="top-bar">
-      <div class="seg" role="group" aria-label="Vista">
-        <button type="button" [class.on]="!mostrarCalendario" (click)="mostrarCalendario = false">
-          <svg class="entrega-nav-icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.8 20.2 7.5v9L12 21.2l-8.2-4.7v-9L12 2.8Z"/><path d="m3.8 7.5 8.2 4.7 8.2-4.7M12 12.2v9"/></svg>
-          Insumos
-        </button>
-        <button type="button" [class.on]="mostrarCalendario" (click)="irACalendario()">
-          <svg class="entrega-nav-icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 2"/></svg>
-          Historial
-        </button>
-        <button type="button" (click)="mostrarModalInventario = true" aria-label="Ver inventario de insumos">
-          <svg class="entrega-nav-icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="6.2" height="6.2" rx="1"/><rect x="14.3" y="3.5" width="6.2" height="6.2" rx="1"/><rect x="3.5" y="14.3" width="6.2" height="6.2" rx="1"/><rect x="14.3" y="14.3" width="6.2" height="6.2" rx="1"/></svg>
-          Ver inventario
-        </button>
-      </div>
+    <!-- 1) Hero compacto solo con imagen y letras blancas -->
+    <div class="hero-shell" *ngIf="!mostrarCalendario">
+      <img class="hero-bg-img" src="/image%20copy.png" alt="" fetchpriority="high" decoding="sync">
+
+      <header class="re-hero">
+        <span class="re-hero-eyebrow">Abastecimiento escolar · SIRAE PAE</span>
+        <h1 class="re-hero-tit">Entregas de Inventario</h1>
+        <p class="re-hero-sub">{{ nombreInstitucion }} · Elige los productos y define las cantidades para esta entrega.</p>
+      </header>
     </div>
 
-    <!-- 2) Hero creativo con arco orgánico a la izquierda -->
-    <header class="re-hero" *ngIf="!mostrarCalendario">
-      <div class="re-hero-visual" aria-hidden="true">
-        <img src="/image%20copy.png" alt="" fetchpriority="high">
-      </div>
-
-      <div class="re-hero-main">
-        <span class="re-hero-eyebrow">Despacho de alimentos · SIRAE PAE</span>
-        <h1 class="re-hero-tit">Entregas de <span>Inventario</span></h1>
-        <p class="re-hero-sub">{{ nombreInstitucion }} · Elige los productos y define las cantidades para esta entrega.</p>
-        <div class="re-hero-actions">
-          <button type="button" class="re-hero-btn" (click)="mostrarModalInventario = true">
-            <span class="material-symbols-outlined" aria-hidden="true">inventory_2</span>
-            Ver existencias
-          </button>
-          <span class="re-hero-chip" *ngIf="nombreSede">
-            <span class="material-symbols-outlined" aria-hidden="true">domain</span>
-            {{ nombreSede }}
-          </span>
-        </div>
-      </div>
-    </header>
+    <!-- Barra visible arriba cuando estás en Historial / Calendario -->
+    <div *ngIf="mostrarCalendario" class="top-bar-cal">
+      <ng-container *ngTemplateOutlet="barraVistas"></ng-container>
+    </div>
 
     <div *ngIf="errorHistorial" class="mb-4 rounded-2xl border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-700" role="alert">
       No se pudo cargar el historial de entregas. <button type="button" (click)="cargarHistorial()" class="ml-2 underline">Reintentar</button>
@@ -704,7 +777,7 @@
           </div>
 
           <div class="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[10.5px] font-semibold text-slate-500">
-            <span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-emerald-500"></span> Vigente</span>
+            <span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-emerald-600"></span> Vigente</span>
             <span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-amber-500"></span> Próximo a vencer</span>
             <span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-red-500"></span> Vencido</span>
             <span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-orange-500"></span> Vencen ese día</span>
@@ -730,11 +803,18 @@
         <!-- VISTA: CATÁLOGO -->
         <div *ngIf="!mostrarCalendario" class="card-panel">
 
-          <!-- Categorías circulares -->
+          <!-- Botones Insumos · Historial · Ver inventario arriba de categorías -->
+          <div class="nav-abasto-bar">
+            <ng-container *ngTemplateOutlet="barraVistas"></ng-container>
+          </div>
+
+          <!-- Categorías en tarjetas compactas -->
           <section *ngIf="!cargandoCatalogos" class="abasto-categorias" aria-labelledby="abasto-titulo">
             <div class="sec-heading">
-              <h3 id="abasto-titulo">Categorías de Abastecimiento</h3>
-              <button type="button" class="sec-heading-link" (click)="categoriaMenu = 'Todos'; setMercado('Todos'); textoFiltro = ''; paginaActual = 1">Ver todo</button>
+              <div>
+                <span class="sec-eyebrow">Insumos para cada minuta</span>
+                <h3 id="abasto-titulo">Categorías de Abastecimiento</h3>
+              </div>
             </div>
             <div class="cat-rail">
               <button type="button" class="abasto-flecha" (click)="carruselCategorias.scrollBy(-216, 0)" aria-label="Categorías anteriores">
@@ -748,8 +828,12 @@
                     <img *ngIf="imagenCategoria(categoria.nombre) as src; else categoriaEmoji" [src]="src" alt="" loading="lazy">
                     <ng-template #categoriaEmoji>{{ categoria.emoji }}</ng-template>
                   </span>
-                  <span class="cat2-nombre">{{ categoria.nombre }}</span>
-                  <span class="cat2-total">{{ categoria.total }} prod.</span>
+                  <span class="cat2-info">
+                    <span class="cat2-txt">
+                      <span class="cat2-nombre">{{ categoria.nombre }}</span>
+                      <span class="cat2-total">{{ categoria.total }} prod.</span>
+                    </span>
+                  </span>
                 </button>
               </div>
               <button type="button" class="abasto-flecha" (click)="carruselCategorias.scrollBy(216, 0)" aria-label="Más categorías">
@@ -762,21 +846,22 @@
             <ng-container *ngIf="{ actual: paginaActual > paginasCatalogo.total && paginasCatalogo.total > 0 ? paginasCatalogo.total : paginaActual } as pagina">
 
               <div class="sec-heading">
-                <h3>Productos de Abastecimiento</h3>
+                <div>
+                  <span class="sec-eyebrow">Disponibles en bodega</span>
+                  <h3>Productos de Abastecimiento</h3>
+                </div>
                 <span class="catalogo-seleccionados" aria-live="polite">{{ seleccionados.length }} {{ seleccionados.length === 1 ? 'seleccionado' : 'seleccionados' }}</span>
               </div>
 
-              <!-- Pestañas con colores combinados + buscador -->
+              <!-- Pestañas + buscador -->
               <div class="prod-bar">
                 <div class="pills" role="tablist" aria-label="Tipo de producto">
-                  <button *ngFor="let f of [['Todos', 'Todos', ''], ['Perecederos', 'Perecederos', 'eco'], ['Granos', 'No perecederos', 'layers']]"
+                  <button *ngFor="let f of [['Todos', 'Todos'], ['Perecederos', 'Perecederos'], ['Granos', 'No perecederos']]"
                     type="button" role="tab"
                     [ngClass]="f[0] === 'Perecederos' ? 'pill-peco' : (f[0] === 'Granos' ? 'pill-nope' : 'pill-all')"
                     [class.on]="filtroMercado === f[0]"
                     [attr.aria-selected]="filtroMercado === f[0]"
                     (click)="setMercado($any(f[0]))">
-                    <svg *ngIf="f[2] === 'eco'" class="entrega-filtro-icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 17.8C2.4 14 4.6 8.9 8.6 7c2.6-1.2 5.4-.7 9.9-2.3-.4 4.7.4 7.9-1.9 11.1-2.2 3.2-6.3 4.4-9.3 3"/><path d="M4.5 20c2.5-4.2 5.1-7.2 8.7-9.7"/></svg>
-                    <svg *ngIf="f[2] === 'layers'" class="entrega-filtro-icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3.5 8.5 6-8.5 6-8.5-6 8.5-6Z"/><path d="m3.5 14 8.5 6 8.5-6"/></svg>
                     {{ f[1] }}
                   </button>
                 </div>
@@ -794,10 +879,10 @@
 
               <div *ngIf="!cargandoCatalogos && totalProductosMenu > 0" class="sirae-aviso-deslizar" role="note">
                 <span class="material-symbols-outlined">touch_app</span>
-                <span>Desliza un producto a la <strong>derecha</strong> para agregarlo al despacho. A la <strong>izquierda</strong> lo quitas.</span>
+                <span>Desliza una tarjeta a la <strong>derecha</strong> para agregarla al despacho, o a la <strong>izquierda</strong> para quitarla.</span>
               </div>
 
-              <!-- Tarjetas de producto compactas (imágenes proporcionadas sin recortar) -->
+              <!-- Tarjetas de producto limpias -->
               <div #cuadriculaCatalogo id="catalogo-top" class="pc-grid abasto-vitrina">
                 <article *ngFor="let producto of productosMenu | slice:((pagina.actual - 1) * 6):(pagina.actual * 6); trackBy: trackPor" class="pc fx-up"
                   [class.activa]="tarjetaActiva(producto)" [class.sin-stock]="totalDisponible(producto) <= 0" [class.arrastrando]="swipeId === producto.id"
@@ -898,9 +983,9 @@
             <article *ngFor="let g of gruposEntradasVisibles; trackBy: trackPor" (click)="abrirDetalleEntrada(g)" (keydown.enter)="abrirDetalleEntrada(g)" tabindex="0" role="button"
               class="fx-up fx-lift mb-2 cursor-pointer rounded-2xl border bg-white px-3 py-2.5 shadow-sm transition" [ngClass]="claseBordeTarjetaEntrada(g)">
               <div class="flex items-center gap-3">
-                <div class="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-xl bg-[#F5B81F] leading-none">
-                  <span class="text-base font-black">{{ diaDe(g.fechaRecepcion) }}</span>
-                  <span class="mt-0.5 text-[9px] font-bold">{{ mesCortoDe(g.fechaRecepcion) }}</span>
+                <div class="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-xl bg-[#F5B81F] text-white leading-none" style="color: #FFFFFF;">
+                  <span class="text-base font-black" style="color: #FFFFFF;">{{ diaDe(g.fechaRecepcion) }}</span>
+                  <span class="mt-0.5 text-[9px] font-bold" style="color: #FFFFFF;">{{ mesCortoDe(g.fechaRecepcion) }}</span>
                 </div>
                 <div class="min-w-0 flex-1">
                   <p class="m-0 truncate text-xs font-black text-slate-900">{{ g.productos.length }} {{ g.productos.length === 1 ? 'producto' : 'productos' }} · {{ fechaCorta(g.fechaRecepcion) }}</p>
@@ -1025,7 +1110,7 @@
   <div class="modal-caja fx-up max-w-[760px]" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Registrar entrada">
     <div class="flex items-start justify-between border-b border-slate-200 pb-4">
       <div>
-        <p class="m-0 text-[10px] font-black uppercase tracking-wider text-orange-500">Nueva entrada</p>
+        <p class="m-0 text-[10px] font-black uppercase tracking-wider text-emerald-700">Nueva entrada</p>
         <h3 class="m-0 mt-1 text-lg font-black text-slate-900">Registrar entrada de alimentos</h3>
         <p class="m-0 mt-1 text-[11px] font-semibold text-slate-500">{{ nombreInstitucion }}</p>
       </div>
@@ -1059,11 +1144,11 @@
     <div class="mt-3 grid max-h-[200px] grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-3 md:grid-cols-4">
       <button type="button" *ngFor="let ing of productosRapidos; trackBy: trackPor" (click)="alternarProductoEntrada(ing.id)" [attr.aria-pressed]="estaEnEntrada(ing.id)"
         class="flex cursor-pointer items-center gap-2 rounded-2xl border p-2 text-left transition" [disabled]="yaRegistrado(ing.id)"
-        [ngClass]="yaRegistrado(ing.id) ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400 opacity-60' : estaEnEntrada(ing.id) ? 'border-orange-400 bg-orange-50 text-orange-700' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'">
-        <ng-container *ngTemplateOutlet="foto; context: { n: ing.nombre, c: 'h-8 w-8 bg-orange-50' }"></ng-container>
+        [ngClass]="yaRegistrado(ing.id) ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400 opacity-60' : estaEnEntrada(ing.id) ? 'border-emerald-500 bg-emerald-50 text-emerald-800' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'">
+        <ng-container *ngTemplateOutlet="foto; context: { n: ing.nombre, c: 'h-8 w-8 bg-emerald-50' }"></ng-container>
         <span class="min-w-0 flex-1 truncate text-[11px] font-bold">{{ ing.nombre }}</span>
         <span *ngIf="yaRegistrado(ing.id)" class="shrink-0 text-[9px] font-black">Ya registrado</span>
-        <span *ngIf="estaEnEntrada(ing.id)" class="material-symbols-outlined text-[16px] text-orange-500">check_circle</span>
+        <span *ngIf="estaEnEntrada(ing.id)" class="material-symbols-outlined text-[16px] text-emerald-700">check_circle</span>
       </button>
       <p *ngIf="productosRapidos.length === 0" class="col-span-full m-0 py-3 text-center text-xs text-slate-500">No hay productos con ese nombre.</p>
     </div>
@@ -1109,7 +1194,7 @@
   <div class="modal-caja fx-up max-w-[640px]" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Registro del día">
     <div class="flex items-start justify-between border-b border-slate-200 pb-4">
       <div>
-        <p class="m-0 text-[10px] font-black uppercase tracking-wider text-orange-500">Registro del día</p>
+        <p class="m-0 text-[10px] font-black uppercase tracking-wider text-emerald-700">Registro del día</p>
         <h3 class="m-0 mt-1 text-lg font-black text-slate-900">{{ fechaDiaModal(diaSeleccionado) }}</h3>
       </div>
       <button type="button" class="btn-cerrar" aria-label="Cerrar" (click)="modalDiaAbierto = false"><span class="material-symbols-outlined text-[20px]">close</span></button>
@@ -1120,10 +1205,10 @@
     <div *ngFor="let reg of registrosDelDia; trackBy: trackPor" class="mt-5">
       <div class="flex items-center justify-between gap-3">
         <div class="flex items-center gap-3">
-          <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600"><span class="material-symbols-outlined text-[24px]">local_shipping</span></div>
+          <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700"><span class="material-symbols-outlined text-[24px]">local_shipping</span></div>
           <div><p class="m-0 text-sm font-black text-slate-900">{{ reg.codigo }}</p><p class="m-0 text-[10px] text-slate-400">{{ reg.descripcion }}</p></div>
         </div>
-        <span class="rounded-full border border-amber-200 bg-amber-50 px-3 py-0.5 text-[10px] font-black text-amber-700">{{ reg.estado }}</span>
+        <span class="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-0.5 text-[10px] font-black text-emerald-800">{{ reg.estado }}</span>
       </div>
 
       <div class="mt-4 grid grid-cols-2 gap-4 rounded-2xl border border-slate-100 bg-slate-50 p-4">
@@ -1135,14 +1220,14 @@
 
       <div class="mt-5 flex items-center justify-between">
         <h4 class="m-0 text-sm font-black text-slate-900">Productos registrados</h4>
-        <span class="text-[10px] font-semibold text-sky-600">{{ reg.items.length }} productos</span>
+        <span class="text-[10px] font-semibold text-emerald-700">{{ reg.items.length }} productos</span>
       </div>
       <div class="mt-2 overflow-hidden rounded-2xl border border-slate-200">
         <div *ngFor="let e of reg.items; let i = index; trackBy: trackPor" class="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3 last:border-b-0">
           <div class="flex min-w-0 items-center gap-3">
-            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-orange-100 text-[10px] font-black text-orange-600">{{ i + 1 }}</span>
-            <ng-container *ngTemplateOutlet="foto; context: { n: e.ingrediente, c: 'h-9 w-9 bg-orange-50' }"></ng-container>
-            <div class="min-w-0"><p class="m-0 truncate text-xs font-black text-slate-900">{{ e.ingrediente }}</p><p class="m-0 truncate text-[10px] text-sky-600">Lote {{ e.lote || '—' }}</p></div>
+            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-[10px] font-black text-emerald-800">{{ i + 1 }}</span>
+            <ng-container *ngTemplateOutlet="foto; context: { n: e.ingrediente, c: 'h-9 w-9 bg-emerald-50' }"></ng-container>
+            <div class="min-w-0"><p class="m-0 truncate text-xs font-black text-slate-900">{{ e.ingrediente }}</p><p class="m-0 truncate text-[10px] text-emerald-700">Lote {{ e.lote || '—' }}</p></div>
           </div>
           <span class="shrink-0 text-xs font-black text-slate-900">{{ e.cantidad }} {{ e.unidad }}</span>
         </div>
@@ -1173,7 +1258,7 @@
   <div class="modal-caja fx-up flex max-w-[860px] flex-col !p-0" style="max-height: 90vh" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Inventario">
     <div class="flex items-start justify-between border-b border-slate-200 p-6 pb-4">
       <div>
-        <p class="m-0 text-[10px] font-black uppercase tracking-wider text-orange-500">Existencias</p>
+        <p class="m-0 text-[10px] font-black uppercase tracking-wider text-emerald-700">Existencias</p>
         <h3 class="m-0 mt-1 text-lg font-black text-slate-900">Inventario</h3>
         <p class="m-0 mt-1 text-[11px] font-semibold text-slate-500">{{ nombreInstitucion }}<span *ngIf="nombreSede"> · {{ nombreSede }}</span></p>
       </div>
@@ -1183,19 +1268,19 @@
     <div class="grid min-h-0 flex-1 grid-cols-1 gap-6 overflow-y-auto p-6 md:grid-cols-2">
       <section>
         <div class="mb-3 flex items-center justify-between">
-          <h5 class="m-0 text-[11px] font-black uppercase tracking-wider text-emerald-600">Disponibles</h5>
-          <span class="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-black text-emerald-700">{{ inventarioDisponible.length }} productos</span>
+          <h5 class="m-0 text-[11px] font-black uppercase tracking-wider text-emerald-700">Disponibles</h5>
+          <span class="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-black text-emerald-800">{{ inventarioDisponible.length }} productos</span>
         </div>
         <p *ngIf="inventarioDisponible.length === 0" class="rounded-xl border border-dashed border-slate-200 p-4 text-center text-xs text-slate-500">No hay productos disponibles. Registra una entrada desde el historial.</p>
         <div class="flex max-h-[52vh] flex-col gap-2 overflow-y-auto pr-1">
           <div *ngFor="let item of inventarioDisponible; trackBy: trackPor" class="rounded-xl border border-slate-100 bg-white p-2.5">
             <div class="flex items-center justify-between gap-2">
               <div class="flex min-w-0 items-center gap-2">
-                <ng-container *ngTemplateOutlet="foto; context: { n: item.producto.nombre, c: 'h-10 w-10 bg-orange-50' }"></ng-container>
+                <ng-container *ngTemplateOutlet="foto; context: { n: item.producto.nombre, c: 'h-10 w-10 bg-emerald-50' }"></ng-container>
                 <div class="min-w-0"><h5 class="m-0 truncate text-xs font-bold text-slate-800">{{ nombreMostrado(item.producto.nombre) }}</h5><p class="m-0 truncate text-[10px] text-slate-400">{{ item.producto.categoria }}</p></div>
               </div>
               <div class="shrink-0 text-right">
-                <span class="block text-sm font-black text-orange-600">{{ item.cantidad | number:'1.0-2' }} {{ item.unidad }}</span>
+                <span class="block text-sm font-black text-emerald-700">{{ item.cantidad | number:'1.0-2' }} {{ item.unidad }}</span>
                 <span *ngIf="item.estado" class="cal-chip !w-auto justify-end" [ngClass]="claseChipEstado(item.estado)"><span class="cal-dot"></span>{{ item.estado }}</span>
               </div>
             </div>
@@ -1278,7 +1363,7 @@
       <div *ngFor="let p of detalleLista; trackBy: trackPor" class="rounded-2xl border border-slate-200 bg-white p-3">
         <div class="flex items-center justify-between gap-3">
           <div class="flex min-w-0 items-center gap-3">
-            <ng-container *ngTemplateOutlet="foto; context: { n: p.ingrediente, c: 'h-11 w-11 bg-orange-50 text-xl' }"></ng-container>
+            <ng-container *ngTemplateOutlet="foto; context: { n: p.ingrediente, c: 'h-11 w-11 bg-emerald-50 text-xl' }"></ng-container>
             <div class="min-w-0">
               <p class="m-0 truncate text-sm font-black text-slate-900">{{ p.ingrediente }}</p>
               <p class="m-0 truncate text-[10px] font-semibold text-slate-400">{{ p.categoria }}<ng-container *ngIf="p.tipoMercado"> · {{ p.tipoMercado }}</ng-container></p>
