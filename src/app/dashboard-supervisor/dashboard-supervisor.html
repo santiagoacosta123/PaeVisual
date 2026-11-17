@@ -39,7 +39,7 @@
 .t-info   { background: #dbeafe; color: #1d4ed8; }
 .t-danger { background: #fee2e2; color: #b91c1c; }
 
-/* ---------- 3. PASO 2: LAYOUT PRINCIPAL (2 COLUMNAS) ---------- */
+/* ---------- 3. LAYOUT PRINCIPAL (2 COLUMNAS) ---------- */
 .sd {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 336px;
@@ -57,102 +57,95 @@
   min-width: 0;
 }
 
-/* ---------- 4. Barra superior con imagen + Filtros ---------- */
-.sd-bar {
+/* ---------- 4. BANNER con imagen de fondo + filtro de período ---------- */
+.sd-banner {
   position: relative;
   overflow: hidden;
-  display: grid;
-  grid-template-columns: minmax(150px, 230px) minmax(0, 1fr);
-  align-items: stretch;
-  min-height: 132px;
-  border: 1px solid #f5e3ad;
-  border-bottom: 4px solid #f4b41f;
-  border-radius: 20px;
-  background: linear-gradient(112deg, #fffdf6, #fff6d9);
-  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 190px;
+  padding: 22px 26px;
+  border-radius: 22px;
+  background: #1f5a3a;
+  box-shadow: var(--shadow-md);
+  color: #fff;
 }
-.sd-hero__art {
-  position: relative;
-  overflow: hidden;
-  min-height: 112px;
-  border-right: 9px solid #f4b41f;
-  border-bottom: 5px solid #f4b41f;
-  border-bottom-right-radius: 100% 100%;
-  background: #e4f7ef;
-}
-.sd-hero__photo {
+/* Imagen de fondo nítida (sin filtros ni blur) */
+.sd-banner__img {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: 68% center;
+  object-position: center;
+  z-index: 0;
+  filter: none;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: high-quality;
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
-.sd-bar__content {
+/* Degradado solo en la zona del texto: el resto de la foto queda limpio */
+.sd-banner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(
+    90deg,
+    rgba(18, 70, 40, 0.85) 0%,
+    rgba(18, 70, 40, 0.5) 25%,
+    rgba(18, 70, 40, 0) 50%
+  );
+  pointer-events: none;
+}
+.sd-banner__text,
+.sd-banner__filters {
+  position: relative;
+  z-index: 2;
+}
+.sd-banner__text {
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  gap: 12px;
+  gap: 4px;
   min-width: 0;
-  padding: 14px 18px;
+  max-width: 640px;
 }
-.sd-bar__l {
-  min-width: 0;
+.sd-banner__eyebrow {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #fff;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
 }
-.sd-bar__l h2 {
-  font-size: 17px;
+.sd-banner__title {
+  font-size: clamp(24px, 3vw, 32px);
   font-weight: 900;
-  color: #17372d;
+  line-height: 1.05;
   letter-spacing: -0.02em;
+  color: #fff;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
 }
-.sd-bar__l p {
+.sd-banner__sub {
   margin-top: 2px;
-  font-size: 12px;
-  color: var(--ink-soft);
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.97);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
 }
 
-.sd-filters {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-}
-.sd-select {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid var(--line);
-}
-.sd-select label {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--g700);
-}
-.sd-select label .material-symbols-outlined { font-size: 16px; color: var(--g600); }
-.sd-select select {
-  max-width: 195px;
-  border: none;
-  background: transparent;
-  outline: none;
-  cursor: pointer;
-  font: inherit;
-  font-size: 12.5px;
-  font-weight: 700;
-  color: var(--ink);
-}
 .sd-pills {
   display: inline-flex;
   gap: 4px;
   padding: 4px;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 8px 18px -10px rgba(0, 0, 0, 0.45);
 }
 .sd-pills button {
   padding: 6px 12px;
@@ -188,24 +181,8 @@
   color: var(--ink);
   letter-spacing: -0.01em;
 }
-.sd-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  border: none;
-  background: none;
-  padding: 4px 8px;
-  border-radius: 8px;
-  font: inherit;
-  font-size: 12px;
-  font-weight: 800;
-  color: var(--deep);
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
-.sd-link:hover { background: var(--g100); }
 
-/* ---------- 6. Acceso Rápido (todas se ponen amarillas al pasar el mouse) ---------- */
+/* ---------- 6. Acceso Rápido ---------- */
 .sd-quick {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -302,10 +279,10 @@
   font-weight: 600;
 }
 
-/* ---------- 7. KPIs (4 tarjetas estilo "Folders") ---------- */
+/* ---------- 7. KPIs (3 tarjetas) ---------- */
 .sd-kpis {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
 }
 .sd-kpi {
@@ -367,7 +344,7 @@
   flex-shrink: 0;
 }
 
-/* ---------- 8. Tarjetas de tabla y gráfico en columna izquierda ---------- */
+/* ---------- 8. Tarjetas de tabla y gráfico ---------- */
 .sd-card {
   min-width: 0;
   padding: 18px 20px;
@@ -487,9 +464,19 @@
   color: var(--mute) !important;
 }
 
-.sd-bars { position: relative; height: 210px; margin-top: 8px; }
+/* Gráfico de sedes */
+.sd-bars {
+  position: relative;
+  height: 130px;
+  max-width: 100%;
+  margin-top: 4px;
+}
+.sd-bars canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
 
-/* ---------- 9. COLUMNA DERECHA (PANEL DE RESUMEN PAE) ---------- */
+/* ---------- 9. COLUMNA DERECHA ---------- */
 .sd-aside {
   display: flex;
   flex-direction: column;
@@ -609,7 +596,6 @@
   color: var(--mute);
 }
 
-/* Sub-bloque Composición de alimentos (apilado para que el tooltip no se corte) */
 .sd-comp-block {
   padding-top: 16px;
   border-top: 1px solid var(--line);
@@ -624,66 +610,7 @@
   gap: 14px;
 }
 
-/* Tarjeta inferior destacada (Colores cálidos PAE) */
-.sd-promo {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 10px;
-  padding: 20px 18px;
-  border: 1px solid #f5e3ad;
-  border-radius: 22px;
-  background: linear-gradient(180deg, #fffdf6 0%, #fff3cc 100%);
-}
-.sd-promo__ic {
-  display: grid;
-  place-items: center;
-  width: 54px;
-  height: 54px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, var(--yellow), var(--amber));
-  color: var(--g800);
-  box-shadow: 0 12px 22px -10px rgba(245, 163, 0, 0.55);
-}
-.sd-promo__ic .material-symbols-outlined { font-size: 26px; }
-.sd-promo h4 {
-  margin: 2px 0 0;
-  font-size: 15px;
-  font-weight: 800;
-  color: var(--ink);
-}
-.sd-promo p {
-  font-size: 11.5px;
-  line-height: 1.45;
-  color: var(--ink-soft);
-}
-.sd-promo__btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  width: 100%;
-  margin-top: 4px;
-  padding: 10px 14px;
-  border: 1px solid var(--amber);
-  border-radius: 12px;
-  background: var(--yellow);
-  color: var(--g800);
-  font: inherit;
-  font-size: 12.5px;
-  font-weight: 800;
-  cursor: pointer;
-  box-shadow: 0 8px 18px -10px rgba(245, 163, 0, 0.6);
-  transition: background 0.2s ease, transform 0.2s ease;
-}
-.sd-promo__btn:hover {
-  background: var(--amber);
-  transform: translateY(-1px);
-}
-.sd-promo__btn .material-symbols-outlined { font-size: 16px; }
-
-/* ---------- 10. PASO 1: ELEGIR INSTITUCIÓN (Colores PAE) ---------- */
+/* ---------- 10. PASO 1: ELEGIR INSTITUCIÓN ---------- */
 .sg1 {
   display: flex;
   flex-direction: column;
@@ -885,23 +812,24 @@
 }
 @media (max-width: 820px) {
   .sd-quick { grid-template-columns: 1fr; }
-  .sd-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sd-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 @media (max-width: 720px) {
-  .sd-bar { grid-template-columns: minmax(0, 1fr); }
-  .sd-hero__art { width: min(75%, 340px); }
-  .sd-hero__photo { object-fit: contain; object-position: left top; }
+  .sd-banner { min-height: 190px; align-items: flex-start; }
+  .sd-banner::before {
+    background: linear-gradient(180deg, rgba(18, 70, 40, 0.8) 0%, rgba(18, 70, 40, 0) 70%);
+  }
+  .sd-kpis { grid-template-columns: 1fr; }
 }
 @media (max-width: 620px) {
   .sd, .sg1 { padding: 12px; border-radius: 20px; }
-  .sd-filters { flex-direction: column; align-items: stretch; }
-  .sd-pills { justify-content: center; }
-  .sd-kpis { grid-template-columns: 1fr; }
+  .sd-banner { padding: 16px 18px; }
+  .sd-pills { width: 100%; justify-content: center; }
   .sg1-hero { padding: 16px 20px; gap: 14px; }
   .sg1-logo { width: 68px; height: 68px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .sd-qcard, .sd-kpi, .sd-promo__btn, .sg1-card, .sg1-spin {
+  .sd-qcard, .sd-kpi, .sg1-card, .sg1-spin {
     transition: none;
     animation: none;
   }
@@ -983,38 +911,25 @@
   <!-- ===================================================================== -->
   <div class="sd-main">
 
-    <!-- 1. Barra superior con imagen PAE + Filtros -->
-    <div class="sd-bar">
-      <div class="sd-hero__art" aria-hidden="true">
-        <img class="sd-hero__photo" src="image%20copy%202.png" width="2172" height="724" alt="" />
+    <!-- 1. Banner con imagen de fondo + filtro de período -->
+    <div class="sd-banner">
+      <img class="sd-banner__img" src="image%20copy%202.png" width="2172" height="724" alt="" aria-hidden="true" decoding="async" />
+
+      <div class="sd-banner__text">
+        <span class="sd-banner__eyebrow">Abastecimiento escolar · SIRAE PAE</span>
+        <h2 class="sd-banner__title">Control y seguimiento PAE</h2>
+        <p class="sd-banner__sub">Métricas de recepción, calidad y cobertura en tiempo real</p>
       </div>
 
-      <div class="sd-bar__content">
-        <div class="sd-bar__l">
-          <h2>Control y seguimiento PAE</h2>
-          <p>Métricas de recepción, calidad y cobertura en tiempo real</p>
-        </div>
-
-        <div class="sd-filters">
-          <div class="sd-select">
-            <label for="filtroSedeSupervisor">
-              <span class="material-symbols-outlined">store</span> Sede:
-            </label>
-            <select id="filtroSedeSupervisor" [(ngModel)]="filtroSedeSeleccionada" (change)="alCambiarFiltroSede()">
-              <option value="TODAS">Todas las sedes ({{ inst.sedes?.length || 0 }})</option>
-              <option *ngFor="let s of inst.sedes" [value]="s.id_sede">{{ s.nombre_sede }}</option>
-            </select>
-          </div>
-          <div class="sd-pills" role="group" aria-label="Filtro de período">
-            <button type="button" [class.on]="filtroPeriodo === '30'" (click)="alCambiarFiltroPeriodo('30')">30 días</button>
-            <button type="button" [class.on]="filtroPeriodo === '90'" (click)="alCambiarFiltroPeriodo('90')">90 días</button>
-            <button type="button" [class.on]="filtroPeriodo === 'TOTAL'" (click)="alCambiarFiltroPeriodo('TOTAL')">Histórico</button>
-          </div>
+      <div class="sd-banner__filters">
+        <div class="sd-pills" role="group" aria-label="Filtro de período">
+          <button type="button" [class.on]="filtroPeriodo === '8'" (click)="alCambiarFiltroPeriodo('8')">8 días</button>
+          <button type="button" [class.on]="filtroPeriodo === '15'" (click)="alCambiarFiltroPeriodo('15')">15 días</button>
         </div>
       </div>
     </div>
 
-    <!-- 2. Acceso Rápido (todas se ponen amarillas al pasar el mouse) -->
+    <!-- 2. Acceso Rápido -->
     <div>
       <div class="sd-sec-head">
         <h3>Acceso Rápido</h3>
@@ -1061,13 +976,10 @@
       </div>
     </div>
 
-    <!-- 3. Indicadores Clave (4 tarjetas estilo "Folders") -->
+    <!-- 3. Indicadores Clave -->
     <div>
       <div class="sd-sec-head">
         <h3>Indicadores Clave</h3>
-        <button type="button" class="sd-link" (click)="irA('reportes')">
-          Ver detalle <span class="material-symbols-outlined" style="font-size:15px;">arrow_forward</span>
-        </button>
       </div>
       <div class="sd-kpis">
         <article class="sd-kpi">
@@ -1100,20 +1012,6 @@
 
         <article class="sd-kpi">
           <div class="sd-kpi__top">
-            <span class="sd-kpi__ic t-info"><span class="material-symbols-outlined">inventory</span></span>
-            <span class="material-symbols-outlined sd-kpi__dots">more_vert</span>
-          </div>
-          <div>
-            <div class="sd-kpi__l">Volumen total</div>
-            <div class="sd-kpi__bottom">
-              <span class="sd-kpi__h">Kg / Litros / Und</span>
-              <span class="sd-kpi__v">{{ totalKilosLitros | number:'1.0-0' }}</span>
-            </div>
-          </div>
-        </article>
-
-        <article class="sd-kpi">
-          <div class="sd-kpi__top">
             <span class="sd-kpi__ic" [ngClass]="novedadesRechazos > 0 ? 't-danger' : 't-ok'">
               <span class="material-symbols-outlined">{{ novedadesRechazos > 0 ? 'warning' : 'task_alt' }}</span>
             </span>
@@ -1139,7 +1037,6 @@
             <h3>Últimas Entregas</h3>
           </div>
         </div>
-        <button type="button" class="sd-link" (click)="irA('entregas')">Ver todas →</button>
       </div>
 
       <div class="sd-table-wrap">
@@ -1186,7 +1083,7 @@
       </div>
     </article>
 
-    <!-- 5. Distribución por sedes -->
+    <!-- 5. Distribución por sedes (gráfico reducido) -->
     <article class="sd-card">
       <div class="sd-ch">
         <div class="sd-ch__left">
@@ -1210,7 +1107,7 @@
   <!-- ===================================================================== -->
   <aside class="sd-aside">
 
-    <!-- Gráfico Calidad y Estado de Recepción -->
+    <!-- Estado de recepción -->
     <div class="sd-aside-head">
       <h3>Estado de Recepción</h3>
       <span class="sd-tag">{{ etiquetaPeriodo }}</span>
@@ -1226,7 +1123,6 @@
       </div>
     </div>
 
-    <!-- Leyenda de estados -->
     <ul class="sd-legend">
       <li *ngFor="let l of leyendaEstados">
         <span class="sd-legend__box">
@@ -1272,18 +1168,6 @@
           </li>
         </ul>
       </div>
-    </div>
-
-    <!-- Tarjeta inferior destacada -->
-    <div class="sd-promo">
-      <span class="sd-promo__ic">
-        <span class="material-symbols-outlined">analytics</span>
-      </span>
-      <h4>Reportes del PAE</h4>
-      <p>Consulta el detalle completo de entregas, novedades e inventario por sede.</p>
-      <button type="button" class="sd-promo__btn" (click)="irA('reportes')">
-        Ver reportes <span class="material-symbols-outlined">arrow_forward</span>
-      </button>
     </div>
 
   </aside>
