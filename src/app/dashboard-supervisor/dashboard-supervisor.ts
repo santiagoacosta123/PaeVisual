@@ -85,7 +85,7 @@ export class DashboardSupervisor implements OnInit, AfterViewInit, OnDestroy {
 
   // Filtros interactivos
   filtroSedeSeleccionada: number | 'TODAS' = 'TODAS';
-  filtroPeriodo: '30' | '90' | 'TOTAL' = '30';
+  filtroPeriodo: '8' | '15' | 'TOTAL' = '8';
 
   // Métricas calculadas
   totalEntregas = 0;
@@ -102,8 +102,8 @@ export class DashboardSupervisor implements OnInit, AfterViewInit, OnDestroy {
   private timerRenderGraficos?: ReturnType<typeof setTimeout>;
 
   get etiquetaPeriodo(): string {
-    if (this.filtroPeriodo === '30') return 'Último mes';
-    if (this.filtroPeriodo === '90') return 'Últimos 3 meses';
+    if (this.filtroPeriodo === '8') return 'Últimos 8 días';
+    if (this.filtroPeriodo === '15') return 'Últimos 15 días';
     return 'Histórico';
   }
 
@@ -424,7 +424,7 @@ export class DashboardSupervisor implements OnInit, AfterViewInit, OnDestroy {
     this.programarRenderGraficos();
   }
 
-  alCambiarFiltroPeriodo(periodo: '30' | '90' | 'TOTAL'): void {
+  alCambiarFiltroPeriodo(periodo: '8' | '15' | 'TOTAL'): void {
     this.filtroPeriodo = periodo;
     this.procesarMetricas();
     this.programarRenderGraficos();
@@ -580,6 +580,7 @@ export class DashboardSupervisor implements OnInit, AfterViewInit, OnDestroy {
           borderSkipped: false,
           barPercentage: 0.6,
           categoryPercentage: 0.8,
+          maxBarThickness: 36,
         }]
       },
       options: {
