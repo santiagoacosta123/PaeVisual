@@ -205,6 +205,9 @@
               <strong style="color:#0f172a; display:block;">{{ noti.titulo }}</strong>
               <span style="color:#475569;">{{ noti.mensaje }}</span>
             </div>
+            <a routerLink="/notificaciones" (click)="mostrarNotificaciones = false" style="display:block; text-align:center; font-size:11px; font-weight:700; color:#d97706; text-decoration:none; margin-top:8px; padding-top:8px; border-top:1px solid #f1f5f9;">
+              Ver centro de notificaciones →
+            </a>
           </div>
         </div>
 
@@ -441,6 +444,9 @@
                 <strong class="notif-item-title">{{ noti.titulo }}</strong>
                 <span class="notif-item-msg">{{ noti.mensaje }}</span>
               </div>
+              <a routerLink="/notificaciones" (click)="mostrarNotificaciones = false" class="block text-center text-xs font-bold text-amber-600 hover:text-amber-700 py-2 border-t border-slate-100">
+                Ver centro de notificaciones →
+              </a>
             </div>
           </div>
         </div>
@@ -698,6 +704,9 @@
                 <strong class="notif-item-title">{{ noti.titulo }}</strong>
                 <span class="notif-item-msg">{{ noti.mensaje }}</span>
               </div>
+              <a routerLink="/notificaciones" (click)="mostrarNotificaciones = false" class="block text-center text-xs font-bold text-amber-600 hover:text-amber-700 py-2 border-t border-slate-100">
+                Ver centro de notificaciones →
+              </a>
             </div>
           </div>
         </div>

@@ -17,6 +17,7 @@ beforeEach(async () => {
   await resolveComponentResources(async (url: string) => {
     const cleanUrl = url.replace(/^\.\//, '');
     const candidatePaths = [
+      resolve(process.cwd(), 'src/app', cleanUrl.replace(/\.component\.(html|css)$/, ''), cleanUrl),
       resolve(process.cwd(), 'src/app', cleanUrl.replace(/\.(html|css)$/, ''), cleanUrl),
       resolve(process.cwd(), 'src/app/login', cleanUrl),
       resolve(process.cwd(), 'src/app/layout', cleanUrl),

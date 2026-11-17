@@ -179,6 +179,12 @@ export class LayoutComponent implements OnInit, OnDestroy {
     }
 
     this.cargarNotificacionesHeader();
+    if (this.notificacionService?.noLeidas$) {
+      this.notificacionService.noLeidas$.subscribe((conteo) => {
+        this.notificacionesNoLeidas = conteo;
+        this.cdr.markForCheck();
+      });
+    }
     this.actualizarTitulo(this.router.url);
 
     if (this.esSupervisor) {
