@@ -305,6 +305,23 @@ export class PlanillasOperativasService {
           try {
             const parsed = JSON.parse(guardada);
             if (parsed && parsed.guardadoManual) {
+              if (!parsed.cupos || !parsed.cupos.totalCupos || parsed.cupos.totalCupos === 0) {
+                const cupoDefecto = params.cuposBase || (params.sedeNombre?.toLowerCase().includes('valencia') ? 227 : 0);
+                const pre = Math.round(cupoDefecto * 0.11);
+                const p13 = Math.round(cupoDefecto * 0.22);
+                const p45 = Math.round(cupoDefecto * 0.22);
+                const sec = Math.round(cupoDefecto * 0.30);
+                const med = Math.max(0, cupoDefecto - (pre + p13 + p45 + sec));
+                parsed.cupos = {
+                  preescolar: pre,
+                  primaria13: p13,
+                  primaria45: p45,
+                  secundaria: sec,
+                  media: med,
+                  totalCupos: cupoDefecto,
+                  racionesTotales: cupoDefecto * 20
+                };
+              }
               return parsed as PlanillaRemisionData;
             }
           } catch (e) {
@@ -320,16 +337,22 @@ export class PlanillasOperativasService {
           Number(c.id_sede) === params.sedeId || Number(c.id_institucion) === params.institucionId
         );
 
-        const cupoTotal = params.cuposBase || Number(contratoSede?.cupos) || 227;
+        // Cupos determinados estrictamente por el contrato de la sede o institución
+        const contratoCupos = Number(contratoSede?.cupos) || 0;
+        const cupoTotal = params.cuposBase || contratoCupos || (params.sedeNombre?.toLowerCase().includes('valencia') ? 227 : 0);
 
-        // Distribución oficial según cupos
-        const factor = cupoTotal / 227;
+        // Distribución oficial según cupos de la sede
+        const preescolar = Math.round(cupoTotal * 0.11);
+        const primaria13 = Math.round(cupoTotal * 0.22);
+        const primaria45 = Math.round(cupoTotal * 0.22);
+        const secundaria = Math.round(cupoTotal * 0.30);
+        const media = Math.max(0, cupoTotal - (preescolar + primaria13 + primaria45 + secundaria));
         const cupos: CuposNivel = {
-          preescolar: Math.round(25 * factor),
-          primaria13: Math.round(50 * factor),
-          primaria45: Math.round(49 * factor),
-          secundaria: Math.round(67 * factor),
-          media: Math.round(36 * factor),
+          preescolar,
+          primaria13,
+          primaria45,
+          secundaria,
+          media,
           totalCupos: cupoTotal,
           racionesTotales: cupoTotal * 20
         };
@@ -341,7 +364,7 @@ export class PlanillasOperativasService {
           return coincideSede && coincideInst;
         });
 
-        const diasHabiles = this.generarDiasHabiles(params.fechaInicio || '2025-01-27');
+        const diasHabiles = this.generarDiasHabiles(params.fechaInicio || '2026-10-19');
 
         // Mapear NO PERECEDEROS (Cero datos quemados: si la manipuladora no ha recibido, es 0)
         const noPerecederos: FilaNoPerecedero[] = this.NO_PERECEDEROS_BASE.map((item, idx) => {
@@ -488,6 +511,7 @@ export class PlanillasOperativasService {
     periodo: string;
     fechaInicio: string;
     fechaFin: string;
+    cuposBase?: number;
     forzarRecarga?: boolean;
     nombreUsuario?: string;
   }): Observable<PlanillaKardexData> {
@@ -496,9 +520,10 @@ export class PlanillasOperativasService {
 
     return forkJoin({
       asistenciasRaw: this.asistenciaService.getAsistencias().pipe(timeout(4000), catchError(() => of([] as AsistenciaDiaria[]))),
-      entregasRaw: this.entregasService.cargar().pipe(timeout(4000), catchError(() => of([] as Entrega[])))
+      entregasRaw: this.entregasService.cargar().pipe(timeout(4000), catchError(() => of([] as Entrega[]))),
+      contratosRaw: this.siraeService.getContratos().pipe(timeout(4000), catchError(() => of([])))
     }).pipe(
-      map(({ asistenciasRaw, entregasRaw }) => {
+      map(({ asistenciasRaw, entregasRaw, contratosRaw }) => {
         if (!params.forzarRecarga && guardada) {
           try {
             const parsed = JSON.parse(guardada);
@@ -512,8 +537,16 @@ export class PlanillasOperativasService {
 
         const asistencias = this.safeArray<AsistenciaDiaria>(asistenciasRaw);
         const entregas = this.safeArray<Entrega>(entregasRaw);
+        const contratos = this.safeArray<any>(contratosRaw);
 
-        const diasHabiles = this.generarDiasHabiles(params.fechaInicio || '2025-01-27');
+        // Buscar contrato de la sede o institución para conocer sus cupos autorizados
+        const contratoSede = contratos.find((c: any) =>
+          Number(c.id_sede) === params.sedeId || Number(c.id_institucion) === params.institucionId
+        );
+        const contratoCupos = Number(contratoSede?.cupos) || 0;
+        const cupoTotal = params.cuposBase || contratoCupos || (params.sedeNombre?.toLowerCase().includes('valencia') ? 227 : 0);
+
+        const diasHabiles = this.generarDiasHabiles(params.fechaInicio || '2026-10-19');
         const diasSemanaNombres: Array<'L' | 'M' | 'M' | 'J' | 'V'> = ['L', 'M', 'M', 'J', 'V'];
 
         const entregasSede = entregas.filter(e => {
@@ -555,9 +588,9 @@ export class PlanillasOperativasService {
 
               let cantidadSalida = 0;
 
-              // CERO DATOS QUEMADOS: Si la manipuladora no registró asistencia ese día, la salida es 0
-              if (ninosPresentes > 0) {
-                const factorAsistencia = ninosPresentes / 227;
+              // CERO DATOS QUEMADOS: Si la manipuladora no registró asistencia ese día (festivo o no hubo clase), la salida es 0
+              if (ninosPresentes > 0 && cupoTotal > 0) {
+                const factorAsistencia = Math.min(1.0, ninosPresentes / cupoTotal);
                 const rasionDiaria = cantidadEntradaFinal / 20;
                 cantidadSalida = Math.round(rasionDiaria * factorAsistencia * 10) / 10;
               }
@@ -635,14 +668,18 @@ export class PlanillasOperativasService {
     cuposBase?: number;
     nombreUsuario?: string;
   }): PlanillaRemisionData {
-    const cupoTotal = params.cuposBase || 227;
-    const factor = cupoTotal / 227;
+    const cupoTotal = params.cuposBase || (params.sedeNombre?.toLowerCase().includes('valencia') ? 227 : 0);
+    const pre = Math.round(cupoTotal * 0.11);
+    const p13 = Math.round(cupoTotal * 0.22);
+    const p45 = Math.round(cupoTotal * 0.22);
+    const sec = Math.round(cupoTotal * 0.30);
+    const med = Math.max(0, cupoTotal - (pre + p13 + p45 + sec));
     const cupos: CuposNivel = {
-      preescolar: Math.round(25 * factor),
-      primaria13: Math.round(50 * factor),
-      primaria45: Math.round(49 * factor),
-      secundaria: Math.round(67 * factor),
-      media: Math.round(36 * factor),
+      preescolar: pre,
+      primaria13: p13,
+      primaria45: p45,
+      secundaria: sec,
+      media: med,
       totalCupos: cupoTotal,
       racionesTotales: cupoTotal * 20
     };
@@ -731,7 +768,7 @@ export class PlanillasOperativasService {
     fechaFin?: string;
     nombreUsuario?: string;
   }): PlanillaKardexData {
-    const diasHabiles = this.generarDiasHabiles(params.fechaInicio || '2025-01-27');
+    const diasHabiles = this.generarDiasHabiles(params.fechaInicio || '2026-10-19');
     const diasSemanaNombres: Array<'L' | 'M' | 'M' | 'J' | 'V'> = ['L', 'M', 'M', 'J', 'V'];
 
     const filas: FilaKardex[] = this.KARDEX_ALIMENTOS_BASE.map((base, idx) => {
