@@ -46,10 +46,14 @@ export class LoginComponent implements OnInit, OnDestroy {
   // Variables para la cámara y reconocimiento facial
   mostrarModalFacial: boolean = false;
   modoFacial: 'login' | 'registro' = 'login';
+  pasoFacial: 1 | 2 | 3 = 1;
+  fotoCapturada: string = '';
+  usuarioReconocido: any = null;
   correoParaRegistroFacial: string = '';
   mensajeFacial: string = '';
   cargandoFacial: boolean = false;
   streamVideo: MediaStream | null = null;
+  private temporizadorRedireccionFacial?: ReturnType<typeof setTimeout>;
 
   ngOnInit(): void {
     this.authService.despertarBackend();
@@ -80,6 +84,10 @@ export class LoginComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.solicitudLogin?.unsubscribe();
     if (this.temporizadorLogin) clearTimeout(this.temporizadorLogin);
+    if (this.temporizadorRedireccionFacial) clearTimeout(this.temporizadorRedireccionFacial);
+    if (this.streamVideo) {
+      this.streamVideo.getTracks().forEach(track => track.stop());
+    }
   }
 
   get correo() { return this.loginForm.get('correo'); }
@@ -237,15 +245,23 @@ export class LoginComponent implements OnInit, OnDestroy {
 
   async abrirCamaraFacial(modo: 'login' | 'registro' = 'login'): Promise<void> {
     this.modoFacial = modo;
+    this.pasoFacial = 1;
+    this.fotoCapturada = '';
+    this.usuarioReconocido = null;
     this.mensajeFacial = '';
+    this.cargandoFacial = false;
     this.mostrarModalFacial = true;
     this.cdr.detectChanges();
 
+    if (this.temporizadorRedireccionFacial) {
+      clearTimeout(this.temporizadorRedireccionFacial);
+      this.temporizadorRedireccionFacial = undefined;
+    }
+
     try {
       this.streamVideo = await navigator.mediaDevices.getUserMedia({
-        video: { width: 400, height: 300, facingMode: 'user' }
+        video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' }
       });
-      // Esperamos un tick para que el elemento <video> exista en el DOM
       setTimeout(() => {
         const videoElement = document.getElementById('videoWebcam') as HTMLVideoElement;
         if (videoElement && this.streamVideo) {
@@ -264,7 +280,14 @@ export class LoginComponent implements OnInit, OnDestroy {
       this.streamVideo.getTracks().forEach(track => track.stop());
       this.streamVideo = null;
     }
+    if (this.temporizadorRedireccionFacial) {
+      clearTimeout(this.temporizadorRedireccionFacial);
+      this.temporizadorRedireccionFacial = undefined;
+    }
     this.mostrarModalFacial = false;
+    this.pasoFacial = 1;
+    this.fotoCapturada = '';
+    this.cargandoFacial = false;
     this.cdr.detectChanges();
   }
 
@@ -272,46 +295,53 @@ export class LoginComponent implements OnInit, OnDestroy {
     const videoElement = document.getElementById('videoWebcam') as HTMLVideoElement;
     if (!videoElement) return;
 
-    // Tomamos la captura en Base64 idéntico a webcamRef.current.getScreenshot()
+    if (this.modoFacial === 'registro' && !this.correoParaRegistroFacial.trim()) {
+      this.mensajeFacial = 'Ingresa el correo institucional del usuario.';
+      this.cdr.detectChanges();
+      return;
+    }
+
+    // 1. Capturar el fotograma directamente de la cámara antes de cambiar de paso
     const canvas = document.createElement('canvas');
-    canvas.width = videoElement.videoWidth || 400;
-    canvas.height = videoElement.videoHeight || 300;
+    canvas.width = videoElement.videoWidth || 640;
+    canvas.height = videoElement.videoHeight || 480;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
     ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
-    const imagenBase64 = canvas.toDataURL('image/jpeg');
+    const imagenBase64 = canvas.toDataURL('image/jpeg', 0.95);
+    this.fotoCapturada = imagenBase64;
 
+    // 2. Activar la animación de escaneo en el paso 2
+    this.pasoFacial = 2;
     this.cargandoFacial = true;
-    this.mensajeFacial = 'Procesando biometría facial...';
+    this.mensajeFacial = '';
     this.cdr.detectChanges();
 
     if (this.modoFacial === 'registro') {
-      if (!this.correoParaRegistroFacial.trim()) {
-        this.mensajeFacial = 'Ingresa el correo electrónico del usuario.';
-        this.cargandoFacial = false;
-        this.cdr.detectChanges();
-        return;
-      }
-
       this.facialService.registrarRostro(this.correoParaRegistroFacial.trim(), imagenBase64).subscribe({
         next: (res) => {
           this.cargandoFacial = false;
-          this.mensajeFacial = res.msg || '¡Rostro registrado exitosamente!';
+          this.usuarioReconocido = {
+            nombre: this.correoParaRegistroFacial.trim(),
+            rol: 'Rostro Registrado Exitosamente'
+          };
+          this.pasoFacial = 3;
           this.cdr.detectChanges();
         },
         error: (err) => {
           this.cargandoFacial = false;
-          this.mensajeFacial = err.error?.detail || 'Error al registrar rostro.';
+          this.pasoFacial = 1;
+          this.mensajeFacial = err.error?.detail || 'No se detectó ningún rostro en la cámara. Enfoca bien tu cara.';
           this.cdr.detectChanges();
         }
       });
     } else {
-      // MODO VERIFICACIÓN / LOGIN FACIAL
+      // Modo LOGIN facial
       this.facialService.verificarRostro(imagenBase64).subscribe({
         next: (response) => {
           this.cargandoFacial = false;
-          this.cerrarCamaraFacial();
+          this.usuarioReconocido = response.usuario || { nombre: 'Usuario', rol: 'Autorizado' };
 
           // Guardamos sesión igual al login tradicional
           this.authService.guardarSesion(response);
@@ -325,23 +355,41 @@ export class LoginComponent implements OnInit, OnDestroy {
             mensaje: 'Inicio de sesión facial exitoso'
           }));
 
-          // REDIRECCIÓN EN ORDEN DE ROLES
-          const rol = response.usuario?.rol;
-          if (this.authService.esSupervisor(rol)) {
-            this.authService.limpiarInstitucionActiva?.();
-            this.router.navigate(['/dashboard-supervisor']);
-          } else if (this.authService.esJefa(rol)) {
-            this.router.navigate(['/asistencia-diaria']);
-          } else {
-            this.router.navigate(['/inicio']);
-          }
+          // Paso 3: ¡Acceso Autorizado! con mensaje de bienvenida
+          this.pasoFacial = 3;
+          this.cdr.detectChanges();
+
+          // Auto-redirección suave después de 2.5 segundos
+          this.temporizadorRedireccionFacial = setTimeout(() => {
+            this.continuarAccesoFacial();
+          }, 2500);
         },
         error: (err) => {
           this.cargandoFacial = false;
-          this.mensajeFacial = err.error?.detail || 'Rostro no reconocido. Inténtalo de nuevo.';
+          this.pasoFacial = 1;
+          this.mensajeFacial = err.error?.detail || 'No se detectó ningún rostro en la cámara. Enfoca bien tu cara.';
           this.cdr.detectChanges();
         }
       });
+    }
+  }
+
+  continuarAccesoFacial(): void {
+    const rol = this.usuarioReconocido?.rol;
+    const esRegistro = this.modoFacial === 'registro';
+    this.cerrarCamaraFacial();
+
+    if (esRegistro) {
+      return;
+    }
+
+    if (this.authService.esSupervisor(rol)) {
+      this.authService.limpiarInstitucionActiva?.();
+      this.router.navigate(['/dashboard-supervisor']);
+    } else if (this.authService.esJefa(rol)) {
+      this.router.navigate(['/asistencia-diaria']);
+    } else {
+      this.router.navigate(['/inicio']);
     }
   }
 

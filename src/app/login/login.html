@@ -88,38 +88,32 @@
       </div>
 
       <!-- FORMULARIO REACTIVO -->
-      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="w-full flex flex-col gap-7">
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="w-full flex flex-col gap-5 sm:gap-6">
 
-        <!-- CAMPO: CORREO ELECTRÓNICO -->
-        <div class="flex flex-col w-full group">
-          <div class="flex items-center gap-3.5 pb-2">
+        <!-- CAMPO: CORREO ELECTRÓNICO (Diseño cápsula redondeada de la Imagen 1) -->
+        <div class="flex flex-col w-full">
+          <div class="w-full rounded-full border border-slate-200 bg-white px-5 py-3 flex items-center gap-3.5 shadow-2xs transition-all focus-within:border-emerald-600 focus-within:ring-2 focus-within:ring-emerald-500/20">
             <span class="text-[#0b6638] shrink-0" aria-hidden="true">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0b6638" stroke-width="2.2"
-                stroke-linecap="round" stroke-linejoin="round">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0b6638" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="2" y="4" width="20" height="16" rx="2"></rect>
                 <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
               </svg>
             </span>
             <input id="correo" type="email" formControlName="correo" placeholder="Correo electrónico"
               autocomplete="email"
-              class="w-full bg-transparent border-none outline-none text-slate-800 text-base placeholder:text-[#5d6e64] placeholder:font-medium p-0 focus:ring-0 focus:outline-none" />
+              class="w-full bg-transparent border-none outline-none text-slate-800 text-sm sm:text-base placeholder:text-slate-400 placeholder:font-medium p-0 focus:ring-0 focus:outline-none" />
           </div>
-          <div
-            class="w-full h-[2px] bg-[#0b6638] rounded-xs transition-all group-focus-within:h-[2.5px] group-focus-within:bg-[#084b29]">
-          </div>
-          <span class="text-xs text-red-600 font-medium mt-1.5"
+          <span class="text-xs text-red-600 font-medium mt-1 ml-4"
             *ngIf="correo?.invalid && (correo?.dirty || correo?.touched)">
-            {{ correo?.errors?.['required'] ? 'El correo electrónico es obligatorio' : 'Ingresa un correo electrónico
-            válido' }}
+            {{ correo?.errors?.['required'] ? 'El correo electrónico es obligatorio' : 'Ingresa un correo electrónico válido' }}
           </span>
         </div>
 
-        <!-- CAMPO: CONTRASEÑA -->
-        <div class="flex flex-col w-full group">
-          <div class="flex items-center gap-3.5 pb-2">
+        <!-- CAMPO: CONTRASEÑA (Diseño cápsula redondeada de la Imagen 1) -->
+        <div class="flex flex-col w-full">
+          <div class="w-full rounded-full border border-slate-200 bg-white px-5 py-3 flex items-center gap-3.5 shadow-2xs transition-all focus-within:border-emerald-600 focus-within:ring-2 focus-within:ring-emerald-500/20">
             <span class="text-[#0b6638] shrink-0" aria-hidden="true">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0b6638" stroke-width="2.2"
-                stroke-linecap="round" stroke-linejoin="round">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0b6638" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                 <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                 <circle cx="12" cy="16" r="1.2" fill="#0b6638"></circle>
@@ -127,18 +121,16 @@
             </span>
             <input id="clave" [type]="mostrarClave ? 'text' : 'password'" formControlName="clave"
               placeholder="Contraseña" autocomplete="current-password"
-              class="w-full bg-transparent border-none outline-none text-slate-800 text-base placeholder:text-[#5d6e64] placeholder:font-medium p-0 focus:ring-0 focus:outline-none" />
+              class="w-full bg-transparent border-none outline-none text-slate-800 text-sm sm:text-base placeholder:text-slate-400 placeholder:font-medium p-0 focus:ring-0 focus:outline-none" />
             <button type="button"
               class="text-[#0b6638] hover:opacity-80 transition cursor-pointer p-0 bg-transparent border-none shrink-0"
               (click)="alternarClave()" tabindex="-1" aria-label="Mostrar u ocultar contraseña">
-              <!-- Icono ojo cerrado -->
-              <svg *ngIf="!mostrarClave" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0b6638"
+              <svg *ngIf="!mostrarClave" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0b6638"
                 stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                 <circle cx="12" cy="12" r="3.2"></circle>
               </svg>
-              <!-- Icono ojo abierto con barra -->
-              <svg *ngIf="mostrarClave" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0b6638"
+              <svg *ngIf="mostrarClave" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0b6638"
                 stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <path
                   d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24">
@@ -147,19 +139,16 @@
               </svg>
             </button>
           </div>
-          <div
-            class="w-full h-[2px] bg-[#0b6638] rounded-xs transition-all group-focus-within:h-[2.5px] group-focus-within:bg-[#084b29]">
-          </div>
-          <span class="text-xs text-red-600 font-medium mt-1.5"
+          <span class="text-xs text-red-600 font-medium mt-1 ml-4"
             *ngIf="clave?.invalid && (clave?.dirty || clave?.touched)">
             {{ clave?.errors?.['required'] ? 'La contraseña es obligatoria' : 'Mínimo 6 caracteres' }}
           </span>
         </div>
 
-        <!-- ¿OLVIDASTE TU CONTRASEÑA? -->
-        <div class="flex justify-end -mt-3">
+        <!-- ¿OLVIDASTE TU CONTRASEÑA? (En verde y a la izquierda como la Imagen 1) -->
+        <div class="flex justify-start -mt-2 ml-2">
           <button type="button" (click)="abrirModalRecuperar()"
-            class="text-sm font-semibold text-[#fab005] hover:underline transition cursor-pointer">
+            class="text-xs sm:text-sm font-semibold text-[#0b6638] hover:underline transition cursor-pointer">
             ¿Olvidaste tu contraseña?
           </button>
         </div>
@@ -171,41 +160,65 @@
           {{ errorMensaje }}
         </div>
 
-        <!-- BOTÓN PILL DE INICIAR SESIÓN -->
+        <!-- BOTÓN PILL DE INICIAR SESIÓN (Texto en blanco solicitado por el usuario) -->
         <button type="submit"
-          class="w-full h-[52px] bg-[#fab005] hover:bg-[#f3a800] text-slate-900 font-bold text-base sm:text-lg rounded-full flex items-center justify-center gap-2.5 shadow-[0_4px_14px_rgba(250,176,5,0.35)] hover:shadow-[0_6px_18px_rgba(250,176,5,0.45)] transition duration-200 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed group"
+          class="w-full h-[52px] bg-[#fab005] hover:bg-[#f3a800] text-white font-bold text-base sm:text-lg rounded-full flex items-center justify-center gap-2.5 shadow-[0_4px_14px_rgba(250,176,5,0.35)] hover:shadow-[0_6px_18px_rgba(250,176,5,0.45)] transition duration-200 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed group"
           [disabled]="cargando">
-          <span *ngIf="!cargando" class="flex items-center justify-center gap-2.5">
-            <span>Iniciar sesión</span>
-            <svg class="transition-transform duration-200 group-hover:translate-x-1" width="24" height="24"
+          <span *ngIf="!cargando" class="flex items-center justify-center gap-2.5 text-white">
+            <span class="text-white font-bold">Iniciar sesión</span>
+            <svg class="transition-transform duration-200 group-hover:translate-x-1 stroke-white" width="22" height="22"
               viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"
               stroke-linejoin="round">
               <line x1="4" y1="12" x2="19" y2="12"></line>
               <polyline points="13 6 19 12 13 18"></polyline>
             </svg>
           </span>
-          <span *ngIf="cargando" class="font-semibold text-base text-slate-900">Iniciando sesión...</span>
+          <span *ngIf="cargando" class="font-bold text-base text-white">Iniciando sesión...</span>
         </button>
 
         <!-- DIVISOR CON 'O' -->
-        <div class="relative flex items-center justify-center my-1">
+        <div class="relative flex items-center justify-center my-0.5">
           <div class="border-t border-slate-200 w-full"></div>
-          <span class="bg-white px-3 text-xs text-slate-500 font-semibold uppercase">O</span>
+          <span class="bg-white px-3 text-xs text-slate-400 font-medium">o</span>
           <div class="border-t border-slate-200 w-full"></div>
         </div>
 
-        <!-- BOTÓN DE INICIO FACIAL -->
+        <!-- BOTÓN DE INICIO FACIAL (Diseño e icono exacto de la Imagen 1) -->
         <button type="button" (click)="abrirCamaraFacial('login')"
-          class="w-full h-[50px] bg-[#0b6638] hover:bg-[#084b29] text-white font-bold text-base rounded-full flex items-center justify-center gap-2.5 shadow-[0_4px_14px_rgba(11,102,56,0.25)] hover:shadow-[0_6px_18px_rgba(11,102,56,0.35)] transition duration-200 cursor-pointer">
-          <span class="material-symbols-outlined text-2xl" aria-hidden="true">face</span>
-          <span>Iniciar con Reconocimiento Facial</span>
+          class="w-full h-[52px] rounded-full border-2 border-[#0b6638] bg-white hover:bg-emerald-50/50 px-5 sm:px-6 flex items-center justify-between transition-all duration-200 shadow-2xs hover:shadow-sm cursor-pointer group">
+          
+          <!-- Icono de escáner facial con corchetes y cara de la Imagen 1 -->
+          <div class="flex items-center gap-3">
+            <svg class="w-6 h-6 text-[#0b6638]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 8V6a2 2 0 0 1 2-2h2" />
+              <path d="M16 4h2a2 2 0 0 1 2 2v2" />
+              <path d="M20 16v2a2 2 0 0 1-2 2h-2" />
+              <path d="M8 20H6a2 2 0 0 1-2-2v-2" />
+              <circle cx="12" cy="12" r="3.6" />
+              <circle cx="10.5" cy="11.2" r="0.5" fill="currentColor" />
+              <circle cx="13.5" cy="11.2" r="0.5" fill="currentColor" />
+              <path d="M10.5 13.8a2 2 0 0 0 3 0" />
+            </svg>
+            <span class="text-[#0b6638] font-bold text-sm sm:text-base tracking-tight">Reconocimiento Facial</span>
+          </div>
+
+          <!-- Badge de Recomendado de la Imagen 1 -->
+          <div class="bg-emerald-50 border border-emerald-200/80 text-[#0b6638] px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-2xs">
+            <svg class="w-3.5 h-3.5 fill-[#0b6638]" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+            </svg>
+            <span>Recomendado</span>
+          </div>
         </button>
 
-        <div class="text-center -mt-2">
+        <div class="flex flex-col items-center gap-1.5 -mt-2">
           <button type="button" (click)="abrirCamaraFacial('registro')"
             class="text-xs font-semibold text-[#0b6638] hover:underline transition cursor-pointer">
             ¿Primera vez? Registrar mi rostro
           </button>
+          <span class="text-xs text-[#0b6638]">
+            ¿Problemas para iniciar sesión? <span class="font-bold underline cursor-pointer">Contáctanos</span>
+          </span>
         </div>
 
       </form>
@@ -266,62 +279,201 @@
   </section>
 </div>
 
-<!-- MODAL DE CÁMARA FACIAL (INDEPENDIENTE) -->
+<!-- ================= MODAL DE RECONOCIMIENTO FACIAL (Diseño de la Imagen 2) ================= -->
 <div *ngIf="mostrarModalFacial" class="fixed inset-0 bg-black/75 backdrop-blur-xs flex items-center justify-center z-[310] p-4">
-  <div class="bg-white rounded-3xl p-6 sm:p-8 w-full max-w-md text-center shadow-2xl relative border border-slate-100 flex flex-col items-center">
+  <div class="bg-white rounded-3xl p-6 sm:p-8 w-full max-w-[480px] sm:max-w-[520px] text-center shadow-2xl relative border border-slate-100 flex flex-col items-center overflow-hidden">
     
-    <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-[#0b6638] flex items-center justify-center mb-3">
-      <span class="material-symbols-outlined text-3xl">face</span>
+    <!-- ENCABEZADO SEGÚN EL PASO -->
+    <div class="mb-4">
+      <!-- Título -->
+      <h3 class="text-2xl sm:text-3xl font-bold text-[#0b6638]" *ngIf="pasoFacial === 1">
+        {{ modoFacial === 'registro' ? 'Registrar Rostro' : 'Reconocimiento Facial' }}
+      </h3>
+      <h3 class="text-2xl sm:text-3xl font-bold text-[#0b6638]" *ngIf="pasoFacial === 2">
+        Verificación
+      </h3>
+      <h3 class="text-2xl sm:text-3xl font-bold text-[#0b6638]" *ngIf="pasoFacial === 3">
+        ¡Acceso Autorizado!
+      </h3>
+
+      <!-- Subtítulo -->
+      <p class="text-xs sm:text-sm text-slate-500 mt-1 max-w-sm mx-auto" *ngIf="pasoFacial === 1">
+        {{ modoFacial === 'registro' ? 'Ingresa el correo institucional y alinea tu rostro dentro del óvalo.' : 'Ubica tu rostro dentro del óvalo para continuar con el acceso.' }}
+      </p>
+      <p class="text-xs sm:text-sm text-slate-500 mt-1 max-w-sm mx-auto" *ngIf="pasoFacial === 2">
+        Mantén tu rostro iluminado y centrado en el recuadro.
+      </p>
+      <p class="text-xs sm:text-sm text-slate-500 mt-1 max-w-sm mx-auto" *ngIf="pasoFacial === 3">
+        {{ modoFacial === 'registro' ? 'Tu biometría facial ha sido registrada exitosamente.' : 'Tu identidad ha sido verificada correctamente.' }}
+      </p>
     </div>
 
-    <h3 class="text-xl font-bold text-slate-900 mb-1">
-      {{ modoFacial === 'registro' ? 'Registrar Rostro' : 'Reconocimiento Facial' }}
-    </h3>
-    <p class="text-xs text-slate-500 mb-4">
-      {{ modoFacial === 'registro' ? 'Ingresa el correo del usuario y mira de frente a la cámara.' : 'Enfoca tu rostro dentro del recuadro para validar tu identidad.' }}
-    </p>
-
-    <!-- Campo de correo si está en modo registro -->
-    <div *ngIf="modoFacial === 'registro'" class="w-full mb-4 text-left">
-      <label class="block text-xs font-bold text-slate-700 mb-1">Correo institucional:</label>
+    <!-- CAMPO DE CORREO EN MODO REGISTRO (Paso 1) -->
+    <div *ngIf="modoFacial === 'registro' && pasoFacial === 1" class="w-full mb-3 text-left max-w-[420px]">
+      <label class="block text-xs font-bold text-slate-700 mb-1">Correo institucional del usuario:</label>
       <input 
         type="email" 
         [(ngModel)]="correoParaRegistroFacial"
-        placeholder="ejemplo@pae.edu.co"
-        class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-[#0b6638] focus:bg-white transition"
+        placeholder="ejemplo@sirae.com"
+        class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-[#0b6638] focus:bg-white transition"
       />
     </div>
 
-    <!-- Visor de la cámara web -->
-    <div class="w-[320px] h-[240px] bg-slate-900 rounded-2xl overflow-hidden relative shadow-inner border-2 border-emerald-500/50 flex items-center justify-center">
-      <video id="videoWebcam" autoplay playsinline class="w-full h-full object-cover"></video>
-      <div class="absolute inset-4 border-2 border-dashed border-emerald-400/60 rounded-xl pointer-events-none"></div>
+    <!-- VISOR DE CÁMARA (Pasos 1 y 2 - Tamaño amplio y cómodo) -->
+    <div *ngIf="pasoFacial === 1 || pasoFacial === 2" 
+      class="w-full max-w-[420px] h-[280px] sm:h-[310px] rounded-3xl overflow-hidden relative shadow-lg bg-slate-950 flex items-center justify-center transition-all duration-300"
+      [ngClass]="pasoFacial === 2 ? 'border-2 border-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.35)]' : 'border-2 border-slate-200'"
+    >
+      <!-- Video en espejo (-scale-x-100) para vista natural de selfie -->
+      <video id="videoWebcam" autoplay playsinline class="w-full h-full object-cover -scale-x-100"></video>
+      
+      <!-- 4 Esquinas blancas del escáner facial (Imagen 2) -->
+      <div class="absolute top-4 left-4 w-7 h-7 border-t-4 border-l-4 rounded-tl-xl pointer-events-none transition-colors" [ngClass]="pasoFacial === 2 ? 'border-amber-400' : 'border-white'"></div>
+      <div class="absolute top-4 right-4 w-7 h-7 border-t-4 border-r-4 rounded-tr-xl pointer-events-none transition-colors" [ngClass]="pasoFacial === 2 ? 'border-amber-400' : 'border-white'"></div>
+      <div class="absolute bottom-4 left-4 w-7 h-7 border-b-4 border-l-4 rounded-bl-xl pointer-events-none transition-colors" [ngClass]="pasoFacial === 2 ? 'border-amber-400' : 'border-white'"></div>
+      <div class="absolute bottom-4 right-4 w-7 h-7 border-b-4 border-r-4 rounded-br-xl pointer-events-none transition-colors" [ngClass]="pasoFacial === 2 ? 'border-amber-400' : 'border-white'"></div>
+
+      <!-- ÓVALO FACIAL BIOMÉTRICO (Solicitado por el usuario para encuadrar la cara) -->
+      <div *ngIf="pasoFacial === 1" class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+        <div class="w-44 h-56 sm:w-48 sm:h-64 rounded-[50%] border-2 border-dashed border-white/85 flex flex-col items-center justify-between py-3 shadow-[0_0_20px_rgba(255,255,255,0.2)]">
+          <span class="text-[10px] sm:text-xs text-white font-medium bg-black/50 px-3 py-1 rounded-full backdrop-blur-xs">
+            Alinea tu rostro aquí
+          </span>
+          <span class="text-[9px] text-white/70 bg-black/40 px-2 py-0.5 rounded-full">
+            Mira de frente a la cámara
+          </span>
+        </div>
+      </div>
+
+      <!-- Línea láser de escaneo animada en verde (Paso 2 de la Imagen 2) -->
+      <div *ngIf="pasoFacial === 2" class="animate-laser-scan h-1 bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_14px_#34d399] pointer-events-none z-10"></div>
     </div>
 
-    <!-- Mensaje de estado -->
-    <p *ngIf="mensajeFacial" class="mt-3 text-xs font-semibold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200">
-      {{ mensajeFacial }}
-    </p>
+    <!-- RETRATO CIRCULAR Y BIENVENIDA (Paso 3 de la Imagen 2) -->
+    <div *ngIf="pasoFacial === 3" class="w-full flex flex-col items-center my-2">
+      <div class="relative mb-3">
+        <div class="w-40 h-40 sm:w-48 sm:h-48 rounded-full border-4 border-emerald-500 shadow-xl overflow-hidden bg-slate-100 flex items-center justify-center">
+          <img [src]="fotoCapturada" alt="Rostro verificado" class="w-full h-full object-cover" />
+        </div>
+        <div class="absolute bottom-1 right-3 w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-md border-2 border-white">
+          <span class="material-symbols-outlined text-2xl font-bold">check</span>
+        </div>
+      </div>
 
-    <!-- Botones de Acción -->
-    <div class="flex items-center gap-3 w-full mt-5">
-      <button 
-        type="button" 
-        (click)="cerrarCamaraFacial()"
-        class="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm rounded-xl transition cursor-pointer"
-      >
-        Cancelar
-      </button>
+      <!-- Mensaje de bienvenida solicitado -->
+      <div class="text-center">
+        <h4 class="text-xl sm:text-2xl font-bold text-slate-900">
+          ¡Bienvenido(a), {{ usuarioReconocido?.nombre || 'Usuario' }}!
+        </h4>
+        <div class="mt-1.5">
+          <span class="inline-block bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs sm:text-sm font-semibold px-4 py-1 rounded-full uppercase tracking-wider">
+            Rol: {{ usuarioReconocido?.rol || 'Autorizado' }}
+          </span>
+        </div>
+        <p class="text-xs sm:text-sm text-slate-500 mt-2">
+          {{ modoFacial === 'registro' ? 'Rostro vinculado exitosamente a tu cuenta.' : 'Redirigiendo a tu pantalla de inicio...' }}
+        </p>
+      </div>
+    </div>
 
-      <button 
-        type="button" 
-        (click)="capturarYEnviarFacial()"
-        [disabled]="cargandoFacial"
-        class="flex-1 py-3 bg-[#fab005] hover:bg-[#f3a800] text-slate-900 font-bold text-sm rounded-xl transition cursor-pointer shadow-md disabled:opacity-50 flex items-center justify-center gap-2"
-      >
-        <span *ngIf="cargandoFacial">Procesando...</span>
-        <span *ngIf="!cargandoFacial">{{ modoFacial === 'registro' ? 'Guardar Rostro' : 'Escanear Rostro' }}</span>
-      </button>
+    <!-- STEPPER DE 3 PASOS (Idéntico a la Imagen 2) -->
+    <div class="flex items-center justify-between w-full max-w-[340px] sm:max-w-[380px] mt-4 mb-5 text-center">
+      <!-- Paso 1: Encuadre -->
+      <div class="flex flex-col items-center">
+        <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors"
+          [ngClass]="pasoFacial >= 2 ? 'bg-emerald-600 text-white' : 'bg-emerald-600 text-white'">
+          <span *ngIf="pasoFacial >= 2" class="material-symbols-outlined text-base font-bold">check</span>
+          <span *ngIf="pasoFacial === 1">1</span>
+        </div>
+        <span class="text-xs font-semibold mt-1" [ngClass]="pasoFacial >= 1 ? 'text-slate-800' : 'text-slate-400'">Encuadre</span>
+      </div>
+
+      <!-- Línea conectora 1-2 -->
+      <div class="flex-1 h-[2px] mx-2 transition-colors"
+        [ngClass]="pasoFacial === 2 ? 'bg-amber-400' : (pasoFacial === 3 ? 'bg-emerald-600' : 'bg-slate-200')"></div>
+
+      <!-- Paso 2: Verificación -->
+      <div class="flex flex-col items-center">
+        <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors"
+          [ngClass]="pasoFacial === 3 ? 'bg-emerald-600 text-white' : (pasoFacial === 2 ? 'bg-amber-400 text-white animate-pulse' : 'bg-slate-200 text-slate-500')">
+          <span *ngIf="pasoFacial === 3" class="material-symbols-outlined text-base font-bold">check</span>
+          <span *ngIf="pasoFacial < 3">2</span>
+        </div>
+        <span class="text-xs font-semibold mt-1" [ngClass]="pasoFacial >= 2 ? 'text-slate-800' : 'text-slate-400'">Verificación</span>
+      </div>
+
+      <!-- Línea conectora 2-3 -->
+      <div class="flex-1 h-[2px] mx-2 transition-colors"
+        [ngClass]="pasoFacial === 3 ? 'bg-emerald-600' : 'bg-slate-200'"></div>
+
+      <!-- Paso 3: Acceso -->
+      <div class="flex flex-col items-center">
+        <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors"
+          [ngClass]="pasoFacial === 3 ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-500'">
+          <span *ngIf="pasoFacial === 3" class="material-symbols-outlined text-base font-bold">check</span>
+          <span *ngIf="pasoFacial < 3">3</span>
+        </div>
+        <span class="text-xs font-semibold mt-1" [ngClass]="pasoFacial === 3 ? 'text-slate-800' : 'text-slate-400'">Acceso</span>
+      </div>
+    </div>
+
+    <!-- ALERTA DE ERROR SI EL ROSTRO NO SE DETECTÓ (Imagen 5) -->
+    <div *ngIf="mensajeFacial && pasoFacial === 1" class="w-full max-w-[420px] mb-3 bg-red-50 text-red-700 border border-red-200 px-4 py-2.5 rounded-2xl text-xs font-semibold text-center flex items-center justify-center gap-2">
+      <span class="material-symbols-outlined text-base">info</span>
+      <span>{{ mensajeFacial }}</span>
+    </div>
+
+    <!-- BOTONES DE ACCIÓN SEGÚN EL PASO -->
+    <div class="w-full max-w-[420px] flex flex-col items-center gap-2.5">
+      
+      <!-- Paso 1: Botones de Iniciar escaneo / Cancelar (Imagen 2) -->
+      <ng-container *ngIf="pasoFacial === 1">
+        <button 
+          type="button" 
+          (click)="capturarYEnviarFacial()"
+          class="w-full h-[50px] bg-[#0b6638] hover:bg-[#084b29] text-white font-bold text-base rounded-full flex items-center justify-center gap-2 shadow-md transition duration-200 cursor-pointer"
+        >
+          <span class="material-symbols-outlined text-xl">photo_camera</span>
+          <span>{{ modoFacial === 'registro' ? 'Guardar Rostro' : 'Iniciar escaneo' }}</span>
+        </button>
+
+        <button 
+          type="button" 
+          (click)="cerrarCamaraFacial()"
+          class="w-full h-[44px] bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold text-sm rounded-full transition duration-200 cursor-pointer"
+        >
+          Cancelar
+        </button>
+      </ng-container>
+
+      <!-- Paso 2: Píldora de "Analizando tu identidad..." (Imagen 2) -->
+      <ng-container *ngIf="pasoFacial === 2">
+        <div class="w-full h-[50px] bg-amber-100 border border-amber-300 text-amber-900 font-bold text-sm sm:text-base rounded-full flex items-center justify-center gap-2 shadow-xs animate-pulse">
+          <span class="w-2.5 h-2.5 rounded-full bg-amber-600 animate-ping"></span>
+          <span>Analizando tu identidad...</span>
+        </div>
+
+        <button 
+          type="button" 
+          (click)="cerrarCamaraFacial()"
+          class="text-xs text-slate-500 hover:text-slate-800 font-medium mt-1 cursor-pointer transition"
+        >
+          ✕ Cancelar
+        </button>
+      </ng-container>
+
+      <!-- Paso 3: Botón de "Continuar →" (Imagen 2) -->
+      <ng-container *ngIf="pasoFacial === 3">
+        <button 
+          type="button" 
+          (click)="continuarAccesoFacial()"
+          class="w-full h-[52px] bg-[#0b6638] hover:bg-[#084b29] text-white font-bold text-base rounded-full flex items-center justify-center gap-2 shadow-lg transition duration-200 cursor-pointer"
+        >
+          <span>Continuar</span>
+          <span class="material-symbols-outlined text-xl">arrow_forward</span>
+        </button>
+      </ng-container>
+
     </div>
 
   </div>
