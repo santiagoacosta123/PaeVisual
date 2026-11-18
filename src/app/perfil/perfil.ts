@@ -63,6 +63,50 @@ export class PerfilComponent implements OnInit, OnDestroy {
     this.consultarBiometria();
   }
 
+  onFotoSeleccionada(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+    const file = input.files[0];
+
+    if (!file.type.startsWith('image/')) {
+      void this.sweetAlert.warning('Archivo no válido', 'Por favor selecciona una imagen válida (JPG o PNG).');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result as string;
+      this.authService.actualizarPerfil({ foto_perfil: base64 }).subscribe({
+        next: () => {
+          if (this.usuario) {
+            this.usuario.foto_perfil = base64;
+          }
+          void this.sweetAlert.success('Foto actualizada', 'Tu foto de perfil se guardó correctamente.');
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          void this.sweetAlert.error('Error', 'No se pudo guardar la foto de perfil en el servidor.');
+        }
+      });
+    };
+    reader.readAsDataURL(file);
+  }
+
+  eliminarFotoPerfil(): void {
+    this.authService.actualizarPerfil({ foto_perfil: '' }).subscribe({
+      next: () => {
+        if (this.usuario) {
+          this.usuario.foto_perfil = null;
+        }
+        void this.sweetAlert.success('Foto eliminada', 'Se restableció el avatar por defecto.');
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        void this.sweetAlert.error('Error', 'No fue posible eliminar la foto de perfil.');
+      }
+    });
+  }
+
   ngOnDestroy(): void {
     if (this.streamVideo) {
       this.streamVideo.getTracks().forEach(track => track.stop());

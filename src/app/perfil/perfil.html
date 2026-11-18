@@ -2,11 +2,17 @@
   <!-- Cabecera de Perfil -->
   <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
     <div class="flex flex-col md:flex-row items-center gap-6">
-      <div class="relative">
-        <div class="w-24 h-24 rounded-full bg-gradient-to-tr from-amber-400 to-amber-200 flex items-center justify-center text-slate-800 text-3xl font-bold shadow-inner border-2 border-white">
-          {{ (usuario?.nombre ? usuario?.nombre?.charAt(0) : 'U') | uppercase }}
+      <div class="relative group">
+        <div class="w-24 h-24 rounded-full bg-gradient-to-tr from-amber-400 to-amber-200 flex items-center justify-center text-slate-800 text-3xl font-bold shadow-inner border-2 border-white overflow-hidden">
+          <img *ngIf="usuario?.foto_perfil" [src]="usuario?.foto_perfil" alt="Foto de perfil" class="w-full h-full object-cover" />
+          <span *ngIf="!usuario?.foto_perfil">{{ (usuario?.nombre ? usuario?.nombre?.charAt(0) : 'U') | uppercase }}</span>
         </div>
-        <span class="absolute bottom-1 right-1 w-5 h-5 rounded-full border-2 border-white bg-emerald-500" title="Usuario activo"></span>
+        <span class="absolute bottom-1 right-1 w-5 h-5 rounded-full border-2 border-white bg-emerald-500 z-10" title="Usuario activo"></span>
+        <!-- Botón para cambiar foto de perfil -->
+        <label class="absolute -bottom-1 -left-1 bg-white hover:bg-slate-100 text-slate-700 w-8 h-8 rounded-full flex items-center justify-center shadow-md cursor-pointer transition border border-slate-200 z-10" title="Cambiar foto de perfil">
+          <input type="file" accept="image/*" (change)="onFotoSeleccionada($event)" class="hidden" />
+          <span class="material-symbols-outlined text-base text-[#0b6638]">photo_camera</span>
+        </label>
       </div>
 
       <div class="flex-1 text-center md:text-left">

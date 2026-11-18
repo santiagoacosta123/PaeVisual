@@ -48,6 +48,7 @@ export interface AuthenticatedUser {
   id_jornada?: number;
   jornada_nombre?: string;
   instituciones_supervisor?: InstitucionAsignada[];
+  foto_perfil?: string | null;
   is_superuser?: boolean;
   debe_cambiar_password?: boolean;
 }
@@ -147,6 +148,7 @@ export class AuthService {
       instituciones_supervisor: Array.isArray(datosLimpios.instituciones_supervisor)
         ? datosLimpios.instituciones_supervisor
         : [],
+      foto_perfil: datosLimpios.foto_perfil || null,
       is_superuser: Boolean(datosLimpios.is_superuser),
       debe_cambiar_password: Boolean(datosLimpios.debe_cambiar_password),
     };
@@ -341,13 +343,15 @@ export class AuthService {
    * Criterios 4 y 5: Actualización autorizada de datos de perfil propio (nombre, apellido)
    * garantizando la restricción estricta de campos protegidos.
    */
-  actualizarPerfil(data: { nombre: string; apellido: string; correo?: string }): Observable<AuthenticatedUser> {
+  actualizarPerfil(data: { nombre?: string; apellido?: string; foto_perfil?: string | null; correo?: string }): Observable<AuthenticatedUser> {
+    const payload: Record<string, any> = {};
+    if (data.nombre !== undefined) payload['nombre'] = (data.nombre ?? '').trim();
+    if (data.apellido !== undefined) payload['apellido'] = (data.apellido ?? '').trim();
+    if (data.foto_perfil !== undefined) payload['foto_perfil'] = data.foto_perfil;
+
     return this.http.patch<AuthenticatedUser>(
       `${this.apiUrl}/usuarios/me/`,
-      {
-        nombre: (data.nombre ?? '').trim(),
-        apellido: (data.apellido ?? '').trim(),
-      }
+      payload
     ).pipe(
       tap((usuarioActualizado) => {
         const usuario = this.obtenerUsuario();
@@ -356,6 +360,7 @@ export class AuthService {
             ...usuario,
             nombre: usuarioActualizado.nombre ?? usuario.nombre,
             apellido: usuarioActualizado.apellido ?? usuario.apellido,
+            foto_perfil: usuarioActualizado.foto_perfil !== undefined ? usuarioActualizado.foto_perfil : usuario.foto_perfil,
           };
           if (this.estaDisponibleStorage()) {
             localStorage.setItem(this.USUARIO, JSON.stringify(this.sanitizarDatosUsuario(actualizado)));
