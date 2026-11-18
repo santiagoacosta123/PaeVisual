@@ -40,6 +40,7 @@ describe('ContratoDetalleComponent', () => {
         { id_sede: 1, nombre_sede: 'Sede Principal', id_institucion: 5, cupos: 350, estado: 'ACTIVO' },
         { id_sede: 2, nombre_sede: 'Sede B', id_institucion: 5, cupos: 150, estado: 'ACTIVO' }
       ])),
+      actualizarSede: vi.fn().mockReturnValue(of({}))
     };
 
     routeMock = {
@@ -55,9 +56,15 @@ describe('ContratoDetalleComponent', () => {
         apellido: 'PAE',
         correo: 'admin@sirae.gov.co',
         rol: 'Superadministrador'
-      })
+      }),
+      esSuperAdministrador: vi.fn().mockImplementation((rol: string) => (rol || '').toLowerCase().includes('super')),
+      normalizarRol: vi.fn().mockImplementation((rol: string) => (rol || '').toLowerCase().trim())
     };
-    httpMock = { get: vi.fn().mockReturnValue(of([])) };
+    httpMock = {
+      get: vi.fn().mockReturnValue(of([])),
+      post: vi.fn().mockReturnValue(of({})),
+      put: vi.fn().mockReturnValue(of({}))
+    };
     cdrMock = { detectChanges: vi.fn() };
     sweetAlertMock = {
       success: vi.fn().mockResolvedValue({}),
@@ -592,6 +599,154 @@ describe('ContratoDetalleComponent', () => {
         zona: 'Sur',
         id_usuario_supervisor: 8
       }));
+    });
+  });
+
+  describe('Funcionalidad: Editar distribución de cupos (Segunda ventana modal)', () => {
+    beforeEach(() => {
+      component.contrato = {
+        id_contrato: 10,
+        codigo: 'COR-2026-010',
+        institucion: 'I.E. Santander',
+        cupos: 300,
+        estado: 'Activo'
+      };
+
+      component.sedesInstitucion = [
+        { id_sede: 1, nombre_sede: 'Sede Principal', cupos: 100 },
+        { id_sede: 2, nombre_sede: 'Sede 2', cupos: 45 },
+        { id_sede: 3, nombre_sede: 'Sede 3', cupos: 35 },
+        { id_sede: 4, nombre_sede: 'Sede 4', cupos: 20 }
+      ];
+    });
+
+    it('Criterio 1 y 7 - debe permitir editar distribución solo a usuarios autorizados', () => {
+      authServiceMock.obtenerUsuario.mockReturnValue({
+        rol: 'Superadministrador',
+        is_superuser: true
+      });
+      expect(component.puedeEditarDistribucion).toBe(true);
+
+      authServiceMock.obtenerUsuario.mockReturnValue({
+        rol: 'Administrador institucional',
+        is_superuser: false
+      });
+      expect(component.puedeEditarDistribucion).toBe(true);
+
+      authServiceMock.obtenerUsuario.mockReturnValue({
+        rol: 'Manipuladora de alimentos',
+        is_superuser: false
+      });
+      expect(component.puedeEditarDistribucion).toBe(false);
+    });
+
+    it('Criterio 2 y 3 - debe abrir la segunda modal y preparar la lista de sedes y grados', () => {
+      authServiceMock.obtenerUsuario.mockReturnValue({ rol: 'Superadministrador' });
+      component.abrirEditarDistribucion();
+
+      expect(component.modalEditarDistribucionAbierto).toBe(true);
+      expect(component.sedesEdicionDistribucion.length).toBe(4);
+      expect(component.sedesEdicionDistribucion[0].nombre_sede).toBe('Sede Principal');
+      expect(component.sedesEdicionDistribucion[0].desplegada).toBe(true);
+      expect(component.sedesEdicionDistribucion[1].desplegada).toBe(false);
+      expect(component.sedesEdicionDistribucion[0].grados.length).toBeGreaterThan(0);
+    });
+
+    it('Criterio 3 y 4 - debe alternar el despliegue de las sedes (acordeón)', () => {
+      component.abrirEditarDistribucion();
+      const sede2 = component.sedesEdicionDistribucion[1];
+      expect(sede2.desplegada).toBe(false);
+
+      component.toggleDesplegarSede(sede2);
+      expect(sede2.desplegada).toBe(true);
+
+      component.toggleDesplegarSede(sede2);
+      expect(sede2.desplegada).toBe(false);
+    });
+
+    it('Criterio 5 - Regla 1: debe rechazar cuando la suma de sedes supera los cupos autorizados del contrato', () => {
+      component.abrirEditarDistribucion();
+      // Cupos autorizados = 300. Asignamos 250 + 100 = 350
+      component.sedesEdicionDistribucion[0].cuposAsignados = 250;
+      component.sedesEdicionDistribucion[1].cuposAsignados = 100;
+
+      const error = component.validarDistribucionEdicion();
+      expect(error).toContain('superar el total de cupos autorizados');
+    });
+
+    it('Criterio 5 - Regla 2: debe rechazar cuando la suma de grados supera el total de la sede', () => {
+      component.abrirEditarDistribucion();
+      const sede = component.sedesEdicionDistribucion[0];
+      sede.cuposAsignados = 100;
+
+      // Asignar cupos a los grados que sumen 110
+      sede.grados[0].cupos = 60;
+      sede.grados[1].cupos = 50;
+
+      const error = component.validarDistribucionEdicion();
+      expect(error).toContain('supera el total asignado a la sede');
+    });
+
+    it('Criterio 5 - Regla 3: debe rechazar valores negativos en sedes o grados', () => {
+      component.abrirEditarDistribucion();
+      component.sedesEdicionDistribucion[0].cuposAsignados = -10;
+
+      const error = component.validarDistribucionEdicion();
+      expect(error).toContain('negativo');
+    });
+
+    it('Criterio 5 - Regla 4 y 7: debe calcular correctamente los totales y pendientes en tiempo real permitiendo cupos sin distribuir', () => {
+      component.abrirEditarDistribucion();
+      component.sedesEdicionDistribucion[0].cuposAsignados = 100;
+      component.sedesEdicionDistribucion[1].cuposAsignados = 50;
+      component.sedesEdicionDistribucion[2].cuposAsignados = 30;
+      component.sedesEdicionDistribucion[3].cuposAsignados = 20;
+
+      expect(component.totalCuposSedesEdicion).toBe(200);
+      expect(component.cuposPendientesSedesEdicion).toBe(100); // 300 - 200 = 100 pendientes
+
+      const sede1 = component.sedesEdicionDistribucion[0];
+      sede1.grados[0].cupos = 10;
+      sede1.grados[1].cupos = 20;
+      sede1.grados[2].cupos = 15;
+      sede1.grados[3].cupos = 20;
+      sede1.grados[4].cupos = 15;
+      sede1.grados[5].cupos = 20;
+
+      expect(component.totalGradosDeSede(sede1)).toBe(100);
+      expect(component.esCoherenteGradosSede(sede1)).toBe(true);
+
+      const validacion = component.validarDistribucionEdicion();
+      expect(validacion).toBeNull();
+    });
+
+    it('Criterio 6 - debe guardar la distribución, persistir en almacenamiento y actualizar la vista principal', async () => {
+      component.abrirEditarDistribucion();
+      component.sedesEdicionDistribucion[0].cuposAsignados = 100;
+      component.sedesEdicionDistribucion[1].cuposAsignados = 45;
+      component.sedesEdicionDistribucion[2].cuposAsignados = 35;
+      component.sedesEdicionDistribucion[3].cuposAsignados = 20;
+
+      await component.guardarDistribucion();
+
+      // Debe cerrar la segunda ventana modal
+      expect(component.modalEditarDistribucionAbierto).toBe(false);
+
+      // Debe actualizar automáticamente la vista de consulta de sedesInstitucion
+      expect(component.sedesInstitucion[0].cupos).toBe(100);
+      expect(component.sedesInstitucion[1].cupos).toBe(45);
+      expect(component.sedesInstitucion[2].cupos).toBe(35);
+      expect(component.sedesInstitucion[3].cupos).toBe(20);
+
+      // Métrica total de cupos asignados
+      expect(component.totalCuposAsignadosSedes).toBe(200);
+      expect(component.cuposPendientesDistribucion).toBe(100);
+
+      // Debe haber llamado a SweetAlert
+      expect(sweetAlertMock.success).toHaveBeenCalledWith(
+        '¡Distribución guardada!',
+        expect.stringContaining('exitosamente')
+      );
     });
   });
 });
