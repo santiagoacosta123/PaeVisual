@@ -1,6 +1,5 @@
 <div class="cg-page">
 
-  <!-- ENCABEZADO -->
   <div class="cg-header">
     <div>
       <span class="cg-eyebrow">PARAMETRIZACIÓN NUTRICIONAL · ALCANCE AUTORIZADO</span>
@@ -23,7 +22,6 @@
     </div>
   </div>
 
-  <!-- RESUMEN -->
   <div class="cg-stats-grid">
     <div class="cg-stat-card">
       <span class="cg-stat-label">Sedes / Jornadas en alcance</span>
@@ -39,7 +37,6 @@
     </div>
   </div>
 
-  <!-- ALERTAS DE ASIGNACIÓN DE USUARIO -->
   <div *ngIf="alertasAlcance.length > 0" class="cg-alert-banner cg-alert-warn">
     <span class="material-symbols-outlined" aria-hidden="true">person_alert</span>
     <div class="cg-alert-body">
@@ -48,7 +45,6 @@
     </div>
   </div>
 
-  <!-- ALERTAS POR FALTA DE GRAMAJE EN PRODUCTOS REQUERIDOS -->
   <div *ngIf="alertasFaltantes.length > 0" class="cg-alert-banner cg-alert-danger">
     <span class="material-symbols-outlined" aria-hidden="true">warning</span>
     <div class="cg-alert-body">

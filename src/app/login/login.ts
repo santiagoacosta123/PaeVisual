@@ -6,6 +6,7 @@ import { AuthService } from '../services/auth.service';
 import { Store } from '@ngrx/store';
 import { login as loginAction } from '../store/action';
 import { Subscription } from 'rxjs';
+import { ReconocimientoFacialService } from '../services/reconocimiento-facial.service';
 
 @Component({
   selector: 'app-login',
@@ -25,6 +26,7 @@ export class LoginComponent implements OnInit, OnDestroy {
   private router = inject(Router);
   private cdr = inject(ChangeDetectorRef);
   private store = inject(Store);
+  private facialService = inject(ReconocimientoFacialService);
 
   loginForm!: FormGroup;
   cargando: boolean = false;
@@ -40,6 +42,14 @@ export class LoginComponent implements OnInit, OnDestroy {
   codigoRecuperacionDesarrollo: string = '';
   private solicitudLogin?: Subscription;
   private temporizadorLogin?: ReturnType<typeof setTimeout>;
+
+  // Variables para la cámara y reconocimiento facial
+  mostrarModalFacial: boolean = false;
+  modoFacial: 'login' | 'registro' = 'login';
+  correoParaRegistroFacial: string = '';
+  mensajeFacial: string = '';
+  cargandoFacial: boolean = false;
+  streamVideo: MediaStream | null = null;
 
   ngOnInit(): void {
     this.authService.despertarBackend();
@@ -206,8 +216,8 @@ export class LoginComponent implements OnInit, OnDestroy {
         this.mensajeRecuperacion = this.codigoRecuperacionDesarrollo
           ? 'Código de prueba: úsalo para cambiar tu contraseña.'
           : this.enlaceRecuperacionDesarrollo
-          ? 'Modo local: abre este enlace para crear la nueva contraseña.'
-          : response.mensaje
+            ? 'Modo local: abre este enlace para crear la nueva contraseña.'
+            : response.mensaje
             || 'Si el correo está registrado, recibirás un código para restablecer la contraseña.';
         this.cdr.detectChanges();
       },
@@ -220,4 +230,119 @@ export class LoginComponent implements OnInit, OnDestroy {
       }
     });
   }
+
+  // ==========================================
+  // RECONOCIMIENTO FACIAL (ESTILO INSTRUCTORA)
+  // ==========================================
+
+  async abrirCamaraFacial(modo: 'login' | 'registro' = 'login'): Promise<void> {
+    this.modoFacial = modo;
+    this.mensajeFacial = '';
+    this.mostrarModalFacial = true;
+    this.cdr.detectChanges();
+
+    try {
+      this.streamVideo = await navigator.mediaDevices.getUserMedia({
+        video: { width: 400, height: 300, facingMode: 'user' }
+      });
+      // Esperamos un tick para que el elemento <video> exista en el DOM
+      setTimeout(() => {
+        const videoElement = document.getElementById('videoWebcam') as HTMLVideoElement;
+        if (videoElement && this.streamVideo) {
+          videoElement.srcObject = this.streamVideo;
+          videoElement.play();
+        }
+      }, 100);
+    } catch (err) {
+      this.mensajeFacial = 'No se pudo acceder a la cámara. Revisa los permisos de tu navegador.';
+      this.cdr.detectChanges();
+    }
+  }
+
+  cerrarCamaraFacial(): void {
+    if (this.streamVideo) {
+      this.streamVideo.getTracks().forEach(track => track.stop());
+      this.streamVideo = null;
+    }
+    this.mostrarModalFacial = false;
+    this.cdr.detectChanges();
+  }
+
+  capturarYEnviarFacial(): void {
+    const videoElement = document.getElementById('videoWebcam') as HTMLVideoElement;
+    if (!videoElement) return;
+
+    // Tomamos la captura en Base64 idéntico a webcamRef.current.getScreenshot()
+    const canvas = document.createElement('canvas');
+    canvas.width = videoElement.videoWidth || 400;
+    canvas.height = videoElement.videoHeight || 300;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+    const imagenBase64 = canvas.toDataURL('image/jpeg');
+
+    this.cargandoFacial = true;
+    this.mensajeFacial = 'Procesando biometría facial...';
+    this.cdr.detectChanges();
+
+    if (this.modoFacial === 'registro') {
+      if (!this.correoParaRegistroFacial.trim()) {
+        this.mensajeFacial = 'Ingresa el correo electrónico del usuario.';
+        this.cargandoFacial = false;
+        this.cdr.detectChanges();
+        return;
+      }
+
+      this.facialService.registrarRostro(this.correoParaRegistroFacial.trim(), imagenBase64).subscribe({
+        next: (res) => {
+          this.cargandoFacial = false;
+          this.mensajeFacial = res.msg || '¡Rostro registrado exitosamente!';
+          this.cdr.detectChanges();
+        },
+        error: (err) => {
+          this.cargandoFacial = false;
+          this.mensajeFacial = err.error?.detail || 'Error al registrar rostro.';
+          this.cdr.detectChanges();
+        }
+      });
+    } else {
+      // MODO VERIFICACIÓN / LOGIN FACIAL
+      this.facialService.verificarRostro(imagenBase64).subscribe({
+        next: (response) => {
+          this.cargandoFacial = false;
+          this.cerrarCamaraFacial();
+
+          // Guardamos sesión igual al login tradicional
+          this.authService.guardarSesion(response);
+          this.store.dispatch(loginAction({
+            username: response.usuario?.correo || '',
+            token: response.access || '',
+            rol: response.usuario?.rol || '',
+            nombre: `${response.usuario?.nombre || ''} ${response.usuario?.apellido || ''}`.trim(),
+            id_usuario: response.usuario?.id_usuario || 0,
+            institucion: '',
+            mensaje: 'Inicio de sesión facial exitoso'
+          }));
+
+          // REDIRECCIÓN EN ORDEN DE ROLES
+          const rol = response.usuario?.rol;
+          if (this.authService.esSupervisor(rol)) {
+            this.authService.limpiarInstitucionActiva?.();
+            this.router.navigate(['/dashboard-supervisor']);
+          } else if (this.authService.esJefa(rol)) {
+            this.router.navigate(['/asistencia-diaria']);
+          } else {
+            this.router.navigate(['/inicio']);
+          }
+        },
+        error: (err) => {
+          this.cargandoFacial = false;
+          this.mensajeFacial = err.error?.detail || 'Rostro no reconocido. Inténtalo de nuevo.';
+          this.cdr.detectChanges();
+        }
+      });
+    }
+  }
+
 }
