@@ -295,19 +295,16 @@ export class LoginComponent implements OnInit, OnDestroy {
     const videoElement = document.getElementById('videoWebcam') as HTMLVideoElement;
     if (!videoElement) return;
 
-    if (this.modoFacial === 'registro' && !this.correoParaRegistroFacial.trim()) {
-      this.mensajeFacial = 'Ingresa el correo institucional del usuario.';
-      this.cdr.detectChanges();
-      return;
-    }
-
     // 1. Capturar el fotograma directamente de la cámara antes de cambiar de paso
+    // Se dibuja en espejo horizontal para que la foto capturada coincida con la vista selfie
     const canvas = document.createElement('canvas');
     canvas.width = videoElement.videoWidth || 640;
     canvas.height = videoElement.videoHeight || 480;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    ctx.translate(canvas.width, 0);
+    ctx.scale(-1, 1);
     ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
     const imagenBase64 = canvas.toDataURL('image/jpeg', 0.95);
     this.fotoCapturada = imagenBase64;
@@ -318,60 +315,39 @@ export class LoginComponent implements OnInit, OnDestroy {
     this.mensajeFacial = '';
     this.cdr.detectChanges();
 
-    if (this.modoFacial === 'registro') {
-      this.facialService.registrarRostro(this.correoParaRegistroFacial.trim(), imagenBase64).subscribe({
-        next: (res) => {
-          this.cargandoFacial = false;
-          this.usuarioReconocido = {
-            nombre: this.correoParaRegistroFacial.trim(),
-            rol: 'Rostro Registrado Exitosamente'
-          };
-          this.pasoFacial = 3;
-          this.cdr.detectChanges();
-        },
-        error: (err) => {
-          this.cargandoFacial = false;
-          this.pasoFacial = 1;
-          this.mensajeFacial = err.error?.detail || 'No se detectó ningún rostro en la cámara. Enfoca bien tu cara.';
-          this.cdr.detectChanges();
-        }
-      });
-    } else {
-      // Modo LOGIN facial
-      this.facialService.verificarRostro(imagenBase64).subscribe({
-        next: (response) => {
-          this.cargandoFacial = false;
-          this.usuarioReconocido = response.usuario || { nombre: 'Usuario', rol: 'Autorizado' };
+    // Verificación de rostro para inicio de sesión
+    this.facialService.verificarRostro(imagenBase64).subscribe({
+      next: (response) => {
+        this.cargandoFacial = false;
+        this.usuarioReconocido = response.usuario || { nombre: 'Usuario', rol: 'Autorizado' };
 
-          // Guardamos sesión igual al login tradicional
-          this.authService.guardarSesion(response);
-          this.store.dispatch(loginAction({
-            username: response.usuario?.correo || '',
-            token: response.access || '',
-            rol: response.usuario?.rol || '',
-            nombre: `${response.usuario?.nombre || ''} ${response.usuario?.apellido || ''}`.trim(),
-            id_usuario: response.usuario?.id_usuario || 0,
-            institucion: '',
-            mensaje: 'Inicio de sesión facial exitoso'
-          }));
+        // Guardamos sesión igual al login tradicional
+        this.authService.guardarSesion(response);
+        this.store.dispatch(loginAction({
+          username: response.usuario?.correo || '',
+          token: response.access || '',
+          rol: response.usuario?.rol || '',
+          nombre: `${response.usuario?.nombre || ''} ${response.usuario?.apellido || ''}`.trim(),
+          id_usuario: response.usuario?.id_usuario || 0,
+          institucion: '',
+          mensaje: 'Inicio de sesión facial exitoso'
+        }));
 
-          // Paso 3: ¡Acceso Autorizado! con mensaje de bienvenida
-          this.pasoFacial = 3;
-          this.cdr.detectChanges();
+        this.pasoFacial = 3;
+        this.cdr.detectChanges();
 
-          // Auto-redirección suave después de 2.5 segundos
-          this.temporizadorRedireccionFacial = setTimeout(() => {
-            this.continuarAccesoFacial();
-          }, 2500);
-        },
-        error: (err) => {
-          this.cargandoFacial = false;
-          this.pasoFacial = 1;
-          this.mensajeFacial = err.error?.detail || 'No se detectó ningún rostro en la cámara. Enfoca bien tu cara.';
-          this.cdr.detectChanges();
-        }
-      });
-    }
+        // Redirección suave al dashboard correspondiente
+        this.temporizadorRedireccionFacial = setTimeout(() => {
+          this.continuarAccesoFacial();
+        }, 2200);
+      },
+      error: (err) => {
+        this.cargandoFacial = false;
+        this.pasoFacial = 1;
+        this.mensajeFacial = err.error?.detail || 'No se detectó ningún rostro en la cámara. Enfoca bien tu cara dentro del óvalo.';
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   continuarAccesoFacial(): void {

@@ -1,8 +1,9 @@
-import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AuthService, AuthenticatedUser } from '../core/auth/auth.service';
 import { SweetAlertService } from '../core/services/sweet-alert.service';
+import { ReconocimientoFacialService } from '../services/reconocimiento-facial.service';
 
 @Component({
   selector: 'app-perfil',
@@ -11,17 +12,28 @@ import { SweetAlertService } from '../core/services/sweet-alert.service';
   templateUrl: './perfil.html',
   styleUrls: ['./perfil.css']
 })
-export class PerfilComponent implements OnInit {
+export class PerfilComponent implements OnInit, OnDestroy {
   private fb = inject(FormBuilder);
   private authService = inject(AuthService);
   private sweetAlert = inject(SweetAlertService);
   private cdr = inject(ChangeDetectorRef);
+  private facialService = inject(ReconocimientoFacialService);
 
   cargando = false;
   guardando = false;
   modoEdicion = false;
   mensajeExito = '';
   mensajeError = '';
+
+  // Variables para Reconocimiento Facial Biométrico en Perfil
+  tieneBiometria = false;
+  cargandoBiometria = false;
+  mostrarModalFacial = false;
+  pasoFacial: 1 | 2 | 3 = 1;
+  fotoCapturada = '';
+  mensajeFacial = '';
+  cargandoFacial = false;
+  streamVideo: MediaStream | null = null;
 
   // Criterio 1: Datos actuales del usuario autenticado
   usuario: AuthenticatedUser | null = null;
@@ -48,6 +60,14 @@ export class PerfilComponent implements OnInit {
 
   ngOnInit(): void {
     this.cargarDatosUsuario();
+    this.consultarBiometria();
+  }
+
+  ngOnDestroy(): void {
+    if (this.streamVideo) {
+      this.streamVideo.getTracks().forEach(track => track.stop());
+      this.streamVideo = null;
+    }
   }
 
   get nombreControl() {
@@ -153,5 +173,123 @@ export class PerfilComponent implements OnInit {
         this.cdr.detectChanges();
       }
     });
+  }
+
+  // ==========================================
+  // RECONOCIMIENTO FACIAL BIOMÉTRICO (PERFIL)
+  // ==========================================
+
+  consultarBiometria(): void {
+    this.cargandoBiometria = true;
+    this.facialService.consultarEstadoBiometria().subscribe({
+      next: (res) => {
+        this.tieneBiometria = Boolean(res?.tiene_biometria);
+        this.cargandoBiometria = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.cargandoBiometria = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  async abrirModalFacial(): Promise<void> {
+    this.pasoFacial = 1;
+    this.fotoCapturada = '';
+    this.mensajeFacial = '';
+    this.cargandoFacial = false;
+    this.mostrarModalFacial = true;
+    this.cdr.detectChanges();
+
+    try {
+      this.streamVideo = await navigator.mediaDevices.getUserMedia({
+        video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' }
+      });
+      setTimeout(() => {
+        const videoElement = document.getElementById('videoWebcamPerfil') as HTMLVideoElement;
+        if (videoElement && this.streamVideo) {
+          videoElement.srcObject = this.streamVideo;
+          videoElement.play();
+        }
+      }, 100);
+    } catch (err) {
+      this.mensajeFacial = 'No se pudo acceder a la cámara. Revisa los permisos de tu navegador.';
+      this.cdr.detectChanges();
+    }
+  }
+
+  cerrarModalFacial(): void {
+    if (this.streamVideo) {
+      this.streamVideo.getTracks().forEach(track => track.stop());
+      this.streamVideo = null;
+    }
+    this.mostrarModalFacial = false;
+    this.pasoFacial = 1;
+    this.fotoCapturada = '';
+    this.cargandoFacial = false;
+    this.mensajeFacial = '';
+    this.cdr.detectChanges();
+  }
+
+  capturarYRegistrarRostro(): void {
+    const videoElement = document.getElementById('videoWebcamPerfil') as HTMLVideoElement;
+    if (!videoElement) return;
+
+    // 1. Capturar el fotograma directamente de la cámara en espejo horizontal
+    const canvas = document.createElement('canvas');
+    canvas.width = videoElement.videoWidth || 640;
+    canvas.height = videoElement.videoHeight || 480;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.translate(canvas.width, 0);
+    ctx.scale(-1, 1);
+    ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+    const imagenBase64 = canvas.toDataURL('image/jpeg', 0.95);
+    this.fotoCapturada = imagenBase64;
+
+    // 2. Activar la animación de escaneo en el paso 2
+    this.pasoFacial = 2;
+    this.cargandoFacial = true;
+    this.mensajeFacial = '';
+    this.cdr.detectChanges();
+
+    // 3. Registrar biometría en el backend
+    this.facialService.registrarRostro(imagenBase64).subscribe({
+      next: () => {
+        this.cargandoFacial = false;
+        this.tieneBiometria = true;
+        this.pasoFacial = 3;
+        void this.sweetAlert.success('Rostro registrado', 'Tu biometría facial se vinculó exitosamente a tu cuenta.');
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.cargandoFacial = false;
+        this.pasoFacial = 1;
+        this.mensajeFacial = err.error?.detail || 'No se detectó un rostro claro en la imagen. Enfoca bien la cámara e inténtalo de nuevo.';
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  async confirmarEliminarBiometria(): Promise<void> {
+    const result = await this.sweetAlert.confirm(
+      '¿Desvincular rostro?',
+      'Si eliminas tu biometría facial, no podrás iniciar sesión con tu rostro y deberás usar tu contraseña.',
+      'Sí, desvincular'
+    );
+    if (result.isConfirmed) {
+      this.facialService.eliminarBiometria().subscribe({
+        next: () => {
+          this.tieneBiometria = false;
+          void this.sweetAlert.success('Biometría eliminada', 'Tu rostro ha sido desvinculado.');
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          void this.sweetAlert.error('Error', 'No fue posible eliminar la biometría facial.');
+        }
+      });
+    }
   }
 }

@@ -226,4 +226,257 @@
       </div>
     </form>
   </div>
+
+  <!-- ================= TARJETA DE SEGURIDAD & ACCESO BIOMÉTRICO ================= -->
+  <div class="mt-6 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+    <div class="p-6 border-b border-slate-100 flex items-center justify-between flex-wrap gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-emerald-50 text-[#0b6638] flex items-center justify-center border border-emerald-100">
+          <svg class="w-6 h-6 text-[#0b6638]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 8V6a2 2 0 0 1 2-2h2" />
+            <path d="M16 4h2a2 2 0 0 1 2 2v2" />
+            <path d="M20 16v2a2 2 0 0 1-2 2h-2" />
+            <path d="M8 20H6a2 2 0 0 1-2-2v-2" />
+            <circle cx="12" cy="12" r="3.6" />
+            <circle cx="10.5" cy="11.2" r="0.5" fill="currentColor" />
+            <circle cx="13.5" cy="11.2" r="0.5" fill="currentColor" />
+            <path d="M10.5 13.8a2 2 0 0 0 3 0" />
+          </svg>
+        </div>
+        <div>
+          <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+            Seguridad & Acceso Biométrico
+          </h2>
+          <p class="text-xs text-slate-500">
+            Gestiona tu reconocimiento facial para iniciar sesión de forma rápida y segura.
+          </p>
+        </div>
+      </div>
+
+      <!-- Badge de Estado -->
+      <span *ngIf="tieneBiometria" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
+        <span class="material-symbols-outlined text-sm">verified</span>
+        Rostro Vinculado
+      </span>
+      <span *ngIf="!tieneBiometria" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+        <span class="material-symbols-outlined text-sm">info</span>
+        No Configurado
+      </span>
+    </div>
+
+    <div class="p-6">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div class="max-w-xl space-y-2">
+          <h3 class="text-sm font-bold text-slate-800">
+            {{ tieneBiometria ? 'Tu rostro se encuentra activo en SIRAE' : 'Autenticación Facial Biométrica' }}
+          </h3>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            {{ tieneBiometria 
+              ? 'Tu modelo biométrico está registrado. Puedes usar el botón de "Reconocimiento Facial" en la pantalla de inicio de sesión para entrar al sistema sin necesidad de digitar tu contraseña.' 
+              : 'Registra tu rostro para habilitar el inicio de sesión biométrico. La captura es privada, encriptada y solo se utilizará para comprobar tu identidad al ingresar.' }}
+          </p>
+        </div>
+
+        <div class="flex items-center gap-3 shrink-0 flex-wrap">
+          <button
+            *ngIf="tieneBiometria"
+            type="button"
+            (click)="confirmarEliminarBiometria()"
+            class="px-4 py-2.5 rounded-xl font-semibold text-xs border border-rose-200 text-rose-700 hover:bg-rose-50 transition-colors inline-flex items-center gap-1.5 cursor-pointer">
+            <span class="material-symbols-outlined text-base">delete</span>
+            Desvincular
+          </button>
+
+          <button
+            type="button"
+            (click)="abrirModalFacial()"
+            class="px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm shadow-sm transition-all inline-flex items-center gap-2 cursor-pointer"
+            [ngClass]="tieneBiometria 
+              ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300' 
+              : 'bg-[#0b6638] hover:bg-[#084b29] text-white shadow-emerald-700/20'">
+            <span class="material-symbols-outlined text-lg">photo_camera</span>
+            <span>{{ tieneBiometria ? 'Actualizar mi rostro' : 'Registrar mi rostro' }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL DE REGISTRO FACIAL BIOMÉTRICO (Diseño Imagen 2) ================= -->
+  <div *ngIf="mostrarModalFacial" class="fixed inset-0 bg-black/75 backdrop-blur-xs flex items-center justify-center z-[310] p-4">
+    <div class="bg-white rounded-3xl p-6 sm:p-8 w-full max-w-[480px] sm:max-w-[520px] text-center shadow-2xl relative border border-slate-100 flex flex-col items-center overflow-hidden">
+      
+      <!-- ENCABEZADO -->
+      <div class="mb-4">
+        <h3 class="text-2xl sm:text-3xl font-bold text-[#0b6638]" *ngIf="pasoFacial === 1">
+          Registro Facial
+        </h3>
+        <h3 class="text-2xl sm:text-3xl font-bold text-[#0b6638]" *ngIf="pasoFacial === 2">
+          Verificación
+        </h3>
+        <h3 class="text-2xl sm:text-3xl font-bold text-[#0b6638]" *ngIf="pasoFacial === 3">
+          ¡Rostro Registrado!
+        </h3>
+
+        <p class="text-xs sm:text-sm text-slate-500 mt-1 max-w-sm mx-auto" *ngIf="pasoFacial === 1">
+          Ubica tu rostro dentro del óvalo para vincular tu biometría a tu cuenta.
+        </p>
+        <p class="text-xs sm:text-sm text-slate-500 mt-1 max-w-sm mx-auto" *ngIf="pasoFacial === 2">
+          Mantén tu rostro iluminado y centrado mientras procesamos tu imagen.
+        </p>
+        <p class="text-xs sm:text-sm text-slate-500 mt-1 max-w-sm mx-auto" *ngIf="pasoFacial === 3">
+          Tu biometría facial ha sido vinculada exitosamente a tu cuenta institucional.
+        </p>
+      </div>
+
+      <!-- VISOR DE CÁMARA (Pasos 1 y 2) -->
+      <div *ngIf="pasoFacial === 1 || pasoFacial === 2" 
+        class="w-full max-w-[420px] h-[280px] sm:h-[310px] rounded-3xl overflow-hidden relative shadow-lg bg-slate-950 flex items-center justify-center transition-all duration-300"
+        [ngClass]="pasoFacial === 2 ? 'border-2 border-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.35)]' : 'border-2 border-slate-200'"
+      >
+        <video id="videoWebcamPerfil" autoplay playsinline class="w-full h-full object-cover -scale-x-100"></video>
+        
+        <!-- 4 Esquinas blancas -->
+        <div class="absolute top-4 left-4 w-7 h-7 border-t-4 border-l-4 rounded-tl-xl pointer-events-none transition-colors" [ngClass]="pasoFacial === 2 ? 'border-amber-400' : 'border-white'"></div>
+        <div class="absolute top-4 right-4 w-7 h-7 border-t-4 border-r-4 rounded-tr-xl pointer-events-none transition-colors" [ngClass]="pasoFacial === 2 ? 'border-amber-400' : 'border-white'"></div>
+        <div class="absolute bottom-4 left-4 w-7 h-7 border-b-4 border-l-4 rounded-bl-xl pointer-events-none transition-colors" [ngClass]="pasoFacial === 2 ? 'border-amber-400' : 'border-white'"></div>
+        <div class="absolute bottom-4 right-4 w-7 h-7 border-b-4 border-r-4 rounded-br-xl pointer-events-none transition-colors" [ngClass]="pasoFacial === 2 ? 'border-amber-400' : 'border-white'"></div>
+
+        <!-- ÓVALO FACIAL BIOMÉTRICO (Paso 1) -->
+        <div *ngIf="pasoFacial === 1" class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+          <div class="w-44 h-56 sm:w-48 sm:h-64 rounded-[50%] border-2 border-dashed border-white/85 flex flex-col items-center justify-between py-3 shadow-[0_0_20px_rgba(255,255,255,0.2)]">
+            <span class="text-[10px] sm:text-xs text-white font-medium bg-black/50 px-3 py-1 rounded-full backdrop-blur-xs">
+              Alinea tu rostro aquí
+            </span>
+            <span class="text-[9px] text-white/70 bg-black/40 px-2 py-0.5 rounded-full">
+              Mira de frente a la cámara
+            </span>
+          </div>
+        </div>
+
+        <!-- Línea láser de escaneo animada en verde (Paso 2) -->
+        <div *ngIf="pasoFacial === 2" class="animate-laser-scan h-1 bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_14px_#34d399] pointer-events-none z-10"></div>
+      </div>
+
+      <!-- RETRATO CIRCULAR Y CONFIRMACIÓN (Paso 3) -->
+      <div *ngIf="pasoFacial === 3" class="w-full flex flex-col items-center my-2">
+        <div class="relative mb-3">
+          <div class="w-40 h-40 sm:w-48 sm:h-48 rounded-full border-4 border-emerald-500 shadow-xl overflow-hidden bg-slate-100 flex items-center justify-center">
+            <img [src]="fotoCapturada" alt="Rostro verificado" class="w-full h-full object-cover" />
+          </div>
+          <div class="absolute bottom-1 right-3 w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-md border-2 border-white">
+            <span class="material-symbols-outlined text-2xl font-bold">check</span>
+          </div>
+        </div>
+
+        <div class="text-center">
+          <h4 class="text-xl sm:text-2xl font-bold text-slate-900">
+            ¡Rostro registrado exitosamente!
+          </h4>
+          <p class="text-xs sm:text-sm text-slate-500 mt-2 max-w-xs mx-auto">
+            Tu biometría facial ha quedado vinculada a tu cuenta. Ya puedes iniciar sesión con tu rostro en la pantalla principal.
+          </p>
+        </div>
+      </div>
+
+      <!-- STEPPER DE 3 PASOS (Imagen 2) -->
+      <div class="flex items-center justify-between w-full max-w-[340px] sm:max-w-[380px] mt-4 mb-5 text-center">
+        <!-- Paso 1: Encuadre -->
+        <div class="flex flex-col items-center">
+          <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors"
+            [ngClass]="pasoFacial >= 2 ? 'bg-emerald-600 text-white' : 'bg-emerald-600 text-white'">
+            <span *ngIf="pasoFacial >= 2" class="material-symbols-outlined text-base font-bold">check</span>
+            <span *ngIf="pasoFacial === 1">1</span>
+          </div>
+          <span class="text-xs font-semibold mt-1" [ngClass]="pasoFacial >= 1 ? 'text-slate-800' : 'text-slate-400'">Encuadre</span>
+        </div>
+
+        <!-- Línea conectora 1-2 -->
+        <div class="flex-1 h-[2px] mx-2 transition-colors"
+          [ngClass]="pasoFacial === 2 ? 'bg-amber-400' : (pasoFacial === 3 ? 'bg-emerald-600' : 'bg-slate-200')"></div>
+
+        <!-- Paso 2: Verificación -->
+        <div class="flex flex-col items-center">
+          <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors"
+            [ngClass]="pasoFacial === 3 ? 'bg-emerald-600 text-white' : (pasoFacial === 2 ? 'bg-amber-400 text-white animate-pulse' : 'bg-slate-200 text-slate-500')">
+            <span *ngIf="pasoFacial === 3" class="material-symbols-outlined text-base font-bold">check</span>
+            <span *ngIf="pasoFacial < 3">2</span>
+          </div>
+          <span class="text-xs font-semibold mt-1" [ngClass]="pasoFacial >= 2 ? 'text-slate-800' : 'text-slate-400'">Verificación</span>
+        </div>
+
+        <!-- Línea conectora 2-3 -->
+        <div class="flex-1 h-[2px] mx-2 transition-colors"
+          [ngClass]="pasoFacial === 3 ? 'bg-emerald-600' : 'bg-slate-200'"></div>
+
+        <!-- Paso 3: Registro -->
+        <div class="flex flex-col items-center">
+          <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors"
+            [ngClass]="pasoFacial === 3 ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-500'">
+            <span *ngIf="pasoFacial === 3" class="material-symbols-outlined text-base font-bold">check</span>
+            <span *ngIf="pasoFacial < 3">3</span>
+          </div>
+          <span class="text-xs font-semibold mt-1" [ngClass]="pasoFacial === 3 ? 'text-slate-800' : 'text-slate-400'">Registro</span>
+        </div>
+      </div>
+
+      <!-- ALERTA DE ERROR -->
+      <div *ngIf="mensajeFacial && pasoFacial === 1" class="w-full max-w-[420px] mb-3 bg-red-50 text-red-700 border border-red-200 px-4 py-2.5 rounded-2xl text-xs font-semibold text-center flex items-center justify-center gap-2">
+        <span class="material-symbols-outlined text-base">info</span>
+        <span>{{ mensajeFacial }}</span>
+      </div>
+
+      <!-- BOTONES DE ACCIÓN SEGÚN EL PASO -->
+      <div class="w-full max-w-[420px] flex flex-col items-center gap-2.5">
+        <!-- Paso 1 -->
+        <ng-container *ngIf="pasoFacial === 1">
+          <button 
+            type="button" 
+            (click)="capturarYRegistrarRostro()"
+            class="w-full h-[50px] bg-[#0b6638] hover:bg-[#084b29] text-white font-bold text-base rounded-full flex items-center justify-center gap-2 shadow-md transition duration-200 cursor-pointer"
+          >
+            <span class="material-symbols-outlined text-xl">save</span>
+            <span>Guardar Rostro</span>
+          </button>
+
+          <button 
+            type="button" 
+            (click)="cerrarModalFacial()"
+            class="w-full h-[44px] bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold text-sm rounded-full transition duration-200 cursor-pointer"
+          >
+            Cancelar
+          </button>
+        </ng-container>
+
+        <!-- Paso 2 -->
+        <ng-container *ngIf="pasoFacial === 2">
+          <div class="w-full h-[50px] bg-amber-100 border border-amber-300 text-amber-900 font-bold text-sm sm:text-base rounded-full flex items-center justify-center gap-2 shadow-xs animate-pulse">
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-600 animate-ping"></span>
+            <span>Analizando y registrando tu rostro...</span>
+          </div>
+
+          <button 
+            type="button" 
+            (click)="cerrarModalFacial()"
+            class="text-xs text-slate-500 hover:text-slate-800 font-medium mt-1 cursor-pointer transition"
+          >
+            ✕ Cancelar
+          </button>
+        </ng-container>
+
+        <!-- Paso 3 -->
+        <ng-container *ngIf="pasoFacial === 3">
+          <button 
+            type="button" 
+            (click)="cerrarModalFacial()"
+            class="w-full h-[52px] bg-[#0b6638] hover:bg-[#084b29] text-white font-bold text-base rounded-full flex items-center justify-center gap-2 shadow-lg transition duration-200 cursor-pointer"
+          >
+            <span>Finalizar</span>
+            <span class="material-symbols-outlined text-xl">check</span>
+          </button>
+        </ng-container>
+      </div>
+
+    </div>
+  </div>
 </div>

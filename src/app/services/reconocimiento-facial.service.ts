@@ -8,18 +8,28 @@ import { environment } from '../../environments/environment';
 })
 export class ReconocimientoFacialService {
     private http = inject(HttpClient);
-    // Usa la URL base de tu backend configurada en environments
     private apiUrl = `${environment.apiUrl}/reconocimiento-facial`;
 
-    // Equivalente a capture('/register-face') del React de tu instructora
-    registrarRostro(correo: string, imagenBase64: string): Observable<any> {
-        return this.http.post(`${this.apiUrl}/register-face/`, {
-            correo: correo,
-            image: imagenBase64
-        });
+    // Consulta si el usuario autenticado tiene biometría activa registrada
+    consultarEstadoBiometria(): Observable<{ tiene_biometria: boolean; correo?: string }> {
+        return this.http.get<{ tiene_biometria: boolean; correo?: string }>(`${this.apiUrl}/estado/`);
     }
 
-    // Equivalente a capture('/verify-face') del React de tu instructora
+    // Registra o actualiza el rostro del usuario (si está autenticado toma request.user)
+    registrarRostro(imagenBase64: string, correo?: string): Observable<any> {
+        const body: { image: string; correo?: string } = { image: imagenBase64 };
+        if (correo) {
+            body.correo = correo;
+        }
+        return this.http.post(`${this.apiUrl}/register-face/`, body);
+    }
+
+    // Permite al usuario desvincular su biometría facial registrada
+    eliminarBiometria(): Observable<any> {
+        return this.http.delete(`${this.apiUrl}/eliminar/`);
+    }
+
+    // Verifica el rostro escaneado para iniciar sesión
     verificarRostro(imagenBase64: string): Observable<any> {
         return this.http.post(`${this.apiUrl}/verify-face/`, {
             image: imagenBase64

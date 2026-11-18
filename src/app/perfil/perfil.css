@@ -9,3 +9,25 @@
 .btn-guardar-perfil:active {
   transform: scale(0.98);
 }
+
+@keyframes laserScan {
+  0% {
+    top: 6%;
+    opacity: 0.7;
+  }
+  50% {
+    top: 88%;
+    opacity: 1;
+  }
+  100% {
+    top: 6%;
+    opacity: 0.7;
+  }
+}
+
+.animate-laser-scan {
+  position: absolute;
+  left: 0;
+  right: 0;
+  animation: laserScan 2s infinite ease-in-out;
+}
