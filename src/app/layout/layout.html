@@ -268,12 +268,6 @@
           <span class="material-symbols-outlined sv-icon">chat</span>
           <span class="sv-label">Mensajería</span>
         </a>
-
-        <button type="button" (click)="abrirModalPerfil('perfil')" class="sv-link"
-           aria-label="Mi Perfil" title="Mi Perfil">
-          <span class="material-symbols-outlined sv-icon">account_circle</span>
-          <span class="sv-label">Mi Perfil</span>
-        </button>
       </nav>
 
       <!-- Cambiar institución + Cerrar sesión (inferior) -->
@@ -344,12 +338,12 @@
 
         <!-- Perfil: solo bolita circular con animación al pasar el mouse -->
         <div style="position:relative;" class="dropdown-container">
-          <button type="button" (click)="togglePerfil()" class="svh-user-btn" [title]="perfil.nombre + ' · Mi cuenta'" aria-label="Menú de perfil">
+          <a routerLink="/perfil" class="svh-user-btn" [title]="perfil.nombre + ' · Mi perfil'" aria-label="Mi perfil" style="text-decoration:none;">
             <span class="svh-avatar-ring overflow-hidden">
               <img *ngIf="perfil.foto_perfil" [src]="perfil.foto_perfil" alt="Avatar" width="38" height="38" style="width:38px; height:38px; border-radius:50%; object-fit:cover; display:block;" />
               <img *ngIf="!perfil.foto_perfil" src="administrador.png" alt="Avatar" width="38" height="38" style="width:38px; height:38px; border-radius:50%; object-fit:cover; display:block;" />
             </span>
-          </button>
+          </a>
         </div>
 
       </div>
@@ -388,14 +382,6 @@
           <div class="superadmin-nav-item-left">
             <span class="material-symbols-outlined superadmin-nav-icon">space_dashboard</span>
             <span class="superadmin-nav-text">Inicio</span>
-          </div>
-        </a>
-
-        <!-- MI PERFIL -->
-        <a routerLink="/perfil" (click)="cerrarPanel()" routerLinkActive="active" class="superadmin-nav-item" title="Mi Perfil">
-          <div class="superadmin-nav-item-left">
-            <span class="material-symbols-outlined superadmin-nav-icon">account_circle</span>
-            <span class="superadmin-nav-text">Mi Perfil</span>
           </div>
         </a>
       </div>
@@ -509,16 +495,16 @@
 
         <!-- Botón Perfil de Usuario Super Administrador con Avatar y Foto Dinámica -->
         <div class="dropdown-container">
-          <button type="button" class="superadmin-user-pill-btn" (click)="abrirModalPerfil('perfil')" title="Mi perfil de usuario" aria-label="Menú de perfil">
+          <a routerLink="/perfil" class="superadmin-user-pill-btn" title="Mi perfil de usuario" aria-label="Menú de perfil" style="text-decoration:none;">
             <div class="superadmin-sa-avatar" style="overflow:hidden; padding:0; display:flex; align-items:center; justify-content:center;">
               <img *ngIf="perfil.foto_perfil" [src]="perfil.foto_perfil" alt="Avatar" style="width:100%; height:100%; object-fit:cover; border-radius:50%;" />
-              <span *ngIf="!perfil.foto_perfil">SA</span>
+              <span *ngIf="!perfil.foto_perfil">{{ iniciales }}</span>
             </div>
             <div class="superadmin-sa-info">
               <span class="superadmin-sa-title">{{ perfil.nombre || 'Super Administrador' }}</span>
               <span class="superadmin-sa-sub">Programa PAE</span>
             </div>
-          </button>
+          </a>
         </div>
 
       </div>
@@ -600,12 +586,6 @@
         <span class="modern-nav-text">Mensajería</span>
       </a>
 
-      <!-- MI PERFIL -->
-      <button type="button" (click)="abrirModalPerfil('perfil')" class="modern-nav-item" title="Mi Perfil" style="background:none; border:none; width:100%; text-align:left; cursor:pointer;">
-        <span class="material-symbols-outlined modern-nav-icon" aria-hidden="true">account_circle</span>
-        <span class="modern-nav-text">Mi Perfil</span>
-      </button>
-
       <!-- El "Historial de entregas" (reportes-consumo) es exclusivo del Supervisor / Super Admin.
            El Administrador consulta el historial de SU institución desde "Recepción Entregas". -->
 
@@ -684,7 +664,7 @@
 
         <!-- Botón Perfil de Usuario con Avatar Dinámico -->
         <div class="dropdown-container">
-          <button type="button" class="user-pill-btn" (click)="abrirModalPerfil('perfil')" title="Mi perfil de usuario" aria-label="Menú de perfil">
+          <a routerLink="/perfil" class="user-pill-btn" title="Mi perfil de usuario" aria-label="Menú de perfil" style="text-decoration:none;">
             <img *ngIf="perfil.foto_perfil" [src]="perfil.foto_perfil" alt="Avatar" class="user-avatar" width="36" height="36" style="width:36px; height:36px; border-radius:50%; object-fit:cover;" />
             <img *ngIf="!perfil.foto_perfil" src="administrador.png" alt="Avatar" class="user-avatar" width="36" height="36" style="width:36px; height:36px; border-radius:50%; object-fit:cover;" />
             <div class="user-info-text">
@@ -692,7 +672,7 @@
               <span class="user-role">{{ perfil.rol }}</span>
             </div>
             <span class="material-symbols-outlined user-chevron" aria-hidden="true">expand_more</span>
-          </button>
+          </a>
         </div>
 
       </div>
@@ -706,377 +686,4 @@
 
   </div>
 
-</div>
-
-
-<!-- ================================================================= -->
-<!-- MODAL EMERGENTE UNIFICADO DE MI PERFIL (DISPONIBLE PARA TODOS LOS ROLES) -->
-<!-- ================================================================= -->
-<div *ngIf="mostrarPerfil" class="sirae-modal-backdrop" (click)="cerrarPanel()">
-  <div class="sirae-modal-card" (click)="$event.stopPropagation()">
-
-    <!-- Encabezado del Modal -->
-    <div class="sirae-modal-header">
-      <div class="sirae-modal-header-info">
-        <div class="sirae-modal-header-icon">
-          <span class="material-symbols-outlined">badge</span>
-        </div>
-        <div>
-          <h2 class="sirae-modal-title">Mi Perfil</h2>
-          <p class="sirae-modal-sub">Información personal, foto de perfil, reconocimiento facial y seguridad</p>
-        </div>
-      </div>
-      <button type="button" class="sirae-modal-close-btn" (click)="cerrarPanel()" title="Cerrar ventana">
-        <span class="material-symbols-outlined">close</span>
-      </button>
-    </div>
-
-    <!-- Barra de Pestañas / Tabs -->
-    <div class="sirae-modal-tabs">
-      <button type="button" class="sirae-tab-btn" [class.active]="vistaActual === 'perfil'" (click)="irA('perfil')">
-        <span class="material-symbols-outlined">account_circle</span>
-        <span>Información Personal</span>
-      </button>
-      <button type="button" class="sirae-tab-btn" [class.active]="vistaActual === 'facial'" (click)="irA('facial')">
-        <span class="material-symbols-outlined">face</span>
-        <span>Reconocimiento Facial</span>
-        <span *ngIf="tieneBiometria" class="sirae-tab-badge-ok">Activo</span>
-      </button>
-      <button type="button" class="sirae-tab-btn" [class.active]="vistaActual === 'password'" (click)="irA('password')">
-        <span class="material-symbols-outlined">lock</span>
-        <span>Seguridad</span>
-      </button>
-    </div>
-
-    <!-- Pestaña 1: Información Personal y Foto de Perfil -->
-    <div *ngIf="vistaActual === 'perfil'" class="sirae-modal-body">
-      <!-- Fila de Foto de Perfil + Resumen -->
-      <div class="sirae-profile-avatar-row">
-        <div class="sirae-avatar-wrapper">
-          <div class="sirae-avatar-circle">
-            <img *ngIf="perfil.foto_perfil" [src]="perfil.foto_perfil" alt="Foto de perfil" class="sirae-avatar-img" />
-            <span *ngIf="!perfil.foto_perfil" class="sirae-avatar-initials">
-              {{ esSuperAdministrador ? 'SA' : (perfil.nombre.charAt(0) || 'U') }}
-            </span>
-          </div>
-          <button type="button" class="sirae-avatar-change-btn" (click)="fileInputModal.click()" title="Subir / cambiar foto de perfil">
-            <span class="material-symbols-outlined">photo_camera</span>
-          </button>
-          <input #fileInputModal type="file" accept="image/png, image/jpeg, image/webp" (change)="cambiarFotoPerfil($event)" style="display:none;" />
-        </div>
-
-        <div class="sirae-avatar-info">
-          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-            <h3 class="sirae-user-display-name">{{ perfil.nombre }}</h3>
-            <span class="sirae-role-tag">{{ perfil.rol }}</span>
-          </div>
-          <p class="sirae-avatar-hint">
-            Puedes cambiar o poner tu foto de perfil cuando desees. Se guarda de forma permanente y segura en la base de datos de SIRAE.
-          </p>
-          <div class="sirae-avatar-actions-row">
-            <button type="button" class="sirae-btn-sm sirae-btn-upload" (click)="fileInputModal.click()">
-              <span class="material-symbols-outlined" style="font-size:16px;">upload</span>
-              Cambiar Foto
-            </button>
-            <button *ngIf="perfil.foto_perfil" type="button" class="sirae-btn-sm sirae-btn-remove" (click)="eliminarFotoPerfil()">
-              <span class="material-symbols-outlined" style="font-size:16px;">delete</span>
-              Quitar Foto
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Formulario de Edición de Datos Personales -->
-      <form [formGroup]="perfilForm" (ngSubmit)="guardarPerfil()" class="sirae-form-grid">
-        <div class="sirae-form-col">
-          <label class="sirae-form-label">Nombre <span class="text-red-500">*</span></label>
-          <div class="sirae-input-wrap">
-            <span class="material-symbols-outlined sirae-input-icon">person</span>
-            <input formControlName="nombre" type="text" class="sirae-input" placeholder="Tu nombre" />
-          </div>
-        </div>
-
-        <div class="sirae-form-col">
-          <label class="sirae-form-label">Apellido <span class="text-red-500">*</span></label>
-          <div class="sirae-input-wrap">
-            <span class="material-symbols-outlined sirae-input-icon">person</span>
-            <input formControlName="apellido" type="text" class="sirae-input" placeholder="Tu apellido" />
-          </div>
-        </div>
-
-        <div class="sirae-form-col">
-          <label class="sirae-form-label">
-            Correo Institucional <span class="sirae-badge-protected">Protegido</span>
-          </label>
-          <div class="sirae-input-wrap disabled">
-            <span class="material-symbols-outlined sirae-input-icon">mail</span>
-            <input [value]="perfil.correo" type="email" disabled class="sirae-input" />
-          </div>
-        </div>
-
-        <div class="sirae-form-col">
-          <label class="sirae-form-label">
-            Rol Institucional <span class="sirae-badge-protected">Protegido</span>
-          </label>
-          <div class="sirae-input-wrap disabled">
-            <span class="material-symbols-outlined sirae-input-icon">shield_person</span>
-            <input [value]="perfil.rol" type="text" disabled class="sirae-input" />
-          </div>
-        </div>
-
-        <div class="sirae-form-col" *ngIf="perfil.numero_documento">
-          <label class="sirae-form-label">
-            Documento de Identidad <span class="sirae-badge-protected">Protegido</span>
-          </label>
-          <div class="sirae-input-wrap disabled">
-            <span class="material-symbols-outlined sirae-input-icon">id_card</span>
-            <input [value]="perfil.numero_documento" type="text" disabled class="sirae-input" />
-          </div>
-        </div>
-
-        <div class="sirae-form-col" *ngIf="perfil.institucion">
-          <label class="sirae-form-label">
-            Institución / Ámbito <span class="sirae-badge-protected">Protegido</span>
-          </label>
-          <div class="sirae-input-wrap disabled">
-            <span class="material-symbols-outlined sirae-input-icon">apartment</span>
-            <input [value]="perfil.institucion + (perfil.sede ? ' - ' + perfil.sede : '')" type="text" disabled class="sirae-input" />
-          </div>
-        </div>
-
-        <div class="sirae-form-full-action">
-          <button type="submit" [disabled]="perfilForm.invalid" class="sirae-btn-save">
-            <span class="material-symbols-outlined" style="font-size:18px;">save</span>
-            Guardar Cambios
-          </button>
-        </div>
-      </form>
-    </div>
-
-    <!-- Pestaña 2: Reconocimiento Facial (Diseño Imagen 2) -->
-    <div *ngIf="vistaActual === 'facial'" class="sirae-modal-body">
-      
-      <!-- Si la cámara no está activa, mostrar estado y botón -->
-      <div *ngIf="!mostrarCamaraFacial" class="sirae-facial-overview">
-        <div class="sirae-facial-status-card" [class.status-active]="tieneBiometria" [class.status-inactive]="!tieneBiometria">
-          <div class="sirae-facial-icon-wrap">
-            <span class="material-symbols-outlined" style="font-size:36px;">
-              {{ tieneBiometria ? 'verified_user' : 'face' }}
-            </span>
-          </div>
-          <div class="sirae-facial-status-info">
-            <div style="display:flex; align-items:center; gap:8px;">
-              <h4 class="sirae-facial-status-title">
-                {{ tieneBiometria ? 'Reconocimiento Facial Habilitado' : 'Reconocimiento Facial No Configurado' }}
-              </h4>
-              <span class="sirae-status-pill" [class.pill-ok]="tieneBiometria" [class.pill-warn]="!tieneBiometria">
-                {{ tieneBiometria ? 'VINCULADO' : 'PENDIENTE' }}
-              </span>
-            </div>
-            <p class="sirae-facial-status-desc">
-              {{ tieneBiometria
-                  ? 'Tu rostro está registrado en SIRAE. Puedes usarlo en la pantalla de inicio de sesión para entrar al sistema de forma instantánea sin escribir contraseña.'
-                  : 'Registra tu biometría facial para iniciar sesión de manera rápida y segura en SIRAE con solo mirar a la cámara web.' }}
-            </p>
-          </div>
-        </div>
-
-        <div class="sirae-facial-actions-row">
-          <button type="button" class="sirae-btn-scan-primary" (click)="iniciarRegistroFacial()">
-            <span class="material-symbols-outlined">photo_camera</span>
-            <span>{{ tieneBiometria ? 'Actualizar / Re-escanear Rostro' : 'Registrar mi Rostro Ahora' }}</span>
-          </button>
-
-          <button *ngIf="tieneBiometria" type="button" class="sirae-btn-unlink" (click)="desvincularBiometria()">
-            <span class="material-symbols-outlined">link_off</span>
-            <span>Desvincular Rostro</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Si la cámara está activa, escáner facial con óvalo guía (Diseño Imagen 2) -->
-      <div *ngIf="mostrarCamaraFacial" class="sirae-facial-scanner-container">
-        
-        <div class="sirae-scanner-head">
-          <h4 class="sirae-scanner-title">
-            {{ pasoFacial === 3 ? '¡Rostro Registrado!' : 'Reconocimiento Facial' }}
-          </h4>
-          <p class="sirae-scanner-subtitle">
-            {{ pasoFacial === 3
-                ? 'Tu biometría facial ha sido vinculada exitosamente a tu cuenta.'
-                : 'Ubica tu rostro dentro del óvalo para continuar con el registro.' }}
-          </p>
-        </div>
-
-        <!-- Visor con Óvalo y Esquinas (Imagen 2) -->
-        <div class="sirae-camera-viewport" [class.scanning]="pasoFacial === 2" [class.success]="pasoFacial === 3">
-          
-          <!-- Video espejo -->
-          <video *ngIf="pasoFacial !== 3" id="videoWebcamLayout" autoplay playsinline muted class="sirae-webcam-feed"></video>
-
-          <!-- Foto tomada al completar -->
-          <div *ngIf="pasoFacial === 3" class="sirae-success-avatar-wrap">
-            <div class="sirae-success-avatar-circle">
-              <img [src]="fotoCapturadaFacial" alt="Rostro Registrado" class="sirae-success-img" />
-              <div class="sirae-success-check-badge">
-                <span class="material-symbols-outlined" style="font-size:22px; color:#fff;">check</span>
-              </div>
-            </div>
-            <h4 class="sirae-success-user-text">¡Bienvenido(a), {{ perfil.nombre }}!</h4>
-            <span class="sirae-success-role-badge">BIOMETRÍA VINCULADA EXITOSAMENTE</span>
-          </div>
-
-          <!-- Overlay con esquinas y óvalo punteado -->
-          <div *ngIf="pasoFacial !== 3" class="sirae-cam-overlay-oval">
-            <div class="cam-corner top-left"></div>
-            <div class="cam-corner top-right"></div>
-            <div class="cam-corner bottom-left"></div>
-            <div class="cam-corner bottom-right"></div>
-
-            <div class="dashed-oval-frame">
-              <span class="oval-guide-text top">Alinea tu rostro aquí</span>
-              <span class="oval-guide-text bottom">Mira de frente a la cámara</span>
-            </div>
-
-            <div *ngIf="pasoFacial === 2" class="sirae-laser-line"></div>
-          </div>
-        </div>
-
-        <!-- Indicador de 3 pasos (1 Encuadre, 2 Verificación, 3 Acceso) -->
-        <div class="sirae-stepper-row">
-          <div class="sirae-step-node" [class.step-done]="pasoFacial > 1" [class.step-active]="pasoFacial === 1">
-            <div class="step-circle">
-              <span *ngIf="pasoFacial > 1" class="material-symbols-outlined" style="font-size:14px;">check</span>
-              <span *ngIf="pasoFacial === 1">1</span>
-            </div>
-            <span class="step-label">Encuadre</span>
-          </div>
-          <div class="step-line" [class.line-filled]="pasoFacial >= 2"></div>
-          <div class="sirae-step-node" [class.step-done]="pasoFacial > 2" [class.step-active]="pasoFacial === 2">
-            <div class="step-circle">
-              <span *ngIf="pasoFacial > 2" class="material-symbols-outlined" style="font-size:14px;">check</span>
-              <span *ngIf="pasoFacial <= 2">2</span>
-            </div>
-            <span class="step-label">Verificación</span>
-          </div>
-          <div class="step-line" [class.line-filled]="pasoFacial === 3"></div>
-          <div class="sirae-step-node" [class.step-done]="pasoFacial === 3" [class.step-active]="pasoFacial === 3">
-            <div class="step-circle">
-              <span *ngIf="pasoFacial === 3" class="material-symbols-outlined" style="font-size:14px;">check</span>
-              <span *ngIf="pasoFacial < 3">3</span>
-            </div>
-            <span class="step-label">Acceso</span>
-          </div>
-        </div>
-
-        <!-- Alerta de detección facial -->
-        <div *ngIf="mensajeFacial" class="sirae-facial-alert-box">
-          <span class="material-symbols-outlined" style="font-size:18px;">info</span>
-          <span>{{ mensajeFacial }}</span>
-        </div>
-
-        <!-- Botones de Acción del Escáner -->
-        <div class="sirae-scanner-actions">
-          <ng-container *ngIf="pasoFacial === 1">
-            <button type="button" class="sirae-btn-scan-action" (click)="capturarYRegistrarRostro()" [disabled]="cargandoFacial">
-              <span class="material-symbols-outlined">photo_camera</span>
-              <span>Iniciar escaneo</span>
-            </button>
-            <button type="button" class="sirae-btn-cancel-action" (click)="cerrarCamaraFacial()">
-              Cancelar
-            </button>
-          </ng-container>
-
-          <ng-container *ngIf="pasoFacial === 2">
-            <button type="button" class="sirae-btn-analyzing" disabled>
-              <div class="sirae-spinner-small"></div>
-              <span>Analizando tu identidad...</span>
-            </button>
-            <button type="button" class="sirae-btn-cancel-action" (click)="cerrarCamaraFacial()">
-              ✕ Cancelar
-            </button>
-          </ng-container>
-
-          <ng-container *ngIf="pasoFacial === 3">
-            <button type="button" class="sirae-btn-continue" (click)="cerrarCamaraFacial()">
-              Continuar →
-            </button>
-          </ng-container>
-        </div>
-
-      </div>
-    </div>
-
-    <!-- Pestaña 3: Seguridad y Contraseña -->
-    <div *ngIf="vistaActual === 'password'" class="sirae-modal-body">
-      <div class="sirae-security-intro">
-        <div class="sirae-security-icon">
-          <span class="material-symbols-outlined" style="font-size:28px; color:#d97706;">lock_reset</span>
-        </div>
-        <div>
-          <h4 class="sirae-security-title">Actualizar Contraseña</h4>
-          <p class="sirae-security-sub">Por tu seguridad, usa una combinación de letras mayúsculas, minúsculas, números y símbolos.</p>
-        </div>
-      </div>
-
-      <div class="sirae-form-grid" style="grid-template-columns: 1fr;">
-        <div class="sirae-form-col">
-          <label class="sirae-form-label">Contraseña Actual <span class="text-red-500">*</span></label>
-          <div class="sirae-input-wrap">
-            <span class="material-symbols-outlined sirae-input-icon">key</span>
-            <input [(ngModel)]="passwordForm.actual" name="pwd_act" type="password" class="sirae-input" placeholder="Ingresa tu contraseña actual" />
-          </div>
-        </div>
-
-        <div class="sirae-form-col">
-          <label class="sirae-form-label">Nueva Contraseña <span class="text-red-500">*</span></label>
-          <div class="sirae-input-wrap">
-            <span class="material-symbols-outlined sirae-input-icon">lock</span>
-            <input [(ngModel)]="passwordForm.nueva" name="pwd_nue" type="password" class="sirae-input" placeholder="Mínimo 6 caracteres" />
-          </div>
-        </div>
-
-        <div class="sirae-form-col">
-          <label class="sirae-form-label">Confirmar Nueva Contraseña <span class="text-red-500">*</span></label>
-          <div class="sirae-input-wrap">
-            <span class="material-symbols-outlined sirae-input-icon">check_circle</span>
-            <input [(ngModel)]="passwordForm.confirmar" name="pwd_conf" type="password" class="sirae-input" placeholder="Repite la nueva contraseña" />
-          </div>
-        </div>
-
-        <div *ngIf="passwordError" class="sirae-facial-alert-box">
-          <span class="material-symbols-outlined" style="font-size:18px;">error</span>
-          <span>{{ passwordError }}</span>
-        </div>
-
-        <div *ngIf="passwordMensaje" style="display:flex; align-items:center; gap:8px; padding:10px 14px; border-radius:10px; background:#dcfce7; color:#15803d; font-size:13px; font-weight:600;">
-          <span class="material-symbols-outlined" style="font-size:18px;">verified</span>
-          <span>{{ passwordMensaje }}</span>
-        </div>
-
-        <div class="sirae-form-full-action" style="display:flex; gap:12px; justify-content:flex-end;">
-          <button type="button" class="sirae-btn-cancel-action" (click)="cerrarPanel()">
-            Cancelar
-          </button>
-          <button type="button" class="sirae-btn-save" (click)="guardarPassword()" [disabled]="passwordProcesando">
-            <span class="material-symbols-outlined" style="font-size:18px;">lock</span>
-            {{ passwordProcesando ? 'Actualizando…' : 'Cambiar Contraseña' }}
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Pie del Modal -->
-    <div class="sirae-modal-footer">
-      <button type="button" class="sirae-footer-logout-btn" (click)="cerrarSesion()">
-        <span class="material-symbols-outlined">logout</span>
-        <span>Cerrar Sesión</span>
-      </button>
-
-      <button type="button" class="sirae-footer-close-btn" (click)="cerrarPanel()">
-        Cerrar Ventana
-      </button>
-    </div>
-
-  </div>
 </div>

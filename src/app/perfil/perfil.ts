@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AuthService, AuthenticatedUser } from '../core/auth/auth.service';
 import { SweetAlertService } from '../core/services/sweet-alert.service';
 import { ReconocimientoFacialService } from '../services/reconocimiento-facial.service';
@@ -8,7 +8,7 @@ import { ReconocimientoFacialService } from '../services/reconocimiento-facial.s
 @Component({
   selector: 'app-perfil',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule],
   templateUrl: './perfil.html',
   styleUrls: ['./perfil.css']
 })
@@ -24,6 +24,22 @@ export class PerfilComponent implements OnInit, OnDestroy {
   modoEdicion = false;
   mensajeExito = '';
   mensajeError = '';
+
+  // Control de pestañas en la interfaz
+  tabActiva: 'info' | 'facial' | 'seguridad' = 'info';
+
+  // Variables para Cambio de Contraseña
+  passwordForm = {
+    actual: '',
+    nueva: '',
+    confirmar: ''
+  };
+  passwordProcesando = false;
+  passwordError = '';
+  passwordMensaje = '';
+  mostrarPasswordActual = false;
+  mostrarPasswordNueva = false;
+  mostrarPasswordConfirmar = false;
 
   // Variables para Reconocimiento Facial Biométrico en Perfil
   tieneBiometria = false;
@@ -120,6 +136,45 @@ export class PerfilComponent implements OnInit, OnDestroy {
 
   get apellidoControl() {
     return this.perfilForm.get('apellido');
+  }
+
+  get iniciales(): string {
+    const n = this.usuario?.nombre?.trim();
+    const a = this.usuario?.apellido?.trim();
+    if (n && a) {
+      return (n.charAt(0) + a.charAt(0)).toUpperCase();
+    }
+    if (n) {
+      const partes = n.split(/\s+/).filter(Boolean);
+      if (partes.length >= 2) {
+        return (partes[0].charAt(0) + partes[1].charAt(0)).toUpperCase();
+      }
+      return n.slice(0, 2).toUpperCase();
+    }
+    if (this.usuario?.correo) {
+      return this.usuario.correo.slice(0, 2).toUpperCase();
+    }
+    return 'SA';
+  }
+
+  get esSuperAdmin(): boolean {
+    if (this.usuario?.correo?.toLowerCase().includes('superadmin')) return true;
+    return this.authService.esSuperAdministrador(this.usuario?.rol);
+  }
+
+  get rolDisplay(): string {
+    if (this.esSuperAdmin || this.usuario?.correo?.toLowerCase().includes('superadmin')) {
+      return 'Super Administrador';
+    }
+    if (this.usuario?.rol) {
+      const r = this.authService.normalizarRol(this.usuario.rol);
+      if (r.includes('super')) return 'Super Administrador';
+      if (r.includes('supervisor') || r.includes('coordinador')) return 'Supervisor PAE';
+      if (r.includes('admin')) return 'Administrador Institucional';
+      if (r.includes('jefa')) return 'Jefa de Manipuladoras';
+      return this.usuario.rol;
+    }
+    return 'Super Administrador';
   }
 
   /**
@@ -335,5 +390,45 @@ export class PerfilComponent implements OnInit, OnDestroy {
         }
       });
     }
+  }
+
+  // ==========================================
+  // CAMBIO DE CONTRASEÑA EN PERFIL
+  // ==========================================
+  cambiarPassword(): void {
+    this.passwordError = '';
+    this.passwordMensaje = '';
+
+    if (!this.passwordForm.actual || !this.passwordForm.nueva || !this.passwordForm.confirmar) {
+      this.passwordError = 'Por favor completa todos los campos requeridos.';
+      void this.sweetAlert.warning('Campos incompletos', this.passwordError);
+      return;
+    }
+    if (this.passwordForm.nueva !== this.passwordForm.confirmar) {
+      this.passwordError = 'Las nuevas contraseñas no coinciden.';
+      void this.sweetAlert.warning('Contraseñas no coinciden', this.passwordError);
+      return;
+    }
+
+    this.passwordProcesando = true;
+    this.authService.cambiarContrasena({
+      password_actual: this.passwordForm.actual,
+      nueva_password: this.passwordForm.nueva,
+      confirmar_password: this.passwordForm.confirmar,
+    }).subscribe({
+      next: (res: any) => {
+        this.passwordProcesando = false;
+        this.passwordMensaje = res.mensaje || 'Contraseña actualizada correctamente.';
+        this.passwordForm = { actual: '', nueva: '', confirmar: '' };
+        void this.sweetAlert.success('Contraseña actualizada', this.passwordMensaje);
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => {
+        this.passwordProcesando = false;
+        this.passwordError = err.error?.error || err.error?.detail || 'No fue posible actualizar la contraseña.';
+        void this.sweetAlert.error('Error', this.passwordError);
+        this.cdr.detectChanges();
+      }
+    });
   }
 }

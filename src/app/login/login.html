@@ -183,32 +183,13 @@
           <div class="border-t border-slate-200 w-full"></div>
         </div>
 
-        <!-- BOTÓN DE INICIO FACIAL (Diseño e icono exacto de la Imagen 1) -->
+        <!-- BOTÓN DE INICIO FACIAL -->
         <button type="button" (click)="abrirCamaraFacial('login')"
-          class="w-full h-[52px] rounded-full border-2 border-[#0b6638] bg-white hover:bg-emerald-50/50 px-5 sm:px-6 flex items-center justify-between transition-all duration-200 shadow-2xs hover:shadow-sm cursor-pointer group">
+          class="w-full h-[52px] rounded-full border-2 border-[#0b6638] bg-white hover:bg-emerald-50/50 px-5 sm:px-6 flex items-center justify-center gap-3 transition-all duration-200 shadow-2xs hover:shadow-sm cursor-pointer group">
           
-          <!-- Icono de escáner facial con corchetes y cara de la Imagen 1 -->
-          <div class="flex items-center gap-3">
-            <svg class="w-6 h-6 text-[#0b6638]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M4 8V6a2 2 0 0 1 2-2h2" />
-              <path d="M16 4h2a2 2 0 0 1 2 2v2" />
-              <path d="M20 16v2a2 2 0 0 1-2 2h-2" />
-              <path d="M8 20H6a2 2 0 0 1-2-2v-2" />
-              <circle cx="12" cy="12" r="3.6" />
-              <circle cx="10.5" cy="11.2" r="0.5" fill="currentColor" />
-              <circle cx="13.5" cy="11.2" r="0.5" fill="currentColor" />
-              <path d="M10.5 13.8a2 2 0 0 0 3 0" />
-            </svg>
-            <span class="text-[#0b6638] font-bold text-sm sm:text-base tracking-tight">Reconocimiento Facial</span>
-          </div>
-
-          <!-- Badge de Recomendado de la Imagen 1 -->
-          <div class="bg-emerald-50 border border-emerald-200/80 text-[#0b6638] px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-2xs">
-            <svg class="w-3.5 h-3.5 fill-[#0b6638]" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-            </svg>
-            <span>Recomendado</span>
-          </div>
+          <!-- Icono de escáner facial definitivo sin fondo -->
+          <img src="icono-facial.png" alt="Icono Facial" class="w-8 h-8 object-contain shrink-0" />
+          <span class="text-[#0b6638] font-bold text-sm sm:text-base tracking-tight">Reconocimiento Facial</span>
         </button>
 
         <div class="flex flex-col items-center gap-1.5 -mt-2">
