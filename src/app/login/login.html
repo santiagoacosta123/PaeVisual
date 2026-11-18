@@ -433,7 +433,7 @@
           (click)="capturarYEnviarFacial()"
           class="w-full h-[50px] bg-[#0b6638] hover:bg-[#084b29] text-white font-bold text-base rounded-full flex items-center justify-center gap-2 shadow-md transition duration-200 cursor-pointer"
         >
-          <span class="material-symbols-outlined text-xl">photo_camera</span>
+          <span class="material-symbols-outlined text-xl">{{ modoFacial === 'registro' ? 'save' : 'photo_camera' }}</span>
           <span>{{ modoFacial === 'registro' ? 'Guardar Rostro' : 'Iniciar escaneo' }}</span>
         </button>
 
@@ -443,6 +443,15 @@
           class="w-full h-[44px] bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold text-sm rounded-full transition duration-200 cursor-pointer"
         >
           Cancelar
+        </button>
+
+        <!-- Alternar entre modo registro y modo escaneo directamente en el modal -->
+        <button 
+          type="button" 
+          (click)="modoFacial = (modoFacial === 'registro' ? 'login' : 'registro'); mensajeFacial = ''"
+          class="text-xs font-semibold text-[#0b6638] hover:underline mt-1 cursor-pointer transition py-1"
+        >
+          {{ modoFacial === 'registro' ? '← Volver a Iniciar Sesión Facial' : '¿Primera vez? Registrar mi rostro aquí' }}
         </button>
       </ng-container>
 
