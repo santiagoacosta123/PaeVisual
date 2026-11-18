@@ -18,6 +18,7 @@ import { SiraeService } from '../features/contratos/services/contratos_pae.servi
 import { FacturasCompraService } from '../services/facturas-compra.service';
 import { environment } from '../../environments/environment';
 import { SweetAlertService } from '../core/services/sweet-alert.service';
+import { ReconocimientoFacialService } from '../services/reconocimiento-facial.service';
 import {
   listaSedesDePagina,
   normalizarInstitucionSupervisor,
@@ -90,13 +91,36 @@ export class LayoutComponent implements OnInit, OnDestroy {
   notificacionesNoLeidas = 0;
 
   // Datos del perfil y formularios
-  perfil = {
+  perfil: {
+    nombre: string;
+    correo: string;
+    rol: string;
+    foto_perfil?: string | null;
+    numero_documento?: string;
+    institucion?: string;
+    sede?: string;
+  } = {
     nombre: '',
     correo: '',
-    rol: ''
+    rol: '',
+    foto_perfil: null,
+    numero_documento: '',
+    institucion: '',
+    sede: ''
   };
 
   editForm = { ...this.perfil };
+
+  // Variables de biometría facial en layout
+  tieneBiometria = false;
+  cargandoBiometria = false;
+  mostrarCamaraFacial = false;
+  pasoFacial: 1 | 2 | 3 = 1;
+  fotoCapturadaFacial = '';
+  mensajeFacial = '';
+  cargandoFacial = false;
+  streamVideoFacial: MediaStream | null = null;
+  private facialService = inject(ReconocimientoFacialService);
 
   private fb = inject(FormBuilder);
   perfilForm: FormGroup = this.fb.group({
@@ -163,7 +187,11 @@ export class LayoutComponent implements OnInit, OnDestroy {
       this.perfil = {
         nombre: `${usuario.nombre ?? ''} ${usuario.apellido ?? ''}`.trim() || usuario.correo,
         correo: usuario.correo,
-        rol: rolNombre
+        rol: rolNombre,
+        foto_perfil: usuario.foto_perfil || null,
+        numero_documento: usuario.numero_documento || 'No registrado',
+        institucion: usuario.institucion_nombre || usuario.institucion || (this.esAdministrador ? 'Institución Educativa Asignada' : 'Ámbito Central'),
+        sede: usuario.sede_nombre || ''
       };
 
       this.editForm = { ...this.perfil };
@@ -171,9 +199,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
       // Asignación de institución para el administrador
       this.institucionUsuario = usuario.institucion || (this.esAdministrador ? 'Institución Educativa Asignada' : '');
 
-      // Primer ingreso con contraseña provisional (preparar vista para cuando abra su perfil)
       if (usuario.debe_cambiar_password) {
-        this.vistaActual = 'password';
         this.passwordMensaje = 'Por seguridad, debes actualizar tu contraseña provisional en este primer inicio de sesión.';
       }
     }
@@ -231,6 +257,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.cerrarCamaraFacial();
     this.navegacionSubscription?.unsubscribe();
     this.institucionesSubscription?.unsubscribe();
     this.sedesSubscription?.unsubscribe();
@@ -332,10 +359,193 @@ export class LayoutComponent implements OnInit, OnDestroy {
   }
 
   togglePerfil(): void {
-    this.mostrarPerfil = !this.mostrarPerfil;
-
     if (this.mostrarPerfil) {
-      this.mostrarNotificaciones = false;
+      this.cerrarPanel();
+    } else {
+      this.abrirModalPerfil('perfil');
+    }
+  }
+
+  abrirModalPerfil(vista: string = 'perfil'): void {
+    const usuario = this.authService.obtenerUsuario();
+    if (usuario) {
+      this.perfil.nombre = `${usuario.nombre ?? ''} ${usuario.apellido ?? ''}`.trim() || usuario.correo;
+      this.perfil.correo = usuario.correo;
+      this.perfil.foto_perfil = usuario.foto_perfil || null;
+      this.perfil.numero_documento = usuario.numero_documento || 'No registrado';
+      this.perfil.institucion = usuario.institucion_nombre || usuario.institucion || (this.esAdministrador ? 'Institución Educativa Asignada' : 'Ámbito Central');
+      this.perfil.sede = usuario.sede_nombre || '';
+
+      this.perfilForm.patchValue({
+        nombre: usuario.nombre || '',
+        apellido: usuario.apellido || ''
+      });
+      this.perfilForm.markAsPristine();
+      this.perfilForm.markAsUntouched();
+    }
+
+    this.mostrarPerfil = true;
+    this.mostrarNotificaciones = false;
+    this.vistaActual = vista;
+    this.passwordError = '';
+    this.passwordMensaje = '';
+
+    if (vista === 'facial') {
+      this.consultarBiometriaLayout();
+    } else {
+      this.cerrarCamaraFacial();
+    }
+    this.cdr.detectChanges();
+  }
+
+  cambiarFotoPerfil(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+    const file = input.files[0];
+
+    if (!file.type.startsWith('image/')) {
+      void this.sweetAlert.warning('Archivo no válido', 'Por favor selecciona una imagen válida (JPG o PNG).');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result as string;
+      this.authService.actualizarPerfil({ foto_perfil: base64 }).subscribe({
+        next: () => {
+          this.perfil.foto_perfil = base64;
+          void this.sweetAlert.success('Foto actualizada', 'Tu foto de perfil se guardó correctamente.');
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          void this.sweetAlert.error('Error', 'No se pudo guardar la foto de perfil en el servidor.');
+        }
+      });
+    };
+    reader.readAsDataURL(file);
+  }
+
+  eliminarFotoPerfil(): void {
+    this.authService.actualizarPerfil({ foto_perfil: '' }).subscribe({
+      next: () => {
+        this.perfil.foto_perfil = null;
+        void this.sweetAlert.success('Foto eliminada', 'Se restableció el avatar por defecto.');
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        void this.sweetAlert.error('Error', 'No fue posible eliminar la foto de perfil.');
+      }
+    });
+  }
+
+  consultarBiometriaLayout(): void {
+    this.cargandoBiometria = true;
+    this.facialService.consultarEstadoBiometria().subscribe({
+      next: (res) => {
+        this.tieneBiometria = Boolean(res?.tiene_biometria);
+        this.cargandoBiometria = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.cargandoBiometria = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  async iniciarRegistroFacial(): Promise<void> {
+    this.mostrarCamaraFacial = true;
+    this.pasoFacial = 1;
+    this.fotoCapturadaFacial = '';
+    this.mensajeFacial = '';
+    this.cargandoFacial = false;
+    this.cdr.detectChanges();
+
+    try {
+      this.streamVideoFacial = await navigator.mediaDevices.getUserMedia({
+        video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' }
+      });
+      setTimeout(() => {
+        const videoElement = document.getElementById('videoWebcamLayout') as HTMLVideoElement;
+        if (videoElement && this.streamVideoFacial) {
+          videoElement.srcObject = this.streamVideoFacial;
+          videoElement.play();
+        }
+      }, 100);
+    } catch (err) {
+      this.mensajeFacial = 'No se pudo acceder a la cámara. Revisa los permisos de tu navegador.';
+      this.cdr.detectChanges();
+    }
+  }
+
+  capturarYRegistrarRostro(): void {
+    const videoElement = document.getElementById('videoWebcamLayout') as HTMLVideoElement;
+    if (!videoElement) return;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = videoElement.videoWidth || 640;
+    canvas.height = videoElement.videoHeight || 480;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.translate(canvas.width, 0);
+    ctx.scale(-1, 1);
+    ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+    const imagenBase64 = canvas.toDataURL('image/jpeg', 0.95);
+    this.fotoCapturadaFacial = imagenBase64;
+
+    this.pasoFacial = 2;
+    this.cargandoFacial = true;
+    this.mensajeFacial = '';
+    this.cdr.detectChanges();
+
+    this.facialService.registrarRostro(imagenBase64).subscribe({
+      next: () => {
+        this.cargandoFacial = false;
+        this.tieneBiometria = true;
+        this.pasoFacial = 3;
+        void this.sweetAlert.success('Rostro registrado', 'Tu biometría facial se vinculó exitosamente a tu cuenta.');
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.cargandoFacial = false;
+        this.pasoFacial = 1;
+        this.mensajeFacial = err.error?.detail || 'No se detectó ningún rostro en la cámara. Enfoca bien tu cara dentro del óvalo.';
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  cerrarCamaraFacial(): void {
+    if (this.streamVideoFacial) {
+      this.streamVideoFacial.getTracks().forEach(track => track.stop());
+      this.streamVideoFacial = null;
+    }
+    this.mostrarCamaraFacial = false;
+    this.pasoFacial = 1;
+    this.fotoCapturadaFacial = '';
+    this.cargandoFacial = false;
+    this.mensajeFacial = '';
+    this.cdr.detectChanges();
+  }
+
+  async desvincularBiometria(): Promise<void> {
+    const result = await this.sweetAlert.confirm(
+      '¿Desvincular rostro?',
+      'Si eliminas tu biometría facial, deberás iniciar sesión con tu correo y contraseña.',
+      'Sí, desvincular'
+    );
+    if (result.isConfirmed) {
+      this.facialService.eliminarBiometria().subscribe({
+        next: () => {
+          this.tieneBiometria = false;
+          void this.sweetAlert.success('Biometría eliminada', 'Tu rostro ha sido desvinculado.');
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          void this.sweetAlert.error('Error', 'No fue posible eliminar la biometría facial.');
+        }
+      });
     }
   }
 
@@ -513,6 +723,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
     this.mostrarPerfil = false;
     this.mostrarNotificaciones = false;
     this.mostrarSelectorInstitucion = false;
+    this.cerrarCamaraFacial();
   }
 
   irA(vista: string): void {
@@ -520,15 +731,24 @@ export class LayoutComponent implements OnInit, OnDestroy {
     this.passwordError = '';
     this.passwordMensaje = '';
 
-    if (vista === 'editar') {
-      const u = this.authService.obtenerUsuario();
-      this.perfilForm.patchValue({
-        nombre: u?.nombre || '',
-        apellido: u?.apellido || '',
-      });
-      this.perfilForm.markAsPristine();
-      this.perfilForm.markAsUntouched();
+    if (vista !== 'facial') {
+      this.cerrarCamaraFacial();
+    } else {
+      this.consultarBiometriaLayout();
     }
+
+    if (vista === 'perfil' || vista === 'editar') {
+      const u = this.authService.obtenerUsuario();
+      if (u) {
+        this.perfilForm.patchValue({
+          nombre: u.nombre || '',
+          apellido: u.apellido || '',
+        });
+        this.perfilForm.markAsPristine();
+        this.perfilForm.markAsUntouched();
+      }
+    }
+    this.cdr.detectChanges();
   }
 
   guardarPerfil(): void {
@@ -613,7 +833,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
     ).then((resultado) => {
       if (resultado.isConfirmed) {
         this.cerrarPanel();
-        this.perfil = { nombre: '', correo: '', rol: '' };
+        this.perfil = { nombre: '', correo: '', rol: '', foto_perfil: null };
         this.editForm = { ...this.perfil };
         this.institucionActiva = null;
         this.sedeActiva = null;
