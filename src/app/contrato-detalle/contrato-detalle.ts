@@ -125,6 +125,339 @@ export class ContratoDetalleComponent implements OnInit {
   mensajeVigenciaContrato = '';
 
   // ========================================================
+  // DISTRIBUCIÓN DE CUPOS POR SEDE Y GRADOS (HU MODAL EDITAR)
+  // ========================================================
+  modalEditarDistribucionAbierto = false;
+  guardandoDistribucion = false;
+  mensajeErrorDistribucion = '';
+  gradosCatalogoDistribucion: { id_grado: number; nombre_grado: string }[] = [];
+  sedesEdicionDistribucion: Array<{
+    id_sede: number;
+    nombre_sede: string;
+    codigo_dane?: string;
+    cuposAsignados: number;
+    desplegada: boolean;
+    grados: Array<{ id_grado: number; nombre_grado: string; cupos: number }>;
+  }> = [];
+
+  get puedeEditarDistribucion(): boolean {
+    const u = this.authService.obtenerUsuario();
+    if (!u) return false;
+    if (u.is_superuser || this.authService.esSuperAdministrador(u.rol)) return true;
+    const rol = this.authService.normalizarRol(u.rol);
+    return rol.includes('admin') || rol.includes('coordinador') || rol.includes('gestor');
+  }
+
+  get rolUsuarioActualNombre(): string {
+    const u = this.authService.obtenerUsuario();
+    if (!u) return 'Administrador';
+    if (u.is_superuser) return 'Superadministrador';
+    const rol = (u.rol || '').trim();
+    if (rol.toLowerCase().includes('admin')) return 'Administrador';
+    if (rol.toLowerCase().includes('super')) return 'Superadministrador';
+    if (rol.toLowerCase().includes('coordinador')) return 'Coordinador';
+    return rol || 'Administrador';
+  }
+
+  get totalCuposSedesEdicion(): number {
+    return (this.sedesEdicionDistribucion || []).reduce((acc, s) => acc + (Number(s.cuposAsignados) || 0), 0);
+  }
+
+  get cuposPendientesSedesEdicion(): number {
+    return this.cuposAutorizados - this.totalCuposSedesEdicion;
+  }
+
+  totalGradosDeSede(sede: any): number {
+    if (!sede || !sede.grados) return 0;
+    return sede.grados.reduce((acc: number, g: any) => acc + (Number(g.cupos) || 0), 0);
+  }
+
+  esCoherenteGradosSede(sede: any): boolean {
+    const totalGrados = this.totalGradosDeSede(sede);
+    const asignado = Number(sede.cuposAsignados) || 0;
+    return totalGrados <= asignado;
+  }
+
+  toggleDesplegarSede(sede: any): void {
+    sede.desplegada = !sede.desplegada;
+    this.cdr.detectChanges();
+  }
+
+  onCambioCuposSede(sede: any): void {
+    if (sede.cuposAsignados < 0) {
+      sede.cuposAsignados = 0;
+    }
+    this.validarDistribucionEdicion();
+    this.cdr.detectChanges();
+  }
+
+  onCambioCuposGrado(sede: any): void {
+    if (sede.grados && Array.isArray(sede.grados)) {
+      sede.grados.forEach((g: any) => {
+        if (g.cupos < 0) {
+          g.cupos = 0;
+        }
+      });
+    }
+    this.validarDistribucionEdicion();
+    this.cdr.detectChanges();
+  }
+
+  validarDistribucionEdicion(): string | null {
+    this.mensajeErrorDistribucion = '';
+
+    // 1. Validar números negativos o inválidos en sedes
+    for (const s of this.sedesEdicionDistribucion) {
+      if (isNaN(s.cuposAsignados) || s.cuposAsignados < 0) {
+        this.mensajeErrorDistribucion = `La sede ${s.nombre_sede} tiene un valor de cupos inválido o negativo.`;
+        return this.mensajeErrorDistribucion;
+      }
+    }
+
+    // 2. La suma de cupos asignados a todas las sedes no puede superar el total autorizado
+    if (this.totalCuposSedesEdicion > this.cuposAutorizados) {
+      this.mensajeErrorDistribucion = `La suma de los cupos asignados a las sedes (${this.totalCuposSedesEdicion}) no puede superar el total de cupos autorizados en el contrato (${this.cuposAutorizados}).`;
+      return this.mensajeErrorDistribucion;
+    }
+
+    // 3. La suma de cupos por grados no puede superar el total asignado a su respectiva sede
+    for (const s of this.sedesEdicionDistribucion) {
+      for (const g of s.grados) {
+        if (isNaN(g.cupos) || g.cupos < 0) {
+          this.mensajeErrorDistribucion = `El grado ${g.nombre_grado} en ${s.nombre_sede} tiene un valor inválido o negativo.`;
+          return this.mensajeErrorDistribucion;
+        }
+      }
+      const totalGrados = this.totalGradosDeSede(s);
+      if (totalGrados > s.cuposAsignados) {
+        this.mensajeErrorDistribucion = `En la ${s.nombre_sede}, la suma de cupos asignados a los grados (${totalGrados}) supera el total asignado a la sede (${s.cuposAsignados}).`;
+        return this.mensajeErrorDistribucion;
+      }
+    }
+
+    return null;
+  }
+
+  cargarGradosParaDistribucion(callback?: () => void): void {
+    if (this.gradosCatalogoDistribucion && this.gradosCatalogoDistribucion.length > 0) {
+      if (callback) callback();
+      return;
+    }
+
+    const token = this.authService.obtenerToken()?.replace(/^(Bearer|Token)\s+/i, '').trim();
+    let headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    if (token) headers = headers.set('Authorization', `Bearer ${token}`);
+
+    this.http.get<any[]>(`${environment.apiUrl}/grados/`, { headers }).subscribe({
+      next: (datos: any) => {
+        const res = Array.isArray(datos) ? datos : (datos.results || datos.data || []);
+        if (res && res.length > 0) {
+          this.gradosCatalogoDistribucion = res.map((g: any) => ({
+            id_grado: Number(g.id_grado || g.id),
+            nombre_grado: g.nombre_grado || g.nombre || `Grado ${g.id_grado || g.id}`
+          }));
+        } else {
+          this.asignarGradosPorDefecto();
+        }
+        if (callback) callback();
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.asignarGradosPorDefecto();
+        if (callback) callback();
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  private asignarGradosPorDefecto(): void {
+    this.gradosCatalogoDistribucion = [
+      { id_grado: 1, nombre_grado: 'Transición' },
+      { id_grado: 2, nombre_grado: 'Primero' },
+      { id_grado: 3, nombre_grado: 'Segundo' },
+      { id_grado: 4, nombre_grado: 'Tercero' },
+      { id_grado: 5, nombre_grado: 'Cuarto' },
+      { id_grado: 6, nombre_grado: 'Quinto' }
+    ];
+  }
+
+  abrirEditarDistribucion(): void {
+    if (!this.puedeEditarDistribucion) {
+      this.sweetAlert.warning('Acceso denegado', 'No tienes autorización para editar la distribución de cupos.');
+      return;
+    }
+
+    this.mensajeErrorDistribucion = '';
+    this.cargarGradosParaDistribucion(() => {
+      this.inicializarSedesParaEdicion();
+      this.modalEditarDistribucionAbierto = true;
+      this.cdr.detectChanges();
+    });
+  }
+
+  cerrarEditarDistribucion(): void {
+    this.modalEditarDistribucionAbierto = false;
+    this.mensajeErrorDistribucion = '';
+    this.cdr.detectChanges();
+  }
+
+  private inicializarSedesParaEdicion(): void {
+    if (this.sedesInstitucion.length === 0) {
+      this.actualizarSedesDeInstitucion();
+    }
+
+    let distribucionGuardada: any = null;
+    try {
+      const dataRaw = localStorage.getItem(`sirae_distribucion_contrato_${this.contratoId}`);
+      if (dataRaw) {
+        distribucionGuardada = JSON.parse(dataRaw);
+      }
+    } catch {
+      distribucionGuardada = null;
+    }
+
+    this.sedesEdicionDistribucion = (this.sedesInstitucion || []).map((s, index) => {
+      const sId = Number(s.id_sede || s.id);
+      const sedeGuardada = distribucionGuardada?.sedes?.find((sg: any) => Number(sg.id_sede) === sId);
+      const cuposSedeActuales = sedeGuardada?.cupos_asignados ?? this.obtenerCuposDeSede(s);
+
+      const gradosSede = this.gradosCatalogoDistribucion.map(g => {
+        let cupoGrado = 0;
+        if (sedeGuardada?.grados) {
+          const gGuardado = sedeGuardada.grados.find((gg: any) => Number(gg.id_grado) === g.id_grado);
+          if (gGuardado) cupoGrado = Number(gGuardado.cupos) || 0;
+        } else if (Array.isArray(s.grados)) {
+          const gExistente = s.grados.find((gg: any) => Number(gg.id_grado) === g.id_grado);
+          if (gExistente) cupoGrado = Number(gExistente.cupos) || 0;
+        }
+        return {
+          id_grado: g.id_grado,
+          nombre_grado: g.nombre_grado,
+          cupos: cupoGrado
+        };
+      });
+
+      return {
+        id_sede: sId,
+        nombre_sede: s.nombre_sede || s.nombre || `Sede #${sId}`,
+        codigo_dane: s.codigo_dane,
+        cuposAsignados: cuposSedeActuales,
+        desplegada: index === 0,
+        grados: gradosSede
+      };
+    });
+  }
+
+  cargarDistribucionPersistida(): void {
+    if (!this.contratoId) return;
+    try {
+      const raw = localStorage.getItem(`sirae_distribucion_contrato_${this.contratoId}`);
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      if (data && Array.isArray(data.sedes)) {
+        this.sedesInstitucion.forEach(s => {
+          const sId = Number(s.id_sede || s.id);
+          const sedeG = data.sedes.find((sg: any) => Number(sg.id_sede) === sId);
+          if (sedeG) {
+            s.cupos = Number(sedeG.cupos_asignados) || 0;
+            s.cupos_asignados = Number(sedeG.cupos_asignados) || 0;
+            s.grados = sedeG.grados || [];
+          }
+        });
+        this.cdr.detectChanges();
+      }
+    } catch {
+      // noop
+    }
+  }
+
+  async guardarDistribucion(): Promise<void> {
+    const error = this.validarDistribucionEdicion();
+    if (error) {
+      await this.sweetAlert.warning('Inconsistencia en la distribución', error);
+      return;
+    }
+
+    this.guardandoDistribucion = true;
+
+    const instId = this.contrato?.id_institucion || null;
+    const ahora = new Date().toISOString();
+
+    const payload = {
+      id_contrato: Number(this.contratoId) || this.contrato?.id_contrato,
+      codigo_contrato: this.contrato?.codigo,
+      id_institucion: instId,
+      institucion_nombre: this.contrato?.institucion,
+      total_autorizado: this.cuposAutorizados,
+      total_distribuido: this.totalCuposSedesEdicion,
+      pendientes: this.cuposPendientesSedesEdicion,
+      fecha_actualizacion: ahora,
+      usuario_responsable: this.nombreUsuarioResponsableActual,
+      sedes: this.sedesEdicionDistribucion.map(s => ({
+        id_sede: s.id_sede,
+        nombre_sede: s.nombre_sede,
+        cupos_asignados: Number(s.cuposAsignados) || 0,
+        grados: s.grados.map(g => ({
+          id_grado: g.id_grado,
+          nombre_grado: g.nombre_grado,
+          cupos: Number(g.cupos) || 0
+        }))
+      }))
+    };
+
+    // 1. Persistencia en localStorage
+    try {
+      localStorage.setItem(`sirae_distribucion_contrato_${this.contratoId}`, JSON.stringify(payload));
+      this.sedesEdicionDistribucion.forEach(s => {
+        localStorage.setItem(`sirae_distribucion_grados_${this.contratoId}_sede_${s.id_sede}`, JSON.stringify(s.grados));
+      });
+    } catch (e) {
+      console.warn('No se pudo guardar distribución en localStorage:', e);
+    }
+
+    // 2. Persistencia en Backend
+    const token = this.authService.obtenerToken()?.replace(/^(Bearer|Token)\s+/i, '').trim();
+    let headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    if (token) headers = headers.set('Authorization', `Bearer ${token}`);
+
+    this.http.put(`${environment.apiUrl}/contratos/${this.contratoId}/distribucion/`, payload, { headers }).subscribe({
+      next: () => {},
+      error: () => {
+        this.http.post(`${environment.apiUrl}/distribucion-cupos/`, payload, { headers }).subscribe({
+          next: () => {},
+          error: () => {}
+        });
+      }
+    });
+
+    for (const s of this.sedesEdicionDistribucion) {
+      this.siraeService.actualizarSede(s.id_sede, { cupos: s.cuposAsignados }).subscribe({
+        next: () => {},
+        error: () => {}
+      });
+    }
+
+    // 3. Actualizar automáticamente la información de la ventana principal
+    this.sedesInstitucion.forEach(s => {
+      const match = this.sedesEdicionDistribucion.find(e => Number(e.id_sede) === Number(s.id_sede || s.id));
+      if (match) {
+        s.cupos = match.cuposAsignados;
+        s.cupos_asignados = match.cuposAsignados;
+        s.grados = match.grados;
+      }
+    });
+
+    this.guardandoDistribucion = false;
+    this.modalEditarDistribucionAbierto = false;
+    this.cdr.detectChanges();
+
+    await this.sweetAlert.success(
+      '¡Distribución guardada!',
+      'La distribución de cupos por sedes y grados ha sido guardada exitosamente y asociada al contrato.'
+    );
+  }
+
+  // ========================================================
   // GESTIÓN DE PRÓRROGAS Y RENOVACIONES CONTRACTUALES
   // ========================================================
   modalProrrogaAbierto = false;
@@ -1271,12 +1604,15 @@ export class ContratoDetalleComponent implements OnInit {
           String(s.nombre_institucion || '').toLowerCase() === String(inst.nombre_institucion || '').toLowerCase();
       });
 
+      this.cargarDistribucionPersistida();
+
       if (instId && this.sedesInstitucion.length === 0) {
         this.siraeService.getSedes(Number(instId)).subscribe({
           next: (datos: any) => {
             const res = Array.isArray(datos) ? datos : (datos.results || datos.data || []);
             if (res.length > 0) {
               this.sedesInstitucion = res;
+              this.cargarDistribucionPersistida();
               this.cdr.detectChanges();
             }
           }
@@ -1341,6 +1677,7 @@ export class ContratoDetalleComponent implements OnInit {
 
           this.actualizarSedesDeInstitucion();
           this.cargarHistorialLocal();
+          this.cargarDistribucionPersistida();
 
           if (this.modo === 'edicion') {
             this.abrirModalEdicion();
