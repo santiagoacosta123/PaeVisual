@@ -75,7 +75,7 @@ export const routes: Routes = [
         path: 'dashboard-supervisor',
         component: DashboardSupervisor,
         canActivate: [roleGuard],
-        data: { roles: ['supervisor', 'coordinador', 'coordinador pae'] }
+        data: { roles: ['supervisor', 'coordinador', 'coordinador pae', 'administrador', 'admin', 'superadministrador', 'super administrador'] }
       },
 
       {

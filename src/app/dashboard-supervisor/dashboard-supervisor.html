@@ -840,15 +840,6 @@
 <!-- A. PASO 1 · ELEGIR INSTITUCIÓN                                          -->
 <!-- ======================================================================= -->
 <section *ngIf="!institucionActiva" class="sg1">
-  <header class="sg1-hero">
-    <div class="sg1-hero__text">
-      <h1>Elige tu institución</h1>
-      <p>Selecciona la institución educativa con la que vas a trabajar para ver todas sus funciones.</p>
-    </div>
-    <div class="sg1-logo">
-      <div><img src="/sirae-logo-dark.png" alt="Logo SIRAE" /></div>
-    </div>
-  </header>
 
   <div *ngIf="cargando && instituciones.length === 0" class="sg1-state sg1-state--solid">
     <span class="material-symbols-outlined sg1-spin sg1-state__icon">progress_activity</span>
