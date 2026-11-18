@@ -498,7 +498,7 @@
           <a routerLink="/perfil" class="superadmin-user-pill-btn" title="Mi perfil de usuario" aria-label="Menú de perfil" style="text-decoration:none;">
             <div class="superadmin-sa-avatar" style="overflow:hidden; padding:0; display:flex; align-items:center; justify-content:center;">
               <img *ngIf="perfil.foto_perfil" [src]="perfil.foto_perfil" alt="Avatar" style="width:100%; height:100%; object-fit:cover; border-radius:50%;" />
-              <span *ngIf="!perfil.foto_perfil">SA</span>
+              <span *ngIf="!perfil.foto_perfil">{{ iniciales }}</span>
             </div>
             <div class="superadmin-sa-info">
               <span class="superadmin-sa-title">{{ perfil.nombre || 'Super Administrador' }}</span>

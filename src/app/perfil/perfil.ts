@@ -37,6 +37,9 @@ export class PerfilComponent implements OnInit, OnDestroy {
   passwordProcesando = false;
   passwordError = '';
   passwordMensaje = '';
+  mostrarPasswordActual = false;
+  mostrarPasswordNueva = false;
+  mostrarPasswordConfirmar = false;
 
   // Variables para Reconocimiento Facial Biométrico en Perfil
   tieneBiometria = false;
@@ -135,8 +138,43 @@ export class PerfilComponent implements OnInit, OnDestroy {
     return this.perfilForm.get('apellido');
   }
 
+  get iniciales(): string {
+    const n = this.usuario?.nombre?.trim();
+    const a = this.usuario?.apellido?.trim();
+    if (n && a) {
+      return (n.charAt(0) + a.charAt(0)).toUpperCase();
+    }
+    if (n) {
+      const partes = n.split(/\s+/).filter(Boolean);
+      if (partes.length >= 2) {
+        return (partes[0].charAt(0) + partes[1].charAt(0)).toUpperCase();
+      }
+      return n.slice(0, 2).toUpperCase();
+    }
+    if (this.usuario?.correo) {
+      return this.usuario.correo.slice(0, 2).toUpperCase();
+    }
+    return 'SA';
+  }
+
   get esSuperAdmin(): boolean {
+    if (this.usuario?.correo?.toLowerCase().includes('superadmin')) return true;
     return this.authService.esSuperAdministrador(this.usuario?.rol);
+  }
+
+  get rolDisplay(): string {
+    if (this.esSuperAdmin || this.usuario?.correo?.toLowerCase().includes('superadmin')) {
+      return 'Super Administrador';
+    }
+    if (this.usuario?.rol) {
+      const r = this.authService.normalizarRol(this.usuario.rol);
+      if (r.includes('super')) return 'Super Administrador';
+      if (r.includes('supervisor') || r.includes('coordinador')) return 'Supervisor PAE';
+      if (r.includes('admin')) return 'Administrador Institucional';
+      if (r.includes('jefa')) return 'Jefa de Manipuladoras';
+      return this.usuario.rol;
+    }
+    return 'Super Administrador';
   }
 
   /**

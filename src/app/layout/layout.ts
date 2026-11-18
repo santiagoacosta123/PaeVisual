@@ -55,6 +55,16 @@ export class LayoutComponent implements OnInit, OnDestroy {
     return this.enInicioSupervisor ? `Bienvenido: ${this.perfil.nombre}` : this.pageTitle;
   }
 
+  get iniciales(): string {
+    const nom = this.perfil?.nombre?.trim();
+    if (!nom) return 'SA';
+    const partes = nom.split(/\s+/).filter(Boolean);
+    if (partes.length >= 2) {
+      return (partes[0].charAt(0) + partes[1].charAt(0)).toUpperCase();
+    }
+    return nom.slice(0, 2).toUpperCase();
+  }
+
   // Badges exclusivos de Super Administrador (valores por defecto según diseño)
   conteoContratos: number = 12;
   conteoFacturas: number = 3;
