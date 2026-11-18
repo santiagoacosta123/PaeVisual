@@ -375,13 +375,17 @@ export class LoginComponent implements OnInit, OnDestroy {
   }
 
   continuarAccesoFacial(): void {
-    const rol = this.usuarioReconocido?.rol;
-    const esRegistro = this.modoFacial === 'registro';
-    this.cerrarCamaraFacial();
-
-    if (esRegistro) {
+    if (this.modoFacial === 'registro') {
+      this.modoFacial = 'login';
+      this.pasoFacial = 1;
+      this.fotoCapturada = '';
+      this.mensajeFacial = '';
+      this.cdr.detectChanges();
       return;
     }
+
+    const rol = this.usuarioReconocido?.rol;
+    this.cerrarCamaraFacial();
 
     if (this.authService.esSupervisor(rol)) {
       this.authService.limpiarInstitucionActiva?.();

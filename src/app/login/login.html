@@ -293,7 +293,7 @@
         Verificación
       </h3>
       <h3 class="text-2xl sm:text-3xl font-bold text-[#0b6638]" *ngIf="pasoFacial === 3">
-        ¡Acceso Autorizado!
+        {{ modoFacial === 'registro' ? '¡Rostro Registrado!' : '¡Acceso Autorizado!' }}
       </h3>
 
       <!-- Subtítulo -->
@@ -304,7 +304,7 @@
         Mantén tu rostro iluminado y centrado en el recuadro.
       </p>
       <p class="text-xs sm:text-sm text-slate-500 mt-1 max-w-sm mx-auto" *ngIf="pasoFacial === 3">
-        {{ modoFacial === 'registro' ? 'Tu biometría facial ha sido registrada exitosamente.' : 'Tu identidad ha sido verificada correctamente.' }}
+        {{ modoFacial === 'registro' ? 'Tu biometría facial ha sido vinculada exitosamente.' : 'Tu identidad ha sido verificada correctamente.' }}
       </p>
     </div>
 
@@ -349,30 +349,43 @@
       <div *ngIf="pasoFacial === 2" class="animate-laser-scan h-1 bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_14px_#34d399] pointer-events-none z-10"></div>
     </div>
 
-    <!-- RETRATO CIRCULAR Y BIENVENIDA (Paso 3 de la Imagen 2) -->
+    <!-- RETRATO CIRCULAR Y CONFIRMACIÓN (Paso 3 de la Imagen 2) -->
     <div *ngIf="pasoFacial === 3" class="w-full flex flex-col items-center my-2">
       <div class="relative mb-3">
+        <!-- Foto en espejo (-scale-x-100) para coincidir con la vista selfie natural -->
         <div class="w-40 h-40 sm:w-48 sm:h-48 rounded-full border-4 border-emerald-500 shadow-xl overflow-hidden bg-slate-100 flex items-center justify-center">
-          <img [src]="fotoCapturada" alt="Rostro verificado" class="w-full h-full object-cover" />
+          <img [src]="fotoCapturada" alt="Rostro verificado" class="w-full h-full object-cover -scale-x-100" />
         </div>
         <div class="absolute bottom-1 right-3 w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-md border-2 border-white">
           <span class="material-symbols-outlined text-2xl font-bold">check</span>
         </div>
       </div>
 
-      <!-- Mensaje de bienvenida solicitado -->
-      <div class="text-center">
+      <!-- SI ES MODO REGISTRO: Solo rostro registrado exitosamente, sin Rol -->
+      <div *ngIf="modoFacial === 'registro'" class="text-center">
+        <h4 class="text-xl sm:text-2xl font-bold text-slate-900">
+          ¡Rostro registrado exitosamente!
+        </h4>
+        <p class="text-xs sm:text-sm text-slate-500 mt-2 max-w-xs mx-auto">
+          Tu biometría facial ha quedado vinculada a tu cuenta. Ya puedes iniciar sesión con tu rostro.
+        </p>
+      </div>
+
+      <!-- SI ES MODO LOGIN: Mensaje de bienvenida oficial con Nombre y Rol -->
+      <div *ngIf="modoFacial === 'login'" class="text-center">
         <h4 class="text-xl sm:text-2xl font-bold text-slate-900">
           ¡Bienvenido(a), {{ usuarioReconocido?.nombre || 'Usuario' }}!
         </h4>
-        <div class="mt-1.5">
+        <div class="mt-1.5" *ngIf="usuarioReconocido?.rol">
           <span class="inline-block bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs sm:text-sm font-semibold px-4 py-1 rounded-full uppercase tracking-wider">
-            Rol: {{ usuarioReconocido?.rol || 'Autorizado' }}
+            Rol: {{ usuarioReconocido?.rol }}
           </span>
         </div>
         <p class="text-xs sm:text-sm text-slate-500 mt-2">
-          {{ modoFacial === 'registro' ? 'Rostro vinculado exitosamente a tu cuenta.' : 'Redirigiendo a tu pantalla de inicio...' }}
+          Redirigiendo a tu pantalla de inicio...
         </p>
+      </div>
+    </div>
       </div>
     </div>
 
@@ -471,14 +484,14 @@
         </button>
       </ng-container>
 
-      <!-- Paso 3: Botón de "Continuar →" (Imagen 2) -->
+      <!-- Paso 3: Botón de Acción según el modo -->
       <ng-container *ngIf="pasoFacial === 3">
         <button 
           type="button" 
           (click)="continuarAccesoFacial()"
           class="w-full h-[52px] bg-[#0b6638] hover:bg-[#084b29] text-white font-bold text-base rounded-full flex items-center justify-center gap-2 shadow-lg transition duration-200 cursor-pointer"
         >
-          <span>Continuar</span>
+          <span>{{ modoFacial === 'registro' ? 'Iniciar Sesión con mi Rostro' : 'Continuar' }}</span>
           <span class="material-symbols-outlined text-xl">arrow_forward</span>
         </button>
       </ng-container>
