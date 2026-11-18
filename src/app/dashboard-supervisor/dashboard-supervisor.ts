@@ -198,7 +198,7 @@ export class DashboardSupervisor implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit(): void {
-    if (this.institucionActiva && this.todasEntregas.length > 0) {
+    if (this.institucionActiva) {
       this.programarRenderGraficos();
     }
   }
@@ -251,7 +251,7 @@ export class DashboardSupervisor implements OnInit, AfterViewInit, OnDestroy {
 
     // 2. SINCRONIZACIÓN EN SEGUNDO PLANO (no bloquea la interfaz)
     this.entregasService.cargar().pipe(
-      timeout(4000),
+      timeout(10000),
       catchError(() => of([] as Entrega[]))
     ).subscribe(entregas => {
       const delInst = (entregas || []).filter(e => {
@@ -453,20 +453,28 @@ export class DashboardSupervisor implements OnInit, AfterViewInit, OnDestroy {
   }
 
   // =========================================================================
-  //  GRÁFICOS CHART.JS (OPTIMIZADOS PARA CARGA ULTRA RÁPIDA)
+  //  GRÁFICOS CHART.JS (OPTIMIZADOS PARA CARGA ULTRA RÁPIDA Y RESILIENTE)
   // =========================================================================
 
   private programarRenderGraficos(): void {
     if (this.timerRenderGraficos) clearTimeout(this.timerRenderGraficos);
-    // Render inmediato en el siguiente ciclo de renderizado sin esperas
     this.timerRenderGraficos = setTimeout(() => {
       this.renderizarGraficos();
-    }, 0);
+    }, 10);
   }
 
-  private renderizarGraficos(): void {
+  private renderizarGraficos(intentos = 0): void {
     if (!this.institucionActiva) {
       this.destruirGraficos();
+      return;
+    }
+
+    // Si los canvas aún no están disponibles en el DOM (debido al *ngIf de Angular), reintentar brevemente
+    if (!this.chartEstadosCanvas?.nativeElement || !this.chartSedesCanvas?.nativeElement || !this.chartCategoriasCanvas?.nativeElement) {
+      if (intentos < 15) {
+        if (this.timerRenderGraficos) clearTimeout(this.timerRenderGraficos);
+        this.timerRenderGraficos = setTimeout(() => this.renderizarGraficos(intentos + 1), 60);
+      }
       return;
     }
 
@@ -478,7 +486,8 @@ export class DashboardSupervisor implements OnInit, AfterViewInit, OnDestroy {
   private crearGraficoEstados(): void {
     if (!this.chartEstadosCanvas?.nativeElement) return;
 
-    const ctx = this.chartEstadosCanvas.nativeElement.getContext('2d');
+    const canvas = this.chartEstadosCanvas.nativeElement;
+    const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
     const dataValues = [this.recibidasConformes, this.conNovedad, this.enTransito, this.rechazadas];
@@ -492,6 +501,12 @@ export class DashboardSupervisor implements OnInit, AfterViewInit, OnDestroy {
       this.chartEstados.data.datasets[0].backgroundColor = bgFinal;
       this.chartEstados.update('none');
       return;
+    }
+
+    // Destruir cualquier instancia previa vinculada al canvas en Chart.js
+    const chartExistente = Chart.getChart(canvas);
+    if (chartExistente) {
+      chartExistente.destroy();
     }
 
     this.chartEstados = new Chart(ctx, {
@@ -523,7 +538,9 @@ export class DashboardSupervisor implements OnInit, AfterViewInit, OnDestroy {
               label: (c) => {
                 const label = c.label || '';
                 const val = Number(c.raw) || 0;
-                const pct = total > 0 ? Math.round((val / total) * 100) : 0;
+                const dataset = (c.chart.data.datasets[0].data as number[]) || [];
+                const totalActual = dataset.reduce((a, b) => a + Number(b || 0), 0);
+                const pct = totalActual > 0 ? Math.round((val / totalActual) * 100) : 0;
                 return ` ${label}: ${val} despachos (${pct}%)`;
               }
             }
@@ -536,7 +553,8 @@ export class DashboardSupervisor implements OnInit, AfterViewInit, OnDestroy {
   private crearGraficoSedes(): void {
     if (!this.chartSedesCanvas?.nativeElement) return;
 
-    const ctx = this.chartSedesCanvas.nativeElement.getContext('2d');
+    const canvas = this.chartSedesCanvas.nativeElement;
+    const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
     // Agrupar entregas por sede
@@ -565,6 +583,12 @@ export class DashboardSupervisor implements OnInit, AfterViewInit, OnDestroy {
       this.chartSedes.data.datasets[0].backgroundColor = bgColors;
       this.chartSedes.update('none');
       return;
+    }
+
+    // Destruir cualquier instancia previa vinculada al canvas en Chart.js
+    const chartExistente = Chart.getChart(canvas);
+    if (chartExistente) {
+      chartExistente.destroy();
     }
 
     this.chartSedes = new Chart(ctx, {
@@ -629,7 +653,8 @@ export class DashboardSupervisor implements OnInit, AfterViewInit, OnDestroy {
   private crearGraficoCategorias(): void {
     if (!this.chartCategoriasCanvas?.nativeElement) return;
 
-    const ctx = this.chartCategoriasCanvas.nativeElement.getContext('2d');
+    const canvas = this.chartCategoriasCanvas.nativeElement;
+    const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
     const perecederos = this.totalPerecederos;
@@ -644,6 +669,12 @@ export class DashboardSupervisor implements OnInit, AfterViewInit, OnDestroy {
       this.chartCategorias.data.datasets[0].backgroundColor = bgColors;
       this.chartCategorias.update('none');
       return;
+    }
+
+    // Destruir cualquier instancia previa vinculada al canvas en Chart.js
+    const chartExistente = Chart.getChart(canvas);
+    if (chartExistente) {
+      chartExistente.destroy();
     }
 
     this.chartCategorias = new Chart(ctx, {
@@ -675,7 +706,9 @@ export class DashboardSupervisor implements OnInit, AfterViewInit, OnDestroy {
               label: (c) => {
                 const label = c.label || '';
                 const val = Number(c.raw) || 0;
-                const pct = total > 0 ? Math.round((val / total) * 100) : 0;
+                const dataset = (c.chart.data.datasets[0].data as number[]) || [];
+                const totalActual = dataset.reduce((a, b) => a + Number(b || 0), 0);
+                const pct = totalActual > 0 ? Math.round((val / totalActual) * 100) : 0;
                 return ` ${label}: ${val} (${pct}%)`;
               }
             }
@@ -686,6 +719,10 @@ export class DashboardSupervisor implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private destruirGraficos(): void {
+    if (this.timerRenderGraficos) {
+      clearTimeout(this.timerRenderGraficos);
+      this.timerRenderGraficos = undefined;
+    }
     if (this.chartEstados) {
       this.chartEstados.destroy();
       this.chartEstados = null;
@@ -697,6 +734,15 @@ export class DashboardSupervisor implements OnInit, AfterViewInit, OnDestroy {
     if (this.chartCategorias) {
       this.chartCategorias.destroy();
       this.chartCategorias = null;
+    }
+    if (this.chartEstadosCanvas?.nativeElement) {
+      Chart.getChart(this.chartEstadosCanvas.nativeElement)?.destroy();
+    }
+    if (this.chartSedesCanvas?.nativeElement) {
+      Chart.getChart(this.chartSedesCanvas.nativeElement)?.destroy();
+    }
+    if (this.chartCategoriasCanvas?.nativeElement) {
+      Chart.getChart(this.chartCategoriasCanvas.nativeElement)?.destroy();
     }
   }
 
