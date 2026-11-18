@@ -525,7 +525,7 @@
           <div
             class="bd-field-box"
             *ngFor="let campo of tab.campos"
-            [style.grid-column]="campo.type === 'textarea' ? '1 / -1' : 'auto'"
+            [style.grid-column]="campo.type === 'textarea' || campo.type === 'image' ? '1 / -1' : 'auto'"
           >
             <label [for]="'campo-' + campo.name" class="bd-field-label">
               {{ campo.label }} <span *ngIf="campo.required" class="bd-required-asterisk">*</span>
@@ -575,6 +575,29 @@
               [placeholder]="campo.placeholder || ''"
               autocomplete="off"
             />
+
+            <!-- Input Image (subida de archivo a Cloudinary) -->
+            <ng-container *ngIf="campo.type === 'image'">
+              <div style="display:flex; flex-direction:column; gap:8px;">
+                <!-- Preview de imagen actual (modo edición) -->
+                <div *ngIf="itemForm[campo.name] && !previewImagenIngrediente" style="width:80px; height:80px; border-radius:8px; overflow:hidden; border:1px solid #e2e8f0;">
+                  <img [src]="itemForm[campo.name]" alt="Imagen actual" style="width:100%; height:100%; object-fit:cover;">
+                </div>
+                <!-- Preview de nueva imagen seleccionada -->
+                <div *ngIf="previewImagenIngrediente" style="width:80px; height:80px; border-radius:8px; overflow:hidden; border:2px solid #f6c400;">
+                  <img [src]="previewImagenIngrediente" alt="Vista previa" style="width:100%; height:100%; object-fit:cover;">
+                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  [id]="'campo-' + campo.name"
+                  [name]="campo.name"
+                  (change)="onImagenIngredienteSeleccionada($event)"
+                  style="font-size:13px; color:#475569;"
+                />
+                <span style="font-size:11px; color:#94a3b8;">Máx. 15 MB. Se subirá a Cloudinary al guardar.</span>
+              </div>
+            </ng-container>
           </div>
         </div>
       </div>

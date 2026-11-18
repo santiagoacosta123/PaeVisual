@@ -21,7 +21,7 @@ import { CATALOGO_PREPARACIONES_PAE } from './recetas-pae-base';
 // TIPOS DE CONFIGURACIÓN
 // ============================================================
 
-type TipoCampo = 'text' | 'textarea' | 'number' | 'time' | 'select';
+type TipoCampo = 'text' | 'textarea' | 'number' | 'time' | 'select' | 'image';
 
 /** Tablas que alimentan listas desplegables de otras tablas. */
 type FuenteRelacion = 'jornadas' | 'unidades_medida' | 'ingredientes' | 'categorias_inventario' | 'grados' | 'instituciones' | 'secciones_menu';
@@ -234,7 +234,8 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
             { id: 'no_perecedero', label: 'No perecedero' }
           ]
         },
-        { name: 'descripcion', label: 'Descripción', type: 'textarea', required: false, placeholder: 'Notas o especificaciones de calidad' }
+        { name: 'descripcion', label: 'Descripción', type: 'textarea', required: false, placeholder: 'Notas o especificaciones de calidad' },
+        { name: 'imagen_ingrediente', label: 'Imagen del ingrediente', type: 'image', required: false }
       ]
     },
     {
@@ -539,6 +540,8 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
   modalVerRecetaAbierto = false;
   recetaDetalleSeleccionada: any = null;
   archivoImagenPlatoSeleccionado: File | null = null;
+  archivoImagenIngredienteSeleccionado: File | null = null;
+  previewImagenIngrediente: string | null = null;
 
   readonly seccionesDisponiblesMenu: { id: string; label: string; icon: string }[] = [
     { id: 'Desayuno', label: 'Desayuno', icon: 'wb_twilight' },
@@ -1455,6 +1458,8 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
     this.itemOriginal = null;
     this.plantillaMenuSeleccionada = '';
     this.archivoImagenPlatoSeleccionado = null;
+    this.archivoImagenIngredienteSeleccionado = null;
+    this.previewImagenIngrediente = null;
   }
 
 
@@ -2166,6 +2171,22 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
   // GUARDAR
   // ============================================================
 
+  onImagenIngredienteSeleccionada(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input?.files?.[0] ?? null;
+    this.archivoImagenIngredienteSeleccionado = file;
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        this.previewImagenIngrediente = e.target?.result as string;
+        this.cdr.detectChanges();
+      };
+      reader.readAsDataURL(file);
+    } else {
+      this.previewImagenIngrediente = null;
+    }
+  }
+
   guardar(): void {
     if (this.tabActual === 'menus') {
       this.guardarMenuReceta();
@@ -2176,10 +2197,48 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const cuerpo = this.construirCuerpo();
     const editando = this.modoEdicion && this.itemSeleccionadoId !== null;
-
     this.guardando = true;
+
+    // Si es ingrediente y hay imagen seleccionada, enviar como FormData (multipart)
+    if (this.tabActual === 'ingredientes' && this.archivoImagenIngredienteSeleccionado) {
+      const cuerpo = this.construirCuerpo();
+      const formData = new FormData();
+      for (const key of Object.keys(cuerpo)) {
+        if (cuerpo[key] !== null && cuerpo[key] !== undefined) {
+          formData.append(key, String(cuerpo[key]));
+        }
+      }
+      formData.append('imagen_ingrediente', this.archivoImagenIngredienteSeleccionado);
+
+      const peticion$ = editando
+        ? this.bancoDatosService.actualizarDato(this.tabActual, this.itemSeleccionadoId as number, formData)
+        : this.bancoDatosService.crearDato(this.tabActual, formData);
+
+      peticion$.subscribe({
+        next: () => {
+          this.sweetAlert.success(
+            editando ? 'Cambios guardados' : 'Registro creado',
+            editando ? 'El ingrediente se actualizó con su imagen.' : 'El ingrediente se creó con su imagen.'
+          );
+          this.cerrarModal();
+          this.cargarDatos();
+          this.refrescarFuenteSiAplica();
+        },
+        error: (err: any) => {
+          console.error(editando ? 'Error al actualizar:' : 'Error al crear:', err);
+          this.guardando = false;
+          this.sweetAlert.error(
+            editando ? 'No se pudo guardar' : 'No se pudo crear',
+            this.mensajeError(err, 'Hubo un problema al guardar el registro.')
+          );
+          this.cdr.detectChanges();
+        }
+      });
+      return;
+    }
+
+    const cuerpo = this.construirCuerpo();
 
     const peticion$ = editando
       ? this.bancoDatosService.actualizarDato(
