@@ -18,7 +18,6 @@ export class Ingredientes implements OnInit {
   // Pestaña activa: inventario | movimientos | gramajes
   pestanaActiva: string = 'inventario';
 
-  
   // Variable para el funcionamiento de la barra de búsqueda
   filtroBusqueda: string = '';
 
@@ -136,10 +135,10 @@ export class Ingredientes implements OnInit {
 
   // Getters para el filtrado en tiempo real según la pestaña y texto ingresado
   get inventarioFiltrado() {
-    if (!this.filtroBusqueda.trim()) return this.inventario;
+    if (!(this.filtroBusqueda || '').trim()) return this.inventario;
     const texto = this.filtroBusqueda.toLowerCase();
-    return this.inventario.filter(item => 
-      item.nombre_ingrediente.toLowerCase().includes(texto) ||
+    return this.inventario.filter(item =>
+      item.nombre_ingrediente?.toLowerCase().includes(texto) ||
       item.nombre_categoria?.toLowerCase().includes(texto) ||
       item.marca_ingrediente?.toLowerCase().includes(texto)
     );
@@ -150,9 +149,9 @@ export class Ingredientes implements OnInit {
   }
 
   get gramajesFiltrados() {
-    if (!this.filtroBusqueda.trim()) return this.gramajes;
+    if (!(this.filtroBusqueda || '').trim()) return this.gramajes;
     const texto = this.filtroBusqueda.toLowerCase();
-    return this.gramajes.filter(gram => 
+    return this.gramajes.filter(gram =>
       gram.nombre_ingrediente?.toLowerCase().includes(texto) ||
       gram.descripcion?.toLowerCase().includes(texto)
     );
@@ -180,7 +179,7 @@ export class Ingredientes implements OnInit {
   }
 
   abrirFormulario(item: any = null): void {
-    this.cerrarDetalles(); 
+    this.cerrarDetalles();
     this.mostrarFormulario = true;
     this.modalTipo = 'INSUMO';
 
@@ -282,7 +281,17 @@ export class Ingredientes implements OnInit {
 
       // Buscar la unidad de medida del ingrediente en el inventario actual
       const invItem = this.inventario.find(i => i.id_ingrediente == this.movimientoForm.id_ingrediente);
-      const id_unidad_medida = invItem ? invItem.id_unidad_medida : (this.unidadesMedida.length > 0 ? this.unidadesMedida[0].id_unidad_medida : 1);
+
+      // Evita un error si el ingrediente elegido todavía no existe en el inventario
+      if (!invItem) {
+        this.sweetAlert.warning(
+          'Insumo no encontrado',
+          'Este ingrediente aún no está en el inventario. Agrégalo primero como nuevo insumo.'
+        );
+        return;
+      }
+
+      const id_unidad_medida = invItem.id_unidad_medida ?? (this.unidadesMedida.length > 0 ? this.unidadesMedida[0].id_unidad_medida : 1);
 
       const cantidadMov = Number(this.movimientoForm.cantidad);
       const stockActual = Number(invItem.cantidad_actual) || 0;
@@ -302,7 +311,7 @@ export class Ingredientes implements OnInit {
           observaciones: this.movimientoForm.observaciones || '',
           id_usuario: id_usuario
         };
-        
+
         this.productoService.crearEntrada(payload).subscribe({
           next: () => this.actualizarStockDirecto(invItem, nuevoStock),
           error: (err) => {
@@ -312,10 +321,10 @@ export class Ingredientes implements OnInit {
         });
       } else {
         payload = {
-          id_inventario: invItem ? invItem.id_inventario : null,
+          id_inventario: invItem.id_inventario ?? null,
           id_ingrediente: this.movimientoForm.id_ingrediente,
           cantidad_salida: cantidadMov,
-          cantidad: cantidadMov, 
+          cantidad: cantidadMov,
           id_unidad_medida: id_unidad_medida,
           observaciones: this.movimientoForm.observaciones || '',
           id_usuario: id_usuario
@@ -340,7 +349,7 @@ export class Ingredientes implements OnInit {
       const payloadInventario = {
         id_ingrediente: invItem.id_ingrediente,
         cantidad_actual: nuevoStock.toString(),
-        stock_minimo: invItem.stock_minimo.toString(),
+        stock_minimo: (invItem.stock_minimo ?? 0).toString(),
         id_unidad_medida: invItem.id_unidad_medida
       };
       this.productoService.actualizarProducto(invItem.id_inventario, payloadInventario).subscribe({
