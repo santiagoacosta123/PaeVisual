@@ -85,13 +85,15 @@ export class HistorialEntregas implements OnInit {
   crudAbierto = false;
   editandoId: number | null = null;
   private catalogosCargados = false;
-  private gruposInicializados = false;
 
   // Modo de visualización: 'facturas' (agrupado por remisión) o 'productos' (plano)
   vistaModo: 'facturas' | 'productos' = 'facturas';
-  facturasExpandidas = new Set<string>();
 
-  // Búsqueda: al escribir, se expanden los grupos automáticamente
+  // ACORDEÓN: solo una factura y un día abiertos a la vez. null = todo cerrado.
+  facturaAbiertaKey: string | null = null;
+  fechaAbiertaKey: string | null = null;
+
+  // Búsqueda
   private _filtroTexto = '';
   get filtroTexto(): string {
     return this._filtroTexto;
@@ -101,10 +103,7 @@ export class HistorialEntregas implements OnInit {
     this.cacheFiltradas = null;
     this.cacheGrupos = null;
     this.cacheFacturas = null;
-    if (this._filtroTexto.trim()) {
-      this.expandirGrupos();
-      this.expandirTodasFacturas();
-    }
+    this.cerrarTodo();
     this.cdr.markForCheck();
   }
 
@@ -128,7 +127,6 @@ export class HistorialEntregas implements OnInit {
   // Modal de Recepción y Control de Calidad (Administrador)
   modalRecepcionAbierto = false;
   entregaSeleccionada: Entrega | null = null;
-  gruposExpandidos = new Set<string>();
   modoRechazoDirecto = false;
   formRecepcion = {
     cantidadRecibida: 0,
@@ -190,7 +188,6 @@ export class HistorialEntregas implements OnInit {
       this.entregasOrigen = cacheadas;
       this.aplicarFiltroInstitucion();
       this.cargando = false;
-      this.expandirGruposIniciales();
     }
 
     // 2. Consulta de datos actualizados al backend en segundo plano
@@ -226,7 +223,6 @@ export class HistorialEntregas implements OnInit {
         this.tieneSedes = this.idsSedesPropias.size > 0;
         // Re-filtra desde la lista completa, no desde la ya filtrada
         this.aplicarFiltroInstitucion();
-        this.expandirGruposIniciales();
       });
   }
 
@@ -241,7 +237,6 @@ export class HistorialEntregas implements OnInit {
         this.aplicarFiltroInstitucion();
         this.guardarCacheEntregas(this.entregasOrigen);
         this.cargando = false;
-        this.expandirGruposIniciales();
       },
       error: (error) => {
         console.error('Error al consultar historial de entregas:', error);
@@ -476,7 +471,7 @@ export class HistorialEntregas implements OnInit {
     return [...localesFiltradas, ...servidorActualizado];
   }
 
-  // SP-249: Exportar historial de entregas a Excel
+  // SP-249: Exportar historial de entregas a Excel (ya no hay botón en el HTML)
   exportarExcel(): void {
     this.entregasService.exportarExcel().subscribe({
       next: (blob) => {
@@ -853,108 +848,50 @@ export class HistorialEntregas implements OnInit {
     return res;
   }
 
-  alternarGrupoFecha(fecha: string): void {
-    const gruposExpandidos = new Set(this.gruposExpandidos);
-    if (gruposExpandidos.has(fecha)) {
-      gruposExpandidos.delete(fecha);
-    } else {
-      gruposExpandidos.add(fecha);
-    }
-    this.gruposExpandidos = gruposExpandidos;
-    // Sincronizar con facturas correspondientes
-    for (const f of this.facturas) {
-      if (f.fechaEntrega === fecha) {
-        if (gruposExpandidos.has(fecha)) {
-          this.facturasExpandidas.add(f.idFactura);
-        } else {
-          this.facturasExpandidas.delete(f.idFactura);
-        }
-      }
-    }
+  // =========================================================================
+  // ACORDEÓN (una sola tarjeta abierta; todas cerradas al entrar)
+  // =========================================================================
+
+  trackFactura = (_: number, fac: FacturaEntrega): string => fac.idFactura;
+  trackGrupo = (_: number, grupo: GrupoEntregasDia): string => grupo.fecha;
+
+  private claveFactura(f: FacturaEntrega | string): string {
+    return typeof f === 'string' ? f : f.idFactura;
+  }
+
+  facturaEstaExpandida(f: FacturaEntrega | string): boolean {
+    return this.facturaAbiertaKey === this.claveFactura(f);
+  }
+
+  alternarFactura(f: FacturaEntrega | string): void {
+    const k = this.claveFactura(f);
+    this.facturaAbiertaKey = this.facturaAbiertaKey === k ? null : k;
     this.cdr.markForCheck();
   }
 
   grupoEstaExpandido(fecha: string): boolean {
-    return this.gruposExpandidos.has(fecha);
+    return this.fechaAbiertaKey === fecha;
   }
 
-  alternarFactura(idFactura: string): void {
-    const expandidas = new Set(this.facturasExpandidas);
-    if (expandidas.has(idFactura)) {
-      expandidas.delete(idFactura);
-    } else {
-      expandidas.add(idFactura);
-    }
-    this.facturasExpandidas = expandidas;
-    // Sincronizar con grupos por fecha para mantener compatibilidad
-    for (const f of this.facturas) {
-      if (f.idFactura === idFactura && f.fechaEntrega) {
-        if (expandidas.has(idFactura)) {
-          this.gruposExpandidos.add(f.fechaEntrega);
-        } else {
-          this.gruposExpandidos.delete(f.fechaEntrega);
-        }
-      }
-    }
+  alternarGrupoFecha(fecha: string): void {
+    this.fechaAbiertaKey = this.fechaAbiertaKey === fecha ? null : fecha;
     this.cdr.markForCheck();
   }
 
-  facturaEstaExpandida(idFactura: string): boolean {
-    if (this.facturasExpandidas.has(idFactura)) return true;
-    const fac = this.facturas.find((f) => f.idFactura === idFactura);
-    return fac ? this.gruposExpandidos.has(fac.fechaEntrega) : false;
-  }
-
-  expandirGrupos(): void {
-    this.gruposExpandidos = new Set(this.gruposPorFecha.map((grupo) => grupo.fecha));
-    this.facturasExpandidas = new Set(this.facturas.map((f) => f.idFactura));
-    this.cdr.markForCheck();
-  }
-
-  contraerGrupos(): void {
-    this.gruposExpandidos = new Set();
-    this.facturasExpandidas = new Set();
-    this.cdr.markForCheck();
-  }
-
-  expandirTodasFacturas(): void {
-    this.facturasExpandidas = new Set(this.facturas.map((f) => f.idFactura));
-    this.gruposExpandidos = new Set(this.gruposPorFecha.map((grupo) => grupo.fecha));
-    this.cdr.markForCheck();
-  }
-
-  contraerTodasFacturas(): void {
-    this.contraerGrupos();
-  }
-
-  expandirFacturasPendientes(): void {
-    const facturasAbiertas = this.facturas.filter((f) => f.pendientes > 0).map((f) => f.idFactura);
-    this.facturasExpandidas = new Set(facturasAbiertas.length ? facturasAbiertas : this.facturas.slice(0, 1).map((f) => f.idFactura));
-    const abiertos = this.gruposPorFecha.filter((g) => g.pendientes > 0).map((g) => g.fecha);
-    this.gruposExpandidos = new Set(abiertos.length ? abiertos : this.gruposPorFecha.slice(0, 1).map((g) => g.fecha));
-    this.cdr.markForCheck();
+  private cerrarTodo(): void {
+    this.facturaAbiertaKey = null;
+    this.fechaAbiertaKey = null;
   }
 
   cambiarVistaModo(modo: 'facturas' | 'productos'): void {
     this.vistaModo = modo;
-    if (modo === 'facturas') {
-      this.expandirFacturasPendientes();
-    } else {
-      this.expandirGrupos();
-    }
+    this.cerrarTodo();
     this.cdr.markForCheck();
   }
 
-  // En la primera carga abre las facturas/días con entregas por recibir (o el más reciente)
-  private expandirGruposIniciales(): void {
-    if (this.gruposInicializados || this.entregas.length === 0) return;
-    this.gruposInicializados = true;
-    const grupos = this.gruposPorFecha;
-    const abiertos = grupos.filter((g) => g.pendientes > 0).map((g) => g.fecha);
-    this.gruposExpandidos = new Set(abiertos.length ? abiertos : grupos.slice(0, 1).map((g) => g.fecha));
-
-    const facturasAbiertas = this.facturas.filter((f) => f.pendientes > 0).map((f) => f.idFactura);
-    this.facturasExpandidas = new Set(facturasAbiertas.length ? facturasAbiertas : this.facturas.slice(0, 1).map((f) => f.idFactura));
+  cambiarFiltroEstado(nuevo: FiltroEstado): void {
+    this.filtroEstado = nuevo;
+    this.cerrarTodo();
     this.cdr.markForCheck();
   }
 
@@ -990,11 +927,6 @@ export class HistorialEntregas implements OnInit {
       }).length;
     }
     return 0;
-  }
-
-  cambiarFiltroEstado(nuevo: FiltroEstado): void {
-    this.filtroEstado = nuevo;
-    this.expandirGrupos(); // al filtrar por estado se ven directamente los resultados
   }
 
   get vencidas(): number {

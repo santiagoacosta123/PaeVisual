@@ -32,18 +32,6 @@
     min-width: 0;
   }
 
-  .he-page-icon-badge {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: #fef3c7;
-    border: 1px solid #fde68a;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-
   .he-page-title-box { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 
   .he-title-row {
@@ -188,7 +176,30 @@
     box-shadow: 0 1px 2px rgba(15, 23, 42, .04);
   }
 
-  /* ---------- Filtros ---------- */
+  .he-card-title-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .he-card-title {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 800;
+    color: #0f172a;
+  }
+
+  .he-card-count {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #64748b;
+    background: #f1f5f9;
+    padding: 2px 10px;
+    border-radius: 999px;
+  }
+
+  /* ---------- Barra superior: buscador + toggle ---------- */
   .he-filters-bar {
     display: flex;
     align-items: center;
@@ -197,62 +208,19 @@
     flex-wrap: wrap;
   }
 
-  .he-status-pills-row {
+  .he-controls-right {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
+    flex: 1 1 100%;
     flex-wrap: wrap;
   }
-
-  .he-status-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    height: 34px;
-    padding: 0 14px;
-    border-radius: 999px;
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    color: #334155;
-    font-family: inherit;
-    font-size: 12.5px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: background .15s ease, border-color .15s ease;
-  }
-
-  .he-status-pill:hover { background: #f8fafc; }
-
-  .he-pill-count {
-    min-width: 22px;
-    padding: 1px 7px;
-    border-radius: 999px;
-    background: #f1f5f9;
-    color: #475569;
-    font-size: 11.5px;
-    font-weight: 800;
-    text-align: center;
-  }
-
-  .he-status-pill.active {
-    background: #fac94b;
-    border-color: #f2b925;
-    color: #0f172a;
-  }
-  .he-status-pill.active .he-pill-count { background: rgba(255, 255, 255, .6); color: #0f172a; }
-
-  .he-status-pill.por-recibir.active { background: #fef3c7; border-color: #fcd34d; color: #92400e; }
-  .he-status-pill.recibida.active    { background: #d1fae5; border-color: #6ee7b7; color: #047857; }
-  .he-status-pill.con-novedad.active { background: #fee2e2; border-color: #fca5a5; color: #b91c1c; }
-
-  /* ---------- Buscador ---------- */
-  .he-controls-right { display: flex; align-items: center; gap: 10px; }
 
   .he-search-box {
     position: relative;
     display: flex;
     align-items: center;
-    width: 280px;
+    flex: 1 1 280px;
     max-width: 100%;
   }
 
@@ -267,7 +235,7 @@
   .he-search-input {
     width: 100%;
     box-sizing: border-box;
-    height: 38px;
+    height: 40px;
     padding: 0 34px 0 38px;
     border: 1px solid #e2e8f0;
     border-radius: 10px;
@@ -298,6 +266,86 @@
 
   .he-search-clear:hover { background: #e2e8f0; }
 
+  /* ---------- Toggle de vista ---------- */
+  .he-view-mode-toggle {
+    display: inline-flex;
+    background: #f1f5f9;
+    border-radius: 999px;
+    padding: 3px;
+    gap: 3px;
+  }
+  .he-view-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    border: none;
+    background: transparent;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    color: #64748b;
+    cursor: pointer;
+    transition: background .15s ease, color .15s ease, box-shadow .15s ease;
+  }
+  .he-view-toggle-btn:hover { color: #0f172a; }
+  .he-view-toggle-btn.active {
+    background: #ffffff;
+    color: #0f172a;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+
+  /* ---------- Pestañas de estado (subrayadas) ---------- */
+  .he-tabs-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .he-tab-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    margin-bottom: -1px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #64748b;
+    cursor: pointer;
+    transition: color .15s ease, border-color .15s ease;
+  }
+
+  .he-tab-btn:hover { color: #0f172a; }
+
+  .he-tab-count {
+    min-width: 22px;
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: #f1f5f9;
+    color: #475569;
+    font-size: 11px;
+    font-weight: 800;
+    text-align: center;
+  }
+
+  .he-tab-btn.active {
+    color: #0f172a;
+    border-bottom-color: #f59e0b;
+  }
+  .he-tab-btn.active .he-tab-count { background: #fde68a; color: #92400e; }
+
+  .he-tab-btn.por-recibir.active .he-tab-count { background: #fef3c7; color: #92400e; }
+  .he-tab-btn.recibida.active .he-tab-count    { background: #d1fae5; color: #047857; }
+  .he-tab-btn.con-novedad.active .he-tab-count { background: #fee2e2; color: #b91c1c; }
+
   /* ---------- Controles de grupos ---------- */
   .he-groups-controls {
     display: flex;
@@ -316,24 +364,7 @@
     color: #64748b;
   }
 
-  .he-groups-caption .material-symbols-outlined { font-size: 18px; color: #b45309; }
-
-  .he-groups-control-actions { display: flex; align-items: center; gap: 14px; }
-
-  .he-groups-control-actions button {
-    background: none;
-    border: none;
-    padding: 0;
-    font-family: inherit;
-    font-size: 12.5px;
-    font-weight: 700;
-    color: #92400e;
-    cursor: pointer;
-  }
-
-  .he-groups-control-actions button:hover { text-decoration: underline; }
-
-  /* ---------- Tabla (compacta) ---------- */
+  /* ---------- Tabla base ---------- */
   .he-table-wrapper {
     width: 100%;
     overflow-x: auto;
@@ -348,7 +379,7 @@
   }
 
   .he-data-table thead th {
-    padding: 9px 14px;
+    padding: 10px 14px;
     background: #f8fafc;
     border-bottom: 1px solid #e2e8f0;
     text-align: left;
@@ -361,15 +392,13 @@
   }
 
   .he-data-table tbody td {
-    padding: 8px 14px;
+    padding: 9px 14px;
     border-bottom: 1px solid #f1f5f9;
     vertical-align: middle;
     color: #334155;
   }
 
   .he-data-table tbody tr:last-child td { border-bottom: none; }
-
-  .he-data-table tbody tr:not(.he-day-group-row):hover td { background: #fafafa; }
 
   .he-primary-name { font-weight: 700; color: #0f172a; line-height: 1.25; }
 
@@ -383,7 +412,6 @@
     text-overflow: ellipsis;
   }
 
-  /* Destino en una sola línea */
   .he-td-destino {
     max-width: 200px;
     white-space: nowrap;
@@ -424,7 +452,7 @@
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    padding: 2px 9px;
+    padding: 3px 10px;
     border-radius: 999px;
     font-size: 11px;
     font-weight: 700;
@@ -481,8 +509,197 @@
   }
 
   /* =========================================================
-     CABECERA DE DÍA (desplegable)
+     VISTA POR FACTURA (tabla)
      ========================================================= */
+  .he-inv-table { min-width: 900px; }
+
+  .he-inv-row { cursor: pointer; transition: background .15s ease; }
+  .he-inv-row:hover > td { background: #fafafa; }
+
+  .he-data-table .he-inv-row > td { padding: 12px 14px; border-left: 3px solid transparent; }
+  .he-data-table .he-inv-row > td:not(:first-child) { border-left: none; }
+
+  .he-inv-row.expandida > td { background: #fffbeb; border-bottom-color: #fde68a; }
+  .he-inv-row.expandida > td:first-child { border-left: 3px solid #f59e0b; }
+
+  .he-inv-cell-main {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .he-inv-chevron {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #f1f5f9;
+    border: none;
+    color: #64748b;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    cursor: pointer;
+    padding: 0;
+    transition: transform .2s ease, background .15s ease, color .15s ease;
+  }
+  .he-inv-chevron .material-symbols-outlined { font-size: 18px; }
+  .he-inv-row.expandida .he-inv-chevron {
+    transform: rotate(180deg);
+    background: #fde68a;
+    color: #92400e;
+  }
+
+  .he-inv-doc-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: #fef3c7;
+    border: 1px solid #fde68a;
+    color: #b45309;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .he-inv-numero {
+    font-size: 13px;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+  }
+
+  .he-inv-sub {
+    margin-top: 1px;
+    font-size: 11px;
+    color: #94a3b8;
+    max-width: 200px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .he-inv-sub.green { color: #047857; font-weight: 700; }
+  .he-inv-sub.amber { color: #b45309; font-weight: 700; }
+
+  .he-inv-sede {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    margin-top: 2px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #92400e;
+  }
+
+  .he-inv-foods {
+    max-width: 240px;
+    font-weight: 600;
+    color: #0f172a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .he-inv-qty { font-weight: 800; color: #0f172a; white-space: nowrap; }
+
+  .he-inv-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    justify-content: flex-end;
+  }
+
+  .he-btn-receive-factura {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    height: 32px;
+    padding: 0 12px;
+    border-radius: 8px;
+    background: #10b981;
+    color: #ffffff;
+    border: none;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background .15s ease;
+  }
+  .he-btn-receive-factura:hover { background: #059669; }
+
+  .he-btn-icon-reject {
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #b91c1c;
+    border: 1px solid #fca5a5;
+    cursor: pointer;
+    transition: background .15s ease;
+  }
+  .he-btn-icon-reject:hover { background: #fee2e2; }
+
+  .he-btn-detail-outline {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0 14px;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #334155;
+    border: 1px solid #e2e8f0;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background .15s ease, border-color .15s ease;
+  }
+  .he-btn-detail-outline:hover { background: #f8fafc; border-color: #cbd5e1; }
+
+  /* Fila de detalle desplegado */
+  .he-data-table .he-inv-detail-row > td {
+    padding: 0;
+    background: #fffdf7;
+    border-bottom: 1px solid #fde68a;
+  }
+
+  .he-inv-detail-wrap { padding: 12px 16px 16px 52px; }
+
+  .he-inv-detail-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+    font-size: 12px;
+    color: #475569;
+  }
+  .he-inv-detail-meta strong { color: #0f172a; }
+  .he-inv-detail-sep { color: #cbd5e1; }
+
+  .he-inv-inner {
+    background: #ffffff;
+    border: 1px solid #f1f5f9;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .he-inv-inner .he-data-table thead th { font-size: 10.5px; }
+
+  /* =========================================================
+     CABECERA DE DÍA (vista por alimento)
+     ========================================================= */
+  .he-data-table tbody tr:not(.he-day-group-row):not(.he-inv-row):not(.he-inv-detail-row):hover td { background: #fafafa; }
+
   .he-data-table .he-day-group-row > td {
     padding: 0;
     background: #ffffff;
@@ -493,7 +710,6 @@
 
   .he-data-table .he-day-group-row:hover > td { background: #f8fafc; }
 
-  /* Día abierto: resaltado ámbar */
   .he-data-table .he-day-group-row:has([aria-expanded="true"]) > td {
     background: #fffbeb;
     border-left-color: #f59e0b;
@@ -519,7 +735,6 @@
     outline-offset: -2px;
   }
 
-  /* Chevron en círculo que rota al abrir */
   .he-day-group-chevron {
     width: 24px;
     height: 24px;
@@ -582,7 +797,6 @@
   .he-day-group-received .material-symbols-outlined,
   .he-day-group-issues .material-symbols-outlined { font-size: 14px; }
 
-  /* Entregas del día: sangría con línea lateral para mostrar que pertenecen al grupo */
   .he-data-table .he-group-item > td:first-child {
     border-left: 3px solid #fde68a;
     padding-left: 22px;
@@ -688,7 +902,7 @@
     border-top: 1px solid #f1f5f9;
   }
 
-  /* ---------- Aviso guía (qué hacer) ---------- */
+  /* ---------- Aviso guía (sin icono) ---------- */
   .he-hint-banner {
     display: flex;
     align-items: center;
@@ -703,7 +917,6 @@
   }
 
   .he-hint-text { display: flex; align-items: flex-start; gap: 10px; min-width: 0; }
-  .he-hint-text .material-symbols-outlined { font-size: 22px; color: #b45309; flex-shrink: 0; }
   .he-hint-title { margin: 0; font-size: 13.5px; font-weight: 800; color: #92400e; }
   .he-hint-desc  { margin: 2px 0 0; font-size: 12.5px; color: #78350f; line-height: 1.45; }
 
@@ -714,221 +927,22 @@
   }
   .he-hint-banner.info .he-hint-title { color: #334155; }
   .he-hint-banner.info .he-hint-desc  { color: #64748b; }
-  .he-hint-banner.info .he-hint-text .material-symbols-outlined { color: #64748b; }
 
   @media (max-width: 720px) {
     .he-form-grid { grid-template-columns: 1fr; }
-    .he-search-box { width: 100%; }
-  }
-
-  /* ---------- Toggle Modo de Vista ---------- */
-  .he-view-mode-toggle {
-    display: inline-flex;
-    background: #f1f5f9;
-    border-radius: 999px;
-    padding: 3px;
-    gap: 3px;
-  }
-  .he-view-toggle-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 5px 14px;
-    border-radius: 999px;
-    border: none;
-    background: transparent;
-    font-family: inherit;
-    font-size: 12px;
-    font-weight: 700;
-    color: #64748b;
-    cursor: pointer;
-    transition: background .15s ease, color .15s ease, box-shadow .15s ease;
-  }
-  .he-view-toggle-btn:hover { color: #0f172a; }
-  .he-view-toggle-btn.active {
-    background: #ffffff;
-    color: #0f172a;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-  }
-
-  /* ---------- Contenedor y Tarjetas de Facturas ---------- */
-  .he-facturas-container {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-  .he-factura-card {
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    overflow: hidden;
-    transition: border-color .15s ease, box-shadow .15s ease;
-  }
-  .he-factura-card:hover {
-    border-color: #cbd5e1;
-    box-shadow: 0 2px 8px -2px rgba(15,23,42,0.06);
-  }
-  .he-factura-card.expandida {
-    border-color: #f59e0b;
-    box-shadow: 0 4px 14px -3px rgba(245,158,11,0.12);
-  }
-  .he-factura-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 16px;
-    cursor: pointer;
-    gap: 12px;
-    flex-wrap: wrap;
-    background: #ffffff;
-    transition: background .15s ease;
-  }
-  .he-factura-card.expandida .he-factura-header {
-    background: #fffdf5;
-    border-bottom: 1px solid #fef3c7;
-  }
-  .he-factura-header-left {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    min-width: 0;
-    flex: 1 1 300px;
-  }
-  .he-factura-toggle-btn {
-    background: none;
-    border: none;
-    padding: 0;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .he-factura-badge-icon {
-    width: 38px;
-    height: 38px;
-    border-radius: 10px;
-    background: #fef3c7;
-    border: 1px solid #fde68a;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-  .he-factura-info-box {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    min-width: 0;
-  }
-  .he-factura-title-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-  .he-factura-numero {
-    font-size: 14.5px;
-    font-weight: 800;
-    color: #0f172a;
-    letter-spacing: -0.01em;
-  }
-  .he-factura-fecha {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 12px;
-    color: #64748b;
-    font-weight: 600;
-  }
-  .he-factura-sede-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 11px;
-    font-weight: 700;
-    color: #92400e;
-    background: #fef3c7;
-    border: 1px solid #fde68a;
-    padding: 1px 8px;
-    border-radius: 999px;
-  }
-  .he-factura-meta-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 12px;
-    color: #475569;
-    flex-wrap: wrap;
-  }
-  .he-factura-sep { color: #cbd5e1; }
-  .he-factura-header-right {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-  }
-  .he-factura-actions {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .he-btn-receive-factura {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    height: 30px;
-    padding: 0 12px;
-    border-radius: 8px;
-    background: #10b981;
-    color: #ffffff;
-    border: none;
-    font-family: inherit;
-    font-size: 12px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: background .15s ease;
-  }
-  .he-btn-receive-factura:hover { background: #059669; }
-  .he-btn-reject-factura {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    height: 30px;
-    padding: 0 12px;
-    border-radius: 8px;
-    background: #ffffff;
-    color: #b91c1c;
-    border: 1px solid #fca5a5;
-    font-family: inherit;
-    font-size: 12px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: background .15s ease;
-  }
-  .he-btn-reject-factura:hover { background: #fee2e2; }
-  .he-factura-body {
-    padding: 0;
-    background: #ffffff;
-    border-top: 1px solid #f1f5f9;
-  }
-  .he-factura-table thead th {
-    background: #f8fafc;
-    font-size: 10.5px;
+    .he-search-box { flex-basis: 100%; }
+    .he-inv-detail-wrap { padding-left: 16px; }
   }
 </style>
 
 <div class="he-layout">
 
   <!-- =========================================================
-       CABECERA DE LA PÁGINA
+       CABECERA DE LA PÁGINA (sin icono, sin Actualizar / Exportar)
        ========================================================= -->
   <header class="he-page-header">
 
     <div class="he-page-header-left">
-      <div class="he-page-icon-badge" aria-hidden="true">
-        <span class="material-symbols-outlined" style="font-size: 24px; color: #b45309;">local_shipping</span>
-      </div>
-
       <div class="he-page-title-box">
         <div class="he-title-row">
           <h1 class="he-page-title">Historial de Entregas</h1>
@@ -942,26 +956,8 @@
       </div>
     </div>
 
-    <div class="he-header-actions">
-      <button
-        type="button"
-        class="he-btn-refresh"
-        (click)="cargarHistorial()"
-        [disabled]="cargando"
-        title="Actualizar entregas"
-      >
-        <span class="material-symbols-outlined" style="font-size: 18px;" [class.animate-spin]="cargando">refresh</span>
-        <span>{{ cargando ? 'Actualizando...' : 'Actualizar' }}</span>
-      </button>
-
-      <!-- Exportar a Excel -->
-      <button type="button" class="he-btn-refresh" (click)="exportarExcel()" title="Exportar historial a Excel">
-        <span class="material-symbols-outlined" style="font-size: 18px;">download</span>
-        <span>Exportar</span>
-      </button>
-
-      <!-- Botón CRUD manual exclusivo para Super Administrador -->
-      <button *ngIf="esSuperAdmin" type="button" class="he-btn-refresh" (click)="toggleCrud()">
+    <div class="he-header-actions" *ngIf="esSuperAdmin">
+      <button type="button" class="he-btn-refresh" (click)="toggleCrud()">
         <span class="material-symbols-outlined" style="font-size: 18px;">{{ crudAbierto ? 'close' : 'add' }}</span>
         <span>{{ crudAbierto ? 'Cerrar' : 'Añadir entrega' }}</span>
       </button>
@@ -971,7 +967,7 @@
 
 
   <!-- =========================================================
-       AVISO GUÍA: QUÉ PUEDES HACER
+       AVISO GUÍA: QUÉ PUEDES HACER (sin iconos)
        ========================================================= -->
 
   <!-- Administrador / Super Admin con entregas pendientes -->
@@ -980,15 +976,14 @@
     class="he-hint-banner"
   >
     <div class="he-hint-text">
-      <span class="material-symbols-outlined" aria-hidden="true">inventory_2</span>
       <div>
         <p class="he-hint-title">
           Tienes {{ contarEstado('POR_RECIBIR') }}
           {{ contarEstado('POR_RECIBIR') === 1 ? 'entrega pendiente' : 'entregas pendientes' }} por recibir
         </p>
         <p class="he-hint-desc">
-          Abre el día para ver las entregas, revisa el estado físico de los alimentos y pulsa
-          <strong>Recibir</strong> para acreditarlos al inventario, o <strong>Rechazar</strong> si llegaron en mal estado.
+          Revisa los alimentos antes de confirmar. Al pulsar <strong>Recibir</strong> se acreditan al inventario;
+          si llegaron en mal estado, usa <strong>Rechazar</strong> o registra la novedad.
         </p>
       </div>
     </div>
@@ -1009,14 +1004,13 @@
     class="he-hint-banner info"
   >
     <div class="he-hint-text">
-      <span class="material-symbols-outlined" aria-hidden="true">info</span>
       <div>
         <p class="he-hint-title">
           {{ puedeGestionarRecepcion ? 'No tienes entregas pendientes por recibir' : 'Consulta del historial de entregas' }}
         </p>
         <p class="he-hint-desc">
-          Usa las pestañas para filtrar por estado, el buscador para encontrar un alimento y haz clic en cada día
-          para ver sus entregas.
+          Usa las pestañas para filtrar por estado, el buscador para encontrar una factura o alimento
+          y abre cada fila para ver el detalle.
         </p>
       </div>
     </div>
@@ -1045,7 +1039,6 @@
       </button>
     </div>
 
-
     <form
       (ngSubmit)="guardarDesdeCrud()"
       style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:12px;"
@@ -1057,7 +1050,7 @@
           <option [ngValue]="null">Seleccionar...</option>
           <option *ngFor="let ing of ingredientes" [ngValue]="ing.id">{{ ing.nombre }}</option>
         </select>
-</div>
+      </div>
 
       <div class="he-form-group">
         <label class="he-form-label" for="crud-tipo-mercado">Tipo de Mercado *</label>
@@ -1065,7 +1058,7 @@
           <option [ngValue]="null">Seleccionar...</option>
           <option *ngFor="let tm of tiposMercado" [ngValue]="tm.id">{{ tm.nombre }}</option>
         </select>
-</div>
+      </div>
 
       <div class="he-form-group">
         <label class="he-form-label" for="crud-frecuencia">Frecuencia *</label>
@@ -1074,7 +1067,7 @@
           <option value="Quincenal">Quincenal</option>
           <option value="Mensual">Mensual</option>
         </select>
-</div>
+      </div>
 
       <div class="he-form-group">
         <label class="he-form-label" for="crud-cantidad">Cantidad *</label>
@@ -1088,7 +1081,7 @@
           class="he-form-input"
           placeholder="0.00"
         />
-</div>
+      </div>
 
       <div class="he-form-group">
         <label class="he-form-label" for="crud-unidad">Unidad *</label>
@@ -1100,7 +1093,7 @@
           class="he-form-input"
           placeholder="Kg"
         />
-</div>
+      </div>
 
       <div class="he-form-group">
         <label class="he-form-label" for="crud-fecha">Fecha Entrega *</label>
@@ -1111,7 +1104,7 @@
           required
           class="he-form-input"
         />
-</div>
+      </div>
 
       <div class="he-form-group">
         <label class="he-form-label" for="crud-fecha-venc">Fecha Vencimiento</label>
@@ -1121,7 +1114,7 @@
           type="date"
           class="he-form-input"
         />
-</div>
+      </div>
 
       <div class="he-form-group" style="grid-column: 1 / -1;">
         <label class="he-form-label" for="crud-observaciones">Observaciones</label>
@@ -1132,7 +1125,7 @@
           class="he-form-input"
           placeholder="Opcional"
         />
-</div>
+      </div>
 
       <div class="he-form-group" style="grid-column: 1 / -1; display:flex; justify-content:flex-end;">
         <button type="submit" [disabled]="guardando" class="he-btn-confirm" style="height:36px;">
@@ -1144,60 +1137,41 @@
   </div>
 
 
-
   <!-- =========================================================
        CARD PRINCIPAL: FILTROS Y TABLA
        ========================================================= -->
   <main class="he-table-card">
 
-    <!-- ---------- Barra de filtros y búsqueda ---------- -->
+    <!-- Título de la card -->
+    <div class="he-card-title-row">
+      <h2 class="he-card-title">Entregas de la institución</h2>
+      <span class="he-card-count">{{ entregas.length }} entregas</span>
+    </div>
+
+    <!-- Buscador + toggle de vista -->
     <div class="he-filters-bar">
-
-      <div class="he-status-pills-row">
-        <button
-          type="button"
-          class="he-status-pill"
-          [class.active]="filtroEstado === 'TODAS'"
-          (click)="cambiarFiltroEstado('TODAS')"
-        >
-          <span>Todas</span>
-          <span class="he-pill-count">{{ contarEstado('TODAS') }}</span>
-        </button>
-
-        <button
-          type="button"
-          class="he-status-pill por-recibir"
-          [class.active]="filtroEstado === 'POR_RECIBIR'"
-          (click)="cambiarFiltroEstado('POR_RECIBIR')"
-        >
-          <span>Por Recibir</span>
-          <span class="he-pill-count">{{ contarEstado('POR_RECIBIR') }}</span>
-        </button>
-
-        <button
-          type="button"
-          class="he-status-pill recibida"
-          [class.active]="filtroEstado === 'RECIBIDA'"
-          (click)="cambiarFiltroEstado('RECIBIDA')"
-        >
-          <span>Recibidas</span>
-          <span class="he-pill-count">{{ contarEstado('RECIBIDA') }}</span>
-        </button>
-
-        <button
-          type="button"
-          class="he-status-pill con-novedad"
-          [class.active]="filtroEstado === 'CON_NOVEDAD'"
-          (click)="cambiarFiltroEstado('CON_NOVEDAD')"
-        >
-          <span>Con Novedad</span>
-          <span class="he-pill-count">{{ contarEstado('CON_NOVEDAD') }}</span>
-        </button>
-</div>
-
-      <!-- Buscador y Toggle de Vista -->
       <div class="he-controls-right">
-        <!-- Toggle de modo de vista: Por Factura / Por Alimento -->
+
+        <div class="he-search-box">
+          <span class="material-symbols-outlined he-search-icon" aria-hidden="true">search</span>
+          <input
+            type="text"
+            [(ngModel)]="filtroTexto"
+            name="filtroTexto"
+            placeholder="Buscar alimento, responsable, factura..."
+            class="he-search-input"
+          />
+          <button
+            *ngIf="filtroTexto"
+            type="button"
+            class="he-search-clear"
+            (click)="filtroTexto = ''"
+            title="Limpiar búsqueda"
+          >
+            ✕
+          </button>
+        </div>
+
         <div class="he-view-mode-toggle">
           <button
             type="button"
@@ -1219,315 +1193,371 @@
             <span class="material-symbols-outlined" style="font-size: 16px;">list_alt</span>
             <span>Por Alimento</span>
           </button>
-  </div>
-
-        <div class="he-search-box">
-          <span class="material-symbols-outlined he-search-icon" aria-hidden="true">search</span>
-          <input
-            type="text"
-            [(ngModel)]="filtroTexto"
-            name="filtroTexto"
-            placeholder="Buscar alimento, responsable, factura..."
-            class="he-search-input"
-          />
-          <button
-            *ngIf="filtroTexto"
-            type="button"
-            class="he-search-clear"
-            (click)="filtroTexto = ''"
-            title="Limpiar búsqueda"
-          >
-            ✕
-          </button>
         </div>
+
       </div>
     </div>
 
+    <!-- Pestañas de estado -->
+    <div class="he-tabs-row" role="tablist">
+      <button
+        type="button" role="tab"
+        class="he-tab-btn"
+        [class.active]="filtroEstado === 'TODAS'"
+        (click)="cambiarFiltroEstado('TODAS')"
+      >
+        <span>Todas</span>
+        <span class="he-tab-count">{{ contarEstado('TODAS') }}</span>
+      </button>
+
+      <button
+        type="button" role="tab"
+        class="he-tab-btn por-recibir"
+        [class.active]="filtroEstado === 'POR_RECIBIR'"
+        (click)="cambiarFiltroEstado('POR_RECIBIR')"
+      >
+        <span>Por recibir</span>
+        <span class="he-tab-count">{{ contarEstado('POR_RECIBIR') }}</span>
+      </button>
+
+      <button
+        type="button" role="tab"
+        class="he-tab-btn recibida"
+        [class.active]="filtroEstado === 'RECIBIDA'"
+        (click)="cambiarFiltroEstado('RECIBIDA')"
+      >
+        <span>Recibidas</span>
+        <span class="he-tab-count">{{ contarEstado('RECIBIDA') }}</span>
+      </button>
+
+      <button
+        type="button" role="tab"
+        class="he-tab-btn con-novedad"
+        [class.active]="filtroEstado === 'CON_NOVEDAD'"
+        (click)="cambiarFiltroEstado('CON_NOVEDAD')"
+      >
+        <span>Con novedad</span>
+        <span class="he-tab-count">{{ contarEstado('CON_NOVEDAD') }}</span>
+      </button>
+    </div>
 
 
     <!-- =========================================================
-         VISTA 1: POR FACTURA / REMISIÓN (Agrupada)
+         VISTA 1: POR FACTURA / REMISIÓN (acordeón: una abierta a la vez)
          ========================================================= -->
     <ng-container *ngIf="vistaModo === 'facturas'">
 
-      <!-- Controles expandir / contraer facturas -->
-      <div *ngIf="facturas.length > 1" class="he-groups-controls">
+      <div *ngIf="facturas.length > 0" class="he-groups-controls">
         <span class="he-groups-caption">
-          <span class="material-symbols-outlined" aria-hidden="true">receipt_long</span>
-          Facturas y Remisiones de Entrega ({{ facturas.length }})
+          Facturas y remisiones de entrega ({{ facturas.length }})
         </span>
-        <div class="he-groups-control-actions">
-          <button type="button" (click)="expandirTodasFacturas()">Expandir todas</button>
-          <button type="button" (click)="contraerTodasFacturas()">Contraer todas</button>
-  </div>
-</div>
+      </div>
 
-      <div class="he-facturas-container">
+      <div class="he-table-wrapper">
+        <table class="he-data-table he-inv-table">
 
-        <!-- Spinner de carga inicial -->
-        <div *ngIf="cargando && facturas.length === 0" class="he-empty-state">
-          <span class="material-symbols-outlined animate-spin he-empty-icon" style="color: #fac94b;">progress_activity</span>
-          <span>Sincronizando facturas con el servidor...</span>
-  </div>
+          <thead>
+            <tr>
+              <th>Factura / Despacho</th>
+              <th>Fecha de envío</th>
+              <th>Alimentos</th>
+              <th>Estado</th>
+              <th>Cantidad</th>
+              <th style="text-align: right;">Acciones</th>
+            </tr>
+          </thead>
 
-        <!-- Sin resultados -->
-        <div *ngIf="!cargando && facturas.length === 0" class="he-empty-state">
-          <span class="material-symbols-outlined he-empty-icon">receipt_long</span>
-          <span style="font-weight: 700; color: #0f172a;">No hay facturas para mostrar</span>
-          <span style="font-size: 12px;">No se encontraron facturas o remisiones con los filtros seleccionados.</span>
-  </div>
+          <tbody>
 
-        <!-- Tarjetas de Facturas -->
-        <div *ngFor="let fac of facturas" class="he-factura-card" [class.expandida]="facturaEstaExpandida(fac.idFactura)">
+            <!-- Spinner de carga inicial -->
+            <tr *ngIf="cargando && facturas.length === 0">
+              <td colspan="6">
+                <div class="he-empty-state">
+                  <span class="material-symbols-outlined animate-spin he-empty-icon" style="color: #fac94b;">progress_activity</span>
+                  <span>Sincronizando facturas con el servidor...</span>
+                </div>
+              </td>
+            </tr>
 
-          <!-- Cabecera de la Factura -->
-          <div class="he-factura-header" (click)="alternarFactura(fac.idFactura)">
+            <!-- Sin resultados -->
+            <tr *ngIf="!cargando && facturas.length === 0">
+              <td colspan="6">
+                <div class="he-empty-state">
+                  <span class="material-symbols-outlined he-empty-icon">receipt_long</span>
+                  <span style="font-weight: 700; color: #0f172a;">No hay facturas para mostrar</span>
+                  <span style="font-size: 12px;">No se encontraron facturas o remisiones con los filtros seleccionados.</span>
+                </div>
+              </td>
+            </tr>
 
-            <div class="he-factura-header-left">
-              <button
-                type="button"
-                class="he-day-group-toggle he-factura-toggle-btn"
-                [attr.aria-expanded]="facturaEstaExpandida(fac.idFactura)"
-                title="Expandir o contraer factura"
+            <ng-container *ngFor="let fac of facturas; trackBy: trackFactura">
+
+              <!-- ===== Fila de la factura ===== -->
+              <tr
+                class="he-inv-row"
+                [class.expandida]="facturaEstaExpandida(fac)"
+                (click)="alternarFactura(fac)"
               >
-                <span class="material-symbols-outlined he-day-group-chevron" aria-hidden="true">
-                  {{ facturaEstaExpandida(fac.idFactura) ? 'expand_less' : 'expand_more' }}
-                </span>
-              </button>
 
-              <div class="he-factura-badge-icon" aria-hidden="true">
-                <span class="material-symbols-outlined" style="font-size: 20px; color: #b45309;">receipt_long</span>
-        </div>
+                <!-- Factura / Despacho -->
+                <td>
+                  <div class="he-inv-cell-main">
+                    <button
+                      type="button"
+                      class="he-inv-chevron"
+                      [attr.aria-expanded]="facturaEstaExpandida(fac)"
+                      title="Expandir o contraer factura"
+                    >
+                      <span class="material-symbols-outlined" aria-hidden="true">expand_more</span>
+                    </button>
 
-              <div class="he-factura-info-box">
-                <div class="he-factura-title-row">
-                  <span class="he-factura-numero">{{ fac.numeroFactura }}</span>
-                  <span class="he-factura-fecha">
-                    <span class="material-symbols-outlined" style="font-size: 14px;">calendar_today</span>
-                    {{ formatoFecha(fac.fechaEntrega) }}
-                  </span>
-                  <span *ngIf="fac.sedeNombre" class="he-factura-sede-pill">
+                    <div class="he-inv-doc-icon" aria-hidden="true">
+                      <span class="material-symbols-outlined" style="font-size: 18px;">description</span>
+                    </div>
+
+                    <div style="min-width: 0;">
+                      <div class="he-inv-numero">{{ fac.numeroFactura }}</div>
+                      <div class="he-inv-sub" [title]="fac.responsable">{{ fac.responsable }}</div>
+                    </div>
+                  </div>
+                </td>
+
+                <!-- Fecha de envío -->
+                <td>
+                  <div style="font-weight: 600; color: #0f172a; white-space: nowrap;">{{ formatoFecha(fac.fechaEntrega) }}</div>
+                  <div *ngIf="fac.sedeNombre" class="he-inv-sede">
                     <span class="material-symbols-outlined" style="font-size: 13px;">apartment</span>
                     {{ fac.sedeNombre }}
+                  </div>
+                </td>
+
+                <!-- Alimentos -->
+                <td>
+                  <div class="he-inv-foods">
+                    <ng-container *ngFor="let e of (fac.entregas | slice:0:3); let last = last">{{ e.ingrediente }}{{ last ? '' : ', ' }}</ng-container><ng-container *ngIf="fac.entregas.length > 3"> +{{ fac.entregas.length - 3 }}</ng-container>
+                  </div>
+                  <div class="he-inv-sub">
+                    {{ fac.totalItems }} producto{{ fac.totalItems === 1 ? '' : 's' }}
+                  </div>
+                </td>
+
+                <!-- Estado -->
+                <td>
+                  <span *ngIf="fac.estado === 'EN_TRANSITO'" class="he-status-badge transito">
+                    <span class="he-status-dot"></span>
+                    <span>Por recibir</span>
                   </span>
-          </div>
 
-                <div class="he-factura-meta-row">
-                  <span class="he-factura-destino" [title]="fac.destino">
-                    <strong>Destino:</strong> {{ fac.destino }}
+                  <span *ngIf="fac.estado === 'RECIBIDA'" class="he-status-badge recibida">
+                    <span class="he-status-dot"></span>
+                    <span>Recibida</span>
                   </span>
-                  <span class="he-factura-sep">•</span>
-                  <span class="he-factura-responsable">
-                    <strong>Responsable:</strong> {{ fac.responsable }}
+
+                  <span *ngIf="fac.estado === 'CON_NOVEDAD'" class="he-status-badge novedad">
+                    <span class="he-status-dot"></span>
+                    <span>Con novedad</span>
                   </span>
-                  <span class="he-factura-sep">•</span>
-                  <span class="he-factura-items-count">
-                    {{ fac.totalItems }} alimento{{ fac.totalItems === 1 ? '' : 's' }} ({{ fac.totalCantidad }} {{ fac.unidadPrincipal }})
+
+                  <span *ngIf="fac.estado === 'RECHAZADA'" class="he-status-badge novedad">
+                    <span class="he-status-dot"></span>
+                    <span>Rechazada</span>
                   </span>
-          </div>
-        </div>
-      </div>
+                </td>
 
-            <div class="he-factura-header-right" (click)="$event.stopPropagation()">
+                <!-- Cantidad -->
+                <td>
+                  <div class="he-inv-qty">{{ fac.totalCantidad }} {{ fac.unidadPrincipal }}</div>
+                  <div *ngIf="fac.estado === 'RECIBIDA'" class="he-inv-sub green">Acreditado</div>
+                  <div *ngIf="fac.estado === 'EN_TRANSITO'" class="he-inv-sub amber">{{ fac.pendientes }} pend.</div>
+                </td>
 
-              <!-- Badge de Estado de la Factura -->
-              <span
-                *ngIf="fac.estado === 'EN_TRANSITO'"
-                class="he-status-badge transito"
-              >
-                <span class="he-status-dot"></span>
-                <span>En tránsito ({{ fac.pendientes }} pend.)</span>
-              </span>
+                <!-- Acciones -->
+                <td style="text-align: right; white-space: nowrap;" (click)="$event.stopPropagation()">
+                  <div class="he-inv-actions">
 
-              <span
-                *ngIf="fac.estado === 'RECIBIDA'"
-                class="he-status-badge recibida"
-              >
-                <span class="he-status-dot"></span>
-                <span>Recibida OK</span>
-              </span>
-
-              <span
-                *ngIf="fac.estado === 'CON_NOVEDAD'"
-                class="he-status-badge novedad"
-              >
-                <span class="he-status-dot"></span>
-                <span>Con Novedad</span>
-              </span>
-
-              <span
-                *ngIf="fac.estado === 'RECHAZADA'"
-                class="he-status-badge novedad"
-              >
-                <span class="he-status-dot"></span>
-                <span>Rechazada</span>
-              </span>
-
-              <!-- Acciones de Factura Completa (Administrador) -->
-              <div *ngIf="puedeGestionarRecepcion && fac.pendientes > 0" class="he-factura-actions">
-                <button
-                  type="button"
-                  class="he-btn-receive-factura"
-                  (click)="confirmarRecepcionFacturaCompleta(fac)"
-                  title="Recibir conforme todos los productos de esta factura"
-                >
-                  <span class="material-symbols-outlined" style="font-size: 16px;">check_circle</span>
-                  <span>Recibir Factura</span>
-                </button>
-                <button
-                  type="button"
-                  class="he-btn-reject-factura"
-                  (click)="abrirModalRechazoFactura(fac)"
-                  title="Rechazar factura completa"
-                >
-                  <span class="material-symbols-outlined" style="font-size: 16px;">cancel</span>
-                  <span>Rechazar</span>
-                </button>
-        </div>
-
-              <!-- Acreditada Total -->
-              <span *ngIf="fac.estado === 'RECIBIDA'" class="he-text-accredited" style="margin-left: 6px;">
-                <span class="material-symbols-outlined" style="font-size: 16px;">verified</span>
-                <span>Factura Acreditada</span>
-              </span>
-
-      </div>
-
-    </div>
-
-          <!-- Detalle de Productos dentro de la Factura -->
-          <div *ngIf="facturaEstaExpandida(fac.idFactura)" class="he-factura-body">
-            <table class="he-data-table he-factura-table">
-              <thead>
-                <tr>
-                  <th>Alimento / Insumo</th>
-                  <th style="text-align: center;">Tipo</th>
-                  <th style="text-align: center;">Cantidad Despachada</th>
-                  <th style="text-align: center;">Vencimiento</th>
-                  <th style="text-align: center;">Estado Ítem</th>
-                  <th style="text-align: right;">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let entrega of fac.entregas" class="he-group-item">
-                  <!-- Alimento -->
-                  <td>
-                    <div class="he-primary-name">{{ entrega.ingrediente }}</div>
-                    <div *ngIf="entrega.observaciones" class="he-sub-name" [title]="entrega.observaciones">
-                      {{ entrega.observaciones }}
-              </div>
-                  </td>
-
-                  <!-- Tipo de mercado -->
-                  <td style="text-align: center;">
-                    <span class="he-tag-market" [ngClass]="entrega.tipoMercado === 'Granos' ? 'grano' : 'perecedero'">
-                      {{ entrega.tipoMercado }}
-                    </span>
-                  </td>
-
-                  <!-- Cantidad -->
-                  <td style="text-align: center; white-space: nowrap;">
-                    <strong style="color: #0f172a; font-weight: 800;">{{ entrega.cantidad }}</strong>
-                    <span style="font-size: 11.5px; color: #64748b; margin-left: 3px;">{{ entrega.unidad || 'Kg' }}</span>
-                  </td>
-
-                  <!-- Vencimiento -->
-                  <td style="text-align: center; font-size: 11.5px; color: #64748b;">
-                    {{ formatoFecha(entrega.fechaVencimiento) }}
-                  </td>
-
-                  <!-- Estado individual -->
-                  <td style="text-align: center;">
-                    <span
-                      *ngIf="['EN_TRANSITO', 'PENDIENTE', 'EN_PROCESO'].includes((entrega.estado || 'EN_TRANSITO').toUpperCase())"
-                      class="he-status-badge transito"
-                    >
-                      <span class="he-status-dot"></span>
-                      <span>En tránsito</span>
-                    </span>
-                    <span
-                      *ngIf="(entrega.estado || '').toUpperCase() === 'RECIBIDA'"
-                      class="he-status-badge recibida"
-                    >
-                      <span class="he-status-dot"></span>
-                      <span>Conforme</span>
-                    </span>
-                    <span
-                      *ngIf="(entrega.estado || '').toUpperCase() === 'CON_NOVEDAD' || (entrega.estado || '').toUpperCase() === 'RECHAZADA'"
-                      class="he-status-badge novedad"
-                    >
-                      <span class="he-status-dot"></span>
-                      <span>{{ (entrega.estado || '').toUpperCase() === 'RECHAZADA' ? 'Rechazado' : 'Con Novedad' }}</span>
-                    </span>
-                  </td>
-
-                  <!-- Acciones individuales -->
-                  <td style="text-align: right; white-space: nowrap;">
-                    <div
-                      *ngIf="puedeGestionarRecepcion && ['EN_TRANSITO', 'PENDIENTE', 'EN_PROCESO'].includes((entrega.estado || 'EN_TRANSITO').toUpperCase())"
-                      class="he-delivery-actions"
-                    >
+                    <ng-container *ngIf="puedeGestionarRecepcion && fac.pendientes > 0; else soloDetalle">
                       <button
                         type="button"
-                        class="he-btn-receive"
-                        (click)="abrirModalRecepcion(entrega)"
-                        title="Control de calidad y recepción individual"
+                        class="he-btn-receive-factura"
+                        (click)="confirmarRecepcionFacturaCompleta(fac)"
+                        title="Recibir conforme todos los productos de esta factura"
                       >
-                        <span>Inspeccionar</span>
+                        <span class="material-symbols-outlined" style="font-size: 16px;">check_circle</span>
+                        <span>Recibir Factura</span>
                       </button>
                       <button
                         type="button"
-                        class="he-btn-reject"
-                        (click)="abrirModalRechazo(entrega)"
-                        title="Rechazar este producto"
+                        class="he-btn-icon-reject"
+                        (click)="abrirModalRechazoFactura(fac)"
+                        title="Rechazar factura completa"
                       >
-                        <span>Rechazar</span>
+                        <span class="material-symbols-outlined" style="font-size: 17px;">cancel</span>
                       </button>
-              </div>
+                    </ng-container>
 
-                    <span *ngIf="(entrega.estado || '').toUpperCase() === 'RECIBIDA'" class="he-text-accredited">
-                      <span class="material-symbols-outlined" style="font-size: 15px;">check_circle</span>
-                      <span>Recibido</span>
-                    </span>
+                    <ng-template #soloDetalle>
+                      <button
+                        type="button"
+                        class="he-btn-detail-outline"
+                        (click)="alternarFactura(fac)"
+                      >
+                        <span class="material-symbols-outlined" style="font-size: 16px;">visibility</span>
+                        <span>{{ facturaEstaExpandida(fac) ? 'Ocultar detalle' : 'Ver detalle' }}</span>
+                      </button>
+                    </ng-template>
 
-                    <button
-                      *ngIf="(entrega.estado || '').toUpperCase() === 'CON_NOVEDAD' || (entrega.estado || '').toUpperCase() === 'RECHAZADA'"
-                      type="button"
-                      class="he-btn-view-detail"
-                      (click)="verDetalleNovedad(entrega)"
-                    >
-                      Ver novedad
-                    </button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-    </div>
+                  </div>
+                </td>
 
-  </div>
+              </tr>
 
-</div>
+              <!-- ===== Detalle desplegable de la factura ===== -->
+              <tr *ngIf="facturaEstaExpandida(fac)" class="he-inv-detail-row">
+                <td colspan="6">
+                  <div class="he-inv-detail-wrap">
+
+                    <div class="he-inv-detail-meta">
+                      <span><strong>Destino:</strong> {{ fac.destino }}</span>
+                      <span class="he-inv-detail-sep">•</span>
+                      <span><strong>Responsable:</strong> {{ fac.responsable }}</span>
+                      <span class="he-inv-detail-sep">•</span>
+                      <span>{{ fac.totalItems }} alimento{{ fac.totalItems === 1 ? '' : 's' }} ({{ fac.totalCantidad }} {{ fac.unidadPrincipal }})</span>
+                    </div>
+
+                    <div class="he-inv-inner">
+                      <table class="he-data-table">
+                        <thead>
+                          <tr>
+                            <th>Alimento / Insumo</th>
+                            <th style="text-align: center;">Tipo</th>
+                            <th style="text-align: center;">Cantidad despachada</th>
+                            <th style="text-align: center;">Vencimiento</th>
+                            <th style="text-align: center;">Estado ítem</th>
+                            <th style="text-align: right;">Acciones</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr *ngFor="let entrega of fac.entregas">
+
+                            <!-- Alimento -->
+                            <td>
+                              <div class="he-primary-name">{{ entrega.ingrediente }}</div>
+                              <div *ngIf="entrega.observaciones" class="he-sub-name" [title]="entrega.observaciones">
+                                {{ entrega.observaciones }}
+                              </div>
+                            </td>
+
+                            <!-- Tipo de mercado -->
+                            <td style="text-align: center;">
+                              <span class="he-tag-market" [ngClass]="entrega.tipoMercado === 'Granos' ? 'grano' : 'perecedero'">
+                                {{ entrega.tipoMercado }}
+                              </span>
+                            </td>
+
+                            <!-- Cantidad -->
+                            <td style="text-align: center; white-space: nowrap;">
+                              <strong style="color: #0f172a; font-weight: 800;">{{ entrega.cantidad }}</strong>
+                              <span style="font-size: 11.5px; color: #64748b; margin-left: 3px;">{{ entrega.unidad || 'Kg' }}</span>
+                            </td>
+
+                            <!-- Vencimiento -->
+                            <td style="text-align: center; font-size: 11.5px; color: #64748b;">
+                              {{ formatoFecha(entrega.fechaVencimiento) }}
+                            </td>
+
+                            <!-- Estado individual -->
+                            <td style="text-align: center;">
+                              <span
+                                *ngIf="['EN_TRANSITO', 'PENDIENTE', 'EN_PROCESO'].includes((entrega.estado || 'EN_TRANSITO').toUpperCase())"
+                                class="he-status-badge transito"
+                              >
+                                <span class="he-status-dot"></span>
+                                <span>En tránsito</span>
+                              </span>
+                              <span
+                                *ngIf="(entrega.estado || '').toUpperCase() === 'RECIBIDA'"
+                                class="he-status-badge recibida"
+                              >
+                                <span class="he-status-dot"></span>
+                                <span>Conforme</span>
+                              </span>
+                              <span
+                                *ngIf="(entrega.estado || '').toUpperCase() === 'CON_NOVEDAD' || (entrega.estado || '').toUpperCase() === 'RECHAZADA'"
+                                class="he-status-badge novedad"
+                              >
+                                <span class="he-status-dot"></span>
+                                <span>{{ (entrega.estado || '').toUpperCase() === 'RECHAZADA' ? 'Rechazado' : 'Con novedad' }}</span>
+                              </span>
+                            </td>
+
+                            <!-- Acciones individuales -->
+                            <td style="text-align: right; white-space: nowrap;">
+                              <div
+                                *ngIf="puedeGestionarRecepcion && ['EN_TRANSITO', 'PENDIENTE', 'EN_PROCESO'].includes((entrega.estado || 'EN_TRANSITO').toUpperCase())"
+                                class="he-delivery-actions"
+                              >
+                                <button
+                                  type="button"
+                                  class="he-btn-receive"
+                                  (click)="abrirModalRecepcion(entrega)"
+                                  title="Control de calidad y recepción individual"
+                                >
+                                  <span>Inspeccionar</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  class="he-btn-reject"
+                                  (click)="abrirModalRechazo(entrega)"
+                                  title="Rechazar este producto"
+                                >
+                                  <span>Rechazar</span>
+                                </button>
+                              </div>
+
+                              <span *ngIf="(entrega.estado || '').toUpperCase() === 'RECIBIDA'" class="he-text-accredited">
+                                <span class="material-symbols-outlined" style="font-size: 15px;">check_circle</span>
+                                <span>Recibido</span>
+                              </span>
+
+                              <button
+                                *ngIf="(entrega.estado || '').toUpperCase() === 'CON_NOVEDAD' || (entrega.estado || '').toUpperCase() === 'RECHAZADA'"
+                                type="button"
+                                class="he-btn-view-detail"
+                                (click)="verDetalleNovedad(entrega)"
+                              >
+                                Ver novedad
+                              </button>
+                            </td>
+
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                  </div>
+                </td>
+              </tr>
+
+            </ng-container>
+
+          </tbody>
+        </table>
+      </div>
 
     </ng-container>
 
+
     <!-- =========================================================
-         VISTA 2: POR ALIMENTO / DÍA (Plana)
+         VISTA 2: POR ALIMENTO / DÍA (acordeón: un día abierto a la vez)
          ========================================================= -->
     <ng-container *ngIf="vistaModo === 'productos'">
 
-      <!-- ---------- Controles expandir / contraer grupos ---------- -->
-      <div *ngIf="gruposPorFecha.length > 1" class="he-groups-controls">
+      <div *ngIf="gruposPorFecha.length > 0" class="he-groups-controls">
         <span class="he-groups-caption">
-          <span class="material-symbols-outlined" aria-hidden="true">calendar_month</span>
           Entregas agrupadas por día
         </span>
-        <div class="he-groups-control-actions">
-          <button type="button" (click)="expandirGrupos()">Expandir todos</button>
-          <button type="button" (click)="contraerGrupos()">Contraer todos</button>
-  </div>
-</div>
+      </div>
 
-      <!-- ---------- Tabla de entregas ---------- -->
       <div class="he-table-wrapper">
         <table class="he-data-table">
 
@@ -1544,29 +1574,26 @@
 
           <tbody>
 
-            <!-- Spinner de carga inicial -->
             <tr *ngIf="cargando && entregas.length === 0">
               <td colspan="6">
                 <div class="he-empty-state">
                   <span class="material-symbols-outlined animate-spin he-empty-icon" style="color: #fac94b;">progress_activity</span>
                   <span>Sincronizando entregas con el servidor...</span>
-          </div>
+                </div>
               </td>
             </tr>
 
-            <!-- Sin resultados -->
             <tr *ngIf="!cargando && entregasFiltradas.length === 0">
               <td colspan="6">
                 <div class="he-empty-state">
                   <span class="material-symbols-outlined he-empty-icon">inbox</span>
                   <span style="font-weight: 700; color: #0f172a;">No hay entregas para mostrar</span>
                   <span style="font-size: 12px;">No se encontraron registros con los filtros seleccionados.</span>
-          </div>
+                </div>
               </td>
             </tr>
 
-            <!-- Grupos por fecha -->
-            <ng-container *ngFor="let grupo of gruposPorFecha">
+            <ng-container *ngFor="let grupo of gruposPorFecha; trackBy: trackGrupo">
 
               <!-- Fila cabecera del día -->
               <tr class="he-day-group-row">
@@ -1602,15 +1629,13 @@
               <ng-container *ngIf="grupoEstaExpandido(grupo.fecha)">
                 <tr *ngFor="let entrega of grupo.entregas" class="he-group-item">
 
-                  <!-- Alimento / Insumo -->
                   <td>
                     <div class="he-primary-name">{{ entrega.ingrediente }}</div>
                     <div *ngIf="entrega.observaciones" class="he-sub-name" [title]="entrega.observaciones">
                       {{ entrega.observaciones }}
-              </div>
+                    </div>
                   </td>
 
-                  <!-- Destino -->
                   <td
                     class="he-td-destino"
                     [title]="entrega.institucionNombre || institucionNombreUsuario || 'Institución asignada'"
@@ -1623,20 +1648,17 @@
                     </span>
                   </td>
 
-                  <!-- Tipo de mercado -->
                   <td style="text-align: center;">
                     <span class="he-tag-market" [ngClass]="entrega.tipoMercado === 'Granos' ? 'grano' : 'perecedero'">
                       {{ entrega.tipoMercado }}
                     </span>
                   </td>
 
-                  <!-- Cantidad -->
                   <td style="text-align: center; white-space: nowrap;">
                     <strong style="color: #0f172a; font-weight: 800;">{{ entrega.cantidad }}</strong>
                     <span style="font-size: 11.5px; color: #64748b; margin-left: 3px;">{{ entrega.unidad || 'Kg' }}</span>
                   </td>
 
-                  <!-- Estado -->
                   <td style="text-align: center;">
                     <span
                       *ngIf="['EN_TRANSITO', 'PENDIENTE', 'EN_PROCESO'].includes((entrega.estado || 'EN_TRANSITO').toUpperCase())"
@@ -1659,14 +1681,12 @@
                       class="he-status-badge novedad"
                     >
                       <span class="he-status-dot"></span>
-                      <span>{{ (entrega.estado || '').toUpperCase() === 'RECHAZADA' ? 'Rechazada' : 'Con Novedad' }}</span>
+                      <span>{{ (entrega.estado || '').toUpperCase() === 'RECHAZADA' ? 'Rechazada' : 'Con novedad' }}</span>
                     </span>
                   </td>
 
-                  <!-- Acciones -->
                   <td style="text-align: right; white-space: nowrap;">
 
-                    <!-- Administrador: Recibir / Rechazar -->
                     <div
                       *ngIf="puedeGestionarRecepcion && ['EN_TRANSITO', 'PENDIENTE', 'EN_PROCESO'].includes((entrega.estado || 'EN_TRANSITO').toUpperCase())"
                       class="he-delivery-actions"
@@ -1687,15 +1707,13 @@
                       >
                         <span>Rechazar</span>
                       </button>
-              </div>
+                    </div>
 
-                    <!-- Acreditada -->
                     <span *ngIf="(entrega.estado || '').toUpperCase() === 'RECIBIDA'" class="he-text-accredited">
                       <span class="material-symbols-outlined" style="font-size: 15px;">check_circle</span>
                       <span>Acreditada</span>
                     </span>
 
-                    <!-- Ver novedad -->
                     <button
                       *ngIf="(entrega.estado || '').toUpperCase() === 'CON_NOVEDAD' || (entrega.estado || '').toUpperCase() === 'RECHAZADA'"
                       type="button"
@@ -1723,7 +1741,7 @@
                       >
                         <span class="material-symbols-outlined" style="font-size:17px;">delete</span>
                       </button>
-              </div>
+                    </div>
 
                   </td>
                 </tr>
@@ -1733,12 +1751,12 @@
           </tbody>
 
         </table>
-</div>
+      </div>
 
     </ng-container>
 
-    <!-- ---------- Pie de tabla informativo ---------- -->
-    <div style="display:flex; justify-content:space-between; align-items:center; font-size:12px; color:#64748b; padding-top:4px;">
+    <!-- Pie de tabla informativo -->
+    <div style="display:flex; justify-content:space-between; align-items:center; font-size:12px; color:#64748b; padding-top:4px; flex-wrap:wrap; gap:6px;">
       <span>Mostrando {{ entregasFiltradas.length }} de {{ entregas.length }} entrega(s)</span>
       <span>SIRAE PAE &bull; Control Institucional</span>
     </div>
@@ -1757,7 +1775,7 @@
         <div class="he-modal-header-left">
           <div class="he-modal-icon-badge">
             <span class="material-symbols-outlined" style="font-size: 20px;">task_alt</span>
-    </div>
+          </div>
           <div>
             <h3 class="he-modal-title">
               {{ modoRechazoDirecto ? 'Rechazar entrega' : 'Control de Calidad y Recepción' }}
@@ -1765,12 +1783,12 @@
             <p class="he-modal-sub">
               {{ modoRechazoDirecto ? 'Confirma el rechazo total e indica el motivo.' : 'Inspecciona el estado físico del insumo antes de acreditarlo.' }}
             </p>
-    </div>
-  </div>
+          </div>
+        </div>
         <button type="button" class="he-modal-close" (click)="cerrarModalRecepcion()" title="Cerrar">
           <span class="material-symbols-outlined" style="font-size: 18px;">close</span>
         </button>
-</div>
+      </div>
 
       <div class="he-modal-body">
 
@@ -1778,12 +1796,12 @@
           <div>
             <div class="he-info-label">Alimento / Insumo</div>
             <div class="he-info-value">{{ entregaSeleccionada.ingrediente }}</div>
-    </div>
+          </div>
           <div style="text-align: right;">
             <div class="he-info-label">Cantidad Despachada</div>
             <div class="he-info-value">{{ entregaSeleccionada.cantidad }} {{ entregaSeleccionada.unidad || 'Kg' }}</div>
-    </div>
-  </div>
+          </div>
+        </div>
 
         <div class="he-form-grid">
           <div class="he-form-group">
@@ -1799,7 +1817,7 @@
               step="0.01"
               class="he-form-input"
             />
-    </div>
+          </div>
 
           <div class="he-form-group">
             <label class="he-form-label" for="rec-rechazada">Cant. Dañada / Rechazada</label>
@@ -1815,8 +1833,8 @@
               class="he-form-input"
               style="color: #991b1b; font-weight: 700;"
             />
-    </div>
-  </div>
+          </div>
+        </div>
 
         <div *ngIf="formRecepcion.cantidadRechazada > 0" class="he-form-group">
           <label class="he-form-label" for="rec-motivo" style="color: #991b1b;">Motivo del rechazo / Avería *</label>
@@ -1827,9 +1845,9 @@
             placeholder="Especifica el motivo (ej: empaque roto, producto golpeado o magullado)..."
             class="he-form-textarea"
           ></textarea>
-  </div>
+        </div>
 
-</div>
+      </div>
 
       <div class="he-modal-footer">
         <button type="button" class="he-btn-cancel" (click)="cerrarModalRecepcion()" [disabled]="procesandoRecepcion">
@@ -1855,16 +1873,16 @@
         <div class="he-modal-header-left">
           <div class="he-modal-icon-badge" style="background:#fee2e2; border-color:#fca5a5; color:#991b1b;">
             <span class="material-symbols-outlined" style="font-size: 20px;">report_problem</span>
-    </div>
+          </div>
           <div>
             <h3 class="he-modal-title">Acta de Novedad Técnica</h3>
             <p class="he-modal-sub">Detalle de inspección y control de calidad registrado.</p>
-    </div>
-  </div>
+          </div>
+        </div>
         <button type="button" class="he-modal-close" (click)="cerrarModalDetalle()">
           <span class="material-symbols-outlined" style="font-size: 18px;">close</span>
         </button>
-</div>
+      </div>
 
       <div class="he-modal-body">
 
@@ -1872,28 +1890,28 @@
           <div>
             <div class="he-info-label">Alimento</div>
             <div class="he-info-value">{{ entregaDetalle.ingrediente }}</div>
-    </div>
+          </div>
           <div style="text-align: right;">
             <div class="he-info-label">Fecha de Entrega</div>
             <div class="he-info-value">{{ formatoFecha(entregaDetalle.fechaRecepcion) }}</div>
-    </div>
-  </div>
+          </div>
+        </div>
 
         <div class="he-form-grid">
           <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:12px;">
             <div style="font-size:11px; font-weight:700; color:#166534; text-transform:uppercase;">Conforme</div>
             <div style="font-size:18px; font-weight:800; color:#166534; margin-top:2px;">
               {{ entregaDetalle.cantidadRecibida ?? entregaDetalle.cantidad }} {{ entregaDetalle.unidad || 'Kg' }}
-      </div>
-    </div>
+            </div>
+          </div>
 
           <div style="background:#fee2e2; border:1px solid #fca5a5; border-radius:10px; padding:12px;">
             <div style="font-size:11px; font-weight:700; color:#991b1b; text-transform:uppercase;">Dañado / Rechazado</div>
             <div style="font-size:18px; font-weight:800; color:#991b1b; margin-top:2px;">
               {{ entregaDetalle.cantidadRechazada || 0 }} {{ entregaDetalle.unidad || 'Kg' }}
-      </div>
-    </div>
-  </div>
+            </div>
+          </div>
+        </div>
 
         <div
           *ngIf="entregaDetalle.motivoRechazo"
@@ -1901,14 +1919,14 @@
         >
           <div style="font-size:11.5px; font-weight:700; color:#475569; text-transform:uppercase;">Motivo Reportado</div>
           <p style="margin:4px 0 0 0; font-size:13px; color:#0f172a;">{{ entregaDetalle.motivoRechazo }}</p>
-  </div>
+        </div>
 
         <div *ngIf="entregaDetalle.usuarioReceptorNombre" style="font-size:12px; color:#64748b;">
           Recibido e inspeccionado por:
           <strong style="color:#0f172a;">{{ entregaDetalle.usuarioReceptorNombre }}</strong>
-  </div>
+        </div>
 
-</div>
+      </div>
 
       <div class="he-modal-footer">
         <button type="button" class="he-btn-confirm" (click)="cerrarModalDetalle()">
