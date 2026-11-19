@@ -7,6 +7,7 @@ import { of, throwError } from 'rxjs';
 import { PerfilComponent } from './perfil';
 import { AuthService, AuthenticatedUser } from '../core/auth/auth.service';
 import { SweetAlertService } from '../core/services/sweet-alert.service';
+import { ReconocimientoFacialService } from '../services/reconocimiento-facial.service';
 import { environment } from '../../environments/environment';
 
 describe('PerfilComponent - Módulo de Edición de Datos Propios del Perfil (Autogestión)', () => {
@@ -41,6 +42,14 @@ describe('PerfilComponent - Módulo de Edición de Datos Propios del Perfil (Aut
         provideMockStore(),
         AuthService,
         SweetAlertService,
+        {
+          provide: ReconocimientoFacialService,
+          useValue: {
+            consultarEstadoBiometria: () => of({ tiene_biometria: false }),
+            registrarRostro: () => of({ success: true }),
+            eliminarRostro: () => of({ success: true }),
+          },
+        },
       ],
     }).compileComponents();
 
@@ -216,5 +225,87 @@ describe('PerfilComponent - Módulo de Edición de Datos Propios del Perfil (Aut
     expect(component.modoEdicion).toBe(false);
     expect(component.mensajeError).toBe('');
     expect(component.mensajeExito).toBe('');
+  });
+
+  it('debe mostrar "Administrador" y nunca "Super Administrador" para un usuario Administrador', () => {
+    const adminUser: AuthenticatedUser = {
+      id_usuario: 20,
+      nombre: 'Ana',
+      apellido: 'Gomez',
+      correo: 'admin@escuela.edu.co',
+      numero_documento: '',
+      rol: 'Administrador',
+      is_active: true,
+      institucion_nombre: '',
+    };
+    vi.spyOn(authService, 'obtenerUsuario').mockReturnValue(adminUser);
+    vi.spyOn(authService, 'obtenerPerfil').mockReturnValue(of(adminUser));
+
+    component.cargarDatosUsuario();
+    fixture.detectChanges();
+
+    expect(component.esSuperAdmin).toBe(false);
+    expect(component.rolDisplay).toBe('Administrador');
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.textContent).toContain('Administrador');
+    expect(compiled.textContent).not.toContain('Super Administrador');
+    expect(compiled.textContent).not.toContain('SUPER001');
+    expect(compiled.textContent).toContain('No registrado');
+    expect(compiled.textContent).not.toContain('Ámbito central');
+    expect(compiled.textContent).toContain('Institución Educativa Asignada');
+  });
+
+  it('debe mostrar "Supervisor" y nunca "Administrador" para Santiago Acosta supervisor@sirae.com (rol 3)', () => {
+    const supervisorUser: AuthenticatedUser = {
+      id_usuario: 30,
+      nombre: 'Santiago',
+      apellido: 'Acosta',
+      correo: 'supervisor@sirae.com',
+      numero_documento: '1098765432',
+      rol: '3',
+      is_active: true,
+      instituciones_supervisor: [{ id_institucion: 1, nombre_institucion: 'Institución Central' } as any],
+    };
+    vi.spyOn(authService, 'obtenerUsuario').mockReturnValue(supervisorUser);
+    vi.spyOn(authService, 'obtenerPerfil').mockReturnValue(of(supervisorUser));
+
+    component.cargarDatosUsuario();
+    fixture.detectChanges();
+
+    expect(component.esSupervisor).toBe(true);
+    expect(component.esSuperAdmin).toBe(false);
+    expect(component.esAdmin).toBe(false);
+    expect(component.rolDisplay).toBe('Supervisor');
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.textContent).toContain('Supervisor');
+    expect(compiled.textContent).not.toContain('Super Administrador');
+  });
+
+  it('debe mostrar "Administrador" y nunca "Usuario Institucional" para Jorge Ruiz jorgeruiz@gmail.com', () => {
+    const jorgeUser: AuthenticatedUser = {
+      id_usuario: 55,
+      nombre: 'Jorge',
+      apellido: 'Ruiz',
+      correo: 'jorgeruiz@gmail.com',
+      numero_documento: '',
+      rol: null,
+      institucion_nombre: 'Institucion educativa Comercial del Norte',
+      is_active: true,
+    };
+    vi.spyOn(authService, 'obtenerUsuario').mockReturnValue(jorgeUser);
+    vi.spyOn(authService, 'obtenerPerfil').mockReturnValue(of(jorgeUser));
+
+    component.cargarDatosUsuario();
+    fixture.detectChanges();
+
+    expect(component.esSupervisor).toBe(false);
+    expect(component.esSuperAdmin).toBe(false);
+    expect(component.rolDisplay).toBe('Administrador');
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.textContent).toContain('Administrador');
+    expect(compiled.textContent).not.toContain('Usuario Institucional');
   });
 });

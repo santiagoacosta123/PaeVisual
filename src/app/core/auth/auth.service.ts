@@ -131,13 +131,43 @@ export class AuthService {
       ...datosLimpios
     } = usuario;
 
+    let rolFinal: any = datosLimpios.rol;
+    if (datosLimpios.rol_nombre) {
+      rolFinal = datosLimpios.rol_nombre;
+    } else if (typeof datosLimpios.rol === 'object' && datosLimpios.rol !== null) {
+      rolFinal = datosLimpios.rol.nombre_rol || datosLimpios.rol.nombre || datosLimpios.rol.rol || datosLimpios.rol.id_rol || datosLimpios.rol.id;
+    } else if (typeof datosLimpios.rol_detalle === 'object' && datosLimpios.rol_detalle !== null) {
+      rolFinal = datosLimpios.rol_detalle.nombre_rol || datosLimpios.rol_detalle.nombre || datosLimpios.rol_detalle.id_rol;
+    }
+
+    if (rolFinal === 1 || rolFinal === '1') {
+      rolFinal = 'Super Administrador';
+    } else if (rolFinal === 2 || rolFinal === '2') {
+      rolFinal = 'Administrador';
+    } else if (rolFinal === 3 || rolFinal === '3') {
+      rolFinal = 'Supervisor';
+    } else if (rolFinal === 4 || rolFinal === '4') {
+      rolFinal = 'Jefa de manipuladoras';
+    } else if (rolFinal === 5 || rolFinal === '5') {
+      rolFinal = 'Manipuladora';
+    } else if (!rolFinal) {
+      const correo = String(datosLimpios.correo || '').toLowerCase();
+      if (correo.includes('superadmin')) {
+        rolFinal = 'Super Administrador';
+      } else if (correo.includes('supervisor') || (Array.isArray(datosLimpios.instituciones_supervisor) && datosLimpios.instituciones_supervisor.length > 0)) {
+        rolFinal = 'Supervisor';
+      } else {
+        rolFinal = 'Administrador';
+      }
+    }
+
     return {
       id_usuario: Number(datosLimpios.id_usuario || 0),
       nombre: String(datosLimpios.nombre || '').trim(),
       apellido: String(datosLimpios.apellido || '').trim(),
       correo: String(datosLimpios.correo || '').trim().toLowerCase(),
       numero_documento: String(datosLimpios.numero_documento || '').trim(),
-      rol: datosLimpios.rol || null,
+      rol: rolFinal ? String(rolFinal) : null,
       estado: datosLimpios.estado || (datosLimpios.is_active ? 'Activo' : 'Inactivo'),
       is_active: datosLimpios.is_active !== undefined ? Boolean(datosLimpios.is_active) : true,
       id_institucion: datosLimpios.id_institucion ?? null,
@@ -234,12 +264,13 @@ export class AuthService {
       .subscribe();
   }
 
-  esSuperAdministrador(rol: string | null | undefined): boolean {
+  esSuperAdministrador(rol: any): boolean {
     const rolNormalizado = this.normalizarRol(rol);
     if (!rolNormalizado || rolNormalizado.includes('supervisor')) {
       return false;
     }
     return rolNormalizado === 'superadministrador'
+      || rolNormalizado === '1'
       || rolNormalizado === 'super administrador'
       || rolNormalizado === 'super admin'
       || rolNormalizado === 'superadmin'
@@ -248,47 +279,77 @@ export class AuthService {
       || (rolNormalizado.includes('super') && (rolNormalizado.includes('admin') || rolNormalizado.includes('administrador')));
   }
 
-  esAdministrador(rol: string | null | undefined): boolean {
+  esAdministrador(rol: any): boolean {
     const rolNormalizado = this.normalizarRol(rol);
     if (!rolNormalizado || this.esSuperAdministrador(rol) || this.esSupervisor(rol)) {
       return false;
     }
-    return rolNormalizado === 'administrador' || rolNormalizado === 'admin' || rolNormalizado.includes('administrador');
+    return rolNormalizado === 'administrador'
+      || rolNormalizado === '2'
+      || rolNormalizado === 'admin'
+      || rolNormalizado.includes('administrador')
+      || rolNormalizado.includes('admin');
   }
 
-  rolPermitido(rol: string | null | undefined): boolean {
+  rolPermitido(rol: any): boolean {
     const rolNormalizado = this.normalizarRol(rol);
 
     return this.esSuperAdministrador(rol)
       || rolNormalizado === 'administrador'
       || rolNormalizado === 'admin'
+      || rolNormalizado === '2'
       || this.esSupervisor(rol)
       || this.esJefa(rol);
   }
 
-  normalizarRol(rol: string | null | undefined): string {
-    return rol
-      ?.normalize('NFD')
+  normalizarRol(rol: any): string {
+    if (rol === null || rol === undefined) {
+      return '';
+    }
+    if (typeof rol === 'object') {
+      const nombre = rol.nombre_rol || rol.nombre || rol.rol || rol.descripcion;
+      if (nombre) return this.normalizarRol(nombre);
+      const id = rol.id_rol ?? rol.id ?? rol.pk;
+      if (id !== undefined && id !== null) return this.normalizarRol(id);
+      return '';
+    }
+
+    const str = String(rol).trim();
+    if (str === '1') return 'superadministrador';
+    if (str === '2') return 'administrador';
+    if (str === '3') return 'supervisor';
+    if (str === '4') return 'jefa de manipuladoras';
+    if (str === '5') return 'manipuladora';
+
+    return str
+      .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
       .trim()
       .toLowerCase()
-      .replace(/\s+/g, ' ') ?? '';
+      .replace(/\s+/g, ' ');
   }
 
-  esSupervisor(rol: string | null | undefined): boolean {
+  esSupervisor(rol: any): boolean {
     const rolNormalizado = this.normalizarRol(rol);
     if (!rolNormalizado) {
       return false;
     }
     return rolNormalizado === 'supervisor'
+      || rolNormalizado === '3'
       || rolNormalizado === 'coordinador'
       || rolNormalizado === 'coordinador pae'
       || rolNormalizado.includes('supervisor')
       || rolNormalizado.includes('coordinador');
   }
 
-  esJefa(rol: string | null | undefined): boolean {
-    return ['jefa de manipuladoras', 'jefa manipuladoras', 'jefamanipuladoras'].includes(this.normalizarRol(rol));
+  esJefa(rol: any): boolean {
+    const rolNormalizado = this.normalizarRol(rol);
+    if (!rolNormalizado || this.esSupervisor(rol) || this.esSuperAdministrador(rol)) {
+      return false;
+    }
+    return rolNormalizado === '4'
+      || ['jefa de manipuladoras', 'jefa manipuladoras', 'jefamanipuladoras', 'jefa'].includes(rolNormalizado)
+      || rolNormalizado.includes('jefa');
   }
 
   recuperarContrasena(data: { correo: string }): Observable<PasswordResetResponse> {
