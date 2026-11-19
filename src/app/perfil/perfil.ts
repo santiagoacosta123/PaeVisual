@@ -157,27 +157,38 @@ export class PerfilComponent implements OnInit, OnDestroy {
     return 'SA';
   }
 
+  get esSupervisor(): boolean {
+    if (this.usuario?.correo?.toLowerCase().includes('supervisor')) return true;
+    if (Array.isArray(this.usuario?.instituciones_supervisor) && this.usuario.instituciones_supervisor.length > 0) return true;
+    return this.authService.esSupervisor(this.usuario?.rol);
+  }
+
   get esSuperAdmin(): boolean {
+    if (this.esSupervisor || this.authService.esSupervisor(this.usuario?.rol) || this.authService.esJefa(this.usuario?.rol)) {
+      return false;
+    }
     if (this.usuario?.correo?.toLowerCase().includes('superadmin')) return true;
     return this.authService.esSuperAdministrador(this.usuario?.rol);
   }
 
-  get rolDisplay(): string {
-    if (this.authService.esSupervisor(this.usuario?.rol)) {
-      return 'Supervisor PAE';
+  get esAdmin(): boolean {
+    if (this.esSupervisor || this.esSuperAdmin || this.authService.esJefa(this.usuario?.rol)) {
+      return false;
     }
-    if (this.esSuperAdmin || this.usuario?.correo?.toLowerCase().includes('superadmin')) {
+    return true;
+  }
+
+  get rolDisplay(): string {
+    if (this.esSupervisor || this.authService.esSupervisor(this.usuario?.rol)) {
+      return 'Supervisor';
+    }
+    if (this.esSuperAdmin || this.authService.esSuperAdministrador(this.usuario?.rol)) {
       return 'Super Administrador';
     }
-    if (this.usuario?.rol) {
-      const r = this.authService.normalizarRol(this.usuario.rol);
-      if (this.authService.esSuperAdministrador(this.usuario.rol)) return 'Super Administrador';
-      if (r.includes('supervisor') || r.includes('coordinador')) return 'Supervisor PAE';
-      if (r.includes('admin')) return 'Administrador Institucional';
-      if (r.includes('jefa')) return 'Jefa de Manipuladoras';
-      return this.usuario.rol;
+    if (this.authService.esJefa(this.usuario?.rol)) {
+      return 'Jefa de manipuladoras';
     }
-    return 'Super Administrador';
+    return 'Administrador';
   }
 
   /**

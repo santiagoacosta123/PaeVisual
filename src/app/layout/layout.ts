@@ -165,21 +165,24 @@ export class LayoutComponent implements OnInit, OnDestroy {
     if (usuario) {
       // Normalizar y evaluar el rol del usuario autenticado
       this.rolUsuario = this.authService.normalizarRol(usuario.rol);
-      this.esSupervisor = this.authService.esSupervisor(usuario.rol);
-      this.esSuperAdministrador = !this.esSupervisor && this.authService.esSuperAdministrador(usuario.rol);
-      this.esJefa = this.authService.esJefa(usuario.rol);
-      this.esAdministrador = !this.esSupervisor && !this.esSuperAdministrador && (this.rolUsuario === 'admin' || this.rolUsuario === 'administrador');
+      this.esSupervisor = this.authService.esSupervisor(usuario.rol) ||
+        Boolean(usuario.correo?.toLowerCase().includes('supervisor')) ||
+        (Array.isArray(usuario.instituciones_supervisor) && usuario.instituciones_supervisor.length > 0);
+      this.esSuperAdministrador = !this.esSupervisor && (
+        this.authService.esSuperAdministrador(usuario.rol) ||
+        Boolean(usuario.correo?.toLowerCase().includes('superadmin'))
+      );
+      this.esJefa = !this.esSupervisor && !this.esSuperAdministrador && this.authService.esJefa(usuario.rol);
+      this.esAdministrador = !this.esSupervisor && !this.esSuperAdministrador && !this.esJefa;
       this.esGestor = this.rolUsuario.includes('gestor');
 
       const rolNombre = this.esSupervisor
-        ? 'Supervisor (Coordinador PAE)'
+        ? 'Supervisor'
         : this.esSuperAdministrador
           ? 'Super Administrador'
           : this.esJefa
             ? 'Jefa de manipuladoras'
-            : this.esAdministrador
-              ? 'Administrador'
-              : usuario.rol || 'Sin rol asignado';
+            : 'Administrador';
 
       this.perfil = {
         nombre: `${usuario.nombre ?? ''} ${usuario.apellido ?? ''}`.trim() || usuario.correo,
@@ -187,7 +190,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
         rol: rolNombre,
         foto_perfil: usuario.foto_perfil || null,
         numero_documento: usuario.numero_documento || 'No registrado',
-        institucion: usuario.institucion_nombre || usuario.institucion || (this.esAdministrador ? 'Institución Educativa Asignada' : 'Ámbito Central'),
+        institucion: usuario.institucion_nombre || usuario.institucion || (this.esSupervisor ? 'Múltiples Instituciones (PAE)' : (this.esAdministrador ? 'Institución Educativa Asignada' : 'Ámbito Central')),
         sede: usuario.sede_nombre || ''
       };
 

@@ -39,6 +39,10 @@ describe('LayoutComponent', () => {
             esSuperAdministrador: (rol: string | null | undefined) => rol?.toLowerCase().includes('super') ?? false,
             esSupervisor: (rol: string | null | undefined) => rol?.toLowerCase().includes('supervisor') ?? false,
             esJefa: (rol: string | null | undefined) => rol?.toLowerCase().includes('jefa') ?? false,
+            esAdministrador: (rol: string | null | undefined) => {
+              const r = rol?.toLowerCase() ?? '';
+              return r.includes('admin') && !r.includes('super') && !r.includes('supervisor');
+            },
             cerrarSesion: vi.fn(),
             cambiarContrasena: vi.fn(),
           },
