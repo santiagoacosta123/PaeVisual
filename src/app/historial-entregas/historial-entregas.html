@@ -10,19 +10,24 @@
   .he-layout {
     display: flex;
     flex-direction: column;
-    gap: 18px;
+    gap: 24px;
     width: 100%;
     font-family: inherit;
     color: #0f172a;
   }
 
-  /* ---------- Cabecera ---------- */
+  /* ---------- Tarjeta superior (cabecera) ---------- */
   .he-page-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 16px;
     flex-wrap: wrap;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 24px;
+    padding: 24px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, .06);
   }
 
   .he-page-header-left {
@@ -32,7 +37,7 @@
     min-width: 0;
   }
 
-  .he-page-title-box { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .he-page-title-box { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 
   .he-title-row {
     display: flex;
@@ -43,8 +48,9 @@
 
   .he-page-title {
     margin: 0;
-    font-size: 22px;
-    font-weight: 800;
+    font-size: 24px;
+    font-weight: 900;
+    letter-spacing: -0.02em;
     color: #0f172a;
     line-height: 1.2;
   }
@@ -62,7 +68,7 @@
 
   .he-page-subtitle {
     margin: 0;
-    font-size: 13px;
+    font-size: 14px;
     color: #64748b;
   }
 
@@ -168,12 +174,12 @@
   .he-table-card {
     background: #ffffff;
     border: 1px solid #e2e8f0;
-    border-radius: 16px;
-    padding: 18px 20px;
+    border-radius: 24px;
+    padding: 24px;
     display: flex;
     flex-direction: column;
-    gap: 14px;
-    box-shadow: 0 1px 2px rgba(15, 23, 42, .04);
+    gap: 16px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, .06);
   }
 
   .he-card-title-row {
@@ -185,7 +191,7 @@
 
   .he-card-title {
     margin: 0;
-    font-size: 15px;
+    font-size: 18px;
     font-weight: 800;
     color: #0f172a;
   }
@@ -369,7 +375,7 @@
     width: 100%;
     overflow-x: auto;
     border: 1px solid #e2e8f0;
-    border-radius: 12px;
+    border-radius: 16px;
   }
 
   .he-data-table {
@@ -938,7 +944,7 @@
 <div class="he-layout">
 
   <!-- =========================================================
-       CABECERA DE LA PÁGINA (sin icono, sin Actualizar / Exportar)
+       TARJETA SUPERIOR (CABECERA DE LA PÁGINA)
        ========================================================= -->
   <header class="he-page-header">
 

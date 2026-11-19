@@ -239,22 +239,13 @@
   }
 
 
-  /* ---- Parte inferior: perfil, cambiar institución y cerrar sesión ---- */
+  /* ---- Parte inferior: cambiar institución y cerrar sesión ---- */
   .adm-bottom {
     display: flex;
     flex-direction: column;
     gap: 6px;
     flex-shrink: 0;
     padding-top: 8px;
-  }
-  .adm-avatar-img {
-    width: 38px;
-    height: 38px;
-    border-radius: 50%;
-    object-fit: cover;
-    display: block;
-    border: 2px solid var(--adm-accent);
-    background: #fff;
   }
   .adm-link.adm-logout { color: #e53935; }
   .adm-link.adm-logout:hover { background: #fdecea; color: #c62828; }
@@ -263,6 +254,79 @@
     .adm-slot, .adm-rail, .adm-ico, .adm-link, .adm-label { transition: none; }
     .adm-link.active .adm-ico { animation: none; }
   }
+
+  /* =====================================================================
+     BARRA SUPERIOR: buscador + notificaciones + perfil (nombre y flecha)
+     ===================================================================== */
+  .adm-search {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 240px;
+    max-width: 100%;
+    flex: 0 1 240px;
+  }
+  .adm-search input {
+    width: 100%;
+    box-sizing: border-box;
+    height: 38px;
+    padding: 0 40px 0 16px;
+    border: 1px solid #e2e8f0;
+    border-radius: 999px;
+    background: #ffffff;
+    font-family: inherit;
+    font-size: 13px;
+    color: #0f172a;
+    outline: none;
+    transition: border-color .15s ease, box-shadow .15s ease;
+  }
+  .adm-search input::placeholder { color: #94a3b8; }
+  .adm-search input:focus {
+    border-color: #f59e0b;
+    box-shadow: 0 0 0 3px rgba(250, 201, 75, .3);
+  }
+  .adm-search .material-symbols-outlined {
+    position: absolute;
+    right: 12px;
+    font-size: 19px;
+    color: #64748b;
+    pointer-events: none;
+  }
+  @media (max-width: 900px) {
+    .adm-search { display: none; }
+  }
+
+  /* Perfil del supervisor: foto + nombre + flecha (lleva a /perfil) */
+  .adm-user-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 3px 10px 3px 3px;
+    border-radius: 999px;
+    text-decoration: none;
+    transition: background .18s ease;
+  }
+  .adm-user-pill:hover { background: #f8fafc; }
+  .adm-user-avatar {
+    width: 36px;
+    height: 36px;
+    box-sizing: border-box;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
+    border: 2px solid #f4b41f;
+    background: #fff;
+  }
+  .adm-user-name {
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 13px;
+    font-weight: 700;
+    color: #334155;
+  }
+  .adm-user-chev { font-size: 18px; color: #94a3b8; }
 
   /* ---------- Header del supervisor (animación solo al acercar el mouse) ---------- */
   @keyframes svhHoverRipple {
@@ -532,6 +596,7 @@
       </div>
 
       <div class="svh-right" style="display:flex; align-items:center; gap:14px; margin-left:auto;">
+
         <!-- Notificaciones -->
         <div style="position:relative;" class="dropdown-container">
           <button type="button" (click)="toggleNotificaciones()" class="svh-notif-btn"
@@ -562,12 +627,12 @@
 
         <div style="width:1px; height:26px; background:#e2e8f0;" aria-hidden="true"></div>
 
-        <!-- Perfil: solo bolita circular con animación al pasar el mouse -->
+        <!-- Perfil: solo avatar con aro amarillo (abre la página de perfil) -->
         <div style="position:relative;" class="dropdown-container">
-          <a routerLink="/perfil" class="svh-user-btn" [title]="perfil.nombre + ' · Mi perfil'" aria-label="Mi perfil" style="text-decoration:none;">
-            <span class="svh-avatar-ring overflow-hidden">
-              <img *ngIf="perfil.foto_perfil" [src]="perfil.foto_perfil" alt="Avatar" width="38" height="38" style="width:38px; height:38px; border-radius:50%; object-fit:cover; display:block;" />
-              <img *ngIf="!perfil.foto_perfil" src="administrador.png" alt="Avatar" width="38" height="38" style="width:38px; height:38px; border-radius:50%; object-fit:cover; display:block;" />
+          <a routerLink="/perfil" class="svh-user-btn" [title]="perfil.nombre + ' · Mi perfil'" aria-label="Mi perfil">
+            <span class="svh-avatar-ring">
+              <img *ngIf="perfil.foto_perfil" [src]="perfil.foto_perfil" alt="" width="36" height="36" style="width:36px; height:36px; border-radius:50%; object-fit:cover; display:block;" />
+              <img *ngIf="!perfil.foto_perfil" src="administrador.png" alt="" width="36" height="36" style="width:36px; height:36px; border-radius:50%; object-fit:cover; display:block;" />
             </span>
           </a>
         </div>
@@ -651,74 +716,69 @@
   </div>
 
 
-  <!-- ================= CONTENEDOR PRINCIPAL SUPER ADMINISTRADOR ================= -->
-  <div class="modern-main-container">
+  <!-- ================= ÁREA PRINCIPAL SUPER ADMINISTRADOR (igual que el supervisor) ================= -->
+  <main class="adm-main">
 
-    <!-- Header Superior Dedicado Super Administrador -->
-    <header class="superadmin-top-header">
-      
-      <!-- Zona Derecha: Notificaciones y Perfil -->
-      <div class="modern-header-actions">
+    <!-- Telón de fondo para cerrar popovers al hacer click fuera -->
+    <div *ngIf="mostrarPerfil || mostrarNotificaciones" class="popover-backdrop" (click)="cerrarPanel()"></div>
 
-        <!-- Telón de fondo para cerrar popovers al hacer click fuera -->
-        <div *ngIf="mostrarPerfil || mostrarNotificaciones" class="popover-backdrop" (click)="cerrarPanel()"></div>
+    <!-- Header Superior Super Administrador (mismo diseño que el supervisor) -->
+    <div class="svh-bar" style="position:relative; z-index:50; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px 18px; min-height:68px; padding:10px 22px; border:1px solid #e9edf2; border-radius:20px; background:#fff; box-shadow:0 8px 22px -14px rgba(15,23,42,.18);">
+      <div class="svh-left" style="display:flex; align-items:center; flex:1 1 15rem; min-width:0;">
+        <div style="min-width:0;">
+          <h1 class="svh-title" style="margin:0; color:#17263a; font-size:17px; line-height:1.25; overflow-wrap:anywhere;">Bienvenido: {{ perfil.nombre || 'Super Administrador' }}</h1>
+          <span class="svh-sub" style="display:block; margin-top:2px; color:#475569; font-size:12px; font-weight:600; line-height:1.35; white-space:normal; overflow-wrap:anywhere;">Programa PAE</span>
+        </div>
+      </div>
 
-        <!-- Botón Notificaciones Circular -->
-        <div class="dropdown-container">
-          <button type="button" class="superadmin-circle-notif" (click)="toggleNotificaciones()" title="Notificaciones" aria-label="Notificaciones del sistema">
-            <span class="material-symbols-outlined text-[19px]">notifications</span>
-            <span *ngIf="notificacionesNoLeidas > 0" class="superadmin-notif-dot"></span>
+      <div class="svh-right" style="display:flex; align-items:center; gap:14px; margin-left:auto;">
+
+        <!-- Notificaciones -->
+        <div style="position:relative;" class="dropdown-container">
+          <button type="button" (click)="toggleNotificaciones()" class="svh-notif-btn"
+            [attr.aria-label]="'Notificaciones' + (notificacionesNoLeidas > 0 ? ' (' + notificacionesNoLeidas + ' sin leer)' : '')">
+            <span class="material-symbols-outlined" style="font-size:21px; color:#64748b;">notifications</span>
+            <span *ngIf="notificacionesNoLeidas > 0" class="svh-notif-dot" [title]="notificacionesNoLeidas + ' sin leer'"></span>
           </button>
 
-          <!-- Dropdown Notificaciones -->
-          <div *ngIf="mostrarNotificaciones" class="modern-dropdown notif-popover">
-            <div class="notif-popover-head">
-              <span class="notif-popover-title">Notificaciones</span>
-              <button type="button" class="notif-mark-btn" (click)="marcarTodasComoLeidasDesdePanel()">
+          <div *ngIf="mostrarNotificaciones" class="svh-notif-pop" style="position:absolute; right:0; top:50px; z-index:200; width:300px; background:#fff; border:1px solid #e2e8f0; border-radius:16px; padding:16px; box-shadow:0 10px 25px -5px rgba(0,0,0,0.1);">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; border-bottom:1px solid #f1f5f9; padding-bottom:8px;">
+              <span style="font-size:13px; font-weight:700; color:#1e293b;">Notificaciones</span>
+              <button type="button" (click)="marcarTodasComoLeidasDesdePanel()" style="background:none; border:none; font-size:11px; color:#d97706; font-weight:600; cursor:pointer;">
                 Marcar leídas
               </button>
             </div>
-            
-            <div *ngIf="listaNotificaciones.length === 0" class="notif-empty-state">
-              No tienes notificaciones pendientes
+            <div *ngIf="listaNotificaciones.length === 0" style="padding:16px 0; text-align:center; font-size:12px; color:#94a3b8;">
+              No tienes notificaciones
             </div>
-
-            <div class="notif-items-list" *ngIf="listaNotificaciones.length > 0">
-              <div *ngFor="let noti of listaNotificaciones" class="notif-item">
-                <strong class="notif-item-title">{{ noti.titulo }}</strong>
-                <span class="notif-item-msg">{{ noti.mensaje }}</span>
-              </div>
-              <a routerLink="/notificaciones" (click)="mostrarNotificaciones = false" class="block text-center text-xs font-bold text-amber-600 hover:text-amber-700 py-2 border-t border-slate-100">
-                Ver centro de notificaciones →
-              </a>
+            <div *ngFor="let noti of listaNotificaciones" style="background:#f8fafc; border-radius:10px; padding:10px; margin-bottom:8px; font-size:12px;">
+              <strong style="color:#0f172a; display:block;">{{ noti.titulo }}</strong>
+              <span style="color:#475569;">{{ noti.mensaje }}</span>
             </div>
+            <a routerLink="/notificaciones" (click)="mostrarNotificaciones = false" style="display:block; text-align:center; font-size:11px; font-weight:700; color:#d97706; text-decoration:none; margin-top:8px; padding-top:8px; border-top:1px solid #f1f5f9;">
+              Ver centro de notificaciones →
+            </a>
           </div>
         </div>
 
-        <!-- Botón Perfil de Usuario Super Administrador con Avatar y Foto Dinámica -->
-        <div class="dropdown-container">
-          <a routerLink="/perfil" class="superadmin-user-pill-btn" title="Mi perfil de usuario" aria-label="Menú de perfil" style="text-decoration:none;">
-            <div class="superadmin-sa-avatar" style="overflow:hidden; padding:0; display:flex; align-items:center; justify-content:center;">
-              <img *ngIf="perfil.foto_perfil" [src]="perfil.foto_perfil" alt="Avatar" style="width:100%; height:100%; object-fit:cover; border-radius:50%;" />
-              <span *ngIf="!perfil.foto_perfil">{{ iniciales }}</span>
-            </div>
-            <div class="superadmin-sa-info">
-              <span class="superadmin-sa-title">{{ perfil.nombre || 'Super Administrador' }}</span>
-              <span class="superadmin-sa-sub">Programa PAE</span>
-            </div>
+        <div style="width:1px; height:26px; background:#e2e8f0;" aria-hidden="true"></div>
+
+        <!-- Perfil: solo avatar con aro amarillo (abre la página de perfil) -->
+        <div style="position:relative;" class="dropdown-container">
+          <a routerLink="/perfil" class="svh-user-btn" title="Mi perfil de usuario" aria-label="Mi perfil">
+            <span class="svh-avatar-ring">
+              <img *ngIf="perfil.foto_perfil" [src]="perfil.foto_perfil" alt="" width="36" height="36" style="width:36px; height:36px; border-radius:50%; object-fit:cover; display:block;" />
+              <span *ngIf="!perfil.foto_perfil" style="width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:#fff1d0; color:#8a5a00; font-size:13px; font-weight:700;">{{ iniciales }}</span>
+            </span>
           </a>
         </div>
 
       </div>
+    </div>
 
-    </header>
-
-    <!-- Contenedor con Scroll para el contenido -->
-    <main class="modern-content-viewport">
-      <router-outlet></router-outlet>
-    </main>
-
-  </div>
+    <!-- Vistas Hijas Dinámicas -->
+    <router-outlet></router-outlet>
+  </main>
 
 </div>
 
@@ -767,11 +827,6 @@
         <span class="adm-label">Usuarios</span>
       </a>
 
-      <a routerLink="/reportes-consumo" routerLinkActive="active" class="adm-link" title="Planillas y Reportes PAE" aria-label="Planillas y Reportes">
-        <span class="adm-ico"><span class="material-symbols-outlined" aria-hidden="true">description</span></span>
-        <span class="adm-label">Planillas y Reportes</span>
-      </a>
-
       <a routerLink="mensajeria" routerLinkActive="active" class="adm-link" title="Mensajería" aria-label="Mensajería">
         <span class="adm-ico"><span class="material-symbols-outlined" aria-hidden="true">chat</span></span>
         <span class="adm-label">Mensajería</span>
@@ -779,13 +834,8 @@
 
     </nav>
 
-    <!-- Parte inferior: perfil y cerrar sesión -->
+    <!-- Parte inferior: cerrar sesión -->
     <div class="adm-bottom">
-      <a routerLink="/perfil" class="adm-link" [title]="perfil.nombre + ' · Mi perfil'" aria-label="Mi perfil">
-        <span class="adm-ico"><img src="administrador.png" alt="" class="adm-avatar-img" width="40" height="40" /></span>
-        <span class="adm-label">{{ perfil.nombre }}</span>
-      </a>
-
       <button type="button" class="adm-link adm-logout" (click)="cerrarSesion()" title="Cerrar sesión" aria-label="Cerrar sesión">
         <span class="adm-ico"><span class="material-symbols-outlined" aria-hidden="true">logout</span></span>
         <span class="adm-label">Cerrar Sesión</span>
@@ -796,182 +846,69 @@
   </div>
 
 
-  <!-- ================= CONTENEDOR PRINCIPAL ================= -->
-  <div class="modern-main-container">
+  <!-- ================= ÁREA PRINCIPAL ADMINISTRADOR (igual que el supervisor) ================= -->
+  <main class="adm-main">
 
-    <!-- Header Superior Limpio con Migas de Pan (Breadcrumbs) -->
-    <header class="modern-top-header">
-      
-      <!-- Migas de Pan -->
-      <nav class="modern-breadcrumb" aria-label="Ruta de navegación">
-        <span class="material-symbols-outlined breadcrumb-home" aria-hidden="true">home</span>
-        <a routerLink="inicio" class="breadcrumb-item">Inicio</a>
-        
-        <ng-container *ngIf="pageTitle && pageTitle !== 'Inicio'">
-          <span class="breadcrumb-sep" aria-hidden="true">&gt;</span>
-          <span class="breadcrumb-current">{{ pageTitle }}</span>
-        </ng-container>
+    <!-- Telón de fondo para cerrar popovers al hacer click fuera -->
+    <div *ngIf="mostrarPerfil || mostrarNotificaciones" class="popover-backdrop" (click)="cerrarPanel()"></div>
 
-        <!-- Indicador para Administrador institucional -->
-        <span *ngIf="esAdministrador && institucionUsuario" class="modern-inst-badge">
-          {{ institucionUsuario }}
-        </span>
-      </nav>
+    <!-- Header Superior Administrador (mismo diseño que el supervisor) -->
+    <div class="svh-bar" style="position:relative; z-index:50; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px 18px; min-height:68px; padding:10px 22px; border:1px solid #e9edf2; border-radius:20px; background:#fff; box-shadow:0 8px 22px -14px rgba(15,23,42,.18);">
+      <div class="svh-left" style="display:flex; align-items:center; flex:1 1 15rem; min-width:0;">
+        <div style="min-width:0;">
+          <h1 class="svh-title" style="margin:0; color:#17263a; font-size:17px; line-height:1.25; overflow-wrap:anywhere;">Bienvenido: {{ perfil.nombre }}</h1>
+          <span *ngIf="institucionUsuario" class="svh-sub" style="display:block; margin-top:2px; color:#475569; font-size:12px; font-weight:600; line-height:1.35; white-space:normal; overflow-wrap:anywhere;">{{ institucionUsuario }}</span>
+        </div>
+      </div>
 
-      <!-- Zona Derecha: Notificaciones y Perfil -->
-      <div class="modern-header-actions">
+      <div class="svh-right" style="display:flex; align-items:center; gap:14px; margin-left:auto;">
 
-        <!-- Telón de fondo para cerrar popovers al hacer click fuera -->
-        <div *ngIf="mostrarPerfil || mostrarNotificaciones" class="popover-backdrop" (click)="cerrarPanel()"></div>
-
-        <!-- Botón Notificaciones -->
-        <div class="dropdown-container">
-          <button type="button" class="notif-btn" (click)="toggleNotificaciones()" title="Notificaciones" aria-label="Notificaciones del sistema">
-            <span class="material-symbols-outlined notif-icon" aria-hidden="true">notifications</span>
-            <span *ngIf="notificacionesNoLeidas > 0" class="notif-badge-dot"></span>
+        <!-- Notificaciones -->
+        <div style="position:relative;" class="dropdown-container">
+          <button type="button" (click)="toggleNotificaciones()" class="svh-notif-btn"
+            [attr.aria-label]="'Notificaciones' + (notificacionesNoLeidas > 0 ? ' (' + notificacionesNoLeidas + ' sin leer)' : '')">
+            <span class="material-symbols-outlined" style="font-size:21px; color:#64748b;">notifications</span>
+            <span *ngIf="notificacionesNoLeidas > 0" class="svh-notif-dot" [title]="notificacionesNoLeidas + ' sin leer'"></span>
           </button>
 
-          <!-- Dropdown Notificaciones -->
-          <div *ngIf="mostrarNotificaciones" class="modern-dropdown notif-popover">
-            <div class="notif-popover-head">
-              <span class="notif-popover-title">Notificaciones</span>
-              <button type="button" class="notif-mark-btn" (click)="marcarTodasComoLeidasDesdePanel()">
+          <div *ngIf="mostrarNotificaciones" class="svh-notif-pop" style="position:absolute; right:0; top:50px; z-index:200; width:300px; background:#fff; border:1px solid #e2e8f0; border-radius:16px; padding:16px; box-shadow:0 10px 25px -5px rgba(0,0,0,0.1);">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; border-bottom:1px solid #f1f5f9; padding-bottom:8px;">
+              <span style="font-size:13px; font-weight:700; color:#1e293b;">Notificaciones</span>
+              <button type="button" (click)="marcarTodasComoLeidasDesdePanel()" style="background:none; border:none; font-size:11px; color:#d97706; font-weight:600; cursor:pointer;">
                 Marcar leídas
               </button>
             </div>
-            
-            <div *ngIf="listaNotificaciones.length === 0" class="notif-empty-state">
-              No tienes notificaciones pendientes
+            <div *ngIf="listaNotificaciones.length === 0" style="padding:16px 0; text-align:center; font-size:12px; color:#94a3b8;">
+              No tienes notificaciones
             </div>
-
-            <div class="notif-items-list" *ngIf="listaNotificaciones.length > 0">
-              <div *ngFor="let noti of listaNotificaciones" class="notif-item">
-                <strong class="notif-item-title">{{ noti.titulo }}</strong>
-                <span class="notif-item-msg">{{ noti.mensaje }}</span>
-              </div>
-              <a routerLink="/notificaciones" (click)="mostrarNotificaciones = false" class="block text-center text-xs font-bold text-amber-600 hover:text-amber-700 py-2 border-t border-slate-100">
-                Ver centro de notificaciones →
-              </a>
+            <div *ngFor="let noti of listaNotificaciones" style="background:#f8fafc; border-radius:10px; padding:10px; margin-bottom:8px; font-size:12px;">
+              <strong style="color:#0f172a; display:block;">{{ noti.titulo }}</strong>
+              <span style="color:#475569;">{{ noti.mensaje }}</span>
             </div>
+            <a routerLink="/notificaciones" (click)="mostrarNotificaciones = false" style="display:block; text-align:center; font-size:11px; font-weight:700; color:#d97706; text-decoration:none; margin-top:8px; padding-top:8px; border-top:1px solid #f1f5f9;">
+              Ver centro de notificaciones →
+            </a>
           </div>
         </div>
 
-        <!-- Botón Perfil de Usuario con Avatar -->
-        <div class="dropdown-container">
-          <button type="button" class="user-pill-btn" (click)="togglePerfil()" title="Mi cuenta" aria-label="Menú de perfil">
-            <img src="administrador.png" alt="Avatar" class="user-avatar" width="36" height="36" style="width:36px; height:36px; border-radius:50%; object-fit:cover;" />
-            <div class="user-info-text">
-              <span class="user-name">{{ perfil.nombre }}</span>
-              <span class="user-role">{{ perfil.rol }}</span>
-            </div>
-            <span class="material-symbols-outlined user-chevron" aria-hidden="true">expand_more</span>
-          </button>
+        <div style="width:1px; height:26px; background:#e2e8f0;" aria-hidden="true"></div>
 
-          <!-- Dropdown Perfil -->
-          <div *ngIf="mostrarPerfil" class="modern-dropdown profile-popover">
-            
-            <!-- Vista General -->
-            <div *ngIf="vistaActual === 'perfil'">
-              <div class="profile-popover-head" style="position:relative;">
-                <img src="administrador.png" class="profile-popover-avatar" alt="Foto de perfil" width="42" height="42" style="width:42px; height:42px; border-radius:50%; object-fit:cover;" />
-                <div class="profile-meta-wrap">
-                  <strong class="profile-popover-name">{{ perfil.nombre }}</strong>
-                  <span class="profile-popover-email">{{ perfil.correo }}</span>
-                  <span class="profile-popover-badge">{{ perfil.rol }}</span>
-                </div>
-                <button type="button" (click)="cerrarPanel()" style="position:absolute; right:0; top:0; background:none; border:none; color:#94a3b8; cursor:pointer; padding:4px;" title="Cerrar">
-                  <span class="material-symbols-outlined" style="font-size:18px;">close</span>
-                </button>
-              </div>
-
-              <div class="profile-actions-list">
-                <a routerLink="/perfil" (click)="cerrarPanel()" class="profile-action-btn">
-                  <span class="material-symbols-outlined" aria-hidden="true">badge</span>
-                  <span>Ver perfil completo</span>
-                </a>
-                <button type="button" class="profile-action-btn" (click)="irA('editar')">
-                  <span class="material-symbols-outlined" aria-hidden="true">edit</span>
-                  <span>Editar información personal</span>
-                </button>
-                <button type="button" class="profile-action-btn" (click)="irA('password')">
-                  <span class="material-symbols-outlined" aria-hidden="true">lock</span>
-                  <span>Cambiar Contraseña</span>
-                </button>
-                <button type="button" class="profile-action-btn profile-logout-btn" (click)="cerrarSesion()">
-                  <span class="material-symbols-outlined" aria-hidden="true">logout</span>
-                  <span>Cerrar Sesión</span>
-                </button>
-              </div>
-            </div>
-
-            <!-- Vista Editar Perfil -->
-            <div *ngIf="vistaActual === 'editar'" class="profile-edit-view">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                <h4 class="popover-view-title" style="margin:0;">Editar información personal</h4>
-                <button type="button" (click)="cerrarPanel()" style="background:none; border:none; color:#94a3b8; cursor:pointer; padding:2px;" title="Cerrar">
-                  <span class="material-symbols-outlined" style="font-size:18px;">close</span>
-                </button>
-              </div>
-              <form [formGroup]="perfilForm" (ngSubmit)="guardarPerfil()">
-                <div class="popover-form-group">
-                  <label>Nombre</label>
-                  <input formControlName="nombre" type="text" class="popover-input" />
-                </div>
-                <div class="popover-form-group">
-                  <label>Apellido</label>
-                  <input formControlName="apellido" type="text" class="popover-input" />
-                </div>
-                <div class="popover-form-group" style="opacity:0.85;">
-                  <label>Correo Institucional (Protegido)</label>
-                  <input [value]="perfil.correo" type="text" disabled class="popover-input" style="background:#f1f5f9; cursor:not-allowed;" />
-                </div>
-                <div class="popover-btn-row">
-                  <button type="submit" [disabled]="perfilForm.invalid" class="btn-save-popover">Guardar</button>
-                  <button type="button" class="btn-cancel-popover" (click)="irA('perfil')">Volver</button>
-                </div>
-              </form>
-            </div>
-
-            <!-- Vista Cambiar Contraseña -->
-            <div *ngIf="vistaActual === 'password'" class="profile-edit-view">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                <h4 class="popover-view-title" style="margin:0;">Cambiar Contraseña</h4>
-                <button type="button" (click)="cerrarPanel()" style="background:none; border:none; color:#94a3b8; cursor:pointer; padding:2px;" title="Cerrar">
-                  <span class="material-symbols-outlined" style="font-size:18px;">close</span>
-                </button>
-              </div>
-              <div class="popover-form-group">
-                <input [(ngModel)]="passwordForm.actual" name="superadmin_actual" type="password" placeholder="Contraseña actual" class="popover-input" />
-              </div>
-              <div class="popover-form-group">
-                <input [(ngModel)]="passwordForm.nueva" name="superadmin_nueva" type="password" placeholder="Nueva contraseña" class="popover-input" />
-              </div>
-              <div class="popover-form-group">
-                <input [(ngModel)]="passwordForm.confirmar" name="superadmin_confirmar" type="password" placeholder="Confirmar contraseña" class="popover-input" />
-              </div>
-              <p *ngIf="passwordError" class="popover-error">{{ passwordError }}</p>
-              <p *ngIf="passwordMensaje" class="popover-success">{{ passwordMensaje }}</p>
-              <div class="popover-btn-row">
-                <button type="button" class="btn-save-popover" (click)="guardarPassword()" [disabled]="passwordProcesando">
-                  {{ passwordProcesando ? 'Guardando…' : 'Cambiar' }}
-                </button>
-                <button type="button" class="btn-cancel-popover" (click)="cerrarPanel()">Cancelar</button>
-              </div>
-            </div>
-
-          </div>
+        <!-- Perfil: solo avatar con aro amarillo (abre la página de perfil) -->
+        <div style="position:relative;" class="dropdown-container">
+          <a routerLink="/perfil" class="svh-user-btn" [title]="perfil.nombre + ' · Mi perfil'" aria-label="Mi perfil">
+            <span class="svh-avatar-ring">
+              <img *ngIf="perfil.foto_perfil" [src]="perfil.foto_perfil" alt="" width="36" height="36" style="width:36px; height:36px; border-radius:50%; object-fit:cover; display:block;" />
+              <img *ngIf="!perfil.foto_perfil" src="administrador.png" alt="" width="36" height="36" style="width:36px; height:36px; border-radius:50%; object-fit:cover; display:block;" />
+            </span>
+          </a>
         </div>
 
       </div>
+    </div>
 
-    </header>
-
-    <!-- Contenedor con Scroll para el contenido -->
-    <main class="modern-content-viewport">
-      <router-outlet></router-outlet>
-    </main>
-
-  </div>
+    <!-- Vistas Hijas Dinámicas -->
+    <router-outlet></router-outlet>
+  </main>
 
 </div>
 
