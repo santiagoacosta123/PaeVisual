@@ -1,159 +1,141 @@
-<div class="flex flex-col gap-5 relative" style="font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;">
+<div class="relative flex w-full flex-col gap-6" style="font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;">
 
-  <!-- ===================== CABECERA PRINCIPAL ===================== -->
-  <header style="width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 24px; background: linear-gradient(135deg, #fffcf0 0%, #ffffff 100%); border: 1px solid #f2ead0; border-radius: 14px; box-shadow: 0 4px 15px rgba(250, 201, 75, 0.05); position: sticky; top: 0; z-index: 20; box-sizing: border-box; flex-wrap: wrap;">
-    
-    <div style="display: flex; align-items: center; gap: 14px;">
-      <div style="width: 48px; height: 48px; border-radius: 50%; background: #fef3c7; border: 1.5px solid #fde68a; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 2px 6px rgba(245, 158, 11, 0.08);">
-        <span class="material-symbols-outlined" style="font-size: 24px; color: #b45309;">group</span>
-      </div>
-      <div>
-        <h1 style="margin: 0; color: #0f172a; font-size: 20px; font-weight: 800; letter-spacing: -0.5px;">Gestión de Usuarios</h1>
-        <p style="margin: 3px 0 0; color: #64748b; font-size: 13px;">Administración de perfiles, roles institucionales y accesos del sistema SIRAE.</p>
-      </div>
+  <!-- ===================== TARJETA SUPERIOR ===================== -->
+  <header class="flex flex-col gap-5 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm lg:flex-row lg:items-center lg:justify-between">
+    <div class="min-w-0">
+      <h1 class="m-0 text-2xl font-black tracking-tight text-slate-900">Gestión de Usuarios</h1>
+      <p class="mb-0 mt-1.5 text-sm text-slate-500">Administración de perfiles, roles institucionales y accesos del sistema SIRAE.</p>
     </div>
 
-    <!-- Filtros y Botón -->
-    <div class="flex flex-wrap items-center gap-2.5">
-      <!-- Buscador -->
-      <div class="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3.5 py-2 min-w-[220px] shadow-xs">
-        <svg class="w-4 h-4 text-slate-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="11" cy="11" r="8"></circle>
-          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-        </svg>
-        <input type="text" [(ngModel)]="filtroTexto" placeholder="Buscar por nombre, doc o correo..." class="border-none bg-transparent outline-none text-[13px] text-slate-900 w-full placeholder-slate-400 font-sans">
-      </div>
+    <div class="flex w-full flex-col items-stretch gap-3 sm:flex-row sm:items-center lg:w-auto">
+      <input
+        type="text"
+        [(ngModel)]="filtroTexto"
+        placeholder="Buscar por nombre, documento o correo"
+        class="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100 sm:w-80">
 
-
-      <!-- Botón Nuevo Usuario -->
-      <button type="button" (click)="abrirFormulario()" class="h-10 px-5 inline-flex items-center justify-center gap-2 border-none rounded-full bg-[#fac94b] text-slate-900 text-[13px] font-bold cursor-pointer whitespace-nowrap shadow-[0_2px_8px_rgba(251,191,36,0.28)] transition-all hover:bg-[#f59e0b]">
-        <span class="material-symbols-outlined text-[18px]">add</span>
-        <span>Nuevo Usuario</span>
+      <button
+        type="button"
+        (click)="abrirFormulario()"
+        class="inline-flex h-11 items-center justify-center whitespace-nowrap rounded-xl bg-amber-500 px-6 text-sm font-bold text-white shadow-sm transition hover:bg-amber-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300">
+        Nuevo Usuario
       </button>
     </div>
   </header>
 
-  <!-- ===================== CONTENIDO / TABLA ===================== -->
-  <section class="w-full bg-white rounded-xl p-5 sm:p-6 border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
-    <!-- Tabla de Usuarios con Cabecera Fija y Scroll en Filas -->
-    <div class="overflow-x-auto overflow-y-auto max-h-[calc(100vh-270px)] rounded-xl border border-slate-200/80">
-      <table class="w-full border-collapse text-left text-xs">
-        <thead class="sticky top-0 z-10 bg-slate-50">
-          <tr class="border-b border-slate-200 text-slate-600 font-bold bg-slate-50">
-            <th class="py-3 px-3.5 text-[11px] tracking-wider uppercase bg-slate-50 sticky top-0 z-10">USUARIO</th>
-            <th class="py-3 px-3.5 text-[11px] tracking-wider uppercase bg-slate-50 sticky top-0 z-10">DOCUMENTO</th>
-            <th class="py-3 px-3.5 text-[11px] tracking-wider uppercase bg-slate-50 sticky top-0 z-10">CORREO ELECTRÓNICO</th>
-            <th class="py-3 px-3.5 text-[11px] tracking-wider uppercase bg-slate-50 sticky top-0 z-10">ROL</th>
-            <th class="py-3 px-3.5 text-[11px] tracking-wider uppercase bg-slate-50 sticky top-0 z-10">INSTITUCIÓN / SEDE</th>
-            <th class="py-3 px-3.5 text-[11px] tracking-wider uppercase bg-slate-50 sticky top-0 z-10">ESTADO</th>
-            <th class="py-3 px-3.5 text-[11px] tracking-wider uppercase text-right bg-slate-50 sticky top-0 z-10">ACCIONES</th>
+  <!-- ===================== LISTADO DE USUARIOS ===================== -->
+  <section aria-label="Listado de usuarios" class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+
+    <div class="mb-4 flex items-center gap-3">
+      <h2 class="m-0 text-lg font-extrabold text-slate-900">Usuarios del sistema</h2>
+      <span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-bold text-slate-600">
+        {{ usuariosBase.length }} {{ usuariosBase.length === 1 ? 'usuario' : 'usuarios' }}
+      </span>
+    </div>
+
+    <div class="max-h-[calc(100vh-380px)] min-h-[140px] overflow-auto">
+      <table class="w-full min-w-[900px] table-fixed border-separate border-spacing-0 text-center text-sm">
+        <colgroup>
+          <col style="width: 22%">
+          <col style="width: 14%">
+          <col style="width: 15%">
+          <col style="width: 25%">
+          <col style="width: 12%">
+          <col style="width: 12%">
+        </colgroup>
+
+        <thead>
+          <tr class="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+            <th class="sticky top-0 z-10 rounded-l-xl bg-slate-50 px-4 py-3 text-center">Usuario</th>
+            <th class="sticky top-0 z-10 bg-slate-50 px-4 py-3 text-center">Documento</th>
+            <th class="sticky top-0 z-10 bg-slate-50 px-4 py-3 text-center">Rol</th>
+            <th class="sticky top-0 z-10 bg-slate-50 px-4 py-3 text-center">Institución / Sede</th>
+            <th class="sticky top-0 z-10 bg-slate-50 px-4 py-3 text-center">Estado</th>
+            <th class="sticky top-0 z-10 rounded-r-xl bg-slate-50 px-4 py-3 text-center">Acciones</th>
           </tr>
         </thead>
+
         <tbody class="text-slate-900">
-          <tr *ngFor="let u of usuariosFiltrados" class="border-b border-slate-100 hover:bg-slate-50/50 transition">
-            <!-- Usuario con Inicial y Nombre -->
-            <td class="py-3 px-3">
-              <div class="flex items-center gap-2.5">
-                <span class="w-8 h-8 rounded-full bg-amber-100 text-amber-800 font-bold text-xs inline-flex items-center justify-center border border-amber-200 shrink-0">
-                  {{ u.nombre ? u.nombre.charAt(0).toUpperCase() : 'U' }}
-                </span>
-                <span class="font-semibold text-slate-900">{{ u.nombre }} {{ u.apellido }}</span>
-              </div>
+          <tr *ngFor="let u of usuariosFiltrados" class="transition hover:bg-amber-50/40">
+
+            <!-- Usuario -->
+            <td class="border-b border-slate-100 px-4 py-4 text-center align-middle">
+              <p class="m-0 truncate text-sm font-bold text-slate-800">{{ u.nombre }} {{ u.apellido }}</p>
+              <p class="mb-0 mt-0.5 truncate text-xs text-slate-500">{{ u.correo }}</p>
             </td>
 
             <!-- Documento -->
-            <td class="py-3 px-3 text-slate-600 font-medium">
-              <span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[11px] font-semibold mr-1">{{ u.tipo_documento || 'CC' }}</span>
-              {{ u.numero_documento }}
-            </td>
-
-            <!-- Correo -->
-            <td class="py-3 px-3 text-slate-500">
-              {{ u.correo }}
+            <td class="border-b border-slate-100 px-4 py-4 text-center align-middle">
+              <p class="m-0 text-sm font-semibold text-slate-800">{{ u.numero_documento }}</p>
+              <p class="mb-0 mt-0.5 text-xs text-slate-500">{{ u.tipo_documento || 'CC' }}</p>
             </td>
 
             <!-- Rol -->
-            <td class="py-3 px-3">
-              <span class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200 inline-block">
+            <td class="border-b border-slate-100 px-4 py-4 text-center align-middle">
+              <span class="inline-block max-w-full truncate rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-bold text-amber-800">
                 {{ obtenerNombreRol(u.rol) }}
               </span>
             </td>
 
             <!-- Institución / Sede -->
-            <td class="py-3 px-3">
-              <!-- Si el usuario es supervisor -->
+            <td class="border-b border-slate-100 px-4 py-4 text-center align-middle">
+              <!-- Supervisor -->
               <ng-container *ngIf="esUsuarioSupervisor(u); else celdaRegular">
-                <div *ngIf="(u.instituciones_supervisor?.length || 0) > 0; else sinInstitucionesSupervisor">
-                  <button
-                    type="button"
-                    (click)="verDetalleInstitucionesSupervisor(u)"
-                    class="inline-flex items-center gap-1.5 text-[11.5px] font-semibold text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-200/90 px-2.5 py-1 rounded-lg transition-all cursor-pointer shadow-xs group"
-                    title="Clic para ver detalle de instituciones y sedes asignadas"
-                  >
-                    <span class="material-symbols-outlined text-[15px] text-amber-600 group-hover:scale-110 transition-transform">apartment</span>
-                    <span>{{ u.instituciones_supervisor.length }} {{ u.instituciones_supervisor.length === 1 ? 'Institución' : 'Instituciones' }}</span>
-                    <span class="text-[10px] bg-amber-200/80 text-amber-900 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Ver</span>
-                  </button>
-                </div>
+                <ng-container *ngIf="(u.instituciones_supervisor?.length || 0) > 0; else sinInstitucionesSupervisor">
+                  <p class="m-0 text-sm font-semibold text-slate-800">
+                    {{ u.instituciones_supervisor.length }} {{ u.instituciones_supervisor.length === 1 ? 'Institución' : 'Instituciones' }}
+                  </p>
+                </ng-container>
                 <ng-template #sinInstitucionesSupervisor>
+                  <p class="m-0 text-sm text-slate-400">Sin instituciones</p>
                   <button
                     type="button"
                     (click)="abrirFormulario(u)"
-                    class="inline-flex items-center gap-1 text-[11px] font-medium text-amber-800 bg-amber-50/70 hover:bg-amber-100/90 border border-amber-200/80 px-2 py-0.5 rounded-md cursor-pointer transition"
-                    title="Asignar instituciones a este supervisor"
-                  >
-                    <span class="material-symbols-outlined text-[13px] text-amber-600">add_circle</span>
-                    Sin instituciones (Asignar)
+                    class="mt-0.5 border-0 bg-transparent p-0 text-xs font-bold text-amber-700 underline-offset-2 hover:underline focus:outline-none focus-visible:underline"
+                    title="Asignar instituciones a este supervisor">
+                    Asignar
                   </button>
                 </ng-template>
               </ng-container>
 
-              <!-- Casos regulares (Administrador, Cocina, etc.) -->
+              <!-- Casos regulares -->
               <ng-template #celdaRegular>
-                <div *ngIf="u.institucion_nombre">
-                  <button
-                    type="button"
-                    (click)="verDetalleUsuario(u)"
-                    class="inline-flex items-center gap-1.5 text-[11.5px] font-semibold text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-200/90 px-2.5 py-1 rounded-lg transition-all cursor-pointer shadow-xs group"
-                    title="Clic para ver detalle de la institución y sedes"
-                  >
-                    <span class="material-symbols-outlined text-[15px] text-amber-600 group-hover:scale-110 transition-transform">apartment</span>
-                    <span class="max-w-[210px] truncate text-left">{{ u.institucion_nombre }}</span>
-                    <span class="text-[10px] bg-amber-200/80 text-amber-900 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">VER</span>
-                  </button>
-                </div>
-                <div *ngIf="u.sede_nombre" class="text-[11px] text-slate-500 font-normal mt-0.5 flex items-center gap-1">
-                  <span class="material-symbols-outlined text-[12px] text-slate-400">pin_drop</span>
-                  Sede: {{ u.sede_nombre }}
-                </div>
-                <span *ngIf="!u.institucion_nombre && !u.sede_nombre" class="text-slate-400 text-xs italic">—</span>
+                <ng-container *ngIf="u.institucion_nombre; else sinInstitucionRegular">
+                  <p class="m-0 truncate text-sm font-semibold text-slate-800" [attr.title]="u.institucion_nombre">{{ u.institucion_nombre }}</p>
+                  <p *ngIf="u.sede_nombre" class="mb-0 mt-0.5 truncate text-xs text-slate-500">Sede: {{ u.sede_nombre }}</p>
+                </ng-container>
+                <ng-template #sinInstitucionRegular>
+                  <p *ngIf="u.sede_nombre" class="m-0 text-sm text-slate-700">Sede: {{ u.sede_nombre }}</p>
+                  <span *ngIf="!u.sede_nombre" class="text-sm text-slate-300">—</span>
+                </ng-template>
               </ng-template>
             </td>
 
             <!-- Estado -->
-            <td class="py-3 px-3">
-              <span [class]="u.is_active ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'" class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold inline-flex items-center gap-1.5">
-                <span [class]="u.is_active ? 'bg-emerald-500' : 'bg-rose-500'" class="w-1.5 h-1.5 rounded-full inline-block"></span>
+            <td class="border-b border-slate-100 px-4 py-4 text-center align-middle">
+              <span
+                class="inline-block rounded-full border px-3 py-1 text-[11px] font-bold uppercase"
+                [ngClass]="u.is_active
+                  ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                  : 'border-rose-200 bg-rose-50 text-rose-700'">
                 {{ u.is_active ? 'Activo' : 'Inactivo' }}
               </span>
             </td>
 
             <!-- Acciones -->
-            <td class="py-3 px-3 text-right">
-              <div class="flex items-center justify-end gap-1.5">
-                <button type="button" (click)="editarUsuario(u)" class="w-8 h-8 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-300 text-slate-600 hover:text-slate-900 inline-flex items-center justify-center transition cursor-pointer" title="Editar">
-                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                  </svg>
-                </button>
-              </div>
+            <td class="border-b border-slate-100 px-4 py-4 text-center align-middle">
+              <button
+                type="button"
+                (click)="editarUsuario(u)"
+                class="rounded-xl border border-slate-200 bg-white px-4 py-1.5 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-amber-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300">
+                Editar
+              </button>
             </td>
           </tr>
 
           <!-- Estado vacío -->
           <tr *ngIf="usuariosFiltrados.length === 0">
-            <td colspan="6" class="py-6 px-3 text-center text-slate-400 italic">
+            <td colspan="6" class="px-4 py-10 text-center text-sm text-slate-400">
               No se encontraron usuarios registrados.
             </td>
           </tr>
@@ -161,22 +143,13 @@
       </table>
     </div>
 
-    <!-- Pie de tabla: Paginación -->
-    <div class="flex items-center justify-between pt-3.5 mt-3.5 border-t border-slate-100 text-xs text-slate-500">
-      <span>Mostrando {{ usuariosFiltrados.length }} de {{ usuariosBase.length }} registros</span>
-      <div class="flex items-center gap-1.5">
-        <button type="button" class="w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 inline-flex items-center justify-center cursor-pointer">
-          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-        </button>
-        <span class="w-7 h-7 rounded-lg bg-slate-900 text-white font-semibold inline-flex items-center justify-center text-xs">1</span>
-        <button type="button" class="w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 inline-flex items-center justify-center cursor-pointer">
-          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-        </button>
-      </div>
+    <!-- Pie de tabla -->
+    <div class="mt-4 text-center text-xs text-slate-500">
+      Mostrando {{ usuariosFiltrados.length }} de {{ usuariosBase.length }} registros
     </div>
   </section>
 
-  <!-- MODAL DE CREACIÓN / EDICIÓN ESTILO BANCO DATOS -->
+  <!-- ===================== MODAL: CREAR / EDITAR USUARIO ===================== -->
   <div class="bd-modal-overlay" *ngIf="mostrarModal" (click)="cerrarFormulario()">
     <form class="bd-modal" role="dialog" aria-modal="true" (click)="$event.stopPropagation()" autocomplete="off">
       <div class="bd-modal-header">
@@ -184,22 +157,20 @@
           <span class="bd-modal-eyebrow">USUARIO</span>
           <h2>{{ modoEdicion ? 'Editar Usuario' : 'Nuevo Usuario' }}</h2>
         </div>
-        <button type="button" class="bd-modal-close" (click)="cerrarFormulario()">
-          <span class="material-symbols-outlined" aria-hidden="true">close</span>
-        </button>
+        <button type="button" class="bd-modal-close" (click)="cerrarFormulario()" aria-label="Cerrar">×</button>
       </div>
 
       <div class="bd-modal-body">
         <p class="bd-modal-description">Completa los datos del perfil de acceso.</p>
-        
+
         <div class="bd-form-grid">
           <div class="bd-form-group">
             <label>Nombre <span style="color: #ef4444">*</span></label>
-            <input type="text" class="bd-input" [(ngModel)]="usuarioForm.nombre" name="nombre" placeholder="Ingresa tu nombre" required>
+            <input type="text" class="bd-input" [(ngModel)]="usuarioForm.nombre" name="nombre" placeholder="Ingresa el nombre" required>
           </div>
           <div class="bd-form-group">
             <label>Apellido <span style="color: #ef4444">*</span></label>
-            <input type="text" class="bd-input" [(ngModel)]="usuarioForm.apellido" name="apellido" placeholder="Ingresa tu apellido" required>
+            <input type="text" class="bd-input" [(ngModel)]="usuarioForm.apellido" name="apellido" placeholder="Ingresa el apellido" required>
           </div>
 
           <div class="bd-form-group">
@@ -224,7 +195,7 @@
           </div>
           <div class="bd-form-group">
             <label>Número de Documento <span style="color: #ef4444">*</span></label>
-            <input type="text" class="bd-input" [(ngModel)]="usuarioForm.numero_documento" name="numero_documento" placeholder="Ingresa número">
+            <input type="text" class="bd-input" [(ngModel)]="usuarioForm.numero_documento" name="numero_documento" placeholder="Ingresa el número">
           </div>
 
           <div class="bd-form-group" style="grid-column: 1 / -1">
@@ -240,7 +211,7 @@
             ></app-custom-select>
           </div>
 
-          <!-- CASO 1: Administrador Institucional o personal vinculado a 1 colegio -->
+          <!-- CASO 1: Administrador institucional o personal vinculado a 1 colegio -->
           <div class="bd-form-group" style="grid-column: 1 / -1" *ngIf="!esRolSupervisor() && esRolConInstitucion()">
             <label>
               {{ esRolAdmin() ? 'Institución Educativa que Administrará' : 'Institución Educativa Asignada' }}
@@ -256,53 +227,52 @@
               [(ngModel)]="usuarioForm.id_institucion"
               (ngModelChange)="onInstitucionChange()"
             ></app-custom-select>
-            <span *ngIf="esRolAdmin()" style="font-size: 11px; color: #64748b; margin-top: 3px; display: block;">
-              Este usuario será el Administrador oficial a cargo de esta institución educativa y sus sedes (Máximo 1 Administrador por colegio).
+            <span *ngIf="esRolAdmin()" style="font-size: 11px; color: #64748b; margin-top: 4px; display: block;">
+              Este usuario será el Administrador oficial a cargo de esta institución educativa y sus sedes (máximo 1 Administrador por colegio).
             </span>
           </div>
 
-          <!-- CASO 2: Supervisor de circuito con Múltiples Instituciones -->
-          <div class="bd-form-group" style="grid-column: 1 / -1; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px;" *ngIf="esRolSupervisor()">
-            <label style="color: #0f172a; font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
-              <span class="material-symbols-outlined" style="font-size: 18px; color: #f59e0b;">domain_add</span>
-              Instituciones Asignadas a este Supervisor (Selección Múltiple)
+          <!-- CASO 2: Supervisor con múltiples instituciones -->
+          <div class="bd-form-group" style="grid-column: 1 / -1; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px;" *ngIf="esRolSupervisor()">
+            <label style="color: #0f172a; font-weight: 700; margin-bottom: 4px; display: block;">
+              Instituciones asignadas a este supervisor
             </label>
-            <p style="margin: 0 0 10px 0; font-size: 11px; color: #64748b;">
-              Selecciona los colegios que estarán bajo la supervisión de este coordinador (cada colegio solo puede tener 1 supervisor responsable):
+            <p style="margin: 0 0 12px 0; font-size: 11.5px; color: #64748b;">
+              Selecciona los colegios que estarán bajo su supervisión. Cada colegio solo puede tener 1 supervisor responsable.
             </p>
-            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; max-height: 200px; overflow-y: auto; padding-right: 4px;">
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; max-height: 220px; overflow-y: auto; padding-right: 4px;">
               <div *ngFor="let inst of instituciones"
                 (click)="toggleInstitucionSupervisor(inst)"
-                style="display: flex; flex-direction: column; gap: 4px; padding: 8px 10px; border-radius: 8px; border: 1px solid #cbd5e1; transition: all 0.15s; user-select: none; font-size: 12px;"
+                style="display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; border-radius: 10px; border: 1px solid #cbd5e1; transition: all 0.15s; user-select: none; font-size: 12px;"
                 [style.opacity]="institucionAsignadaAotroSupervisor(inst) ? '0.6' : '1'"
                 [style.cursor]="institucionAsignadaAotroSupervisor(inst) ? 'not-allowed' : 'pointer'"
-                [style.background]="institucionSupervisorSeleccionada(inst.id_institucion || inst.id) ? '#fefce8' : (institucionAsignadaAotroSupervisor(inst) ? '#f1f5f9' : '#ffffff')"
+                [style.background]="institucionSupervisorSeleccionada(inst.id_institucion || inst.id) ? '#fffbeb' : (institucionAsignadaAotroSupervisor(inst) ? '#f1f5f9' : '#ffffff')"
                 [style.border-color]="institucionSupervisorSeleccionada(inst.id_institucion || inst.id) ? '#f59e0b' : '#cbd5e1'">
-                
-                <div style="display: flex; align-items: center; gap: 8px;">
-                  <span class="material-symbols-outlined" style="font-size: 18px;"
-                    [style.color]="institucionSupervisorSeleccionada(inst.id_institucion || inst.id) ? '#d97706' : '#94a3b8'">
-                    {{ institucionSupervisorSeleccionada(inst.id_institucion || inst.id) ? 'check_box' : 'check_box_outline_blank' }}
-                  </span>
+
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <input
+                    type="checkbox"
+                    tabindex="-1"
+                    style="width: 16px; height: 16px; accent-color: #d97706; pointer-events: none; flex-shrink: 0;"
+                    [checked]="institucionSupervisorSeleccionada(inst.id_institucion || inst.id)">
                   <span style="font-weight: 600; color: #0f172a; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
                     {{ inst.nombre_institucion || inst.nombre }}
                   </span>
                 </div>
-                
-                <!-- Badge indicador si ya pertenece a otro supervisor -->
-                <span *ngIf="institucionAsignadaAotroSupervisor(inst)" style="font-size: 10.5px; color: #dc2626; font-weight: 700; padding-left: 26px; display: inline-flex; align-items: center; gap: 4px;">
-                  <span class="material-symbols-outlined" style="font-size: 13px;">block</span>
+
+                <span *ngIf="institucionAsignadaAotroSupervisor(inst)" style="font-size: 10.5px; color: #dc2626; font-weight: 700; padding-left: 26px;">
                   Supervisada por: {{ nombreSupervisorAsignado(inst) }}
                 </span>
               </div>
             </div>
-            <div style="margin-top: 8px; font-size: 11px; color: #b45309; font-weight: 700; display: flex; align-items: center; gap: 4px;">
-              <span class="material-symbols-outlined" style="font-size: 14px;">check_circle</span>
-              {{ supervisorInstitucionesSeleccionadas.length }} instituciones seleccionadas
+
+            <div style="margin-top: 10px; font-size: 11.5px; color: #b45309; font-weight: 700;">
+              {{ supervisorInstitucionesSeleccionadas.length }} {{ supervisorInstitucionesSeleccionadas.length === 1 ? 'institución seleccionada' : 'instituciones seleccionadas' }}
             </div>
           </div>
 
-          <!-- Selector de Sede cuando la institución tiene sedes y el rol es de sede -->
+          <!-- Sede (si la institución tiene sedes y el rol es de sede) -->
           <div class="bd-form-group" style="grid-column: 1 / -1" *ngIf="usuarioForm.id_institucion && sedesDeInstitucionSeleccionada.length > 0 && esRolConSede()">
             <label>
               Sede Educativa Asignada
@@ -321,16 +291,17 @@
             </span>
           </div>
 
-          <div class="bd-form-group" style="grid-column: 1 / -1; flex-direction: row; align-items: center; gap: 8px; margin-top: 5px;">
+          <!-- Estado -->
+          <div class="bd-form-group" style="grid-column: 1 / -1; flex-direction: row; align-items: center; gap: 10px; margin-top: 4px;">
             <label style="position: relative; display: inline-flex; cursor: pointer; align-items: center; margin: 0;">
               <input type="checkbox" [(ngModel)]="usuarioForm.is_active" name="is_active" style="opacity: 0; width: 0; height: 0; position: absolute;">
               <div style="width: 36px; height: 20px; border-radius: 9999px; position: relative; transition: background-color 0.2s;"
-                   [style.background-color]="usuarioForm.is_active ? '#0f172a' : '#e2e8f0'">
+                   [style.background-color]="usuarioForm.is_active ? '#f59e0b' : '#e2e8f0'">
                 <div style="width: 16px; height: 16px; background-color: #ffffff; border-radius: 50%; position: absolute; top: 2px; transition: left 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.1);"
                      [style.left]="usuarioForm.is_active ? '18px' : '2px'"></div>
               </div>
             </label>
-            <span style="font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 0;">Usuario Activo</span>
+            <span style="font-size: 13px; font-weight: 600; color: #334155;">Usuario activo</span>
           </div>
         </div>
       </div>
@@ -344,86 +315,66 @@
     </form>
   </div>
 
-  <!-- MODAL DE VENTANA EMERGENTE: INSTITUCIONES Y SEDES ASIGNADAS AL SUPERVISOR -->
+  <!-- ===================== MODAL: DETALLE DE INSTITUCIONES Y SEDES ===================== -->
   <div class="bd-modal-overlay" *ngIf="mostrarModalDetalleSupervisor" (click)="cerrarModalDetalleSupervisor()">
     <div class="bd-modal" role="dialog" aria-modal="true" (click)="$event.stopPropagation()" style="max-width: 640px; width: 92%;">
-      <div class="bd-modal-header" style="background: linear-gradient(135deg, #fffcf0 0%, #ffffff 100%);">
+
+      <div class="bd-modal-header">
         <div>
-          <span class="bd-modal-eyebrow" style="color: #d97706; font-weight: 800; letter-spacing: 0.5px;">
+          <span class="bd-modal-eyebrow" style="color: #b45309; font-weight: 800; letter-spacing: 0.5px;">
             ROL {{ (obtenerNombreRol(usuarioDetalleModal?.rol || supervisorDetalle?.rol) || 'USUARIO').toUpperCase() }}
           </span>
           <h2 style="font-size: 19px; font-weight: 800; color: #0f172a; margin: 2px 0 0 0;">
             {{ (usuarioDetalleModal || supervisorDetalle)?.nombre }} {{ (usuarioDetalleModal || supervisorDetalle)?.apellido }}
           </h2>
           <div style="font-size: 12.5px; color: #64748b; margin-top: 4px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-            <span style="display: inline-flex; align-items: center; gap: 4px;">
-              <span class="material-symbols-outlined" style="font-size: 15px; color: #94a3b8;">mail</span>
-              {{ (usuarioDetalleModal || supervisorDetalle)?.correo }}
-            </span>
+            <span>{{ (usuarioDetalleModal || supervisorDetalle)?.correo }}</span>
             <span style="color: #cbd5e1;">•</span>
-            <span style="display: inline-flex; align-items: center; gap: 4px;">
-              <span class="material-symbols-outlined" style="font-size: 15px; color: #94a3b8;">badge</span>
-              {{ (usuarioDetalleModal || supervisorDetalle)?.tipo_documento || 'CC' }} {{ (usuarioDetalleModal || supervisorDetalle)?.numero_documento }}
-            </span>
+            <span>{{ (usuarioDetalleModal || supervisorDetalle)?.tipo_documento || 'CC' }} {{ (usuarioDetalleModal || supervisorDetalle)?.numero_documento }}</span>
           </div>
         </div>
-        <button type="button" class="bd-modal-close" (click)="cerrarModalDetalleSupervisor()" title="Cerrar">
-          <span class="material-symbols-outlined" aria-hidden="true">close</span>
-        </button>
+        <button type="button" class="bd-modal-close" (click)="cerrarModalDetalleSupervisor()" title="Cerrar" aria-label="Cerrar">×</button>
       </div>
 
       <div class="bd-modal-body" style="padding: 20px 24px; max-height: 62vh; overflow-y: auto;">
-        <!-- Resumen métricas -->
-        <div style="display: flex; gap: 12px; margin-bottom: 20px;">
-          <div style="flex: 1; background: #fffbeb; border: 1px solid #fde68a; border-radius: 12px; padding: 12px 16px; display: flex; align-items: center; gap: 12px;">
-            <div style="width: 38px; height: 38px; border-radius: 10px; background: #fef3c7; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-              <span class="material-symbols-outlined" style="color: #d97706; font-size: 22px;">apartment</span>
+
+        <!-- Resumen -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 22px;">
+          <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 14px; padding: 14px 16px;">
+            <div style="font-size: 11.5px; font-weight: 600; color: #b45309;">
+              {{ institucionesDetalleModal.length === 1 ? 'Institución asignada' : 'Instituciones asignadas' }}
             </div>
-            <div>
-              <div style="font-size: 18px; font-weight: 800; color: #92400e; line-height: 1;">
-                {{ institucionesDetalleModal.length }}
-              </div>
-              <div style="font-size: 11.5px; font-weight: 600; color: #b45309; margin-top: 2px;">
-                {{ (institucionesDetalleModal.length === 1) ? 'Institución Asignada' : 'Instituciones Asignadas' }}
-              </div>
+            <div style="font-size: 26px; font-weight: 800; color: #92400e; line-height: 1.1; margin-top: 4px;">
+              {{ institucionesDetalleModal.length }}
             </div>
           </div>
 
-          <div style="flex: 1; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px 16px; display: flex; align-items: center; gap: 12px;">
-            <div style="width: 38px; height: 38px; border-radius: 10px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-              <span class="material-symbols-outlined" style="color: #475569; font-size: 22px;">pin_drop</span>
-            </div>
-            <div>
-              <div style="font-size: 18px; font-weight: 800; color: #1e293b; line-height: 1;">
-                {{ contarSedesTotalDetalle() }}
-              </div>
-              <div style="font-size: 11.5px; font-weight: 600; color: #64748b; margin-top: 2px;">
-                Sedes en Total
-              </div>
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px 16px;">
+            <div style="font-size: 11.5px; font-weight: 600; color: #64748b;">Sedes en total</div>
+            <div style="font-size: 26px; font-weight: 800; color: #1e293b; line-height: 1.1; margin-top: 4px;">
+              {{ contarSedesTotalDetalle() }}
             </div>
           </div>
         </div>
 
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-          <p style="font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; margin: 0;">
-            Colegios y Sedes Bajo su Cobertura
+          <p style="font-size: 12px; font-weight: 700; color: #475569; margin: 0;">
+            Colegios y sedes bajo su cobertura
           </p>
-          <span style="font-size: 11px; color: #94a3b8; font-weight: 500;">
-            Contrato institucional PAE
-          </span>
+          <span style="font-size: 11px; color: #94a3b8; font-weight: 500;">Contrato institucional PAE</span>
         </div>
 
-        <!-- Lista de Instituciones -->
+        <!-- Lista de instituciones -->
         <div *ngIf="institucionesDetalleModal.length > 0; else sinAsignacionesModal" style="display: flex; flex-direction: column; gap: 12px;">
-          <div *ngFor="let inst of institucionesDetalleModal; let idx = index" 
-               style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 14px 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
-            
+          <div *ngFor="let inst of institucionesDetalleModal; let idx = index"
+               style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 16px;">
+
             <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;">
-              <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
                 <div style="width: 28px; height: 28px; border-radius: 8px; background: #fef3c7; color: #b45309; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                   {{ idx + 1 }}
                 </div>
-                <div>
+                <div style="min-width: 0;">
                   <h4 style="margin: 0; font-size: 14px; font-weight: 700; color: #0f172a; line-height: 1.25;">
                     {{ inst.nombre_institucion }}
                   </h4>
@@ -432,28 +383,26 @@
                   </span>
                 </div>
               </div>
-              <span style="font-size: 10.5px; font-weight: 700; color: #15803d; background: #dcfce7; padding: 2.5px 8px; border-radius: 9999px; white-space: nowrap; border: 1px solid #bbf7d0;">
+              <span style="font-size: 10.5px; font-weight: 700; color: #15803d; background: #f0fdf4; padding: 3px 10px; border-radius: 9999px; white-space: nowrap; border: 1px solid #bbf7d0;">
                 Asignada
               </span>
             </div>
 
-            <!-- Sedes de la institución -->
-            <div style="margin-top: 12px; padding-top: 10px; border-top: 1px dashed #e2e8f0;">
-              <div style="font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 8px; display: flex; align-items: center; gap: 5px;">
-                <span class="material-symbols-outlined" style="font-size: 14px; color: #f59e0b;">location_away</span>
-                Sedes de la institución ({{ inst.sedes?.length || 0 }}):
+            <!-- Sedes -->
+            <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #f1f5f9;">
+              <div style="font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 8px;">
+                Sedes de la institución ({{ inst.sedes?.length || 0 }})
               </div>
 
-              <div *ngIf="inst.sedes && inst.sedes.length > 0; else sinSedesEspecificas" 
+              <div *ngIf="inst.sedes && inst.sedes.length > 0; else sinSedesEspecificas"
                    style="display: flex; flex-wrap: wrap; gap: 6px;">
-                <span *ngFor="let s of inst.sedes" 
-                      style="display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; color: #1e293b; background: #f8fafc; border: 1px solid #cbd5e1; padding: 4px 9px; border-radius: 7px;">
-                  <span class="material-symbols-outlined" style="font-size: 13px; color: #d97706;">pin_drop</span>
+                <span *ngFor="let s of inst.sedes"
+                      style="font-size: 11.5px; font-weight: 600; color: #1e293b; background: #f8fafc; border: 1px solid #e2e8f0; padding: 4px 10px; border-radius: 9999px;">
                   {{ s.nombre_sede }}
                 </span>
               </div>
               <ng-template #sinSedesEspecificas>
-                <div style="font-size: 11px; color: #94a3b8; font-style: italic; background: #f8fafc; padding: 6px 10px; border-radius: 6px; border: 1px dashed #e2e8f0;">
+                <div style="font-size: 11.5px; color: #94a3b8; background: #f8fafc; padding: 8px 12px; border-radius: 8px;">
                   Sin sedes secundarias registradas (la entrega y supervisión se realiza directamente en la sede principal).
                 </div>
               </ng-template>
@@ -462,22 +411,16 @@
         </div>
 
         <ng-template #sinAsignacionesModal>
-          <div style="text-align: center; padding: 36px 16px; background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 14px;">
-            <span class="material-symbols-outlined" style="font-size: 44px; color: #94a3b8;">domain_disabled</span>
-            <h4 style="margin: 10px 0 4px 0; font-size: 14.5px; font-weight: 700; color: #334155;">Sin instituciones asignadas</h4>
+          <div style="text-align: center; padding: 36px 16px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 14px;">
+            <h4 style="margin: 0 0 4px 0; font-size: 14.5px; font-weight: 700; color: #334155;">Sin instituciones asignadas</h4>
             <p style="margin: 0; font-size: 12px; color: #64748b;">Este usuario aún no tiene colegios asignados bajo su responsabilidad.</p>
           </div>
         </ng-template>
       </div>
 
-      <div class="bd-modal-footer" style="background: #f8fafc; border-top: 1px solid #e2e8f0;">
-        <button type="button" class="bd-cancel" (click)="cerrarModalDetalleSupervisor()">
-          Cerrar
-        </button>
-        <button type="button" class="bd-save" (click)="editarDesdeDetalle()">
-          <span class="material-symbols-outlined" style="font-size: 16px;">edit</span>
-          Editar Asignaciones
-        </button>
+      <div class="bd-modal-footer">
+        <button type="button" class="bd-cancel" (click)="cerrarModalDetalleSupervisor()">Cerrar</button>
+        <button type="button" class="bd-save" (click)="editarDesdeDetalle()">Editar Asignaciones</button>
       </div>
     </div>
   </div>

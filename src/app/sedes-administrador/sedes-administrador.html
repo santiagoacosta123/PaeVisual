@@ -1,16 +1,16 @@
 <section class="flex w-full flex-col gap-6">
 
   <!-- ENCABEZADO -->
-  <header class="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
-    <div>
+  <header class="flex flex-col justify-between gap-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:flex-row sm:items-center">
+    <div class="min-w-0">
       <div class="flex flex-wrap items-center gap-3">
-        <h1 class="m-0 text-3xl font-black tracking-tight text-slate-900">Sedes de mi institución</h1>
+        <h1 class="m-0 text-2xl font-black tracking-tight text-slate-900">Sedes de mi institución</h1>
         <span *ngIf="institucionAsignada"
           class="rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-[11px] font-bold text-amber-800">
           {{ institucionAsignada }}
         </span>
       </div>
-      <p class="mb-0 mt-2 text-sm text-slate-500">Consulta los cupos, jornadas y secciones de menú configuradas.</p>
+      <p class="mb-0 mt-1.5 text-sm text-slate-500">Consulta los cupos, jornadas y secciones de menú configuradas.</p>
     </div>
   </header>
 
