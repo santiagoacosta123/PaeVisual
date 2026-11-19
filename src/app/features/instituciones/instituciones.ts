@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, inject } from '@angular/core';
+﻿import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
@@ -8,18 +8,18 @@ import { map } from 'rxjs/operators';
 import { environment } from '@env/environment';
 import { PlanillasPaeService } from '../../services/planillas-pae.service';
 
-type EstadoInventario = 'Ok' | 'Bajo' | 'Crítico';
+type EstadoInventario = 'Ok' | 'Bajo' | 'CrÃ­tico';
 type FiltroEstado = 'Todos' | EstadoInventario;
 type Pestana = 'resumen' | 'inventario' | 'consumo' | 'menus' | 'entregas' | 'reportes';
 
-// Institución asignada al supervisor
+// InstituciÃ³n asignada al supervisor
 interface Institucion {
   id: number | string;
   nombre: string;
   administrador: string;
   matriculados: number;
   asistenciaPromedio: number;   // %
-  diasInventario: number;       // días que alcanza el saldo actual
+  diasInventario: number;       // dÃ­as que alcanza el saldo actual
   sedePrincipal: string;
   municipio: string;
   modalidad: string;
@@ -27,7 +27,7 @@ interface Institucion {
   estado: EstadoInventario;
 }
 
-// Tarjeta de ingrediente (datos de ejemplo hasta conectar el inventario de cada institución)
+// Tarjeta de ingrediente (datos de ejemplo hasta conectar el inventario de cada instituciÃ³n)
 interface ProductoInventario {
   nombre: string;
   emoji: string;
@@ -54,19 +54,19 @@ interface EntregaUnida {
   emoji: string;
   unidad: string;
   cantidad: number;
-  fechaRegistro: string;        // la más reciente de ese producto
+  fechaRegistro: string;        // la mÃ¡s reciente de ese producto
 }
 
-// Consumo de un día (datos de ejemplo)
+// Consumo de un dÃ­a (datos de ejemplo)
 interface ConsumoDia {
   fecha: string;                // YYYY-MM-DD
   dia: string;
   raciones: number;
   kg: number;
-  porcentaje: number;           // 0 - 100, relativo al día de mayor consumo
+  porcentaje: number;           // 0 - 100, relativo al dÃ­a de mayor consumo
 }
 
-// Menú publicado (datos de ejemplo)
+// MenÃº publicado (datos de ejemplo)
 interface MenuDia {
   fecha: string;
   dia: string;
@@ -85,23 +85,23 @@ interface ReporteItem {
 
 // Mismos emojis que usa la pantalla registrar-entrega-alimentos
 const EMOJI_PRODUCTO: Record<string, string> = {
-  'arroz': '🌾', 'frijol': '🫘', 'lentejas': '🫘', 'lenteja': '🫘', 'pasta': '🍝', 'harina de maiz': '🌽',
-  'azucar': '🍬', 'sal': '🧂', 'aceite': '🫒', 'panela': '🍯',
-  'carne de res': '🥩', 'carne molida': '🥩', 'pollo': '🍗', 'huevos': '🥚', 'pescado': '🐟',
-  'leche': '🥛', 'queso': '🧀', 'yogur': '🥣', 'mantequilla': '🧈',
-  'zanahoria': '🥕', 'tomate': '🍅', 'cebolla': '🧅', 'papa': '🥔',
-  'platano': '🍌', 'naranja': '🍊', 'manzana': '🍎',
+  'arroz': 'ðŸŒ¾', 'frijol': 'ðŸ«˜', 'lentejas': 'ðŸ«˜', 'lenteja': 'ðŸ«˜', 'pasta': 'ðŸ', 'harina de maiz': 'ðŸŒ½',
+  'azucar': 'ðŸ¬', 'sal': 'ðŸ§‚', 'aceite': 'ðŸ«’', 'panela': 'ðŸ¯',
+  'carne de res': 'ðŸ¥©', 'carne molida': 'ðŸ¥©', 'pollo': 'ðŸ—', 'huevos': 'ðŸ¥š', 'pescado': 'ðŸŸ',
+  'leche': 'ðŸ¥›', 'queso': 'ðŸ§€', 'yogur': 'ðŸ¥£', 'mantequilla': 'ðŸ§ˆ',
+  'zanahoria': 'ðŸ¥•', 'tomate': 'ðŸ…', 'cebolla': 'ðŸ§…', 'papa': 'ðŸ¥”',
+  'platano': 'ðŸŒ', 'naranja': 'ðŸŠ', 'manzana': 'ðŸŽ',
 };
 
 /* ============================================================
-   IMÁGENES DE INGREDIENTES
-   Los archivos están en la carpeta public/ de Angular, que se
-   sirve desde la raíz del sitio ("/arroz.png", "/aceite.png"...).
+   IMÃGENES DE INGREDIENTES
+   Los archivos estÃ¡n en la carpeta public/ de Angular, que se
+   sirve desde la raÃ­z del sitio ("/arroz.png", "/aceite.png"...).
    ============================================================ */
 const RUTA_IMAGENES = '/';
 const EXTENSION_IMAGEN = 'png';
 
-// clave: nombre del producto sin tildes y en minúscula  ->  archivo real en public/
+// clave: nombre del producto sin tildes y en minÃºscula  ->  archivo real en public/
 const ARCHIVOS_IMAGEN: Record<string, string> = {
   // Granos y cereales
   'arroz': 'arroz.png',
@@ -128,7 +128,7 @@ const ARCHIVOS_IMAGEN: Record<string, string> = {
   'huevo': 'huevos.png',
   'huevos': 'huevos.png',
 
-  // Lácteos
+  // LÃ¡cteos
   'leche': 'leche.png',
   'leche deslactosada': 'deslatosada.png',
   'deslactosada': 'deslatosada.png',
@@ -167,7 +167,7 @@ function leerTexto(item: any, ...claves: string[]): string {
   return '';
 }
 
-// Lee el primer campo numérico válido
+// Lee el primer campo numÃ©rico vÃ¡lido
 function leerNumero(item: any, ...claves: string[]): number {
   for (const k of claves) {
     if (item?.[k] == null || item[k] === '') continue;
@@ -177,7 +177,7 @@ function leerNumero(item: any, ...claves: string[]): number {
   return 0;
 }
 
-// Sin tildes y en minúscula, para comparar nombres de productos
+// Sin tildes y en minÃºscula, para comparar nombres de productos
 function normalizar(s: string): string {
   return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
 }
@@ -194,12 +194,12 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
   private router = inject(Router, { optional: true });
   private planillasPae = inject(PlanillasPaeService, { optional: true });
 
-  // Ruta de las instituciones asignadas al supervisor que inició sesión (el backend filtra por el usuario)
+  // Ruta de las instituciones asignadas al supervisor que iniciÃ³ sesiÃ³n (el backend filtra por el usuario)
   private readonly urlInstituciones = `${environment.apiUrl}/instituciones/`;
 
-  // Catálogo de ingredientes del servidor: solo se usa como respaldo para productos que no estén en ARCHIVOS_IMAGEN
+  // CatÃ¡logo de ingredientes del servidor: solo se usa como respaldo para productos que no estÃ©n en ARCHIVOS_IMAGEN
   private readonly urlIngredientes = `${environment.apiUrl}/ingredientes/`;
-  // Raíz del servidor (apiUrl sin el "/api" final), p. ej. https://backend-sirae-pyim.onrender.com
+  // RaÃ­z del servidor (apiUrl sin el "/api" final), p. ej. https://backend-sirae-pyim.onrender.com
   private readonly origenServidor = /^https?:/i.test(environment.apiUrl)
     ? environment.apiUrl.replace(/\/api\/?$/, '')
     : 'https://backend-sirae-pyim.onrender.com';
@@ -214,7 +214,7 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
   // Lista
   textoBusqueda = '';
   filtroEstado: FiltroEstado = 'Todos';
-  opcionesEstado: FiltroEstado[] = ['Todos', 'Ok', 'Bajo', 'Crítico'];
+  opcionesEstado: FiltroEstado[] = ['Todos', 'Ok', 'Bajo', 'CrÃ­tico'];
 
   // Detalle (solo lectura)
   seleccionada: Institucion | null = null;
@@ -223,12 +223,12 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
     { id: 'resumen',    nombre: 'Resumen',        icono: 'dashboard' },
     { id: 'inventario', nombre: 'Inventario',     icono: 'inventory_2' },
     { id: 'consumo',    nombre: 'Consumo diario', icono: 'monitoring' },
-    { id: 'menus',      nombre: 'Menús',          icono: 'restaurant_menu' },
+    { id: 'menus',      nombre: 'MenÃºs',          icono: 'restaurant_menu' },
     { id: 'entregas',   nombre: 'Entregas',       icono: 'local_shipping' },
     { id: 'reportes',   nombre: 'Reportes',       icono: 'description' },
   ];
 
-  // Datos del detalle: se calculan una sola vez al abrir una institución
+  // Datos del detalle: se calculan una sola vez al abrir una instituciÃ³n
   inventario: ProductoInventario[] = [];
   consumo: ConsumoDia[] = [];
   menus: MenuDia[] = [];
@@ -236,19 +236,19 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
 
   // Entregas (vienen del servidor; cada producto aparece una sola vez)
   entregasUnidas: EntregaUnida[] = [];
-  ultimasEntregas: EntregaUnida[] = [];      // las 4 más recientes, para el resumen
+  ultimasEntregas: EntregaUnida[] = [];      // las 4 mÃ¡s recientes, para el resumen
   cargandoEntregas = false;
   errorEntregas = '';
   private subEntregas?: Subscription;
 
   // Instituciones de ejemplo: solo se usan si el servidor no responde o no devuelve nada
   private readonly institucionesBase: Institucion[] = [
-    this.crear(1, 'I.E. Técnica Agropecuaria', 'Claudia Martínez', 386, 91, 18, 'Vereda El Carmen', 'Santa Rosa de Cabal', 'Almuerzo preparado en sitio', 'Hoy, 8:42 a. m.'),
-    this.crear(2, 'I.E. Santa Rosa', 'Julián Torres', 248, 88, 7, 'Barrio Centro', 'Santa Rosa de Cabal', 'Almuerzo preparado en sitio', 'Hoy, 8:42 a. m.'),
-    this.crear(3, 'I.E. San José', 'Marcela Rojas', 172, 93, 22, 'Calle Principal', 'Dosquebradas', 'Almuerzo preparado en sitio', 'Hoy, 8:42 a. m.'),
-    this.crear(4, 'I.E. La Esperanza', 'Andrés Gómez', 310, 85, 3, 'Vereda La Esperanza', 'Pereira', 'Almuerzo transportado', 'Hoy, 8:42 a. m.'),
+    this.crear(1, 'I.E. TÃ©cnica Agropecuaria', 'Claudia MartÃ­nez', 386, 91, 18, 'Vereda El Carmen', 'Santa Rosa de Cabal', 'Almuerzo preparado en sitio', 'Hoy, 8:42 a. m.'),
+    this.crear(2, 'I.E. Santa Rosa', 'JuliÃ¡n Torres', 248, 88, 7, 'Barrio Centro', 'Santa Rosa de Cabal', 'Almuerzo preparado en sitio', 'Hoy, 8:42 a. m.'),
+    this.crear(3, 'I.E. San JosÃ©', 'Marcela Rojas', 172, 93, 22, 'Calle Principal', 'Dosquebradas', 'Almuerzo preparado en sitio', 'Hoy, 8:42 a. m.'),
+    this.crear(4, 'I.E. La Esperanza', 'AndrÃ©s GÃ³mez', 310, 85, 3, 'Vereda La Esperanza', 'Pereira', 'Almuerzo transportado', 'Hoy, 8:42 a. m.'),
     this.crear(5, 'I.E. El Rosal', 'Luz Dary Pineda', 126, 90, 12, 'Vereda El Rosal', 'Dosquebradas', 'Almuerzo preparado en sitio', 'Hoy, 8:42 a. m.'),
-    this.crear(6, 'I.E. Nuestra Señora del Carmen', 'Hernán Castro', 355, 87, 9, 'Barrio El Carmen', 'Pereira', 'Almuerzo preparado en sitio', 'Hoy, 8:42 a. m.'),
+    this.crear(6, 'I.E. Nuestra SeÃ±ora del Carmen', 'HernÃ¡n Castro', 355, 87, 9, 'Barrio El Carmen', 'Pereira', 'Almuerzo preparado en sitio', 'Hoy, 8:42 a. m.'),
   ];
 
   ngOnInit(): void {
@@ -276,7 +276,7 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
         if (this.instituciones.length === 0) {
           this.instituciones = this.institucionesBase;
           this.usandoRespaldo = true;
-          this.avisoRespaldo = 'El servidor no devolvió instituciones asignadas. Se muestran instituciones de ejemplo.';
+          this.avisoRespaldo = 'El servidor no devolviÃ³ instituciones asignadas. Se muestran instituciones de ejemplo.';
         }
         this.cargando = false;
       },
@@ -292,8 +292,8 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
 
   private describirError(error: any): string {
     const estado = error?.status;
-    if (estado === 0) return 'no hay conexión con el servidor';
-    if (estado === 401) return 'la sesión expiró; inicia sesión de nuevo';
+    if (estado === 0) return 'no hay conexiÃ³n con el servidor';
+    if (estado === 401) return 'la sesiÃ³n expirÃ³; inicia sesiÃ³n de nuevo';
     if (estado === 403) return 'no tienes permiso (403)';
     if (estado === 404) return 'la ruta no existe en el servidor (404)';
     return estado ? `error ${estado} del servidor` : 'error desconocido';
@@ -303,7 +303,7 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
   private aInstitucion(item: any, indice: number): Institucion {
     return this.crear(
       item?.id ?? item?.id_institucion ?? indice + 1,
-      leerTexto(item, 'nombre', 'nombre_institucion', 'institucion') || `Institución ${indice + 1}`,
+      leerTexto(item, 'nombre', 'nombre_institucion', 'institucion') || `InstituciÃ³n ${indice + 1}`,
       leerTexto(item, 'administrador', 'nombre_administrador', 'administrador_nombre'),
       leerNumero(item, 'matriculados', 'estudiantes', 'estudiantes_matriculados', 'ninos_matriculados', 'cupos'),
       leerNumero(item, 'asistencia_promedio', 'asistenciaPromedio', 'asistencia'),
@@ -332,11 +332,11 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
     };
   }
 
-  // 10 días o más: Ok · de 4 a 9: Bajo · menos de 4: Crítico
+  // 10 dÃ­as o mÃ¡s: Ok Â· de 4 a 9: Bajo Â· menos de 4: CrÃ­tico
   estadoPorDias(dias: number): EstadoInventario {
     if (dias >= 10) return 'Ok';
     if (dias >= 4) return 'Bajo';
-    return 'Crítico';
+    return 'CrÃ­tico';
   }
 
   // =====================================================
@@ -380,7 +380,7 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
   }
 
   volver(): void {
-    this.subEntregas?.unsubscribe();   // evita que una respuesta tardía pise otra institución
+    this.subEntregas?.unsubscribe();   // evita que una respuesta tardÃ­a pise otra instituciÃ³n
     this.cargandoEntregas = false;
     this.seleccionada = null;
   }
@@ -392,7 +392,7 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
     }
   }
 
-  // Porcentaje de la barra de cobertura (30 días = barra llena)
+  // Porcentaje de la barra de cobertura (30 dÃ­as = barra llena)
   porcentajeCobertura(i: Institucion): number {
     return Math.max(0, Math.min(100, Math.round((i.diasInventario / 30) * 100)));
   }
@@ -406,7 +406,7 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
       case 'Despachada':
       case 'Por vencer':
         return 'border-amber-200 bg-amber-50 text-amber-700';
-      case 'Crítico':
+      case 'CrÃ­tico':
       case 'Con novedad':
       case 'Agotado':
         return 'border-red-200 bg-red-50 text-red-700';
@@ -419,11 +419,11 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
     return estado === 'Ok' ? 'bg-emerald-500' : estado === 'Bajo' ? 'bg-amber-500' : 'bg-red-500';
   }
 
-  // Color de la barra de cada producto según su estado
+  // Color de la barra de cada producto segÃºn su estado
   barraProducto(p: ProductoInventario): string {
     if (p.estado === 'Ok') return this.claseBarra('Ok');
     if (p.estado === 'Bajo' || p.estado === 'Por vencer') return this.claseBarra('Bajo');
-    return this.claseBarra('Crítico');
+    return this.claseBarra('CrÃ­tico');
   }
 
   // =====================================================
@@ -475,7 +475,7 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
     };
   }
 
-  // Une las entregas del mismo producto: suma cantidades y conserva la fecha más reciente
+  // Une las entregas del mismo producto: suma cantidades y conserva la fecha mÃ¡s reciente
   private unirEntregas(crudas: EntregaCruda[]): EntregaUnida[] {
     const grupos = new Map<string, EntregaUnida>();
 
@@ -507,7 +507,7 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
 
   emojiDe(nombre: string): string {
     const n = normalizar(nombre);
-    return EMOJI_PRODUCTO[n] ?? this.catalogoMuestra.find(p => normalizar(p.nombre) === n)?.emoji ?? '📦';
+    return EMOJI_PRODUCTO[n] ?? this.catalogoMuestra.find(p => normalizar(p.nombre) === n)?.emoji ?? 'ðŸ“¦';
   }
 
   private marcaTiempo(valor: string): number {
@@ -515,14 +515,14 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
     return Number.isNaN(t) ? 0 : t;
   }
 
-  // Entregas de ejemplo (con productos repetidos a propósito para mostrar la unificación)
+  // Entregas de ejemplo (con productos repetidos a propÃ³sito para mostrar la unificaciÃ³n)
   private entregasMuestra(): EntregaCruda[] {
     const hoy = this.hoy();
     const f = (dias: number, hora: string) => `${this.sumarDias(hoy, dias)}T${hora}`;
     return [
       { ingrediente: 'Arroz',   unidad: 'Kg',       cantidad: 50,  fechaRegistro: f(-18, '08:30:00') },
       { ingrediente: 'Arroz',   unidad: 'Kg',       cantidad: 30,  fechaRegistro: f(-3, '09:10:00') },
-      { ingrediente: 'Fríjol',  unidad: 'Kg',       cantidad: 20,  fechaRegistro: f(-18, '08:30:00') },
+      { ingrediente: 'FrÃ­jol',  unidad: 'Kg',       cantidad: 20,  fechaRegistro: f(-18, '08:30:00') },
       { ingrediente: 'Pollo',   unidad: 'Kg',       cantidad: 25,  fechaRegistro: f(-3, '09:10:00') },
       { ingrediente: 'Huevos',  unidad: 'Unidades', cantidad: 300, fechaRegistro: f(-3, '09:10:00') },
       { ingrediente: 'Leche',   unidad: 'Litros',   cantidad: 120, fechaRegistro: f(-3, '09:10:00') },
@@ -532,23 +532,23 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
 
   // =====================================================
   //  DATOS DE EJEMPLO DEL DETALLE
-  //  Cuando existan los servicios por institución, se reemplazan aquí.
+  //  Cuando existan los servicios por instituciÃ³n, se reemplazan aquÃ­.
   // =====================================================
   private readonly catalogoMuestra = [
-    { nombre: 'Arroz',    emoji: '🌾', categoria: 'Granos y cereales', unidad: 'Kg',       porNino: 0.08, perecedero: false },
-    { nombre: 'Fríjol',   emoji: '🫘', categoria: 'Granos y cereales', unidad: 'Kg',       porNino: 0.04, perecedero: false },
-    { nombre: 'Lenteja',  emoji: '🫘', categoria: 'Granos y cereales', unidad: 'Kg',       porNino: 0.03, perecedero: false },
-    { nombre: 'Aceite',   emoji: '🫒', categoria: 'Despensa',          unidad: 'Litros',   porNino: 0.01, perecedero: false },
-    { nombre: 'Pollo',    emoji: '🍗', categoria: 'Carnes y huevos',   unidad: 'Kg',       porNino: 0.07, perecedero: true },
-    { nombre: 'Huevos',   emoji: '🥚', categoria: 'Carnes y huevos',   unidad: 'Unidades', porNino: 0.5,  perecedero: true },
-    { nombre: 'Leche',    emoji: '🥛', categoria: 'Lácteos',           unidad: 'Litros',   porNino: 0.2,  perecedero: true },
-    { nombre: 'Papa',     emoji: '🥔', categoria: 'Verduras',          unidad: 'Kg',       porNino: 0.1,  perecedero: true },
-    { nombre: 'Plátano',  emoji: '🍌', categoria: 'Frutas',            unidad: 'Kg',       porNino: 0.08, perecedero: true },
+    { nombre: 'Arroz',    emoji: 'ðŸŒ¾', categoria: 'Granos y cereales', unidad: 'Kg',       porNino: 0.08, perecedero: false },
+    { nombre: 'FrÃ­jol',   emoji: 'ðŸ«˜', categoria: 'Granos y cereales', unidad: 'Kg',       porNino: 0.04, perecedero: false },
+    { nombre: 'Lenteja',  emoji: 'ðŸ«˜', categoria: 'Granos y cereales', unidad: 'Kg',       porNino: 0.03, perecedero: false },
+    { nombre: 'Aceite',   emoji: 'ðŸ«’', categoria: 'Despensa',          unidad: 'Litros',   porNino: 0.01, perecedero: false },
+    { nombre: 'Pollo',    emoji: 'ðŸ—', categoria: 'Carnes y huevos',   unidad: 'Kg',       porNino: 0.07, perecedero: true },
+    { nombre: 'Huevos',   emoji: 'ðŸ¥š', categoria: 'Carnes y huevos',   unidad: 'Unidades', porNino: 0.5,  perecedero: true },
+    { nombre: 'Leche',    emoji: 'ðŸ¥›', categoria: 'LÃ¡cteos',           unidad: 'Litros',   porNino: 0.2,  perecedero: true },
+    { nombre: 'Papa',     emoji: 'ðŸ¥”', categoria: 'Verduras',          unidad: 'Kg',       porNino: 0.1,  perecedero: true },
+    { nombre: 'PlÃ¡tano',  emoji: 'ðŸŒ', categoria: 'Frutas',            unidad: 'Kg',       porNino: 0.08, perecedero: true },
   ];
 
   private readonly menusMuestra: string[][] = [
     ['Arroz con pollo', 'Ensalada de zanahoria', 'Jugo de naranja'],
-    ['Fríjoles con arroz', 'Carne molida', 'Plátano maduro'],
+    ['FrÃ­joles con arroz', 'Carne molida', 'PlÃ¡tano maduro'],
     ['Pasta con pollo', 'Ensalada fresca', 'Agua de panela'],
     ['Lentejas con arroz', 'Huevo revuelto', 'Jugo de mora'],
     ['Sancocho de papa', 'Arroz blanco', 'Fruta de temporada'],
@@ -558,7 +558,7 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
     const asistentes = i.matriculados * (i.asistenciaPromedio / 100);
 
     return this.catalogoMuestra.map((p, indice) => {
-      // Los perecederos no duran más de una semana
+      // Los perecederos no duran mÃ¡s de una semana
       const cobertura = p.perecedero ? Math.min(i.diasInventario, 7) : i.diasInventario;
       const saldo = Math.round(asistentes * p.porNino * cobertura * 10) / 10;
       const diasVence = p.perecedero ? 3 + (indice % 5) : 90 + indice * 10;
@@ -581,7 +581,7 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
     });
   }
 
-  // Últimos 5 días hábiles: raciones según matriculados y asistencia
+  // Ãšltimos 5 dÃ­as hÃ¡biles: raciones segÃºn matriculados y asistencia
   private consumoDe(i: Institucion): ConsumoDia[] {
     const base = i.matriculados * (i.asistenciaPromedio / 100);
     const variacion = [0.98, 1.02, 0.95, 1.04, 1.0];
@@ -601,7 +601,7 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
     return dias.map(d => ({ ...d, porcentaje: Math.round((d.raciones / maximo) * 100) }));
   }
 
-  // Menús de los próximos 3 días hábiles
+  // MenÃºs de los prÃ³ximos 3 dÃ­as hÃ¡biles
   private menusDe(i: Institucion): MenuDia[] {
     const ninos = Math.round(i.matriculados * (i.asistenciaPromedio / 100));
     return this.diasHabiles(3, false).map((fecha, n) => ({
@@ -629,14 +629,14 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
           {
             tipoReporte: 'INVENTARIO_CONSOLIDADO',
             nombre: 'Inventario consolidado por sede',
-            detalle: `${res['sedes_autorizadas'] ?? 0} sede(s) · ${res['productos_bajo_minimo'] ?? 0} alerta(s) bajo stock mínimo`,
+            detalle: `${res['sedes_autorizadas'] ?? 0} sede(s) Â· ${res['productos_bajo_minimo'] ?? 0} alerta(s) bajo stock mÃ­nimo`,
             fecha: fechaAct,
             icono: 'inventory_2',
           },
           {
             tipoReporte: 'CONSUMO_ALIMENTOS',
-            nombre: 'Balance de consumo y ejecución',
-            detalle: `Programado: ${res['productos_programados'] ?? 0} · Recibido: ${res['productos_recibidos'] ?? 0} · Consumido: ${res['productos_consumidos'] ?? 0}`,
+            nombre: 'Balance de consumo y ejecuciÃ³n',
+            detalle: `Programado: ${res['productos_programados'] ?? 0} Â· Recibido: ${res['productos_recibidos'] ?? 0} Â· Consumido: ${res['productos_consumidos'] ?? 0}`,
             fecha: fechaAct,
             icono: 'monitoring',
           },
@@ -650,7 +650,7 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
           {
             tipoReporte: 'ASISTENCIA_GRADOS',
             nombre: 'Asistencia diaria por grados',
-            detalle: `${res['asistencia_acumulada'] ?? 0} asistencia(s) registradas · Cobertura promedio ${res['cobertura_asistencia_promedio'] ?? 0}%`,
+            detalle: `${res['asistencia_acumulada'] ?? 0} asistencia(s) registradas Â· Cobertura promedio ${res['cobertura_asistencia_promedio'] ?? 0}%`,
             fecha: fechaAct,
             icono: 'fact_check',
           },
@@ -693,10 +693,10 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
   }
 
   // =====================================================
-  //  IMÁGENES
+  //  IMÃGENES
   // =====================================================
 
-  // Carga el catálogo del servidor (solo respaldo para productos que no estén en ARCHIVOS_IMAGEN)
+  // Carga el catÃ¡logo del servidor (solo respaldo para productos que no estÃ©n en ARCHIVOS_IMAGEN)
   private cargarImagenes(): void {
     this.http.get<any>(this.urlIngredientes).pipe(
       map(d => (Array.isArray(d) ? d : (d?.results ?? [])) as any[])
@@ -705,13 +705,13 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
         const mapa = new Map<string, string>();
         for (const item of lista) {
           const nombre = leerTexto(item, 'nombre', 'nombre_ingrediente', 'ingrediente');
-          const url = this.resolverImagen(leerTexto(item, 'imagen', 'imagen_url', 'foto', 'image', 'icono'));
+          const url = this.resolverImagen(leerTexto(item, 'imagen_ingrediente', 'imagen', 'imagen_url', 'foto', 'image', 'icono'));
           if (nombre && url) mapa.set(normalizar(nombre), url);
         }
         this.imagenesIngredientes = mapa;
       },
-      // Sin catálogo no pasa nada grave: se usan las imágenes locales o los emojis
-      error: (error) => console.error('Error al cargar imágenes de ingredientes:', error),
+      // Sin catÃ¡logo no pasa nada grave: se usan las imÃ¡genes locales o los emojis
+      error: (error) => console.error('Error al cargar imÃ¡genes de ingredientes:', error),
     });
   }
 
@@ -727,17 +727,21 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
   }
 
   // Orden de búsqueda:
-  //   1) archivo local de public/ (mapa ARCHIVOS_IMAGEN)
-  //   2) imagen del catálogo del servidor
+  //   1) imagen del catálogo del servidor (Cloudinary u otra URL)
+  //   2) archivo local de public/ (mapa ARCHIVOS_IMAGEN)
   //   3) public/<nombre_del_producto>.png
   urlImagen(nombre: string): string {
     const n = normalizar(nombre);
 
+    // Prioridad 1: imagen real del servidor (Cloudinary)
+    const urlServidor = this.imagenesIngredientes.get(n);
+    if (urlServidor) return urlServidor;
+
+    // Prioridad 2: imagen estática local como respaldo
     const local = ARCHIVOS_IMAGEN[n];
     if (local) return `${RUTA_IMAGENES}${local}`;
 
-    return this.imagenesIngredientes.get(n)
-      ?? `${RUTA_IMAGENES}${n.replace(/\s+/g, '_')}.${EXTENSION_IMAGEN}`;
+    return `${RUTA_IMAGENES}${n.replace(/\s+/g, '_')}.${EXTENSION_IMAGEN}`;
   }
 
   // Se muestra la imagen mientras no falle al cargar; si falla, queda el emoji
@@ -776,7 +780,7 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
     return this.aISO(d);
   }
 
-  // n días hábiles (lunes a viernes): hacia atrás desde hoy, o hacia adelante desde mañana
+  // n dÃ­as hÃ¡biles (lunes a viernes): hacia atrÃ¡s desde hoy, o hacia adelante desde maÃ±ana
   private diasHabiles(n: number, haciaAtras: boolean): string[] {
     const resultado: string[] = [];
     const d = new Date(this.hoy() + 'T00:00:00');
@@ -791,23 +795,23 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
   }
 
   private nombreDia(iso: string): string {
-    const nombres = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    const nombres = ['Domingo', 'Lunes', 'Martes', 'MiÃ©rcoles', 'Jueves', 'Viernes', 'SÃ¡bado'];
     return nombres[new Date(iso + 'T00:00:00').getDay()];
   }
 
-  // dd/mm/aaaa; si no hay fecha válida muestra "—"
+  // dd/mm/aaaa; si no hay fecha vÃ¡lida muestra "â€”"
   fechaCorta(valor: string | null | undefined): string {
     const iso = String(valor ?? '').substring(0, 10);
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return '—';
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return 'â€”';
     const [y, m, d] = iso.split('-');
     return `${d}/${m}/${y}`;
   }
 
-  // dd/mm/aaaa hh:mm; si solo viene la fecha (sin hora) muestra únicamente la fecha
+  // dd/mm/aaaa hh:mm; si solo viene la fecha (sin hora) muestra Ãºnicamente la fecha
   fechaHora(valor: string | null | undefined): string {
     const v = String(valor ?? '').trim();
-    if (!v) return '—';
-    // Una fecha sin hora se interpretaría como UTC y podría mostrar el día anterior
+    if (!v) return 'â€”';
+    // Una fecha sin hora se interpretarÃ­a como UTC y podrÃ­a mostrar el dÃ­a anterior
     if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return this.fechaCorta(v);
     const d = new Date(v);
     if (Number.isNaN(d.getTime())) return this.fechaCorta(v);
@@ -817,10 +821,10 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
     });
   }
 
-  // La última actualización puede venir como fecha o como texto ("Hoy, 8:42 a. m.")
+  // La Ãºltima actualizaciÃ³n puede venir como fecha o como texto ("Hoy, 8:42 a. m.")
   textoActualizacion(i: Institucion): string {
     const v = i.ultimaActualizacion;
-    if (!v) return '—';
+    if (!v) return 'â€”';
     return /^\d{4}-\d{2}-\d{2}/.test(v) ? this.fechaCorta(v) : v;
   }
 }
