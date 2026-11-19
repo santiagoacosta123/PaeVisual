@@ -24,6 +24,7 @@ interface SedeBase {
   id: number;
   nombre: string;
   cupos: number;
+  codigoDane?: string;
 }
 
 /**
@@ -239,26 +240,36 @@ export class PlanillasOperativasComponent implements OnInit, OnDestroy {
     const idInstitucion = this.institucionActiva?.id_institucion || 1;
     const nombreInstitucion = this.institucionActiva?.nombre_institucion || 'Institución Educativa';
     const idSede = this.sedeActiva?.id_sede ?? (typeof this.sedeFiltro === 'number' ? this.sedeFiltro : 1);
-    const nombreSede = this.sedeActiva?.nombre_sede ?? (this.sedesBase.find(s => s.id === idSede)?.nombre || 'Sede Principal');
-    const cuposSede = this.sedesBase.find(s => s.id === idSede)?.cupos
+    const sedeObj = this.sedesBase.find(s => s.id === idSede);
+    const nombreSede = this.sedeActiva?.nombre_sede ?? (sedeObj?.nombre || 'Sede Principal');
+    const codigoDaneSede = sedeObj?.codigoDane || (this.institucionActiva as any)?.codigo_dane || (this.institucionActiva as any)?.dane || '';
+    const cuposSede = sedeObj?.cupos
       || (nombreSede.toLowerCase().includes('valencia') ? 227 : 0);
     const usuarioActual = this.auth.obtenerUsuario();
     const nombreUsuario = usuarioActual?.nombre
       ? `${usuarioActual.nombre} ${usuarioActual.apellido || ''}`.trim()
-      : 'Supervisor PAE';
+      : '';
 
     forkJoin({
       remision: this.planillasPaeService.obtenerPlanillaRemision({
         institucionId: idInstitucion,
         institucionNombre: nombreInstitucion,
+        institucionRector: this.institucionActiva?.representante_legal || '',
+        institucionTelefono: this.institucionActiva?.telefono || '',
         sedeId: idSede,
         sedeNombre: nombreSede,
+        sedeCodigoDane: codigoDaneSede,
         periodo: this.periodoSeleccionado,
         fechaInicio: this.fechaInicioPlanilla,
         fechaFin: this.fechaFinPlanilla,
         cuposBase: cuposSede,
         forzarRecarga: !mostrarCargando,
-        nombreUsuario
+        nombreUsuario,
+        usuarioActual: usuarioActual ? {
+          nombre: nombreUsuario,
+          cedula: usuarioActual.numero_documento || '',
+          rol: usuarioActual.rol || ''
+        } : undefined
       }),
       kardex: this.planillasPaeService.obtenerPlanillaKardex({
         institucionId: idInstitucion,
@@ -406,7 +417,8 @@ export class PlanillasOperativasComponent implements OnInit, OnDestroy {
     for (const item of origen) {
       const id = Number(item.id_sede ?? item.id);
       if (!id) continue;
-      mapaSedes.set(id, { id, nombre: texto(item.nombre_sede ?? item.nombre) || `Sede ${id}`, cupos: 0 });
+      const dane = texto(item.codigo_dane ?? item.dane ?? item.codigoDane ?? '');
+      mapaSedes.set(id, { id, nombre: texto(item.nombre_sede ?? item.nombre) || `Sede ${id}`, cupos: 0, codigoDane: dane });
     }
     const institucionSinSedes = mapaSedes.size === 0 &&
       listaDe(this.institucionActiva?.sedes).length === 0;

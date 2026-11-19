@@ -284,14 +284,22 @@ export class PlanillasOperativasService {
   obtenerPlanillaRemision(params: {
     institucionId: number;
     institucionNombre: string;
+    institucionRector?: string;
+    institucionTelefono?: string;
     sedeId: number;
     sedeNombre: string;
+    sedeCodigoDane?: string;
     periodo: string;
     fechaInicio: string;
     fechaFin: string;
     cuposBase?: number;
     forzarRecarga?: boolean;
     nombreUsuario?: string;
+    usuarioActual?: {
+      nombre: string;
+      cedula: string;
+      rol: string;
+    };
   }): Observable<PlanillaRemisionData> {
     const cacheKey = `pae_remision_${params.institucionId}_${params.sedeId}_${params.periodo}_${params.fechaInicio}`;
     const guardada = localStorage.getItem(cacheKey);
@@ -305,23 +313,6 @@ export class PlanillasOperativasService {
           try {
             const parsed = JSON.parse(guardada);
             if (parsed && parsed.guardadoManual) {
-              if (!parsed.cupos || !parsed.cupos.totalCupos || parsed.cupos.totalCupos === 0) {
-                const cupoDefecto = params.cuposBase || (params.sedeNombre?.toLowerCase().includes('valencia') ? 227 : 0);
-                const pre = Math.round(cupoDefecto * 0.11);
-                const p13 = Math.round(cupoDefecto * 0.22);
-                const p45 = Math.round(cupoDefecto * 0.22);
-                const sec = Math.round(cupoDefecto * 0.30);
-                const med = Math.max(0, cupoDefecto - (pre + p13 + p45 + sec));
-                parsed.cupos = {
-                  preescolar: pre,
-                  primaria13: p13,
-                  primaria45: p45,
-                  secundaria: sec,
-                  media: med,
-                  totalCupos: cupoDefecto,
-                  racionesTotales: cupoDefecto * 20
-                };
-              }
               return parsed as PlanillaRemisionData;
             }
           } catch (e) {
@@ -332,14 +323,14 @@ export class PlanillasOperativasService {
         const entregas = this.safeArray<Entrega>(entregasRaw);
         const contratos = this.safeArray<any>(contratosRaw);
 
-        // Buscar contrato de la sede o institución de forma segura
+        // Buscar contrato de la sede o institución de forma real
         const contratoSede = contratos.find((c: any) =>
           Number(c.id_sede) === params.sedeId || Number(c.id_institucion) === params.institucionId
         );
 
-        // Cupos determinados estrictamente por el contrato de la sede o institución
+        // Cupos determinados estrictamente por la sede o el contrato real
         const contratoCupos = Number(contratoSede?.cupos) || 0;
-        const cupoTotal = params.cuposBase || contratoCupos || (params.sedeNombre?.toLowerCase().includes('valencia') ? 227 : 0);
+        const cupoTotal = params.cuposBase || contratoCupos || 0;
 
         // Distribución oficial según cupos de la sede
         const preescolar = Math.round(cupoTotal * 0.11);
@@ -366,15 +357,26 @@ export class PlanillasOperativasService {
 
         const diasHabiles = this.generarDiasHabiles(params.fechaInicio || '2026-10-19');
 
-        // Mapear NO PERECEDEROS (Cero datos quemados: si la manipuladora no ha recibido, es 0)
-        const noPerecederos: FilaNoPerecedero[] = this.NO_PERECEDEROS_BASE.map((item, idx) => {
-          const termino = item.alimento.toLowerCase().split(' ')[0];
-          const entregasProd = entregasSede.filter(e =>
-            e.ingrediente && e.ingrediente.toLowerCase().includes(termino)
-          );
+        // Función auxiliar para normalizar nombres y cruzar entregas reales
+        const normalizarTexto = (t: string) =>
+          t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
 
-          // Cantidad real recibida y firmada por la manipuladora
-          const cantidadRecibidaAuto = entregasProd.reduce((sum, e) => {
+        // Factor para calcular cantidades a entregar proporcionales a los cupos reales
+        const factorCupos = cupoTotal > 0 ? (cupoTotal / 227) : 1;
+
+        // Mapear NO PERECEDEROS (Conectado a recepciones reales de manipuladoras)
+        const noPerecederos: FilaNoPerecedero[] = this.NO_PERECEDEROS_BASE.map((item, idx) => {
+          const alimLimpio = normalizarTexto(item.alimento);
+          const palabras = alimLimpio.split(/\s+/).filter(p => p.length > 2 && !['con','del','los','las','para','tipo'].includes(p));
+
+          const entregasProd = entregasSede.filter(e => {
+            if (!e.ingrediente) return false;
+            const ingLimpio = normalizarTexto(e.ingrediente);
+            return palabras.some(p => ingLimpio.includes(p)) || ingLimpio.includes(palabras[0] || '');
+          });
+
+          // Cantidad real recibida y verificada por la manipuladora
+          const cantidadRecibidaReal = entregasProd.reduce((sum, e) => {
             if (e.cantidadRecibida != null) return sum + Number(e.cantidadRecibida);
             if (e.estado === 'RECIBIDA') return sum + Number(e.cantidad || 0);
             return sum;
@@ -383,31 +385,37 @@ export class PlanillasOperativasService {
           const conNovedad = entregasProd.find(e => e.motivoRechazo || e.observaciones || e.estado === 'CON_NOVEDAD');
           const observaciones = conNovedad ? (conNovedad.motivoRechazo || conNovedad.observaciones || 'Con novedad') : '';
 
+          const aEntregarCalculado = Math.round(item.baseMes * factorCupos * 10) / 10;
+
           return {
             id: idx + 1,
             alimento: item.alimento,
             gramajes: { ...item.gramajes },
             unidad: item.unidad,
-            cantidadEntregar: item.baseMes,
-            cantidadRecibida: Math.round(cantidadRecibidaAuto * 100) / 100,
+            cantidadEntregar: aEntregarCalculado,
+            cantidadRecibida: Math.round(cantidadRecibidaReal * 100) / 100,
             observaciones
           };
         });
 
         // Mapear PERECEDEROS con 4 entregas semanales reales
         const perecederos: FilaPerecedero[] = this.PERECEDEROS_BASE.map((item, idx) => {
-          const termino = item.alimento.toLowerCase().split(' ')[0];
-          const entregasProd = entregasSede.filter(e =>
-            e.ingrediente && e.ingrediente.toLowerCase().includes(termino)
-          );
+          const alimLimpio = normalizarTexto(item.alimento);
+          const palabras = alimLimpio.split(/\s+/).filter(p => p.length > 2 && !['con','del','los','las','para','tipo'].includes(p));
 
-          const e1 = item.baseSemanal[0] || 0;
-          const e2 = item.baseSemanal[1] || 0;
-          const e3 = item.baseSemanal[2] || 0;
-          const e4 = item.baseSemanal[3] || 0;
-          const totalEntregado = Math.round((e1 + e2 + e3 + e4) * 100) / 100;
+          const entregasProd = entregasSede.filter(e => {
+            if (!e.ingrediente) return false;
+            const ingLimpio = normalizarTexto(e.ingrediente);
+            return palabras.some(p => ingLimpio.includes(p)) || ingLimpio.includes(palabras[0] || '');
+          });
 
-          // Cantidades reales recibidas por la manipuladora por cada semana
+          const e1 = Math.round(item.baseSemanal[0] * factorCupos * 10) / 10;
+          const e2 = Math.round(item.baseSemanal[1] * factorCupos * 10) / 10;
+          const e3 = Math.round(item.baseSemanal[2] * factorCupos * 10) / 10;
+          const e4 = Math.round(item.baseSemanal[3] * factorCupos * 10) / 10;
+          const totalEntregado = Math.round((e1 + e2 + e3 + e4) * 10) / 10;
+
+          // Cantidades reales recibidas por la manipuladora en cada semana
           const calcularRecibidaSemana = (semIdx: number): number => {
             const fechaIni = diasHabiles[semIdx * 5];
             const fechaFin = diasHabiles[Math.min(semIdx * 5 + 4, diasHabiles.length - 1)];
@@ -445,7 +453,7 @@ export class PlanillasOperativasService {
           };
         });
 
-        // Mapear ASEO: DEJAR VACÍOS POR SOLICITUD EXPLÍCITA DEL USUARIO
+        // Mapear ASEO: columnas de cantidades en blanco por solicitud oficial
         const aseo: FilaAseo[] = this.ASEO_BASE.map((item, idx) => ({
           id: idx + 1,
           item: item.item,
@@ -455,21 +463,42 @@ export class PlanillasOperativasService {
           observaciones: ''
         }));
 
+        // Datos reales de firmas: cero datos inventados o quemados
+        const esManipuladoraSesion = !!params.usuarioActual?.rol && (
+          params.usuarioActual.rol.toLowerCase().includes('manipula') ||
+          params.usuarioActual.rol.toLowerCase().includes('jefa')
+        );
         const manipuladoraEntrega = entregasSede.find(e => e.usuarioReceptorNombre)?.usuarioReceptorNombre;
-        const nombreManipuladoraReal = manipuladoraEntrega || params.nombreUsuario || 'MARÍA YOLANDA SOLANO (Manipuladora)';
+
+        const nombreManipuladoraReal = esManipuladoraSesion
+          ? (params.usuarioActual?.nombre || 'Manipuladora Asignada')
+          : (manipuladoraEntrega || '_________________');
+
+        const cedulaManipuladoraReal = esManipuladoraSesion
+          ? (params.usuarioActual?.cedula || '_________________')
+          : '_________________';
+
+        const nombreRectorReal = params.institucionRector || contratoSede?.representante_legal || '_________________';
+        const telefonoRectorReal = params.institucionTelefono || contratoSede?.telefono || '_________________';
+
+        const operadorNombreReal = contratoSede?.operador || contratoSede?.nombre_operador || contratoSede?.contratista || '_________________';
+        const operadorRepresentante = contratoSede?.coordinador || contratoSede?.representante_legal || operadorNombreReal;
+
+        const codigoDaneReal = params.sedeCodigoDane || contratoSede?.codigo_dane || contratoSede?.dane || '_________________';
+        const contratoNumeroReal = contratoSede?.numero_contrato || contratoSede?.numero || contratoSede?.codigo_contrato || '_________________';
 
         const nuevaPlanilla: PlanillaRemisionData = {
           municipio: 'POPAYÁN',
           periodo: params.periodo || 'PRIMERA',
-          fechaInicio: params.fechaInicio || '2025-01-27',
-          fechaTerminacion: params.fechaFin || '2025-02-21',
-          contratoNumero: contratoSede?.numero_contrato || '20241800039887',
-          operador: contratoSede?.operador || 'ASOCIACIÓN DE PADRES DE FAMILIA DE LOS RESTAURANTES ESCOLARES DEL MUNICIPIO DE EL TAMBO',
-          institucionEducativa: params.institucionNombre || 'INSTITUCIÓN EDUCATIVA COMERCIAL DEL NORTE',
+          fechaInicio: params.fechaInicio || '2026-10-19',
+          fechaTerminacion: params.fechaFin || '2026-11-13',
+          contratoNumero: contratoNumeroReal,
+          operador: operadorNombreReal,
+          institucionEducativa: params.institucionNombre || 'INSTITUCIÓN EDUCATIVA',
           sede: params.sedeNombre || 'SEDE PRINCIPAL',
-          codigoDane: contratoSede?.codigo_dane || '119001001483',
+          codigoDane: codigoDaneReal,
           modalidad: 'RACIÓN PREPARADA EN SITIO - RPS',
-          tipo: 'COMPLEMENTO ALIMENTARIO ALMUERZO',
+          tipo: 'COMPLEMENTO ALIMENTARIO CAJ/CAJT',
           diasAtender: 20,
           cupos,
           ciclosMenus: '1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20',
@@ -478,15 +507,15 @@ export class PlanillasOperativasService {
           aseo,
           firmas: {
             manipuladoraNombre: nombreManipuladoraReal,
-            manipuladoraCedula: '34.567.890 DE POPAYÁN',
-            rectorNombre: 'ARY MEDARDO SÁNCHEZ ROSERO',
-            rectorCedula: '10.305.118 DE POPAYÁN',
-            rectorTelefono: '3225029321 - 3223864703',
+            manipuladoraCedula: cedulaManipuladoraReal,
+            rectorNombre: nombreRectorReal,
+            rectorCedula: '_________________',
+            rectorTelefono: telefonoRectorReal,
             rectorCargo: 'RECTOR / DOCENTE ENCARGADO PAE',
-            operadorNombre: 'ARY M. SÁNCHEZ R.',
-            operadorCedula: '10.305.118 DE POPAYÁN',
-            operadorTelefono: '3225029321',
-            operadorCargo: 'REPRESENTANTE LEGAL CONTRATISTA O COORDINADOR'
+            operadorNombre: operadorRepresentante,
+            operadorCedula: '_________________',
+            operadorTelefono: '_________________',
+            operadorCargo: 'REPRESENTANTE LEGAL CONTRATISTA O COORDINADOR OPERATIVO'
           }
         };
 
@@ -727,15 +756,15 @@ export class PlanillasOperativasService {
     return {
       municipio: 'POPAYÁN',
       periodo: params.periodo || 'PRIMERA',
-      fechaInicio: params.fechaInicio || '2025-01-27',
-      fechaTerminacion: params.fechaFin || '2025-02-21',
-      contratoNumero: '20241800039887',
-      operador: 'ASOCIACIÓN DE PADRES DE FAMILIA DE LOS RESTAURANTES ESCOLARES DEL MUNICIPIO DE EL TAMBO',
+      fechaInicio: params.fechaInicio || '2026-10-19',
+      fechaTerminacion: params.fechaFin || '2026-11-13',
+      contratoNumero: '_________________',
+      operador: '_________________',
       institucionEducativa: params.institucionNombre || 'INSTITUCIÓN EDUCATIVA',
       sede: params.sedeNombre || 'SEDE PRINCIPAL',
-      codigoDane: '119001001483',
+      codigoDane: '_________________',
       modalidad: 'RACIÓN PREPARADA EN SITIO - RPS',
-      tipo: 'COMPLEMENTO ALIMENTARIO ALMUERZO',
+      tipo: 'COMPLEMENTO ALIMENTARIO CAJ/CAJT',
       diasAtender: 20,
       cupos,
       ciclosMenus: '1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20',
@@ -743,16 +772,16 @@ export class PlanillasOperativasService {
       perecederos,
       aseo,
       firmas: {
-        manipuladoraNombre: params.nombreUsuario || 'MARÍA YOLANDA SOLANO',
-        manipuladoraCedula: '34.567.890',
-        rectorNombre: 'ARY MEDARDO SÁNCHEZ ROSERO',
-        rectorCedula: '10.305.118',
-        rectorTelefono: '3225029321',
-        rectorCargo: 'RECTOR / ENCARGADO PAE',
-        operadorNombre: 'ARY M. SÁNCHEZ R.',
-        operadorCedula: '10.305.118',
-        operadorTelefono: '3225029321',
-        operadorCargo: 'COORDINADOR OPERATIVO'
+        manipuladoraNombre: params.nombreUsuario || '_________________',
+        manipuladoraCedula: '_________________',
+        rectorNombre: '_________________',
+        rectorCedula: '_________________',
+        rectorTelefono: '_________________',
+        rectorCargo: 'RECTOR / DOCENTE ENCARGADO PAE',
+        operadorNombre: '_________________',
+        operadorCedula: '_________________',
+        operadorTelefono: '_________________',
+        operadorCargo: 'REPRESENTANTE LEGAL CONTRATISTA O COORDINADOR OPERATIVO'
       }
     };
   }
