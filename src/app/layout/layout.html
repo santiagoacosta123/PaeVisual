@@ -584,7 +584,7 @@
 <!-- ================================================================= -->
 <!-- CASO 2A: SUPER ADMINISTRADOR — RIEL LATERAL                       -->
 <!-- ================================================================= -->
-<div *ngIf="esSuperAdministrador" class="adm-shell">
+<div *ngIf="esSuperAdministrador && !esSupervisor" class="adm-shell">
 
   <!-- ================= SIDEBAR ================= -->
   <div class="adm-slot">
