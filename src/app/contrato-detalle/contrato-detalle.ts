@@ -153,8 +153,9 @@ export class ContratoDetalleComponent implements OnInit {
     if (!u) return 'Administrador';
     if (u.is_superuser) return 'Superadministrador';
     const rol = (u.rol || '').trim();
+    if (this.authService.esSupervisor(rol)) return 'Supervisor';
+    if (this.authService.esSuperAdministrador(rol)) return 'Superadministrador';
     if (rol.toLowerCase().includes('admin')) return 'Administrador';
-    if (rol.toLowerCase().includes('super')) return 'Superadministrador';
     if (rol.toLowerCase().includes('coordinador')) return 'Coordinador';
     return rol || 'Administrador';
   }

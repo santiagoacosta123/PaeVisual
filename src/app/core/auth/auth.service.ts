@@ -236,15 +236,23 @@ export class AuthService {
 
   esSuperAdministrador(rol: string | null | undefined): boolean {
     const rolNormalizado = this.normalizarRol(rol);
+    if (!rolNormalizado || rolNormalizado.includes('supervisor')) {
+      return false;
+    }
     return rolNormalizado === 'superadministrador'
       || rolNormalizado === 'super administrador'
       || rolNormalizado === 'super admin'
       || rolNormalizado === 'superadmin'
-      || rolNormalizado.includes('super');
+      || rolNormalizado === 'super'
+      || rolNormalizado === 'super_administrador'
+      || (rolNormalizado.includes('super') && (rolNormalizado.includes('admin') || rolNormalizado.includes('administrador')));
   }
 
   esAdministrador(rol: string | null | undefined): boolean {
     const rolNormalizado = this.normalizarRol(rol);
+    if (!rolNormalizado || this.esSuperAdministrador(rol) || this.esSupervisor(rol)) {
+      return false;
+    }
     return rolNormalizado === 'administrador' || rolNormalizado === 'admin' || rolNormalizado.includes('administrador');
   }
 
@@ -269,9 +277,14 @@ export class AuthService {
 
   esSupervisor(rol: string | null | undefined): boolean {
     const rolNormalizado = this.normalizarRol(rol);
+    if (!rolNormalizado) {
+      return false;
+    }
     return rolNormalizado === 'supervisor'
       || rolNormalizado === 'coordinador'
-      || rolNormalizado === 'coordinador pae';
+      || rolNormalizado === 'coordinador pae'
+      || rolNormalizado.includes('supervisor')
+      || rolNormalizado.includes('coordinador');
   }
 
   esJefa(rol: string | null | undefined): boolean {

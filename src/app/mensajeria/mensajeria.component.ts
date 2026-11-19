@@ -300,9 +300,9 @@ export class MensajeriaComponent implements OnInit, OnDestroy, AfterViewChecked 
 
   obtenerColorRol(rol: string): string {
     const rolNorm = (rol || '').toLowerCase();
-    if (rolNorm.includes('super')) return 'bg-purple-100 text-purple-700 border-purple-200';
+    if (rolNorm.includes('supervisor') || rolNorm.includes('coordinador')) return 'bg-amber-100 text-amber-700 border-amber-200';
+    if (rolNorm.includes('super') && (rolNorm.includes('admin') || !rolNorm.includes('supervisor'))) return 'bg-purple-100 text-purple-700 border-purple-200';
     if (rolNorm.includes('admin')) return 'bg-blue-100 text-blue-700 border-blue-200';
-    if (rolNorm.includes('supervisor')) return 'bg-amber-100 text-amber-700 border-amber-200';
     if (rolNorm.includes('jefa')) return 'bg-emerald-100 text-emerald-700 border-emerald-200';
     return 'bg-slate-100 text-slate-700 border-slate-200';
   }

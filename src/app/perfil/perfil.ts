@@ -163,12 +163,15 @@ export class PerfilComponent implements OnInit, OnDestroy {
   }
 
   get rolDisplay(): string {
+    if (this.authService.esSupervisor(this.usuario?.rol)) {
+      return 'Supervisor PAE';
+    }
     if (this.esSuperAdmin || this.usuario?.correo?.toLowerCase().includes('superadmin')) {
       return 'Super Administrador';
     }
     if (this.usuario?.rol) {
       const r = this.authService.normalizarRol(this.usuario.rol);
-      if (r.includes('super')) return 'Super Administrador';
+      if (this.authService.esSuperAdministrador(this.usuario.rol)) return 'Super Administrador';
       if (r.includes('supervisor') || r.includes('coordinador')) return 'Supervisor PAE';
       if (r.includes('admin')) return 'Administrador Institucional';
       if (r.includes('jefa')) return 'Jefa de Manipuladoras';
