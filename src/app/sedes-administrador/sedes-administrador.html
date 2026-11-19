@@ -1,258 +1,347 @@
 <section class="flex w-full flex-col gap-6">
-  <header class="flex flex-col justify-between gap-4 rounded-3xl border border-slate-100 bg-white p-6 shadow-sm sm:flex-row sm:items-center">
+
+  <!-- ENCABEZADO -->
+  <header class="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
     <div>
-      <h1 class="m-0 text-2xl font-black tracking-tight text-slate-900">Sedes de mi institución</h1>
-      <p class="mt-1 text-sm text-slate-500">Consulta los cupos, jornadas y secciones de menú configuradas.</p>
-    
+      <div class="flex flex-wrap items-center gap-3">
+        <h1 class="m-0 text-3xl font-black tracking-tight text-slate-900">Sedes de mi institución</h1>
+        <span *ngIf="institucionAsignada"
+          class="rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-[11px] font-bold text-amber-800">
+          {{ institucionAsignada }}
+        </span>
+      </div>
+      <p class="mb-0 mt-2 text-sm text-slate-500">Consulta los cupos, jornadas y secciones de menú configuradas.</p>
     </div>
-    <button
-      type="button"
-      (click)="actualizar()"
-      [disabled]="cargandoSedes"
-      class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 shadow-sm hover:bg-amber-50 disabled:opacity-60"
-      aria-label="Actualizar información de sedes">
-      <span class="material-symbols-outlined text-lg" [class.animate-spin]="cargandoSedes">refresh</span>
-      Actualizar
-    </button>
   </header>
 
+  <!-- RESUMEN -->
+  <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <p class="m-0 text-xs font-semibold text-slate-500">Total de sedes</p>
+      <p class="mb-0 mt-2 text-3xl font-black text-slate-900">{{ sedes.length | number:'2.0-0' }}</p>
+      <p class="mb-0 mt-1 text-[11px] text-slate-400">Asignadas a tu institución</p>
+    </div>
+
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <p class="m-0 text-xs font-semibold text-slate-500">Cupos autorizados</p>
+      <p class="mb-0 mt-2 text-3xl font-black text-slate-900">
+        <ng-container *ngIf="configuracion; else sinSedeA">{{ configuracion.cupos_totales | number }}</ng-container>
+        <ng-template #sinSedeA>—</ng-template>
+      </p>
+      <p class="mb-0 mt-1 text-[11px] text-slate-400">En contratos de la sede</p>
+    </div>
+
+    <div class="rounded-2xl border border-amber-300 bg-amber-50/60 p-5 shadow-sm">
+      <p class="m-0 text-xs font-semibold text-amber-800">Distribuidos</p>
+      <p class="mb-0 mt-2 text-3xl font-black text-amber-700">
+        <ng-container *ngIf="configuracion; else sinSedeB">{{ cuposTotalesDistribuidos | number }}</ng-container>
+        <ng-template #sinSedeB>—</ng-template>
+      </p>
+      <p class="mb-0 mt-1 text-[11px] text-amber-700/70">Asignados a jornadas</p>
+    </div>
+
+    <div class="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-5 shadow-sm">
+      <p class="m-0 text-xs font-semibold text-emerald-700">Pendientes</p>
+      <p class="mb-0 mt-2 text-3xl font-black text-emerald-600">
+        <ng-container *ngIf="configuracion; else sinSedeC">{{ cuposPendientes | number }}</ng-container>
+        <ng-template #sinSedeC>—</ng-template>
+      </p>
+      <p class="mb-0 mt-1 text-[11px] text-emerald-700/70">Por distribuir</p>
+    </div>
+  </div>
+
+  <!-- AVISO -->
+  <div class="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4">
+    <p class="m-0 text-sm font-extrabold text-amber-900">Revisa la distribución antes de guardar</p>
+    <p class="mb-0 mt-1 text-xs text-amber-800/80">
+      La suma de cupos por grado debe coincidir con los cupos asignados a cada jornada.
+    </p>
+  </div>
+
+  <!-- ERROR / CARGANDO / VACÍO -->
   <div *ngIf="errorSedes" role="alert" class="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm font-semibold text-rose-700">
     {{ errorSedes }}
     <button type="button" class="ml-2 underline" (click)="actualizar()">Reintentar</button>
   </div>
 
-  <div *ngIf="cargandoSedes && sedes.length === 0" class="rounded-2xl bg-white p-8 text-center text-sm font-semibold text-slate-500 shadow-sm">
+  <div *ngIf="cargandoSedes && sedes.length === 0" class="rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm font-semibold text-slate-500 shadow-sm">
     Cargando sedes...
   </div>
 
-  <div *ngIf="!cargandoSedes && !errorSedes && sedes.length === 0" class="rounded-2xl bg-white p-8 text-center text-sm text-slate-500 shadow-sm">
+  <div *ngIf="!cargandoSedes && !errorSedes && sedes.length === 0" class="rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500 shadow-sm">
     No hay sedes asignadas a tu institución.
   </div>
 
-  <div *ngIf="sedes.length > 0" class="grid gap-6 xl:grid-cols-[minmax(260px,0.8fr)_minmax(0,2fr)]">
-    <section aria-label="Listado de sedes" class="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm">
-      <h2 class="mb-4 text-base font-extrabold text-slate-900">Listado de sedes</h2>
-      <div class="flex flex-col gap-3">
-        <button
+  <!-- LISTADO DE SEDES -->
+  <section *ngIf="sedes.length > 0" aria-label="Listado de sedes" class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+      <div class="flex items-center gap-3">
+        <h2 class="m-0 text-lg font-extrabold text-slate-900">Sedes de la institución</h2>
+        <span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-bold text-slate-600">{{ sedes.length }} {{ sedes.length === 1 ? 'sede' : 'sedes' }}</span>
+      </div>
+      <span class="text-xs text-slate-400">Selecciona una sede para ver su configuración</span>
+    </div>
+
+    <div class="overflow-x-auto rounded-2xl border border-slate-100">
+      <div class="min-w-[560px]">
+        <!-- Cabecera -->
+        <div class="grid grid-cols-[minmax(0,1fr)_140px_150px] items-center gap-4 bg-slate-50 px-5 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+          <span class="text-left">Sede</span>
+          <span class="text-left">Estado</span>
+          <span class="text-right">Acciones</span>
+        </div>
+
+        <!-- Filas -->
+        <div
           *ngFor="let sede of sedes"
-          type="button"
-          (click)="seleccionarSede(sede)"
-          [attr.aria-pressed]="sedeSeleccionada?.id_sede === sede.id_sede"
-          class="flex items-center justify-between gap-3 rounded-2xl border p-4 text-left transition hover:border-amber-300 hover:bg-amber-50/50"
-          [ngClass]="sedeSeleccionada?.id_sede === sede.id_sede ? 'border-amber-400 bg-amber-50' : 'border-slate-100 bg-white'">
-          <span class="flex min-w-0 items-center gap-3">
-            <span class="material-symbols-outlined text-2xl text-amber-600">apartment</span>
-            <span class="truncate font-bold text-slate-800">{{ sede.nombre_sede }}</span>
-          </span>
-          <span
-            class="shrink-0 rounded-full px-2.5 py-1 text-xs font-bold"
-            [ngClass]="sedeEstaActiva(sede.estado) ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'">
-            {{ sede.estado || 'Sin estado' }}
-          </span>
-        </button>
-      </div>
-    </section>
+          class="grid grid-cols-[minmax(0,1fr)_140px_150px] items-center gap-4 border-t border-slate-100 px-5 py-4 transition hover:bg-amber-50/40"
+          [ngClass]="sedeSeleccionada?.id_sede === sede.id_sede ? 'bg-amber-50/60' : 'bg-white'">
 
-    <section *ngIf="!sedeSeleccionada" class="flex min-h-56 items-center justify-center rounded-3xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
-      Selecciona una sede para consultar su información general y configuración operativa.
-    </section>
+          <div class="min-w-0 text-left">
+            <p class="m-0 truncate text-sm font-bold text-slate-800">{{ sede.nombre_sede }}</p>
+            <p class="mb-0 mt-0.5 truncate text-xs text-slate-400">{{ sede.direccion || 'Dirección no registrada' }}</p>
+          </div>
 
-    <section *ngIf="sedeSeleccionada" aria-label="Detalle de sede" class="flex flex-col gap-5">
-      <div *ngIf="cargandoDetalle" class="rounded-3xl bg-white p-8 text-center text-sm font-semibold text-slate-500 shadow-sm">
-        Cargando configuración de {{ sedeSeleccionada.nombre_sede }}...
-      </div>
-
-      <div *ngIf="errorDetalle" role="alert" class="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm font-semibold text-rose-700">
-        {{ errorDetalle }}
-        <button type="button" class="ml-2 underline" (click)="actualizar()">Reintentar</button>
-      </div>
-
-      <ng-container *ngIf="configuracion as detalle">
-        <article class="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
-          <div class="mb-5 flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <p class="m-0 text-xs font-bold uppercase tracking-wider text-amber-700">Información general</p>
-              <h2 class="mb-0 mt-1 text-xl font-black text-slate-900">{{ detalle.sede.nombre_sede }}</h2>
-            </div>
+          <div class="text-left">
             <span
-              class="rounded-full px-3 py-1 text-xs font-bold"
-              [ngClass]="sedeEstaActiva(detalle.sede.estado) ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'">
-              {{ detalle.sede.estado || 'Sin estado' }}
+              class="inline-block rounded-full border px-3 py-1 text-[11px] font-bold uppercase"
+              [ngClass]="sedeEstaActiva(sede.estado)
+                ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                : 'border-slate-200 bg-slate-100 text-slate-600'">
+              {{ sede.estado || 'Sin estado' }}
             </span>
           </div>
 
-          <dl class="grid gap-4 sm:grid-cols-2">
-            <div>
-              <dt class="text-xs font-semibold text-slate-500">Institución</dt>
-              <dd class="mb-0 mt-1 font-semibold text-slate-800">{{ detalle.sede.institucion_nombre || institucionAsignada }}</dd>
-            </div>
-            <div>
-              <dt class="text-xs font-semibold text-slate-500">Código DANE</dt>
-              <dd class="mb-0 mt-1 font-semibold text-slate-800">{{ detalle.sede.codigo_dane || 'No registrado' }}</dd>
-            </div>
-            <div>
-              <dt class="text-xs font-semibold text-slate-500">Dirección</dt>
-              <dd class="mb-0 mt-1 font-semibold text-slate-800">{{ detalle.sede.direccion || 'No registrada' }}</dd>
-            </div>
-            <div>
-              <dt class="text-xs font-semibold text-slate-500">Teléfono</dt>
-              <dd class="mb-0 mt-1 font-semibold text-slate-800">{{ detalle.sede.telefono || 'No registrado' }}</dd>
-            </div>
-          </dl>
-        </article>
-
-        <article class="rounded-3xl border border-amber-100 bg-gradient-to-br from-amber-50 to-white p-6 shadow-sm">
-          <p class="m-0 text-sm font-bold text-slate-600">Total de cupos asignados en contratos</p>
-          <p class="mb-0 mt-2 text-4xl font-black text-amber-700">{{ detalle.cupos_totales | number }}</p>
-        </article>
-
-        <article class="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
-          <div class="mb-5 flex items-center justify-between gap-3">
-            <h3 class="m-0 text-lg font-extrabold text-slate-900">Configuración de jornadas y cupos</h3>
-            <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-700">
-              {{ cuposTotalesDistribuidos | number }} distribuidos
-            </span>
-          </div>
-
-          <div class="mb-5 grid gap-3 sm:grid-cols-3">
-            <div class="rounded-2xl bg-slate-50 p-3">
-              <p class="m-0 text-[11px] font-bold uppercase tracking-wide text-slate-500">Autorizados</p>
-              <p class="mb-0 mt-1 text-xl font-black text-slate-800">{{ detalle.cupos_totales | number }}</p>
-            </div>
-            <div class="rounded-2xl bg-amber-50 p-3">
-              <p class="m-0 text-[11px] font-bold uppercase tracking-wide text-amber-700">Distribuidos</p>
-              <p class="mb-0 mt-1 text-xl font-black text-amber-700">{{ cuposTotalesDistribuidos | number }}</p>
-            </div>
-            <div class="rounded-2xl bg-emerald-50 p-3">
-              <p class="m-0 text-[11px] font-bold uppercase tracking-wide text-emerald-700">Pendientes</p>
-              <p class="mb-0 mt-1 text-xl font-black text-emerald-700">{{ cuposPendientes | number }}</p>
-            </div>
-          </div>
-
-          <div *ngIf="errorValidacion" class="mb-4 rounded-2xl border border-rose-200 bg-rose-50 p-3 text-sm font-semibold text-rose-700">
-            {{ errorValidacion }}
-          </div>
-
-          <div *ngIf="mensajeGuardado" class="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-semibold text-emerald-700">
-            {{ mensajeGuardado }}
-          </div>
-
-          <div *ngIf="detalle.jornadas.length === 0" class="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-center text-sm font-semibold text-amber-800">
-            Esta sede no tiene contratos con jornadas asignadas en este momento. Registra un contrato para asociar sus jornadas y cupos operativos.
-          </div>
-
-          <div *ngIf="detalle.jornadas.length > 0" class="space-y-4">
-            <div *ngFor="let jornada of detalle.jornadas" class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <div class="flex flex-wrap items-center justify-between gap-3">
-                <label class="flex items-center gap-3 text-sm font-bold text-slate-800">
-                  <input
-                    type="checkbox"
-                    [checked]="jornada.habilitada"
-                    (change)="toggleJornada(jornada)"
-                    class="h-4 w-4 rounded border-slate-300 text-amber-600 focus:ring-amber-500">
-                  {{ jornada.nombre_jornada }}
-                </label>
-                <span class="rounded-full px-2.5 py-1 text-xs font-bold"
-                  [ngClass]="jornada.habilitada ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'">
-                  {{ jornada.habilitada ? 'Habilitada' : 'No habilitada' }}
-                </span>
-              </div>
-
-              <div class="mt-4 grid gap-4 lg:grid-cols-[220px_minmax(0,1fr)]">
-                <label class="block text-sm font-semibold text-slate-700">
-                  Cupos asignados para la jornada
-                  <input
-                    type="number"
-                    min="0"
-                    step="1"
-                    [disabled]="!jornada.habilitada"
-                    [ngModel]="jornada.cupos"
-                    (ngModelChange)="actualizarCupoJornada(jornada, $event)"
-                    class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-base font-semibold text-slate-800 outline-none transition focus:border-amber-400 focus:ring-2 focus:ring-amber-100 disabled:bg-slate-100"
-                    placeholder="0">
-                </label>
-
-                <div class="rounded-xl border border-dashed border-slate-200 bg-white p-3">
-                  <div class="mb-2 flex justify-between gap-2 text-xs font-bold uppercase tracking-wide text-slate-500">
-                    <span>Distribución por grado</span>
-                    <span>{{ calcularSumaGrados(jornada) }} / {{ jornada.cupos || 0 }}</span>
-                  </div>
-                  <div *ngIf="(jornada.grados || []).length > 0; else noGrados" class="grid gap-3 sm:grid-cols-2">
-                    <label *ngFor="let grado of jornada.grados" class="block rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm font-medium text-slate-700">
-                      <span class="block font-bold text-slate-800">{{ grado.nombre_grado }}</span>
-                      <input
-                        type="number"
-                        min="0"
-                        step="1"
-                        [disabled]="!jornada.habilitada"
-                        [ngModel]="grado.cupos"
-                        (ngModelChange)="actualizarCupoGrado(jornada, grado, $event)"
-                        class="mt-2 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm font-semibold text-slate-800 outline-none transition focus:border-amber-400 focus:ring-2 focus:ring-amber-100 disabled:bg-slate-100">
-                    </label>
-                  </div>
-                  <ng-template #noGrados>
-                    <p class="mb-0 text-sm text-slate-500">No hay grados disponibles para esta jornada.</p>
-                  </ng-template>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="mt-6 flex justify-end">
+          <div class="text-right">
             <button
               type="button"
-              (click)="guardarConfiguracion()"
-              class="inline-flex items-center justify-center rounded-xl bg-amber-500 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-amber-600">
-              Guardar configuración
+              (click)="seleccionarSede(sede)"
+              [attr.aria-pressed]="sedeSeleccionada?.id_sede === sede.id_sede"
+              class="w-full rounded-xl px-4 py-2 text-xs font-bold shadow-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
+              [ngClass]="sedeSeleccionada?.id_sede === sede.id_sede
+                ? 'border border-amber-500 bg-amber-500 text-white hover:bg-amber-600'
+                : 'border border-slate-200 bg-white text-slate-700 hover:bg-amber-50'">
+              {{ sedeSeleccionada?.id_sede === sede.id_sede ? 'Seleccionada' : 'Ver detalle' }}
             </button>
           </div>
-        </article>
+        </div>
+      </div>
+    </div>
+  </section>
 
-        <article class="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
-          <h3 class="mb-4 mt-0 text-lg font-extrabold text-slate-900">Jornadas y secciones de menú</h3>
-          <p *ngIf="detalle.jornadas.length === 0" class="mb-0 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
-            Esta sede no tiene jornadas configuradas.
+  <!-- SIN SELECCIÓN -->
+  <section *ngIf="sedes.length > 0 && !sedeSeleccionada"
+    class="flex min-h-40 items-center justify-center rounded-3xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
+    Selecciona una sede para consultar su información general y configuración operativa.
+  </section>
+
+  <!-- DETALLE DE SEDE -->
+  <section *ngIf="sedeSeleccionada" aria-label="Detalle de sede" class="flex flex-col gap-6">
+    <div *ngIf="cargandoDetalle" class="rounded-3xl border border-slate-200 bg-white p-8 text-center text-sm font-semibold text-slate-500 shadow-sm">
+      Cargando configuración de {{ sedeSeleccionada.nombre_sede }}...
+    </div>
+
+    <div *ngIf="errorDetalle" role="alert" class="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm font-semibold text-rose-700">
+      {{ errorDetalle }}
+      <button type="button" class="ml-2 underline" (click)="actualizar()">Reintentar</button>
+    </div>
+
+    <ng-container *ngIf="configuracion as detalle">
+
+      <!-- INFORMACIÓN GENERAL -->
+      <article class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div class="mb-5 flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p class="m-0 text-xs font-bold text-amber-700">Información general</p>
+            <h2 class="mb-0 mt-1 text-xl font-black text-slate-900">{{ detalle.sede.nombre_sede }}</h2>
+          </div>
+          <span
+            class="inline-block rounded-full border px-3 py-1 text-[11px] font-bold uppercase"
+            [ngClass]="sedeEstaActiva(detalle.sede.estado)
+              ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+              : 'border-slate-200 bg-slate-100 text-slate-600'">
+            {{ detalle.sede.estado || 'Sin estado' }}
+          </span>
+        </div>
+
+        <dl class="m-0 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div class="rounded-2xl bg-slate-50 p-4">
+            <dt class="text-xs font-semibold text-slate-500">Institución</dt>
+            <dd class="mb-0 ml-0 mt-1 text-sm font-bold text-slate-800">{{ detalle.sede.institucion_nombre || institucionAsignada }}</dd>
+          </div>
+          <div class="rounded-2xl bg-slate-50 p-4">
+            <dt class="text-xs font-semibold text-slate-500">Código DANE</dt>
+            <dd class="mb-0 ml-0 mt-1 text-sm font-bold text-slate-800">{{ detalle.sede.codigo_dane || 'No registrado' }}</dd>
+          </div>
+          <div class="rounded-2xl bg-slate-50 p-4">
+            <dt class="text-xs font-semibold text-slate-500">Dirección</dt>
+            <dd class="mb-0 ml-0 mt-1 text-sm font-bold text-slate-800">{{ detalle.sede.direccion || 'No registrada' }}</dd>
+          </div>
+          <div class="rounded-2xl bg-slate-50 p-4">
+            <dt class="text-xs font-semibold text-slate-500">Teléfono</dt>
+            <dd class="mb-0 ml-0 mt-1 text-sm font-bold text-slate-800">{{ detalle.sede.telefono || 'No registrado' }}</dd>
+          </div>
+        </dl>
+      </article>
+
+      <!-- CONFIGURACIÓN DE JORNADAS Y CUPOS -->
+      <article class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <h3 class="m-0 text-lg font-extrabold text-slate-900">Configuración de jornadas y cupos</h3>
+            <span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-bold text-slate-600">
+              {{ detalle.jornadas.length }} {{ detalle.jornadas.length === 1 ? 'jornada' : 'jornadas' }}
+            </span>
+          </div>
+          <p class="m-0 text-xs text-slate-500">
+            <span class="font-bold text-slate-800">{{ cuposTotalesDistribuidos | number }}</span> de
+            <span class="font-bold text-slate-800">{{ detalle.cupos_totales | number }}</span> cupos distribuidos
           </p>
+        </div>
 
-          <div *ngFor="let jornada of detalle.jornadas" class="border-t border-slate-100 py-5 first:border-0 first:pt-0 last:pb-0">
-            <div class="flex flex-wrap items-center justify-between gap-2">
-              <h4 class="m-0 font-extrabold text-slate-800">{{ jornada.nombre_jornada }}</h4>
-              <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800">
-                {{ jornada.cupos | number }} cupos en contratos
+        <div *ngIf="errorValidacion" role="alert" class="mb-4 rounded-2xl border border-rose-200 bg-rose-50 p-3 text-sm font-semibold text-rose-700">
+          {{ errorValidacion }}
+        </div>
+
+        <div *ngIf="mensajeGuardado" class="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-semibold text-emerald-700">
+          {{ mensajeGuardado }}
+        </div>
+
+        <div *ngIf="detalle.jornadas.length === 0" class="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-center text-sm font-semibold text-amber-800">
+          Esta sede no tiene contratos con jornadas asignadas en este momento. Registra un contrato para asociar sus jornadas y cupos operativos.
+        </div>
+
+        <div *ngIf="detalle.jornadas.length > 0" class="space-y-4">
+          <div *ngFor="let jornada of detalle.jornadas"
+            class="rounded-2xl border p-5 transition"
+            [ngClass]="jornada.habilitada ? 'border-slate-200 bg-white' : 'border-slate-100 bg-slate-50/60'">
+
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <label class="flex cursor-pointer items-center gap-3 text-sm font-bold text-slate-800">
+                <input
+                  type="checkbox"
+                  [checked]="jornada.habilitada"
+                  (change)="toggleJornada(jornada)"
+                  class="h-4 w-4 rounded border-slate-300 text-amber-600 focus:ring-amber-500">
+                {{ jornada.nombre_jornada }}
+              </label>
+              <span class="inline-block rounded-full border px-2.5 py-1 text-[11px] font-bold"
+                [ngClass]="jornada.habilitada
+                  ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                  : 'border-slate-200 bg-slate-100 text-slate-600'">
+                {{ jornada.habilitada ? 'Habilitada' : 'No habilitada' }}
               </span>
             </div>
-            <p *ngIf="jornada.cupos === 0" class="mb-0 mt-3 rounded-lg bg-slate-50 p-3 text-sm text-slate-500">
-              No hay cupos de contrato asociados a esta jornada.
-            </p>
-            <div class="mt-3">
-              <p class="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">Secciones de menú</p>
-              <div *ngIf="jornada.secciones.length > 0" class="flex flex-wrap gap-2">
-                <span *ngFor="let seccion of jornada.secciones" class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-700">
-                  {{ seccion.nombre_seccion }}
-                  <span *ngIf="seccion.estado" class="ml-1 text-xs text-slate-500">({{ seccion.estado }})</span>
-                </span>
+
+            <div class="mt-5 grid gap-5 lg:grid-cols-[220px_minmax(0,1fr)]">
+              <label class="block text-xs font-semibold text-slate-600">
+                Cupos asignados para la jornada
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  [disabled]="!jornada.habilitada"
+                  [ngModel]="jornada.cupos"
+                  (ngModelChange)="actualizarCupoJornada(jornada, $event)"
+                  class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-base font-semibold text-slate-800 outline-none transition focus:border-amber-400 focus:ring-2 focus:ring-amber-100 disabled:bg-slate-100"
+                  placeholder="0">
+              </label>
+
+              <div class="rounded-xl border border-slate-100 bg-slate-50/60 p-4">
+                <div class="mb-3 flex items-center justify-between gap-2">
+                  <span class="text-xs font-bold text-slate-600">Distribución por grado</span>
+                  <span class="rounded-full border px-2.5 py-0.5 text-[11px] font-bold"
+                    [ngClass]="calcularSumaGrados(jornada) === (jornada.cupos || 0)
+                      ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                      : 'border-amber-300 bg-amber-50 text-amber-800'">
+                    {{ calcularSumaGrados(jornada) }} / {{ jornada.cupos || 0 }}
+                  </span>
+                </div>
+
+                <div *ngIf="(jornada.grados || []).length > 0; else noGrados" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                  <label *ngFor="let grado of jornada.grados"
+                    class="block rounded-xl border border-slate-200 bg-white p-3">
+                    <span class="block text-xs font-bold text-slate-700">{{ grado.nombre_grado }}</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      [disabled]="!jornada.habilitada"
+                      [ngModel]="grado.cupos"
+                      (ngModelChange)="actualizarCupoGrado(jornada, grado, $event)"
+                      class="mt-2 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm font-semibold text-slate-800 outline-none transition focus:border-amber-400 focus:ring-2 focus:ring-amber-100 disabled:bg-slate-100">
+                  </label>
+                </div>
+                <ng-template #noGrados>
+                  <p class="m-0 text-sm text-slate-500">No hay grados disponibles para esta jornada.</p>
+                </ng-template>
               </div>
-              <p *ngIf="jornada.secciones.length === 0" class="mb-0 rounded-lg bg-slate-50 p-3 text-sm text-slate-500">
-                Esta jornada no tiene secciones de menú configuradas.
-              </p>
             </div>
           </div>
-        </article>
+        </div>
 
-        <article *ngIf="(configuracion?.historial ?? []).length > 0" class="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
-          <h3 class="mb-4 mt-0 text-lg font-extrabold text-slate-900">Historial de cambios</h3>
-          <ul class="space-y-3">
-            <li *ngFor="let cambio of configuracion?.historial ?? []" class="rounded-2xl bg-slate-50 p-3">
-              <p class="mb-1 text-sm font-bold text-slate-800">{{ cambio.descripcion }}</p>
-              <div class="flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                <span>{{ cambio.usuario }}</span>
-                <span>•</span>
-                <span>{{ cambio.fecha_hora | date: 'dd/MM/yyyy HH:mm' }}</span>
-              </div>
-            </li>
-          </ul>
-        </article>
-      </ng-container>
-    </section>
-  </div>
+        <div class="mt-6 flex justify-end border-t border-slate-100 pt-5">
+          <button
+            type="button"
+            (click)="guardarConfiguracion()"
+            class="rounded-xl bg-amber-500 px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-amber-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300">
+            Guardar configuración
+          </button>
+        </div>
+      </article>
+
+      <!-- JORNADAS Y SECCIONES DE MENÚ -->
+      <article class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h3 class="mb-4 mt-0 text-lg font-extrabold text-slate-900">Jornadas y secciones de menú</h3>
+
+        <p *ngIf="detalle.jornadas.length === 0" class="mb-0 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
+          Esta sede no tiene jornadas configuradas.
+        </p>
+
+        <div *ngFor="let jornada of detalle.jornadas"
+          class="border-t border-slate-100 py-5 first:border-0 first:pt-0 last:pb-0">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <h4 class="m-0 text-sm font-extrabold text-slate-800">{{ jornada.nombre_jornada }}</h4>
+            <span class="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800">
+              {{ jornada.cupos | number }} cupos en contratos
+            </span>
+          </div>
+
+          <p *ngIf="jornada.cupos === 0" class="mb-0 mt-3 rounded-lg bg-slate-50 p-3 text-sm text-slate-500">
+            No hay cupos de contrato asociados a esta jornada.
+          </p>
+
+          <div class="mt-3">
+            <p class="mb-2 mt-0 text-xs font-bold text-slate-500">Secciones de menú</p>
+            <div *ngIf="jornada.secciones.length > 0" class="flex flex-wrap gap-2">
+              <span *ngFor="let seccion of jornada.secciones"
+                class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-700">
+                {{ seccion.nombre_seccion }}
+                <span *ngIf="seccion.estado" class="ml-1 text-xs text-slate-500">({{ seccion.estado }})</span>
+              </span>
+            </div>
+            <p *ngIf="jornada.secciones.length === 0" class="mb-0 rounded-lg bg-slate-50 p-3 text-sm text-slate-500">
+              Esta jornada no tiene secciones de menú configuradas.
+            </p>
+          </div>
+        </div>
+      </article>
+
+      <!-- HISTORIAL DE CAMBIOS -->
+      <article *ngIf="(configuracion?.historial ?? []).length > 0" class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h3 class="mb-4 mt-0 text-lg font-extrabold text-slate-900">Historial de cambios</h3>
+        <ul class="m-0 list-none space-y-3 p-0">
+          <li *ngFor="let cambio of configuracion?.historial ?? []" class="rounded-2xl border border-slate-100 bg-slate-50 p-3">
+            <p class="mb-1 mt-0 text-sm font-bold text-slate-800">{{ cambio.descripcion }}</p>
+            <div class="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+              <span>{{ cambio.usuario }}</span>
+              <span>•</span>
+              <span>{{ cambio.fecha_hora | date: 'dd/MM/yyyy HH:mm' }}</span>
+            </div>
+          </li>
+        </ul>
+      </article>
+
+    </ng-container>
+  </section>
 </section>

@@ -1,62 +1,625 @@
-<div style="display:flex; flex-direction:column; gap:18px; position:relative; font-family: system-ui, -apple-system, sans-serif;">
-      
-  <!-- ===================== CABECERA PRINCIPAL ===================== -->
-  <header style="width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 20px 24px; background: linear-gradient(135deg, #fffcf0 0%, #ffffff 100%); border: 1px solid #f2ead0; border-radius: 12px; box-shadow: 0 4px 15px rgba(250, 201, 75, 0.05);">
-    <div>
-      <h1 style="margin: 0; color: #1a1a1a; font-size: 22px; font-weight: 700; letter-spacing: -0.5px;">Inventario Actual</h1>
-      <p style="margin: 4px 0 0; color: #64748b; font-size: 13px;">Insumos, marcas y stock disponible.</p>
-    </div>
+<style>
+  /* =========================================================
+     INVENTARIO ACTUAL — CSS autocontenido (mismo estilo que Historial de Entregas)
+     ========================================================= */
 
-    <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-      <!-- Buscador -->
-      <div style="display:flex; align-items:center; gap:8px; background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; padding:8px 12px; min-width:240px; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-        <input type="text" [(ngModel)]="filtroBusqueda" placeholder="Buscar..." style="border:none; background:transparent; outline:none; font-size:13px; width:100%; color:#0f172a;">
-      </div>
+  .inv-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    width: 100%;
+    font-family: inherit;
+    color: #0f172a;
+  }
+
+  /* ---------- Cabecera ---------- */
+  .inv-page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .inv-title-box { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+
+  .inv-page-title {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.2;
+  }
+
+  .inv-page-subtitle {
+    margin: 0;
+    font-size: 13px;
+    color: #64748b;
+  }
+
+  /* ---------- Card principal ---------- */
+  .inv-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, .04);
+  }
+
+  .inv-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .inv-card-title-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .inv-card-title {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 800;
+    color: #0f172a;
+  }
+
+  .inv-card-count {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #64748b;
+    background: #f1f5f9;
+    padding: 2px 10px;
+    border-radius: 999px;
+  }
+
+  /* ---------- Buscador ---------- */
+  .inv-search-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex: 1 1 280px;
+    max-width: 380px;
+  }
+
+  .inv-search-icon {
+    position: absolute;
+    left: 12px;
+    font-size: 18px;
+    color: #94a3b8;
+    pointer-events: none;
+  }
+
+  .inv-search-input {
+    width: 100%;
+    box-sizing: border-box;
+    height: 40px;
+    padding: 0 34px 0 38px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: #ffffff;
+    font-family: inherit;
+    font-size: 13px;
+    color: #0f172a;
+    outline: none;
+    transition: border-color .15s ease, box-shadow .15s ease;
+  }
+
+  .inv-search-input:focus {
+    border-color: #f59e0b;
+    box-shadow: 0 0 0 3px rgba(250, 201, 75, .3);
+  }
+
+  .inv-search-clear {
+    position: absolute;
+    right: 8px;
+    width: 22px;
+    height: 22px;
+    border: none;
+    border-radius: 50%;
+    background: #f1f5f9;
+    color: #64748b;
+    font-size: 11px;
+    cursor: pointer;
+  }
+
+  .inv-search-clear:hover { background: #e2e8f0; }
+
+  /* ---------- Tabla ---------- */
+  .inv-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+  }
+
+  .inv-table {
+    width: 100%;
+    min-width: 700px;
+    border-collapse: collapse;
+    font-size: 12.5px;
+  }
+
+  .inv-table thead th {
+    padding: 10px 14px;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: #64748b;
+    white-space: nowrap;
+  }
+
+  .inv-table tbody td {
+    padding: 12px 14px;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+    color: #334155;
+  }
+
+  .inv-table tbody tr:last-child td { border-bottom: none; }
+  .inv-row { transition: background .15s ease; }
+  .inv-row:hover > td { background: #fafafa; }
+
+  .inv-item-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .inv-item-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: #fef3c7;
+    border: 1px solid #fde68a;
+    color: #b45309;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .inv-item-name {
+    font-size: 13px;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.25;
+  }
+
+  .inv-item-sub {
+    margin-top: 1px;
+    font-size: 11px;
+    color: #94a3b8;
+  }
+
+  /* ---------- Categoría ---------- */
+  .inv-tag-categoria {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  /* ---------- Stock ---------- */
+  .inv-stock-cell { display: flex; flex-direction: column; gap: 3px; align-items: flex-start; }
+
+  .inv-stock-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  .inv-stock-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+  .inv-stock-badge.ok  { background: #d1fae5; color: #047857; }
+  .inv-stock-badge.low { background: #fee2e2; color: #b91c1c; }
+
+  .inv-stock-min {
+    font-size: 11px;
+    color: #94a3b8;
+  }
+
+  .inv-stock-min.low { color: #b91c1c; font-weight: 700; }
+
+  /* ---------- Acciones ---------- */
+  .inv-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    justify-content: flex-end;
+  }
+
+  .inv-btn-icon {
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: #ffffff;
+    cursor: pointer;
+    padding: 0;
+    transition: background .15s ease, border-color .15s ease;
+  }
+
+  .inv-btn-icon .material-symbols-outlined { font-size: 17px; }
+
+  .inv-btn-edit { color: #92400e; border: 1px solid #fcd34d; }
+  .inv-btn-edit:hover { background: #fffbeb; }
+
+  .inv-btn-delete { color: #b91c1c; border: 1px solid #fca5a5; }
+  .inv-btn-delete:hover { background: #fef2f2; }
+
+  /* ---------- Estado vacío ---------- */
+  .inv-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 36px 16px;
+    font-size: 13px;
+    color: #64748b;
+  }
+
+  .inv-empty-icon { font-size: 34px; color: #cbd5e1; }
+
+  /* ---------- Pie ---------- */
+  .inv-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: #64748b;
+    padding-top: 4px;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  @media (max-width: 720px) {
+    .inv-search-box { flex-basis: 100%; max-width: 100%; }
+  }
+
+  /* =========================================================
+     MODAL (Nuevo / Editar insumo y movimientos)
+     ========================================================= */
+  .bd-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: rgba(15, 23, 42, .45);
+  }
+
+  .bd-modal {
+    width: 100%;
+    max-width: 520px;
+    overflow: visible; /* deja que la lista del select salga del modal sin recortarse */
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 20px 50px rgba(15, 23, 42, .25);
+    font-family: inherit;
+    color: #0f172a;
+  }
+
+  .bd-modal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 18px 20px;
+    border-bottom: 1px solid #f1f5f9;
+  }
+
+  .bd-modal-eyebrow {
+    display: block;
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: #b45309;
+  }
+
+  .bd-modal-header h2 {
+    margin: 3px 0 0;
+    font-size: 17px;
+    font-weight: 800;
+    color: #0f172a;
+  }
+
+  .bd-modal-close {
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+    border: none;
+    border-radius: 50%;
+    background: #f1f5f9;
+    color: #475569;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .bd-modal-close:hover { background: #e2e8f0; }
+  .bd-modal-close .material-symbols-outlined { font-size: 18px; }
+
+  .bd-modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 18px 20px;
+  }
+
+  .bd-modal-description {
+    margin: 0;
+    font-size: 13px;
+    color: #64748b;
+  }
+
+  .bd-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  .bd-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    min-width: 0;
+  }
+
+  .bd-form-group label {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #475569;
+  }
+
+  .bd-input {
+    width: 100%;
+    box-sizing: border-box;
+    height: 38px;
+    padding: 0 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: #ffffff;
+    font-family: inherit;
+    font-size: 13px;
+    color: #0f172a;
+    outline: none;
+    transition: border-color .15s ease, box-shadow .15s ease;
+  }
+
+  textarea.bd-input {
+    height: auto;
+    padding: 10px 12px;
+    resize: vertical;
+  }
+
+  .bd-input:focus {
+    border-color: #f59e0b;
+    box-shadow: 0 0 0 3px rgba(250, 201, 75, .3);
+  }
+
+  .bd-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 14px 20px;
+    border-top: 1px solid #f1f5f9;
+  }
+
+  .bd-cancel,
+  .bd-save {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 36px;
+    padding: 0 18px;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background .15s ease, border-color .15s ease;
+  }
+
+  .bd-cancel {
+    background: #ffffff;
+    color: #334155;
+    border: 1px solid #e2e8f0;
+  }
+
+  .bd-cancel:hover { background: #f8fafc; border-color: #cbd5e1; }
+
+  .bd-save {
+    background: #fac94b;
+    color: #0f172a;
+    border: 1px solid #f2b925;
+  }
+
+  .bd-save:hover { background: #f7bf2e; }
+
+  @media (max-width: 560px) {
+    .bd-form-grid { grid-template-columns: 1fr; }
+  }
+</style>
+
+<div class="inv-layout">
+
+  <!-- =========================================================
+       CABECERA DE LA PÁGINA
+       ========================================================= -->
+  <header class="inv-page-header">
+    <div class="inv-title-box">
+      <h1 class="inv-page-title">Inventario Actual</h1>
+      <p class="inv-page-subtitle">Insumos, marcas y stock disponible.</p>
     </div>
   </header>
 
-  <!-- ===================== CONTENIDO / TABLA ===================== -->
-  <section style="width: 100%; margin: 0; background: #ffffff; border-radius: 12px; padding: 24px; border: 1px solid #f1f5f9; box-shadow: 0 2px 10px rgba(0,0,0,0.02);">
 
-    <div style="overflow-x:auto;">
-          <table style="width:100%; border-collapse:collapse; text-align:left; font-size:13px; min-width:650px;">
-            <thead>
-              <tr style="border-bottom:2px solid #f1f5f9; color:#64748b;">
-                <th style="padding:12px 16px; font-weight:600;">Ingrediente</th>
-                <th style="padding:12px 16px; font-weight:600;">Categoría</th>
-                <th style="padding:12px 16px; font-weight:600;">Marca</th>
-                <th style="padding:12px 16px; font-weight:600;">Cant. Actual</th>
-                <th style="padding:12px 16px; font-weight:600;">Unidad</th>
-                <th style="padding:12px 16px; font-weight:600; text-align:right;">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let item of inventarioFiltrado" style="border-bottom:1px solid #f1f5f9; transition:background 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
-                <td style="padding:12px 16px; color:#0f172a; font-weight:600;">{{ item.nombre_ingrediente }}</td>
-                <td style="padding:12px 16px; color:#475569;">{{ item.nombre_categoria }}</td>
-                <td style="padding:12px 16px; color:#475569;">{{ item.marca_ingrediente || 'N/A' }}</td>
-                <td style="padding:12px 16px;">
-                  <span [style.color]="item.cantidad_actual <= item.stock_minimo ? '#dc2626' : '#059669'" [style.background]="item.cantidad_actual <= item.stock_minimo ? '#fee2e2' : '#d1fae5'" style="font-weight:700; padding:4px 8px; border-radius:6px;">{{ item.cantidad_actual }}</span>
-                </td>
-                <td style="padding:12px 16px; color:#475569;">{{ item.nombre_unidad }}</td>
-                <td style="padding:12px 16px; text-align:right;">
-                  <button type="button" (click)="abrirFormulario(item)" style="background:transparent; border:none; cursor:pointer; padding:4px; color:#3b82f6;" title="Editar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
-                  <button type="button" (click)="eliminarItem(inventario, item)" style="background:transparent; border:none; cursor:pointer; padding:4px; color:#ef4444; margin-left:8px;" title="Eliminar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2 2h4a2 2 0 0 1 2 2v2"></path></svg></button>
-                </td>
-              </tr>
-              <tr *ngIf="inventarioFiltrado.length === 0">
-                <td colspan="6" style="padding:24px; text-align:center; color:#64748b;">No hay registros disponibles.</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-  </section>
+  <!-- =========================================================
+       CARD PRINCIPAL: BUSCADOR + TABLA
+       ========================================================= -->
+  <main class="inv-card">
 
-  <!-- MODAL PRINCIPAL (NUEVO/EDITAR Y MOVIMIENTOS) ESTILO BANCO DATOS -->
+    <div class="inv-card-top">
+      <div class="inv-card-title-row">
+        <h2 class="inv-card-title">Insumos en inventario</h2>
+        <span class="inv-card-count">{{ inventarioFiltrado.length }} {{ inventarioFiltrado.length === 1 ? 'insumo' : 'insumos' }}</span>
+      </div>
+
+      <div class="inv-search-box">
+        <span class="material-symbols-outlined inv-search-icon" aria-hidden="true">search</span>
+        <input
+          type="text"
+          [(ngModel)]="filtroBusqueda"
+          name="filtroBusqueda"
+          placeholder="Buscar ingrediente, categoría o marca..."
+          class="inv-search-input"
+        />
+        <button
+          *ngIf="filtroBusqueda"
+          type="button"
+          class="inv-search-clear"
+          (click)="filtroBusqueda = ''"
+          title="Limpiar búsqueda"
+        >
+          ✕
+        </button>
+      </div>
+    </div>
+
+    <div class="inv-table-wrapper">
+      <table class="inv-table">
+
+        <thead>
+          <tr>
+            <th>Ingrediente</th>
+            <th>Categoría</th>
+            <th>Marca</th>
+            <th>Cant. Actual</th>
+            <th>Unidad</th>
+            <th style="text-align: right;">Acciones</th>
+          </tr>
+        </thead>
+
+        <tbody>
+
+          <tr *ngFor="let item of inventarioFiltrado" class="inv-row">
+
+            <!-- Ingrediente -->
+            <td>
+              <div class="inv-item-name">{{ item.nombre_ingrediente }}</div>
+            </td>
+
+            <!-- Categoría -->
+            <td>
+              <span class="inv-tag-categoria">{{ item.nombre_categoria }}</span>
+            </td>
+
+            <!-- Marca -->
+            <td style="color: #475569;">{{ item.marca_ingrediente || 'N/A' }}</td>
+
+            <!-- Cantidad actual -->
+            <td>
+              <div class="inv-stock-cell">
+                <span
+                  class="inv-stock-badge"
+                  [ngClass]="item.cantidad_actual <= item.stock_minimo ? 'low' : 'ok'"
+                >
+                  <span class="inv-stock-dot"></span>
+                  <span>{{ item.cantidad_actual }}</span>
+                </span>
+                <span class="inv-stock-min" [class.low]="item.cantidad_actual <= item.stock_minimo">
+                  {{ item.cantidad_actual <= item.stock_minimo ? 'Stock bajo · mín. ' : 'Mín. ' }}{{ item.stock_minimo }}
+                </span>
+              </div>
+            </td>
+
+            <!-- Unidad -->
+            <td style="color: #475569;">{{ item.nombre_unidad }}</td>
+
+            <!-- Acciones -->
+            <td style="text-align: right; white-space: nowrap;">
+              <div class="inv-actions">
+                <button
+                  type="button"
+                  class="inv-btn-icon inv-btn-edit"
+                  (click)="abrirFormulario(item)"
+                  title="Editar"
+                >
+                  <span class="material-symbols-outlined" aria-hidden="true">edit</span>
+                </button>
+                <button
+                  type="button"
+                  class="inv-btn-icon inv-btn-delete"
+                  (click)="eliminarItem(inventario, item)"
+                  title="Eliminar"
+                >
+                  <span class="material-symbols-outlined" aria-hidden="true">delete</span>
+                </button>
+              </div>
+            </td>
+
+          </tr>
+
+          <!-- Sin resultados -->
+          <tr *ngIf="inventarioFiltrado.length === 0">
+            <td colspan="6">
+              <div class="inv-empty-state">
+                <span class="material-symbols-outlined inv-empty-icon">inbox</span>
+                <span style="font-weight: 700; color: #0f172a;">No hay registros disponibles</span>
+                <span style="font-size: 12px;">No se encontraron insumos con la búsqueda actual.</span>
+              </div>
+            </td>
+          </tr>
+
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pie informativo -->
+    <div class="inv-footer">
+      <span>Mostrando {{ inventarioFiltrado.length }} {{ inventarioFiltrado.length === 1 ? 'insumo' : 'insumos' }}</span>
+      <span>SIRAE PAE &bull; Control Institucional</span>
+    </div>
+
+  </main>
+
+
+  <!-- =========================================================
+       MODAL PRINCIPAL (NUEVO/EDITAR Y MOVIMIENTOS) — sin cambios de flujo
+       ========================================================= -->
   <div class="bd-modal-overlay" *ngIf="mostrarFormulario" (click)="cerrarFormulario()">
     <form class="bd-modal" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
-      
+
       <div class="bd-modal-header">
         <div>
           <span class="bd-modal-eyebrow">{{ modalTipo === 'ENTRADA' ? 'INGRESO' : (modalTipo === 'SALIDA' ? 'DESCUENTO' : 'INVENTARIO') }}</span>
@@ -70,7 +633,7 @@
       <div class="bd-modal-body">
         <p class="bd-modal-description" *ngIf="modalTipo === 'INSUMO'">Completa los datos del insumo en el inventario.</p>
         <p class="bd-modal-description" *ngIf="modalTipo !== 'INSUMO'">Completa los datos del movimiento de stock.</p>
-        
+
         <div class="bd-form-grid">
           <!-- Formulario Insumo -->
           <ng-container *ngIf="modalTipo === 'INSUMO'">
