@@ -141,16 +141,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
   private router = inject(Router);
   private sweetAlert = inject(SweetAlertService);
 
-  constructor(
-
-
-
-
-
-
-
-
-  ) {
+  constructor() {
     // Escuchar los cambios de ruta para actualizar el título automáticamente
     this.navegacionSubscription = this.router.events.pipe(
       filter((event): event is NavigationEnd => event instanceof NavigationEnd)
@@ -361,7 +352,16 @@ export class LayoutComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Abre/cierra el desplegable de perfil (usado por el Administrador institucional)
+  togglePerfil(): void {
+    this.mostrarPerfil = !this.mostrarPerfil;
 
+    if (this.mostrarPerfil) {
+      this.mostrarNotificaciones = false;
+      this.mostrarSelectorInstitucion = false;
+      this.irA('perfil');
+    }
+  }
 
   marcarTodasComoLeidasDesdePanel(): void {
     this.notificacionService.marcarTodasComoLeidas().subscribe({
