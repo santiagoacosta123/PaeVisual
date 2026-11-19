@@ -67,18 +67,15 @@ describe('LayoutComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('displays a visible logout button and executes cerrarSesion when confirmed', async () => {
+  it('displays a visible logout button and executes cerrarSesion immediately', () => {
     const logoutBtn = fixture.nativeElement.querySelector('button[title="Cerrar sesión"]') as HTMLButtonElement;
     expect(logoutBtn).toBeTruthy();
     expect(logoutBtn.textContent).toMatch(/Cerrar Sesión/i);
 
     const authService = TestBed.inject(AuthService);
-    sweetAlertMock.confirm.mockResolvedValue({ isConfirmed: true });
 
     component.cerrarSesion();
-    await Promise.resolve();
 
-    expect(sweetAlertMock.confirm).toHaveBeenCalled();
     expect(authService.cerrarSesion).toHaveBeenCalledTimes(1);
     expect(component.perfil.nombre).toBe('');
     expect(component.perfil.correo).toBe('');

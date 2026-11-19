@@ -635,23 +635,15 @@ export class LayoutComponent implements OnInit, OnDestroy {
   }
 
   cerrarSesion(): void {
-    void this.sweetAlert.confirm(
-      '¿Cerrar sesión?',
-      'Tu sesión actual finalizará.',
-      'Sí, cerrar sesión'
-    ).then((resultado) => {
-      if (resultado.isConfirmed) {
-        this.cerrarPanel();
-        this.perfil = { nombre: '', correo: '', rol: '', foto_perfil: null };
-        this.editForm = { ...this.perfil };
-        this.institucionActiva = null;
-        this.sedeActiva = null;
-        this.institucionesSupervisor = [];
-        this.listaNotificaciones = [];
-        this.notificacionesNoLeidas = 0;
-        this.authService.cerrarSesion();
-      }
-    });
+    this.cerrarPanel();
+    this.perfil = { nombre: '', correo: '', rol: '', foto_perfil: null };
+    this.editForm = { ...this.perfil };
+    this.institucionActiva = null;
+    this.sedeActiva = null;
+    this.institucionesSupervisor = [];
+    this.listaNotificaciones = [];
+    this.notificacionesNoLeidas = 0;
+    this.authService.cerrarSesion();
   }
 
   get tieneSedes(): boolean {
