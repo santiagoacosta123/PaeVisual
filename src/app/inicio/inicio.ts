@@ -1,6 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 
 @Component({
@@ -12,6 +12,7 @@ import { AuthService } from '../services/auth.service';
 })
 export class InicioComponent implements OnInit {
   private authService = inject(AuthService);
+  private router = inject(Router);
 
   usuario = this.authService.obtenerUsuario();
   nombreUsuario = this.obtenerNombreUsuario();
@@ -26,7 +27,11 @@ export class InicioComponent implements OnInit {
     year: 'numeric'
   }).format(new Date());
 
-  ngOnInit(): void {}
+  ngOnInit(): void {
+    if (this.authService.esSupervisor(this.usuario?.rol)) {
+      this.router.navigate(['/dashboard-supervisor']);
+    }
+  }
 
   private obtenerNombreUsuario(): string {
     const usuario = this.usuario;

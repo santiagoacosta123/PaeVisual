@@ -165,19 +165,21 @@ export class LayoutComponent implements OnInit, OnDestroy {
     if (usuario) {
       // Normalizar y evaluar el rol del usuario autenticado
       this.rolUsuario = this.authService.normalizarRol(usuario.rol);
-      this.esSuperAdministrador = this.authService.esSuperAdministrador(usuario.rol);
       this.esSupervisor = this.authService.esSupervisor(usuario.rol);
+      this.esSuperAdministrador = !this.esSupervisor && this.authService.esSuperAdministrador(usuario.rol);
       this.esJefa = this.authService.esJefa(usuario.rol);
-      this.esAdministrador = (this.rolUsuario === 'admin' || this.rolUsuario === 'administrador') && !this.esSuperAdministrador;
+      this.esAdministrador = !this.esSupervisor && !this.esSuperAdministrador && (this.rolUsuario === 'admin' || this.rolUsuario === 'administrador');
       this.esGestor = this.rolUsuario.includes('gestor');
 
-      const rolNombre = this.esSuperAdministrador
-        ? 'Super Administrador'
-        : this.esSupervisor
-          ? 'Supervisor (Coordinador PAE)'
+      const rolNombre = this.esSupervisor
+        ? 'Supervisor (Coordinador PAE)'
+        : this.esSuperAdministrador
+          ? 'Super Administrador'
           : this.esJefa
             ? 'Jefa de manipuladoras'
-            : usuario.rol || 'Sin rol asignado';
+            : this.esAdministrador
+              ? 'Administrador'
+              : usuario.rol || 'Sin rol asignado';
 
       this.perfil = {
         nombre: `${usuario.nombre ?? ''} ${usuario.apellido ?? ''}`.trim() || usuario.correo,
