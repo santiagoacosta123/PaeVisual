@@ -341,8 +341,19 @@
                   <span *ngIf="!valorCelda(item, campo)" style="font-size:12px; color:#94a3b8; font-style:italic;">Sin imagen</span>
                 </ng-container>
 
+                <!-- Celda de Resumen de Grados en Gramajes -->
+                <div *ngIf="!primer && tabActual === 'gramajes' && campo.name === 'grados_resumen'" class="flex flex-wrap items-center gap-1.5 py-1">
+                  <span
+                    *ngFor="let g of (item.grados_lista || [])"
+                    class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-xs"
+                  >
+                    <strong class="capitalize">{{ g.nombre_grado }}:</strong> {{ g.cantidad }} {{ item.abreviatura_unidad_medida || 'gr' }}
+                  </span>
+                  <span *ngIf="!(item.grados_lista?.length)" class="text-xs text-slate-400 italic">Sin grados asignados</span>
+                </div>
+
                 <!-- Resto de celdas estándar -->
-                <span *ngIf="!primer && tabActual !== 'menus' && !esCampoEstado(campo) && campo.type !== 'image'" class="bd-cell-text" style="display:block; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" [title]="valorCelda(item, campo)">
+                <span *ngIf="!primer && tabActual !== 'menus' && !esCampoEstado(campo) && campo.type !== 'image' && !(tabActual === 'gramajes' && campo.name === 'grados_resumen')" class="bd-cell-text" style="display:block; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" [title]="valorCelda(item, campo)">
                   {{ valorCelda(item, campo) }}
                 </span>
               </td>
@@ -467,7 +478,7 @@
     <form
       #formulario="ngForm"
       class="bd-modal-window"
-      [class.bd-modal-window-menus]="tabActual === 'menus'"
+      [class.bd-modal-window-menus]="tabActual === 'menus' || tabActual === 'gramajes'"
       role="dialog"
       aria-modal="true"
       (click)="$event.stopPropagation()"
@@ -478,7 +489,7 @@
         <div>
           <span class="bd-modal-eyebrow">{{ tab.nombre | uppercase }}</span>
           <h2 class="bd-modal-heading">
-            {{ tabActual === 'menus' ? (modoEdicion ? 'Configurar receta y componentes del menú' : 'Nuevo menú / plato del ciclo PAE') : ((modoEdicion ? 'Editar ' : 'Nuevo ') + tab.singular) }}
+            {{ tabActual === 'menus' ? (modoEdicion ? 'Configurar receta y componentes del menú' : 'Nuevo menú / plato del ciclo PAE') : (tabActual === 'gramajes' ? (modoEdicion ? 'Editar gramajes del ingrediente' : 'Asignar gramajes por grado escolar') : ((modoEdicion ? 'Editar ' : 'Nuevo ') + tab.singular)) }}
           </h2>
         </div>
         <button type="button" class="bd-modal-close-btn" (click)="cerrarModal()" title="Cerrar">
@@ -487,7 +498,7 @@
       </div>
 
       <!-- Cuerpo del Modal: Tablas Estándar -->
-      <div class="bd-modal-content" *ngIf="tabActual !== 'menus'">
+      <div class="bd-modal-content" *ngIf="tabActual !== 'menus' && tabActual !== 'gramajes'">
         <p class="bd-modal-desc">Ingresa los datos correspondientes para registrar o actualizar el elemento.</p>
 
         <div class="bd-form-fields-grid">
@@ -565,6 +576,132 @@
                 <span style="font-size:11px; color:#94a3b8;">Máx. 15 MB. Se subirá a Cloudinary al guardar.</span>
               </div>
             </ng-container>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cuerpo del Modal: Formulario Especializado de GRAMAJES POR GRADO -->
+      <div class="bd-modal-content" *ngIf="tabActual === 'gramajes'" style="max-height: 70vh; overflow-y: auto;">
+        <p class="bd-modal-desc">
+          Asigna o ajusta los gramajes por porción para cada grado escolar correspondiente al ingrediente seleccionado.
+        </p>
+
+        <div style="display: flex; flex-direction: column; gap: 18px; margin-top: 12px;">
+          <!-- Fila: Ingrediente y Unidad de Medida -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;">
+            <div class="bd-field-box">
+              <label class="bd-field-label">
+                Ingrediente <span class="bd-required-asterisk">*</span>
+              </label>
+              <app-custom-select
+                name="gramaje_ingrediente"
+                [options]="opciones['ingredientes'] || []"
+                valueField="id"
+                labelField="label"
+                placeholder="Seleccionar ingrediente…"
+                [(ngModel)]="gramajeIngredienteId"
+                [disabled]="modoEdicion"
+                [required]="true"
+              ></app-custom-select>
+              <span *ngIf="modoEdicion" style="font-size: 11px; color: #94a3b8; margin-top: 4px; display: block;">
+                El ingrediente no se puede modificar en modo edición.
+              </span>
+            </div>
+
+            <div class="bd-field-box">
+              <label class="bd-field-label">
+                Unidad de medida <span class="bd-required-asterisk">*</span>
+              </label>
+              <app-custom-select
+                name="gramaje_unidad"
+                [options]="opciones['unidades_medida'] || []"
+                valueField="id"
+                labelField="label"
+                placeholder="Seleccionar unidad…"
+                [(ngModel)]="gramajeUnidadMedidaId"
+                [required]="true"
+              ></app-custom-select>
+            </div>
+          </div>
+
+          <!-- Barra de autocompletado rápido -->
+          <div style="padding: 14px 16px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 12px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span class="material-symbols-outlined" style="color: #d97706; font-size: 22px;">bolt</span>
+              <div>
+                <span style="font-size: 13px; font-weight: 700; color: #1e293b; display: block;">Llenado rápido de gramaje estándar</span>
+                <span style="font-size: 11.5px; color: #64748b;">Aplica la misma porción base a todos los grados escolares con un solo clic.</span>
+              </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <div style="width: 110px;">
+                <input
+                  type="number"
+                  min="0"
+                  step="any"
+                  style="width: 100%; font-size: 13px; font-weight: 700; padding: 6px 10px; border-radius: 8px; border: 1px solid #fcd34d; background: #ffffff; color: #0f172a;"
+                  placeholder="Ej: 90"
+                  [(ngModel)]="gramajeEstandarRapido"
+                  name="gramaje_estandar_rapido"
+                />
+              </div>
+              <button
+                type="button"
+                (click)="aplicarGramajeEstandar()"
+                style="padding: 7px 14px; background: #f59e0b; color: #ffffff; border: none; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);"
+              >
+                <span class="material-symbols-outlined" style="font-size: 16px;">content_copy</span>
+                <span>Copiar a todos</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Cuadrícula de Grados Escolares -->
+          <div>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+              <label class="bd-field-label" style="margin-bottom: 0; font-weight: 700; color: #1e293b;">
+                Porción por grado escolar ({{ obtenerEtiquetaOpcion('unidades_medida', gramajeUnidadMedidaId) || 'gramos (gr)' }})
+              </label>
+              <span style="font-size: 11.5px; color: #94a3b8;">Solo se guardarán los grados con cantidad mayor a 0</span>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; max-height: 260px; overflow-y: auto; padding: 8px; border: 1px solid #f1f5f9; border-radius: 12px; background: #f8fafc;">
+              <div
+                *ngFor="let grado of (opciones['grados'] || [])"
+                style="padding: 8px 12px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; gap: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.02);"
+              >
+                <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
+                  <span class="material-symbols-outlined" style="color: #94a3b8; font-size: 18px; flex-shrink: 0;">school</span>
+                  <span style="font-size: 12.5px; font-weight: 600; color: #334155; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" [title]="grado.label">
+                    {{ grado.label }}
+                  </span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 4px; width: 95px; flex-shrink: 0;">
+                  <input
+                    type="number"
+                    min="0"
+                    step="any"
+                    style="width: 100%; text-align: right; font-size: 12px; font-weight: 700; padding: 4px 6px; border-radius: 6px; border: 1px solid #cbd5e1; background: #ffffff;"
+                    placeholder="0"
+                    [(ngModel)]="gramajesPorGrado[grado.id]"
+                    [name]="'gramaje_grado_' + grado.id"
+                  />
+                  <span style="font-size: 11px; color: #94a3b8; font-weight: 500;">gr</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Descripción -->
+          <div class="bd-field-box">
+            <label class="bd-field-label">Descripción / Observación (opcional)</label>
+            <textarea
+              class="bd-field-input bd-field-textarea"
+              rows="2"
+              [(ngModel)]="gramajeDescripcion"
+              name="gramaje_descripcion"
+              placeholder="Ej: Gramaje oficial PAE para ciclo regular…"
+            ></textarea>
           </div>
         </div>
       </div>

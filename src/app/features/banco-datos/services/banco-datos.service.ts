@@ -188,4 +188,19 @@ export class BancoDatosService {
       grados_ids: gradosIds
     });
   }
+
+  asignarGramajesPorGrados(payload: {
+    id_ingrediente: number;
+    id_unidad_medida?: number;
+    descripcion?: string;
+    grados: { id_grado: number; cantidad_gramaje: number; cantidad_gramage?: number; estado?: string }[];
+  }): Observable<any> {
+    delete this.cacheTablas['gramajes'];
+    return this.http.post(`${this.apiUrl}/gramage/asignar-por-grados/`, payload);
+  }
+
+  eliminarGramajesPorIngrediente(idIngrediente: number): Observable<any> {
+    delete this.cacheTablas['gramajes'];
+    return this.http.post(`${this.apiUrl}/gramage/eliminar-por-ingrediente/`, { id_ingrediente: idIngrediente });
+  }
 }

@@ -367,8 +367,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       categoria: 'inventario',
       campos: [
         { name: 'id_ingrediente', label: 'Ingrediente', type: 'select', required: true, source: 'ingredientes' },
-        { name: 'id_grado', label: 'Grado', type: 'select', required: true, source: 'grados' },
-        { name: 'cantidad_gramage', label: 'Cantidad por porción', type: 'number', required: true },
+        { name: 'grados_resumen', label: 'Grados y gramajes asignados', type: 'text' },
         { name: 'id_unidad_medida', label: 'Unidad de medida', type: 'select', required: true, source: 'unidades_medida' },
         { name: 'descripcion', label: 'Descripción', type: 'textarea' }
       ]
@@ -542,6 +541,15 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
   archivoImagenPlatoSeleccionado: File | null = null;
   archivoImagenIngredienteSeleccionado: File | null = null;
   previewImagenIngrediente: string | null = null;
+
+  // ============================================================
+  // GRAMAJES POR GRADO (Modal especializado)
+  // ============================================================
+  gramajeIngredienteId: number | null = null;
+  gramajeUnidadMedidaId: number | null = null;
+  gramajeDescripcion: string = '';
+  gramajeEstandarRapido: number | null = null;
+  gramajesPorGrado: Record<number, number | null> = {};
 
   readonly seccionesDisponiblesMenu: { id: string; label: string; icon: string }[] = [
     { id: 'Desayuno', label: 'Desayuno', icon: 'wb_twilight' },
@@ -970,6 +978,58 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
   get datosFiltrados(): any[] {
     let resultado = [...this.datos];
 
+    // Agrupación de Gramajes por Ingrediente (muestra 1 sola fila por ingrediente con sus grados)
+    if (this.tabActual === 'gramajes') {
+      const mapa = new Map<number, any>();
+      for (const item of resultado) {
+        const ingId = typeof item.id_ingrediente === 'object' && item.id_ingrediente !== null
+          ? (item.id_ingrediente?.id_ingrediente || item.id_ingrediente?.id)
+          : item.id_ingrediente;
+        if (!ingId) continue;
+
+        let grupo = mapa.get(Number(ingId));
+        if (!grupo) {
+          const ingNom = item.nombre_ingrediente || this.obtenerEtiquetaOpcion('ingredientes', ingId) || `Ingrediente #${ingId}`;
+          const umId = typeof item.id_unidad_medida === 'object' && item.id_unidad_medida !== null
+            ? (item.id_unidad_medida?.id_unidad_medida || item.id_unidad_medida?.id)
+            : item.id_unidad_medida;
+          const umNom = item.nombre_unidad_medida || item.unidad_medida_nombre || this.obtenerEtiquetaOpcion('unidades_medida', umId) || 'gramos (gr)';
+          const umAbr = item.abreviatura_unidad_medida || item.unidad_medida_abreviatura || 'gr';
+          grupo = {
+            id_gramaje: item.id_gramaje ?? item.id_gramage ?? item.id,
+            id_ingrediente: Number(ingId),
+            nombre_ingrediente: ingNom,
+            id_unidad_medida: Number(umId) || null,
+            nombre_unidad_medida: umNom,
+            abreviatura_unidad_medida: umAbr,
+            descripcion: item.descripcion || '',
+            estado: item.estado || 'ACTIVO',
+            grados_lista: [],
+            grados_resumen: '',
+          };
+          mapa.set(Number(ingId), grupo);
+        }
+        const gradoId = typeof item.id_grado === 'object' && item.id_grado !== null
+          ? (item.id_grado?.id_grado || item.id_grado?.id)
+          : item.id_grado;
+        const gradoNom = item.nombre_grado || this.obtenerEtiquetaOpcion('grados', gradoId) || `Grado #${gradoId}`;
+        const cant = Number(item.cantidad_gramaje ?? item.cantidad_gramage ?? 0);
+        if (gradoId) {
+          grupo.grados_lista.push({
+            id_gramaje: item.id_gramaje ?? item.id_gramage ?? item.id,
+            id_grado: Number(gradoId),
+            nombre_grado: gradoNom,
+            cantidad: cant,
+          });
+        }
+      }
+      mapa.forEach(g => {
+        g.grados_lista.sort((a: any, b: any) => a.nombre_grado.localeCompare(b.nombre_grado, 'es', { numeric: true }));
+        g.grados_resumen = g.grados_lista.map((x: any) => `${x.nombre_grado}: ${x.cantidad} ${g.abreviatura_unidad_medida}`).join(', ');
+      });
+      resultado = Array.from(mapa.values());
+    }
+
     // Filtro de sedes por institución
     if (this.tabActual === 'sedes' && this.filtroInstitucionSede && this.filtroInstitucionSede !== 'TODAS') {
       resultado = resultado.filter(item => {
@@ -1323,6 +1383,12 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
     return item?.[this.tab.idField] ?? item?.id;
   }
 
+  obtenerEtiquetaOpcion(fuente: string, id: any): string {
+    if (!id) return '';
+    const opcion = this.opciones[fuente]?.find(o => String(o.id) === String(id));
+    return opcion?.label || '';
+  }
+
   opcionesDe(campo: CampoConfig): OpcionRelacion[] {
     if (campo.options && campo.options.length > 0) {
       return campo.options;
@@ -1331,6 +1397,18 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
   }
 
   valorCelda(item: any, campo: CampoConfig): string {
+    if (this.tabActual === 'gramajes') {
+      if (campo.name === 'id_ingrediente') {
+        return item?.nombre_ingrediente || this.obtenerEtiquetaOpcion('ingredientes', item?.id_ingrediente) || '—';
+      }
+      if (campo.name === 'grados_resumen') {
+        return item?.grados_resumen || '—';
+      }
+      if (campo.name === 'id_unidad_medida') {
+        return item?.nombre_unidad_medida || this.obtenerEtiquetaOpcion('unidades_medida', item?.id_unidad_medida) || 'gramos (gr)';
+      }
+    }
+
     if (this.tabActual === 'secciones_menu' && campo.name === 'id_jornada') {
       const nom = (item?.nombre_seccion || '').trim().toLowerCase();
       if (nom === 'desayuno') return 'Mañana (aplica también para Jornada Única)';
@@ -1419,6 +1497,11 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       return;
     }
 
+    if (this.tabActual === 'gramajes') {
+      this.abrirModalGramajes(item);
+      return;
+    }
+
     const form: any = {};
     for (const campo of this.tab.campos) {
       let valor = item ? item[campo.name] : null;
@@ -1460,6 +1543,128 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
     this.archivoImagenPlatoSeleccionado = null;
     this.archivoImagenIngredienteSeleccionado = null;
     this.previewImagenIngrediente = null;
+    this.gramajeIngredienteId = null;
+    this.gramajeUnidadMedidaId = null;
+    this.gramajeDescripcion = '';
+    this.gramajeEstandarRapido = null;
+    this.gramajesPorGrado = {};
+  }
+
+  // ============================================================
+  // LÓGICA DE GRAMAJES MULTI-GRADO
+  // ============================================================
+
+  obtenerIdUnidadPorDefectoGramaje(): number | null {
+    const unidades = this.opciones['unidades_medida'] || [];
+    const gr = unidades.find(u => {
+      const lbl = (u.label || '').toLowerCase();
+      return lbl.includes('(gr)') || lbl.includes('gramo') || lbl.includes(' g');
+    });
+    return gr ? Number(gr.id) : (unidades.length > 0 ? Number(unidades[0].id) : null);
+  }
+
+  abrirModalGramajes(item?: any): void {
+    this.itemOriginal = item || null;
+    this.itemSeleccionadoId = item ? (item.id_gramaje || item.id_ingrediente) : null;
+    this.modoEdicion = !!item;
+    this.gramajeEstandarRapido = null;
+    this.gramajesPorGrado = {};
+
+    if (item) {
+      this.gramajeIngredienteId = Number(item.id_ingrediente);
+      this.gramajeUnidadMedidaId = item.id_unidad_medida ? Number(item.id_unidad_medida) : this.obtenerIdUnidadPorDefectoGramaje();
+      this.gramajeDescripcion = item.descripcion || '';
+      for (const g of (item.grados_lista || [])) {
+        if (g.id_grado) {
+          this.gramajesPorGrado[Number(g.id_grado)] = g.cantidad;
+        }
+      }
+    } else {
+      this.gramajeIngredienteId = null;
+      this.gramajeUnidadMedidaId = this.obtenerIdUnidadPorDefectoGramaje();
+      this.gramajeDescripcion = '';
+    }
+    this.mostrarModal = true;
+  }
+
+  aplicarGramajeEstandar(): void {
+    const valor = Number(this.gramajeEstandarRapido);
+    if (!Number.isFinite(valor) || valor <= 0) {
+      this.sweetAlert.warning('Cantidad requerida', 'Ingresa una porción estándar válida mayor a 0 para copiar a todos los grados.');
+      return;
+    }
+    const grados = this.opciones['grados'] || [];
+    for (const g of grados) {
+      this.gramajesPorGrado[Number(g.id)] = valor;
+    }
+  }
+
+  guardarGramajesMultiples(): void {
+    if (!this.gramajeIngredienteId) {
+      this.sweetAlert.warning('Ingrediente requerido', 'Selecciona el ingrediente al que asignarás los gramajes.');
+      return;
+    }
+    const gradosPayload = (this.opciones['grados'] || [])
+      .map(grado => {
+        const idGrado = Number(grado.id);
+        const cant = this.gramajesPorGrado[idGrado];
+        const numCant = cant !== null && cant !== undefined && !isNaN(Number(cant)) ? Number(cant) : 0;
+        return {
+          id_grado: idGrado,
+          cantidad_gramaje: numCant,
+          cantidad_gramage: numCant,
+        };
+      })
+      .filter(g => g.cantidad_gramaje > 0);
+
+    if (gradosPayload.length === 0) {
+      this.sweetAlert.warning('Gramajes requeridos', 'Ingresa la porción para al menos un grado escolar.');
+      return;
+    }
+
+    this.guardando = true;
+    this.bancoDatosService.asignarGramajesPorGrados({
+      id_ingrediente: this.gramajeIngredienteId,
+      id_unidad_medida: this.gramajeUnidadMedidaId || undefined,
+      descripcion: this.gramajeDescripcion || undefined,
+      grados: gradosPayload,
+    }).subscribe({
+      next: (resp) => {
+        this.guardando = false;
+        this.sweetAlert.success('Gramajes asignados', resp.mensaje || 'Se guardaron los gramajes correctamente.');
+        this.cerrarModal();
+        this.cargarDatos();
+      },
+      error: (err) => {
+        this.guardando = false;
+        const msg = err.error?.error || err.error?.detail || 'No se pudieron registrar los gramajes.';
+        this.sweetAlert.error('Error al guardar', msg);
+      }
+    });
+  }
+
+  eliminarGramajesIngrediente(item: any): void {
+    const ingNom = item.nombre_ingrediente || 'este ingrediente';
+    this.sweetAlert
+      .confirm(
+        '¿Eliminar gramajes?',
+        `Se inactivarán todos los gramajes registrados para ${ingNom}.`,
+        'Sí, eliminar'
+      )
+      .then((res: any) => {
+        if (!res?.isConfirmed) return;
+
+        this.bancoDatosService.eliminarGramajesPorIngrediente(Number(item.id_ingrediente)).subscribe({
+          next: () => {
+            this.sweetAlert.success('Gramajes eliminados', `Los gramajes de ${ingNom} fueron eliminados.`);
+            this.cargarDatos();
+          },
+          error: (err) => {
+            const msg = err.error?.error || 'No se pudieron eliminar los gramajes.';
+            this.sweetAlert.error('Error al eliminar', msg);
+          }
+        });
+      });
   }
 
 
@@ -2193,6 +2398,11 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       return;
     }
 
+    if (this.tabActual === 'gramajes') {
+      this.guardarGramajesMultiples();
+      return;
+    }
+
     if (this.guardando || !this.validarFormulario()) {
       return;
     }
@@ -2491,6 +2701,11 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
   // ============================================================
 
   eliminar(item: any): void {
+    if (this.tabActual === 'gramajes') {
+      void this.eliminarGramajesIngrediente(item);
+      return;
+    }
+
     const id = this.obtenerIdItem(item);
 
     if (id === undefined || id === null) {
