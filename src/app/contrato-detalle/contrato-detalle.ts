@@ -1652,13 +1652,73 @@ export class ContratoDetalleComponent implements OnInit {
             if (res.length > 0) {
               this.sedesInstitucion = res;
               this.cargarDistribucionPersistida();
+              this.inicializarSedesParaDistribucion();
               this.cdr.detectChanges();
             }
           }
         });
+      } else {
+        this.inicializarSedesParaDistribucion();
       }
     } else {
       this.sedesInstitucion = [];
+    }
+    this.cdr.detectChanges();
+  }
+
+  inicializarSedesParaDistribucion() {
+    if (!this.gradosCatalogoDistribucion || this.gradosCatalogoDistribucion.length === 0) {
+      this.cargarGradosParaDistribucion();
+    }
+    (this.sedesInstitucion || []).forEach(s => {
+      if (s.cupos_asignados === undefined || s.cupos_asignados === null) {
+        s.cupos_asignados = Number(s.cupos) || 0;
+      }
+      if (!Array.isArray(s.grados) || s.grados.length === 0) {
+        s.grados = (this.gradosCatalogoDistribucion || []).map(g => ({
+          id_grado: g.id_grado,
+          nombre_grado: g.nombre_grado,
+          cupos: 0
+        }));
+      }
+      if (s.expandidoGrados === undefined) {
+        s.expandidoGrados = false;
+      }
+    });
+  }
+
+  get totalCuposAsignadosFormulario(): number {
+    return (this.sedesInstitucion || []).reduce((acc, s) => acc + (Number(s.cupos_asignados ?? s.cupos) || 0), 0);
+  }
+
+  onCambioCuposSedeFormulario(s: any) {
+    s.cupos_asignados = Math.max(0, Number(s.cupos_asignados) || 0);
+    s.cupos = s.cupos_asignados;
+    this.cdr.detectChanges();
+  }
+
+  toggleDesgloseGradosSede(s: any) {
+    s.expandidoGrados = !s.expandidoGrados;
+    if (!Array.isArray(s.grados) || s.grados.length === 0) {
+      if (!this.gradosCatalogoDistribucion || this.gradosCatalogoDistribucion.length === 0) {
+        this.asignarGradosPorDefecto();
+      }
+      s.grados = (this.gradosCatalogoDistribucion || []).map(g => ({
+        id_grado: g.id_grado,
+        nombre_grado: g.nombre_grado,
+        cupos: 0
+      }));
+    }
+    this.cdr.detectChanges();
+  }
+
+  onCambioCupoGradoFormulario(s: any) {
+    if (Array.isArray(s.grados)) {
+      const suma = s.grados.reduce((acc: number, g: any) => acc + (Number(g.cupos) || 0), 0);
+      if (suma > 0) {
+        s.cupos_asignados = suma;
+        s.cupos = suma;
+      }
     }
     this.cdr.detectChanges();
   }
@@ -2267,6 +2327,61 @@ export class ContratoDetalleComponent implements OnInit {
               });
             });
             await Promise.all(promesas);
+          }
+
+          // Persistir distribución de cupos asignados a sedes y grados si se ingresaron
+          if (newId && this.sedesInstitucion && this.sedesInstitucion.length > 0) {
+            const distribucionPayload = {
+              id_contrato: Number(newId),
+              codigo_contrato: payload.numero_cor,
+              id_institucion: payload.id_institucion,
+              total_autorizado: payload.cupos,
+              total_distribuido: this.totalCuposAsignadosFormulario,
+              pendientes: Math.max(0, payload.cupos - this.totalCuposAsignadosFormulario),
+              fecha_actualizacion: new Date().toISOString(),
+              sedes: this.sedesInstitucion.map((s: any) => ({
+                id_sede: Number(s.id_sede || s.id),
+                nombre_sede: s.nombre_sede,
+                cuposAsignados: Number(s.cupos_asignados ?? s.cupos) || 0,
+                cupos_asignados: Number(s.cupos_asignados ?? s.cupos) || 0,
+                cupos: Number(s.cupos_asignados ?? s.cupos) || 0,
+                grados: Array.isArray(s.grados) ? s.grados.map((g: any) => ({
+                  id_grado: Number(g.id_grado || g.id),
+                  nombre_grado: g.nombre_grado,
+                  cuposAsignados: Number(g.cupos) || 0,
+                  cupos_asignados: Number(g.cupos) || 0,
+                  cupos: Number(g.cupos) || 0
+                })) : []
+              }))
+            };
+
+            try {
+              localStorage.setItem(`sirae_distribucion_contrato_${newId}`, JSON.stringify(distribucionPayload));
+            } catch (_) {}
+
+            const token = this.authService.obtenerToken()?.replace(/^(Bearer|Token)\s+/i, '').trim();
+            let headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+            if (token) headers = headers.set('Authorization', `Bearer ${token}`);
+
+            this.http.put(`${environment.apiUrl}/contratos/${newId}/distribucion/`, distribucionPayload, { headers }).subscribe({
+              next: () => {},
+              error: () => {
+                this.http.post(`${environment.apiUrl}/distribucion-cupos/`, distribucionPayload, { headers }).subscribe({
+                  next: () => {},
+                  error: () => {}
+                });
+              }
+            });
+
+            for (const s of this.sedesInstitucion) {
+              const cSede = Number(s.cupos_asignados ?? s.cupos) || 0;
+              if (cSede > 0) {
+                this.siraeService.actualizarSede(Number(s.id_sede || s.id), { cupos: cSede }).subscribe({
+                  next: () => {},
+                  error: () => {}
+                });
+              }
+            }
           }
 
           const nuevoContratoFormateado = {
