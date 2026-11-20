@@ -29,7 +29,45 @@ export class NotificacionService {
   private noLeidasSubject = new BehaviorSubject<number>(0);
   public noLeidas$ = this.noLeidasSubject.asObservable();
 
+  // Toast flotante en tiempo real (esquina inferior derecha)
+  private toastSubject = new BehaviorSubject<Notificacion | null>(null);
+  public toastActivo$ = this.toastSubject.asObservable();
+  private toastTimer: any = null;
+
   constructor(private http: HttpClient) {}
+
+  mostrarToast(notif: Notificacion, duracionMs = 6000): void {
+    if (this.toastTimer) clearTimeout(this.toastTimer);
+    this.toastSubject.next(notif);
+    this.toastTimer = setTimeout(() => {
+      this.cerrarToast();
+    }, duracionMs);
+  }
+
+  cerrarToast(): void {
+    if (this.toastTimer) clearTimeout(this.toastTimer);
+    this.toastSubject.next(null);
+  }
+
+  tiempoRelativo(fechaIso?: string): string {
+    if (!fechaIso) return 'Reciente';
+    try {
+      const fecha = new Date(fechaIso);
+      const ahora = new Date();
+      const diffSeg = Math.floor((ahora.getTime() - fecha.getTime()) / 1000);
+      if (diffSeg < 60) return 'Hace un momento';
+      const diffMin = Math.floor(diffSeg / 60);
+      if (diffMin < 60) return `Hace ${diffMin} min`;
+      const diffHoras = Math.floor(diffMin / 60);
+      if (diffHoras < 24) return `Hace ${diffHoras} ${diffHoras === 1 ? 'hora' : 'horas'}`;
+      const diffDias = Math.floor(diffHoras / 24);
+      if (diffDias === 1) return 'Ayer';
+      if (diffDias < 7) return `Hace ${diffDias} días`;
+      return fecha.toLocaleDateString('es-CO', { day: '2-digit', month: 'short' });
+    } catch {
+      return 'Reciente';
+    }
+  }
 
   // Listar todas con sincronización reactiva
   obtenerNotificaciones(): Observable<Notificacion[]> {

@@ -99,6 +99,8 @@ export class LayoutComponent implements OnInit, OnDestroy {
   mostrarNotificaciones = false;
   listaNotificaciones: Notificacion[] = [];
   notificacionesNoLeidas = 0;
+  filtroNotificaciones: 'todas' | 'no_leidas' = 'todas';
+  toastNotificacion: Notificacion | null = null;
 
   // Datos del perfil y formularios
   perfil: {
@@ -208,6 +210,12 @@ export class LayoutComponent implements OnInit, OnDestroy {
     if (this.notificacionService?.noLeidas$) {
       this.notificacionService.noLeidas$.subscribe((conteo) => {
         this.notificacionesNoLeidas = conteo;
+        this.cdr.markForCheck();
+      });
+    }
+    if (this.notificacionService?.toastActivo$) {
+      this.notificacionService.toastActivo$.subscribe((toast) => {
+        this.toastNotificacion = toast;
         this.cdr.markForCheck();
       });
     }
@@ -373,6 +381,104 @@ export class LayoutComponent implements OnInit, OnDestroy {
       next: () => this.cargarNotificacionesHeader(),
       error: (err: any) => console.error('Error al marcar todas como leídas', err)
     });
+  }
+
+  get notificacionesFiltradas(): Notificacion[] {
+    if (this.filtroNotificaciones === 'no_leidas') {
+      return this.listaNotificaciones.filter(n => !n.leida);
+    }
+    return this.listaNotificaciones;
+  }
+
+  cambiarFiltroNotificaciones(filtro: 'todas' | 'no_leidas'): void {
+    this.filtroNotificaciones = filtro;
+    this.cdr.markForCheck();
+  }
+
+  hacerClicNotificacion(notif: Notificacion): void {
+    const id = notif.id ?? notif.id_notificacion;
+    if (id && !notif.leida) {
+      this.notificacionService.marcarComoLeida(id).subscribe({
+        next: () => {
+          notif.leida = true;
+          this.notificacionesNoLeidas = Math.max(0, this.notificacionesNoLeidas - 1);
+          this.cdr.markForCheck();
+        }
+      });
+    }
+
+    this.mostrarNotificaciones = false;
+
+    let ruta = notif.ruta_accion || notif.accion?.ruta;
+
+    // Redirección contextual inteligente si la notificación no trae ruta fija
+    if (!ruta) {
+      const texto = ((notif.titulo || '') + ' ' + (notif.mensaje || '')).toLowerCase();
+      const cat = (notif.categoria || '').toLowerCase();
+
+      // Extraer remisión (#REM-2026-104)
+      const matchRem = (notif.mensaje || '').match(/#?(REM-\d+-\d+)/i) || (notif.titulo || '').match(/#?(REM-\d+-\d+)/i);
+      const remisionDoc = matchRem ? matchRem[1] : '';
+
+      if (texto.includes('recepci') || texto.includes('remisi') || cat.includes('entrega')) {
+        if (remisionDoc) {
+          ruta = '/historial-entregas?buscar=' + encodeURIComponent(remisionDoc) + '&modo=facturas';
+        } else {
+          const matchInsumo = (notif.titulo || '').match(/insumo:[\s]*([^\r\n]+)/i);
+          if (matchInsumo) {
+            ruta = '/historial-entregas?buscar=' + encodeURIComponent(matchInsumo[1].trim());
+          } else {
+            ruta = '/historial-entregas';
+          }
+        }
+      } else if (texto.includes('insumo') || cat.includes('inventario')) {
+        const matchInsumo = (notif.titulo || '').match(/insumo:[\s]*([^\r\n]+)/i);
+        const termino = matchInsumo ? matchInsumo[1].trim() : '';
+        ruta = '/historial-entregas?buscar=' + encodeURIComponent(termino);
+      } else if (cat.includes('contrato') || texto.includes('contrato')) {
+        ruta = '/contratos';
+      } else if (cat.includes('asistencia') || texto.includes('asistencia')) {
+        ruta = '/asistencia-diaria';
+      } else if (cat.includes('menu') || texto.includes('minuta')) {
+        ruta = '/menus';
+      } else {
+        ruta = '/reportes-consumo';
+      }
+    }
+
+    if (ruta) {
+      void this.router.navigateByUrl(ruta);
+    }
+  }
+
+  cerrarToast(): void {
+    this.notificacionService.cerrarToast();
+  }
+
+  tiempoRelativo(fecha?: string): string {
+    return this.notificacionService.tiempoRelativo(fecha);
+  }
+
+  obtenerIconoNotificacion(notif: Notificacion): { icono: string; color: string; bg: string } {
+    const cat = (notif.categoria || '').toLowerCase();
+    const prio = (notif.prioridad || '').toLowerCase();
+
+    if (prio === 'critica' || prio === 'alta') {
+      return { icono: 'warning', color: '#ef4444', bg: '#fee2e2' };
+    }
+    if (cat.includes('entrega')) {
+      return { icono: 'local_shipping', color: '#2563eb', bg: '#dbeafe' };
+    }
+    if (cat.includes('inventario') || cat.includes('stock')) {
+      return { icono: 'inventory_2', color: '#d97706', bg: '#fef3c7' };
+    }
+    if (cat.includes('asistencia')) {
+      return { icono: 'fact_check', color: '#10b981', bg: '#d1fae5' };
+    }
+    if (cat.includes('contrato') || cat.includes('menu')) {
+      return { icono: 'description', color: '#8b5cf6', bg: '#ede9fe' };
+    }
+    return { icono: 'notifications', color: '#3b82f6', bg: '#eff6ff' };
   }
 
   cargarInstitucionesSupervisor(): void {

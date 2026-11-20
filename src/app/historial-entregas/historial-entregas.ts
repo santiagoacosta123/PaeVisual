@@ -1,4 +1,5 @@
 import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
@@ -59,6 +60,7 @@ export class HistorialEntregas implements OnInit {
   private authService = inject(AuthService);
   private http = inject(HttpClient);
   private cdr = inject(ChangeDetectorRef);
+  private route = inject(ActivatedRoute);
 
   // Lista visible (ya filtrada por institución del usuario)
   private _entregas: Entrega[] = [];
@@ -192,6 +194,31 @@ export class HistorialEntregas implements OnInit {
 
     // 2. Consulta de datos actualizados al backend en segundo plano
     this.cargarHistorial();
+
+    // 3. Capturar parámetros de URL desde notificaciones (ej: ?buscar=REM-2026-104 o ?buscar=Arroz)
+    this.route.queryParams.subscribe((params) => {
+      const termino = params['buscar'] || params['remision'] || params['q'];
+      if (termino) {
+        this.filtroTexto = termino;
+      }
+      if (params['modo'] === 'facturas' || params['modo'] === 'productos') {
+        this.vistaModo = params['modo'];
+      }
+      if (params['abrir'] || termino) {
+        setTimeout(() => {
+          const buscarKey = (params['abrir'] || termino).toLowerCase();
+          const facEncontrada = this.facturas.find(f => 
+            f.numeroFactura?.toLowerCase().includes(buscarKey) ||
+            f.codigoDocumento?.toLowerCase().includes(buscarKey) ||
+            f.idFactura?.toLowerCase().includes(buscarKey)
+          );
+          if (facEncontrada) {
+            this.facturaAbiertaKey = facEncontrada.idFactura;
+            this.cdr.markForCheck();
+          }
+        }, 500);
+      }
+    });
   }
 
   // =========================================================================

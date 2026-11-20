@@ -1053,3 +1053,300 @@
 
 
 
+
+/* ============================================================
+   SAAS NOTIFICATION CENTER — Bell, Dropdown, Tabs, Rows, Toast
+   ============================================================ */
+
+/* ---- Bell button ---- */
+.saas-notif-bell-btn {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.saas-notif-bell-btn:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+.saas-bell-icon {
+  font-size: 20px;
+  color: #475569;
+}
+
+/* ---- Numeric badge ---- */
+.saas-notif-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  border: 2px solid #fff;
+  line-height: 1;
+  pointer-events: none;
+}
+
+/* ---- Dropdown panel ---- */
+.saas-notif-dropdown {
+  position: absolute;
+  right: 0;
+  top: 48px;
+  z-index: 300;
+  width: 380px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  animation: saasDropIn 0.18s ease;
+}
+@keyframes saasDropIn {
+  from { opacity: 0; transform: translateY(-8px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Arrow pointer at the top of the dropdown */
+.saas-dropdown-arrow {
+  position: absolute;
+  top: -6px;
+  right: 14px;
+  width: 12px;
+  height: 12px;
+  background: #fff;
+  border-left: 1px solid #e2e8f0;
+  border-top: 1px solid #e2e8f0;
+  transform: rotate(45deg);
+}
+
+/* ---- Tabs ---- */
+.saas-notif-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid #f1f5f9;
+  padding: 0 16px;
+}
+.saas-tab-btn {
+  flex: 1;
+  padding: 12px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.saas-tab-btn.activa {
+  color: #2563eb;
+  border-bottom-color: #2563eb;
+}
+.saas-tab-count {
+  font-size: 11px;
+  color: #2563eb;
+  margin-left: 4px;
+}
+
+/* ---- Notification list ---- */
+.saas-notif-list {
+  max-height: 360px;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+.saas-notif-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 32px 16px;
+  color: #94a3b8;
+  font-size: 12px;
+  text-align: center;
+}
+.saas-empty-icon {
+  font-size: 36px;
+  color: #cbd5e1;
+}
+
+/* ---- Notification row ---- */
+.saas-notif-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background 0.12s;
+  position: relative;
+  border-bottom: 1px solid #f8fafc;
+}
+.saas-notif-row:hover { background: #f8fafc; }
+.saas-notif-row.sin-leer { background: #eff6ff; }
+.saas-notif-row.sin-leer:hover { background: #dbeafe; }
+
+/* ---- Avatar / icon ---- */
+.saas-notif-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.saas-avatar-icon { font-size: 18px; }
+
+/* ---- Row body ---- */
+.saas-notif-body { flex: 1; min-width: 0; }
+.saas-notif-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+.saas-notif-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.3;
+}
+.saas-notif-time {
+  font-size: 10px;
+  color: #94a3b8;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.saas-notif-msg {
+  font-size: 11.5px;
+  color: #475569;
+  margin: 0;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ---- Unread dot ---- */
+.saas-unread-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #2563eb;
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+/* ---- Footer button ---- */
+.saas-notif-footer {
+  padding: 12px 16px;
+  border-top: 1px solid #f1f5f9;
+}
+.saas-btn-marcar-todas {
+  width: 100%;
+  padding: 9px;
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.saas-btn-marcar-todas:hover { background: #1d4ed8; }
+
+/* ============================================================
+   FLOATING TOAST — bottom-right real-time notification
+   ============================================================ */
+.saas-floating-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  background: #1e293b;
+  color: #fff;
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  max-width: 320px;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.3);
+  animation: toastIn 0.25s ease;
+}
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(16px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.saas-toast-dot {
+  width: 10px;
+  height: 10px;
+  background: #3b82f6;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 4px;
+  animation: toastPulse 1.5s infinite;
+}
+@keyframes toastPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.5); }
+  50%       { box-shadow: 0 0 0 5px rgba(59, 130, 246, 0); }
+}
+
+.saas-toast-content { flex: 1; min-width: 0; }
+.saas-toast-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  display: block;
+  margin-bottom: 2px;
+}
+.saas-toast-body {
+  font-size: 11.5px;
+  color: #94a3b8;
+  margin: 0;
+  line-height: 1.4;
+}
+.saas-toast-actions { margin-top: 8px; }
+.saas-toast-btn-action {
+  background: #3b82f6;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.saas-toast-btn-action:hover { background: #2563eb; }
+.saas-toast-close-btn {
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 2px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  transition: color 0.15s;
+}
+.saas-toast-close-btn:hover { color: #fff; }

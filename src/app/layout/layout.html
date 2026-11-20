@@ -598,32 +598,7 @@
       <div class="svh-right" style="display:flex; align-items:center; gap:14px; margin-left:auto;">
 
         <!-- Notificaciones -->
-        <div style="position:relative;" class="dropdown-container">
-          <button type="button" (click)="toggleNotificaciones()" class="svh-notif-btn"
-            [attr.aria-label]="'Notificaciones' + (notificacionesNoLeidas > 0 ? ' (' + notificacionesNoLeidas + ' sin leer)' : '')">
-            <span class="material-symbols-outlined" style="font-size:21px; color:#64748b;">notifications</span>
-            <span *ngIf="notificacionesNoLeidas > 0" class="svh-notif-dot" [title]="notificacionesNoLeidas + ' sin leer'"></span>
-          </button>
-
-          <div *ngIf="mostrarNotificaciones" class="svh-notif-pop" style="position:absolute; right:0; top:50px; z-index:200; width:300px; background:#fff; border:1px solid #e2e8f0; border-radius:16px; padding:16px; box-shadow:0 10px 25px -5px rgba(0,0,0,0.1);">
-            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; border-bottom:1px solid #f1f5f9; padding-bottom:8px;">
-              <span style="font-size:13px; font-weight:700; color:#1e293b;">Notificaciones</span>
-              <button type="button" (click)="marcarTodasComoLeidasDesdePanel()" style="background:none; border:none; font-size:11px; color:#d97706; font-weight:600; cursor:pointer;">
-                Marcar leídas
-              </button>
-            </div>
-            <div *ngIf="listaNotificaciones.length === 0" style="padding:16px 0; text-align:center; font-size:12px; color:#94a3b8;">
-              No tienes notificaciones
-            </div>
-            <div *ngFor="let noti of listaNotificaciones" style="background:#f8fafc; border-radius:10px; padding:10px; margin-bottom:8px; font-size:12px;">
-              <strong style="color:#0f172a; display:block;">{{ noti.titulo }}</strong>
-              <span style="color:#475569;">{{ noti.mensaje }}</span>
-            </div>
-            <a routerLink="/notificaciones" (click)="mostrarNotificaciones = false" style="display:block; text-align:center; font-size:11px; font-weight:700; color:#d97706; text-decoration:none; margin-top:8px; padding-top:8px; border-top:1px solid #f1f5f9;">
-              Ver centro de notificaciones →
-            </a>
-          </div>
-        </div>
+        <ng-container *ngTemplateOutlet="centroNotificacionesSaaS"></ng-container>
 
         <div style="width:1px; height:26px; background:#e2e8f0;" aria-hidden="true"></div>
 
@@ -734,32 +709,7 @@
       <div class="svh-right" style="display:flex; align-items:center; gap:14px; margin-left:auto;">
 
         <!-- Notificaciones -->
-        <div style="position:relative;" class="dropdown-container">
-          <button type="button" (click)="toggleNotificaciones()" class="svh-notif-btn"
-            [attr.aria-label]="'Notificaciones' + (notificacionesNoLeidas > 0 ? ' (' + notificacionesNoLeidas + ' sin leer)' : '')">
-            <span class="material-symbols-outlined" style="font-size:21px; color:#64748b;">notifications</span>
-            <span *ngIf="notificacionesNoLeidas > 0" class="svh-notif-dot" [title]="notificacionesNoLeidas + ' sin leer'"></span>
-          </button>
-
-          <div *ngIf="mostrarNotificaciones" class="svh-notif-pop" style="position:absolute; right:0; top:50px; z-index:200; width:300px; background:#fff; border:1px solid #e2e8f0; border-radius:16px; padding:16px; box-shadow:0 10px 25px -5px rgba(0,0,0,0.1);">
-            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; border-bottom:1px solid #f1f5f9; padding-bottom:8px;">
-              <span style="font-size:13px; font-weight:700; color:#1e293b;">Notificaciones</span>
-              <button type="button" (click)="marcarTodasComoLeidasDesdePanel()" style="background:none; border:none; font-size:11px; color:#d97706; font-weight:600; cursor:pointer;">
-                Marcar leídas
-              </button>
-            </div>
-            <div *ngIf="listaNotificaciones.length === 0" style="padding:16px 0; text-align:center; font-size:12px; color:#94a3b8;">
-              No tienes notificaciones
-            </div>
-            <div *ngFor="let noti of listaNotificaciones" style="background:#f8fafc; border-radius:10px; padding:10px; margin-bottom:8px; font-size:12px;">
-              <strong style="color:#0f172a; display:block;">{{ noti.titulo }}</strong>
-              <span style="color:#475569;">{{ noti.mensaje }}</span>
-            </div>
-            <a routerLink="/notificaciones" (click)="mostrarNotificaciones = false" style="display:block; text-align:center; font-size:11px; font-weight:700; color:#d97706; text-decoration:none; margin-top:8px; padding-top:8px; border-top:1px solid #f1f5f9;">
-              Ver centro de notificaciones →
-            </a>
-          </div>
-        </div>
+        <ng-container *ngTemplateOutlet="centroNotificacionesSaaS"></ng-container>
 
         <div style="width:1px; height:26px; background:#e2e8f0;" aria-hidden="true"></div>
 
@@ -864,32 +814,7 @@
       <div class="svh-right" style="display:flex; align-items:center; gap:14px; margin-left:auto;">
 
         <!-- Notificaciones -->
-        <div style="position:relative;" class="dropdown-container">
-          <button type="button" (click)="toggleNotificaciones()" class="svh-notif-btn"
-            [attr.aria-label]="'Notificaciones' + (notificacionesNoLeidas > 0 ? ' (' + notificacionesNoLeidas + ' sin leer)' : '')">
-            <span class="material-symbols-outlined" style="font-size:21px; color:#64748b;">notifications</span>
-            <span *ngIf="notificacionesNoLeidas > 0" class="svh-notif-dot" [title]="notificacionesNoLeidas + ' sin leer'"></span>
-          </button>
-
-          <div *ngIf="mostrarNotificaciones" class="svh-notif-pop" style="position:absolute; right:0; top:50px; z-index:200; width:300px; background:#fff; border:1px solid #e2e8f0; border-radius:16px; padding:16px; box-shadow:0 10px 25px -5px rgba(0,0,0,0.1);">
-            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; border-bottom:1px solid #f1f5f9; padding-bottom:8px;">
-              <span style="font-size:13px; font-weight:700; color:#1e293b;">Notificaciones</span>
-              <button type="button" (click)="marcarTodasComoLeidasDesdePanel()" style="background:none; border:none; font-size:11px; color:#d97706; font-weight:600; cursor:pointer;">
-                Marcar leídas
-              </button>
-            </div>
-            <div *ngIf="listaNotificaciones.length === 0" style="padding:16px 0; text-align:center; font-size:12px; color:#94a3b8;">
-              No tienes notificaciones
-            </div>
-            <div *ngFor="let noti of listaNotificaciones" style="background:#f8fafc; border-radius:10px; padding:10px; margin-bottom:8px; font-size:12px;">
-              <strong style="color:#0f172a; display:block;">{{ noti.titulo }}</strong>
-              <span style="color:#475569;">{{ noti.mensaje }}</span>
-            </div>
-            <a routerLink="/notificaciones" (click)="mostrarNotificaciones = false" style="display:block; text-align:center; font-size:11px; font-weight:700; color:#d97706; text-decoration:none; margin-top:8px; padding-top:8px; border-top:1px solid #f1f5f9;">
-              Ver centro de notificaciones →
-            </a>
-          </div>
-        </div>
+        <ng-container *ngTemplateOutlet="centroNotificacionesSaaS"></ng-container>
 
         <div style="width:1px; height:26px; background:#e2e8f0;" aria-hidden="true"></div>
 
@@ -1023,36 +948,7 @@
         <div *ngIf="mostrarPerfil || mostrarNotificaciones" class="popover-backdrop" (click)="cerrarPanel()"></div>
 
         <!-- Botón Notificaciones -->
-        <div class="dropdown-container">
-          <button type="button" class="notif-btn" (click)="toggleNotificaciones()" title="Notificaciones" aria-label="Notificaciones del sistema">
-            <span class="material-symbols-outlined notif-icon" aria-hidden="true">notifications</span>
-            <span *ngIf="notificacionesNoLeidas > 0" class="notif-badge-dot"></span>
-          </button>
-
-          <!-- Dropdown Notificaciones -->
-          <div *ngIf="mostrarNotificaciones" class="modern-dropdown notif-popover">
-            <div class="notif-popover-head">
-              <span class="notif-popover-title">Notificaciones</span>
-              <button type="button" class="notif-mark-btn" (click)="marcarTodasComoLeidasDesdePanel()">
-                Marcar leídas
-              </button>
-            </div>
-            
-            <div *ngIf="listaNotificaciones.length === 0" class="notif-empty-state">
-              No tienes notificaciones pendientes
-            </div>
-
-            <div class="notif-items-list" *ngIf="listaNotificaciones.length > 0">
-              <div *ngFor="let noti of listaNotificaciones" class="notif-item">
-                <strong class="notif-item-title">{{ noti.titulo }}</strong>
-                <span class="notif-item-msg">{{ noti.mensaje }}</span>
-              </div>
-              <a routerLink="/notificaciones" (click)="mostrarNotificaciones = false" class="block text-center text-xs font-bold text-amber-600 hover:text-amber-700 py-2 border-t border-slate-100">
-                Ver centro de notificaciones →
-              </a>
-            </div>
-          </div>
-        </div>
+        <ng-container *ngTemplateOutlet="centroNotificacionesSaaS"></ng-container>
 
         <!-- Botón Perfil de Usuario con Avatar Dinámico -->
         <div class="dropdown-container">
@@ -1079,3 +975,109 @@
   </div>
 
 </div>
+
+<!-- ================================================================= -->
+<!-- PLANTILLA SAAS: CENTRO DE NOTIFICACIONES (DROPDOWN MODERNO)       -->
+<!-- ================================================================= -->
+<ng-template #centroNotificacionesSaaS>
+  <div style="position:relative;" class="dropdown-container">
+    <!-- Botón Campana con Badge numérico circular rojo -->
+    <button type="button" (click)="toggleNotificaciones()" class="saas-notif-bell-btn"
+      [attr.aria-label]="'Notificaciones' + (notificacionesNoLeidas > 0 ? ' (' + notificacionesNoLeidas + ' sin leer)' : '')">
+      <span class="material-symbols-outlined saas-bell-icon">notifications</span>
+      <span *ngIf="notificacionesNoLeidas > 0" class="saas-notif-badge">
+        {{ notificacionesNoLeidas > 99 ? '99+' : notificacionesNoLeidas }}
+      </span>
+    </button>
+
+    <!-- Dropdown Centro de Notificaciones -->
+    <div *ngIf="mostrarNotificaciones" class="saas-notif-dropdown">
+      <!-- Puntero superior que apunta a la campana -->
+      <div class="saas-dropdown-arrow"></div>
+
+      <!-- Pestañas: Todas / No leídas -->
+      <div class="saas-notif-tabs">
+        <button type="button" 
+          class="saas-tab-btn" 
+          [class.activa]="filtroNotificaciones === 'todas'"
+          (click)="cambiarFiltroNotificaciones('todas')">
+          Todas
+        </button>
+        <button type="button" 
+          class="saas-tab-btn" 
+          [class.activa]="filtroNotificaciones === 'no_leidas'"
+          (click)="cambiarFiltroNotificaciones('no_leidas')">
+          No leídas
+          <span *ngIf="notificacionesNoLeidas > 0" class="saas-tab-count">({{ notificacionesNoLeidas }})</span>
+        </button>
+      </div>
+
+      <!-- Lista de Notificaciones con Scroll -->
+      <div class="saas-notif-list">
+        <div *ngIf="notificacionesFiltradas.length === 0" class="saas-notif-empty">
+          <span class="material-symbols-outlined saas-empty-icon">notifications_none</span>
+          <span>{{ filtroNotificaciones === 'no_leidas' ? 'No tienes notificaciones sin leer' : 'No tienes notificaciones pendientes' }}</span>
+        </div>
+
+        <div *ngFor="let noti of notificacionesFiltradas" 
+          class="saas-notif-row" 
+          [class.sin-leer]="!noti.leida"
+          (click)="hacerClicNotificacion(noti)">
+          
+          <!-- Avatar o Icono según tipo -->
+          <div class="saas-notif-avatar" [style.background]="obtenerIconoNotificacion(noti).bg" [style.color]="obtenerIconoNotificacion(noti).color">
+            <img *ngIf="noti.imagen_url" [src]="noti.imagen_url" alt="Avatar" class="w-full h-full object-cover rounded-full" />
+            <span *ngIf="!noti.imagen_url" class="material-symbols-outlined saas-avatar-icon">
+              {{ obtenerIconoNotificacion(noti).icono }}
+            </span>
+          </div>
+
+          <!-- Contenido central: Título y Mensaje -->
+          <div class="saas-notif-body">
+            <div class="saas-notif-header-row">
+              <span class="saas-notif-title">{{ noti.titulo }}</span>
+              <span class="saas-notif-time">{{ tiempoRelativo(noti.fecha_creacion || noti.fecha_hora) }}</span>
+            </div>
+            <p class="saas-notif-msg">{{ noti.mensaje }}</p>
+          </div>
+
+          <!-- Punto azul de estado (Unread Dot) -->
+          <div *ngIf="!noti.leida" class="saas-unread-dot" title="No leída"></div>
+        </div>
+      </div>
+
+      <!-- Pie con botón azul Marcar todas como leídas -->
+      <div class="saas-notif-footer">
+        <button type="button" class="saas-btn-marcar-todas" (click)="marcarTodasComoLeidasDesdePanel()">
+          Marcar todas como leídas
+        </button>
+      </div>
+    </div>
+  </div>
+</ng-template>
+
+<!-- ================================================================= -->
+<!-- TOAST FLOTANTE EN TIEMPO REAL (ESQUINA INFERIOR DERECHA)          -->
+<!-- ================================================================= -->
+<aside *ngIf="toastNotificacion" class="saas-floating-toast" aria-live="polite">
+  <!-- Punto azul vibrante -->
+  <div class="saas-toast-dot"></div>
+
+  <!-- Contenido del Toast -->
+  <div class="saas-toast-content">
+    <strong class="saas-toast-title">{{ toastNotificacion.titulo }}</strong>
+    <p class="saas-toast-body">{{ toastNotificacion.mensaje }}</p>
+
+    <!-- Botón de acción directa si aplica -->
+    <div class="saas-toast-actions" *ngIf="toastNotificacion.ruta_accion || toastNotificacion.accion?.ruta">
+      <button type="button" class="saas-toast-btn-action" (click)="hacerClicNotificacion(toastNotificacion)">
+        {{ toastNotificacion.accion?.textoBoton || 'Ver detalle' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Botón cerrar -->
+  <button type="button" class="saas-toast-close-btn" (click)="cerrarToast()" aria-label="Cerrar notificación">
+    <span class="material-symbols-outlined" style="font-size:16px;">close</span>
+  </button>
+</aside>
