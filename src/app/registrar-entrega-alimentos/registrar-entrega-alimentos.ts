@@ -310,7 +310,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     const inst = this.institucionActiva?.id_institucion ?? this.idInstitucion ?? undefined;
     const elegido = destino ?? this.entradaDestino;
     const sede = this.institucionActiva?.sedes?.find(s => elegido.endsWith(` - ${s.nombre_sede}`));
-    const idSede = sede ? Number(sede.id_sede ?? sede.id) : this.idSede ?? undefined;
+    const idSede = sede ? Number(sede.id_sede ?? sede.id) : (this.idSede ?? this.sedeEfectivaId ?? undefined);
     return { ...(inst !== undefined ? { id_institucion: inst } : {}), ...(idSede !== undefined ? { id_sede: idSede } : {}) };
   }
 
@@ -1650,14 +1650,16 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     const datos = this.datosInstitucion(destino);
     if (datos.id_institucion === undefined) return fallo('No se encontró el identificador de la institución.');
 
+    const idInstitucionVista = this.idInstitucion;
+    const idSede = datos.id_sede ?? this.idSede ?? this.sedeEfectivaId ?? null;
+    if (idSede == null) return fallo('No se encontró una sede vinculada a esta institución para realizar el despacho.');
+
     const hoy = this.envioFecha.trim();
     const responsable = this.envioResponsable.trim();
     if (!hoy) return fallo('Indica la fecha de envío.');
     if (!responsable) return fallo('Indica el responsable del envío.');
     this.guardandoEnvio = true;
 
-    const idInstitucionVista = this.idInstitucion;
-    const idSede = this.idSede ?? this.sedeEfectivaId;
     const sigueEnLaVista = () => idInstitucionVista === this.idInstitucion && idSede === this.idSede;
     const fechaRegistro = new Date().toISOString();
     const lote = fechaRegistro;
@@ -1667,7 +1669,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     const datosEnvio = (sel: FilaEntrega, cantidad: number, unidad: string, docFactura: string = codigoFactura): EnvioConfirmado => ({
       id_temporal: --this.idEnvioTemporal,
       id_institucion: datos.id_institucion!,
-      id_sede: datos.id_sede,
+      id_sede: idSede ?? undefined,
       id_ingrediente: sel.idIngrediente!,
       id_tipo_mercado: sel.idTipoMercado!,
       ingrediente_nombre: sel.ingrediente,
