@@ -478,10 +478,19 @@ export class UsuariosComponent implements OnInit {
 
   esRolConSede(): boolean {
     if (!this.usuarioForm.rol) return false;
-    if (this.esRolSupervisor()) return false;
+    if (this.esRolSupervisor() || this.esRolAdmin()) return false;
     const nom = this.obtenerNombreRol(this.usuarioForm.rol).toLowerCase();
-    if (nom.includes('super')) return false;
-    return true;
+    if (nom.includes('super') || nom.includes('admin')) return false;
+    return this.esRolManipuladoraOCocina();
+  }
+
+  onRolChange(): void {
+    if (!this.esRolConSede()) {
+      this.usuarioForm.id_sede = null;
+    }
+    if (this.esRolSupervisor() || !this.esRolConInstitucion()) {
+      this.usuarioForm.id_institucion = null;
+    }
   }
 
   get sedesDeInstitucionSeleccionada(): any[] {
@@ -613,6 +622,10 @@ export class UsuariosComponent implements OnInit {
         password: '' 
       };
 
+      if (this.esRolAdmin() || !this.esRolConSede()) {
+        this.usuarioForm.id_sede = null;
+      }
+
       // Si el usuario ya trae instituciones_supervisor cargadas, las poblamos de inmediato
       if (Array.isArray(usuario.instituciones_supervisor) && usuario.instituciones_supervisor.length > 0) {
         this.supervisorInstitucionesSeleccionadas = usuario.instituciones_supervisor.map((i: any) => Number(i.id_institucion || i.id));
@@ -721,11 +734,15 @@ export class UsuariosComponent implements OnInit {
       }
     }
 
+    if (this.esRolAdmin() || !this.esRolConSede()) {
+      this.usuarioForm.id_sede = null;
+    }
+
     const datosEnviar: any = {
       ...this.usuarioForm,
       rol: Number(this.usuarioForm.rol),
       id_institucion: this.usuarioForm.id_institucion ? Number(this.usuarioForm.id_institucion) : null,
-      id_sede: this.usuarioForm.id_sede ? Number(this.usuarioForm.id_sede) : null
+      id_sede: (this.esRolAdmin() || !this.esRolConSede()) ? null : (this.usuarioForm.id_sede ? Number(this.usuarioForm.id_sede) : null)
     };
 
     if (this.modoEdicion && this.usuarioSeleccionadoId) {

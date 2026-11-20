@@ -208,6 +208,7 @@
               name="rol"
               [required]="true"
               [(ngModel)]="usuarioForm.rol"
+              (ngModelChange)="onRolChange()"
             ></app-custom-select>
           </div>
 
