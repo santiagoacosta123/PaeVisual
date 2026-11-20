@@ -350,7 +350,41 @@ export class ContratoDetalleComponent implements OnInit {
   }
 
   cargarDistribucionPersistida(): void {
-    if (!this.contratoId) return;
+    if (!this.contratoId || this.contratoId === 'nuevo' || this.contratoId === '0') return;
+
+    const token = this.authService.obtenerToken()?.replace(/^(Bearer|Token)\s+/i, '').trim();
+    let headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    if (token) headers = headers.set('Authorization', `Bearer ${token}`);
+
+    this.http.get<any>(`${environment.apiUrl}/contratos/${this.contratoId}/distribucion/`, { headers }).subscribe({
+      next: (data: any) => {
+        if (data && Array.isArray(data.sedes) && data.sedes.length > 0) {
+          this.sedesInstitucion.forEach(s => {
+            const sId = Number(s.id_sede || s.id);
+            const match = data.sedes.find((sg: any) => Number(sg.id_sede) === sId);
+            if (match) {
+              const cupos = Number(match.cuposAsignados ?? match.cupos_asignados ?? match.cupos) || 0;
+              s.cupos = cupos;
+              s.cupos_asignados = cupos;
+              s.grados = (match.grados || []).map((g: any) => ({
+                id_grado: Number(g.id_grado || g.id),
+                nombre_grado: g.nombre || g.nombre_grado || `Grado ${g.id_grado}`,
+                cupos: Number(g.cuposAsignados ?? g.cupos_asignados ?? g.cupos) || 0
+              }));
+            }
+          });
+          this.cdr.detectChanges();
+        } else {
+          this.cargarDistribucionDesdeLocalStorage();
+        }
+      },
+      error: () => {
+        this.cargarDistribucionDesdeLocalStorage();
+      }
+    });
+  }
+
+  private cargarDistribucionDesdeLocalStorage(): void {
     try {
       const raw = localStorage.getItem(`sirae_distribucion_contrato_${this.contratoId}`);
       if (!raw) return;
@@ -360,8 +394,8 @@ export class ContratoDetalleComponent implements OnInit {
           const sId = Number(s.id_sede || s.id);
           const sedeG = data.sedes.find((sg: any) => Number(sg.id_sede) === sId);
           if (sedeG) {
-            s.cupos = Number(sedeG.cupos_asignados) || 0;
-            s.cupos_asignados = Number(sedeG.cupos_asignados) || 0;
+            s.cupos = Number(sedeG.cupos_asignados ?? sedeG.cuposAsignados ?? sedeG.cupos) || 0;
+            s.cupos_asignados = s.cupos;
             s.grados = sedeG.grados || [];
           }
         });
@@ -397,10 +431,14 @@ export class ContratoDetalleComponent implements OnInit {
       sedes: this.sedesEdicionDistribucion.map(s => ({
         id_sede: s.id_sede,
         nombre_sede: s.nombre_sede,
+        cuposAsignados: Number(s.cuposAsignados) || 0,
         cupos_asignados: Number(s.cuposAsignados) || 0,
+        cupos: Number(s.cuposAsignados) || 0,
         grados: s.grados.map(g => ({
           id_grado: g.id_grado,
           nombre_grado: g.nombre_grado,
+          cuposAsignados: Number(g.cupos) || 0,
+          cupos_asignados: Number(g.cupos) || 0,
           cupos: Number(g.cupos) || 0
         }))
       }))
