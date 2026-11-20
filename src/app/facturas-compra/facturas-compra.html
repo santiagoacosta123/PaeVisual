@@ -7,9 +7,6 @@
   <!-- Header para Modo Stock Global Exclusivo -->
   <header *ngIf="modoExclusivo === 'bodega'" style="width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 24px; background: linear-gradient(135deg, #fffcf0 0%, #ffffff 100%); border: 1px solid #f2ead0; border-radius: 14px; box-shadow: 0 4px 15px rgba(250, 201, 75, 0.05); position: sticky; top: 0; z-index: 20; box-sizing: border-box; flex-wrap: wrap;">
     <div style="display: flex; align-items: center; gap: 14px;">
-      <div style="width: 48px; height: 48px; border-radius: 50%; background: #fef3c7; border: 1.5px solid #fde68a; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 2px 6px rgba(245, 158, 11, 0.08);">
-        <span class="material-symbols-outlined" style="font-size: 24px; color: #b45309;">warehouse</span>
-      </div>
       <div>
         <h1 style="margin: 0; color: #0f172a; font-size: 20px; font-weight: 800; letter-spacing: -0.5px;">Stock Global</h1>
         <p style="margin: 3px 0 0; color: #64748b; font-size: 13px;">Control de existencias globales, balance de insumos y semáforo de disponibilidad.</p>
@@ -20,9 +17,6 @@
   <!-- Header para Modo Facturas de Compra Exclusivo (Estilo idéntico a Contratos) -->
   <header *ngIf="modoExclusivo === 'facturas'" style="width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 24px; background: linear-gradient(135deg, #fffcf0 0%, #ffffff 100%); border: 1px solid #f2ead0; border-radius: 14px; box-shadow: 0 4px 15px rgba(250, 201, 75, 0.05); position: sticky; top: 0; z-index: 20; box-sizing: border-box; flex-wrap: wrap;">
     <div style="display: flex; align-items: center; gap: 14px;">
-      <div style="width: 48px; height: 48px; border-radius: 50%; background: #fef3c7; border: 1.5px solid #fde68a; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 2px 6px rgba(245, 158, 11, 0.08);">
-        <span class="material-symbols-outlined" style="font-size: 24px; color: #b45309;">receipt_long</span>
-      </div>
       <div>
         <h1 style="margin: 0; color: #0f172a; font-size: 20px; font-weight: 800; letter-spacing: -0.5px;">Facturas de Compra</h1>
         <p style="margin: 3px 0 0; color: #64748b; font-size: 13px;">Registro de compras a proveedores mayoristas y recepción técnica de insumos.</p>
@@ -41,9 +35,6 @@
   <!-- Header combinado solo si modoExclusivo === 'ambas' -->
   <header *ngIf="modoExclusivo === 'ambas'" style="width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 24px; background: linear-gradient(135deg, #fffcf0 0%, #ffffff 100%); border: 1px solid #f2ead0; border-radius: 14px; box-shadow: 0 4px 15px rgba(250, 201, 75, 0.05); position: sticky; top: 0; z-index: 20; box-sizing: border-box; flex-wrap: wrap;">
     <div style="display: flex; align-items: center; gap: 14px;">
-      <div style="width: 48px; height: 48px; border-radius: 50%; background: #fef3c7; border: 1.5px solid #fde68a; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 2px 6px rgba(245, 158, 11, 0.08);">
-        <span class="material-symbols-outlined" style="font-size: 24px; color: #b45309;">receipt_long</span>
-      </div>
       <div>
         <h1 style="margin: 0; color: #0f172a; font-size: 20px; font-weight: 800; letter-spacing: -0.5px;">Facturas de Compra & Stock Global</h1>
         <p style="margin: 3px 0 0; color: #64748b; font-size: 13px;">Registro de compras a proveedores mayoristas y control del stock global del operador PAE.</p>
