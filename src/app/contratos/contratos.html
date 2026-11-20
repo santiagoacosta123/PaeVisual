@@ -6,34 +6,37 @@
     <!-- CONTRATOS -->
     <div *ngSwitchCase="'contratos'" class="flex flex-col gap-6">
 
-      <!-- ===================== TARJETA SUPERIOR (igual a Facturas de Compra) ===================== -->
+      <!-- ===================== TARJETA SUPERIOR (verde con letras blancas) ===================== -->
       <header
         class="flex w-full flex-col justify-between gap-4 sm:flex-row sm:items-center"
-        style="background: #fffdf2; border: 1px solid #f6edc3; border-radius: 20px; padding: 22px 24px;">
+        style="background: linear-gradient(135deg, #2B5424 0%, #1f3f1a 100%); border-radius: 20px; padding: 22px 26px; box-shadow: 0 6px 16px rgba(43, 84, 36, 0.25);">
         <div class="min-w-0">
-          <h1 class="m-0 font-extrabold tracking-tight" style="font-size: 21px; line-height: 1.2; color: #0f172a;">Contratos PAE</h1>
-          <p class="m-0" style="margin-top: 4px; font-size: 13.5px; color: #64748b;">Consulta, crea y controla la vigencia de los contratos de alimentación escolar.</p>
+          <p class="m-0 font-bold uppercase" style="font-size: 10.5px; letter-spacing: 0.14em; color: #F5B81F;">Gestión contractual</p>
+          <h1 class="m-0 font-extrabold tracking-tight" style="margin-top: 4px; font-size: 22px; line-height: 1.2; color: #ffffff;">Contratos PAE</h1>
+          <p class="m-0" style="margin-top: 4px; font-size: 13.5px; color: rgba(255, 255, 255, 0.82);">Consulta, crea y controla la vigencia de los contratos de alimentación escolar.</p>
         </div>
 
         <button
           type="button"
           (click)="abrirModalGrandeContrato('nuevo')"
           class="inline-flex cursor-pointer items-center justify-center whitespace-nowrap border-0 focus:outline-none"
-          style="height: 40px; padding: 0 24px; gap: 8px; border-radius: 999px; background: #fdc84f; color: #0f172a; font-size: 13px; font-weight: 700; box-shadow: 0 3px 8px rgba(253, 200, 79, 0.45); transition: background 0.15s;"
-          onmouseover="this.style.background='#f7bd33'"
-          onmouseout="this.style.background='#fdc84f'">
+          style="height: 40px; padding: 0 24px; gap: 8px; border-radius: 999px; background: #F5B81F; color: #ffffff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35); font-size: 13px; font-weight: 800; box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25); transition: background 0.15s;"
+          onmouseover="this.style.background='#e0a512'"
+          onmouseout="this.style.background='#F5B81F'">
           <span class="material-symbols-outlined" aria-hidden="true" style="font-size: 18px;">add</span>
           <span>Nuevo contrato</span>
         </button>
       </header>
 
       <!-- ===================== LISTADO DE CONTRATOS ===================== -->
-      <section aria-label="Listado de contratos" class="flex flex-col gap-5 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section aria-label="Listado de contratos"
+               class="flex flex-col gap-5 rounded-3xl border bg-white p-6 shadow-sm"
+               style="border-color: #dbe6d7;">
 
         <!-- Título de la tarjeta -->
         <div class="flex flex-wrap items-center gap-3">
-          <h2 class="m-0 text-lg font-extrabold text-slate-900">Contratos registrados</h2>
-          <span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-bold text-slate-600">
+          <h2 class="m-0 text-lg font-extrabold" style="color: #2B5424;">Contratos registrados</h2>
+          <span class="rounded-full px-2.5 py-0.5 text-[11px] font-bold" style="background: #F5B81F; color: #1f3f1a;">
             {{ contratos.length }} {{ contratos.length === 1 ? 'contrato' : 'contratos' }}
           </span>
         </div>
@@ -52,20 +55,24 @@
           </button>
         </div>
 
-        <!-- Aviso: contratos próximos a vencer -->
+        <!-- Aviso: contratos próximos a vencer (amarillo de la paleta) -->
         <div *ngIf="totalContratosProximosVencer > 0"
-             class="relative flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50 py-4 pl-8 pr-5">
-          <span class="absolute bottom-3.5 left-3.5 top-3.5 w-1 rounded-full bg-amber-500"></span>
+             class="relative flex flex-wrap items-center justify-between gap-3 rounded-2xl border py-4 pl-8 pr-5"
+             style="background: #fff8e6; border-color: #f7d77a;">
+          <span class="absolute bottom-3.5 left-3.5 top-3.5 w-1 rounded-full" style="background: #F5B81F;"></span>
           <div class="min-w-0">
-            <p class="m-0 text-sm font-extrabold text-amber-900">
+            <p class="m-0 text-sm font-extrabold" style="color: #2B5424;">
               {{ totalContratosProximosVencer }} contrato{{ totalContratosProximosVencer > 1 ? 's' : '' }} próximo{{ totalContratosProximosVencer > 1 ? 's' : '' }} a vencer
             </p>
-            <p class="mb-0 mt-0.5 text-xs text-amber-800">
+            <p class="mb-0 mt-0.5 text-xs" style="color: #6b5410;">
               {{ primerContratoProximo?.codigo }} • {{ formatearFecha(primerContratoProximo?.fechaFin) }}
             </p>
           </div>
           <button type="button" (click)="cambiarFiltroVigencia('PROXIMO_VENCER')"
-                  class="h-9 cursor-pointer whitespace-nowrap rounded-xl border border-amber-300 bg-white px-4 text-xs font-bold text-amber-800 shadow-sm transition hover:bg-amber-100">
+                  class="h-9 cursor-pointer whitespace-nowrap rounded-xl border-0 px-4 text-xs font-extrabold shadow-sm transition"
+                  style="background: #F5B81F; color: #ffffff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);"
+                  onmouseover="this.style.background='#e0a512'"
+                  onmouseout="this.style.background='#F5B81F'">
             Gestionar vigencia
           </button>
         </div>
@@ -77,44 +84,53 @@
             [(ngModel)]="filtroBusquedaContratos"
             (ngModelChange)="paginaActual = 1"
             placeholder="Buscar por contrato o colegio"
-            class="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 pr-10 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100">
+            class="h-11 w-full rounded-xl border bg-white px-4 pr-10 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:ring-2"
+            style="border-color: #cfdccb;"
+            onfocus="this.style.borderColor='#2B5424'; this.style.boxShadow='0 0 0 3px rgba(43,84,36,0.15)'"
+            onblur="this.style.borderColor='#cfdccb'; this.style.boxShadow='none'">
           <button *ngIf="filtroBusquedaContratos" type="button" (click)="limpiarBusquedaContratos()"
-                  class="absolute right-3 h-6 w-6 cursor-pointer rounded-full border-0 bg-slate-200 text-[11px] text-slate-600 hover:bg-slate-300"
+                  class="absolute right-3 h-6 w-6 cursor-pointer rounded-full border-0 text-[11px] hover:opacity-80"
+                  style="background: #e6eee3; color: #2B5424;"
                   title="Borrar búsqueda">✕</button>
         </div>
 
-        <!-- Pestañas de vigencia (con conteo) -->
-        <div class="flex flex-wrap items-center gap-1 border-b border-slate-200" role="tablist">
+        <!-- Pestañas de vigencia (estilo píldora, activa en verde con letras blancas) -->
+        <div class="flex flex-wrap items-center gap-1 self-start rounded-full border p-1.5"
+             style="background: #f7f6f2; border-color: #e9e6dc;" role="tablist">
+
           <button type="button" role="tab" (click)="cambiarFiltroVigencia('TODOS')"
-                  class="-mb-px inline-flex cursor-pointer items-center gap-2 border-0 border-b-2 bg-transparent px-4 py-2.5 text-xs font-bold transition"
-                  [ngClass]="filtroEstadoVigencia === 'TODOS' ? 'border-amber-500 text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-900'">
+                  class="inline-flex cursor-pointer items-center gap-2 rounded-full border-0 px-4 py-2 text-xs font-bold transition"
+                  [ngClass]="filtroEstadoVigencia === 'TODOS' ? 'bg-[#2B5424] text-white shadow-sm' : 'bg-transparent text-slate-600 hover:text-[#2B5424]'">
             <span>Todos</span>
-            <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-extrabold text-slate-600">{{ contratos.length }}</span>
+            <span class="rounded-full px-2 py-0.5 text-[11px] font-extrabold"
+                  [ngClass]="filtroEstadoVigencia === 'TODOS' ? 'bg-[#F5B81F] text-[#1f3f1a]' : 'bg-slate-200 text-slate-600'">{{ contratos.length }}</span>
           </button>
 
           <button type="button" role="tab" (click)="cambiarFiltroVigencia('ACTIVO')"
-                  class="-mb-px inline-flex cursor-pointer items-center gap-2 border-0 border-b-2 bg-transparent px-4 py-2.5 text-xs font-bold transition"
-                  [ngClass]="filtroEstadoVigencia === 'ACTIVO' ? 'border-amber-500 text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-900'">
+                  class="inline-flex cursor-pointer items-center gap-2 rounded-full border-0 px-4 py-2 text-xs font-bold transition"
+                  [ngClass]="filtroEstadoVigencia === 'ACTIVO' ? 'bg-[#2B5424] text-white shadow-sm' : 'bg-transparent text-slate-600 hover:text-[#2B5424]'">
             <span>Activos</span>
-            <span class="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-extrabold text-emerald-700">{{ totalContratosActivos }}</span>
+            <span class="rounded-full px-2 py-0.5 text-[11px] font-extrabold"
+                  [ngClass]="filtroEstadoVigencia === 'ACTIVO' ? 'bg-[#F5B81F] text-[#1f3f1a]' : 'bg-emerald-50 text-emerald-700'">{{ totalContratosActivos }}</span>
           </button>
 
           <button type="button" role="tab" (click)="cambiarFiltroVigencia('PROXIMO_VENCER')"
-                  class="-mb-px inline-flex cursor-pointer items-center gap-2 border-0 border-b-2 bg-transparent px-4 py-2.5 text-xs font-bold transition"
-                  [ngClass]="filtroEstadoVigencia === 'PROXIMO_VENCER' ? 'border-amber-500 text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-900'">
+                  class="inline-flex cursor-pointer items-center gap-2 rounded-full border-0 px-4 py-2 text-xs font-bold transition"
+                  [ngClass]="filtroEstadoVigencia === 'PROXIMO_VENCER' ? 'bg-[#2B5424] text-white shadow-sm' : 'bg-transparent text-slate-600 hover:text-[#2B5424]'">
             <span>Por vencer</span>
-            <span class="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-extrabold text-amber-800">{{ totalContratosProximosVencer }}</span>
+            <span class="rounded-full px-2 py-0.5 text-[11px] font-extrabold"
+                  [ngClass]="filtroEstadoVigencia === 'PROXIMO_VENCER' ? 'bg-[#F5B81F] text-[#1f3f1a]' : 'bg-amber-100 text-amber-800'">{{ totalContratosProximosVencer }}</span>
           </button>
 
           <button type="button" role="tab" (click)="cambiarFiltroVigencia('INACTIVO')"
-                  class="-mb-px inline-flex cursor-pointer items-center gap-2 border-0 border-b-2 bg-transparent px-4 py-2.5 text-xs font-bold transition"
-                  [ngClass]="filtroEstadoVigencia === 'INACTIVO' ? 'border-amber-500 text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-900'">
+                  class="inline-flex cursor-pointer items-center gap-2 rounded-full border-0 px-4 py-2 text-xs font-bold transition"
+                  [ngClass]="filtroEstadoVigencia === 'INACTIVO' ? 'bg-[#2B5424] text-white shadow-sm' : 'bg-transparent text-slate-600 hover:text-[#2B5424]'">
             <span>Inactivos</span>
           </button>
 
           <button type="button" role="tab" (click)="cambiarFiltroVigencia('FINALIZADO')"
-                  class="-mb-px inline-flex cursor-pointer items-center gap-2 border-0 border-b-2 bg-transparent px-4 py-2.5 text-xs font-bold transition"
-                  [ngClass]="filtroEstadoVigencia === 'FINALIZADO' ? 'border-amber-500 text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-900'">
+                  class="inline-flex cursor-pointer items-center gap-2 rounded-full border-0 px-4 py-2 text-xs font-bold transition"
+                  [ngClass]="filtroEstadoVigencia === 'FINALIZADO' ? 'bg-[#2B5424] text-white shadow-sm' : 'bg-transparent text-slate-600 hover:text-[#2B5424]'">
             <span>Finalizados</span>
           </button>
         </div>
@@ -133,16 +149,17 @@
               <col style="width: 12%">
             </colgroup>
 
+            <!-- Encabezado verde con letras blancas -->
             <thead>
-              <tr class="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                <th class="sticky top-0 rounded-l-xl bg-slate-50 px-3 py-3 text-center">N.º contrato</th>
-                <th class="bg-slate-50 px-3 py-3 text-center">Institución educativa</th>
-                <th class="bg-slate-50 px-3 py-3 text-center">Cupos</th>
-                <th class="bg-slate-50 px-3 py-3 text-center">Supervisor</th>
-                <th class="bg-slate-50 px-3 py-3 text-center">Inicio</th>
-                <th class="bg-slate-50 px-3 py-3 text-center">Fin</th>
-                <th class="bg-slate-50 px-3 py-3 text-center">Estado</th>
-                <th class="rounded-r-xl bg-slate-50 px-3 py-3 text-center">Acciones</th>
+              <tr class="text-[11px] font-bold uppercase tracking-wider text-white">
+                <th class="sticky top-0 rounded-l-xl px-3 py-3 text-center" style="background: #2B5424;">N.º contrato</th>
+                <th class="px-3 py-3 text-center" style="background: #2B5424;">Institución educativa</th>
+                <th class="px-3 py-3 text-center" style="background: #2B5424;">Cupos</th>
+                <th class="px-3 py-3 text-center" style="background: #2B5424;">Supervisor</th>
+                <th class="px-3 py-3 text-center" style="background: #2B5424;">Inicio</th>
+                <th class="px-3 py-3 text-center" style="background: #2B5424;">Fin</th>
+                <th class="px-3 py-3 text-center" style="background: #2B5424;">Estado</th>
+                <th class="rounded-r-xl px-3 py-3 text-center" style="background: #2B5424;">Acciones</th>
               </tr>
             </thead>
 
@@ -152,9 +169,9 @@
               <tr *ngIf="cargandoContratos">
                 <td colspan="8" class="px-4 py-12 text-center">
                   <div class="inline-flex flex-col items-center gap-3">
-                    <div class="h-8 w-8 animate-spin rounded-full border-[3px] border-amber-200 border-t-amber-600"></div>
+                    <div class="h-8 w-8 animate-spin rounded-full border-[3px]" style="border-color: #dbe6d7; border-top-color: #2B5424;"></div>
                     <div>
-                      <p class="m-0 text-sm font-bold text-slate-900">Cargando contratos registrados...</p>
+                      <p class="m-0 text-sm font-bold" style="color: #2B5424;">Cargando contratos registrados...</p>
                       <p class="mb-0 mt-0.5 text-xs text-slate-500">Consultando la información en SIRAE</p>
                     </div>
                   </div>
@@ -163,11 +180,11 @@
 
               <!-- Filas -->
               <ng-container *ngIf="!cargandoContratos">
-                <tr *ngFor="let c of contratosPaginados; trackBy: trackPorId" class="transition hover:bg-amber-50/40">
+                <tr *ngFor="let c of contratosPaginados; trackBy: trackPorId" class="transition hover:bg-[#f3f7f1]">
 
                   <!-- N.º contrato -->
                   <td class="border-b border-slate-100 px-3 py-4 text-center align-middle">
-                    <span class="text-sm font-extrabold text-amber-700">{{ c.codigo }}</span>
+                    <span class="text-sm font-extrabold" style="color: #2B5424;">{{ c.codigo }}</span>
                   </td>
 
                   <!-- Institución -->
@@ -178,7 +195,8 @@
 
                   <!-- Cupos -->
                   <td class="border-b border-slate-100 px-3 py-4 text-center align-middle">
-                    <span class="inline-block whitespace-nowrap rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
+                    <span class="inline-block whitespace-nowrap rounded-full px-3 py-1 text-xs font-bold"
+                          style="background: #eef3ec; color: #2B5424;">
                       {{ c.cupos || 0 }} cupos
                     </span>
                   </td>
@@ -208,7 +226,8 @@
                   <!-- Estado -->
                   <td class="border-b border-slate-100 px-3 py-4 text-center align-middle">
                     <span *ngIf="c.estado === 'Activo'"
-                          class="inline-block rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-bold uppercase text-emerald-700">Activo</span>
+                          class="inline-block rounded-full border px-3 py-1 text-[11px] font-bold uppercase"
+                          style="background: #eaf3e6; border-color: #b9d3b0; color: #2B5424;">Activo</span>
                     <span *ngIf="c.estado === 'Inactivo'"
                           class="inline-block rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-[11px] font-bold uppercase text-rose-700">Inactivo</span>
                     <span *ngIf="c.estado === 'Finalizado'"
@@ -218,18 +237,21 @@
                   <!-- Acciones -->
                   <td class="border-b border-slate-100 px-3 py-4 text-center align-middle">
                     <div class="flex flex-col items-center gap-1.5">
+                      <!-- Ver detalle: verde sólido -->
                       <button type="button" (click)="abrirModalGrandeContrato(c.id, 'consulta', 'resumen')"
-                              class="w-24 cursor-pointer rounded-lg border border-slate-200 bg-white py-1.5 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-amber-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
+                              class="w-24 cursor-pointer rounded-lg border-0 bg-[#2B5424] py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-[#1f3f1a] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F5B81F]"
                               title="Consultar detalle del contrato">
                         Ver detalle
                       </button>
+                      <!-- Editar: contorno verde -->
                       <button type="button" (click)="abrirModalGrandeContrato(c.id, 'edicion', 'resumen')"
-                              class="w-24 cursor-pointer rounded-lg border border-slate-200 bg-white py-1.5 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-amber-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
+                              class="w-24 cursor-pointer rounded-lg border border-[#2B5424] bg-white py-1.5 text-xs font-bold text-[#2B5424] shadow-sm transition hover:bg-[#eef3ec] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F5B81F]"
                               title="Editar información contractual">
                         Editar
                       </button>
+                      <!-- Prorrogar: amarillo -->
                       <button type="button" (click)="abrirModalGrandeContrato(c.id, 'consulta', 'prorrogas')"
-                              class="w-24 cursor-pointer rounded-lg border border-slate-200 bg-white py-1.5 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-amber-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
+                              class="w-24 cursor-pointer rounded-lg border-0 bg-[#F5B81F] py-1.5 text-xs font-extrabold text-[#1f3f1a] shadow-sm transition hover:bg-[#e0a512] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2B5424]"
                               title="Prorrogar o renovar contrato">
                         Prorrogar
                       </button>
@@ -240,7 +262,7 @@
                 <!-- Catálogo vacío -->
                 <tr *ngIf="contratos.length === 0 && !errorCargaContratos">
                   <td colspan="8" class="px-4 py-12 text-center">
-                    <p class="m-0 text-sm font-bold text-slate-800">No hay contratos registrados</p>
+                    <p class="m-0 text-sm font-bold" style="color: #2B5424;">No hay contratos registrados</p>
                     <p class="mx-auto mb-0 mt-1 max-w-sm text-xs text-slate-500">Actualmente no existen contratos PAE registrados en el sistema SIRAE.</p>
                   </td>
                 </tr>
@@ -248,10 +270,10 @@
                 <!-- Búsqueda sin coincidencias -->
                 <tr *ngIf="contratos.length > 0 && contratosFiltrados.length === 0">
                   <td colspan="8" class="px-4 py-10 text-center">
-                    <p class="m-0 text-sm font-bold text-slate-800">No se encontraron resultados</p>
+                    <p class="m-0 text-sm font-bold" style="color: #2B5424;">No se encontraron resultados</p>
                     <p class="mb-0 mt-1 text-xs text-slate-500">No se encontraron contratos que coincidan con «<strong>{{ filtroBusquedaContratos }}</strong>».</p>
                     <button type="button" (click)="limpiarBusquedaContratos()"
-                            class="mt-3 cursor-pointer rounded-lg border border-slate-200 bg-white px-4 py-1.5 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-amber-50">
+                            class="mt-3 cursor-pointer rounded-lg border border-[#2B5424] bg-white px-4 py-1.5 text-xs font-bold text-[#2B5424] shadow-sm transition hover:bg-[#eef3ec]">
                       Limpiar búsqueda
                     </button>
                   </td>
@@ -263,15 +285,15 @@
         </div>
 
         <!-- Pie: conteo y paginación -->
-        <div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-t pt-4" style="border-color: #e6eee3;">
           <span class="text-xs text-slate-500">
-            Mostrando <strong class="text-slate-700">{{ inicioRango }}</strong> – <strong class="text-slate-700">{{ finRango }}</strong>
-            de <strong class="text-slate-700">{{ contratosFiltrados.length }}</strong> contratos
+            Mostrando <strong style="color: #2B5424;">{{ inicioRango }}</strong> – <strong style="color: #2B5424;">{{ finRango }}</strong>
+            de <strong style="color: #2B5424;">{{ contratosFiltrados.length }}</strong> contratos
           </span>
 
           <div class="flex items-center gap-1.5">
             <button type="button" (click)="paginaAnterior()" [disabled]="paginaActual === 1"
-                    class="h-8 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 transition hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-40">
+                    class="h-8 rounded-lg border border-[#cfdccb] bg-white px-3 text-xs font-bold text-[#2B5424] transition hover:bg-[#eef3ec] disabled:cursor-not-allowed disabled:opacity-40">
               Anterior
             </button>
 
@@ -279,14 +301,14 @@
               <button type="button" (click)="irAPagina(p)"
                       class="h-8 w-8 cursor-pointer rounded-lg border text-xs font-bold transition"
                       [ngClass]="p === paginaActual
-                        ? 'border-amber-500 bg-amber-500 text-white'
-                        : 'border-slate-200 bg-white text-slate-600 hover:bg-amber-50'">
+                        ? 'border-[#2B5424] bg-[#2B5424] text-white'
+                        : 'border-[#cfdccb] bg-white text-[#2B5424] hover:bg-[#eef3ec]'">
                 {{ p }}
               </button>
             </ng-container>
 
             <button type="button" (click)="paginaSiguiente()" [disabled]="paginaActual >= totalPaginas"
-                    class="h-8 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 transition hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-40">
+                    class="h-8 rounded-lg border border-[#cfdccb] bg-white px-3 text-xs font-bold text-[#2B5424] transition hover:bg-[#eef3ec] disabled:cursor-not-allowed disabled:opacity-40">
               Siguiente
             </button>
           </div>
@@ -299,27 +321,37 @@
 
   <!-- ==================== MODAL: CONTRATO ==================== -->
   <div *ngIf="modalContratoAbierto" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center; z-index:1000;">
-    <div style="background:#ffffff; width:540px; max-width:92%; border-radius:16px; padding:24px; box-shadow:0 10px 25px rgba(0,0,0,0.1); display:flex; flex-direction:column; gap:20px; max-height:90vh; overflow-y:auto;">
-      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #f1f5f9; padding-bottom:12px;">
-        <h3 style="font-size:16px; font-weight:700; color:#0f172a; margin:0;">{{ modoEdicionContrato ? 'EDITAR CONTRATO' : 'NUEVO CONTRATO' }}</h3>
-        <button type="button" (click)="cerrarModalContrato()" style="background:none; border:none; font-size:18px; cursor:pointer; color:#64748b;">✕</button>
-      </div>
-      <div style="display:flex; flex-direction:column; gap:14px;">
+    <div style="background:#ffffff; width:540px; max-width:92%; border-radius:16px; box-shadow:0 10px 25px rgba(0,0,0,0.15); display:flex; flex-direction:column; max-height:90vh; overflow:hidden;">
+
+      <!-- Cabecera verde -->
+      <div style="display:flex; justify-content:space-between; align-items:center; background:#2B5424; padding:16px 24px;">
         <div>
-          <label style="font-size:12px; font-weight:600; color:#334155; display:block; margin-bottom:6px;">N° Contrato *</label>
-          <input type="text" [(ngModel)]="contratoActual.codigo" placeholder="Ej. COR-2026-001" style="width:100%; padding:10px 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px; outline:none; box-sizing:border-box;">
+          <p style="margin:0; font-size:10px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:#F5B81F;">Contratos PAE</p>
+          <h3 style="font-size:16px; font-weight:700; color:#ffffff; margin:2px 0 0;">{{ modoEdicionContrato ? 'EDITAR CONTRATO' : 'NUEVO CONTRATO' }}</h3>
+        </div>
+        <button type="button" (click)="cerrarModalContrato()" style="background:rgba(255,255,255,0.15); border:none; width:28px; height:28px; border-radius:50%; font-size:14px; cursor:pointer; color:#ffffff;">✕</button>
+      </div>
+
+      <!-- Formulario -->
+      <div style="display:flex; flex-direction:column; gap:14px; padding:20px 24px; overflow-y:auto;">
+        <div>
+          <label style="font-size:12px; font-weight:600; color:#2B5424; display:block; margin-bottom:6px;">N° Contrato *</label>
+          <input type="text" [(ngModel)]="contratoActual.codigo" placeholder="Ej. COR-2026-001"
+                 style="width:100%; padding:10px 14px; border:1px solid #cfdccb; border-radius:8px; font-size:13px; outline:none; box-sizing:border-box;"
+                 onfocus="this.style.borderColor='#2B5424'; this.style.boxShadow='0 0 0 3px rgba(43,84,36,0.15)'"
+                 onblur="this.style.borderColor='#cfdccb'; this.style.boxShadow='none'">
         </div>
         <div>
-          <label style="font-size:12px; font-weight:600; color:#334155; display:block; margin-bottom:6px;">Institución Educativa *</label>
+          <label style="font-size:12px; font-weight:600; color:#2B5424; display:block; margin-bottom:6px;">Institución Educativa *</label>
 
-          <!-- Selector sobrio y profesional acorde a los campos del formulario -->
+          <!-- Selector de institución -->
           <div (click)="abrirModalSeleccionarInstitucion()"
-               style="width: 100%; min-height: 38px; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; background: #ffffff; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 8px; box-sizing: border-box; transition: border-color 0.15s ease;"
-               onmouseover="this.style.borderColor='#94a3b8'"
-               onmouseout="this.style.borderColor='#cbd5e1'"
+               style="width: 100%; min-height: 38px; padding: 8px 12px; border: 1px solid #cfdccb; border-radius: 8px; background: #ffffff; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 8px; box-sizing: border-box; transition: border-color 0.15s ease;"
+               onmouseover="this.style.borderColor='#2B5424'"
+               onmouseout="this.style.borderColor='#cfdccb'"
                title="Haz clic para seleccionar la institución">
 
-            <span *ngIf="contratoActual.institucion" style="font-size: 13px; font-weight: 600; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;">
+            <span *ngIf="contratoActual.institucion" style="font-size: 13px; font-weight: 600; color: #2B5424; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;">
               {{ contratoActual.institucion }}
             </span>
             <span *ngIf="!contratoActual.institucion" style="font-size: 12px; color: #94a3b8; flex: 1;">
@@ -328,22 +360,22 @@
 
             <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
               <button *ngIf="contratoActual.institucion" type="button" (click)="deseleccionarInstitucion($event)" style="background: none; border: none; font-size: 13px; color: #94a3b8; cursor: pointer; padding: 0 3px; line-height: 1;" title="Quitar selección">✕</button>
-              <span style="font-size: 11px; color: #64748b; line-height: 1;">▾</span>
+              <span style="font-size: 11px; color: #2B5424; line-height: 1;">▾</span>
             </div>
           </div>
 
           <!-- Si la institución no está en la lista (por compatibilidad previa), permitir escribirla -->
           <div *ngIf="instituciones.length === 0" style="margin-top:6px;">
-            <input type="text" [(ngModel)]="contratoActual.institucion" placeholder="O escribe el nombre de la institución..." style="width:100%; padding:8px 12px; border:1px dashed #cbd5e1; border-radius:6px; font-size:12px; outline:none; box-sizing:border-box;">
+            <input type="text" [(ngModel)]="contratoActual.institucion" placeholder="O escribe el nombre de la institución..." style="width:100%; padding:8px 12px; border:1px dashed #cfdccb; border-radius:6px; font-size:12px; outline:none; box-sizing:border-box;">
           </div>
 
           <!-- Previsualización de sedes vinculadas a la institución seleccionada -->
-          <div *ngIf="contratoActual.institucion" style="margin-top:10px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px;">
+          <div *ngIf="contratoActual.institucion" style="margin-top:10px; background:#f3f7f1; border:1px solid #dbe6d7; border-radius:8px; padding:10px 12px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-              <span style="font-size:11px; font-weight:700; color:#334155;">SEDES VINCULADAS ({{ sedesDeInstitucionSeleccionada.length }})</span>
+              <span style="font-size:11px; font-weight:700; color:#2B5424;">SEDES VINCULADAS ({{ sedesDeInstitucionSeleccionada.length }})</span>
             </div>
             <div *ngIf="sedesDeInstitucionSeleccionada.length > 0" style="display:flex; flex-wrap:wrap; gap:6px;">
-              <span *ngFor="let s of sedesDeInstitucionSeleccionada" style="background:#fef3c7; color:#92400e; font-size:11px; font-weight:600; padding:2px 8px; border-radius:4px; border:1px solid #fde68a;">
+              <span *ngFor="let s of sedesDeInstitucionSeleccionada" style="background:#2B5424; color:#ffffff; font-size:11px; font-weight:600; padding:2px 8px; border-radius:4px;">
                 {{ s.nombre_sede }}
               </span>
             </div>
@@ -353,7 +385,7 @@
           </div>
         </div>
         <div>
-          <label style="font-size:12px; font-weight:600; color:#334155; display:block; margin-bottom:6px;">Zona</label>
+          <label style="font-size:12px; font-weight:600; color:#2B5424; display:block; margin-bottom:6px;">Zona</label>
           <app-custom-select
             [options]="opcionesZona"
             [(ngModel)]="contratoActual.zona"
@@ -363,28 +395,42 @@
         </div>
         <div style="display:flex; gap:12px;">
           <div style="flex:1;">
-            <label style="font-size:12px; font-weight:600; color:#334155; display:block; margin-bottom:6px;">Fecha Inicio</label>
-            <input type="date" [(ngModel)]="contratoActual.fechaInicio" style="width:100%; padding:10px 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px; outline:none; box-sizing:border-box;">
+            <label style="font-size:12px; font-weight:600; color:#2B5424; display:block; margin-bottom:6px;">Fecha Inicio</label>
+            <input type="date" [(ngModel)]="contratoActual.fechaInicio"
+                   style="width:100%; padding:10px 14px; border:1px solid #cfdccb; border-radius:8px; font-size:13px; outline:none; box-sizing:border-box;"
+                   onfocus="this.style.borderColor='#2B5424'; this.style.boxShadow='0 0 0 3px rgba(43,84,36,0.15)'"
+                   onblur="this.style.borderColor='#cfdccb'; this.style.boxShadow='none'">
           </div>
           <div style="flex:1;">
-            <label style="font-size:12px; font-weight:600; color:#334155; display:block; margin-bottom:6px;">Fecha Fin</label>
-            <input type="date" [(ngModel)]="contratoActual.fechaFin" style="width:100%; padding:10px 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px; outline:none; box-sizing:border-box;">
+            <label style="font-size:12px; font-weight:600; color:#2B5424; display:block; margin-bottom:6px;">Fecha Fin</label>
+            <input type="date" [(ngModel)]="contratoActual.fechaFin"
+                   style="width:100%; padding:10px 14px; border:1px solid #cfdccb; border-radius:8px; font-size:13px; outline:none; box-sizing:border-box;"
+                   onfocus="this.style.borderColor='#2B5424'; this.style.boxShadow='0 0 0 3px rgba(43,84,36,0.15)'"
+                   onblur="this.style.borderColor='#cfdccb'; this.style.boxShadow='none'">
           </div>
         </div>
         <div>
-          <label style="font-size:12px; font-weight:600; color:#334155; display:block; margin-bottom:6px;">Estado</label>
+          <label style="font-size:12px; font-weight:600; color:#2B5424; display:block; margin-bottom:6px;">Estado</label>
           <label style="position: relative; display: inline-flex; cursor: pointer; align-items: center; margin-top: 4px;">
             <input type="checkbox" [checked]="contratoActual.estado === 'Activo'" (change)="contratoActual.estado = $event.target.checked ? 'Activo' : 'Inactivo'" style="opacity: 0; width: 0; height: 0; position: absolute;">
-            <div style="width: 36px; height: 20px; background-color: {{ contratoActual.estado === 'Activo' ? '#0f172a' : '#e2e8f0' }}; border-radius: 9999px; position: relative; transition: background-color 0.2s;">
-              <div style="width: 16px; height: 16px; background-color: #ffffff; border-radius: 50%; position: absolute; top: 2px; left: {{ contratoActual.estado === 'Activo' ? '18px' : '2px' }}; transition: left 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.1);"></div>
+            <div [style.background-color]="contratoActual.estado === 'Activo' ? '#2B5424' : '#e2e8f0'"
+                 style="width: 36px; height: 20px; border-radius: 9999px; position: relative; transition: background-color 0.2s;">
+              <div [style.left]="contratoActual.estado === 'Activo' ? '18px' : '2px'"
+                   [style.background-color]="contratoActual.estado === 'Activo' ? '#F5B81F' : '#ffffff'"
+                   style="width: 16px; height: 16px; border-radius: 50%; position: absolute; top: 2px; transition: left 0.2s, background-color 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.15);"></div>
             </div>
-            <span style="margin-left: 12px; font-size: 13px; font-weight: 600; color: #334155;">{{ contratoActual.estado }}</span>
+            <span style="margin-left: 12px; font-size: 13px; font-weight: 600; color: #2B5424;">{{ contratoActual.estado }}</span>
           </label>
         </div>
       </div>
-      <div style="display:flex; justify-content:flex-end; gap:12px; border-top:1px solid #f1f5f9; padding-top:16px;">
-        <button type="button" (click)="cerrarModalContrato()" style="background:#ffffff; border:1px solid #cbd5e1; color:#334155; padding:9px 18px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer;">Cancelar</button>
-        <button type="button" (click)="guardarContrato()" style="background:#0f172a; color:#ffffff; border:none; padding:9px 18px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer;">Guardar Registro</button>
+
+      <!-- Pie del modal -->
+      <div style="display:flex; justify-content:flex-end; gap:12px; border-top:1px solid #e6eee3; padding:16px 24px;">
+        <button type="button" (click)="cerrarModalContrato()" style="background:#ffffff; border:1px solid #cfdccb; color:#2B5424; padding:9px 18px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer;">Cancelar</button>
+        <button type="button" (click)="guardarContrato()"
+                style="background:#2B5424; color:#ffffff; border:none; padding:9px 18px; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; box-shadow:0 2px 6px rgba(43,84,36,0.3);"
+                onmouseover="this.style.background='#1f3f1a'"
+                onmouseout="this.style.background='#2B5424'">Guardar Registro</button>
       </div>
     </div>
   </div>
@@ -395,20 +441,20 @@
        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); display: flex; justify-content: center; align-items: center; z-index: 2000; padding: 20px; box-sizing: border-box;">
 
     <div (click)="$event.stopPropagation()"
-         style="background: #ffffff; width: 560px; max-width: 95%; max-height: 85vh; border-radius: 16px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); display: flex; flex-direction: column; overflow: hidden; font-family: inherit;">
+         style="background: #ffffff; width: 560px; max-width: 95%; max-height: 85vh; border-radius: 16px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15); display: flex; flex-direction: column; overflow: hidden; font-family: inherit;">
 
-      <!-- Cabecera del modal -->
-      <div style="padding: 16px 20px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
+      <!-- Cabecera verde -->
+      <div style="padding: 16px 20px; background: #2B5424; display: flex; justify-content: space-between; align-items: center;">
         <div>
-          <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #0f172a;">Seleccionar institución educativa</h3>
-          <p style="margin: 3px 0 0; font-size: 12px; color: #64748b;">Elige una institución para vincularla a este contrato.</p>
+          <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #ffffff;">Seleccionar institución educativa</h3>
+          <p style="margin: 3px 0 0; font-size: 12px; color: rgba(255,255,255,0.8);">Elige una institución para vincularla a este contrato.</p>
         </div>
-        <button type="button" (click)="cerrarModalSeleccionarInstitucion()" style="background: none; border: none; font-size: 18px; color: #64748b; cursor: pointer; padding: 4px;">✕</button>
+        <button type="button" (click)="cerrarModalSeleccionarInstitucion()" style="background: rgba(255,255,255,0.15); border: none; width: 28px; height: 28px; border-radius: 50%; font-size: 14px; color: #ffffff; cursor: pointer;">✕</button>
       </div>
 
       <!-- Buscador -->
-      <div style="padding: 12px 20px; border-bottom: 1px solid #f1f5f9; background: #f8fafc;">
-        <div style="display: flex; align-items: center; gap: 8px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px 12px;">
+      <div style="padding: 12px 20px; border-bottom: 1px solid #e6eee3; background: #f3f7f1;">
+        <div style="display: flex; align-items: center; gap: 8px; background: #ffffff; border: 1px solid #cfdccb; border-radius: 8px; padding: 8px 12px;">
           <input type="text" [(ngModel)]="busquedaInstitucionModal" placeholder="Buscar por nombre o NIT..."
                  style="border: none; background: transparent; outline: none; font-size: 13px; width: 100%; color: #0f172a; font-family: inherit;">
           <span *ngIf="busquedaInstitucionModal" (click)="busquedaInstitucionModal = ''" style="cursor: pointer; color: #94a3b8; font-size: 14px;">✕</span>
@@ -421,26 +467,26 @@
              (click)="marcarInstitucion(inst)"
              (dblclick)="seleccionarInstitucionDesdeModal(inst)"
              style="padding: 12px 14px; border: 1px solid #e2e8f0; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: all 0.15s; background: #ffffff;"
-             [style.border-color]="(institucionTemporalSeleccionada?.nombre_institucion === inst.nombre_institucion || contratoActual.institucion === inst.nombre_institucion) ? '#fac94b' : '#e2e8f0'"
-             [style.background]="(institucionTemporalSeleccionada?.nombre_institucion === inst.nombre_institucion || contratoActual.institucion === inst.nombre_institucion) ? '#fffdf0' : '#ffffff'">
+             [style.border-color]="(institucionTemporalSeleccionada?.nombre_institucion === inst.nombre_institucion || contratoActual.institucion === inst.nombre_institucion) ? '#2B5424' : '#e2e8f0'"
+             [style.background]="(institucionTemporalSeleccionada?.nombre_institucion === inst.nombre_institucion || contratoActual.institucion === inst.nombre_institucion) ? '#f3f7f1' : '#ffffff'">
           <div>
             <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-              <span style="font-weight: 700; font-size: 13px; color: #0f172a;">{{ inst.nombre_institucion }}</span>
-              <span style="font-size: 11px; font-weight: 600; color: #475569; background: #f1f5f9; padding: 2px 6px; border-radius: 4px;">NIT: {{ inst.nit }}</span>
+              <span style="font-weight: 700; font-size: 13px; color: #2B5424;">{{ inst.nombre_institucion }}</span>
+              <span style="font-size: 11px; font-weight: 600; color: #2B5424; background: #e6eee3; padding: 2px 6px; border-radius: 4px;">NIT: {{ inst.nit }}</span>
             </div>
             <div style="font-size: 11px; color: #64748b; margin-top: 3px; display: flex; gap: 10px; flex-wrap: wrap;">
               <span *ngIf="inst.representante_legal">Rep: {{ inst.representante_legal }}</span>
               <span *ngIf="inst.telefono">Tel: {{ inst.telefono }}</span>
-              <span style="color: #ca8a04; font-weight: 600;">{{ obtenerSedesDeInst(inst).length }} sedes</span>
+              <span style="color: #b7860a; font-weight: 700;">{{ obtenerSedesDeInst(inst).length }} sedes</span>
             </div>
           </div>
 
           <button type="button" (click)="seleccionarInstitucionDesdeModal(inst); $event.stopPropagation()"
                   style="border-radius: 8px; font-size: 12px; padding: 7px 16px; cursor: pointer; transition: all 0.15s; white-space: nowrap;"
-                  [style.background]="(institucionTemporalSeleccionada?.nombre_institucion === inst.nombre_institucion || contratoActual.institucion === inst.nombre_institucion) ? '#fac94b' : '#ffffff'"
-                  [style.color]="(institucionTemporalSeleccionada?.nombre_institucion === inst.nombre_institucion || contratoActual.institucion === inst.nombre_institucion) ? '#000000' : '#334155'"
-                  [style.font-weight]="(institucionTemporalSeleccionada?.nombre_institucion === inst.nombre_institucion || contratoActual.institucion === inst.nombre_institucion) ? '700' : '600'"
-                  [style.border]="(institucionTemporalSeleccionada?.nombre_institucion === inst.nombre_institucion || contratoActual.institucion === inst.nombre_institucion) ? '1px solid #eab308' : '1px solid #cbd5e1'">
+                  [style.background]="(institucionTemporalSeleccionada?.nombre_institucion === inst.nombre_institucion || contratoActual.institucion === inst.nombre_institucion) ? '#F5B81F' : '#ffffff'"
+                  [style.color]="(institucionTemporalSeleccionada?.nombre_institucion === inst.nombre_institucion || contratoActual.institucion === inst.nombre_institucion) ? '#1f3f1a' : '#2B5424'"
+                  [style.font-weight]="(institucionTemporalSeleccionada?.nombre_institucion === inst.nombre_institucion || contratoActual.institucion === inst.nombre_institucion) ? '800' : '600'"
+                  [style.border]="(institucionTemporalSeleccionada?.nombre_institucion === inst.nombre_institucion || contratoActual.institucion === inst.nombre_institucion) ? '1px solid #F5B81F' : '1px solid #cfdccb'">
             {{ (institucionTemporalSeleccionada?.nombre_institucion === inst.nombre_institucion || contratoActual.institucion === inst.nombre_institucion) ? 'Seleccionada ✓' : 'Seleccionar' }}
           </button>
         </div>
@@ -451,18 +497,18 @@
       </div>
 
       <!-- Pie del modal -->
-      <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #f1f5f9; padding: 14px 20px; background: #ffffff;">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e6eee3; padding: 14px 20px; background: #ffffff;">
         <span style="font-size: 12px; color: #64748b;">
           {{ institucionesFiltradasModal.length }} instituciones disponibles
         </span>
         <div style="display: flex; gap: 8px;">
           <button type="button" (click)="cerrarModalSeleccionarInstitucion()"
-                  style="background: #ffffff; border: 1px solid #cbd5e1; color: #334155; padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer;">
+                  style="background: #ffffff; border: 1px solid #cfdccb; color: #2B5424; padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer;">
             Cancelar
           </button>
           <button type="button" (click)="confirmarSeleccionInstitucion()"
                   [disabled]="!institucionTemporalSeleccionada && !contratoActual.institucion"
-                  style="background: #fac94b; border: none; color: #000000; font-weight: 700; padding: 8px 18px; border-radius: 8px; font-size: 12px; cursor: pointer; box-shadow: 0 1px 3px rgba(250, 201, 75, 0.3);"
+                  style="background: #2B5424; border: none; color: #ffffff; font-weight: 700; padding: 8px 18px; border-radius: 8px; font-size: 12px; cursor: pointer; box-shadow: 0 2px 6px rgba(43, 84, 36, 0.3);"
                   [style.opacity]="(institucionTemporalSeleccionada || contratoActual.institucion) ? '1' : '0.5'"
                   [style.cursor]="(institucionTemporalSeleccionada || contratoActual.institucion) ? 'pointer' : 'not-allowed'">
             Guardar

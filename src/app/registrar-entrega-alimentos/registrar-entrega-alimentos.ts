@@ -123,6 +123,7 @@ type FiltroMercado = 'Todos' | 'Granos' | 'Perecederos';
   styleUrls: ['./registrar-entrega-alimentos.css'],
 })
 export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
+  // Vista integrada con fondo dinámico del layout SIRAE
 
   // ===================== CATÁLOGOS =====================
   ingredientes: Opcion[] = [];
