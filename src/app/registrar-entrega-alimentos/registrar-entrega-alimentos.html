@@ -895,7 +895,7 @@ input[type="date"].campo::-webkit-calendar-picker-indicator:hover {
 
                   <div class="pc-foto">
                     <span class="pc-tipo" [ngClass]="esPerecedero(producto) ? 'peco' : 'nope'">{{ nombreTipo(producto) }}</span>
-                    <ng-container *ngIf="imagenDe(producto.nombre) as src; else sinFotoProd">
+                    <ng-container *ngIf="imagenDe(producto.nombre, producto) as src; else sinFotoProd">
                       <img #fotoProducto [src]="src" [alt]="nombreMostrado(producto.nombre)" loading="lazy" draggable="false"
                         (error)="fotoProducto.hidden = true; iconoFotoProducto.hidden = false">
                       <span #iconoFotoProducto hidden class="pc-sin-foto" aria-hidden="true">{{ emojiDe(producto.nombre) }}</span>

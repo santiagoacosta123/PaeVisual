@@ -333,8 +333,16 @@
                   </span>
                 </ng-container>
 
+                <!-- Celda de Imagen (Cloudinary / Foto de Ingrediente) -->
+                <ng-container *ngIf="!primer && campo.type === 'image'">
+                  <div *ngIf="valorCelda(item, campo) as imgUrl" style="width:38px; height:38px; border-radius:8px; overflow:hidden; border:1px solid #e2e8f0; display:inline-flex; align-items:center; justify-content:center; background:#f8fafc; box-shadow:0 1px 2px rgba(0,0,0,0.05);">
+                    <img [src]="imgUrl" [alt]="item.nombre_ingrediente || item.nombre" style="width:100%; height:100%; object-fit:cover;" (error)="$any($event.target).style.display='none'">
+                  </div>
+                  <span *ngIf="!valorCelda(item, campo)" style="font-size:12px; color:#94a3b8; font-style:italic;">Sin imagen</span>
+                </ng-container>
+
                 <!-- Resto de celdas estándar -->
-                <span *ngIf="!primer && tabActual !== 'menus' && !esCampoEstado(campo)" class="bd-cell-text" style="display:block; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" [title]="valorCelda(item, campo)">
+                <span *ngIf="!primer && tabActual !== 'menus' && !esCampoEstado(campo) && campo.type !== 'image'" class="bd-cell-text" style="display:block; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" [title]="valorCelda(item, campo)">
                   {{ valorCelda(item, campo) }}
                 </span>
               </td>

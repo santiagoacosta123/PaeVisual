@@ -62,6 +62,7 @@ export interface InventarioCentralItem {
   ingrediente_nombre: string;
   categoria_nombre: string;
   tipo_conservacion: string;
+  imagen_ingrediente?: string | null;
   cantidad_disponible: number;
   stock_minimo: number;
   id_unidad_medida?: number;

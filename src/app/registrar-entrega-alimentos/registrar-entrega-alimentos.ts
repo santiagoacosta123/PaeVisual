@@ -40,6 +40,7 @@ interface FilaEntrega {
 interface ProductoCatalogo {
   id: number; nombre: string; categoria: string; unidad: string;
   idTipoMercado: number | null; tipoMercado?: string;
+  imagen?: string | null;
 }
 interface GrupoPagina { nombre: string; emoji: string; total: number; productos: ProductoCatalogo[]; }
 interface CategoriaOpcion { nombre: string; emoji: string; total: number; }
@@ -131,6 +132,8 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
   private unidadesInventario = new Map<number, string>();
   private categoriasInventario = new Map<number, string>();
   private tiposInventario = new Map<number, string>();
+  private imagenesInventario = new Map<number, string>();
+  private imagenesPorNombre = new Map<string, string>();
 
   private readonly tiposBase: Opcion[] = [{ id: 1, nombre: 'Perecedero' }, { id: 2, nombre: 'No perecedero' }];
   private readonly unidadPorDefecto: Record<string, string> = { Aceite: 'Litros', Leche: 'Litros', Huevos: 'Unidades' };
@@ -453,27 +456,51 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     this.unidadesInventario.clear();
     this.categoriasInventario.clear();
     this.tiposInventario.clear();
+    this.imagenesInventario.clear();
+    this.imagenesPorNombre.clear();
     forkJoin([
       this.facturasCompraService.getInventarioCentral(),
       this.entregasService.cargarTiposMercado(),
+      this.http.get<any>(`${environment.apiUrl}/ingredientes/`).pipe(
+        catchError(() => of([]))
+      ),
     ]).subscribe({
-      next: ([inventarioCentral, tiposMercado]: readonly [InventarioCentralItem[], TipoMercadoOpcion[]]) => {
-        this.saldosInventario = new Map(inventarioCentral.map(item => [
-          item.id_ingrediente,
-          Number(item.cantidad_disponible) || 0,
-        ] as const));
-        this.unidadesInventario = new Map(inventarioCentral.map(item => [
-          item.id_ingrediente,
-          item.unidad_medida_abreviatura || item.unidad_medida_nombre || 'Kg',
-        ] as const));
-        this.categoriasInventario = new Map(inventarioCentral.map(item => [
-          item.id_ingrediente,
-          item.categoria_nombre || 'General',
-        ] as const));
-        this.tiposInventario = new Map(inventarioCentral.map(item => [
-          item.id_ingrediente,
-          this.tipoConservacionVisible(item.tipo_conservacion),
-        ] as const));
+      next: ([inventarioCentral, tiposMercado, ingredientesRaw]: readonly [InventarioCentralItem[], TipoMercadoOpcion[], any]) => {
+        // 1. Guardar imágenes de ingredientes cargadas directamente del endpoint general (Cloudinary)
+        const listaIngredientes: any[] = Array.isArray(ingredientesRaw)
+          ? ingredientesRaw
+          : (ingredientesRaw?.results ?? ingredientesRaw?.data ?? []);
+        for (const ing of listaIngredientes) {
+          const id = Number(ing.id_ingrediente ?? ing.id);
+          const foto = typeof ing.imagen_ingrediente === 'string' && ing.imagen_ingrediente.trim()
+            ? ing.imagen_ingrediente.trim()
+            : (typeof ing.imagen === 'string' ? ing.imagen.trim() : '');
+          const nom = (ing.nombre_ingrediente || ing.nombre || '').trim();
+          if (id && foto) {
+            this.imagenesInventario.set(id, foto);
+          }
+          if (nom && foto) {
+            this.imagenesPorNombre.set(this.norm(nom), foto);
+            this.imagenesPorNombre.set(this.norm(nom.replace(/[()]/g, '')), foto);
+          }
+        }
+
+        // 2. Mapear inventario central (cantidades, unidades, tipos y posibles fotos)
+        for (const item of inventarioCentral) {
+          const id = item.id_ingrediente;
+          this.saldosInventario.set(id, Number(item.cantidad_disponible) || 0);
+          this.unidadesInventario.set(id, item.unidad_medida_abreviatura || item.unidad_medida_nombre || 'Kg');
+          this.categoriasInventario.set(id, item.categoria_nombre || 'General');
+          this.tiposInventario.set(id, this.tipoConservacionVisible(item.tipo_conservacion));
+          if (item.imagen_ingrediente && item.imagen_ingrediente.trim()) {
+            this.imagenesInventario.set(id, item.imagen_ingrediente.trim());
+            if (item.ingrediente_nombre) {
+              this.imagenesPorNombre.set(this.norm(item.ingrediente_nombre), item.imagen_ingrediente.trim());
+              this.imagenesPorNombre.set(this.norm(item.ingrediente_nombre.replace(/[()]/g, '')), item.imagen_ingrediente.trim());
+            }
+          }
+        }
+
         this.ingredientes = inventarioCentral.map(item => ({
           id: item.id_ingrediente,
           nombre: item.ingrediente_nombre || `Ingrediente ${item.id_ingrediente}`,
@@ -1071,10 +1098,20 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     ['deslactosad', 'deslatosada.png'], ['leche', 'leche.png'], ['queso', 'queso.png'],
   ];
 
-  // Imagen desde public/ (null = se usa el emoji). Busca por el nombre ORIGINAL del catálogo.
-  imagenDe(nombre: string): string | null {
+  // Imagen desde Cloudinary o desde public/ (null = se usa el emoji).
+  imagenDe(nombre: string, producto?: ProductoCatalogo | null): string | null {
+    if (producto?.imagen && producto.imagen.trim()) {
+      return producto.imagen.trim();
+    }
     const n = this.norm(nombre);
-    const hallada = this.imagenesProducto.find(([clave]) => n.includes(clave));
+    const nLimpio = this.norm((nombre || '').replace(/[()]/g, ''));
+    const imgCloudinary = this.imagenesPorNombre.get(n)
+      ?? this.imagenesPorNombre.get(nLimpio)
+      ?? (producto?.id != null ? this.imagenesInventario.get(producto.id) : null);
+    if (imgCloudinary && imgCloudinary.trim()) {
+      return imgCloudinary.trim();
+    }
+    const hallada = this.imagenesProducto.find(([clave]) => n.includes(clave) || nLimpio.includes(clave));
     return hallada ? '/' + hallada[1] : null;
   }
 
@@ -1147,7 +1184,13 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       const ultima = this.ultimaEntradaDe(ing.id);
       const categoria = this.categoriasInventario.get(ing.id) ?? this.categoriaDe(ing.nombre);
       const tipoMercado = this.tiposInventario.get(ing.id) || undefined;
-      const producto = {
+      const n = this.norm(ing.nombre);
+      const nLimpio = this.norm((ing.nombre || '').replace(/[()]/g, ''));
+      const imagen = this.imagenesInventario.get(ing.id)
+        ?? this.imagenesPorNombre.get(n)
+        ?? this.imagenesPorNombre.get(nLimpio)
+        ?? null;
+      const producto: ProductoCatalogo = {
         id: ing.id,
         nombre: ing.nombre,
         categoria,
@@ -1155,12 +1198,14 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
           ?? (ultima ? this.normalizarUnidad(ultima.unidad) : (this.unidadPorDefecto[ing.nombre] ?? 'Kg')),
         idTipoMercado: null,
         tipoMercado,
+        imagen,
       };
 
       return {
         ...producto,
         idTipoMercado: this.idTipoMercadoDeProducto(producto),
         tipoMercado,
+        imagen,
       };
     }).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
   }
