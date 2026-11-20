@@ -1,345 +1,293 @@
-<div style="display:flex; flex-direction:column; gap:18px; position:relative; font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;">
-      
+<div class="relative flex w-full flex-col gap-6" style="font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;">
+
   <!-- Contenido Dinámico -->
   <div [ngSwitch]="pestanaActiva">
-    
-    <!-- CONTRATOS -->
-    <div *ngSwitchCase="'contratos'" style="display:flex; flex-direction:column; gap:20px;">
 
-      <!-- ===================== CABECERA PRINCIPAL ===================== -->
-      <header style="width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
-        <div>
-          <span style="font-size: 11px; font-weight: 800; color: #ca8a04; letter-spacing: 0.8px; text-transform: uppercase; display: block; margin-bottom: 2px;">ADMINISTRACIÓN CONTRACTUAL</span>
-          <h1 style="margin: 0; color: #0f172a; font-size: 26px; font-weight: 800; letter-spacing: -0.5px;">Contratos PAE</h1>
-          <p style="margin: 4px 0 0; color: #64748b; font-size: 13px;">Consulta, crea y controla la vigencia de los contratos de alimentación escolar.</p>
+    <!-- CONTRATOS -->
+    <div *ngSwitchCase="'contratos'" class="flex flex-col gap-6">
+
+      <!-- ===================== TARJETA SUPERIOR (igual a Facturas de Compra) ===================== -->
+      <header
+        class="flex w-full flex-col justify-between gap-4 sm:flex-row sm:items-center"
+        style="background: #fffdf2; border: 1px solid #f6edc3; border-radius: 20px; padding: 22px 24px;">
+        <div class="min-w-0">
+          <h1 class="m-0 font-extrabold tracking-tight" style="font-size: 21px; line-height: 1.2; color: #0f172a;">Contratos PAE</h1>
+          <p class="m-0" style="margin-top: 4px; font-size: 13.5px; color: #64748b;">Consulta, crea y controla la vigencia de los contratos de alimentación escolar.</p>
         </div>
 
-        <button type="button" (click)="abrirModalGrandeContrato('nuevo')" style="height: 42px; padding: 0 20px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: none; border-radius: 8px; background: #fac94b; color: #000000; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; box-shadow: 0 2px 6px rgba(250, 201, 75, 0.3); transition: all 0.2s ease;">
-          <span class="material-symbols-outlined" style="font-size: 18px; color: #000000;">add</span>
+        <button
+          type="button"
+          (click)="abrirModalGrandeContrato('nuevo')"
+          class="inline-flex cursor-pointer items-center justify-center whitespace-nowrap border-0 focus:outline-none"
+          style="height: 40px; padding: 0 24px; gap: 8px; border-radius: 999px; background: #fdc84f; color: #0f172a; font-size: 13px; font-weight: 700; box-shadow: 0 3px 8px rgba(253, 200, 79, 0.45); transition: background 0.15s;"
+          onmouseover="this.style.background='#f7bd33'"
+          onmouseout="this.style.background='#fdc84f'">
+          <span class="material-symbols-outlined" aria-hidden="true" style="font-size: 18px;">add</span>
           <span>Nuevo contrato</span>
         </button>
       </header>
 
-      <!-- Banner de Error al Cargar Contratos -->
-      <div *ngIf="errorCargaContratos" style="background:#fef2f2; border:1px solid #fecaca; border-left:5px solid #ef4444; border-radius:12px; padding:14px 18px; display:flex; align-items:center; justify-content:space-between; gap:14px; box-shadow:0 2px 8px rgba(239,68,68,0.06);">
-        <div style="display:flex; align-items:center; gap:12px;">
-          <span class="material-symbols-outlined" style="color:#dc2626; font-size:24px; flex-shrink:0;">error</span>
-          <div>
-            <strong style="color:#991b1b; font-size:13px; font-weight:700; display:block;">Error al cargar los contratos</strong>
-            <span style="color:#b91c1c; font-size:12px;">{{ errorCargaContratos }}</span>
-          </div>
-        </div>
-        <button type="button" (click)="cargarContratos()" style="background:#dc2626; color:#ffffff; border:none; padding:7px 16px; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap; box-shadow:0 2px 6px rgba(220,38,38,0.2);">
-          Reintentar
-        </button>
-      </div>
+      <!-- ===================== LISTADO DE CONTRATOS ===================== -->
+      <section aria-label="Listado de contratos" class="flex flex-col gap-5 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
 
-      <!-- Banner de Alerta de Contratos Próximos a Vencer -->
-      <div *ngIf="totalContratosProximosVencer > 0" style="background:#fffbeb; border:1px solid #fef08a; border-radius:12px; padding:14px 20px; display:flex; align-items:center; justify-content:space-between; gap:14px; box-shadow:0 1px 3px rgba(0,0,0,0.02);">
-        <div style="display:flex; align-items:center; gap:14px;">
-          <div style="width: 36px; height: 36px; border-radius: 8px; background: #fef3c7; border: 1px solid #fde68a; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-            <span class="material-symbols-outlined" style="color:#d97706; font-size:20px;">warning</span>
+        <!-- Título de la tarjeta -->
+        <div class="flex flex-wrap items-center gap-3">
+          <h2 class="m-0 text-lg font-extrabold text-slate-900">Contratos registrados</h2>
+          <span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-bold text-slate-600">
+            {{ contratos.length }} {{ contratos.length === 1 ? 'contrato' : 'contratos' }}
+          </span>
+        </div>
+
+        <!-- Aviso: error al cargar contratos -->
+        <div *ngIf="errorCargaContratos" role="alert"
+             class="relative flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-rose-200 bg-rose-50 py-4 pl-8 pr-5">
+          <span class="absolute bottom-3.5 left-3.5 top-3.5 w-1 rounded-full bg-rose-500"></span>
+          <div class="min-w-0">
+            <p class="m-0 text-sm font-extrabold text-rose-800">Error al cargar los contratos</p>
+            <p class="mb-0 mt-0.5 text-xs text-rose-700">{{ errorCargaContratos }}</p>
           </div>
-          <div>
-            <strong style="color:#713f12; font-size:13px; font-weight:700; display:block;">
+          <button type="button" (click)="cargarContratos()"
+                  class="h-9 cursor-pointer whitespace-nowrap rounded-xl border-0 bg-rose-600 px-4 text-xs font-bold text-white shadow-sm transition hover:bg-rose-700">
+            Reintentar
+          </button>
+        </div>
+
+        <!-- Aviso: contratos próximos a vencer -->
+        <div *ngIf="totalContratosProximosVencer > 0"
+             class="relative flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50 py-4 pl-8 pr-5">
+          <span class="absolute bottom-3.5 left-3.5 top-3.5 w-1 rounded-full bg-amber-500"></span>
+          <div class="min-w-0">
+            <p class="m-0 text-sm font-extrabold text-amber-900">
               {{ totalContratosProximosVencer }} contrato{{ totalContratosProximosVencer > 1 ? 's' : '' }} próximo{{ totalContratosProximosVencer > 1 ? 's' : '' }} a vencer
-            </strong>
-            <span style="color:#854d0e; font-size:12px;">
+            </p>
+            <p class="mb-0 mt-0.5 text-xs text-amber-800">
               {{ primerContratoProximo?.codigo }} • {{ formatearFecha(primerContratoProximo?.fechaFin) }}
-            </span>
+            </p>
           </div>
-        </div>
-        <button type="button" (click)="cambiarFiltroVigencia('PROXIMO_VENCER')" style="background:none; border:none; color:#713f12; font-weight:700; font-size:12px; text-decoration:underline; cursor:pointer; padding:4px 8px; white-space:nowrap;">
-          Gestionar vigencia
-        </button>
-      </div>
-
-      <!-- ===================== TARJETAS KPI ===================== -->
-      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:16px;">
-        <!-- 1. Total Contratos -->
-        <div (click)="cambiarFiltroVigencia('TODOS')"
-             style="cursor:pointer; padding:16px 20px; border-radius:12px; border:1px solid #e2e8f0; background:#ffffff; transition:all 0.15s; display:flex; justify-content:space-between; align-items:center; box-shadow:0 1px 2px rgba(0,0,0,0.02);"
-             [style.border-color]="filtroEstadoVigencia === 'TODOS' ? '#0f172a' : '#e2e8f0'">
-          <div>
-            <span style="font-size:12px; font-weight:500; color:#64748b; display:block;">Total contratos</span>
-            <div style="font-size:26px; font-weight:800; color:#0f172a; margin:4px 0 2px 0;">{{ contratos.length }}</div>
-            <span style="font-size:11px; color:#94a3b8;">Registrados en el sistema</span>
-          </div>
-          <div style="width:38px; height:38px; border-radius:8px; background:#f1f5f9; display:flex; align-items:center; justify-content:center; color:#64748b;">
-            <span class="material-symbols-outlined" style="font-size:20px;">description</span>
-          </div>
+          <button type="button" (click)="cambiarFiltroVigencia('PROXIMO_VENCER')"
+                  class="h-9 cursor-pointer whitespace-nowrap rounded-xl border border-amber-300 bg-white px-4 text-xs font-bold text-amber-800 shadow-sm transition hover:bg-amber-100">
+            Gestionar vigencia
+          </button>
         </div>
 
-        <!-- 2. Contratos Activos -->
-        <div (click)="cambiarFiltroVigencia('ACTIVO')"
-             style="cursor:pointer; padding:16px 20px; border-radius:12px; border:1px solid #e2e8f0; background:#ffffff; transition:all 0.15s; display:flex; justify-content:space-between; align-items:center; box-shadow:0 1px 2px rgba(0,0,0,0.02);"
-             [style.border-color]="filtroEstadoVigencia === 'ACTIVO' ? '#10b981' : '#e2e8f0'">
-          <div>
-            <span style="font-size:12px; font-weight:500; color:#64748b; display:block;">Contratos activos</span>
-            <div style="font-size:26px; font-weight:800; color:#0f172a; margin:4px 0 2px 0;">{{ totalContratosActivos }}</div>
-            <span style="font-size:11px; color:#059669; font-weight:600;">Operación vigente</span>
-          </div>
-          <div style="width:38px; height:38px; border-radius:8px; background:#ecfdf5; border:1px solid #a7f3d0; display:flex; align-items:center; justify-content:center; color:#059669;">
-            <span class="material-symbols-outlined" style="font-size:20px;">check</span>
-          </div>
+        <!-- Buscador -->
+        <div class="relative flex w-full max-w-md items-center">
+          <input
+            type="text"
+            [(ngModel)]="filtroBusquedaContratos"
+            (ngModelChange)="paginaActual = 1"
+            placeholder="Buscar por contrato o colegio"
+            class="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 pr-10 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100">
+          <button *ngIf="filtroBusquedaContratos" type="button" (click)="limpiarBusquedaContratos()"
+                  class="absolute right-3 h-6 w-6 cursor-pointer rounded-full border-0 bg-slate-200 text-[11px] text-slate-600 hover:bg-slate-300"
+                  title="Borrar búsqueda">✕</button>
         </div>
 
-        <!-- 3. Próximos a Vencer -->
-        <div (click)="cambiarFiltroVigencia('PROXIMO_VENCER')"
-             style="cursor:pointer; padding:16px 20px; border-radius:12px; border:1px solid #e2e8f0; background:#ffffff; transition:all 0.15s; display:flex; justify-content:space-between; align-items:center; box-shadow:0 1px 2px rgba(0,0,0,0.02);"
-             [style.border-color]="filtroEstadoVigencia === 'PROXIMO_VENCER' ? '#f59e0b' : '#e2e8f0'">
-          <div>
-            <span style="font-size:12px; font-weight:500; color:#64748b; display:block;">Próximos a vencer</span>
-            <div style="font-size:26px; font-weight:800; color:#0f172a; margin:4px 0 2px 0;">{{ totalContratosProximosVencer }}</div>
-            <span style="font-size:11px; color:#b45309; font-weight:600;">En los próximos 30 días</span>
-          </div>
-          <div style="width:38px; height:38px; border-radius:8px; background:#fffbeb; border:1px solid #fef08a; display:flex; align-items:center; justify-content:center; color:#d97706;">
-            <span class="material-symbols-outlined" style="font-size:20px;">warning</span>
-          </div>
-        </div>
-      </div>
+        <!-- Pestañas de vigencia (con conteo) -->
+        <div class="flex flex-wrap items-center gap-1 border-b border-slate-200" role="tablist">
+          <button type="button" role="tab" (click)="cambiarFiltroVigencia('TODOS')"
+                  class="-mb-px inline-flex cursor-pointer items-center gap-2 border-0 border-b-2 bg-transparent px-4 py-2.5 text-xs font-bold transition"
+                  [ngClass]="filtroEstadoVigencia === 'TODOS' ? 'border-amber-500 text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-900'">
+            <span>Todos</span>
+            <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-extrabold text-slate-600">{{ contratos.length }}</span>
+          </button>
 
-      <!-- ===================== CONTENIDO / TABLA ===================== -->
-      <section style="width: 100%; margin: 0; background: #ffffff; border-radius: 12px; padding: 20px 24px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.02); display: flex; flex-direction: column; gap: 16px;">
+          <button type="button" role="tab" (click)="cambiarFiltroVigencia('ACTIVO')"
+                  class="-mb-px inline-flex cursor-pointer items-center gap-2 border-0 border-b-2 bg-transparent px-4 py-2.5 text-xs font-bold transition"
+                  [ngClass]="filtroEstadoVigencia === 'ACTIVO' ? 'border-amber-500 text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-900'">
+            <span>Activos</span>
+            <span class="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-extrabold text-emerald-700">{{ totalContratosActivos }}</span>
+          </button>
 
-        <!-- Barra de búsqueda y pestañas de filtro -->
-        <div style="display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;">
-          <!-- Buscador -->
-          <div style="display:flex; align-items:center; gap:8px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:8px 14px; min-width:300px; flex:1; max-width:440px;">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-            <input type="text" [(ngModel)]="filtroBusquedaContratos" (ngModelChange)="paginaActual = 1" placeholder="Buscar por contrato o colegio" style="border:none; background:transparent; outline:none; font-size:13px; width:100%; color:#0f172a; font-family: inherit;">
-            <button *ngIf="filtroBusquedaContratos" type="button" (click)="limpiarBusquedaContratos()" style="background:none; border:none; color:#94a3b8; font-size:14px; cursor:pointer; padding:0 2px;" title="Borrar búsqueda">✕</button>
-          </div>
+          <button type="button" role="tab" (click)="cambiarFiltroVigencia('PROXIMO_VENCER')"
+                  class="-mb-px inline-flex cursor-pointer items-center gap-2 border-0 border-b-2 bg-transparent px-4 py-2.5 text-xs font-bold transition"
+                  [ngClass]="filtroEstadoVigencia === 'PROXIMO_VENCER' ? 'border-amber-500 text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-900'">
+            <span>Por vencer</span>
+            <span class="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-extrabold text-amber-800">{{ totalContratosProximosVencer }}</span>
+          </button>
 
-          <!-- Pestañas de estado -->
-          <div style="display:flex; align-items:center; gap:4px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:3px;">
-            <button type="button" (click)="cambiarFiltroVigencia('TODOS')"
-                    style="border:none; padding:6px 14px; border-radius:8px; font-size:12px; cursor:pointer; transition:all 0.15s;"
-                    [style.background]="filtroEstadoVigencia === 'TODOS' ? '#0f172a' : 'transparent'"
-                    [style.color]="filtroEstadoVigencia === 'TODOS' ? '#ffffff' : '#64748b'"
-                    [style.font-weight]="filtroEstadoVigencia === 'TODOS' ? '700' : '600'">
-              Todos
-            </button>
-            <button type="button" (click)="cambiarFiltroVigencia('ACTIVO')"
-                    style="border:none; padding:6px 14px; border-radius:8px; font-size:12px; cursor:pointer; transition:all 0.15s;"
-                    [style.background]="filtroEstadoVigencia === 'ACTIVO' ? '#0f172a' : 'transparent'"
-                    [style.color]="filtroEstadoVigencia === 'ACTIVO' ? '#ffffff' : '#64748b'"
-                    [style.font-weight]="filtroEstadoVigencia === 'ACTIVO' ? '700' : '600'">
-              Activo
-            </button>
-            <button type="button" (click)="cambiarFiltroVigencia('INACTIVO')"
-                    style="border:none; padding:6px 14px; border-radius:8px; font-size:12px; cursor:pointer; transition:all 0.15s;"
-                    [style.background]="filtroEstadoVigencia === 'INACTIVO' ? '#0f172a' : 'transparent'"
-                    [style.color]="filtroEstadoVigencia === 'INACTIVO' ? '#ffffff' : '#64748b'"
-                    [style.font-weight]="filtroEstadoVigencia === 'INACTIVO' ? '700' : '600'">
-              Inactivo
-            </button>
-            <button type="button" (click)="cambiarFiltroVigencia('FINALIZADO')"
-                    style="border:none; padding:6px 14px; border-radius:8px; font-size:12px; cursor:pointer; transition:all 0.15s;"
-                    [style.background]="filtroEstadoVigencia === 'FINALIZADO' ? '#0f172a' : 'transparent'"
-                    [style.color]="filtroEstadoVigencia === 'FINALIZADO' ? '#ffffff' : '#64748b'"
-                    [style.font-weight]="filtroEstadoVigencia === 'FINALIZADO' ? '700' : '600'">
-              Finalizado
-            </button>
-          </div>
+          <button type="button" role="tab" (click)="cambiarFiltroVigencia('INACTIVO')"
+                  class="-mb-px inline-flex cursor-pointer items-center gap-2 border-0 border-b-2 bg-transparent px-4 py-2.5 text-xs font-bold transition"
+                  [ngClass]="filtroEstadoVigencia === 'INACTIVO' ? 'border-amber-500 text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-900'">
+            <span>Inactivos</span>
+          </button>
+
+          <button type="button" role="tab" (click)="cambiarFiltroVigencia('FINALIZADO')"
+                  class="-mb-px inline-flex cursor-pointer items-center gap-2 border-0 border-b-2 bg-transparent px-4 py-2.5 text-xs font-bold transition"
+                  [ngClass]="filtroEstadoVigencia === 'FINALIZADO' ? 'border-amber-500 text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-900'">
+            <span>Finalizados</span>
+          </button>
         </div>
 
         <!-- Tabla de contratos -->
-        <div style="overflow-x:auto; border-radius:8px; border:1px solid #f1f5f9;">
-          <table style="width:100%; border-collapse:collapse; text-align:left; font-size:13px; min-width:850px;">
-          <thead style="background:#f8fafc; border-bottom:1px solid #e2e8f0;">
-            <tr style="color:#64748b; font-weight:700; font-size:11px; letter-spacing:0.5px;">
-              <th style="padding:14px 16px;">NÚMERO DE CONTRATO</th>
-              <th style="padding:14px 16px;">INSTITUCIÓN EDUCATIVA</th>
-              <th style="padding:14px 16px;">CUPOS AUTORIZADOS</th>
-              <th style="padding:14px 16px;">SUPERVISOR</th>
-              <th style="padding:14px 16px;">FECHA DE INICIO</th>
-              <th style="padding:14px 16px;">FECHA FINAL</th>
-              <th style="padding:14px 16px;">ESTADO</th>
-              <th style="padding:14px 16px; text-align:right;">ACCIONES</th>
-            </tr>
-          </thead>
-          <tbody style="color:#0f172a;">
+        <div class="overflow-x-auto">
+          <table class="w-full min-w-[1000px] table-fixed border-separate border-spacing-0 text-center text-sm">
+            <colgroup>
+              <col style="width: 12%">
+              <col style="width: 22%">
+              <col style="width: 11%">
+              <col style="width: 14%">
+              <col style="width: 10%">
+              <col style="width: 10%">
+              <col style="width: 9%">
+              <col style="width: 12%">
+            </colgroup>
 
-            <!-- Estado de Carga (Spinner) -->
-            <tr *ngIf="cargandoContratos">
-              <td colspan="8" style="padding:48px 20px; text-align:center; background:#ffffff;">
-                <div style="display:inline-flex; flex-direction:column; align-items:center; gap:12px;">
-                  <div style="width:32px; height:32px; border:3px solid #fde68a; border-top-color:#d97706; border-radius:50%; animation:spin 0.8s linear infinite;"></div>
-                  <div>
-                    <strong style="color:#0f172a; font-size:14px; display:block;">Cargando contratos registrados...</strong>
-                    <span style="color:#64748b; font-size:12px;">Consultando la información en SIRAE</span>
-                  </div>
-                </div>
-              </td>
-            </tr>
+            <thead>
+              <tr class="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                <th class="sticky top-0 rounded-l-xl bg-slate-50 px-3 py-3 text-center">N.º contrato</th>
+                <th class="bg-slate-50 px-3 py-3 text-center">Institución educativa</th>
+                <th class="bg-slate-50 px-3 py-3 text-center">Cupos</th>
+                <th class="bg-slate-50 px-3 py-3 text-center">Supervisor</th>
+                <th class="bg-slate-50 px-3 py-3 text-center">Inicio</th>
+                <th class="bg-slate-50 px-3 py-3 text-center">Fin</th>
+                <th class="bg-slate-50 px-3 py-3 text-center">Estado</th>
+                <th class="rounded-r-xl bg-slate-50 px-3 py-3 text-center">Acciones</th>
+              </tr>
+            </thead>
 
-            <!-- Filas de Contratos -->
-            <ng-container *ngIf="!cargandoContratos">
-              <ng-container *ngFor="let c of contratosPaginados; trackBy: trackPorId">
-                <tr style="border-bottom:1px solid #f1f5f9; transition:background-color 0.15s;" onmouseover="this.style.background='#fafaf9'" onmouseout="this.style.background='transparent'">
-                  
-                  <!-- N° Contrato -->
-                  <td style="padding:14px 16px;">
-                    <span style="font-weight:800; color:#ca8a04; font-size:13px; letter-spacing:-0.2px;">
-                      {{ c.codigo }}
-                    </span>
-                  </td>
+            <tbody class="text-slate-900">
 
-                  <!-- Institución Educativa -->
-                  <td style="padding:14px 16px;">
-                    <div style="display:flex; align-items:center; gap:10px;">
-                      <div style="width:32px; height:32px; border-radius:8px; background:#fef9c3; border:1px solid #fde68a; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-                        <span class="material-symbols-outlined" style="font-size:18px; color:#ca8a04;">home</span>
-                      </div>
-                      <div>
-                        <strong style="color:#0f172a; font-size:13px; display:block;">{{ c.institucion }}</strong>
-                        <span style="color:#64748b; font-size:11px;">{{ c.zona ? 'Zona ' + c.zona : '' }}</span>
-                      </div>
+              <!-- Estado de carga -->
+              <tr *ngIf="cargandoContratos">
+                <td colspan="8" class="px-4 py-12 text-center">
+                  <div class="inline-flex flex-col items-center gap-3">
+                    <div class="h-8 w-8 animate-spin rounded-full border-[3px] border-amber-200 border-t-amber-600"></div>
+                    <div>
+                      <p class="m-0 text-sm font-bold text-slate-900">Cargando contratos registrados...</p>
+                      <p class="mb-0 mt-0.5 text-xs text-slate-500">Consultando la información en SIRAE</p>
                     </div>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- Filas -->
+              <ng-container *ngIf="!cargandoContratos">
+                <tr *ngFor="let c of contratosPaginados; trackBy: trackPorId" class="transition hover:bg-amber-50/40">
+
+                  <!-- N.º contrato -->
+                  <td class="border-b border-slate-100 px-3 py-4 text-center align-middle">
+                    <span class="text-sm font-extrabold text-amber-700">{{ c.codigo }}</span>
                   </td>
 
-                  <!-- Cupos Autorizados -->
-                  <td style="padding:14px 16px;">
-                    <span style="background:#eff6ff; color:#2563eb; font-size:12px; font-weight:700; padding:4px 12px; border-radius:6px; border:1px solid #dbeafe; display:inline-block; white-space:nowrap;">
+                  <!-- Institución -->
+                  <td class="border-b border-slate-100 px-3 py-4 text-center align-middle">
+                    <p class="m-0 truncate text-sm font-bold text-slate-800" [attr.title]="c.institucion">{{ c.institucion }}</p>
+                    <p *ngIf="c.zona" class="mb-0 mt-0.5 text-xs text-slate-500">Zona {{ c.zona }}</p>
+                  </td>
+
+                  <!-- Cupos -->
+                  <td class="border-b border-slate-100 px-3 py-4 text-center align-middle">
+                    <span class="inline-block whitespace-nowrap rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
                       {{ c.cupos || 0 }} cupos
                     </span>
                   </td>
 
                   <!-- Supervisor -->
-                  <td style="padding:14px 16px; color:#334155; font-size:12px;">
-                    <span *ngIf="c.supervisor && c.supervisor !== 'Sin asignar'" style="font-weight:600; color:#0f172a;">
+                  <td class="border-b border-slate-100 px-3 py-4 text-center align-middle">
+                    <span *ngIf="c.supervisor && c.supervisor !== 'Sin asignar'" class="block truncate text-xs font-semibold text-slate-800">
                       {{ c.supervisor }}
                     </span>
-                    <span *ngIf="!c.supervisor || c.supervisor === 'Sin asignar'" style="color:#94a3b8; font-style:italic;">
+                    <span *ngIf="!c.supervisor || c.supervisor === 'Sin asignar'" class="text-xs italic text-slate-400">
                       Sin asignar
                     </span>
                   </td>
 
-                  <!-- Fecha de Inicio -->
-                  <td style="padding:14px 16px;">
-                    <div style="font-size:12px; font-weight:600; color:#334155;">{{ formatearFechaDiaMes(c.fechaInicio) }}</div>
-                    <div style="font-size:11px; color:#64748b;">{{ formatearFechaAnio(c.fechaInicio) }}</div>
+                  <!-- Fecha de inicio -->
+                  <td class="border-b border-slate-100 px-3 py-4 text-center align-middle">
+                    <p class="m-0 text-xs font-semibold text-slate-700">{{ formatearFechaDiaMes(c.fechaInicio) }}</p>
+                    <p class="mb-0 mt-0.5 text-[11px] text-slate-500">{{ formatearFechaAnio(c.fechaInicio) }}</p>
                   </td>
 
-                  <!-- Fecha Final -->
-                  <td style="padding:14px 16px;">
-                    <div style="font-size:12px; font-weight:600; color:#334155;">{{ formatearFechaDiaMes(c.fechaFin) }}</div>
-                    <div style="font-size:11px; color:#64748b;">{{ formatearFechaAnio(c.fechaFin) }}</div>
+                  <!-- Fecha final -->
+                  <td class="border-b border-slate-100 px-3 py-4 text-center align-middle">
+                    <p class="m-0 text-xs font-semibold text-slate-700">{{ formatearFechaDiaMes(c.fechaFin) }}</p>
+                    <p class="mb-0 mt-0.5 text-[11px] text-slate-500">{{ formatearFechaAnio(c.fechaFin) }}</p>
                   </td>
 
                   <!-- Estado -->
-                  <td style="padding:14px 16px;">
-                    <span *ngIf="c.estado === 'Activo'" style="padding:4px 12px; border-radius:20px; font-size:11px; font-weight:700; background:#ecfdf5; color:#059669; border:1px solid #a7f3d0; display:inline-flex; align-items:center; gap:6px;">
-                      <span style="width:6px; height:6px; border-radius:50%; background:#10b981;"></span>
-                      Activo
-                    </span>
-                    <span *ngIf="c.estado === 'Inactivo'" style="padding:4px 12px; border-radius:20px; font-size:11px; font-weight:700; background:#fef2f2; color:#dc2626; border:1px solid #fecaca; display:inline-flex; align-items:center; gap:6px;">
-                      <span style="width:6px; height:6px; border-radius:50%; background:#ef4444;"></span>
-                      Inactivo
-                    </span>
-                    <span *ngIf="c.estado === 'Finalizado'" style="padding:4px 12px; border-radius:20px; font-size:11px; font-weight:700; background:#f1f5f9; color:#475569; border:1px solid #e2e8f0; display:inline-flex; align-items:center; gap:6px;">
-                      <span style="width:6px; height:6px; border-radius:50%; background:#94a3b8;"></span>
-                      Finalizado
-                    </span>
+                  <td class="border-b border-slate-100 px-3 py-4 text-center align-middle">
+                    <span *ngIf="c.estado === 'Activo'"
+                          class="inline-block rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-bold uppercase text-emerald-700">Activo</span>
+                    <span *ngIf="c.estado === 'Inactivo'"
+                          class="inline-block rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-[11px] font-bold uppercase text-rose-700">Inactivo</span>
+                    <span *ngIf="c.estado === 'Finalizado'"
+                          class="inline-block rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-[11px] font-bold uppercase text-slate-600">Finalizado</span>
                   </td>
 
-                  <!-- Acciones (3 botones cuadrados con iconos limpios) -->
-                  <td style="padding:14px 16px; text-align:right;">
-                    <div style="display:flex; justify-content:flex-end; align-items:center; gap:6px;">
-                      
-                      <!-- Botón 1: Ver detalle -->
+                  <!-- Acciones -->
+                  <td class="border-b border-slate-100 px-3 py-4 text-center align-middle">
+                    <div class="flex flex-col items-center gap-1.5">
                       <button type="button" (click)="abrirModalGrandeContrato(c.id, 'consulta', 'resumen')"
-                              style="width:32px; height:32px; border-radius:8px; border:1px solid #e2e8f0; background:#ffffff; display:flex; align-items:center; justify-content:center; cursor:pointer; color:#64748b; transition:all 0.15s;"
-                              onmouseover="this.style.background='#f8fafc'; this.style.borderColor='#cbd5e1'; this.style.color='#0f172a'"
-                              onmouseout="this.style.background='#ffffff'; this.style.borderColor='#e2e8f0'; this.style.color='#64748b'"
+                              class="w-24 cursor-pointer rounded-lg border border-slate-200 bg-white py-1.5 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-amber-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
                               title="Consultar detalle del contrato">
-                        <span class="material-symbols-outlined" style="font-size:17px;">visibility</span>
+                        Ver detalle
                       </button>
-
-                      <!-- Botón 2: Editar contrato -->
                       <button type="button" (click)="abrirModalGrandeContrato(c.id, 'edicion', 'resumen')"
-                              style="width:32px; height:32px; border-radius:8px; border:1px solid #e2e8f0; background:#ffffff; display:flex; align-items:center; justify-content:center; cursor:pointer; color:#64748b; transition:all 0.15s;"
-                              onmouseover="this.style.background='#f8fafc'; this.style.borderColor='#cbd5e1'; this.style.color='#0f172a'"
-                              onmouseout="this.style.background='#ffffff'; this.style.borderColor='#e2e8f0'; this.style.color='#64748b'"
+                              class="w-24 cursor-pointer rounded-lg border border-slate-200 bg-white py-1.5 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-amber-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
                               title="Editar información contractual">
-                        <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+                        Editar
                       </button>
-
-                      <!-- Botón 3: Prorrogar / renovar -->
                       <button type="button" (click)="abrirModalGrandeContrato(c.id, 'consulta', 'prorrogas')"
-                              style="width:32px; height:32px; border-radius:8px; border:1px solid #e2e8f0; background:#ffffff; display:flex; align-items:center; justify-content:center; cursor:pointer; color:#64748b; transition:all 0.15s;"
-                              onmouseover="this.style.background='#f8fafc'; this.style.borderColor='#cbd5e1'; this.style.color='#0f172a'"
-                              onmouseout="this.style.background='#ffffff'; this.style.borderColor='#e2e8f0'; this.style.color='#64748b'"
+                              class="w-24 cursor-pointer rounded-lg border border-slate-200 bg-white py-1.5 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-amber-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
                               title="Prorrogar o renovar contrato">
-                        <span class="material-symbols-outlined" style="font-size:17px;">wb_sunny</span>
+                        Prorrogar
                       </button>
                     </div>
                   </td>
                 </tr>
-              </ng-container>
 
-              <!-- Mensaje: Catálogo vacío -->
-              <tr *ngIf="contratos.length === 0 && !errorCargaContratos">
-                <td colspan="8" style="padding:48px 20px; text-align:center;">
-                  <div style="display:inline-flex; flex-direction:column; align-items:center; gap:10px;">
-                    <span class="material-symbols-outlined" style="font-size:40px; color:#cbd5e1;">description</span>
-                    <strong style="color:#1e293b; font-size:15px;">No hay contratos registrados</strong>
-                    <p style="color:#64748b; font-size:12px; margin:0; max-width:360px;">Actualmente no existen contratos PAE registrados en el sistema SIRAE.</p>
-                  </div>
-                </td>
-              </tr>
+                <!-- Catálogo vacío -->
+                <tr *ngIf="contratos.length === 0 && !errorCargaContratos">
+                  <td colspan="8" class="px-4 py-12 text-center">
+                    <p class="m-0 text-sm font-bold text-slate-800">No hay contratos registrados</p>
+                    <p class="mx-auto mb-0 mt-1 max-w-sm text-xs text-slate-500">Actualmente no existen contratos PAE registrados en el sistema SIRAE.</p>
+                  </td>
+                </tr>
 
-              <!-- Mensaje: Búsqueda sin coincidencias -->
-              <tr *ngIf="contratos.length > 0 && contratosFiltrados.length === 0">
-                <td colspan="8" style="padding:40px 20px; text-align:center;">
-                  <div style="display:inline-flex; flex-direction:column; align-items:center; gap:8px;">
-                    <span class="material-symbols-outlined" style="font-size:36px; color:#94a3b8;">search_off</span>
-                    <strong style="color:#1e293b; font-size:14px;">No se encontraron resultados</strong>
-                    <p style="color:#64748b; font-size:12px; margin:0;">No se encontraron contratos que coincidan con «<strong>{{ filtroBusquedaContratos }}</strong>».</p>
-                    <button type="button" (click)="limpiarBusquedaContratos()" style="margin-top:6px; background:#f1f5f9; border:1px solid #cbd5e1; border-radius:6px; padding:6px 14px; font-size:12px; color:#334155; font-weight:600; cursor:pointer;">
+                <!-- Búsqueda sin coincidencias -->
+                <tr *ngIf="contratos.length > 0 && contratosFiltrados.length === 0">
+                  <td colspan="8" class="px-4 py-10 text-center">
+                    <p class="m-0 text-sm font-bold text-slate-800">No se encontraron resultados</p>
+                    <p class="mb-0 mt-1 text-xs text-slate-500">No se encontraron contratos que coincidan con «<strong>{{ filtroBusquedaContratos }}</strong>».</p>
+                    <button type="button" (click)="limpiarBusquedaContratos()"
+                            class="mt-3 cursor-pointer rounded-lg border border-slate-200 bg-white px-4 py-1.5 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-amber-50">
                       Limpiar búsqueda
                     </button>
-                  </div>
-                </td>
-              </tr>
-            </ng-container>
+                  </td>
+                </tr>
+              </ng-container>
 
-          </tbody>
-        </table>
+            </tbody>
+          </table>
         </div>
 
-        <!-- Pie: Conteo y paginación -->
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; padding-top:12px; border-top:1px solid #f1f5f9; flex-wrap:wrap; gap:10px;">
-          <span style="font-size:12px; color:#64748b; font-weight:500;">
-            Mostrando <strong>{{ inicioRango }}</strong> – <strong>{{ finRango }}</strong> de <strong>{{ contratosFiltrados.length }}</strong> contratos
+        <!-- Pie: conteo y paginación -->
+        <div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
+          <span class="text-xs text-slate-500">
+            Mostrando <strong class="text-slate-700">{{ inicioRango }}</strong> – <strong class="text-slate-700">{{ finRango }}</strong>
+            de <strong class="text-slate-700">{{ contratosFiltrados.length }}</strong> contratos
           </span>
-          <div style="display:flex; align-items:center; gap:4px;">
-            <!-- Botón anterior -->
-            <button type="button" (click)="paginaAnterior()"
-                    [disabled]="paginaActual === 1"
-                    style="background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; color:#64748b; transition:all 0.15s;"
-                    [style.opacity]="paginaActual === 1 ? '0.4' : '1'"
-                    [style.cursor]="paginaActual === 1 ? 'not-allowed' : 'pointer'">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+
+          <div class="flex items-center gap-1.5">
+            <button type="button" (click)="paginaAnterior()" [disabled]="paginaActual === 1"
+                    class="h-8 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 transition hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-40">
+              Anterior
             </button>
-            <!-- Números de página -->
+
             <ng-container *ngFor="let p of paginasVisibles">
               <button type="button" (click)="irAPagina(p)"
-                      style="border:none; border-radius:8px; width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; font-size:12px; font-weight:600; cursor:pointer; transition:all 0.15s;"
-                      [style.background]="p === paginaActual ? '#0f172a' : '#ffffff'"
-                      [style.color]="p === paginaActual ? '#ffffff' : '#64748b'"
-                      [style.border]="p === paginaActual ? 'none' : '1px solid #e2e8f0'">
+                      class="h-8 w-8 cursor-pointer rounded-lg border text-xs font-bold transition"
+                      [ngClass]="p === paginaActual
+                        ? 'border-amber-500 bg-amber-500 text-white'
+                        : 'border-slate-200 bg-white text-slate-600 hover:bg-amber-50'">
                 {{ p }}
               </button>
             </ng-container>
-            <!-- Botón siguiente -->
-            <button type="button" (click)="paginaSiguiente()"
-                    [disabled]="paginaActual >= totalPaginas"
-                    style="background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; color:#64748b; transition:all 0.15s;"
-                    [style.opacity]="paginaActual >= totalPaginas ? '0.4' : '1'"
-                    [style.cursor]="paginaActual >= totalPaginas ? 'not-allowed' : 'pointer'">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+
+            <button type="button" (click)="paginaSiguiente()" [disabled]="paginaActual >= totalPaginas"
+                    class="h-8 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 transition hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-40">
+              Siguiente
             </button>
           </div>
         </div>
@@ -347,7 +295,7 @@
       </section>
     </div>
   </div>
-  
+
 
   <!-- ==================== MODAL: CONTRATO ==================== -->
   <div *ngIf="modalContratoAbierto" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center; z-index:1000;">
@@ -363,14 +311,14 @@
         </div>
         <div>
           <label style="font-size:12px; font-weight:600; color:#334155; display:block; margin-bottom:6px;">Institución Educativa *</label>
-          
+
           <!-- Selector sobrio y profesional acorde a los campos del formulario -->
           <div (click)="abrirModalSeleccionarInstitucion()"
                style="width: 100%; min-height: 38px; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; background: #ffffff; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 8px; box-sizing: border-box; transition: border-color 0.15s ease;"
                onmouseover="this.style.borderColor='#94a3b8'"
                onmouseout="this.style.borderColor='#cbd5e1'"
                title="Haz clic para seleccionar la institución">
-            
+
             <span *ngIf="contratoActual.institucion" style="font-size: 13px; font-weight: 600; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;">
               {{ contratoActual.institucion }}
             </span>
@@ -378,9 +326,9 @@
               Seleccione la institución...
             </span>
 
-            <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
+            <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
               <button *ngIf="contratoActual.institucion" type="button" (click)="deseleccionarInstitucion($event)" style="background: none; border: none; font-size: 13px; color: #94a3b8; cursor: pointer; padding: 0 3px; line-height: 1;" title="Quitar selección">✕</button>
-              <span class="material-symbols-outlined" style="font-size: 18px; color: #64748b; line-height: 1;">keyboard_arrow_down</span>
+              <span style="font-size: 11px; color: #64748b; line-height: 1;">▾</span>
             </div>
           </div>
 
@@ -445,10 +393,10 @@
   <!-- ==================== MODAL EMERGENTE: SELECCIONAR INSTITUCIÓN ==================== -->
   <div *ngIf="modalSeleccionarInstitucionAbierto" (click)="cerrarModalSeleccionarInstitucion()"
        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); display: flex; justify-content: center; align-items: center; z-index: 2000; padding: 20px; box-sizing: border-box;">
-    
+
     <div (click)="$event.stopPropagation()"
          style="background: #ffffff; width: 560px; max-width: 95%; max-height: 85vh; border-radius: 16px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); display: flex; flex-direction: column; overflow: hidden; font-family: inherit;">
-      
+
       <!-- Cabecera del modal -->
       <div style="padding: 16px 20px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
         <div>
@@ -461,7 +409,6 @@
       <!-- Buscador -->
       <div style="padding: 12px 20px; border-bottom: 1px solid #f1f5f9; background: #f8fafc;">
         <div style="display: flex; align-items: center; gap: 8px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px 12px;">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
           <input type="text" [(ngModel)]="busquedaInstitucionModal" placeholder="Buscar por nombre o NIT..."
                  style="border: none; background: transparent; outline: none; font-size: 13px; width: 100%; color: #0f172a; font-family: inherit;">
           <span *ngIf="busquedaInstitucionModal" (click)="busquedaInstitucionModal = ''" style="cursor: pointer; color: #94a3b8; font-size: 14px;">✕</span>

@@ -55,17 +55,6 @@
     line-height: 1.2;
   }
 
-  .he-institution-pill {
-    font-size: 11.5px;
-    font-weight: 700;
-    color: #92400e;
-    background: #fef3c7;
-    border: 1px solid #fde68a;
-    padding: 3px 10px;
-    border-radius: 999px;
-    white-space: nowrap;
-  }
-
   .he-page-subtitle {
     margin: 0;
     font-size: 14px;
@@ -910,16 +899,29 @@
 
   /* ---------- Aviso guía (sin icono) ---------- */
   .he-hint-banner {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 14px;
     flex-wrap: wrap;
-    padding: 14px 18px;
+    padding: 16px 20px 16px 32px;
     background: #fffbeb;
     border: 1px solid #fde68a;
-    border-left: 4px solid #f59e0b;
-    border-radius: 12px;
+    border-radius: 16px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, .04);
+  }
+
+  /* Barra de acento: va por dentro, con puntas redondeadas y sin tocar el borde */
+  .he-hint-banner::before {
+    content: '';
+    position: absolute;
+    left: 14px;
+    top: 14px;
+    bottom: 14px;
+    width: 4px;
+    border-radius: 999px;
+    background: #f59e0b;
   }
 
   .he-hint-text { display: flex; align-items: flex-start; gap: 10px; min-width: 0; }
@@ -929,8 +931,8 @@
   .he-hint-banner.info {
     background: #f8fafc;
     border-color: #e2e8f0;
-    border-left-color: #94a3b8;
   }
+  .he-hint-banner.info::before { background: #94a3b8; }
   .he-hint-banner.info .he-hint-title { color: #334155; }
   .he-hint-banner.info .he-hint-desc  { color: #64748b; }
 
@@ -952,9 +954,6 @@
       <div class="he-page-title-box">
         <div class="he-title-row">
           <h1 class="he-page-title">Historial de Entregas</h1>
-          <span *ngIf="institucionNombreUsuario" class="he-institution-pill">
-            {{ institucionNombreUsuario }}
-          </span>
         </div>
         <p class="he-page-subtitle">
           Inspecciona y confirma los alimentos despachados por el supervisor para el inventario escolar.
@@ -971,56 +970,6 @@
 
   </header>
 
-
-  <!-- =========================================================
-       AVISO GUÍA: QUÉ PUEDES HACER (sin iconos)
-       ========================================================= -->
-
-  <!-- Administrador / Super Admin con entregas pendientes -->
-  <div
-    *ngIf="puedeGestionarRecepcion && !cargando && contarEstado('POR_RECIBIR') > 0"
-    class="he-hint-banner"
-  >
-    <div class="he-hint-text">
-      <div>
-        <p class="he-hint-title">
-          Tienes {{ contarEstado('POR_RECIBIR') }}
-          {{ contarEstado('POR_RECIBIR') === 1 ? 'entrega pendiente' : 'entregas pendientes' }} por recibir
-        </p>
-        <p class="he-hint-desc">
-          Revisa los alimentos antes de confirmar. Al pulsar <strong>Recibir</strong> se acreditan al inventario;
-          si llegaron en mal estado, usa <strong>Rechazar</strong> o registra la novedad.
-        </p>
-      </div>
-    </div>
-
-    <button
-      *ngIf="filtroEstado !== 'POR_RECIBIR'"
-      type="button"
-      class="he-btn-confirm"
-      (click)="cambiarFiltroEstado('POR_RECIBIR')"
-    >
-      Ver pendientes
-    </button>
-  </div>
-
-  <!-- Sin pendientes, o usuario que solo consulta (supervisor) -->
-  <div
-    *ngIf="!cargando && (!puedeGestionarRecepcion || contarEstado('POR_RECIBIR') === 0)"
-    class="he-hint-banner info"
-  >
-    <div class="he-hint-text">
-      <div>
-        <p class="he-hint-title">
-          {{ puedeGestionarRecepcion ? 'No tienes entregas pendientes por recibir' : 'Consulta del historial de entregas' }}
-        </p>
-        <p class="he-hint-desc">
-          Usa las pestañas para filtrar por estado, el buscador para encontrar una factura o alimento
-          y abre cada fila para ver el detalle.
-        </p>
-      </div>
-    </div>
-  </div>
 
   <!-- =========================================================
        FORMULARIO CRUD (solo Super Admin)
@@ -1154,6 +1103,54 @@
       <span class="he-card-count">{{ entregas.length }} entregas</span>
     </div>
 
+    <!-- AVISOS GUÍA (dentro de la card, sin iconos) -->
+
+  <!-- Administrador / Super Admin con entregas pendientes -->
+  <div
+    *ngIf="puedeGestionarRecepcion && !cargando && contarEstado('POR_RECIBIR') > 0"
+    class="he-hint-banner"
+  >
+    <div class="he-hint-text">
+      <div>
+        <p class="he-hint-title">
+          Tienes {{ contarEstado('POR_RECIBIR') }}
+          {{ contarEstado('POR_RECIBIR') === 1 ? 'entrega pendiente' : 'entregas pendientes' }} por recibir
+        </p>
+        <p class="he-hint-desc">
+          Revisa los alimentos antes de confirmar. Al pulsar <strong>Recibir</strong> se acreditan al inventario;
+          si llegaron en mal estado, usa <strong>Rechazar</strong> o registra la novedad.
+        </p>
+      </div>
+    </div>
+
+    <button
+      *ngIf="filtroEstado !== 'POR_RECIBIR'"
+      type="button"
+      class="he-btn-confirm"
+      (click)="cambiarFiltroEstado('POR_RECIBIR')"
+    >
+      Ver pendientes
+    </button>
+  </div>
+
+  <!-- Sin pendientes, o usuario que solo consulta (supervisor) -->
+  <div
+    *ngIf="!cargando && (!puedeGestionarRecepcion || contarEstado('POR_RECIBIR') === 0)"
+    class="he-hint-banner info"
+  >
+    <div class="he-hint-text">
+      <div>
+        <p class="he-hint-title">
+          {{ puedeGestionarRecepcion ? 'No tienes entregas pendientes por recibir' : 'Consulta del historial de entregas' }}
+        </p>
+        <p class="he-hint-desc">
+          Usa las pestañas para filtrar por estado, el buscador para encontrar una factura o alimento
+          y abre cada fila para ver el detalle.
+        </p>
+      </div>
+    </div>
+  </div>
+
     <!-- Buscador + toggle de vista -->
     <div class="he-filters-bar">
       <div class="he-controls-right">
@@ -1186,7 +1183,6 @@
             (click)="cambiarVistaModo('facturas')"
             title="Ver entregas agrupadas por factura o remisión"
           >
-            <span class="material-symbols-outlined" style="font-size: 16px;">receipt_long</span>
             <span>Por Factura</span>
           </button>
           <button
@@ -1196,7 +1192,6 @@
             (click)="cambiarVistaModo('productos')"
             title="Ver alimentos individuales por día"
           >
-            <span class="material-symbols-outlined" style="font-size: 16px;">list_alt</span>
             <span>Por Alimento</span>
           </button>
         </div>

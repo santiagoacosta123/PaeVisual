@@ -5,50 +5,10 @@
     <div class="min-w-0">
       <div class="flex flex-wrap items-center gap-3">
         <h1 class="m-0 text-2xl font-black tracking-tight text-slate-900">Sedes de mi institución</h1>
-        <span *ngIf="institucionAsignada"
-          class="rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-[11px] font-bold text-amber-800">
-          {{ institucionAsignada }}
-        </span>
       </div>
       <p class="mb-0 mt-1.5 text-sm text-slate-500">Consulta los cupos, jornadas y secciones de menú configuradas.</p>
     </div>
   </header>
-
-  <!-- RESUMEN -->
-  <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
-    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <p class="m-0 text-xs font-semibold text-slate-500">Total de sedes</p>
-      <p class="mb-0 mt-2 text-3xl font-black text-slate-900">{{ sedes.length | number:'2.0-0' }}</p>
-      <p class="mb-0 mt-1 text-[11px] text-slate-400">Asignadas a tu institución</p>
-    </div>
-
-    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <p class="m-0 text-xs font-semibold text-slate-500">Cupos autorizados</p>
-      <p class="mb-0 mt-2 text-3xl font-black text-slate-900">
-        <ng-container *ngIf="configuracion; else sinSedeA">{{ configuracion.cupos_totales | number }}</ng-container>
-        <ng-template #sinSedeA>—</ng-template>
-      </p>
-      <p class="mb-0 mt-1 text-[11px] text-slate-400">En contratos de la sede</p>
-    </div>
-
-    <div class="rounded-2xl border border-amber-300 bg-amber-50/60 p-5 shadow-sm">
-      <p class="m-0 text-xs font-semibold text-amber-800">Distribuidos</p>
-      <p class="mb-0 mt-2 text-3xl font-black text-amber-700">
-        <ng-container *ngIf="configuracion; else sinSedeB">{{ cuposTotalesDistribuidos | number }}</ng-container>
-        <ng-template #sinSedeB>—</ng-template>
-      </p>
-      <p class="mb-0 mt-1 text-[11px] text-amber-700/70">Asignados a jornadas</p>
-    </div>
-
-    <div class="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-5 shadow-sm">
-      <p class="m-0 text-xs font-semibold text-emerald-700">Pendientes</p>
-      <p class="mb-0 mt-2 text-3xl font-black text-emerald-600">
-        <ng-container *ngIf="configuracion; else sinSedeC">{{ cuposPendientes | number }}</ng-container>
-        <ng-template #sinSedeC>—</ng-template>
-      </p>
-      <p class="mb-0 mt-1 text-[11px] text-emerald-700/70">Por distribuir</p>
-    </div>
-  </div>
 
   <!-- AVISO -->
   <div class="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4">
@@ -196,6 +156,8 @@
           <p class="m-0 text-xs text-slate-500">
             <span class="font-bold text-slate-800">{{ cuposTotalesDistribuidos | number }}</span> de
             <span class="font-bold text-slate-800">{{ detalle.cupos_totales | number }}</span> cupos distribuidos
+            <span class="mx-1 text-slate-300">•</span>
+            <span class="font-bold text-slate-800">{{ cuposPendientes | number }}</span> pendientes
           </p>
         </div>
 

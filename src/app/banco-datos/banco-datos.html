@@ -1,24 +1,18 @@
 <div class="banco-datos-layout">
 
   <!-- ===================== CABECERA DE LA PÁGINA ===================== -->
-  <header class="bd-page-header">
+  <header class="bd-page-header" style="background:#fff8e1; border:1px solid #fde68a; border-radius:16px; padding:16px 20px;">
     <div class="bd-page-header-left">
-      <!-- Ícono circular idéntico al de Contratos y Facturas -->
-      <div class="bd-page-icon-badge" aria-hidden="true">
-        <span class="material-symbols-outlined" style="font-size: 24px; color: #b45309;">database</span>
-      </div>
-
-      <!-- Título y descripción con tipografía estandarizada -->
       <div class="bd-page-title-box">
         <h1 class="bd-page-title">Banco de Datos</h1>
         <p class="bd-page-subtitle">Administra los parámetros y tablas principales del sistema.</p>
       </div>
     </div>
 
-    <!-- Acciones de Cabecera: Selector de Tablas Arriba + Botón Añadir -->
+    <!-- Acciones de Cabecera: Selector de Tablas + Botón Añadir -->
     <div class="bd-page-header-actions">
 
-      <!-- Selector Desplegable "Todas las tablas principales" -->
+      <!-- Selector Desplegable "Tablas principales" -->
       <div class="bd-top-selector-wrapper">
         <button
           type="button"
@@ -103,7 +97,7 @@
         </div>
       </div>
 
-      <!-- Botón Añadir (Pill dorado estandarizado) -->
+      <!-- Botón Añadir -->
       <button type="button" class="bd-btn-add" (click)="abrirModal()">
         <span class="material-symbols-outlined" aria-hidden="true">add</span>
         <span>Añadir {{ tab.singular }}</span>
@@ -116,27 +110,11 @@
   <!-- ===================== CONTENEDOR PRINCIPAL ===================== -->
   <div class="bd-main-grid">
 
-    <!-- ================= TABLA Y CONTROLES A ANCHO COMPLETO ================= -->
     <main class="bd-table-card">
-
-      <!-- Cabecera de la tabla activa -->
-      <div class="bd-table-heading-row">
-        <div class="bd-table-heading-left">
-          <div class="bd-table-heading-icon-badge">
-            <span class="material-symbols-outlined">{{ tab.icon }}</span>
-          </div>
-          <div>
-            <h2 class="bd-table-heading-title">{{ tab.nombre }}</h2>
-            <span class="bd-table-heading-sub">
-              {{ datos ? datos.length + ' ' + (datos.length === 1 ? tab.singular : tab.nombre.toLowerCase()) + ' en el sistema' : 'Cargando datos...' }}
-            </span>
-          </div>
-        </div>
-      </div>
 
       <!-- Barra de Filtros Superiores -->
       <div class="bd-filters-bar">
-        
+
         <!-- Buscador -->
         <div class="bd-search-box">
           <span class="material-symbols-outlined bd-search-icon" aria-hidden="true">search</span>
@@ -158,7 +136,7 @@
           </button>
         </div>
 
-        <!-- Filtro Rápido por Momento del Menú (Desayuno / Almuerzo / Merienda) -->
+        <!-- Filtro Rápido por Momento del Menú -->
         <div *ngIf="tabActual === 'menus'" class="flex items-center gap-1.5 flex-wrap">
           <span class="text-xs font-bold text-slate-600 mr-1">Momento:</span>
           <button
@@ -199,13 +177,12 @@
 
       </div>
 
-      <!-- Filtro específico para Sedes por Institución (Si aplica) -->
+      <!-- Filtro específico para Sedes por Institución -->
       <div *ngIf="tabActual === 'sedes'" class="bd-sedes-filter-row">
         <label class="bd-sedes-filter-label">
-          <span class="material-symbols-outlined" aria-hidden="true">apartment</span>
           Institución educativa:
         </label>
-        
+
         <div
           (click)="abrirModalInstitucionSede()"
           class="bd-sedes-filter-trigger"
@@ -272,31 +249,29 @@
       </div>
 
       <!-- ================= TABLA DE DATOS ================= -->
-      <div class="bd-table-wrapper" *ngIf="!cargando && !errorCarga && totalRegistros > 0">
-        <table class="bd-data-table">
+      <div class="bd-table-wrapper" *ngIf="!cargando && !errorCarga && totalRegistros > 0" style="width:100%; overflow-x:auto; border-radius:12px;">
+        <table class="bd-data-table" style="width:100%; min-width:900px; table-layout:fixed; border-collapse:collapse;">
           <thead>
             <tr>
-              <th *ngFor="let campo of tab.campos; let primer = first" scope="col" [class.col-primary]="primer">
+              <th *ngFor="let campo of tab.campos; let primer = first" scope="col" [class.col-primary]="primer" [style.width]="primer ? '22%' : null" style="padding:14px 12px; text-align:left; font-size:12.5px; font-weight:600; color:#475569; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; background:#f8fafc; border-bottom:1px solid #e2e8f0;">
                 {{ campo.label }}
               </th>
-              <th scope="col" class="col-actions">Acciones</th>
+              <th scope="col" class="col-actions" style="padding:14px 12px; text-align:left; font-size:12.5px; font-weight:600; color:#475569; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; background:#f8fafc; border-bottom:1px solid #e2e8f0; width:150px; min-width:150px; max-width:150px; white-space:nowrap; overflow:visible;">Acciones</th>
             </tr>
           </thead>
           <tbody>
             <tr *ngFor="let item of datosPaginados; trackBy: trackPorId">
-              
+
               <!-- Celdas de Datos -->
-              <td *ngFor="let campo of tab.campos; let primer = first" [class.col-primary]="primer">
-                
-                <!-- Celda Primaria: Ícono temático + Nombre -->
-                <div *ngIf="primer" class="bd-primary-cell">
-                  <span *ngIf="tabActual !== 'menus'" class="material-symbols-outlined bd-cell-icon" aria-hidden="true">{{ tab.icon }}</span>
-                  <span class="bd-primary-name" [title]="valorCelda(item, campo)">{{ valorCelda(item, campo) }}</span>
+              <td *ngFor="let campo of tab.campos; let primer = first" [class.col-primary]="primer" style="padding:14px 12px; text-align:left; vertical-align:middle; overflow:hidden; border-bottom:1px solid #eef2f7; font-size:13.5px; color:#475569;">
+
+                <!-- Celda Primaria: Nombre -->
+                <div *ngIf="primer" class="bd-primary-cell" style="display:block; min-width:0;">
+                  <span class="bd-primary-name" style="display:block; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:600; color:#0f172a;" [title]="valorCelda(item, campo)">{{ valorCelda(item, campo) }}</span>
                 </div>
 
                 <!-- Celdas especiales de la tabla Platos y Recetas -->
                 <ng-container *ngIf="!primer && tabActual === 'menus' && !esCampoEstado(campo)">
-                  <!-- Columna: Secciones / Momentos del plato (Desayuno, Almuerzo, Merienda) -->
                   <div *ngIf="campo.name === 'secciones_texto'" class="flex flex-wrap items-center gap-1">
                     <span
                       *ngFor="let sec of (item.secciones || ['Desayuno', 'Almuerzo'])"
@@ -309,7 +284,6 @@
                     </span>
                   </div>
 
-                  <!-- Columna: Componentes del plato -->
                   <div *ngIf="campo.name === 'componente'" class="bd-menu-componentes-cell">
                     <span
                       *ngFor="let comp of (item.componentes || []).slice(0, 3)"
@@ -326,7 +300,6 @@
                     </span>
                   </div>
 
-                  <!-- Columna: Resumen de Receta (Ingredientes y Pasos) -->
                   <div *ngIf="campo.name === 'resumen_receta'" class="bd-menu-receta-cell">
                     <button
                       type="button"
@@ -345,7 +318,7 @@
                   </div>
                 </ng-container>
 
-                <!-- Celda de Estado (Badge verde o rojo) -->
+                <!-- Celda de Estado -->
                 <ng-container *ngIf="!primer && esCampoEstado(campo)">
                   <span *ngIf="isEstadoActivo(item, campo)" class="bd-badge bd-badge-active">
                     <span class="bd-dot bd-dot-active" aria-hidden="true"></span>
@@ -355,70 +328,64 @@
                     <span class="bd-dot bd-dot-inactive" aria-hidden="true"></span>
                     <span>Inactivo</span>
                   </span>
-                  <span *ngIf="!isEstadoActivo(item, campo) && !isEstadoInactivo(item, campo)" class="bd-cell-text">
+                  <span *ngIf="!isEstadoActivo(item, campo) && !isEstadoInactivo(item, campo)" class="bd-cell-text" style="display:block; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
                     {{ valorCelda(item, campo) }}
                   </span>
                 </ng-container>
 
-                <!-- Resto de celdas estándar (otras tablas) -->
-                <span *ngIf="!primer && tabActual !== 'menus' && !esCampoEstado(campo)" class="bd-cell-text" [title]="valorCelda(item, campo)">
+                <!-- Resto de celdas estándar -->
+                <span *ngIf="!primer && tabActual !== 'menus' && !esCampoEstado(campo)" class="bd-cell-text" style="display:block; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" [title]="valorCelda(item, campo)">
                   {{ valorCelda(item, campo) }}
                 </span>
               </td>
 
-              <!-- Celda de Acciones (Menú de tres puntos verticales) -->
-              <td class="col-actions">
-                <div class="row-actions-container">
+              <!-- Celda de Acciones -->
+              <td class="col-actions" style="padding:14px 12px; text-align:left; vertical-align:middle; overflow:hidden; border-bottom:1px solid #eef2f7; font-size:13.5px; color:#475569; width:150px; min-width:150px; max-width:150px; white-space:nowrap; overflow:visible;">
+                <div class="bd-actions" style="display:flex; align-items:center; justify-content:flex-start; gap:6px;">
+
+                  <!-- Ver sedes (solo Instituciones) -->
                   <button
+                    *ngIf="tabActual === 'instituciones'"
                     type="button"
-                    class="bd-action-trigger"
-                    (click)="toggleMenuAccion(obtenerIdItem(item), $event)"
-                    title="Opciones"
-                    aria-label="Opciones del registro"
-                  >
-                    <span class="material-symbols-outlined" aria-hidden="true">more_vert</span>
+                    class="bd-action-btn bd-action-amber"
+                    style="flex:0 0 auto; width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; border:1px solid #e2e8f0; border-radius:8px; background:#ffffff; cursor:pointer; padding:0; transition:all 0.15s;" onmouseover="this.style.background='#fff7ed'; this.style.borderColor='#fdba74'" onmouseout="this.style.background='#ffffff'; this.style.borderColor='#e2e8f0'"
+                    title="Ver sedes"
+                    aria-label="Ver sedes"
+                    (click)="navegarASedesDeInstitucion(obtenerIdItem(item))">
+                    <span class="material-symbols-outlined" aria-hidden="true" style="font-size:18px; color:#d97706;">domain</span>
                   </button>
 
-                  <!-- Menú Desplegable Flotante -->
-                  <div *ngIf="menuAccionAbiertoId === obtenerIdItem(item)" class="bd-actions-menu" (click)="$event.stopPropagation()">
-                    <button
-                      *ngIf="tabActual === 'instituciones'"
-                      type="button"
-                      class="bd-menu-item"
-                      (click)="navegarASedesDeInstitucion(obtenerIdItem(item)); cerrarMenuAccion()"
-                    >
-                      <span class="material-symbols-outlined item-icon-sedes" aria-hidden="true">domain</span>
-                      <span>Ver sedes</span>
-                    </button>
+                  <!-- Ver receta (solo Menús / Platos) -->
+                  <button
+                    *ngIf="tabActual === 'menus'"
+                    type="button"
+                    class="bd-action-btn bd-action-amber" style="flex:0 0 auto; width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; border:1px solid #e2e8f0; border-radius:8px; background:#ffffff; cursor:pointer; padding:0; transition:all 0.15s;" onmouseover="this.style.background='#fff7ed'; this.style.borderColor='#fdba74'" onmouseout="this.style.background='#ffffff'; this.style.borderColor='#e2e8f0'"
+                    title="Ver receta"
+                    aria-label="Ver receta"
+                    (click)="abrirModalVerReceta(item)">
+                    <span class="material-symbols-outlined" aria-hidden="true" style="font-size:18px; color:#d97706;">menu_book</span>
+                  </button>
 
-                    <button
-                      *ngIf="tabActual === 'menus'"
-                      type="button"
-                      class="bd-menu-item"
-                      (click)="abrirModalVerReceta(item); cerrarMenuAccion()"
-                    >
-                      <span class="material-symbols-outlined item-icon-sedes" aria-hidden="true">menu_book</span>
-                      <span>Ver receta</span>
-                    </button>
+                  <!-- Editar -->
+                  <button
+                    type="button"
+                    class="bd-action-btn bd-action-blue" style="flex:0 0 auto; width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; border:1px solid #e2e8f0; border-radius:8px; background:#ffffff; cursor:pointer; padding:0; transition:all 0.15s;" onmouseover="this.style.background='#eff6ff'; this.style.borderColor='#93c5fd'" onmouseout="this.style.background='#ffffff'; this.style.borderColor='#e2e8f0'"
+                    title="Editar"
+                    aria-label="Editar"
+                    (click)="abrirModal(item)">
+                    <span class="material-symbols-outlined" aria-hidden="true" style="font-size:18px; color:#2563eb;">edit</span>
+                  </button>
 
-                    <button
-                      type="button"
-                      class="bd-menu-item"
-                      (click)="abrirModal(item); cerrarMenuAccion()"
-                    >
-                      <span class="material-symbols-outlined item-icon-edit" aria-hidden="true">edit</span>
-                      <span>Editar</span>
-                    </button>
+                  <!-- Eliminar -->
+                  <button
+                    type="button"
+                    class="bd-action-btn bd-action-red" style="flex:0 0 auto; width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; border:1px solid #e2e8f0; border-radius:8px; background:#ffffff; cursor:pointer; padding:0; transition:all 0.15s;" onmouseover="this.style.background='#fef2f2'; this.style.borderColor='#fca5a5'" onmouseout="this.style.background='#ffffff'; this.style.borderColor='#e2e8f0'"
+                    title="Eliminar"
+                    aria-label="Eliminar"
+                    (click)="eliminar(item)">
+                    <span class="material-symbols-outlined" aria-hidden="true" style="font-size:18px; color:#dc2626;">delete</span>
+                  </button>
 
-                    <button
-                      type="button"
-                      class="bd-menu-item item-delete"
-                      (click)="eliminar(item); cerrarMenuAccion()"
-                    >
-                      <span class="material-symbols-outlined item-icon-delete" aria-hidden="true">delete</span>
-                      <span>Eliminar</span>
-                    </button>
-                  </div>
                 </div>
               </td>
             </tr>
@@ -428,16 +395,13 @@
 
       <!-- ================= PIE DE PÁGINA / PAGINACIÓN ================= -->
       <footer class="bd-pagination-footer" *ngIf="!cargando && !errorCarga && totalRegistros > 0">
-        
-        <!-- Contador de registros -->
+
         <div class="bd-pagination-info">
           Mostrando {{ registroInicio }} - {{ registroFin }} de {{ totalRegistros }} registros
         </div>
 
-        <!-- Controles de navegación y cantidad por página -->
         <div class="bd-pagination-controls">
-          
-          <!-- Botón Anterior -->
+
           <button
             type="button"
             class="bd-page-arrow"
@@ -448,7 +412,6 @@
             <span class="material-symbols-outlined" aria-hidden="true">chevron_left</span>
           </button>
 
-          <!-- Números de página -->
           <div class="bd-page-numbers">
             <button
               *ngFor="let p of listaPaginas"
@@ -461,7 +424,6 @@
             </button>
           </div>
 
-          <!-- Botón Siguiente -->
           <button
             type="button"
             class="bd-page-arrow"
@@ -472,7 +434,6 @@
             <span class="material-symbols-outlined" aria-hidden="true">chevron_right</span>
           </button>
 
-          <!-- Selector de elementos por página -->
           <div class="bd-per-page-wrapper">
             <select
               [ngModel]="elementosPorPagina"
@@ -520,7 +481,7 @@
       <!-- Cuerpo del Modal: Tablas Estándar -->
       <div class="bd-modal-content" *ngIf="tabActual !== 'menus'">
         <p class="bd-modal-desc">Ingresa los datos correspondientes para registrar o actualizar el elemento.</p>
-        
+
         <div class="bd-form-fields-grid">
           <div
             class="bd-field-box"
@@ -579,11 +540,9 @@
             <!-- Input Image (subida de archivo a Cloudinary) -->
             <ng-container *ngIf="campo.type === 'image'">
               <div style="display:flex; flex-direction:column; gap:8px;">
-                <!-- Preview de imagen actual (modo edición) -->
                 <div *ngIf="itemForm[campo.name] && !previewImagenIngrediente" style="width:80px; height:80px; border-radius:8px; overflow:hidden; border:1px solid #e2e8f0;">
                   <img [src]="itemForm[campo.name]" alt="Imagen actual" style="width:100%; height:100%; object-fit:cover;">
                 </div>
-                <!-- Preview de nueva imagen seleccionada -->
                 <div *ngIf="previewImagenIngrediente" style="width:80px; height:80px; border-radius:8px; overflow:hidden; border:2px solid #f6c400;">
                   <img [src]="previewImagenIngrediente" alt="Vista previa" style="width:100%; height:100%; object-fit:cover;">
                 </div>
@@ -604,7 +563,7 @@
 
       <!-- Cuerpo del Modal: Formulario Especializado de MENÚS / PLATOS (Ciclo PAE) -->
       <div class="bd-modal-content bd-menus-modal-body" *ngIf="tabActual === 'menus'">
-        
+
         <!-- 1. Autocompletar rápido desde el Recetario Oficial PAE -->
         <div class="bd-minuta-quickfill-card" *ngIf="!modoEdicion">
           <div class="bd-minuta-quickfill-left">
@@ -650,7 +609,7 @@
               />
             </div>
 
-            <!-- Secciones de menú aplicables (Desayuno, Almuerzo, Merienda) -->
+            <!-- Secciones de menú aplicables -->
             <div class="bd-field-box" style="grid-column: 1 / -1;">
               <label class="bd-field-label">
                 Secciones de menú aplicables <span class="bd-required-asterisk">*</span>
@@ -680,7 +639,7 @@
           </div>
         </div>
 
-        <!-- 3. Componentes del plato + Ingredientes separados por componente + Pasos de preparación -->
+        <!-- 3. Componentes + Ingredientes + Pasos -->
         <div class="bd-menus-section-box">
           <div class="bd-menus-section-header bd-menus-section-header-between">
             <div class="bd-menus-section-header-left">
@@ -698,7 +657,6 @@
             </button>
           </div>
 
-          <!-- Lista de tarjetas de componentes -->
           <div class="bd-componentes-list">
             <div
               *ngFor="let comp of menuRecetaForm.componentes; let idxComp = index"
@@ -758,10 +716,10 @@
                 </button>
               </div>
 
-              <!-- Cuerpo del componente en 2 columnas: Ingredientes | Pasos de preparación -->
+              <!-- Cuerpo del componente: Ingredientes | Pasos -->
               <div class="bd-comp-card-split">
-                
-                <!-- COLUMNA A: INGREDIENTES DEL COMPONENTE -->
+
+                <!-- COLUMNA A: INGREDIENTES -->
                 <div class="bd-comp-subbox">
                   <div class="bd-comp-subbox-head">
                     <div>
@@ -770,7 +728,6 @@
                     </div>
                   </div>
 
-                  <!-- Selector para agregar ingrediente -->
                   <div class="bd-ing-adder-row">
                     <div class="bd-ing-select-col">
                       <app-custom-select
@@ -801,7 +758,6 @@
                     </button>
                   </div>
 
-                  <!-- Lista de ingredientes agregados a este componente -->
                   <div class="bd-ing-chips-list" *ngIf="comp.ingredientes.length > 0">
                     <div
                       *ngFor="let ing of comp.ingredientes; let idxIng = index"
@@ -828,7 +784,7 @@
                   </div>
                 </div>
 
-                <!-- COLUMNA B: PASOS DE PREPARACIÓN DEL COMPONENTE -->
+                <!-- COLUMNA B: PASOS DE PREPARACIÓN -->
                 <div class="bd-comp-subbox">
                   <div class="bd-comp-subbox-head">
                     <div>
@@ -924,7 +880,6 @@
       </div>
 
       <div class="bd-modal-content bd-receta-viewer-body">
-        <!-- Resumen superior de componentes, ingredientes y pasos -->
         <div class="bd-receta-hero-card">
           <div class="bd-receta-hero-info">
             <div class="bd-receta-stats-row">
@@ -937,7 +892,6 @@
           </div>
         </div>
 
-        <!-- Desglose por cada componente -->
         <div class="bd-receta-comp-grid">
           <div *ngFor="let comp of recetaDetalleSeleccionada.componentes; let i = index" class="bd-receta-comp-card">
             <div class="bd-receta-comp-header">
@@ -988,8 +942,7 @@
   <!-- ===================== MODAL SELECCIONAR INSTITUCIÓN PARA SEDES ===================== -->
   <div *ngIf="modalSeleccionarInstitucionAbierto" class="bd-modal-overlay" (click)="cerrarModalInstitucionSede()">
     <div class="bd-institucion-modal" (click)="$event.stopPropagation()">
-      
-      <!-- Cabecera -->
+
       <div class="bd-inst-head">
         <div>
           <h3 class="bd-inst-title">Filtrar sedes por institución</h3>
@@ -998,7 +951,6 @@
         <button type="button" class="bd-modal-close-btn" (click)="cerrarModalInstitucionSede()" title="Cerrar">✕</button>
       </div>
 
-      <!-- Buscador -->
       <div class="bd-inst-search-wrap">
         <div class="bd-inst-search-box">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1015,9 +967,7 @@
         </div>
       </div>
 
-      <!-- Lista de instituciones -->
       <div class="bd-inst-list">
-        <!-- Opción Ver todas -->
         <div
           (click)="marcarInstitucionSede('TODAS')"
           (dblclick)="seleccionarInstitucionSede('TODAS')"
@@ -1042,7 +992,6 @@
           </button>
         </div>
 
-        <!-- Tarjetas por institución -->
         <div
           *ngFor="let inst of institucionesFiltradasModal"
           (click)="marcarInstitucionSede(inst)"
@@ -1077,7 +1026,6 @@
         </div>
       </div>
 
-      <!-- Pie del modal -->
       <div class="bd-inst-foot">
         <span class="bd-inst-total">{{ institucionesFiltradasModal.length }} instituciones disponibles</span>
         <div class="bd-inst-actions">
