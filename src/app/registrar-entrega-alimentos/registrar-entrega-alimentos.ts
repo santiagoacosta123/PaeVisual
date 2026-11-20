@@ -1318,21 +1318,16 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     };
     this.seleccionados.push(item);
 
-    // Sugerir automáticamente la cantidad según cupos y gramajes calculados
-    const calc = this.calculoAbastecimiento?.productos_sugeridos?.find(itemCalc => itemCalc.id_ingrediente === p.id);
-    let sugerida = 0;
-    if (calc && Number(calc.cantidad_sugerida_despacho) > 0) {
-      sugerida = Number(calc.cantidad_sugerida_despacho);
-    } else if (calc && Number(calc.cantidad_total_requerida) > 0) {
-      sugerida = Number(calc.cantidad_total_requerida);
-    } else {
-      sugerida = 1;
+    // Sugerir automáticamente la cantidad requerida exacta según el cálculo nutricional
+    const req = this.cantidadRequeridaDe(item);
+    const disp = this.disponibleDe(item);
+    let cantInicial = 1;
+    if (req > 0) {
+      cantInicial = Math.min(disp, req);
+    } else if (disp > 0) {
+      cantInicial = Math.min(disp, 1);
     }
-    const disponible = this.totalDisponible(p);
-    if (disponible > 0 && sugerida > disponible) {
-      sugerida = disponible;
-    }
-    this.fijarCantidadEnviar(item, Math.max(1, Math.round(sugerida * 100) / 100));
+    this.fijarCantidadEnviar(item, Math.round(cantInicial * 100) / 100);
     this.cdr.markForCheck();
   }
 
@@ -1440,22 +1435,19 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       id_jornada: null,
       dias_perecederos: null,
       dias_no_perecederos: null,
-      incluir_todos_gramajes: false,
+      incluir_todos_gramajes: true,
     }).subscribe({
       next: (calculo: any) => {
         const respuesta: CalculoAbastecimientoResponse | null = Array.isArray(calculo) ? (calculo[0] ?? null) : calculo;
         this.calculoAbastecimiento = respuesta;
         // Asignar cantidad sugerida automáticamente a productos ya en el panel si están en cero o por defecto
         for (const sel of this.seleccionados) {
-          if (sel.idIngrediente != null && this.cantidadEnviarDe(sel) <= 1) {
-            const pCalc = respuesta?.productos_sugeridos?.find(item => item.id_ingrediente === sel.idIngrediente);
-            if (pCalc) {
-              let cant = Number(pCalc.cantidad_sugerida_despacho ?? pCalc.cantidad_total_requerida ?? 0);
-              if (cant > 0) {
-                const disp = this.disponibleDe(sel);
-                if (disp > 0) cant = Math.min(cant, disp);
-                this.fijarCantidadEnviar(sel, Math.round(cant * 100) / 100);
-              }
+          const req = this.cantidadRequeridaDe(sel);
+          if (req > 0) {
+            const actual = this.cantidadEnviarDe(sel);
+            if (actual <= 1 || actual > req) {
+              const maximo = this.maximoPermitidoParaEnvio(sel);
+              this.fijarCantidadEnviar(sel, maximo);
             }
           }
         }
@@ -1474,7 +1466,39 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
   }
 
   calculadoDe(sel: FilaEntrega): ProductoCalculado | null {
-    return this.calculoAbastecimiento?.productos_sugeridos?.find(p => p.id_ingrediente === sel.idIngrediente) ?? null;
+    if (!this.calculoAbastecimiento?.productos_sugeridos?.length) return null;
+    if (sel.idIngrediente != null) {
+      const porId = this.calculoAbastecimiento.productos_sugeridos.find(
+        p => Number(p.id_ingrediente) === Number(sel.idIngrediente)
+      );
+      if (porId) return porId;
+    }
+    if (sel.ingrediente) {
+      const nombreNorm = this.norm(sel.ingrediente);
+      return this.calculoAbastecimiento.productos_sugeridos.find(
+        p => this.norm(p.nombre_ingrediente) === nombreNorm
+      ) ?? null;
+    }
+    return null;
+  }
+
+  cantidadRequeridaDe(sel: FilaEntrega): number {
+    const calc = this.calculadoDe(sel);
+    if (!calc) return 0;
+    const sug = Number(calc.cantidad_sugerida_despacho);
+    if (Number.isFinite(sug) && sug > 0) return sug;
+    const req = Number(calc.cantidad_total_requerida);
+    if (Number.isFinite(req) && req > 0) return req;
+    return 0;
+  }
+
+  maximoPermitidoParaEnvio(sel: FilaEntrega): number {
+    const disp = this.disponibleDe(sel);
+    const req = this.cantidadRequeridaDe(sel);
+    if (req > 0) {
+      return Math.min(disp, req);
+    }
+    return disp;
   }
 
   get itemsConExcesoCalculo(): Array<{ sel: FilaEntrega; enviado: number; requerido: number }> {
@@ -1482,10 +1506,9 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     const salida: Array<{ sel: FilaEntrega; enviado: number; requerido: number }> = [];
     for (const sel of this.productosParaEnviar) {
       const enviado = this.cantidadEnviarDe(sel);
-      const calc = this.calculadoDe(sel);
-      const requerido = calc ? Number(calc.cantidad_sugerida_despacho ?? 0) : 0;
-      if (enviado > requerido + 0.0001) {
-        salida.push({ sel, enviado, requerido });
+      const req = this.cantidadRequeridaDe(sel);
+      if (req > 0 && enviado > req + 0.0001) {
+        salida.push({ sel, enviado, requerido: req });
       }
     }
     return salida;
@@ -1549,14 +1572,26 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
 
   fijarCantidadEnviar(sel: FilaEntrega, valor: any): void {
     if (sel.idIngrediente == null) return;
-    const n = Number(valor);
-    this.cantidadesEnviar[sel.idIngrediente] = Number.isFinite(n) && n > 0 ? n : null;
+    const maximo = this.maximoPermitidoParaEnvio(sel);
+    let n = Number(valor);
+    if (Number.isFinite(n) && n > 0) {
+      if (n > maximo) {
+        n = maximo;
+      }
+      this.cantidadesEnviar[sel.idIngrediente] = Math.round(n * 100) / 100;
+    } else {
+      this.cantidadesEnviar[sel.idIngrediente] = null;
+    }
     this.errorEnvioPanel = '';
   }
 
   ajustarCantidadEnviar(sel: FilaEntrega, paso: number): void {
-    const nueva = Math.max(0, Math.round((this.cantidadEnviarDe(sel) + paso) * 100) / 100);
-    this.fijarCantidadEnviar(sel, Math.min(nueva, this.disponibleDe(sel)));
+    const maximo = this.maximoPermitidoParaEnvio(sel);
+    const actual = this.cantidadEnviarDe(sel);
+    let nueva = Math.round((actual + paso) * 100) / 100;
+    if (nueva > maximo) nueva = maximo;
+    if (nueva < 0) nueva = 0;
+    this.fijarCantidadEnviar(sel, nueva);
   }
 
   get productosParaEnviar(): FilaEntrega[] { return this.seleccionados.filter(s => this.cantidadEnviarDe(s) > 0); }
@@ -1622,7 +1657,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     this.guardandoEnvio = true;
 
     const idInstitucionVista = this.idInstitucion;
-    const idSede = this.idSede;
+    const idSede = this.idSede ?? this.sedeEfectivaId;
     const sigueEnLaVista = () => idInstitucionVista === this.idInstitucion && idSede === this.idSede;
     const fechaRegistro = new Date().toISOString();
     const lote = fechaRegistro;

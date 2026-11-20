@@ -1054,11 +1054,15 @@ input[type="date"].campo::-webkit-calendar-picker-indicator:hover {
                 <div class="inv-qty">
                   <span>Cantidad a enviar</span>
                   <div class="inv-stepper">
-                    <button type="button" class="cant-btn" aria-label="Restar" (click)="ajustarCantidadEnviar(sel, -1)"><span class="material-symbols-outlined text-[14px]">remove</span></button>
-                    <input type="number" min="0" [max]="disponibleDe(sel)" step="any" placeholder="0"
+                    <button type="button" class="cant-btn" aria-label="Restar" [disabled]="cantidadEnviarDe(sel) <= 0" (click)="ajustarCantidadEnviar(sel, -1)">
+                      <span class="material-symbols-outlined text-[14px]">remove</span>
+                    </button>
+                    <input type="number" min="0" [max]="maximoPermitidoParaEnvio(sel)" step="any" placeholder="0"
                       [ngModel]="cantidadEnviarDe(sel) || null" (ngModelChange)="fijarCantidadEnviar(sel, $event)"
                       [attr.aria-label]="'Cantidad de ' + sel.ingrediente + ' a enviar'" class="inv-input">
-                    <button type="button" class="cant-btn" aria-label="Sumar" (click)="ajustarCantidadEnviar(sel, 1)"><span class="material-symbols-outlined text-[14px]">add</span></button>
+                    <button type="button" class="cant-btn" aria-label="Sumar" [disabled]="cantidadEnviarDe(sel) >= maximoPermitidoParaEnvio(sel)" (click)="ajustarCantidadEnviar(sel, 1)">
+                      <span class="material-symbols-outlined text-[14px]">add</span>
+                    </button>
                     <span class="inv-unidad">{{ sel.unidad }}</span>
                   </div>
                 </div>
@@ -1067,11 +1071,14 @@ input[type="date"].campo::-webkit-calendar-picker-indicator:hover {
 
                 <ng-container *ngIf="calculadoDe(sel) as calcRow">
                   <p class="m-0 px-2.5 pb-1 text-[10px] font-semibold text-slate-500">
-                    Requerido neto cálculo: <b class="text-slate-800">{{ calcRow.cantidad_sugerida_despacho | number:'1.0-2' }} {{ sel.unidad }}</b>
+                    Requerido neto cálculo: <b class="text-slate-800">{{ (calcRow.cantidad_sugerida_despacho || calcRow.cantidad_total_requerida) | number:'1.0-2' }} {{ sel.unidad }}</b>
                     (periodo: {{ calcRow.cantidad_total_requerida | number:'1.0-2' }} {{ sel.unidad }})
                   </p>
-                  <p *ngIf="cantidadEnviarDe(sel) > calcRow.cantidad_sugerida_despacho + 0.0001" class="m-0 px-2.5 pb-2 text-[10px] font-bold text-amber-700">
-                    Supera lo requerido en +{{ (cantidadEnviarDe(sel) - calcRow.cantidad_sugerida_despacho) | number:'1.0-2' }} {{ sel.unidad }} (requiere autorización).
+                  <p *ngIf="cantidadEnviarDe(sel) < (calcRow.cantidad_sugerida_despacho || calcRow.cantidad_total_requerida) - 0.0001 && cantidadEnviarDe(sel) > 0" class="m-0 px-2.5 pb-1 text-[10px] font-semibold text-emerald-700">
+                    Envío parcial: faltarán {{ ((calcRow.cantidad_sugerida_despacho || calcRow.cantidad_total_requerida) - cantidadEnviarDe(sel)) | number:'1.0-2' }} {{ sel.unidad }}
+                  </p>
+                  <p *ngIf="cantidadEnviarDe(sel) > (calcRow.cantidad_sugerida_despacho || calcRow.cantidad_total_requerida) + 0.0001" class="m-0 px-2.5 pb-2 text-[10px] font-bold text-amber-700">
+                    Supera lo requerido en +{{ (cantidadEnviarDe(sel) - (calcRow.cantidad_sugerida_despacho || calcRow.cantidad_total_requerida)) | number:'1.0-2' }} {{ sel.unidad }} (requiere autorización).
                   </p>
                 </ng-container>
               </article>
