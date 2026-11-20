@@ -138,6 +138,12 @@ export class MenusComponent implements OnInit {
   modalVerRecetaAbierto: boolean = false;
   platoVerReceta: any = null;
 
+  // Filas desplegadas del catálogo de platos
+  filasPlatosAbiertas = new Set<string | number>();
+
+  // Momentos plegados en la minuta semanal (por defecto todos desplegados)
+  momentosMinutaPlegados = new Set<string>();
+
   // Modal Oficial de Receta y Componentes (Idéntico a Banco de Datos / Super Admin)
   modalRecetaPlatoAbierto: boolean = false;
   modoEdicionReceta: boolean = true;
@@ -1321,6 +1327,40 @@ export class MenusComponent implements OnInit {
       ? guardado.pasos.map((p, idx) => ({ numero_paso: idx + 1, descripcion_paso: p.descripcion_paso }))
       : [{ numero_paso: 1, descripcion_paso: '' }];
     this.cdr.detectChanges();
+  }
+
+  // ---------- Filas desplegables ----------
+  private claveFilaPlato(plato: any): string | number {
+    return plato?.id_plato ?? plato?.nombre_plato;
+  }
+
+  trackByPlato(index: number, plato: any): string | number {
+    return plato?.id_plato ?? plato?.nombre_plato ?? index;
+  }
+
+  filaPlatoAbierta(plato: any): boolean {
+    return this.filasPlatosAbiertas.has(this.claveFilaPlato(plato));
+  }
+
+  toggleFilaPlato(plato: any): void {
+    const k = this.claveFilaPlato(plato);
+    if (this.filasPlatosAbiertas.has(k)) {
+      this.filasPlatosAbiertas.delete(k);
+    } else {
+      this.filasPlatosAbiertas.add(k);
+    }
+  }
+
+  momentoMinutaAbierto(mom: string): boolean {
+    return !this.momentosMinutaPlegados.has(mom);
+  }
+
+  toggleMomentoMinuta(mom: string): void {
+    if (this.momentosMinutaPlegados.has(mom)) {
+      this.momentosMinutaPlegados.delete(mom);
+    } else {
+      this.momentosMinutaPlegados.add(mom);
+    }
   }
 
   @HostListener('document:click')
