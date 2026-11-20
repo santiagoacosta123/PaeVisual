@@ -339,18 +339,23 @@
           </div>
 
           <div style="margin-bottom: 10px;">
-            <div style="font-size: 10px; font-weight: 800; color: #64748b; letter-spacing: 0.5px; margin-bottom: 6px;">MAÑANA</div>
+            <div style="font-size: 10px; font-weight: 800; color: #64748b; letter-spacing: 0.5px; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;">
+              <span>MAÑANA</span>
+              <span *ngIf="!jornadaManana?.habilitada" style="color: #ef4444; font-weight: 600; font-size: 10px;">⚠️ Jornada no asignada — no seleccionable</span>
+            </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
               <div *ngFor="let s of seccionesPorNombreJornada('Mañana')"
                    (click)="!esContratoNoVigente && toggleSeccionItem(s)"
-                   style="border-radius: 8px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.15s;"
-                   [style.border]="estaSeccionAsignada(s.id_seccion || s.id) ? '1.5px solid #10b981' : '1px solid #e2e8f0'"
-                   [style.background]="estaSeccionAsignada(s.id_seccion || s.id) ? '#f0fdf4' : '#ffffff'">
-                <span style="font-size: 13px; font-weight: 700; color: #0f172a;">{{ s.nombre_seccion || s.nombre }}</span>
+                   style="border-radius: 8px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; transition: all 0.15s;"
+                   [style.opacity]="!jornadaManana?.habilitada ? '0.45' : '1'"
+                   [style.cursor]="!jornadaManana?.habilitada ? 'not-allowed' : 'pointer'"
+                   [style.border]="estaSeccionAsignada(s.id_seccion || s.id) && jornadaManana?.habilitada ? '1.5px solid #10b981' : '1px solid #e2e8f0'"
+                   [style.background]="estaSeccionAsignada(s.id_seccion || s.id) && jornadaManana?.habilitada ? '#f0fdf4' : '#ffffff'">
+                <span style="font-size: 13px; font-weight: 700;" [style.color]="!jornadaManana?.habilitada ? '#94a3b8' : '#0f172a'">{{ s.nombre_seccion || s.nombre }}</span>
                 <div style="width: 18px; height: 18px; border-radius: 4px; display: flex; align-items: center; justify-content: center;"
-                     [style.background]="estaSeccionAsignada(s.id_seccion || s.id) ? '#059669' : '#ffffff'"
-                     [style.border]="estaSeccionAsignada(s.id_seccion || s.id) ? 'none' : '1.5px solid #cbd5e1'">
-                  <svg *ngIf="estaSeccionAsignada(s.id_seccion || s.id)" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                     [style.background]="estaSeccionAsignada(s.id_seccion || s.id) && jornadaManana?.habilitada ? '#059669' : '#ffffff'"
+                     [style.border]="estaSeccionAsignada(s.id_seccion || s.id) && jornadaManana?.habilitada ? 'none' : '1.5px solid #cbd5e1'">
+                  <svg *ngIf="estaSeccionAsignada(s.id_seccion || s.id) && jornadaManana?.habilitada" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
                     <polyline points="20 6 9 17 4 12"></polyline>
                   </svg>
                 </div>
@@ -359,18 +364,23 @@
           </div>
 
           <div>
-            <div style="font-size: 10px; font-weight: 800; color: #64748b; letter-spacing: 0.5px; margin-bottom: 6px;">TARDE</div>
+            <div style="font-size: 10px; font-weight: 800; color: #64748b; letter-spacing: 0.5px; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;">
+              <span>TARDE</span>
+              <span *ngIf="!jornadaTarde?.habilitada" style="color: #ef4444; font-weight: 600; font-size: 10px;">⚠️ Jornada no asignada — no seleccionable</span>
+            </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
               <div *ngFor="let s of seccionesPorNombreJornada('Tarde')"
                    (click)="!esContratoNoVigente && toggleSeccionItem(s)"
-                   style="border-radius: 8px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.15s;"
-                   [style.border]="estaSeccionAsignada(s.id_seccion || s.id) ? '1.5px solid #10b981' : '1px solid #e2e8f0'"
-                   [style.background]="estaSeccionAsignada(s.id_seccion || s.id) ? '#f0fdf4' : '#ffffff'">
-                <span style="font-size: 13px; font-weight: 700; color: #0f172a;">{{ s.nombre_seccion || s.nombre }}</span>
+                   style="border-radius: 8px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; transition: all 0.15s;"
+                   [style.opacity]="!jornadaTarde?.habilitada ? '0.45' : '1'"
+                   [style.cursor]="!jornadaTarde?.habilitada ? 'not-allowed' : 'pointer'"
+                   [style.border]="estaSeccionAsignada(s.id_seccion || s.id) && jornadaTarde?.habilitada ? '1.5px solid #10b981' : '1px solid #e2e8f0'"
+                   [style.background]="estaSeccionAsignada(s.id_seccion || s.id) && jornadaTarde?.habilitada ? '#f0fdf4' : '#ffffff'">
+                <span style="font-size: 13px; font-weight: 700;" [style.color]="!jornadaTarde?.habilitada ? '#94a3b8' : '#0f172a'">{{ s.nombre_seccion || s.nombre }}</span>
                 <div style="width: 18px; height: 18px; border-radius: 4px; display: flex; align-items: center; justify-content: center;"
-                     [style.background]="estaSeccionAsignada(s.id_seccion || s.id) ? '#059669' : '#ffffff'"
-                     [style.border]="estaSeccionAsignada(s.id_seccion || s.id) ? 'none' : '1.5px solid #cbd5e1'">
-                  <svg *ngIf="estaSeccionAsignada(s.id_seccion || s.id)" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                     [style.background]="estaSeccionAsignada(s.id_seccion || s.id) && jornadaTarde?.habilitada ? '#059669' : '#ffffff'"
+                     [style.border]="estaSeccionAsignada(s.id_seccion || s.id) && jornadaTarde?.habilitada ? 'none' : '1.5px solid #cbd5e1'">
+                  <svg *ngIf="estaSeccionAsignada(s.id_seccion || s.id) && jornadaTarde?.habilitada" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
                     <polyline points="20 6 9 17 4 12"></polyline>
                   </svg>
                 </div>
@@ -727,19 +737,25 @@
               </div>
             </div>
 
+            <!-- MAÑANA -->
             <div style="margin-bottom: 10px;">
-              <div style="font-size: 10px; font-weight: 800; color: #64748b; letter-spacing: 0.5px; margin-bottom: 6px;">MAÑANA</div>
+              <div style="font-size: 10px; font-weight: 800; color: #64748b; letter-spacing: 0.5px; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;">
+                <span>MAÑANA</span>
+                <span *ngIf="!jornadaManana?.habilitada" style="color: #ef4444; font-weight: 600; font-size: 10px;">⚠️ Jornada no asignada — no seleccionable</span>
+              </div>
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                 <div *ngFor="let s of seccionesPorNombreJornada('Mañana')"
                      (click)="toggleSeccionItem(s)"
-                     style="border-radius: 8px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.15s;"
-                     [style.border]="estaSeccionAsignada(s.id_seccion || s.id) ? '1.5px solid #10b981' : '1px solid #e2e8f0'"
-                     [style.background]="estaSeccionAsignada(s.id_seccion || s.id) ? '#f0fdf4' : '#ffffff'">
-                  <span style="font-size: 13px; font-weight: 700; color: #0f172a;">{{ s.nombre_seccion || s.nombre }}</span>
+                     style="border-radius: 8px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; transition: all 0.15s;"
+                     [style.opacity]="!jornadaManana?.habilitada ? '0.45' : '1'"
+                     [style.cursor]="!jornadaManana?.habilitada ? 'not-allowed' : 'pointer'"
+                     [style.border]="estaSeccionAsignada(s.id_seccion || s.id) && jornadaManana?.habilitada ? '1.5px solid #10b981' : '1px solid #e2e8f0'"
+                     [style.background]="estaSeccionAsignada(s.id_seccion || s.id) && jornadaManana?.habilitada ? '#f0fdf4' : '#ffffff'">
+                  <span style="font-size: 13px; font-weight: 700;" [style.color]="!jornadaManana?.habilitada ? '#94a3b8' : '#0f172a'">{{ s.nombre_seccion || s.nombre }}</span>
                   <div style="width: 18px; height: 18px; border-radius: 4px; display: flex; align-items: center; justify-content: center;"
-                       [style.background]="estaSeccionAsignada(s.id_seccion || s.id) ? '#059669' : '#ffffff'"
-                       [style.border]="estaSeccionAsignada(s.id_seccion || s.id) ? 'none' : '1.5px solid #cbd5e1'">
-                    <svg *ngIf="estaSeccionAsignada(s.id_seccion || s.id)" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                       [style.background]="estaSeccionAsignada(s.id_seccion || s.id) && jornadaManana?.habilitada ? '#059669' : '#ffffff'"
+                       [style.border]="estaSeccionAsignada(s.id_seccion || s.id) && jornadaManana?.habilitada ? 'none' : '1.5px solid #cbd5e1'">
+                    <svg *ngIf="estaSeccionAsignada(s.id_seccion || s.id) && jornadaManana?.habilitada" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
                       <polyline points="20 6 9 17 4 12"></polyline>
                     </svg>
                   </div>
@@ -747,19 +763,25 @@
               </div>
             </div>
 
+            <!-- TARDE -->
             <div>
-              <div style="font-size: 10px; font-weight: 800; color: #64748b; letter-spacing: 0.5px; margin-bottom: 6px;">TARDE</div>
+              <div style="font-size: 10px; font-weight: 800; color: #64748b; letter-spacing: 0.5px; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;">
+                <span>TARDE</span>
+                <span *ngIf="!jornadaTarde?.habilitada" style="color: #ef4444; font-weight: 600; font-size: 10px;">⚠️ Jornada no asignada — no seleccionable</span>
+              </div>
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                 <div *ngFor="let s of seccionesPorNombreJornada('Tarde')"
                      (click)="toggleSeccionItem(s)"
-                     style="border-radius: 8px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.15s;"
-                     [style.border]="estaSeccionAsignada(s.id_seccion || s.id) ? '1.5px solid #10b981' : '1px solid #e2e8f0'"
-                     [style.background]="estaSeccionAsignada(s.id_seccion || s.id) ? '#f0fdf4' : '#ffffff'">
-                  <span style="font-size: 13px; font-weight: 700; color: #0f172a;">{{ s.nombre_seccion || s.nombre }}</span>
+                     style="border-radius: 8px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; transition: all 0.15s;"
+                     [style.opacity]="!jornadaTarde?.habilitada ? '0.45' : '1'"
+                     [style.cursor]="!jornadaTarde?.habilitada ? 'not-allowed' : 'pointer'"
+                     [style.border]="estaSeccionAsignada(s.id_seccion || s.id) && jornadaTarde?.habilitada ? '1.5px solid #10b981' : '1px solid #e2e8f0'"
+                     [style.background]="estaSeccionAsignada(s.id_seccion || s.id) && jornadaTarde?.habilitada ? '#f0fdf4' : '#ffffff'">
+                  <span style="font-size: 13px; font-weight: 700;" [style.color]="!jornadaTarde?.habilitada ? '#94a3b8' : '#0f172a'">{{ s.nombre_seccion || s.nombre }}</span>
                   <div style="width: 18px; height: 18px; border-radius: 4px; display: flex; align-items: center; justify-content: center;"
-                       [style.background]="estaSeccionAsignada(s.id_seccion || s.id) ? '#059669' : '#ffffff'"
-                       [style.border]="estaSeccionAsignada(s.id_seccion || s.id) ? 'none' : '1.5px solid #cbd5e1'">
-                    <svg *ngIf="estaSeccionAsignada(s.id_seccion || s.id)" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                       [style.background]="estaSeccionAsignada(s.id_seccion || s.id) && jornadaTarde?.habilitada ? '#059669' : '#ffffff'"
+                       [style.border]="estaSeccionAsignada(s.id_seccion || s.id) && jornadaTarde?.habilitada ? 'none' : '1.5px solid #cbd5e1'">
+                    <svg *ngIf="estaSeccionAsignada(s.id_seccion || s.id) && jornadaTarde?.habilitada" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
                       <polyline points="20 6 9 17 4 12"></polyline>
                     </svg>
                   </div>
@@ -799,7 +821,7 @@
               <span style="font-size: 11px; font-weight: 600; color: #64748b;">Techo: {{ contrato.cupos || 0 }}</span>
             </div>
 
-            <div style="display: flex; flex-direction: column; gap: 8px; max-height: 320px; overflow-y: auto; padding-right: 2px;">
+            <div style="display: flex; flex-direction: column; gap: 8px; max-height: 420px; overflow-y: auto; padding-right: 2px;">
               <div *ngFor="let s of sedesInstitucion"
                    style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; transition: all 0.15s; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
                 
@@ -829,6 +851,66 @@
                            style="width: 65px; padding: 4px 6px; border: 1.5px solid #cbd5e1; border-radius: 6px; font-size: 12px; font-weight: 800; text-align: right; color: #0f172a; background: #f8fafc;"
                            onfocus="this.style.background='#ffffff'; this.style.borderColor='#f59e0b'"
                            onblur="this.style.background='#f8fafc'; this.style.borderColor='#cbd5e1'" />
+                  </div>
+                </div>
+
+                <!-- Jornadas y Menús asignados a esta sede -->
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px 8px; display: flex; flex-direction: column; gap: 6px;">
+                  <!-- Selector de Jornadas de la Sede -->
+                  <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+                    <span style="font-size: 10px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.3px;">Jornadas:</span>
+                    <div style="display: flex; gap: 4px;">
+                      <!-- Mañana -->
+                      <button type="button"
+                              (click)="toggleJornadaSede(s, 'Mañana')"
+                              [disabled]="!jornadaManana?.habilitada"
+                              [title]="!jornadaManana?.habilitada ? 'Primero activa la jornada Mañana en el Paso 2' : (s.jornada_manana ? 'Jornada Mañana activa para esta sede (clic para quitar)' : 'Asignar jornada Mañana a esta sede')"
+                              style="padding: 2px 7px; border-radius: 5px; font-size: 10.5px; font-weight: 700; border: 1.5px solid; display: inline-flex; align-items: center; gap: 3px; transition: all 0.15s;"
+                              [style.border-color]="s.jornada_manana && jornadaManana?.habilitada ? '#10b981' : '#cbd5e1'"
+                              [style.background]="s.jornada_manana && jornadaManana?.habilitada ? '#ecfdf5' : '#ffffff'"
+                              [style.color]="s.jornada_manana && jornadaManana?.habilitada ? '#065f46' : '#64748b'"
+                              [style.opacity]="!jornadaManana?.habilitada ? '0.45' : '1'"
+                              [style.cursor]="!jornadaManana?.habilitada ? 'not-allowed' : 'pointer'">
+                        <span *ngIf="s.jornada_manana && jornadaManana?.habilitada">✓</span>
+                        <span>Mañana</span>
+                      </button>
+
+                      <!-- Tarde -->
+                      <button type="button"
+                              (click)="toggleJornadaSede(s, 'Tarde')"
+                              [disabled]="!jornadaTarde?.habilitada"
+                              [title]="!jornadaTarde?.habilitada ? 'Primero activa la jornada Tarde en el Paso 2' : (s.jornada_tarde ? 'Jornada Tarde activa para esta sede (clic para quitar)' : 'Asignar jornada Tarde a esta sede')"
+                              style="padding: 2px 7px; border-radius: 5px; font-size: 10.5px; font-weight: 700; border: 1.5px solid; display: inline-flex; align-items: center; gap: 3px; transition: all 0.15s;"
+                              [style.border-color]="s.jornada_tarde && jornadaTarde?.habilitada ? '#10b981' : '#cbd5e1'"
+                              [style.background]="s.jornada_tarde && jornadaTarde?.habilitada ? '#ecfdf5' : '#ffffff'"
+                              [style.color]="s.jornada_tarde && jornadaTarde?.habilitada ? '#065f46' : '#64748b'"
+                              [style.opacity]="!jornadaTarde?.habilitada ? '0.45' : '1'"
+                              [style.cursor]="!jornadaTarde?.habilitada ? 'not-allowed' : 'pointer'">
+                        <span *ngIf="s.jornada_tarde && jornadaTarde?.habilitada">✓</span>
+                        <span>Tarde</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Selector de Secciones de Menú de la Sede -->
+                  <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px; border-top: 1px dashed #e2e8f0; padding-top: 4px;">
+                    <span style="font-size: 10px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.3px;">Menús:</span>
+                    <div style="display: flex; flex-wrap: wrap; gap: 4px; justify-content: flex-end;">
+                      <button *ngFor="let sec of todasSeccionesDisponibles"
+                              type="button"
+                              (click)="toggleSeccionSede(s, sec)"
+                              [disabled]="!esSeccionPermitidaParaSede(s, sec)"
+                              [title]="!esSeccionPermitidaParaSede(s, sec) ? obtenerMotivoBloqueoSeccionSede(s, sec) : (estaSeccionEnSede(s, sec.id_seccion || sec.id) ? 'Quitar ' + (sec.nombre_seccion || sec.nombre) : 'Asignar ' + (sec.nombre_seccion || sec.nombre))"
+                              style="padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 600; border: 1px solid; display: inline-flex; align-items: center; gap: 2px; transition: all 0.15s;"
+                              [style.border-color]="estaSeccionEnSede(s, sec.id_seccion || sec.id) && esSeccionPermitidaParaSede(s, sec) ? '#059669' : '#cbd5e1'"
+                              [style.background]="estaSeccionEnSede(s, sec.id_seccion || sec.id) && esSeccionPermitidaParaSede(s, sec) ? '#d1fae5' : '#ffffff'"
+                              [style.color]="estaSeccionEnSede(s, sec.id_seccion || sec.id) && esSeccionPermitidaParaSede(s, sec) ? '#065f46' : '#64748b'"
+                              [style.opacity]="!esSeccionPermitidaParaSede(s, sec) ? '0.4' : '1'"
+                              [style.cursor]="!esSeccionPermitidaParaSede(s, sec) ? 'not-allowed' : 'pointer'">
+                        <span *ngIf="estaSeccionEnSede(s, sec.id_seccion || sec.id) && esSeccionPermitidaParaSede(s, sec)">✓</span>
+                        <span>{{ sec.nombre_seccion || sec.nombre }}</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
 

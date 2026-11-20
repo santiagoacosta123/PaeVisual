@@ -366,6 +366,9 @@ export class ContratoDetalleComponent implements OnInit {
               const cupos = Number(match.cuposAsignados ?? match.cupos_asignados ?? match.cupos) || 0;
               s.cupos = cupos;
               s.cupos_asignados = cupos;
+              if (match.jornada_manana !== undefined) s.jornada_manana = !!match.jornada_manana;
+              if (match.jornada_tarde !== undefined) s.jornada_tarde = !!match.jornada_tarde;
+              if (Array.isArray(match.secciones_ids)) s.secciones_ids = match.secciones_ids;
               s.grados = (match.grados || []).map((g: any) => ({
                 id_grado: Number(g.id_grado || g.id),
                 nombre_grado: g.nombre || g.nombre_grado || `Grado ${g.id_grado}`,
@@ -396,6 +399,9 @@ export class ContratoDetalleComponent implements OnInit {
           if (sedeG) {
             s.cupos = Number(sedeG.cupos_asignados ?? sedeG.cuposAsignados ?? sedeG.cupos) || 0;
             s.cupos_asignados = s.cupos;
+            if (sedeG.jornada_manana !== undefined) s.jornada_manana = !!sedeG.jornada_manana;
+            if (sedeG.jornada_tarde !== undefined) s.jornada_tarde = !!sedeG.jornada_tarde;
+            if (Array.isArray(sedeG.secciones_ids)) s.secciones_ids = sedeG.secciones_ids;
             s.grados = sedeG.grados || [];
           }
         });
@@ -1442,10 +1448,180 @@ export class ContratoDetalleComponent implements OnInit {
     });
   }
 
+  get todasSeccionesDisponibles(): any[] {
+    if (!this.seccionesMenu || this.seccionesMenu.length === 0) {
+      this.cargarSeccionesPorDefecto();
+    }
+    return this.seccionesMenu || [];
+  }
+
+  obtenerNombreJornadaDeSeccion(seccion: any): string {
+    const nom = (seccion.nombre_seccion || seccion.nombre || '').toLowerCase();
+    const jNom = (seccion.jornada || seccion.nombre_jornada || seccion.jornada_nombre || '').toLowerCase();
+    const jId = Number(typeof seccion.id_jornada === 'object' ? seccion.id_jornada?.id_jornada : seccion.id_jornada);
+
+    if (nom.includes('desayuno') || jNom.includes('mañana') || jId === 1 || jId === 3) return 'Mañana';
+    if (nom.includes('merienda') || jNom.includes('tarde') || jId === 2 || jId === 5) return 'Tarde';
+    return 'correspondiente';
+  }
+
+  esSeccionDeJornada(seccion: any, jornada: 'Mañana' | 'Tarde'): boolean {
+    const nom = (seccion.nombre_seccion || seccion.nombre || '').toLowerCase();
+    const jNom = (seccion.jornada || seccion.nombre_jornada || seccion.jornada_nombre || '').toLowerCase();
+    const jId = Number(typeof seccion.id_jornada === 'object' ? seccion.id_jornada?.id_jornada : seccion.id_jornada);
+
+    if (jornada === 'Mañana') {
+      return nom.includes('desayuno') || jNom.includes('mañana') || jId === 1 || jId === 3;
+    }
+    if (jornada === 'Tarde') {
+      return nom.includes('merienda') || jNom.includes('tarde') || jId === 2 || jId === 5;
+    }
+    return false;
+  }
+
+  esJornadaDeSeccionHabilitada(seccion: any): boolean {
+    const jReq = this.obtenerNombreJornadaDeSeccion(seccion);
+    if (jReq === 'Mañana') {
+      return !!this.jornadaManana?.habilitada;
+    }
+    if (jReq === 'Tarde') {
+      return !!this.jornadaTarde?.habilitada;
+    }
+    return !!this.jornadaManana?.habilitada || !!this.jornadaTarde?.habilitada;
+  }
+
   toggleSeccionItem(seccion: any) {
+    if (!this.esJornadaDeSeccionHabilitada(seccion)) {
+      const nom = seccion.nombre_seccion || seccion.nombre || 'esta sección';
+      const jReq = this.obtenerNombreJornadaDeSeccion(seccion);
+      void this.sweetAlert.warning(
+        'Jornada no amparada',
+        `No puedes seleccionar "${nom}" porque la jornada ${jReq} no está activa en el contrato. Actívala primero en el Paso 2.`
+      );
+      return;
+    }
     const sId = Number(seccion.id_seccion || seccion.id);
     const estaAsignada = this.estaSeccionAsignada(sId);
     this.toggleSeccionMenu(sId, { target: { checked: !estaAsignada } });
+  }
+
+  esSeccionPermitidaParaSede(sede: any, sec: any): boolean {
+    const nom = (sec.nombre_seccion || sec.nombre || '').toLowerCase();
+    const jNom = (sec.jornada || sec.nombre_jornada || sec.jornada_nombre || '').toLowerCase();
+    const jId = Number(typeof sec.id_jornada === 'object' ? sec.id_jornada?.id_jornada : sec.id_jornada);
+
+    const esManana = nom.includes('desayuno') || jNom.includes('mañana') || jId === 1 || jId === 3;
+    const esMerienda = nom.includes('merienda') || jNom.includes('tarde') || jId === 2 || jId === 5;
+
+    if (esManana) {
+      return !!sede.jornada_manana && !!this.jornadaManana?.habilitada;
+    }
+    if (esMerienda) {
+      return !!sede.jornada_tarde && !!this.jornadaTarde?.habilitada;
+    }
+    // Almuerzo u otra sección general: requiere que la sede tenga al menos una jornada activa y amparada
+    return (!!sede.jornada_manana && !!this.jornadaManana?.habilitada) ||
+           (!!sede.jornada_tarde && !!this.jornadaTarde?.habilitada);
+  }
+
+  obtenerMotivoBloqueoSeccionSede(sede: any, sec: any): string {
+    const jReq = this.obtenerNombreJornadaDeSeccion(sec);
+    if (jReq === 'Mañana') {
+      if (!this.jornadaManana?.habilitada) return 'La jornada Mañana no está amparada en el contrato.';
+      if (!sede.jornada_manana) return 'Esta sede no tiene asignada la jornada Mañana.';
+    }
+    if (jReq === 'Tarde') {
+      if (!this.jornadaTarde?.habilitada) return 'La jornada Tarde no está amparada en el contrato.';
+      if (!sede.jornada_tarde) return 'Esta sede no tiene asignada la jornada Tarde.';
+    }
+    if (!sede.jornada_manana && !sede.jornada_tarde) {
+      return 'Debes asignarle al menos una jornada a esta sede para habilitar sus menús.';
+    }
+    return 'Sección no disponible para la jornada de esta sede.';
+  }
+
+  estaSeccionEnSede(sede: any, seccionId: number): boolean {
+    if (!sede.secciones_ids || !Array.isArray(sede.secciones_ids)) return false;
+    return sede.secciones_ids.includes(Number(seccionId));
+  }
+
+  toggleJornadaSede(sede: any, tipo: 'Mañana' | 'Tarde') {
+    if (tipo === 'Mañana') {
+      if (!this.jornadaManana?.habilitada) {
+        void this.sweetAlert.warning(
+          'Jornada no amparada',
+          'Debes habilitar la jornada Mañana en el contrato (Paso 2) antes de asignarla a una sede.'
+        );
+        return;
+      }
+      sede.jornada_manana = !sede.jornada_manana;
+      if (!sede.jornada_manana && Array.isArray(sede.secciones_ids)) {
+        sede.secciones_ids = sede.secciones_ids.filter((id: number) => {
+          const sec = this.seccionesMenu.find(m => Number(m.id_seccion || m.id) === id);
+          return sec ? !this.esSeccionDeJornada(sec, 'Mañana') : true;
+        });
+      } else if (sede.jornada_manana) {
+        if (!Array.isArray(sede.secciones_ids)) sede.secciones_ids = [];
+        const secManana = this.seccionesPorNombreJornada('Mañana');
+        if (secManana.length > 0) {
+          const sId = Number(secManana[0].id_seccion || secManana[0].id);
+          if (!sede.secciones_ids.includes(sId)) sede.secciones_ids.push(sId);
+          if (!this.estaSeccionAsignada(sId)) {
+            this.toggleSeccionMenu(sId, { target: { checked: true } });
+          }
+        }
+      }
+    } else {
+      if (!this.jornadaTarde?.habilitada) {
+        void this.sweetAlert.warning(
+          'Jornada no amparada',
+          'Debes habilitar la jornada Tarde en el contrato (Paso 2) antes de asignarla a una sede.'
+        );
+        return;
+      }
+      sede.jornada_tarde = !sede.jornada_tarde;
+      if (!sede.jornada_tarde && Array.isArray(sede.secciones_ids)) {
+        sede.secciones_ids = sede.secciones_ids.filter((id: number) => {
+          const sec = this.seccionesMenu.find(m => Number(m.id_seccion || m.id) === id);
+          return sec ? !this.esSeccionDeJornada(sec, 'Tarde') : true;
+        });
+      } else if (sede.jornada_tarde) {
+        if (!Array.isArray(sede.secciones_ids)) sede.secciones_ids = [];
+        const secTarde = this.seccionesPorNombreJornada('Tarde');
+        if (secTarde.length > 0) {
+          const sId = Number(secTarde[0].id_seccion || secTarde[0].id);
+          if (!sede.secciones_ids.includes(sId)) sede.secciones_ids.push(sId);
+          if (!this.estaSeccionAsignada(sId)) {
+            this.toggleSeccionMenu(sId, { target: { checked: true } });
+          }
+        }
+      }
+    }
+    this.cdr.detectChanges();
+  }
+
+  toggleSeccionSede(sede: any, seccion: any) {
+    if (!this.esSeccionPermitidaParaSede(sede, seccion)) {
+      const motivo = this.obtenerMotivoBloqueoSeccionSede(sede, seccion);
+      void this.sweetAlert.warning('Acción no permitida', motivo);
+      return;
+    }
+
+    if (!Array.isArray(sede.secciones_ids)) {
+      sede.secciones_ids = [];
+    }
+
+    const sId = Number(seccion.id_seccion || seccion.id);
+    const idx = sede.secciones_ids.indexOf(sId);
+    if (idx >= 0) {
+      sede.secciones_ids.splice(idx, 1);
+    } else {
+      sede.secciones_ids.push(sId);
+      if (!this.estaSeccionAsignada(sId)) {
+        this.toggleSeccionMenu(sId, { target: { checked: true } });
+      }
+    }
+    this.cdr.detectChanges();
   }
 
   cambiarEstadoContrato(nuevoEstado: 'Activo' | 'Inactivo') {
@@ -1684,6 +1860,29 @@ export class ContratoDetalleComponent implements OnInit {
       if (s.expandidoGrados === undefined) {
         s.expandidoGrados = false;
       }
+      if (s.jornada_manana === undefined || s.jornada_manana === null) {
+        s.jornada_manana = this.jornadaManana ? !!this.jornadaManana.habilitada : false;
+      }
+      if (s.jornada_tarde === undefined || s.jornada_tarde === null) {
+        s.jornada_tarde = this.jornadaTarde ? !!this.jornadaTarde.habilitada : false;
+      }
+      if (!Array.isArray(s.secciones_ids)) {
+        s.secciones_ids = [];
+        if (s.jornada_manana) {
+          const secM = this.seccionesPorNombreJornada('Mañana');
+          secM.forEach(m => {
+            const mId = Number(m.id_seccion || m.id);
+            if (!s.secciones_ids.includes(mId)) s.secciones_ids.push(mId);
+          });
+        }
+        if (s.jornada_tarde) {
+          const secT = this.seccionesPorNombreJornada('Tarde');
+          secT.forEach(m => {
+            const mId = Number(m.id_seccion || m.id);
+            if (!s.secciones_ids.includes(mId)) s.secciones_ids.push(mId);
+          });
+        }
+      }
     });
   }
 
@@ -1878,28 +2077,45 @@ export class ContratoDetalleComponent implements OnInit {
 
   toggleJornada(jornada: any, evento: any) {
     jornada.habilitada = evento.target.checked;
+    const jNom = (jornada.nombre_jornada || jornada.nombre || '').toString().toLowerCase();
+    const esManana = jNom.includes('mañana');
+    const esTarde = jNom.includes('tarde');
 
-    // Si se deshabilita la jornada, quitamos las secciones correspondientes
+    // Si se deshabilita la jornada, quitamos las secciones correspondientes del contrato y de las sedes
     if (!jornada.habilitada) {
-      const jId = jornada.id_jornada || jornada.id;
-      const jNom = (jornada.nombre_jornada || jornada.nombre || '').toString().toLowerCase();
+      const tipo = esManana ? 'Mañana' : 'Tarde';
+      const seccionesAfectadas = this.seccionesPorNombreJornada(tipo);
 
-      const seccionesDeEstaJornada = this.seccionesMenu.filter(s => {
-        const sJornadaId = (typeof s.id_jornada === 'object' && s.id_jornada !== null)
-          ? (s.id_jornada.id_jornada || s.id_jornada.id)
-          : (s.id_jornada ?? s.jornada);
-        const sJornadaNom = (s.nombre_jornada || s.jornada_nombre || s.jornada || '').toString().toLowerCase();
-
-        return (sJornadaId && jId && Number(sJornadaId) === Number(jId)) ||
-               (sJornadaNom && jNom && (sJornadaNom.includes(jNom) || jNom.includes(sJornadaNom))) ||
-               (String(sJornadaId).toLowerCase() === jNom);
-      });
-
-      seccionesDeEstaJornada.forEach(seccion => {
+      seccionesAfectadas.forEach(seccion => {
         const secId = Number(seccion.id_seccion || seccion.id);
         this.seccionesSeleccionadasIds.delete(secId);
-        if (this.estaSeccionAsignada(secId) && !this.editandoSecciones) {
-          this.toggleSeccionMenu(secId, { target: { checked: false } });
+        this.contratosSeccionMenu = this.contratosSeccionMenu.filter(rel => {
+          const relSecId = typeof rel.id_seccion === 'object' ? (rel.id_seccion?.id_seccion || rel.id_seccion?.id) : rel.id_seccion;
+          return Number(relSecId) !== Number(secId);
+        });
+      });
+
+      // Desactivar en cada sede esa jornada y limpiar sus secciones asociadas
+      (this.sedesInstitucion || []).forEach(sede => {
+        if (esManana) {
+          sede.jornada_manana = false;
+        }
+        if (esTarde) {
+          sede.jornada_tarde = false;
+        }
+        if (Array.isArray(sede.secciones_ids)) {
+          const idsAfectados = seccionesAfectadas.map(s => Number(s.id_seccion || s.id));
+          sede.secciones_ids = sede.secciones_ids.filter((id: number) => !idsAfectados.includes(id));
+        }
+      });
+    } else {
+      // Si se habilita la jornada en el contrato, activarla en las sedes por defecto si no tenían ninguna
+      (this.sedesInstitucion || []).forEach(sede => {
+        if (esManana && (sede.jornada_manana === undefined || sede.jornada_manana === null)) {
+          sede.jornada_manana = true;
+        }
+        if (esTarde && (sede.jornada_tarde === undefined || sede.jornada_tarde === null)) {
+          sede.jornada_tarde = true;
         }
       });
     }
@@ -2345,6 +2561,13 @@ export class ContratoDetalleComponent implements OnInit {
                 cuposAsignados: Number(s.cupos_asignados ?? s.cupos) || 0,
                 cupos_asignados: Number(s.cupos_asignados ?? s.cupos) || 0,
                 cupos: Number(s.cupos_asignados ?? s.cupos) || 0,
+                jornada_manana: !!s.jornada_manana,
+                jornada_tarde: !!s.jornada_tarde,
+                jornadas: [
+                  ...(s.jornada_manana ? ['Mañana'] : []),
+                  ...(s.jornada_tarde ? ['Tarde'] : [])
+                ],
+                secciones_ids: Array.isArray(s.secciones_ids) ? s.secciones_ids : [],
                 grados: Array.isArray(s.grados) ? s.grados.map((g: any) => ({
                   id_grado: Number(g.id_grado || g.id),
                   nombre_grado: g.nombre_grado,
