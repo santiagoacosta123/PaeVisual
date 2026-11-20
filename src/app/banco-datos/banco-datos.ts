@@ -363,11 +363,11 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       nombre: 'Gramajes',
       singular: 'gramaje',
       icon: 'scale',
-      idField: 'id_gramaje',
+      idField: 'id_ingrediente',
       categoria: 'inventario',
       campos: [
         { name: 'id_ingrediente', label: 'Ingrediente', type: 'select', required: true, source: 'ingredientes' },
-        { name: 'grados_resumen', label: 'Grados y gramajes asignados', type: 'text' },
+        { name: 'grados_resumen', label: 'Porción por grado escolar', type: 'text' },
         { name: 'id_unidad_medida', label: 'Unidad de medida', type: 'select', required: true, source: 'unidades_medida' },
         { name: 'descripcion', label: 'Descripción', type: 'textarea' }
       ]
@@ -545,6 +545,8 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
   // ============================================================
   // GRAMAJES POR GRADO (Modal especializado)
   // ============================================================
+  modalVerGramajesAbierto: boolean = false;
+  gramajeDetalleSeleccionado: any = null;
   gramajeIngredienteId: number | null = null;
   gramajeUnidadMedidaId: number | null = null;
   gramajeDescripcion: string = '';
@@ -880,6 +882,10 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
   onEscape(): void {
     if (this.modalVerRecetaAbierto) {
       this.cerrarModalVerReceta();
+      return;
+    }
+    if (this.modalVerGramajesAbierto) {
+      this.cerrarModalVerDetalleGramajes();
       return;
     }
     if (this.mostrarModal) {
@@ -1553,6 +1559,32 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
   // ============================================================
   // LÓGICA DE GRAMAJES MULTI-GRADO
   // ============================================================
+
+  abrirModalVerDetalleGramajes(item: any): void {
+    this.gramajeDetalleSeleccionado = item;
+    this.modalVerGramajesAbierto = true;
+  }
+
+  cerrarModalVerDetalleGramajes(): void {
+    this.modalVerGramajesAbierto = false;
+    this.gramajeDetalleSeleccionado = null;
+  }
+
+  editarDesdeVistaGramaje(): void {
+    const item = this.gramajeDetalleSeleccionado;
+    this.cerrarModalVerDetalleGramajes();
+    if (item) {
+      this.abrirModal(item);
+    }
+  }
+
+  obtenerResumenCortoGrados(item: any): string {
+    if (!item?.grados_lista?.length) return 'Sin grados asignados';
+    const abr = item.abreviatura_unidad_medida || 'gr';
+    const primeros = item.grados_lista.slice(0, 3).map((g: any) => `${g.nombre_grado}: ${g.cantidad} ${abr}`);
+    const resto = item.grados_lista.length - primeros.length;
+    return primeros.join(' · ') + (resto > 0 ? ` (+${resto} más)` : '');
+  }
 
   obtenerIdUnidadPorDefectoGramaje(): number | null {
     const unidades = this.opciones['unidades_medida'] || [];
