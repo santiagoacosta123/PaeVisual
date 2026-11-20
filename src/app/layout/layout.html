@@ -8,7 +8,7 @@
      pasar el mouse, igual que el menú del supervisor.
      ===================================================================== */
   .adm-shell {
-    --adm-page-bg: #f1f5f9;
+    --adm-page-bg: transparent;
     --adm-rail: #ffffff;
     --adm-text: #64748b;
     --adm-accent: #f4b41f;
@@ -19,16 +19,79 @@
     display: flex;
     height: 100vh;
     overflow: hidden;
-    background: var(--adm-page-bg);
+    background-color: #f8fafc;
     font-family: 'Roboto', system-ui, -apple-system, 'Segoe UI', sans-serif;
   }
+
+  /* Fondo Tecnológico Animado (Supervisor · Super Administrador · Administrador) */
+  .adm-shell::before {
+    content: '';
+    position: absolute;
+    top: -28px;
+    left: -28px;
+    right: -28px;
+    bottom: -28px;
+    background-image: url('/fondo-sistema.png');
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-size: cover;
+    z-index: 0;
+    pointer-events: none;
+    animation: circuitSoftFloat 28s ease-in-out infinite alternate;
+    will-change: transform;
+  }
+
+  /* Capa de iluminación y pulso sutil de energía en los circuitos */
+  .adm-shell::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 50% 35%, rgba(245, 184, 31, 0.04) 0%, transparent 60%),
+                radial-gradient(circle at 80% 20%, rgba(43, 84, 36, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 20% 80%, rgba(245, 184, 31, 0.03) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 1;
+    animation: circuitPulseGlow 14s ease-in-out infinite alternate;
+    will-change: opacity;
+  }
+
+  @keyframes circuitSoftFloat {
+    0% {
+      transform: scale(1) translate3d(0, 0, 0);
+    }
+    50% {
+      transform: scale(1.03) translate3d(-14px, -10px, 0);
+    }
+    100% {
+      transform: scale(1.015) translate3d(10px, -6px, 0);
+    }
+  }
+
+  @keyframes circuitPulseGlow {
+    0%, 100% {
+      opacity: 0.6;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .adm-shell::before,
+    .adm-shell::after {
+      animation: none !important;
+    }
+  }
+
   .adm-shell .modern-main-container {
     flex: 1 1 0;
     min-width: 0;
     height: 100%;
     margin-left: 0 !important;
     width: auto !important;
-    background: var(--adm-page-bg);
+    background: transparent;
+    position: relative;
+    z-index: 10;
   }
 
   /* Área principal del supervisor (misma posición que el contenedor del admin) */
@@ -39,13 +102,14 @@
     height: 100%;
     padding: 24px 32px 24px 24px;
     position: relative;
+    z-index: 10;
     overflow-y: auto;
     overflow-x: hidden;
     display: flex;
     flex-direction: column;
     gap: 20px;
     box-sizing: border-box;
-    background: var(--adm-page-bg);
+    background: transparent;
   }
 
   /* Hueco que ocupa la barra en el layout; al abrirse por hover flota encima */

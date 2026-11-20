@@ -1,0 +1,16 @@
+:host {
+  display: block;
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+:host .sirae-root,
+.sirae-root {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 0 0 36px !important;
+  margin: 0 !important;
+}

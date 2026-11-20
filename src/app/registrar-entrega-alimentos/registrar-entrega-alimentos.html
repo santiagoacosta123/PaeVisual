@@ -39,10 +39,14 @@
 
 .sirae-root {
   position: relative;
-  min-height: 100vh;
-  padding: 16px 22px 36px;
-  border-radius: 26px;
-  background: var(--sirae-crema);
+  min-height: auto;
+  padding: 0 0 36px !important;
+  margin: 0 !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
   color: var(--sirae-azul);
   -webkit-font-smoothing: antialiased;
 }
@@ -736,7 +740,7 @@ input[type="date"].campo::-webkit-calendar-picker-indicator:hover {
   </div>
 </ng-template>
 
-<div class="sirae-root">
+<div class="sirae-root" style="background: transparent !important; background-color: transparent !important; border: none !important; border-radius: 0 !important; box-shadow: none !important; padding: 0 0 36px !important; margin: 0 !important;">
   <div class="relative mx-auto max-w-[1520px]">
 
     <!-- 1) Hero compacto solo con imagen y letras blancas -->
