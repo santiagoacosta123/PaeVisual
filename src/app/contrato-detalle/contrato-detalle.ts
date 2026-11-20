@@ -1506,6 +1506,7 @@ export class ContratoDetalleComponent implements OnInit {
   }
 
   esSeccionPermitidaParaSede(sede: any, sec: any): boolean {
+    if (!sede) return false;
     const nom = (sec.nombre_seccion || sec.nombre || '').toLowerCase();
     const jNom = (sec.jornada || sec.nombre_jornada || sec.jornada_nombre || '').toLowerCase();
     const jId = Number(typeof sec.id_jornada === 'object' ? sec.id_jornada?.id_jornada : sec.id_jornada);
@@ -1514,25 +1515,22 @@ export class ContratoDetalleComponent implements OnInit {
     const esMerienda = nom.includes('merienda') || jNom.includes('tarde') || jId === 2 || jId === 5;
 
     if (esManana) {
-      return !!sede.jornada_manana && !!this.jornadaManana?.habilitada;
+      return !!sede.jornada_manana;
     }
     if (esMerienda) {
-      return !!sede.jornada_tarde && !!this.jornadaTarde?.habilitada;
+      return !!sede.jornada_tarde;
     }
-    // Almuerzo u otra sección general: requiere que la sede tenga al menos una jornada activa y amparada
-    return (!!sede.jornada_manana && !!this.jornadaManana?.habilitada) ||
-           (!!sede.jornada_tarde && !!this.jornadaTarde?.habilitada);
+    // Almuerzo u otra sección general: requiere que la sede tenga al menos una jornada activa
+    return !!sede.jornada_manana || !!sede.jornada_tarde;
   }
 
   obtenerMotivoBloqueoSeccionSede(sede: any, sec: any): string {
     const jReq = this.obtenerNombreJornadaDeSeccion(sec);
-    if (jReq === 'Mañana') {
-      if (!this.jornadaManana?.habilitada) return 'La jornada Mañana no está amparada en el contrato.';
-      if (!sede.jornada_manana) return 'Esta sede no tiene asignada la jornada Mañana.';
+    if (jReq === 'Mañana' && !sede.jornada_manana) {
+      return 'Para asignar Desayuno, primero activa la jornada Mañana en esta sede.';
     }
-    if (jReq === 'Tarde') {
-      if (!this.jornadaTarde?.habilitada) return 'La jornada Tarde no está amparada en el contrato.';
-      if (!sede.jornada_tarde) return 'Esta sede no tiene asignada la jornada Tarde.';
+    if (jReq === 'Tarde' && !sede.jornada_tarde) {
+      return 'Para asignar Merienda, primero activa la jornada Tarde en esta sede.';
     }
     if (!sede.jornada_manana && !sede.jornada_tarde) {
       return 'Debes asignarle al menos una jornada a esta sede para habilitar sus menús.';
@@ -1545,15 +1543,41 @@ export class ContratoDetalleComponent implements OnInit {
     return sede.secciones_ids.includes(Number(seccionId));
   }
 
+  sincronizarJornadasYMenusDesdeSedes(): void {
+    const algunManana = (this.sedesInstitucion || []).some(s => !!s.jornada_manana);
+    const algunTarde = (this.sedesInstitucion || []).some(s => !!s.jornada_tarde);
+    if (this.jornadaManana) this.jornadaManana.habilitada = algunManana;
+    if (this.jornadaTarde) this.jornadaTarde.habilitada = algunTarde;
+
+    const idsUnicos = new Set<number>();
+    (this.sedesInstitucion || []).forEach(s => {
+      (s.secciones_ids || []).forEach((id: number) => idsUnicos.add(Number(id)));
+    });
+
+    this.contratosSeccionMenu = Array.from(idsUnicos).map(id => ({ id_seccion: id }));
+  }
+
+  get tieneJornadaMananaEnAlgunaSede(): boolean {
+    return (this.sedesInstitucion || []).some(s => !!s.jornada_manana);
+  }
+
+  get tieneJornadaTardeEnAlgunaSede(): boolean {
+    return (this.sedesInstitucion || []).some(s => !!s.jornada_tarde);
+  }
+
+  get nombresMenusConsolidados(): string[] {
+    const ids = new Set<number>();
+    (this.sedesInstitucion || []).forEach(s => {
+      (s.secciones_ids || []).forEach((id: number) => ids.add(Number(id)));
+    });
+    return Array.from(ids).map(id => {
+      const sec = (this.seccionesMenu || []).find(m => Number(m.id_seccion || m.id) === id);
+      return sec ? (sec.nombre_seccion || sec.nombre) : `Menú #${id}`;
+    });
+  }
+
   toggleJornadaSede(sede: any, tipo: 'Mañana' | 'Tarde') {
     if (tipo === 'Mañana') {
-      if (!this.jornadaManana?.habilitada) {
-        void this.sweetAlert.warning(
-          'Jornada no amparada',
-          'Debes habilitar la jornada Mañana en el contrato (Paso 2) antes de asignarla a una sede.'
-        );
-        return;
-      }
       sede.jornada_manana = !sede.jornada_manana;
       if (!sede.jornada_manana && Array.isArray(sede.secciones_ids)) {
         sede.secciones_ids = sede.secciones_ids.filter((id: number) => {
@@ -1566,19 +1590,9 @@ export class ContratoDetalleComponent implements OnInit {
         if (secManana.length > 0) {
           const sId = Number(secManana[0].id_seccion || secManana[0].id);
           if (!sede.secciones_ids.includes(sId)) sede.secciones_ids.push(sId);
-          if (!this.estaSeccionAsignada(sId)) {
-            this.toggleSeccionMenu(sId, { target: { checked: true } });
-          }
         }
       }
     } else {
-      if (!this.jornadaTarde?.habilitada) {
-        void this.sweetAlert.warning(
-          'Jornada no amparada',
-          'Debes habilitar la jornada Tarde en el contrato (Paso 2) antes de asignarla a una sede.'
-        );
-        return;
-      }
       sede.jornada_tarde = !sede.jornada_tarde;
       if (!sede.jornada_tarde && Array.isArray(sede.secciones_ids)) {
         sede.secciones_ids = sede.secciones_ids.filter((id: number) => {
@@ -1591,12 +1605,10 @@ export class ContratoDetalleComponent implements OnInit {
         if (secTarde.length > 0) {
           const sId = Number(secTarde[0].id_seccion || secTarde[0].id);
           if (!sede.secciones_ids.includes(sId)) sede.secciones_ids.push(sId);
-          if (!this.estaSeccionAsignada(sId)) {
-            this.toggleSeccionMenu(sId, { target: { checked: true } });
-          }
         }
       }
     }
+    this.sincronizarJornadasYMenusDesdeSedes();
     this.cdr.detectChanges();
   }
 
@@ -1617,10 +1629,8 @@ export class ContratoDetalleComponent implements OnInit {
       sede.secciones_ids.splice(idx, 1);
     } else {
       sede.secciones_ids.push(sId);
-      if (!this.estaSeccionAsignada(sId)) {
-        this.toggleSeccionMenu(sId, { target: { checked: true } });
-      }
     }
+    this.sincronizarJornadasYMenusDesdeSedes();
     this.cdr.detectChanges();
   }
 
