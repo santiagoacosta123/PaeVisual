@@ -349,8 +349,38 @@ export class ContratoDetalleComponent implements OnInit {
     });
   }
 
+  obtenerClavesContrato(prefijo: string): string[] {
+    const claves = new Set<string>();
+    if (this.contratoId && this.contratoId !== 'nuevo' && this.contratoId !== '0') {
+      claves.add(`${prefijo}${this.contratoId}`);
+    }
+    const c = this.contrato;
+    if (c) {
+      const id = c.id_contrato || c.id;
+      if (id) claves.add(`${prefijo}${id}`);
+      const cod = c.numero_cor || c.codigo;
+      if (cod) {
+        claves.add(`${prefijo}${cod.trim()}`);
+        claves.add(`${prefijo}${cod.trim().toLowerCase()}`);
+      }
+      const instId = c.id_institucion;
+      if (instId) claves.add(`${prefijo}inst_${instId}`);
+      const instNom = c.institucion || c.nombre_institucion;
+      if (instNom && typeof instNom === 'string' && instNom.trim()) {
+        claves.add(`${prefijo}${instNom.trim().toLowerCase()}`);
+        claves.add(`${prefijo}${instNom.trim()}`);
+      }
+    }
+    return Array.from(claves);
+  }
+
   cargarDistribucionPersistida(): void {
-    if (!this.contratoId || this.contratoId === 'nuevo' || this.contratoId === '0') return;
+    // 1. Cargar inmediatamente desde almacenamiento local (es síncrono y preserva jornadas/menús)
+    this.cargarDistribucionDesdeLocalStorage();
+
+    if (!this.contratoId || this.contratoId === 'nuevo' || this.contratoId === '0') {
+      return;
+    }
 
     const token = this.authService.obtenerToken()?.replace(/^(Bearer|Token)\s+/i, '').trim();
     let headers = new HttpHeaders({ 'Content-Type': 'application/json' });
@@ -359,57 +389,144 @@ export class ContratoDetalleComponent implements OnInit {
     this.http.get<any>(`${environment.apiUrl}/contratos/${this.contratoId}/distribucion/`, { headers }).subscribe({
       next: (data: any) => {
         if (data && Array.isArray(data.sedes) && data.sedes.length > 0) {
-          this.sedesInstitucion.forEach(s => {
-            const sId = Number(s.id_sede || s.id);
-            const match = data.sedes.find((sg: any) => Number(sg.id_sede) === sId);
-            if (match) {
-              const cupos = Number(match.cuposAsignados ?? match.cupos_asignados ?? match.cupos) || 0;
-              s.cupos = cupos;
-              s.cupos_asignados = cupos;
-              if (match.jornada_manana !== undefined) s.jornada_manana = !!match.jornada_manana;
-              if (match.jornada_tarde !== undefined) s.jornada_tarde = !!match.jornada_tarde;
-              if (Array.isArray(match.secciones_ids)) s.secciones_ids = match.secciones_ids;
-              s.grados = (match.grados || []).map((g: any) => ({
-                id_grado: Number(g.id_grado || g.id),
-                nombre_grado: g.nombre || g.nombre_grado || `Grado ${g.id_grado}`,
-                cupos: Number(g.cuposAsignados ?? g.cupos_asignados ?? g.cupos) || 0
-              }));
-            }
-          });
-          this.cdr.detectChanges();
-        } else {
-          this.cargarDistribucionDesdeLocalStorage();
+          this.aplicarDatosDistribucion(data);
         }
       },
       error: () => {
-        this.cargarDistribucionDesdeLocalStorage();
+        // En caso de error ya se precargó desde localStorage
       }
     });
   }
 
-  private cargarDistribucionDesdeLocalStorage(): void {
-    try {
-      const raw = localStorage.getItem(`sirae_distribucion_contrato_${this.contratoId}`);
-      if (!raw) return;
-      const data = JSON.parse(raw);
-      if (data && Array.isArray(data.sedes)) {
-        this.sedesInstitucion.forEach(s => {
-          const sId = Number(s.id_sede || s.id);
-          const sedeG = data.sedes.find((sg: any) => Number(sg.id_sede) === sId);
-          if (sedeG) {
-            s.cupos = Number(sedeG.cupos_asignados ?? sedeG.cuposAsignados ?? sedeG.cupos) || 0;
-            s.cupos_asignados = s.cupos;
-            if (sedeG.jornada_manana !== undefined) s.jornada_manana = !!sedeG.jornada_manana;
-            if (sedeG.jornada_tarde !== undefined) s.jornada_tarde = !!sedeG.jornada_tarde;
-            if (Array.isArray(sedeG.secciones_ids)) s.secciones_ids = sedeG.secciones_ids;
-            s.grados = sedeG.grados || [];
-          }
-        });
-        this.cdr.detectChanges();
-      }
-    } catch {
-      // noop
+  obtenerDistribucionLocal(): any {
+    const keys = this.obtenerClavesContrato('sirae_distribucion_contrato_');
+    for (const key of keys) {
+      try {
+        const raw = localStorage.getItem(key);
+        if (!raw) continue;
+        const data = JSON.parse(raw);
+        if (data && Array.isArray(data.sedes) && data.sedes.length > 0) {
+          return data;
+        }
+      } catch {}
     }
+
+    try {
+      const allKeys = Object.keys(localStorage).filter(k => k.startsWith('sirae_distribucion_contrato_'));
+      const instNom = (this.contrato?.institucion || '').trim().toLowerCase();
+      const instId = Number(this.contrato?.id_institucion);
+      const cId = Number(this.contratoId || this.contrato?.id_contrato || this.contrato?.id);
+
+      for (const k of allKeys) {
+        const raw = localStorage.getItem(k);
+        if (!raw) continue;
+        const d = JSON.parse(raw);
+        if (d && Array.isArray(d.sedes) && d.sedes.length > 0) {
+          if (cId && (Number(d.id_contrato) === cId || Number(d.contrato_id) === cId)) return d;
+          if (instId && Number(d.id_institucion) === instId) return d;
+          if (instNom && d.institucion && String(d.institucion).trim().toLowerCase() === instNom) return d;
+          const sedeMatches = (this.sedesInstitucion || []).some(s =>
+            d.sedes.some((ds: any) =>
+              Number(ds.id_sede || ds.id) === Number(s.id_sede || s.id) ||
+              (ds.nombre_sede && s.nombre_sede && ds.nombre_sede.trim().toLowerCase() === s.nombre_sede.trim().toLowerCase())
+            )
+          );
+          if (sedeMatches) return d;
+        }
+      }
+    } catch {}
+
+    return null;
+  }
+
+  private cargarDistribucionDesdeLocalStorage(): void {
+    const data = this.obtenerDistribucionLocal();
+    if (data) {
+      this.aplicarDatosDistribucion(data);
+    }
+  }
+
+  aplicarDatosDistribucion(data: any): void {
+    if (!data || !Array.isArray(data.sedes)) return;
+
+    const datosLocales = this.obtenerDistribucionLocal();
+
+    let sumaCuposSedes = 0;
+    this.sedesInstitucion.forEach(s => {
+      const sId = Number(s.id_sede || s.id);
+      const sedeG = data.sedes.find((sg: any) =>
+        Number(sg.id_sede || sg.id || sg.sede) === sId ||
+        (sg.nombre_sede && s.nombre_sede && sg.nombre_sede.trim().toLowerCase() === s.nombre_sede.trim().toLowerCase())
+      );
+      const sedeLocal = datosLocales?.sedes?.find((sl: any) =>
+        Number(sl.id_sede || sl.id || sl.sede) === sId ||
+        (sl.nombre_sede && s.nombre_sede && sl.nombre_sede.trim().toLowerCase() === s.nombre_sede.trim().toLowerCase())
+      );
+
+      if (sedeG || sedeLocal) {
+        // Cupos
+        const cuposBackend = Number(sedeG?.cupos_asignados ?? sedeG?.cuposAsignados ?? sedeG?.cupos) || 0;
+        const cuposLocal = Number(sedeLocal?.cupos_asignados ?? sedeLocal?.cuposAsignados ?? sedeLocal?.cupos) || 0;
+        const cupos = cuposBackend > 0 ? cuposBackend : (cuposLocal > 0 ? cuposLocal : (Number(s.cupos_asignados ?? s.cupos) || 0));
+
+        s.cupos = cupos;
+        s.cupos_asignados = cupos;
+        sumaCuposSedes += cupos;
+
+        // Jornadas: combinar backend y local
+        if (sedeG?.jornada_manana !== undefined) {
+          s.jornada_manana = !!sedeG.jornada_manana;
+        } else if (sedeLocal?.jornada_manana !== undefined) {
+          s.jornada_manana = !!sedeLocal.jornada_manana;
+        }
+
+        if (sedeG?.jornada_tarde !== undefined) {
+          s.jornada_tarde = !!sedeG.jornada_tarde;
+        } else if (sedeLocal?.jornada_tarde !== undefined) {
+          s.jornada_tarde = !!sedeLocal.jornada_tarde;
+        }
+
+        const jList = Array.isArray(sedeG?.jornadas) && sedeG.jornadas.length > 0
+          ? sedeG.jornadas
+          : (Array.isArray(sedeLocal?.jornadas) ? sedeLocal.jornadas : []);
+
+        if (jList.length > 0) {
+          if (jList.some((j: string) => String(j).toLowerCase().includes('mañan'))) s.jornada_manana = true;
+          if (jList.some((j: string) => String(j).toLowerCase().includes('tard'))) s.jornada_tarde = true;
+        }
+
+        // Secciones / Menús
+        if (Array.isArray(sedeG?.secciones_ids) && sedeG.secciones_ids.length > 0) {
+          s.secciones_ids = [...sedeG.secciones_ids];
+        } else if (Array.isArray(sedeLocal?.secciones_ids) && sedeLocal.secciones_ids.length > 0) {
+          s.secciones_ids = [...sedeLocal.secciones_ids];
+        }
+
+        // Grados
+        const gradosFuente = (Array.isArray(sedeG?.grados) && sedeG.grados.length > 0)
+          ? sedeG.grados
+          : (Array.isArray(sedeLocal?.grados) ? sedeLocal.grados : []);
+
+        if (gradosFuente.length > 0) {
+          s.grados = gradosFuente.map((g: any) => ({
+            id_grado: Number(g.id_grado || g.id),
+            nombre_grado: g.nombre || g.nombre_grado || `Grado ${g.id_grado}`,
+            cupos: Number(g.cuposAsignados ?? g.cupos_asignados ?? g.cupos) || 0
+          }));
+        }
+      }
+    });
+
+    const totalAutorizado = Number(data.total_autorizado ?? data.total_distribuido ?? datosLocales?.total_autorizado) || sumaCuposSedes;
+    if (totalAutorizado > 0 && this.contrato) {
+      this.contrato.cupos = totalAutorizado;
+    }
+
+    // Actualizar jornadas globales y menús del contrato
+    this.sincronizarJornadasYMenusDesdeSedes();
+
+    this.cargarHistorialLocal();
+    this.cdr.detectChanges();
   }
 
   async guardarDistribucion(): Promise<void> {
@@ -423,13 +540,14 @@ export class ContratoDetalleComponent implements OnInit {
 
     const instId = this.contrato?.id_institucion || null;
     const ahora = new Date().toISOString();
+    const cuposAnteriores = this.cuposAutorizados;
 
     const payload = {
       id_contrato: Number(this.contratoId) || this.contrato?.id_contrato,
       codigo_contrato: this.contrato?.codigo,
       id_institucion: instId,
       institucion_nombre: this.contrato?.institucion,
-      total_autorizado: this.cuposAutorizados,
+      total_autorizado: this.totalCuposSedesEdicion || this.cuposAutorizados,
       total_distribuido: this.totalCuposSedesEdicion,
       pendientes: this.cuposPendientesSedesEdicion,
       fecha_actualizacion: ahora,
@@ -450,9 +568,10 @@ export class ContratoDetalleComponent implements OnInit {
       }))
     };
 
-    // 1. Persistencia en localStorage
+    // 1. Persistencia en localStorage en todas las claves
     try {
-      localStorage.setItem(`sirae_distribucion_contrato_${this.contratoId}`, JSON.stringify(payload));
+      const keys = this.obtenerClavesContrato('sirae_distribucion_contrato_');
+      keys.forEach(k => localStorage.setItem(k, JSON.stringify(payload)));
       this.sedesEdicionDistribucion.forEach(s => {
         localStorage.setItem(`sirae_distribucion_grados_${this.contratoId}_sede_${s.id_sede}`, JSON.stringify(s.grados));
       });
@@ -475,13 +594,6 @@ export class ContratoDetalleComponent implements OnInit {
       }
     });
 
-    for (const s of this.sedesEdicionDistribucion) {
-      this.siraeService.actualizarSede(s.id_sede, { cupos: s.cuposAsignados }).subscribe({
-        next: () => {},
-        error: () => {}
-      });
-    }
-
     // 3. Actualizar automáticamente la información de la ventana principal
     this.sedesInstitucion.forEach(s => {
       const match = this.sedesEdicionDistribucion.find(e => Number(e.id_sede) === Number(s.id_sede || s.id));
@@ -491,6 +603,29 @@ export class ContratoDetalleComponent implements OnInit {
         s.grados = match.grados;
       }
     });
+
+    if (this.totalCuposSedesEdicion > 0 && this.contrato) {
+      this.contrato.cupos = this.totalCuposSedesEdicion;
+    }
+
+    // Registrar en auditoría
+    const ahoraFmt = new Date().toLocaleString('es-CO');
+    const registroAudit = {
+      id_modificacion: Date.now(),
+      tipo: 'DISTRIBUCION',
+      usuario_responsable: this.nombreUsuarioResponsableActual,
+      fecha_registro: ahoraFmt,
+      cambios: [
+        {
+          campo: 'Distribución de cupos entre sedes',
+          anterior: `${cuposAnteriores} cupos`,
+          nuevo: `${this.totalCuposSedesEdicion} cupos distribuidos`
+        }
+      ],
+      estado_resultante: this.contrato?.estado || 'Activo'
+    };
+    this.historialModificaciones.unshift(registroAudit);
+    this.guardarHistorialLocal();
 
     this.guardandoDistribucion = false;
     this.modalEditarDistribucionAbierto = false;
@@ -528,26 +663,62 @@ export class ContratoDetalleComponent implements OnInit {
   }
 
   cargarHistorialLocal() {
-    if (!this.contratoId) return;
-    try {
-      const data = localStorage.getItem(`sirae_historial_modificaciones_${this.contratoId}`);
-      if (data) {
-        this.historialModificaciones = JSON.parse(data);
-      } else {
-        this.historialModificaciones = [];
-      }
-    } catch {
-      this.historialModificaciones = [];
+    this.historialModificaciones = [];
+    const keys = this.obtenerClavesContrato('sirae_historial_modificaciones_');
+
+    for (const key of keys) {
+      try {
+        const data = localStorage.getItem(key);
+        if (data) {
+          const parsed = JSON.parse(data);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            this.historialModificaciones = parsed;
+            return;
+          }
+        }
+      } catch {}
+    }
+
+    // Si aún no hay historial grabado pero el contrato existe, generar el registro inicial de auditoría
+    if (this.contrato && (this.contrato.codigo || this.contrato.institucion)) {
+      const fechaBase = this.contrato.fecha_inicio
+        ? `${this.contrato.fecha_inicio} 08:00:00`
+        : new Date().toLocaleString('es-CO');
+      const cuposContrato = this.cuposAutorizados;
+      this.historialModificaciones = [
+        {
+          id_modificacion: Date.now(),
+          tipo: 'MODIFICACION',
+          usuario_responsable: this.nombreSupervisorAsignado || this.nombreUsuarioResponsableActual,
+          fecha_registro: fechaBase,
+          cambios: [
+            {
+              campo: 'Registro inicial del contrato y cupos autorizados',
+              anterior: 'No registrado',
+              nuevo: `${this.contrato.institucion || 'Institución'} (${cuposContrato} cupos)`
+            },
+            {
+              campo: 'Vigencia contractual',
+              anterior: 'Sin vigencia',
+              nuevo: `${this.contrato.fecha_inicio || 'Inicio'} al ${this.contrato.fecha_fin || 'Fin'}`
+            }
+          ],
+          estado_resultante: this.contrato.estado || 'Activo'
+        }
+      ];
+      this.guardarHistorialLocal();
     }
   }
 
   guardarHistorialLocal() {
-    if (!this.contratoId) return;
-    try {
-      localStorage.setItem(`sirae_historial_modificaciones_${this.contratoId}`, JSON.stringify(this.historialModificaciones));
-    } catch (e) {
-      console.warn('Error guardando historial local de prórrogas:', e);
-    }
+    const keys = this.obtenerClavesContrato('sirae_historial_modificaciones_');
+    keys.forEach(k => {
+      try {
+        localStorage.setItem(k, JSON.stringify(this.historialModificaciones));
+      } catch (e) {
+        console.warn('Error guardando historial en localStorage:', e);
+      }
+    });
   }
 
   abrirModalProrroga(tipo: 'PRORROGA' | 'RENOVACION' = 'PRORROGA') {
@@ -1264,6 +1435,38 @@ export class ContratoDetalleComponent implements OnInit {
   modalSeleccionarInstitucionAbierto = false;
   busquedaInstitucion = '';
   institucionTemporalSeleccionada: any = null;
+  listaContratosExistentes: any[] = [];
+
+  institucionTieneContrato(inst: any): { tieneContrato: boolean; contratoExistente?: any } {
+    if (!inst) return { tieneContrato: false };
+    const instId = inst?.id_institucion || inst?.id;
+    const instNom = (inst?.nombre_institucion || '').trim().toLowerCase();
+
+    const c = (this.listaContratosExistentes || []).find((con: any) => {
+      // Si estamos editando este contrato, no es conflicto consigo mismo
+      if (this.contratoId && String(con.id_contrato || con.id || con.pk) === String(this.contratoId)) {
+        return false;
+      }
+      const cInstId = typeof con.id_institucion === 'object' && con.id_institucion !== null
+        ? (con.id_institucion.id_institucion || con.id_institucion.id)
+        : con.id_institucion;
+      const cInstNom = (con.institucion || con.id_institucion?.nombre_institucion || '').trim().toLowerCase();
+
+      const coincideId = instId != null && cInstId != null && Number(instId) === Number(cInstId);
+      const coincideNom = !!(instNom && cInstNom && instNom === cInstNom);
+      return coincideId || coincideNom;
+    });
+
+    return { tieneContrato: !!c, contratoExistente: c };
+  }
+
+  trackBySede(index: number, sede: any): any {
+    return sede.id_sede || sede.id || index;
+  }
+
+  trackByGrado(index: number, grado: any): any {
+    return grado.id_grado || grado.id || index;
+  }
 
   toggleMostrarSedes(): void {
     this.mostrarSedesDetalle = !this.mostrarSedesDetalle;
@@ -1285,11 +1488,37 @@ export class ContratoDetalleComponent implements OnInit {
   }
 
   marcarInstitucion(inst: any): void {
+    if (this.modo === 'nuevo') {
+      const info = this.institucionTieneContrato(inst);
+      if (info.tieneContrato) {
+        return;
+      }
+    }
     this.institucionTemporalSeleccionada = inst;
     this.cdr.detectChanges();
   }
 
+  irAEditarContratoExistente(info: any): void {
+    const idExistente = info?.contratoExistente?.id_contrato || info?.contratoExistente?.id;
+    if (!idExistente) return;
+
+    this.cerrarModalSeleccionarInstitucion();
+    this.contratoId = String(idExistente);
+    this.modo = 'consulta';
+    this.modalEdicionAbierto = false;
+    this.pestanaActiva = 'resumen';
+    this.cargarDetalleContrato();
+    this.cdr.detectChanges();
+  }
+
   seleccionarInstitucionDesdeModal(inst: any): void {
+    if (this.modo === 'nuevo') {
+      const info = this.institucionTieneContrato(inst);
+      if (info.tieneContrato) {
+        this.irAEditarContratoExistente(info);
+        return;
+      }
+    }
     this.institucionTemporalSeleccionada = inst;
     this.contrato.institucion = inst.nombre_institucion;
     this.mensajeAviso = '';
@@ -1300,6 +1529,13 @@ export class ContratoDetalleComponent implements OnInit {
 
   confirmarSeleccionInstitucion(): void {
     if (this.institucionTemporalSeleccionada) {
+      if (this.modo === 'nuevo') {
+        const info = this.institucionTieneContrato(this.institucionTemporalSeleccionada);
+        if (info.tieneContrato) {
+          this.irAEditarContratoExistente(info);
+          return;
+        }
+      }
       this.contrato.institucion = this.institucionTemporalSeleccionada.nombre_institucion;
       this.mensajeAviso = '';
       this.institucionRequeridaAviso = false;
@@ -1704,7 +1940,18 @@ export class ContratoDetalleComponent implements OnInit {
       }
     });
 
-    // 5. Cargar Supervisores disponibles
+    // 5. Cargar lista de contratos existentes (para evitar duplicidad de contratos por IE)
+    this.siraeService.getContratos().subscribe({
+      next: (datos: any) => {
+        this.listaContratosExistentes = Array.isArray(datos) ? datos : (datos.results || datos.data || []);
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.warn('Error al precargar contratos existentes:', err);
+      }
+    });
+
+    // 6. Cargar Supervisores disponibles
     this.cargarSupervisores();
   }
 
@@ -1815,10 +2062,14 @@ export class ContratoDetalleComponent implements OnInit {
       this.sedesInstitucion = [];
       return;
     }
-    const inst = this.instituciones.find(i =>
-      i.nombre_institucion?.toLowerCase() === this.contrato.institucion?.toLowerCase() ||
-      String(i.id_institucion) === String(this.contrato.institucion)
-    );
+    const instNombre = (this.contrato?.institucion || '').trim().toLowerCase();
+    const cInstId = this.contrato?.id_institucion;
+    const inst = this.instituciones.find(i => {
+      const nom = (i.nombre_institucion || i.nombre || '').trim().toLowerCase();
+      const id = i.id_institucion || i.id;
+      return (instNombre && nom && (nom === instNombre || nom.includes(instNombre) || instNombre.includes(nom))) ||
+             (cInstId && id && Number(id) === Number(cInstId));
+    });
     if (inst) {
       const instId = inst.id_institucion || inst.id;
       this.sedesInstitucion = this.sedes.filter(s => {
@@ -1839,12 +2090,14 @@ export class ContratoDetalleComponent implements OnInit {
               this.sedesInstitucion = res;
               this.cargarDistribucionPersistida();
               this.inicializarSedesParaDistribucion();
+              this.cargarHistorialLocal();
               this.cdr.detectChanges();
             }
           }
         });
       } else {
         this.inicializarSedesParaDistribucion();
+        this.cargarHistorialLocal();
       }
     } else {
       this.sedesInstitucion = [];
@@ -1856,44 +2109,74 @@ export class ContratoDetalleComponent implements OnInit {
     if (!this.gradosCatalogoDistribucion || this.gradosCatalogoDistribucion.length === 0) {
       this.cargarGradosParaDistribucion();
     }
+    const datosLocales = this.obtenerDistribucionLocal();
+
     (this.sedesInstitucion || []).forEach(s => {
+      const sId = Number(s.id_sede || s.id);
+      const sedeLocal = datosLocales?.sedes?.find((sl: any) =>
+        Number(sl.id_sede || sl.id || sl.sede) === sId ||
+        (sl.nombre_sede && s.nombre_sede && sl.nombre_sede.trim().toLowerCase() === s.nombre_sede.trim().toLowerCase())
+      );
+
       if (s.cupos_asignados === undefined || s.cupos_asignados === null) {
-        s.cupos_asignados = Number(s.cupos) || 0;
+        s.cupos_asignados = Number(sedeLocal?.cupos_asignados ?? sedeLocal?.cupos ?? s.cupos) || 0;
       }
       if (!Array.isArray(s.grados) || s.grados.length === 0) {
-        s.grados = (this.gradosCatalogoDistribucion || []).map(g => ({
-          id_grado: g.id_grado,
-          nombre_grado: g.nombre_grado,
-          cupos: 0
-        }));
+        if (Array.isArray(sedeLocal?.grados) && sedeLocal.grados.length > 0) {
+          s.grados = sedeLocal.grados.map((g: any) => ({
+            id_grado: Number(g.id_grado || g.id),
+            nombre_grado: g.nombre || g.nombre_grado || `Grado ${g.id_grado}`,
+            cupos: Number(g.cuposAsignados ?? g.cupos_asignados ?? g.cupos) || 0
+          }));
+        } else {
+          s.grados = (this.gradosCatalogoDistribucion || []).map(g => ({
+            id_grado: g.id_grado,
+            nombre_grado: g.nombre_grado,
+            cupos: 0
+          }));
+        }
       }
       if (s.expandidoGrados === undefined) {
         s.expandidoGrados = false;
       }
       if (s.jornada_manana === undefined || s.jornada_manana === null) {
-        s.jornada_manana = this.jornadaManana ? !!this.jornadaManana.habilitada : false;
+        if (sedeLocal?.jornada_manana !== undefined) {
+          s.jornada_manana = !!sedeLocal.jornada_manana;
+        } else {
+          s.jornada_manana = this.jornadaManana ? !!this.jornadaManana.habilitada : false;
+        }
       }
       if (s.jornada_tarde === undefined || s.jornada_tarde === null) {
-        s.jornada_tarde = this.jornadaTarde ? !!this.jornadaTarde.habilitada : false;
-      }
-      if (!Array.isArray(s.secciones_ids)) {
-        s.secciones_ids = [];
-        if (s.jornada_manana) {
-          const secM = this.seccionesPorNombreJornada('Mañana');
-          secM.forEach(m => {
-            const mId = Number(m.id_seccion || m.id);
-            if (!s.secciones_ids.includes(mId)) s.secciones_ids.push(mId);
-          });
+        if (sedeLocal?.jornada_tarde !== undefined) {
+          s.jornada_tarde = !!sedeLocal.jornada_tarde;
+        } else {
+          s.jornada_tarde = this.jornadaTarde ? !!this.jornadaTarde.habilitada : false;
         }
-        if (s.jornada_tarde) {
-          const secT = this.seccionesPorNombreJornada('Tarde');
-          secT.forEach(m => {
-            const mId = Number(m.id_seccion || m.id);
-            if (!s.secciones_ids.includes(mId)) s.secciones_ids.push(mId);
-          });
+      }
+      if (!Array.isArray(s.secciones_ids) || s.secciones_ids.length === 0) {
+        if (Array.isArray(sedeLocal?.secciones_ids) && sedeLocal.secciones_ids.length > 0) {
+          s.secciones_ids = [...sedeLocal.secciones_ids];
+        } else if (!Array.isArray(s.secciones_ids)) {
+          s.secciones_ids = [];
+          if (s.jornada_manana) {
+            const secM = this.seccionesPorNombreJornada('Mañana');
+            secM.forEach(m => {
+              const mId = Number(m.id_seccion || m.id);
+              if (!s.secciones_ids.includes(mId)) s.secciones_ids.push(mId);
+            });
+          }
+          if (s.jornada_tarde) {
+            const secT = this.seccionesPorNombreJornada('Tarde');
+            secT.forEach(m => {
+              const mId = Number(m.id_seccion || m.id);
+              if (!s.secciones_ids.includes(mId)) s.secciones_ids.push(mId);
+            });
+          }
         }
       }
     });
+
+    this.sincronizarJornadasYMenusDesdeSedes();
   }
 
   get totalCuposAsignadosFormulario(): number {
@@ -1903,6 +2186,10 @@ export class ContratoDetalleComponent implements OnInit {
   onCambioCuposSedeFormulario(s: any) {
     s.cupos_asignados = Math.max(0, Number(s.cupos_asignados) || 0);
     s.cupos = s.cupos_asignados;
+    const totalSedes = this.totalCuposAsignadosFormulario;
+    if (totalSedes > 0 && this.contrato) {
+      this.contrato.cupos = totalSedes;
+    }
     this.cdr.detectChanges();
   }
 
@@ -1927,6 +2214,10 @@ export class ContratoDetalleComponent implements OnInit {
       if (suma > 0) {
         s.cupos_asignados = suma;
         s.cupos = suma;
+        const totalSedes = this.totalCuposAsignadosFormulario;
+        if (totalSedes > 0 && this.contrato) {
+          this.contrato.cupos = totalSedes;
+        }
       }
     }
     this.cdr.detectChanges();
@@ -1946,9 +2237,18 @@ export class ContratoDetalleComponent implements OnInit {
     this.siraeService.getContratos().subscribe({
       next: (datos: any) => {
         const listaContratos = Array.isArray(datos) ? datos : (datos.results || datos.data || []);
-        const contratoEncontrado = listaContratos.find((c: any) =>
+        let contratoEncontrado = listaContratos.find((c: any) =>
           String(c.id_contrato || c.id || c.pk) === String(this.contratoId)
         );
+
+        if (!contratoEncontrado && this.contratoId) {
+          const cid = String(this.contratoId).trim().toLowerCase();
+          contratoEncontrado = listaContratos.find((c: any) => {
+            const numCor = String(c.numero_cor || c.codigo || '').trim().toLowerCase();
+            const instNom = String(c.institucion || c.nombre_institucion || c.id_institucion?.nombre_institucion || '').trim().toLowerCase();
+            return numCor === cid || instNom === cid || instNom.includes(cid);
+          });
+        }
 
         if (contratoEncontrado) {
           const instId = contratoEncontrado.id_institucion ? (contratoEncontrado.id_institucion?.id_institucion || contratoEncontrado.id_institucion) : null;
@@ -1969,7 +2269,7 @@ export class ContratoDetalleComponent implements OnInit {
 
           this.contrato = {
             ...contratoEncontrado,
-            institucion: contratoEncontrado.institucion || contratoEncontrado.nombre_institucion || 'No especificada',
+            institucion: contratoEncontrado.institucion || contratoEncontrado.nombre_institucion || contratoEncontrado.id_institucion?.nombre_institucion || 'No especificada',
             id_institucion: instId,
             zona: contratoEncontrado.zona || contratoEncontrado.nombre_zona || 'No especificada',
             fecha_inicio: contratoEncontrado.fecha_inicio || contratoEncontrado.inicio,
@@ -1984,11 +2284,11 @@ export class ContratoDetalleComponent implements OnInit {
           this.mensajeVigenciaContrato = vigencia.mensajeVigencia;
 
           this.actualizarSedesDeInstitucion();
-          this.cargarHistorialLocal();
           this.cargarDistribucionPersistida();
+          this.cargarHistorialLocal();
 
           if (this.modo === 'edicion') {
-            this.abrirModalEdicion();
+            this.modalEdicionAbierto = false;
           }
         } else {
           // Fallback por si acaso entra directo por URL y el backend requiere detalle por ID específico
@@ -2038,7 +2338,89 @@ export class ContratoDetalleComponent implements OnInit {
 
   // Getters para Distribución de Cupos
   get cuposAutorizados(): number {
-    return Number(this.contrato?.cupos) || 0;
+    const sedesCupos = this.totalCuposAsignadosSedes;
+    const formCupos = this.totalCuposAsignadosFormulario;
+    const cCupos = Number(this.contrato?.cupos);
+
+    if (sedesCupos && sedesCupos > 0) return sedesCupos;
+    if (formCupos && formCupos > 0) return formCupos;
+    if (cCupos && cCupos > 0) return cCupos;
+    return 0;
+  }
+
+  get contratoTieneJornadaManana(): boolean {
+    if (this.jornadaManana?.habilitada) return true;
+    if ((this.sedesInstitucion || []).some(s => !!s.jornada_manana)) return true;
+    if ((this.sedesInstitucion || []).some(s => Array.isArray(s.jornadas) && s.jornadas.some((j: any) => String(j).toLowerCase().includes('mañan') || String(j).toLowerCase().includes('manan')))) return true;
+    const local = this.obtenerDistribucionLocal();
+    if (local && Array.isArray(local.sedes) && local.sedes.some((s: any) => !!s.jornada_manana || (Array.isArray(s.jornadas) && s.jornadas.some((j: any) => String(j).toLowerCase().includes('mañan') || String(j).toLowerCase().includes('manan'))))) return true;
+    return false;
+  }
+
+  get contratoTieneJornadaTarde(): boolean {
+    if (this.jornadaTarde?.habilitada) return true;
+    if ((this.sedesInstitucion || []).some(s => !!s.jornada_tarde)) return true;
+    if ((this.sedesInstitucion || []).some(s => Array.isArray(s.jornadas) && s.jornadas.some((j: any) => String(j).toLowerCase().includes('tard')))) return true;
+    const local = this.obtenerDistribucionLocal();
+    if (local && Array.isArray(local.sedes) && local.sedes.some((s: any) => !!s.jornada_tarde || (Array.isArray(s.jornadas) && s.jornadas.some((j: any) => String(j).toLowerCase().includes('tard'))))) return true;
+    return false;
+  }
+
+  get totalJornadasContrato(): number {
+    let count = 0;
+    if (this.contratoTieneJornadaManana) count++;
+    if (this.contratoTieneJornadaTarde) count++;
+    if (count > 0) return count;
+    const hab = (this.jornadas || []).filter(j => j.habilitada).length;
+    if (hab > 0) return hab;
+    if (this.seccionesAsignadas.length > 0) return 1;
+    return 0;
+  }
+
+  obtenerNombresSeccionesDeSede(s: any): { id: number; nombre: string; jornada?: string }[] {
+    if (!s) return [];
+    const catalogo = (this.todasSeccionesDisponibles && this.todasSeccionesDisponibles.length > 0)
+      ? this.todasSeccionesDisponibles
+      : (this.seccionesMenu || []);
+    const secIds = Array.isArray(s.secciones_ids) ? s.secciones_ids : [];
+
+    if (secIds.length > 0) {
+      return secIds.map((idSec: any) => {
+        const match = catalogo.find(
+          (sec: any) => Number(sec.id_seccion || sec.id) === Number(idSec)
+        );
+        return {
+          id: Number(idSec),
+          nombre: match ? (match.nombre_seccion || match.nombre) : `Menú #${idSec}`,
+          jornada: match ? (match.nombre_jornada || match.jornada_nombre || match.jornada || '') : ''
+        };
+      });
+    }
+
+    const res: { id: number; nombre: string; jornada?: string }[] = [];
+    if (this.contratosSeccionMenu && this.contratosSeccionMenu.length > 0) {
+      this.contratosSeccionMenu.forEach(csm => {
+        const secId = csm.id_seccion?.id_seccion || csm.id_seccion;
+        const sec = catalogo.find(
+          (x: any) => Number(x.id_seccion || x.id) === Number(secId)
+        );
+        if (sec) {
+          const jNom = (sec.nombre_jornada || sec.jornada_nombre || sec.jornada || '').toString().toLowerCase();
+          const matchesManana = s.jornada_manana && jNom.includes('mañan');
+          const matchesTarde = s.jornada_tarde && jNom.includes('tard');
+          if (matchesManana || matchesTarde || (!s.jornada_manana && !s.jornada_tarde)) {
+            if (!res.some(r => r.id === Number(secId))) {
+              res.push({
+                id: Number(secId),
+                nombre: sec.nombre_seccion || sec.nombre,
+                jornada: sec.nombre_jornada || sec.jornada_nombre || sec.jornada || ''
+              });
+            }
+          }
+        }
+      });
+    }
+    return res;
   }
 
   obtenerCuposDeSede(s: any): number {
@@ -2511,6 +2893,13 @@ export class ContratoDetalleComponent implements OnInit {
     const instEncontrada = this.institucionSeleccionadaInfo;
     const idInst = instEncontrada?.id_institucion || instEncontrada?.id || this.contrato.id_institucion || null;
 
+    const cuposAnteriores = Number(this.contrato.cupos) || 0;
+    const cuposCalculados = this.totalCuposAsignadosFormulario > 0
+      ? this.totalCuposAsignadosFormulario
+      : (Number(this.contrato.cupos) || this.totalCuposAsignadosSedes || 0);
+
+    this.contrato.cupos = cuposCalculados;
+
     const payload: any = {
       numero_cor: this.contrato.codigo.trim(),
       institucion: this.contrato.institucion,
@@ -2518,7 +2907,7 @@ export class ContratoDetalleComponent implements OnInit {
       fecha_inicio: this.contrato.fecha_inicio,
       fecha_fin: this.contrato.fecha_fin || '2026-12-31',
       estado: this.contrato.estado || 'Activo',
-      cupos: Number(this.contrato.cupos) || 0
+      cupos: cuposCalculados
     };
 
     if (idInst) {
@@ -2590,6 +2979,8 @@ export class ContratoDetalleComponent implements OnInit {
 
             try {
               localStorage.setItem(`sirae_distribucion_contrato_${newId}`, JSON.stringify(distribucionPayload));
+              const keys = this.obtenerClavesContrato('sirae_distribucion_contrato_');
+              keys.forEach(k => localStorage.setItem(k, JSON.stringify(distribucionPayload)));
             } catch (_) {}
 
             const token = this.authService.obtenerToken()?.replace(/^(Bearer|Token)\s+/i, '').trim();
@@ -2605,17 +2996,27 @@ export class ContratoDetalleComponent implements OnInit {
                 });
               }
             });
-
-            for (const s of this.sedesInstitucion) {
-              const cSede = Number(s.cupos_asignados ?? s.cupos) || 0;
-              if (cSede > 0) {
-                this.siraeService.actualizarSede(Number(s.id_sede || s.id), { cupos: cSede }).subscribe({
-                  next: () => {},
-                  error: () => {}
-                });
-              }
-            }
           }
+
+          // Historial de creación
+          const ahoraFmt = new Date().toLocaleString('es-CO');
+          this.historialModificaciones = [
+            {
+              id_modificacion: Date.now(),
+              tipo: 'MODIFICACION',
+              usuario_responsable: this.nombreUsuarioResponsableActual,
+              fecha_registro: ahoraFmt,
+              cambios: [
+                {
+                  campo: 'Creación de contrato',
+                  anterior: 'Sin registro',
+                  nuevo: `${payload.institucion} (${cuposCalculados} cupos autorizados)`
+                }
+              ],
+              estado_resultante: payload.estado
+            }
+          ];
+          this.guardarHistorialLocal();
 
           const nuevoContratoFormateado = {
             id: newId,
@@ -2657,11 +3058,119 @@ export class ContratoDetalleComponent implements OnInit {
     } else {
       this.siraeService.actualizarContrato(Number(this.contratoId), payload).subscribe({
         next: async () => {
+          // Asignar las secciones/menús en backend si están seleccionadas
+          if (this.contratosSeccionMenu.length > 0 && this.contratoId) {
+            const promesas = this.contratosSeccionMenu.map(rel => {
+              const secId = typeof rel.id_seccion === 'object' ? (rel.id_seccion?.id_seccion || rel.id_seccion?.id) : rel.id_seccion;
+              return new Promise((resolve) => {
+                this.siraeService.crearContratoSeccionMenu({
+                  id_contrato: Number(this.contratoId),
+                  id_seccion: Number(secId),
+                  estado: 'Activo',
+                  valor: 0
+                }).subscribe({
+                  next: () => resolve(true),
+                  error: () => resolve(false)
+                });
+              });
+            });
+            try {
+              await Promise.all(promesas);
+            } catch (_) {}
+          }
+
+          // Persistir distribución de sedes y grados en edición si están presentes
+          if (this.contratoId && this.sedesInstitucion && this.sedesInstitucion.length > 0) {
+            const distribucionPayload = {
+              id_contrato: Number(this.contratoId),
+              codigo_contrato: payload.numero_cor || this.contrato?.codigo,
+              id_institucion: payload.id_institucion,
+              total_autorizado: payload.cupos,
+              total_distribuido: this.totalCuposAsignadosFormulario,
+              pendientes: Math.max(0, payload.cupos - this.totalCuposAsignadosFormulario),
+              fecha_actualizacion: new Date().toISOString(),
+              sedes: this.sedesInstitucion.map((s: any) => ({
+                id_sede: Number(s.id_sede || s.id),
+                nombre_sede: s.nombre_sede,
+                cuposAsignados: Number(s.cupos_asignados ?? s.cupos) || 0,
+                cupos_asignados: Number(s.cupos_asignados ?? s.cupos) || 0,
+                cupos: Number(s.cupos_asignados ?? s.cupos) || 0,
+                jornada_manana: !!s.jornada_manana,
+                jornada_tarde: !!s.jornada_tarde,
+                jornadas: [
+                  ...(s.jornada_manana ? ['Mañana'] : []),
+                  ...(s.jornada_tarde ? ['Tarde'] : [])
+                ],
+                secciones_ids: Array.isArray(s.secciones_ids) ? s.secciones_ids : [],
+                grados: Array.isArray(s.grados) ? s.grados.map((g: any) => ({
+                  id_grado: Number(g.id_grado || g.id),
+                  nombre_grado: g.nombre_grado,
+                  cuposAsignados: Number(g.cupos) || 0,
+                  cupos_asignados: Number(g.cupos) || 0,
+                  cupos: Number(g.cupos) || 0
+                })) : []
+              }))
+            };
+
+            try {
+              localStorage.setItem(`sirae_distribucion_contrato_${this.contratoId}`, JSON.stringify(distribucionPayload));
+              const keys = this.obtenerClavesContrato('sirae_distribucion_contrato_');
+              keys.forEach(k => localStorage.setItem(k, JSON.stringify(distribucionPayload)));
+            } catch (_) {}
+
+            this.sincronizarJornadasYMenusDesdeSedes();
+
+            const token = this.authService.obtenerToken()?.replace(/^(Bearer|Token)\s+/i, '').trim();
+            let headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+            if (token) headers = headers.set('Authorization', `Bearer ${token}`);
+
+            this.http.put(`${environment.apiUrl}/contratos/${this.contratoId}/distribucion/`, distribucionPayload, { headers }).subscribe({
+              next: () => {},
+              error: () => {
+                this.http.post(`${environment.apiUrl}/distribucion-cupos/`, distribucionPayload, { headers }).subscribe({
+                  next: () => {},
+                  error: () => {}
+                });
+              }
+            });
+          }
+
+          // Historial de modificación
+          const ahoraFmt = new Date().toLocaleString('es-CO');
+          const registroAudit = {
+            id_modificacion: Date.now(),
+            tipo: 'MODIFICACION',
+            usuario_responsable: this.nombreUsuarioResponsableActual,
+            fecha_registro: ahoraFmt,
+            cambios: [
+              {
+                campo: 'Cupos autorizados y configuración de sedes',
+                anterior: `${cuposAnteriores} cupos`,
+                nuevo: `${cuposCalculados} cupos`
+              }
+            ],
+            estado_resultante: payload.estado
+          };
+          this.historialModificaciones.unshift(registroAudit);
+          this.guardarHistorialLocal();
+
+          const contratoActualizado = {
+            id: Number(this.contratoId),
+            codigo: payload.numero_cor || this.contrato?.codigo,
+            institucion: payload.institucion,
+            cupos: payload.cupos,
+            zona: payload.zona,
+            fechaInicio: payload.fecha_inicio,
+            fechaFin: payload.fecha_fin,
+            estado: payload.estado,
+            supervisor: this.nombreSupervisorAsignado
+          };
+
           await this.sweetAlert.success(
             '¡Contrato actualizado!',
-            'Los cambios del contrato han sido guardados exitosamente.'
+            'Los cambios del contrato y su distribución han sido guardados exitosamente.'
           );
-          this.cerrar.emit();
+          this.cerrar.emit(contratoActualizado);
           this.router.navigate(['/contratos']);
         },
         error: (err) => {

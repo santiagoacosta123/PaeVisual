@@ -172,7 +172,7 @@ export class ContratosComponent implements OnInit {
             mensajeVigencia: vigencia.mensajeVigencia,
             alertaNivel: vigencia.alertaNivel,
             zona: c.zona,
-            cupos: c.cupos || 0,
+            cupos: this.obtenerCuposContrato(c),
             supervisor: c.supervisor_nombre || (c.id_usuario_supervisor ? `Supervisor #${c.id_usuario_supervisor}` : 'Sin asignar'),
             expandido: false
           };
@@ -674,6 +674,33 @@ export class ContratosComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
+  obtenerCuposContrato(c: any): number {
+    const id = c.id_contrato || c.id;
+    const codigo = c.numero_cor || c.codigo;
+    const inst = c.institucion || c.institucion_nombre;
+    const idInst = c.id_institucion;
+
+    const keys = [
+      id ? `sirae_distribucion_contrato_${id}` : '',
+      codigo ? `sirae_distribucion_contrato_${codigo}` : '',
+      inst ? `sirae_distribucion_contrato_${inst}` : '',
+      idInst ? `sirae_distribucion_contrato_inst_${idInst}` : ''
+    ].filter(Boolean);
+
+    for (const k of keys) {
+      try {
+        const raw = localStorage.getItem(k);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          const total = Number(parsed?.total_autorizado ?? parsed?.total_distribuido);
+          if (total > 0) return total;
+        }
+      } catch (_) {}
+    }
+
+    return Number(c.cupos) || 0;
+  }
+
   cerrarModalGrandeContrato(nuevoContrato?: any) {
     this.modalGrandeAbierto = false;
     this.contratoIdSeleccionado = null;
@@ -681,6 +708,8 @@ export class ContratosComponent implements OnInit {
       const index = this.contratos.findIndex(c => c.id === nuevoContrato.id);
       if (index === -1) {
         this.contratos.unshift(nuevoContrato);
+      } else {
+        this.contratos[index] = { ...this.contratos[index], ...nuevoContrato };
       }
     }
     this.cargarContratos();

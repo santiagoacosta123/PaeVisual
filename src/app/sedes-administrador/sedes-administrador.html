@@ -179,110 +179,66 @@
             [ngClass]="jornada.habilitada ? 'border-slate-200 bg-white' : 'border-slate-100 bg-slate-50/60'">
 
             <div class="flex flex-wrap items-center justify-between gap-3">
-              <label class="flex cursor-pointer items-center gap-3 text-sm font-bold text-slate-800">
-                <input
-                  type="checkbox"
-                  [checked]="jornada.habilitada"
-                  (change)="toggleJornada(jornada)"
-                  class="h-4 w-4 rounded border-slate-300 text-amber-600 focus:ring-amber-500">
-                {{ jornada.nombre_jornada }}
-              </label>
-              <span class="inline-block rounded-full border px-2.5 py-1 text-[11px] font-bold"
+              <div class="flex items-center gap-3">
+                <span class="text-base font-extrabold text-slate-800">{{ jornada.nombre_jornada }}</span>
+              </div>
+              <span class="inline-block rounded-full border px-3 py-1 text-xs font-bold"
                 [ngClass]="jornada.habilitada
                   ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
                   : 'border-slate-200 bg-slate-100 text-slate-600'">
-                {{ jornada.habilitada ? 'Habilitada' : 'No habilitada' }}
+                {{ jornada.habilitada ? 'Habilitada en contrato' : 'No habilitada' }}
               </span>
             </div>
 
-            <div class="mt-5 grid gap-5 lg:grid-cols-[220px_minmax(0,1fr)]">
-              <label class="block text-xs font-semibold text-slate-600">
-                Cupos asignados para la jornada
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  [disabled]="!jornada.habilitada"
-                  [ngModel]="jornada.cupos"
-                  (ngModelChange)="actualizarCupoJornada(jornada, $event)"
-                  class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-base font-semibold text-slate-800 outline-none transition focus:border-amber-400 focus:ring-2 focus:ring-amber-100 disabled:bg-slate-100"
-                  placeholder="0">
-              </label>
-
-              <div class="rounded-xl border border-slate-100 bg-slate-50/60 p-4">
-                <div class="mb-3 flex items-center justify-between gap-2">
-                  <span class="text-xs font-bold text-slate-600">Distribución por grado</span>
-                  <span class="rounded-full border px-2.5 py-0.5 text-[11px] font-bold"
-                    [ngClass]="calcularSumaGrados(jornada) === (jornada.cupos || 0)
-                      ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                      : 'border-amber-300 bg-amber-50 text-amber-800'">
-                    {{ calcularSumaGrados(jornada) }} / {{ jornada.cupos || 0 }}
-                  </span>
+            <!-- Cupos totales de la jornada (Solo informativo, configurado desde el contrato) -->
+            <div class="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50/80 p-4">
+              <div>
+                <span class="block text-xs font-bold uppercase tracking-wider text-slate-500">Cupos totales de la jornada</span>
+                <div class="mt-1 flex items-baseline gap-2">
+                  <span class="text-3xl font-black text-blue-600">{{ jornada.cupos | number }}</span>
+                  <span class="text-xs font-bold text-slate-600">cupos asignados</span>
                 </div>
-
-                <div *ngIf="(jornada.grados || []).length > 0; else noGrados" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                  <label *ngFor="let grado of jornada.grados"
-                    class="block rounded-xl border border-slate-200 bg-white p-3">
-                    <span class="block text-xs font-bold text-slate-700">{{ grado.nombre_grado }}</span>
-                    <input
-                      type="number"
-                      min="0"
-                      step="1"
-                      [disabled]="!jornada.habilitada"
-                      [ngModel]="grado.cupos"
-                      (ngModelChange)="actualizarCupoGrado(jornada, grado, $event)"
-                      class="mt-2 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm font-semibold text-slate-800 outline-none transition focus:border-amber-400 focus:ring-2 focus:ring-amber-100 disabled:bg-slate-100">
-                  </label>
-                </div>
-                <ng-template #noGrados>
-                  <p class="m-0 text-sm text-slate-500">No hay grados disponibles para esta jornada.</p>
-                </ng-template>
               </div>
+              <span class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-500 shadow-sm">
+                Cupos establecidos desde el contrato
+              </span>
             </div>
           </div>
-        </div>
-
-        <div class="mt-6 flex justify-end border-t border-slate-100 pt-5">
-          <button
-            type="button"
-            (click)="guardarConfiguracion()"
-            class="rounded-xl bg-amber-500 px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-amber-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300">
-            Guardar configuración
-          </button>
         </div>
       </article>
 
       <!-- JORNADAS Y SECCIONES DE MENÚ -->
       <article class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h3 class="mb-4 mt-0 text-lg font-extrabold text-slate-900">Jornadas y secciones de menú</h3>
+        <h3 class="mb-1 mt-0 text-lg font-extrabold text-slate-900">Jornadas y secciones de menú</h3>
+        <p class="mb-4 mt-0 text-xs text-slate-500">Jornadas y menús que maneja esta sede según lo establecido en el contrato.</p>
 
         <p *ngIf="detalle.jornadas.length === 0" class="mb-0 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
-          Esta sede no tiene jornadas configuradas.
+          Esta sede no tiene jornadas configuradas en este momento.
         </p>
 
         <div *ngFor="let jornada of detalle.jornadas"
-          class="border-t border-slate-100 py-5 first:border-0 first:pt-0 last:pb-0">
-          <div class="flex flex-wrap items-center justify-between gap-2">
-            <h4 class="m-0 text-sm font-extrabold text-slate-800">{{ jornada.nombre_jornada }}</h4>
-            <span class="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800">
-              {{ jornada.cupos | number }} cupos en contratos
+          class="border-t border-slate-100 py-4 first:border-0 first:pt-0 last:pb-0">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <div class="flex items-center gap-2">
+              <h4 class="m-0 text-sm font-extrabold text-slate-800">{{ jornada.nombre_jornada }}</h4>
+            </div>
+            <span class="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
+              {{ jornada.cupos | number }} cupos autorizados
             </span>
           </div>
 
-          <p *ngIf="jornada.cupos === 0" class="mb-0 mt-3 rounded-lg bg-slate-50 p-3 text-sm text-slate-500">
-            No hay cupos de contrato asociados a esta jornada.
-          </p>
-
-          <div class="mt-3">
-            <p class="mb-2 mt-0 text-xs font-bold text-slate-500">Secciones de menú</p>
-            <div *ngIf="jornada.secciones.length > 0" class="flex flex-wrap gap-2">
+          <div class="rounded-xl border border-slate-100 bg-slate-50/70 p-3.5">
+            <p class="mb-2.5 mt-0 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+              Menús / Raciones que maneja esta sede
+            </p>
+            <div *ngIf="jornada.secciones && jornada.secciones.length > 0" class="flex flex-wrap gap-2">
               <span *ngFor="let seccion of jornada.secciones"
-                class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-700">
+                class="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3.5 py-1 text-xs font-bold text-emerald-800 shadow-sm">
+                <span>🍽️</span>
                 {{ seccion.nombre_seccion }}
-                <span *ngIf="seccion.estado" class="ml-1 text-xs text-slate-500">({{ seccion.estado }})</span>
               </span>
             </div>
-            <p *ngIf="jornada.secciones.length === 0" class="mb-0 rounded-lg bg-slate-50 p-3 text-sm text-slate-500">
+            <p *ngIf="!jornada.secciones || jornada.secciones.length === 0" class="mb-0 text-xs text-slate-500 italic">
               Esta jornada no tiene secciones de menú configuradas.
             </p>
           </div>

@@ -156,6 +156,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
   institucionActiva: InstitucionAsignada | null = null;
   idInstitucion: number | null = null;
   idSede: number | null = null;             // viene de ?sede=ID
+  sedesInstitucion: { id_sede: number; nombre_sede: string }[] = [];
   ahoraTexto = '';
   private subInstitucion?: Subscription;
   private subSede?: Subscription;
@@ -194,10 +195,12 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     this.idInstitucion = this.institucionActiva?.id_institucion ?? this.authService.obtenerUsuario()?.id_institucion ?? null;
     const sedeActual = this.authService.obtenerSedeActiva();
     this.idSede = sedeActual?.id_sede ?? null;
+    this.cargarSedesInstitucion();
 
     this.subInstitucion = this.authService.institucionActiva$.subscribe(institucion => {
       this.institucionActiva = institucion;
       this.idInstitucion = institucion?.id_institucion ?? this.authService.obtenerUsuario()?.id_institucion ?? null;
+      this.cargarSedesInstitucion();
       this.cargarHistorial();
       this.actualizarCalculoAbastecimiento();
       this.cdr.markForCheck();
@@ -220,6 +223,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       }
       const reponer = params.get('reponer');
       if (reponer) { this.textoFiltro = reponer; }
+      this.cargarSedesInstitucion();
       this.cdr.markForCheck();
     });
 
@@ -264,6 +268,42 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     else if (this.mostrarModalInventario) this.mostrarModalInventario = false;
     else if (this.mostrarModalEntrada && !this.guardandoEntrada) this.mostrarModalEntrada = false;
     else this.modalDiaAbierto = false;
+  }
+
+  cargarSedesInstitucion(): void {
+    const idInst = this.idInstitucion;
+    if (!idInst) {
+      this.sedesInstitucion = [];
+      return;
+    }
+    this.http.get<any>(`${environment.apiUrl}/sedes/?id_institucion=${idInst}`).pipe(
+      catchError(() => of([]))
+    ).subscribe(resp => {
+      const lista = Array.isArray(resp) ? resp : (resp?.results ?? []);
+      this.sedesInstitucion = lista.map((s: any) => ({
+        id_sede: Number(s.id_sede ?? s.id),
+        nombre_sede: s.nombre_sede ?? s.nombre ?? `Sede ${s.id_sede ?? s.id}`,
+      }));
+      this.cdr.markForCheck();
+    });
+  }
+
+  cambiarSedeDespacho(nuevaSede: number | null): void {
+    this.idSede = nuevaSede;
+    if (nuevaSede != null) {
+      const encontrada = this.sedesInstitucion.find(s => s.id_sede === nuevaSede);
+      this.authService.establecerSedeActiva({
+        id_sede: nuevaSede,
+        nombre_sede: encontrada?.nombre_sede ?? 'Sede',
+        id_institucion: this.idInstitucion ?? undefined,
+        nombre_institucion: this.nombreInstitucion,
+      });
+    } else {
+      this.authService.limpiarSedeActiva();
+    }
+    this.cargarHistorial();
+    this.actualizarCalculoAbastecimiento();
+    this.cdr.markForCheck();
   }
 
   // Una sola función de seguimiento para todas las listas de la plantilla
@@ -1796,40 +1836,100 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const peticiones = items.map(sel => {
-      const cantidad = this.cantidadEnviarDe(sel);
-      const unidad = this.normalizarUnidad(sel.unidad) || 'Kg';
-      return this.entregasService.registrar({
-        id_ingrediente: sel.idIngrediente!,
-        ingrediente: sel.idIngrediente!,
-        id_tipo_mercado: sel.idTipoMercado!,
-        tipo_mercado: sel.idTipoMercado!,
-        id_institucion: datos.id_institucion!,
-        institucion: datos.id_institucion!,
-        institucion_nombre: this.nombreInstitucion,
-        id_sede: datos.id_sede,
-        sede: datos.id_sede,
-        sede_nombre: this.nombreSede,
-        fecha_entrega: hoy,
-        fecha_salida: hoy,
-        fecha_vencimiento: sel.fechaVencimiento,
-        cantidad,
-        frecuencia: sel.frecuencia,
-        unidad,
-        destino,
-        responsable,
-        documento_entrega: codigoFactura,
-        codigo_documento: codigoFactura,
-        numero_factura: codigoFactura,
-        lote_registro: lote,
-        observaciones: `Factura: ${codigoFactura} | Responsable: ${responsable} | Destino: ${destino}`,
-      } as any).pipe(
-        map((resp: any) => ({ ok: true, sel, cantidad, unidad, motivo: '', idResp: (resp?.id ?? resp?.id_entrega) as any })),
-        catchError(error => {
-          console.error(`Error al enviar ${sel.ingrediente}:`, error?.error ?? error);   // respuesta completa en la consola (F12)
-          return of({ ok: false, sel, cantidad, unidad, motivo: this.describirError(error), idResp: undefined as any });
-        }),
-      );
+    // Si no se eligió una sede específica en particular, replicar el despacho a TODAS las sedes de la institución
+    const sedesDestino: { id_sede?: number; nombre_sede?: string }[] = [];
+    if (idSede != null) {
+      sedesDestino.push({ id_sede: idSede, nombre_sede: this.nombreSede });
+    } else {
+      let sedesActivas: any[] = this.sedesInstitucion.filter((s: any) => s && (s.id_sede != null || s.id != null));
+      if (!sedesActivas.length) {
+        sedesActivas = (this.institucionActiva?.sedes || []).filter((s: any) => s && (s.id_sede != null || s.id != null));
+      }
+      if (!sedesActivas.length) {
+        const instSupervisor = this.authService.obtenerInstitucionesSupervisor()?.find(
+          i => Number(i.id_institucion) === Number(datos.id_institucion)
+        );
+        sedesActivas = ((instSupervisor as any)?.sedes || []).filter((s: any) => s && (s.id_sede != null || s.id != null));
+      }
+      if (!sedesActivas.length) {
+        try {
+          const guardadas = JSON.parse(localStorage.getItem('sirae_instituciones_supervisor') || '[]');
+          const instStorage = guardadas.find((i: any) => Number(i.id_institucion) === Number(datos.id_institucion));
+          sedesActivas = (instStorage?.sedes || []).filter((s: any) => s && (s.id_sede != null || s.id != null));
+        } catch {}
+      }
+
+      if (sedesActivas.length > 0) {
+        sedesActivas.forEach((s: any) => {
+          sedesDestino.push({
+            id_sede: Number(s.id_sede ?? s.id),
+            nombre_sede: s.nombre_sede || s.nombre || '',
+          });
+        });
+      } else {
+        sedesDestino.push({ id_sede: undefined, nombre_sede: undefined });
+      }
+    }
+
+    const peticiones = sedesDestino.flatMap(targetSede => {
+      const destinoSede = targetSede.nombre_sede
+        ? `${this.nombreInstitucion} - ${targetSede.nombre_sede}`
+        : destino;
+      const idSedeItem = targetSede.id_sede ?? datos.id_sede;
+
+      return items.map(sel => {
+        const cantidad = this.cantidadEnviarDe(sel);
+        const unidad = this.normalizarUnidad(sel.unidad) || 'Kg';
+        return this.entregasService.registrar({
+          id_ingrediente: sel.idIngrediente!,
+          ingrediente: sel.idIngrediente!,
+          id_tipo_mercado: sel.idTipoMercado!,
+          tipo_mercado: sel.idTipoMercado!,
+          id_institucion: datos.id_institucion!,
+          institucion: datos.id_institucion!,
+          institucion_nombre: this.nombreInstitucion,
+          id_sede: idSedeItem,
+          sede: idSedeItem,
+          sede_nombre: targetSede.nombre_sede || this.nombreSede,
+          fecha_entrega: hoy,
+          fecha_salida: hoy,
+          fecha_vencimiento: sel.fechaVencimiento,
+          cantidad,
+          frecuencia: sel.frecuencia,
+          unidad,
+          destino: destinoSede,
+          responsable,
+          documento_entrega: codigoFactura,
+          codigo_documento: codigoFactura,
+          numero_factura: codigoFactura,
+          lote_registro: lote,
+          observaciones: `Factura: ${codigoFactura} | Responsable: ${responsable} | Destino: ${destinoSede}`,
+        } as any).pipe(
+          map((resp: any) => ({
+            ok: true,
+            sel,
+            cantidad,
+            unidad,
+            targetSede,
+            destinoSede,
+            motivo: '',
+            idResp: (resp?.id ?? resp?.id_entrega) as any,
+          })),
+          catchError(error => {
+            console.error(`Error al enviar ${sel.ingrediente} a ${destinoSede}:`, error?.error ?? error);
+            return of({
+              ok: false,
+              sel,
+              cantidad,
+              unidad,
+              targetSede,
+              destinoSede,
+              motivo: this.describirError(error),
+              idResp: undefined as any,
+            });
+          }),
+        );
+      });
     });
 
     // Uno tras otro, por si el servidor falla al recibir varios envíos a la vez
@@ -1840,6 +1940,8 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
 
       const confirmados = exitosos.map(r => ({
         ...datosEnvio(r.sel, r.cantidad, r.unidad, codigoFactura),
+        id_sede: r.targetSede.id_sede,
+        destino: r.destinoSede,
         id: Number(r.idResp) || undefined,
       }));
       this.incorporarEnviosConfirmados(confirmados, sigueEnLaVista());
@@ -1853,12 +1955,15 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       }
 
       if (fallidos.length) {
-        this.errorEnvioPanel = `Se enviaron ${exitosos.length} producto(s). No se pudo enviar: ${fallidos.map(r => `${r.sel.ingrediente} (${r.motivo})`).join('; ')}.`;
+        this.errorEnvioPanel = `Se enviaron ${exitosos.length} despacho(s). No se pudo enviar: ${fallidos.map(r => `${r.sel.ingrediente} (${r.motivo})`).join('; ')}.`;
         void this.alertas.error('Envío incompleto', this.errorEnvioPanel);
       } else {
+        const sedesTexto = sedesDestino.length > 1
+          ? `a las ${sedesDestino.length} sedes de ${this.nombreInstitucion}`
+          : `a ${destino}`;
         void this.alertas.success(
           'Factura de envío registrada',
-          `Factura / Remisión ${codigoFactura} · ${exitosos.length} producto(s) enviados a ${destino}, con entrega el ${this.fechaCorta(hoy)}.`,
+          `Factura / Remisión ${codigoFactura} · ${items.length} producto(s) despachados con éxito ${sedesTexto}, con entrega el ${this.fechaCorta(hoy)}.`,
         );
       }
       this.cdr.markForCheck();
