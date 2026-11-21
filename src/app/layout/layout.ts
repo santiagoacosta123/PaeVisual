@@ -88,6 +88,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
   private institucionesSubscription?: Subscription;
   private sedesSubscription?: Subscription;
   private refrescoInstitucionesSubscription?: Subscription;
+  private notificacionesSubscription?: Subscription;
   private sedesSupervisor: any[] = [];
   private sedesSupervisorCargadas = false;
 
@@ -207,6 +208,11 @@ export class LayoutComponent implements OnInit, OnDestroy {
     }
 
     this.cargarNotificacionesHeader();
+    this.notificacionesSubscription = interval(20_000).subscribe(() => {
+      if (this.authService.estaAutenticado()) {
+        this.cargarNotificacionesHeader(true);
+      }
+    });
     if (this.notificacionService?.noLeidas$) {
       this.notificacionService.noLeidas$.subscribe((conteo) => {
         this.notificacionesNoLeidas = conteo;
@@ -269,6 +275,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
     this.institucionesSubscription?.unsubscribe();
     this.sedesSubscription?.unsubscribe();
     this.refrescoInstitucionesSubscription?.unsubscribe();
+    this.notificacionesSubscription?.unsubscribe();
   }
 
   private iniciarActualizacionInstituciones(): void {
@@ -343,15 +350,28 @@ export class LayoutComponent implements OnInit, OnDestroy {
     }
   }
 
-  cargarNotificacionesHeader(): void {
+  cargarNotificacionesHeader(silent = false): void {
     this.notificacionService.obtenerNotificaciones().subscribe({
       next: (data: Notificacion[]) => {
+        const previosIds = new Set(this.listaNotificaciones.map(n => n.id ?? n.id_notificacion));
+        const nuevasSinLeer = data.filter(n => !n.leida && !previosIds.has(n.id ?? n.id_notificacion));
+
         this.listaNotificaciones = data;
         this.notificacionesNoLeidas = data.filter((n: Notificacion) => !n.leida).length;
+
+        // Si llegó una nueva notificación sin leer en sondeo suave, mostrar el Toast emergente
+        if (silent && nuevasSinLeer.length > 0 && previosIds.size > 0) {
+          const masReciente = nuevasSinLeer[0];
+          this.notificacionService.mostrarToast(masReciente);
+        }
+        this.cdr.markForCheck();
       },
       error: () => {
-        this.listaNotificaciones = [];
-        this.notificacionesNoLeidas = 0;
+        if (!silent) {
+          this.listaNotificaciones = [];
+          this.notificacionesNoLeidas = 0;
+          this.cdr.markForCheck();
+        }
       }
     });
   }
@@ -411,30 +431,27 @@ export class LayoutComponent implements OnInit, OnDestroy {
 
     let ruta = notif.ruta_accion || notif.accion?.ruta;
 
-    // Redirección contextual inteligente si la notificación no trae ruta fija
+    // Redirección contextual inteligente según rol y tipo de evento
     if (!ruta) {
       const texto = ((notif.titulo || '') + ' ' + (notif.mensaje || '')).toLowerCase();
       const cat = (notif.categoria || '').toLowerCase();
 
-      // Extraer remisión (#REM-2026-104)
-      const matchRem = (notif.mensaje || '').match(/#?(REM-\d+-\d+)/i) || (notif.titulo || '').match(/#?(REM-\d+-\d+)/i);
+      // Extraer remisión (#REM-2026-104 o ENT-...)
+      const matchRem = (notif.mensaje || '').match(/#?(REM-[\w\-]+|ENT-[\w\-]+)/i) || (notif.titulo || '').match(/#?(REM-[\w\-]+|ENT-[\w\-]+)/i);
       const remisionDoc = matchRem ? matchRem[1] : '';
 
-      if (texto.includes('recepci') || texto.includes('remisi') || cat.includes('entrega')) {
-        if (remisionDoc) {
+      if (texto.includes('factura') || texto.includes('bodega central') || texto.includes('abastecid')) {
+        ruta = this.esSuperAdministrador ? '/facturas-compra' : '/bodega-central';
+      } else if (texto.includes('recepci') || texto.includes('remisi') || cat.includes('entrega') || texto.includes('despacho')) {
+        if (this.esSupervisor && (texto.includes('despachad') || texto.includes('programado'))) {
+          ruta = '/registrar-entrega-alimentos';
+        } else if (remisionDoc) {
           ruta = '/historial-entregas?buscar=' + encodeURIComponent(remisionDoc) + '&modo=facturas';
         } else {
-          const matchInsumo = (notif.titulo || '').match(/insumo:[\s]*([^\r\n]+)/i);
-          if (matchInsumo) {
-            ruta = '/historial-entregas?buscar=' + encodeURIComponent(matchInsumo[1].trim());
-          } else {
-            ruta = '/historial-entregas';
-          }
+          ruta = '/historial-entregas';
         }
-      } else if (texto.includes('insumo') || cat.includes('inventario')) {
-        const matchInsumo = (notif.titulo || '').match(/insumo:[\s]*([^\r\n]+)/i);
-        const termino = matchInsumo ? matchInsumo[1].trim() : '';
-        ruta = '/historial-entregas?buscar=' + encodeURIComponent(termino);
+      } else if (texto.includes('stock') || texto.includes('insumo') || cat.includes('inventario')) {
+        ruta = this.esAdministrador ? '/ingredientes' : '/bodega-central';
       } else if (cat.includes('contrato') || texto.includes('contrato')) {
         ruta = '/contratos';
       } else if (cat.includes('asistencia') || texto.includes('asistencia')) {
@@ -442,7 +459,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
       } else if (cat.includes('menu') || texto.includes('minuta')) {
         ruta = '/menus';
       } else {
-        ruta = '/reportes-consumo';
+        ruta = this.esSupervisor ? '/dashboard-supervisor' : '/inicio';
       }
     }
 
@@ -460,23 +477,30 @@ export class LayoutComponent implements OnInit, OnDestroy {
   }
 
   obtenerIconoNotificacion(notif: Notificacion): { icono: string; color: string; bg: string } {
+    const texto = ((notif.titulo || '') + ' ' + (notif.mensaje || '')).toLowerCase();
     const cat = (notif.categoria || '').toLowerCase();
     const prio = (notif.prioridad || '').toLowerCase();
 
-    if (prio === 'critica' || prio === 'alta') {
+    if (prio === 'critica' || prio === 'alta' || texto.includes('alerta') || texto.includes('novedad') || texto.includes('rechazad')) {
       return { icono: 'warning', color: '#ef4444', bg: '#fee2e2' };
     }
-    if (cat.includes('entrega')) {
+    if (texto.includes('factura') || texto.includes('bodega')) {
+      return { icono: 'warehouse', color: '#b45309', bg: '#fef3c7' };
+    }
+    if (texto.includes('aceptad') || texto.includes('conforme') || texto.includes('acreditad')) {
+      return { icono: 'check_circle', color: '#10b981', bg: '#d1fae5' };
+    }
+    if (cat.includes('entrega') || texto.includes('despacho') || texto.includes('remisi') || texto.includes('tránsito')) {
       return { icono: 'local_shipping', color: '#2563eb', bg: '#dbeafe' };
     }
-    if (cat.includes('inventario') || cat.includes('stock')) {
-      return { icono: 'inventory_2', color: '#d97706', bg: '#fef3c7' };
-    }
-    if (cat.includes('asistencia')) {
-      return { icono: 'fact_check', color: '#10b981', bg: '#d1fae5' };
-    }
-    if (cat.includes('contrato') || cat.includes('menu')) {
+    if (cat.includes('contrato') || texto.includes('contrato')) {
       return { icono: 'description', color: '#8b5cf6', bg: '#ede9fe' };
+    }
+    if (cat.includes('menu') || texto.includes('minuta')) {
+      return { icono: 'restaurant_menu', color: '#059669', bg: '#ecfdf5' };
+    }
+    if (cat.includes('asistencia') || texto.includes('asistencia')) {
+      return { icono: 'fact_check', color: '#10b981', bg: '#d1fae5' };
     }
     return { icono: 'notifications', color: '#3b82f6', bg: '#eff6ff' };
   }
