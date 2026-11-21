@@ -6,6 +6,96 @@
   font-family: 'Roboto', system-ui, -apple-system, 'Segoe UI', sans-serif;
 }
 
+/* =====================================================================
+   TARJETA HERO (cabecera con imagen de fondo)
+   Imagen: /public/image copy 5.png  →  se sirve como /image%20copy%205.png
+   (Recomendado: renombrarla a "fondo-menus.png" y cambiar la ruta aquí)
+   ===================================================================== */
+.menu-hero {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px 24px;
+  min-height: 150px;
+  padding: 24px 30px;
+  border-radius: 26px;
+  background-color: #3a3a30;
+  background-image:
+    linear-gradient(90deg, rgba(18, 22, 14, .86) 0%, rgba(18, 22, 14, .62) 42%, rgba(18, 22, 14, .12) 100%),
+    url('/image%20copy%205.png');
+  background-size: cover;
+  background-position: center right;
+  background-repeat: no-repeat;
+  box-shadow: 0 14px 28px -20px rgba(15, 23, 42, .6);
+}
+.menu-hero-eyebrow {
+  display: block;
+  margin: 0 0 4px;
+  color: #fac94b;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+.menu-hero-title {
+  margin: 0;
+  color: #ffffff;
+  font-size: clamp(22px, 2.6vw, 32px);
+  font-weight: 800;
+  letter-spacing: -.02em;
+  line-height: 1.1;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, .35);
+}
+.menu-hero-sub {
+  margin: 6px 0 0;
+  max-width: 520px;
+  color: rgba(255, 255, 255, .9);
+  font-size: 13.5px;
+  font-weight: 500;
+  line-height: 1.4;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, .35);
+}
+
+/* Selector de pestañas dentro del hero (estilo vidrio) */
+.menu-hero-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, .3);
+  background: rgba(255, 255, 255, .14);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.menu-hero-tab {
+  padding: 8px 16px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: #ffffff;
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease;
+}
+.menu-hero-tab:hover { background: rgba(255, 255, 255, .2); }
+
+/* Pestaña activa: letras BLANCAS (con sombra suave para que se lean sobre el amarillo) */
+.menu-hero-tab.activa {
+  background: #f0a500;
+  border-color: #d98f00;
+  color: #ffffff;
+  font-weight: 800;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, .35);
+  box-shadow: 0 6px 14px -8px rgba(0, 0, 0, .5);
+}
+.menu-hero-tab:focus-visible { outline: 2px solid #fac94b; outline-offset: 2px; }
+
 /* ===== Botón redondo con chevron (a la izquierda de cada fila / sección) ===== */
 .tri-sum {
   list-style: none;
@@ -65,115 +155,105 @@ details[open] > .tri-sum .chev::before,
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .chev, .chev::before { transition: none; }
+  .chev, .chev::before, .menu-hero-tab { transition: none; }
 }
 </style>
 
 <div class="fx-roboto flex flex-col gap-4 max-w-7xl mx-auto text-slate-800">
 
-  <!-- ===================== CABECERA UNIFICADA: CONTEXTO Y PESTAÑAS ===================== -->
-  <header class="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col gap-4">
-    <div class="flex flex-wrap items-center justify-between gap-4">
-      <!-- Identidad de la vista -->
-      <div>
-        <div class="flex items-center gap-2.5 flex-wrap">
-          <h1 class="text-base sm:text-lg font-extrabold text-slate-900 m-0 tracking-tight">
-            {{ pestanaActiva === 'minuta' ? 'Minuta Semanal de Sedes' : 'Platos y Recetas PAE' }}
-          </h1>
-        </div>
-        <p class="text-xs text-slate-500 m-0 mt-0.5">
-          {{ pestanaActiva === 'minuta'
-            ? 'Supervisión, programación y aprobación de la minuta semanal por sede educativa.'
-            : 'Catálogo oficial de platos, componentes y recetas del ciclo PAE.' }}
-        </p>
-      </div>
-
-      <!-- Selector de Pestañas -->
-      <div class="inline-flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200/80">
-        <button type="button" (click)="pestanaActiva = 'platos'"
-          [ngClass]="pestanaActiva === 'platos'
-            ? 'bg-[#fac94b] text-slate-950 font-bold shadow-xs border-amber-400'
-            : 'text-slate-600 hover:text-slate-900 hover:bg-white/70 font-medium border-transparent'"
-          class="px-3.5 py-1.5 rounded-lg text-xs border transition cursor-pointer inline-flex items-center gap-1.5 whitespace-nowrap">
-          <span>Platos y Recetas PAE</span>
-        </button>
-
-        <button type="button" (click)="pestanaActiva = 'minuta'"
-          [ngClass]="pestanaActiva === 'minuta'
-            ? 'bg-[#fac94b] text-slate-950 font-bold shadow-xs border-amber-400'
-            : 'text-slate-600 hover:text-slate-900 hover:bg-white/70 font-medium border-transparent'"
-          class="px-3.5 py-1.5 rounded-lg text-xs border transition cursor-pointer inline-flex items-center gap-1.5 whitespace-nowrap">
-          <span>Minuta Semanal de Sedes</span>
-        </button>
-      </div>
+  <!-- ===================== TARJETA HERO: TÍTULO + PESTAÑAS ===================== -->
+  <header class="menu-hero">
+    <!-- Identidad de la vista -->
+    <div>
+      <span class="menu-hero-eyebrow">Programa PAE · SIRAE</span>
+      <h1 class="menu-hero-title">
+        {{ pestanaActiva === 'minuta' ? 'Minuta Semanal de Sedes' : 'Platos y Recetas PAE' }}
+      </h1>
+      <p class="menu-hero-sub">
+        {{ pestanaActiva === 'minuta'
+          ? 'Supervisión, programación y aprobación de la minuta semanal por sede educativa.'
+          : 'Catálogo oficial de platos, componentes y recetas del ciclo PAE.' }}
+      </p>
     </div>
 
-    <!-- BARRA DE SELECCIÓN DE SEDE (desplegable con chevron) -->
-    <details *ngIf="pestanaActiva === 'minuta'" open
-      class="bg-slate-50/80 border border-slate-200/90 rounded-xl p-3.5">
-      <summary class="tri-sum">
-        <span class="chev" aria-hidden="true"></span>
-        <span class="text-[11px] font-extrabold text-slate-600 uppercase tracking-wider inline-flex items-center gap-1.5">
-          <span class="material-symbols-outlined text-amber-600 text-[16px]">apartment</span>
-          <span>Sedes de la Institución ({{ sedesInstitucion.length }} {{ sedesInstitucion.length === 1 ? 'Sede' : 'Sedes — Cada sede maneja su propia minuta y momentos' }})</span>
-        </span>
-      </summary>
+    <!-- Selector de Pestañas -->
+    <div class="menu-hero-tabs" role="tablist">
+      <button type="button" role="tab"
+        (click)="pestanaActiva = 'platos'"
+        [class.activa]="pestanaActiva === 'platos'"
+        [attr.aria-selected]="pestanaActiva === 'platos'"
+        class="menu-hero-tab">
+        Platos y Recetas PAE
+      </button>
 
-      <div class="flex flex-col gap-3 mt-3">
-        <!-- Tarjetas de Sedes con el nombre de su Jefa abajo -->
-        <div *ngIf="sedesInstitucion.length > 0" class="flex items-stretch gap-2.5 overflow-x-auto pb-1">
-          <button *ngFor="let s of sedesInstitucion; let idx = index" type="button"
-            (click)="seleccionarSede(s.id_sede || s.id)" [ngClass]="(s.id_sede || s.id) === sedeSeleccionadaId
-              ? 'bg-[#fac94b] text-slate-950 border-amber-400 shadow-xs font-bold'
-              : 'bg-white hover:bg-amber-50/40 text-slate-700 border-slate-200 hover:border-amber-300'"
-            class="px-3.5 py-2 rounded-xl border text-left transition cursor-pointer shrink-0 flex items-center gap-2.5 min-w-[200px]">
-            <span
-              [ngClass]="(s.id_sede || s.id) === sedeSeleccionadaId ? 'bg-slate-950/10 text-slate-950 font-black' : 'bg-slate-100 text-slate-600 font-bold'"
-              class="w-6 h-6 rounded-lg text-[11px] inline-flex items-center justify-center shrink-0">
-              {{ idx + 1 }}
-            </span>
-            <div class="overflow-hidden flex flex-col">
-              <span class="text-xs font-extrabold truncate leading-tight">{{ s.nombre_sede || s.nombre }}</span>
-              <span class="text-[11px] font-medium truncate leading-tight mt-0.5 inline-flex items-center gap-1"
-                [ngClass]="(s.id_sede || s.id) === sedeSeleccionadaId ? 'text-amber-950/80' : 'text-slate-500'">
-                <span class="material-symbols-outlined text-[12px]">person</span>
-                <span class="truncate">{{ obtenerNombreJefaDeSede(s.id_sede || s.id) }}</span>
-              </span>
-            </div>
-          </button>
-        </div>
-
-        <!-- Configuración de Momentos PAE que atiende la sede activa -->
-        <div class="flex items-center justify-between flex-wrap gap-2.5 pt-2.5 border-t border-slate-200/70">
-          <div class="flex items-center gap-2 flex-wrap">
-            <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-              <span class="material-symbols-outlined text-amber-600 text-[16px]">restaurant</span>
-              <span>Momentos que atiende esta sede:</span>
-            </span>
-            <div class="inline-flex items-center gap-1.5 flex-wrap">
-              <button *ngFor="let mom of ['Desayuno', 'Almuerzo', 'Merienda']"
-                type="button"
-                (click)="toggleMomentoEnSede(sedeSeleccionadaId, mom)"
-                [ngClass]="sedeManejaMomento(sedeSeleccionadaId, mom)
-                  ? 'bg-white text-slate-900 font-bold border-amber-300 shadow-2xs ring-1 ring-amber-200'
-                  : 'bg-slate-100/80 text-slate-400 line-through border-slate-200 hover:bg-white hover:text-slate-600'"
-                class="px-2.5 py-1 rounded-lg text-xs border transition cursor-pointer inline-flex items-center gap-1.5"
-                [title]="'Haz clic para habilitar o deshabilitar ' + mom + ' en esta sede'">
-                <span class="material-symbols-outlined text-[14px]"
-                  [ngClass]="sedeManejaMomento(sedeSeleccionadaId, mom) ? 'text-emerald-600' : 'text-slate-400'">
-                  {{ sedeManejaMomento(sedeSeleccionadaId, mom) ? 'check_circle' : 'cancel' }}
-                </span>
-                <span>{{ mom }}</span>
-              </button>
-            </div>
-          </div>
-          <span class="text-[11px] text-slate-500">
-            * Mantén activos únicamente los momentos que sirve esta sede.
-          </span>
-        </div>
-      </div>
-    </details>
+      <button type="button" role="tab"
+        (click)="pestanaActiva = 'minuta'"
+        [class.activa]="pestanaActiva === 'minuta'"
+        [attr.aria-selected]="pestanaActiva === 'minuta'"
+        class="menu-hero-tab">
+        Minuta Semanal de Sedes
+      </button>
+    </div>
   </header>
+
+  <!-- BARRA DE SELECCIÓN DE SEDE (tarjeta aparte, desplegable con chevron) -->
+  <details *ngIf="pestanaActiva === 'minuta'" open
+    class="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-xs">
+    <summary class="tri-sum">
+      <span class="chev" aria-hidden="true"></span>
+      <span class="text-[11px] font-extrabold text-slate-600 uppercase tracking-wider">
+        Sedes de la Institución ({{ sedesInstitucion.length }} {{ sedesInstitucion.length === 1 ? 'Sede' : 'Sedes — Cada sede maneja su propia minuta y momentos' }})
+      </span>
+    </summary>
+
+    <div class="flex flex-col gap-3 mt-3">
+      <!-- Tarjetas de Sedes con el nombre de su Jefa abajo -->
+      <div *ngIf="sedesInstitucion.length > 0" class="flex items-stretch gap-2.5 overflow-x-auto pb-1">
+        <button *ngFor="let s of sedesInstitucion; let idx = index" type="button"
+          (click)="seleccionarSede(s.id_sede || s.id)" [ngClass]="(s.id_sede || s.id) === sedeSeleccionadaId
+            ? 'bg-[#fac94b] text-slate-950 border-amber-400 shadow-xs font-bold'
+            : 'bg-white hover:bg-amber-50/40 text-slate-700 border-slate-200 hover:border-amber-300'"
+          class="px-3.5 py-2 rounded-xl border text-left transition cursor-pointer shrink-0 flex items-center gap-2.5 min-w-[200px]">
+          <span
+            [ngClass]="(s.id_sede || s.id) === sedeSeleccionadaId ? 'bg-slate-950/10 text-slate-950 font-black' : 'bg-slate-100 text-slate-600 font-bold'"
+            class="w-6 h-6 rounded-lg text-[11px] inline-flex items-center justify-center shrink-0">
+            {{ idx + 1 }}
+          </span>
+          <div class="overflow-hidden flex flex-col">
+            <span class="text-xs font-extrabold truncate leading-tight">{{ s.nombre_sede || s.nombre }}</span>
+            <span class="text-[11px] font-medium truncate leading-tight mt-0.5"
+              [ngClass]="(s.id_sede || s.id) === sedeSeleccionadaId ? 'text-amber-950/80' : 'text-slate-500'">
+              {{ obtenerNombreJefaDeSede(s.id_sede || s.id) }}
+            </span>
+          </div>
+        </button>
+      </div>
+
+      <!-- Configuración de Momentos PAE que atiende la sede activa -->
+      <div class="flex items-center justify-between flex-wrap gap-2.5 pt-2.5 border-t border-slate-200/70">
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="text-xs font-bold text-slate-700">
+            Momentos que atiende esta sede:
+          </span>
+          <div class="inline-flex items-center gap-1.5 flex-wrap">
+            <button *ngFor="let mom of ['Desayuno', 'Almuerzo', 'Merienda']"
+              type="button"
+              (click)="toggleMomentoEnSede(sedeSeleccionadaId, mom)"
+              [ngClass]="sedeManejaMomento(sedeSeleccionadaId, mom)
+                ? 'bg-white text-slate-900 font-bold border-amber-300 shadow-2xs ring-1 ring-amber-200'
+                : 'bg-slate-100/80 text-slate-400 line-through border-slate-200 hover:bg-white hover:text-slate-600'"
+              class="px-3 py-1 rounded-lg text-xs border transition cursor-pointer inline-flex items-center"
+              [title]="'Haz clic para habilitar o deshabilitar ' + mom + ' en esta sede'">
+              <span>{{ mom }}</span>
+            </button>
+          </div>
+        </div>
+        <span class="text-[11px] text-slate-500">
+          * Mantén activos únicamente los momentos que sirve esta sede.
+        </span>
+      </div>
+    </div>
+  </details>
 
   <!-- ===================================================================== -->
   <!-- VISTA 1: MINUTA SEMANAL DE LA SEDE (CON APROBACIÓN DE JEFA Y SUPERVISOR) -->
@@ -185,9 +265,8 @@ details[open] > .tri-sum .chev::before,
       <summary class="tri-sum flex-wrap justify-between gap-2">
         <div class="flex items-center gap-2.5 flex-wrap">
           <span class="chev" aria-hidden="true"></span>
-          <span class="text-xs font-extrabold uppercase tracking-wide text-slate-800 flex items-center gap-1.5">
-            <span class="material-symbols-outlined text-amber-600 text-[17px]">calendar_month</span>
-            <span>Ciclo de 20 días — {{ sedeActualObj?.nombre_sede || 'Sede' }}</span>
+          <span class="text-xs font-extrabold uppercase tracking-wide text-slate-800">
+            Ciclo de 20 días — {{ sedeActualObj?.nombre_sede || 'Sede' }}
           </span>
           <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-950 border border-amber-200">
             {{ resumenProgramacionCicloSede.diasProgramados }} / 20 programados ({{ resumenProgramacionCicloSede.porcentaje }}%)
@@ -218,10 +297,6 @@ details[open] > .tri-sum .chev::before,
               <span class="text-[10px] font-black uppercase tracking-tight"
                 [ngClass]="dia.programado ? 'text-emerald-900' : 'text-slate-500'">
                 M{{ dia.numeroMenu }} · {{ dia.diaSemana.substring(0, 3) }}
-              </span>
-              <span class="material-symbols-outlined text-[13px]"
-                [ngClass]="dia.programado ? 'text-emerald-600' : 'text-slate-400'">
-                {{ dia.programado ? 'check_circle' : 'schedule' }}
               </span>
             </div>
             <div class="text-[10.5px] font-semibold leading-tight truncate"
@@ -289,10 +364,6 @@ details[open] > .tri-sum .chev::before,
             [ngClass]="obtenerAprobacionSemana(semana.numeroSemana).aprobado_jefa
               ? 'bg-emerald-50 text-emerald-900 border-emerald-200'
               : 'bg-amber-50 text-amber-900 border-amber-200'">
-            <span class="material-symbols-outlined text-[15px]"
-              [ngClass]="obtenerAprobacionSemana(semana.numeroSemana).aprobado_jefa ? 'text-emerald-600' : 'text-amber-600'">
-              {{ obtenerAprobacionSemana(semana.numeroSemana).aprobado_jefa ? 'verified' : 'pending' }}
-            </span>
             <span>Jefa: {{ obtenerAprobacionSemana(semana.numeroSemana).aprobado_jefa ? 'Aprobado' : 'Pendiente' }}</span>
           </div>
 
@@ -300,26 +371,20 @@ details[open] > .tri-sum .chev::before,
             [ngClass]="obtenerAprobacionSemana(semana.numeroSemana).aprobado_supervisor
               ? 'bg-emerald-50 text-emerald-900 border-emerald-200'
               : 'bg-slate-50 text-slate-700 border-slate-200'">
-            <span class="material-symbols-outlined text-[15px]"
-              [ngClass]="obtenerAprobacionSemana(semana.numeroSemana).aprobado_supervisor ? 'text-emerald-600' : 'text-slate-400'">
-              {{ obtenerAprobacionSemana(semana.numeroSemana).aprobado_supervisor ? 'verified_user' : 'hourglass_empty' }}
-            </span>
             <span>Supervisor: {{ obtenerAprobacionSemana(semana.numeroSemana).aprobado_supervisor ? 'Aprobado' : 'Pendiente' }}</span>
           </div>
 
           <button *ngIf="esSupervisor && !obtenerAprobacionSemana(semana.numeroSemana).aprobado_supervisor"
             type="button"
             (click)="aprobarSemanaComoSupervisor(semana.numeroSemana)"
-            class="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-[#fac94b] hover:bg-amber-400 text-slate-950 border border-amber-400 cursor-pointer shadow-2xs transition inline-flex items-center gap-1.5 whitespace-nowrap">
-            <span class="material-symbols-outlined text-[15px]">task_alt</span>
+            class="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-[#fac94b] hover:bg-amber-400 text-slate-950 border border-amber-400 cursor-pointer shadow-2xs transition inline-flex items-center whitespace-nowrap">
             <span>Aprobar Minuta Semana {{ semana.numeroSemana }}</span>
           </button>
 
           <button *ngIf="esJefaManipuladoras && !obtenerAprobacionSemana(semana.numeroSemana).aprobado_jefa"
             type="button"
             (click)="aprobarSemanaComoJefa(semana.numeroSemana)"
-            class="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-[#fac94b] hover:bg-amber-400 text-slate-950 border border-amber-400 cursor-pointer shadow-2xs transition inline-flex items-center gap-1.5 whitespace-nowrap">
-            <span class="material-symbols-outlined text-[15px]">thumb_up</span>
+            class="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-[#fac94b] hover:bg-amber-400 text-slate-950 border border-amber-400 cursor-pointer shadow-2xs transition inline-flex items-center whitespace-nowrap">
             <span>Dar Visto Bueno (Jefa)</span>
           </button>
         </div>
