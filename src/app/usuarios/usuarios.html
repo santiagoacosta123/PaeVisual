@@ -343,9 +343,86 @@
   transition: none !important;
   animation: none !important;
 }
+
+/* =====================================================================
+   MODO ADMINISTRADOR (esAdminInstitucional)
+   Estilo blanco como "Sedes de mi institución", sin verde.
+   El superadmin NO recibe la clase .modo-admin, así que no cambia.
+   ===================================================================== */
+.usuarios-layout.modo-admin .us-hero {
+  padding: 24px 26px;
+  border: 1px solid #e2e8f0;
+  border-radius: 24px;
+  background: #ffffff;
+  box-shadow: 0 6px 18px -10px rgba(15, 23, 42, .18);
+}
+.usuarios-layout.modo-admin .us-eyebrow { display: none; }
+.usuarios-layout.modo-admin .us-title { color: #0f172a; }
+.usuarios-layout.modo-admin .us-subtitle { color: #64748b; }
+.usuarios-layout.modo-admin .us-search {
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #0f172a;
+}
+.usuarios-layout.modo-admin .us-search::placeholder { color: #94a3b8; }
+.usuarios-layout.modo-admin .us-search:focus { border-color: #94a3b8; background: #ffffff; }
+
+.usuarios-layout.modo-admin .us-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 24px;
+  box-shadow: 0 6px 18px -10px rgba(15, 23, 42, .18);
+}
+.usuarios-layout.modo-admin .us-card-title { color: #0f172a; }
+.usuarios-layout.modo-admin .us-count { background: #eef2f7; color: #475569; font-weight: 700; }
+
+.usuarios-layout.modo-admin .us-table-wrap { border: 1px solid #e8edf3; border-radius: 16px; }
+.usuarios-layout.modo-admin .us-table th {
+  background: #f8fafc;
+  color: #64748b;
+  letter-spacing: .08em;
+  font-size: 11px;
+  border-bottom: 1px solid #e8edf3;
+}
+.usuarios-layout.modo-admin .us-table td { border-bottom: 1px solid #eef2f7; color: #0f172a; }
+.usuarios-layout.modo-admin .us-table tbody tr:hover { background: #f8fafc; }
+.usuarios-layout.modo-admin .us-name { color: #0f172a; }
+.usuarios-layout.modo-admin .us-sub { color: #94a3b8; }
+.usuarios-layout.modo-admin .us-role { border-color: #e2e8f0; background: #f1f5f9; color: #475569; }
+.usuarios-layout.modo-admin .us-state.on { border-color: #a7f3d0; background: #ecfdf5; color: #047857; }
+.usuarios-layout.modo-admin .us-link { color: #b45309; }
+.usuarios-layout.modo-admin .us-btn-edit {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 2px 6px -2px rgba(15, 23, 42, .18);
+}
+.usuarios-layout.modo-admin .us-btn-edit:hover { background: #f8fafc; border-color: #e2e8f0; }
+.usuarios-layout.modo-admin .us-foot { border-top: 1px solid #e8edf3; }
+
+/* Ventanas emergentes del admin */
+.usuarios-layout.modo-admin .bd-modal { border-radius: 24px; }
+.usuarios-layout.modo-admin .bd-modal-header {
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+}
+.usuarios-layout.modo-admin .bd-modal-header div,
+.usuarios-layout.modo-admin .bd-modal-header span { color: #64748b !important; }
+.usuarios-layout.modo-admin .bd-modal-header .bd-modal-eyebrow { color: #b45309 !important; }
+.usuarios-layout.modo-admin .bd-modal-header h2 { color: #0f172a !important; }
+.usuarios-layout.modo-admin .bd-modal-close { background: #f1f5f9; color: #475569; }
+.usuarios-layout.modo-admin .bd-modal-close:hover { background: #e2e8f0; }
+.usuarios-layout.modo-admin .bd-form-group > label { color: #0f172a; }
+.usuarios-layout.modo-admin .bd-input { border: 1px solid #e2e8f0; }
+.usuarios-layout.modo-admin .bd-input:focus { border-color: #94a3b8; box-shadow: 0 0 0 4px rgba(148, 163, 184, .25); }
+.usuarios-layout.modo-admin .bd-modal-footer { background: #f8fafc; border-top: 1px solid #e2e8f0; }
+.usuarios-layout.modo-admin .bd-cancel { border: 1px solid #e2e8f0; }
+.usuarios-layout.modo-admin .bd-cancel:hover { background: #f8fafc; }
+.usuarios-layout.modo-admin button:focus-visible,
+.usuarios-layout.modo-admin input:focus-visible { outline: 2px solid #94a3b8; }
 </style>
 
-<div class="usuarios-layout">
+<div class="usuarios-layout" [class.modo-admin]="esAdminInstitucional">
 
   <!-- ===================== TARJETA SUPERIOR ===================== -->
   <header class="us-hero">
