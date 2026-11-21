@@ -8,13 +8,19 @@
      pasar el mouse, igual que el menú del supervisor.
      ===================================================================== */
   .adm-shell {
-    --adm-page-bg: transparent;
+    /* Color real del fondo de la página: con él se dibuja la muesca curva
+       del ítem activo (antes estaba en transparent y la muesca no se veía). */
+    --adm-page-bg: #fafafa;
     --adm-rail: #ffffff;
     --adm-text: #64748b;
     --adm-accent: #f4b41f;
     --adm-accent-dark: #e69a0c;
     --adm-accent-ink: #2B1D00;
     --adm-soft: #fff1d0;
+    /* Borde de la barra: gris suave que se nota sobre el fondo claro */
+    --adm-rail-border: #dfe3e8;
+    /* Color del borde de la pestaña activa (cámbialo aquí: #f0e3bd da un toque amarillo suave) */
+    --adm-tab-border: #f4b41f;
     position: relative;
     display: flex;
     height: 100vh;
@@ -94,7 +100,10 @@
     z-index: 10;
   }
 
-  /* Área principal del supervisor (misma posición que el contenedor del admin) */
+  /* Área principal (supervisor, super admin y administrador).
+     IMPORTANTE: z-index 40 (mayor que el del sidebar, 30) para que los modales
+     con position: fixed que se abren dentro de esta área cubran TODA la pantalla,
+     incluido el sidebar. Con 10 el modal quedaba atrapado debajo del riel. */
   .adm-shell .adm-main {
     flex: 1 1 0;
     min-width: 0;
@@ -102,7 +111,7 @@
     height: 100%;
     padding: 24px 32px 24px 24px;
     position: relative;
-    z-index: 10;
+    z-index: 40;
     overflow-y: auto;
     overflow-x: hidden;
     display: flex;
@@ -121,7 +130,11 @@
     transition: width .25s cubic-bezier(.2, .8, .2, 1);
   }
 
-  /* La barra siempre ocupa todo el hueco (menos el margen izquierdo de 12px) */
+  /* La barra siempre ocupa todo el hueco (menos el margen izquierdo de 12px).
+     BORDE: línea gris de 1px arriba, izquierda y abajo, más una sombra doble
+     (una de contorno y otra suave) para que la barra se despegue del fondo.
+     El borde derecho se deja transparente a propósito: así la muesca curva
+     del ítem activo se sigue fundiendo con la página sin que una línea la corte. */
   .adm-rail {
     position: absolute;
     top: 12px;
@@ -133,9 +146,14 @@
     display: flex;
     flex-direction: column;
     background: var(--adm-rail);
+    border: 1px solid var(--adm-rail-border);
+    border-right-color: transparent;
     border-radius: 28px;
     overflow: hidden;
-    box-shadow: 0 14px 30px -20px rgba(180, 120, 0, .45);
+    box-shadow:
+      0 0 0 1px rgba(16, 24, 40, .03),
+      0 2px 6px rgba(16, 24, 40, .06),
+      0 14px 30px -14px rgba(16, 24, 40, .22);
   }
 
   /* Barra abierta (mouse encima o teclado): el hueco crece y EMPUJA el contenido,
@@ -289,6 +307,16 @@
     font-weight: 700;
   }
   .adm-link.active:hover { background: var(--adm-page-bg); }
+
+  /* BORDE de la pestaña activa: dibuja una línea fina siguiendo toda la forma
+     (la píldora y las dos curvas de arriba y abajo). drop-shadow sigue el
+     contorno real, así el borde se ve también en las curvas. */
+  .adm-link.active {
+    filter:
+      drop-shadow(-1px 0 0 var(--adm-tab-border))
+      drop-shadow(0 -1px 0 var(--adm-tab-border))
+      drop-shadow(0 1px 0 var(--adm-tab-border));
+  }
 
   /* Curvas cóncavas arriba y abajo de la pestaña activa */
   .adm-link.active::before,
@@ -583,6 +611,34 @@
     color: #c62828;
   }
 
+  /* =====================================================================
+     TEMA VERDE (solo Super Administrador): .adm-shell.adm-verde
+     Supervisor y Administrador conservan el amarillo de SIRAE.
+     ===================================================================== */
+  .adm-shell.adm-verde {
+    --adm-accent: #168a43;
+    --adm-accent-dark: #0f6b35;
+    --adm-soft: #e8f7ee;
+    --adm-tab-border: #168a43;
+  }
+  .adm-verde .adm-search input:focus {
+    border-color: #168a43;
+    box-shadow: 0 0 0 3px rgba(22, 138, 67, .22);
+  }
+  .adm-verde .adm-user-avatar { border-color: #168a43; }
+  .adm-verde .svh-notif-dot { background: #168a43; }
+  .adm-verde .svh-avatar-ring { border-color: #168a43; }
+  .adm-verde .svh-avatar-ring::after { border-color: #168a43; }
+  .adm-verde .svh-user-btn:hover .svh-avatar-ring {
+    border-color: #0f6b35;
+    box-shadow: 0 6px 16px -4px rgba(22, 138, 67, .45);
+  }
+  .adm-verde .svh-role { background: #e8f7ee; color: #0f6b35; }
+  .adm-verde .svh-act::before { background: #168a43; }
+  .adm-verde .svh-act:hover { background: #e8f7ee; color: #0f6b35; }
+  .adm-verde .svh-out::before { background: #e53935; }
+  .adm-verde .svh-out:hover { background: #fdecea; color: #c62828; }
+
   @media (prefers-reduced-motion: reduce) {
     .svh-user-btn:hover .svh-avatar-ring::after,
     .svh-notif-btn:hover .material-symbols-outlined,
@@ -635,11 +691,6 @@
       <a *ngIf="institucionActiva" routerLink="/menus" routerLinkActive="active" class="adm-link" title="Menú y Platos PAE" aria-label="Menú y Platos PAE">
         <span class="adm-ico"><span class="material-symbols-outlined" aria-hidden="true">restaurant_menu</span></span>
         <span class="adm-label">Menú</span>
-      </a>
-
-      <a *ngIf="institucionActiva" routerLink="/mensajeria" routerLinkActive="active" class="adm-link" title="Mensajería" aria-label="Mensajería">
-        <span class="adm-ico"><span class="material-symbols-outlined" aria-hidden="true">chat</span></span>
-        <span class="adm-label">Mensajería</span>
       </a>
 
     </nav>
@@ -709,7 +760,7 @@
 <!-- ================================================================= -->
 <!-- CASO 2A: SUPER ADMINISTRADOR — RIEL LATERAL                       -->
 <!-- ================================================================= -->
-<div *ngIf="esSuperAdministrador && !esSupervisor" class="adm-shell">
+<div *ngIf="esSuperAdministrador && !esSupervisor" class="adm-shell adm-verde">
 
   <!-- ================= SIDEBAR ================= -->
   <div class="adm-slot">
@@ -803,7 +854,7 @@
           <a routerLink="/perfil" class="svh-user-btn" title="Mi perfil de usuario" aria-label="Mi perfil">
             <span class="svh-avatar-ring">
               <img *ngIf="perfil.foto_perfil" [src]="perfil.foto_perfil" alt="" width="36" height="36" style="width:36px; height:36px; border-radius:50%; object-fit:cover; display:block;" />
-              <span *ngIf="!perfil.foto_perfil" style="width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:#fff1d0; color:#8a5a00; font-size:13px; font-weight:700;">{{ iniciales }}</span>
+              <span *ngIf="!perfil.foto_perfil" style="width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:#e8f7ee; color:#0f6b35; font-size:13px; font-weight:700;">{{ iniciales }}</span>
             </span>
           </a>
         </div>
@@ -860,11 +911,6 @@
       <a routerLink="usuarios" routerLinkActive="active" class="adm-link" title="Usuarios" aria-label="Usuarios">
         <span class="adm-ico"><span class="material-symbols-outlined" aria-hidden="true">group</span></span>
         <span class="adm-label">Usuarios</span>
-      </a>
-
-      <a routerLink="mensajeria" routerLinkActive="active" class="adm-link" title="Mensajería" aria-label="Mensajería">
-        <span class="adm-ico"><span class="material-symbols-outlined" aria-hidden="true">chat</span></span>
-        <span class="adm-label">Mensajería</span>
       </a>
 
     </nav>

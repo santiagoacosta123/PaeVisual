@@ -22,50 +22,50 @@
   <!-- ============ CONTENIDO PRINCIPAL (SI HAY INSTITUCIÓN) ============ -->
   <ng-container *ngIf="institucionActiva">
 
-    <!-- ENCABEZADO DE PANTALLA -->
-    <header class="flex flex-col gap-4 border-b border-[#f5d98a] pb-4 sm:flex-row sm:items-center sm:justify-between no-print">
-      <div>
-        <div class="flex items-center gap-2">
-          <span class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-3 py-1 text-xs font-black text-amber-800">
-            <span class="material-symbols-outlined text-[15px]">verified</span> Planillas Oficiales PAE Popayán
-          </span>
-          <span *ngIf="modoEdicion" class="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-xs font-black text-emerald-800 animate-pulse">
-            <span class="material-symbols-outlined text-[15px]">edit</span> Modo Edición Activo
-          </span>
-        </div>
-        <h1 class="m-0 mt-1 text-2xl font-black tracking-tight text-slate-900">Módulo de Planillas, Minutas y Reportes</h1>
-        <p class="m-0 text-xs text-slate-500">Gestión de remisiones, control diario de alimentos por semanas y minutas por niveles.</p>
-      </div>
+    <!-- TARJETA SUPERIOR CON IMAGEN (sin difuminado) y textos -->
+    <header class="relative w-full overflow-hidden rounded-3xl shadow-md no-print" style="height: 130px;">
+      <!-- Imagen original: se enfoca a la persona y la planilla -->
+      <img src="/image%20copy%204.png" alt="Manipuladora de alimentos diligenciando una planilla"
+        class="absolute inset-0 h-full w-full object-cover" style="object-position: center 58%;" />
 
-      <div class="flex flex-wrap items-center gap-3">
-        <!-- Botón Exportar PDF -->
-        <button type="button" (click)="exportarPdf(pestanaActiva === 'minuta' ? 'minuta' : (pestanaActiva === 'remision' ? 'remision' : 'kardex'))"
-          class="btn-rojo-pdf inline-flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-black shadow-md">
-          <span class="material-symbols-outlined text-[18px]">picture_as_pdf</span>
-          Exportar PDF / Imprimir
-        </button>
+      <!-- Textos -->
+      <div class="relative z-10 flex h-full flex-col justify-center px-6 sm:px-8">
+        <h1 class="m-0 text-2xl font-black tracking-tight text-white sm:text-3xl"
+          style="text-shadow: 0 2px 6px rgba(0,0,0,0.75);">Módulo de Planillas, Minutas y Reportes</h1>
+        <p class="m-0 mt-1 max-w-xl text-xs font-medium text-white sm:text-sm"
+          style="text-shadow: 0 1px 4px rgba(0,0,0,0.8);">Gestión de remisiones, control diario de alimentos por semanas y minutas por niveles.</p>
       </div>
     </header>
+
+    <!-- BARRA DE ACCIONES (fuera de la tarjeta) -->
+    <div class="flex flex-wrap items-center justify-between gap-3 no-print">
+      <span *ngIf="modoEdicion" class="inline-flex items-center rounded-full bg-emerald-100 px-3 py-1 text-xs font-black text-emerald-800 animate-pulse">
+        Modo Edición Activo
+      </span>
+      <span *ngIf="!modoEdicion"></span>
+
+      <!-- Botón Exportar PDF -->
+      <button type="button" (click)="exportarPdf(pestanaActiva === 'minuta' ? 'minuta' : (pestanaActiva === 'remision' ? 'remision' : 'kardex'))"
+        class="btn-rojo-pdf inline-flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-black shadow-md">
+        Exportar PDF / Imprimir
+      </button>
+    </div>
 
     <!-- SELECTOR DE PESTAÑAS PRINCIPALES -->
     <nav class="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-3 pestanas-selector no-print" aria-label="Pestañas de Reportes">
       <button type="button" class="pestana-btn" [class.activa]="pestanaActiva === 'remision'" (click)="pestanaActiva = 'remision'">
-        <span class="material-symbols-outlined text-[20px]">description</span>
         Plantilla Oficial: Remisión de Víveres e Insumos
       </button>
 
       <button type="button" class="pestana-btn" [class.activa]="pestanaActiva === 'kardex'" (click)="pestanaActiva = 'kardex'">
-        <span class="material-symbols-outlined text-[20px]">calendar_month</span>
         Plantilla: Control Diario de Salidas (Kardex Semanal)
       </button>
 
       <button type="button" class="pestana-btn" [class.activa]="pestanaActiva === 'minuta'" (click)="pestanaActiva = 'minuta'">
-        <span class="material-symbols-outlined text-[20px]">restaurant</span>
         Plantilla: Minuta Patrón y Clasificación por Niveles
       </button>
 
       <button type="button" class="pestana-btn" [class.activa]="pestanaActiva === 'historial'" (click)="pestanaActiva = 'historial'">
-        <span class="material-symbols-outlined text-[20px]">history</span>
         Historial y Consolidado de Sedes
       </button>
     </nav>
