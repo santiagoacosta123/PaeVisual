@@ -274,6 +274,8 @@ export class PlanillasOperativasComponent implements OnInit, OnDestroy {
       kardex: this.planillasPaeService.obtenerPlanillaKardex({
         institucionId: idInstitucion,
         institucionNombre: nombreInstitucion,
+        institucionRector: this.institucionActiva?.representante_legal || '',
+        institucionTelefono: this.institucionActiva?.telefono || '',
         sedeId: idSede,
         sedeNombre: nombreSede,
         periodo: this.periodoSeleccionado,
@@ -281,7 +283,12 @@ export class PlanillasOperativasComponent implements OnInit, OnDestroy {
         fechaFin: this.fechaFinPlanilla,
         cuposBase: cuposSede,
         forzarRecarga: !mostrarCargando,
-        nombreUsuario
+        nombreUsuario,
+        usuarioActual: usuarioActual ? {
+          nombre: nombreUsuario,
+          cedula: usuarioActual.numero_documento || '',
+          rol: usuarioActual.rol || ''
+        } : undefined
       })
     }).subscribe({
       next: ({ remision, kardex }) => {
