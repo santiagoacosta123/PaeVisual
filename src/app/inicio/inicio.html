@@ -1,48 +1,179 @@
-<div class="flex flex-col gap-6 relative" style="font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;">
+<div class="flex flex-col gap-6 relative" style="font-family: 'Roboto', system-ui, -apple-system, sans-serif;">
 
   <!-- =========================================================================
-       CASO 1: SUPER ADMINISTRADOR (DISEÑO DEDICADO Y ARMONIZADO CON LA IDENTIDAD SIRAE)
+       CASO 1: SUPER ADMINISTRADOR (DASHBOARD ANALÍTICO Y OPERATIVO PAE)
        ========================================================================= -->
   <ng-container *ngIf="esSuperAdministrador">
 
-    <!-- TARJETA PRINCIPAL DE BIENVENIDA -->
-    <div class="superadmin-banner-card">
-      <div class="superadmin-banner-content">
-        
-        <!-- Encabezado con ícono y título -->
-        <div class="flex items-start sm:items-center gap-4.5">
-          <div class="superadmin-badge-circle shrink-0">
-            <span class="material-symbols-outlined text-[26px]" style="color: #b45309;">widgets</span>
+    <!-- TARJETA PRINCIPAL DE BIENVENIDA (estilo verde) -->
+    <div class="w-full rounded-[24px] px-7 py-6 shadow-sm"
+      style="background: linear-gradient(135deg, #2b5526 0%, #1f4019 100%);">
+      <p class="m-0 text-[11px] font-bold uppercase tracking-[0.14em]" style="color: #fac94b;">
+        Gestión central
+      </p>
+      <h1 class="m-0 mt-1 text-[26px] font-bold tracking-tight text-white leading-tight">
+        ¡Bienvenido, <span style="color: #fac94b;">Super Administrador</span>!
+      </h1>
+      <p class="m-0 mt-1.5 text-[14px] font-normal text-white/90 leading-relaxed">
+        Centro de operaciones y gestión central del programa PAE.
+      </p>
+    </div>
+
+    <!-- =========================================================================
+         LAYOUT PRINCIPAL: COLUMNA CENTRAL + PANEL LATERAL DERECHO
+         ========================================================================= -->
+    <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_330px] gap-6 items-start">
+
+      <!-- ===================== COLUMNA PRINCIPAL ===================== -->
+      <div class="flex flex-col gap-6 min-w-0">
+
+        <!-- GRÁFICA 1: ESTADO DE CONTRATOS PAE -->
+        <div class="superadmin-chart-card">
+          <div class="superadmin-chart-header">
+            <div>
+              <h3 class="m-0 text-[16px] font-bold text-slate-900">Estado de Contratos PAE</h3>
+              <p class="m-0 text-xs text-slate-500">Distribución por estado de ejecución</p>
+            </div>
+            <span class="text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">
+              {{ metricas.contratosVigentes }} vigentes
+            </span>
           </div>
-          <div>
-            <h1 class="m-0 text-2xl sm:text-[27px] font-black tracking-tight text-slate-900 leading-tight">
-              ¡Bienvenido, <span class="superadmin-highlight">Super Administrador</span>!
-            </h1>
-            <p class="m-0 mt-1.5 text-slate-500 text-[13.5px] font-medium leading-relaxed">
-              Centro de operaciones y gestión central del programa PAE.
+
+          <!-- Altura reducida para barras más pequeñas -->
+          <div class="superadmin-chart-container" style="height: 200px; max-height: 200px;">
+            <canvas #chartContratosCanvas></canvas>
+          </div>
+
+          <div class="superadmin-chart-footer">
+            <div class="flex items-center gap-4 text-xs text-slate-600 flex-wrap">
+              <div class="flex items-center gap-1.5">
+                <span class="w-3 h-3 rounded-sm inline-block" style="background: #2b5526;"></span>
+                <span class="font-semibold">Vigentes</span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <span class="w-3 h-3 rounded-sm inline-block" style="background: #fac94b;"></span>
+                <span class="font-semibold">Por Vencer</span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <span class="w-3 h-3 rounded-sm inline-block" style="background: #94a3b8;"></span>
+                <span class="font-semibold">Finalizados</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- GRÁFICA 4: COBERTURA DE SEDES POR INSTITUCIÓN -->
+        <div class="superadmin-chart-card">
+          <div class="superadmin-chart-header">
+            <div>
+              <h3 class="m-0 text-[16px] font-bold text-slate-900">Cobertura de Sedes por Institución</h3>
+              <p class="m-0 text-xs text-slate-500">Top instituciones con mayor número de sedes activas PAE</p>
+            </div>
+            <span class="text-xs font-bold text-amber-800 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full">
+              {{ metricas.totalSedes }} Sedes
+            </span>
+          </div>
+
+          <div class="superadmin-chart-container">
+            <canvas #chartSedesCanvas></canvas>
+          </div>
+
+          <div class="superadmin-chart-footer">
+            <div class="flex items-center justify-between text-xs text-slate-600">
+              <span>Red de cobertura de {{ metricas.totalInstituciones }} instituciones</span>
+              <a routerLink="/banco-datos" class="text-amber-700 hover:text-amber-900 font-semibold no-underline flex items-center gap-1">
+                Ver detalle de sedes
+                <span class="material-symbols-outlined text-[15px]">arrow_forward</span>
+              </a>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ===================== PANEL LATERAL DERECHO ===================== -->
+      <aside class="flex flex-col gap-6 xl:sticky xl:top-4">
+
+        <!-- GRÁFICA 2: ESTADO DE RECEPCIÓN (DONUT) -->
+        <div class="superadmin-chart-card">
+          <div class="superadmin-chart-header">
+            <div>
+              <h3 class="m-0 text-[15px] font-bold text-slate-900">Estado de Recepción</h3>
+              <p class="m-0 text-xs text-slate-500">{{ metricas.totalEntregas }} despachos registrados</p>
+            </div>
+            <span class="text-xs font-bold text-blue-800 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-full">
+              {{ metricas.tasaEfectividad }}%
+            </span>
+          </div>
+
+          <div class="superadmin-chart-container relative">
+            <canvas #chartEntregasCanvas></canvas>
+            <!-- Indicador Central del Donut -->
+            <div class="superadmin-donut-center">
+              <span class="text-2xl font-black text-slate-900 leading-none">{{ metricas.tasaEfectividad }}%</span>
+              <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-0.5">Efectividad</span>
+            </div>
+          </div>
+
+          <div class="superadmin-chart-footer">
+            <div class="flex flex-col gap-2.5 text-xs text-slate-600">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full inline-block" style="background: #16a34a;"></span>
+                  <span>Recibidas conformes</span>
+                </div>
+                <strong>{{ desgloseEntregas.recibidas }}</strong>
+              </div>
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full inline-block" style="background: #f59e0b;"></span>
+                  <span>Con novedades</span>
+                </div>
+                <strong>{{ desgloseEntregas.conNovedad }}</strong>
+              </div>
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full inline-block" style="background: #3b82f6;"></span>
+                  <span>En tránsito</span>
+                </div>
+                <strong>{{ desgloseEntregas.enTransito }}</strong>
+              </div>
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full inline-block" style="background: #ef4444;"></span>
+                  <span>Rechazadas</span>
+                </div>
+                <strong>{{ desgloseEntregas.rechazadas }}</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- GRÁFICA 3: COMPOSICIÓN DE ALIMENTOS (DONUT) -->
+        <div class="superadmin-chart-card">
+          <div class="superadmin-chart-header">
+            <div>
+              <h3 class="m-0 text-[15px] font-bold text-slate-900">Composición de Alimentos</h3>
+              <p class="m-0 text-xs text-slate-500">Catálogo por categoría</p>
+            </div>
+            <span class="text-xs font-bold text-slate-700 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-full">
+              {{ metricas.totalInsumos }} Ítems
+            </span>
+          </div>
+
+          <div class="superadmin-chart-container">
+            <canvas #chartCategoriasCanvas></canvas>
+          </div>
+
+          <div class="superadmin-chart-footer">
+            <p class="m-0 text-xs text-slate-500">
+              Clasificación alimentaria conforme a los lineamientos técnico-administrativos de la Unidad de Alimentos para Aprender (UApA).
             </p>
           </div>
         </div>
 
-        <!-- Fila de Fecha -->
-        <div class="flex flex-wrap items-center gap-3.5 pt-2">
-          <!-- Píldora de Fecha -->
-          <div class="superadmin-date-pill">
-            <span class="material-symbols-outlined text-[17px]" style="color: #b45309;">calendar_month</span>
-            <span class="capitalize">{{ fechaActual }}</span>
-          </div>
-        </div>
+      </aside>
 
-      </div>
-
-      <!-- Ilustración Gráfica Derecha: Diagonal Geométrica Limpia con el Amarillo Dorado SIRAE -->
-      <div class="superadmin-banner-graphic" aria-hidden="true">
-        <svg viewBox="0 0 280 210" preserveAspectRatio="none" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-full">
-          <!-- Capas geométricas sutiles y elegantes -->
-          <path d="M125 0 L280 0 L280 210 L50 210 Z" fill="#fac94b" />
-          <path d="M152 0 L280 0 L280 210 L78 210 Z" fill="#fde68a" />
-        </svg>
-      </div>
     </div>
 
   </ng-container>
