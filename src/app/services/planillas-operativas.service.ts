@@ -312,7 +312,9 @@ export class PlanillasOperativasService {
         if (!params.forzarRecarga && guardada) {
           try {
             const parsed = JSON.parse(guardada);
-            if (parsed && parsed.guardadoManual) {
+            const str = JSON.stringify(parsed);
+            const tieneDatosQuemados = str.includes('ARY MEDARDO') || str.includes('34.567.890') || str.includes('MARÍA YOLANDA');
+            if (parsed && parsed.guardadoManual && !tieneDatosQuemados) {
               return parsed as PlanillaRemisionData;
             }
           } catch (e) {
@@ -479,11 +481,14 @@ export class PlanillasOperativasService {
           ? params.usuarioActual.cedula
           : '1.061.789.432';
 
-        const nombreRectorReal = params.institucionRector || contratoSede?.representante_legal || 'Carlos Mendoza';
-        const telefonoRectorReal = params.institucionTelefono || contratoSede?.telefono || '602 8234567';
+        const nombreRectorReal = params.institucionRector || contratoSede?.representante_legal || '_________________';
+        const telefonoRectorReal = params.institucionTelefono || contratoSede?.telefono || '_________________';
+        const cedulaRectorReal = contratoSede?.cedula_representante || contratoSede?.cedula_rector || '_________________';
 
-        const operadorNombreReal = contratoSede?.operador || contratoSede?.nombre_operador || contratoSede?.contratista || 'Carlos Méndez';
-        const operadorRepresentante = contratoSede?.coordinador || contratoSede?.representante_legal || operadorNombreReal || 'Carlos Méndez';
+        const operadorNombreReal = contratoSede?.operador || contratoSede?.nombre_operador || contratoSede?.contratista || '_________________';
+        const operadorRepresentante = contratoSede?.coordinador || contratoSede?.representante_legal || operadorNombreReal;
+        const operadorCedulaReal = contratoSede?.nit_operador || contratoSede?.cedula_operador || '_________________';
+        const operadorTelefonoReal = contratoSede?.telefono_operador || '_________________';
 
         const codigoDaneReal = params.sedeCodigoDane || contratoSede?.codigo_dane || contratoSede?.dane || '11900100001';
         const contratoNumeroReal = contratoSede?.numero_contrato || contratoSede?.numero_cor || contratoSede?.numero || contratoSede?.codigo_contrato || 'CTR-PAE-2026-ANT-01';
@@ -510,13 +515,13 @@ export class PlanillasOperativasService {
             manipuladoraNombre: nombreManipuladoraReal,
             manipuladoraCedula: cedulaManipuladoraReal,
             rectorNombre: nombreRectorReal,
-            rectorCedula: '10.543.890',
+            rectorCedula: cedulaRectorReal,
             rectorTelefono: telefonoRectorReal,
             rectorCargo: 'RECTOR / DIRECTIVO DOCENTE',
             operadorNombre: operadorRepresentante,
-            operadorCedula: '76.321.456',
-            operadorTelefono: '312 4567890',
-            operadorCargo: 'SUPERVISOR OPERATIVO PAE'
+            operadorCedula: operadorCedulaReal,
+            operadorTelefono: operadorTelefonoReal,
+            operadorCargo: 'REPRESENTANTE LEGAL CONTRATISTA O COORDINADOR OPERATIVO'
           }
         };
 
@@ -564,7 +569,9 @@ export class PlanillasOperativasService {
         if (!params.forzarRecarga && guardada) {
           try {
             const parsed = JSON.parse(guardada);
-            if (parsed && parsed.guardadoManual) {
+            const str = JSON.stringify(parsed);
+            const tieneDatosQuemados = str.includes('ARY MEDARDO') || str.includes('34.567.890') || str.includes('MARÍA YOLANDA') || str.includes('51720');
+            if (parsed && parsed.guardadoManual && !tieneDatosQuemados) {
               return parsed as PlanillaKardexData;
             }
           } catch (e) {
@@ -581,7 +588,7 @@ export class PlanillasOperativasService {
           Number(c.id_sede) === params.sedeId || Number(c.id_institucion) === params.institucionId
         );
         const contratoCupos = Number(contratoSede?.cupos) || 0;
-        const cupoTotal = params.cuposBase || contratoCupos || 150;
+        const cupoTotal = params.cuposBase || contratoCupos || 0;
 
         const diasHabiles = this.generarDiasHabiles(params.fechaInicio || '2026-10-19');
         const diasSemanaNombres: Array<'L' | 'M' | 'M' | 'J' | 'V'> = ['L', 'M', 'M', 'J', 'V'];
@@ -593,7 +600,7 @@ export class PlanillasOperativasService {
         });
 
         const filas: FilaKardex[] = this.KARDEX_ALIMENTOS_BASE.map((base, idx) => {
-          // Entradas reales registradas en las entregas para este producto
+          // Entradas reales registradas en las entregas para este producto por las manipuladoras
           const termino = base.alimento.toLowerCase().split(' ')[0];
           const entregasProd = entregasSede.filter(e =>
             e.ingrediente && e.ingrediente.toLowerCase().includes(termino)
@@ -603,7 +610,8 @@ export class PlanillasOperativasService {
             if (e.estado === 'RECIBIDA') return sum + Number(e.cantidad || 0);
             return sum;
           }, 0);
-          const cantidadEntradaFinal = entradaReal > 0 ? Math.round(entradaReal * 100) / 100 : base.entrada;
+          // CERO DATOS QUEMADOS: Si la manipuladora no registró entrada de este producto, es 0
+          const cantidadEntradaFinal = entradaReal > 0 ? Math.round(entradaReal * 100) / 100 : 0;
 
           const semanas: [SemanaSalida, SemanaSalida, SemanaSalida, SemanaSalida] = [
             { semanaNumero: 1, dias: [] },
@@ -625,11 +633,12 @@ export class PlanillasOperativasService {
 
               let cantidadSalida = 0;
 
-              // Salida diaria calculada a partir de los niños atendidos
-              const efectivos = ninosPresentes > 0 ? ninosPresentes : Math.round(cupoTotal * 0.94);
-              const factorAsistencia = Math.min(1.0, efectivos / cupoTotal);
-              const racionDiaria = cantidadEntradaFinal / 20;
-              cantidadSalida = Math.round(racionDiaria * factorAsistencia * 10) / 10;
+              // CERO DATOS QUEMADOS: Si la manipuladora no registró asistencia ese día o no hubo entrada, la salida es 0
+              if (ninosPresentes > 0 && cupoTotal > 0 && cantidadEntradaFinal > 0) {
+                const factorAsistencia = Math.min(1.0, ninosPresentes / cupoTotal);
+                const rasionDiaria = cantidadEntradaFinal / 20;
+                cantidadSalida = Math.round(rasionDiaria * factorAsistencia * 10) / 10;
+              }
 
               totalSalidas += cantidadSalida;
 
@@ -658,12 +667,33 @@ export class PlanillasOperativasService {
           };
         });
 
+        // Firmas reales: cero datos inventados
+        const esManipuladoraSesion = !!params.usuarioActual?.rol && (
+          params.usuarioActual.rol.toLowerCase().includes('manipula') ||
+          params.usuarioActual.rol.toLowerCase().includes('jefa')
+        );
         const manipuladoraEntrega = entregasSede.find(e => e.usuarioReceptorNombre)?.usuarioReceptorNombre;
-        const nombreManipuladoraReal = manipuladoraEntrega || 'Isa Pérez';
+
+        const nombreManipuladoraReal = esManipuladoraSesion
+          ? (params.usuarioActual?.nombre || 'Manipuladora Asignada')
+          : (manipuladoraEntrega || (params.nombreUsuario && !params.nombreUsuario.toLowerCase().includes('supervisor') ? params.nombreUsuario : '_________________'));
+
+        const cedulaManipuladoraReal = esManipuladoraSesion
+          ? (params.usuarioActual?.cedula || '_________________')
+          : '_________________';
+
+        const nombreRectorReal = params.institucionRector || contratoSede?.representante_legal || '_________________';
+        const telefonoRectorReal = params.institucionTelefono || contratoSede?.telefono || '_________________';
+        const cedulaRectorReal = contratoSede?.cedula_representante || contratoSede?.cedula_rector || '_________________';
+
+        const operadorNombreReal = contratoSede?.operador || contratoSede?.nombre_operador || contratoSede?.contratista || '_________________';
+        const operadorRepresentante = contratoSede?.coordinador || contratoSede?.representante_legal || operadorNombreReal;
+        const operadorCedulaReal = contratoSede?.nit_operador || contratoSede?.cedula_operador || '_________________';
+        const operadorTelefonoReal = contratoSede?.telefono_operador || '_________________';
 
         const nuevaPlanilla: PlanillaKardexData = {
           municipio: 'POPAYÁN',
-          institucionEducativa: params.institucionNombre || 'INSTITUCIÓN EDUCATIVA SAN JOSÉ',
+          institucionEducativa: params.institucionNombre || 'INSTITUCIÓN EDUCATIVA',
           sede: params.sedeNombre || 'SEDE PRINCIPAL',
           periodo: params.periodo || 'PRIMERA',
           fechaInicio: params.fechaInicio || '2026-10-19',
@@ -671,15 +701,15 @@ export class PlanillasOperativasService {
           filas,
           firmas: {
             manipuladoraNombre: nombreManipuladoraReal,
-            manipuladoraCedula: '1.061.789.432',
-            rectorNombre: params.institucionRector || 'Carlos Mendoza',
-            rectorCedula: '10.543.890',
-            rectorTelefono: params.institucionTelefono || '602 8234567',
-            rectorCargo: 'RECTOR / DIRECTIVO DOCENTE',
-            operadorNombre: params.nombreUsuario || 'Carlos Méndez',
-            operadorCedula: '76.321.456',
-            operadorTelefono: '312 4567890',
-            operadorCargo: 'SUPERVISOR OPERATIVO PAE'
+            manipuladoraCedula: cedulaManipuladoraReal,
+            rectorNombre: nombreRectorReal,
+            rectorCedula: cedulaRectorReal,
+            rectorTelefono: telefonoRectorReal,
+            rectorCargo: 'SUPERVISOR PAE / RECTOR',
+            operadorNombre: operadorRepresentante,
+            operadorCedula: operadorCedulaReal,
+            operadorTelefono: operadorTelefonoReal,
+            operadorCargo: 'REPRESENTANTE LEGAL CONTRATISTA O COORDINADOR OPERATIVO'
           }
         };
 
@@ -704,7 +734,7 @@ export class PlanillasOperativasService {
     cuposBase?: number;
     nombreUsuario?: string;
   }): PlanillaRemisionData {
-    const cupoTotal = params.cuposBase || (params.sedeNombre?.toLowerCase().includes('valencia') ? 227 : 0);
+    const cupoTotal = params.cuposBase || 0;
     const pre = Math.round(cupoTotal * 0.11);
     const p13 = Math.round(cupoTotal * 0.22);
     const p45 = Math.round(cupoTotal * 0.22);
@@ -832,11 +862,11 @@ export class PlanillasOperativasService {
         alimento: base.alimento,
         fechaEntrada: diasHabiles[0],
         menu: base.menu,
-        cantidadEntrada: base.entrada,
+        cantidadEntrada: 0,
         unidad: base.unidad,
         semanas,
         totalSalidas: 0,
-        saldoMes: base.entrada
+        saldoMes: 0
       };
     });
 
@@ -849,16 +879,16 @@ export class PlanillasOperativasService {
       fechaTerminacion: params.fechaFin || '2026-11-13',
       filas,
       firmas: {
-        manipuladoraNombre: params.nombreUsuario || 'Isa Pérez',
-        manipuladoraCedula: '1.061.789.432',
-        rectorNombre: 'Carlos Mendoza',
-        rectorCedula: '10.543.890',
-        rectorTelefono: '602 8234567',
-        rectorCargo: 'RECTOR / DIRECTIVO DOCENTE',
-        operadorNombre: 'Carlos Méndez',
-        operadorCedula: '76.321.456',
-        operadorTelefono: '312 4567890',
-        operadorCargo: 'SUPERVISOR OPERATIVO PAE'
+        manipuladoraNombre: params.nombreUsuario || '_________________',
+        manipuladoraCedula: '_________________',
+        rectorNombre: '_________________',
+        rectorCedula: '_________________',
+        rectorTelefono: '_________________',
+        rectorCargo: 'SUPERVISOR PAE / RECTOR',
+        operadorNombre: '_________________',
+        operadorCedula: '_________________',
+        operadorTelefono: '_________________',
+        operadorCargo: 'REPRESENTANTE LEGAL CONTRATISTA O COORDINADOR OPERATIVO'
       }
     };
   }

@@ -220,15 +220,17 @@ export class DashboardSupervisor implements OnInit, AfterViewInit, OnDestroy {
     const idInst = Number(this.institucionActiva.id_institucion);
     const claveCache = `sirae_entregas_cache_${idInst}`;
 
-    // 1. CARGA INMEDIATA EN 0ms (caché local o entregas en memoria o datos base)
-    // Esto garantiza que las gráficas aparezcan de inmediato sin demoras
+    // 1. CARGA INMEDIATA DESDE CACHÉ LOCAL REAL (SI EXISTE)
     let entregasIniciales: Entrega[] = [];
     try {
       const guardadas = localStorage.getItem(claveCache);
       if (guardadas) {
         const parsed = JSON.parse(guardadas);
-        if (Array.isArray(parsed) && parsed.length > 0) {
+        // Filtrar y descartar si eran entregas simuladas antiguas (id >= 2000)
+        if (Array.isArray(parsed) && parsed.length > 0 && !parsed.some(e => Number(e.id) >= 2000)) {
           entregasIniciales = parsed;
+        } else {
+          localStorage.removeItem(claveCache);
         }
       }
     } catch {}
@@ -241,15 +243,12 @@ export class DashboardSupervisor implements OnInit, AfterViewInit, OnDestroy {
       });
     }
 
-    if (entregasIniciales.length === 0) {
-      entregasIniciales = this.generarEntregasEjemplo(this.institucionActiva);
-    }
-
+    // CERO DATOS FALSOS O QUEMADOS: Solo datos reales subidos por las manipuladoras
     this.todasEntregas = entregasIniciales;
     this.procesarMetricas();
     this.programarRenderGraficos();
 
-    // 2. SINCRONIZACIÓN EN SEGUNDO PLANO (no bloquea la interfaz)
+    // 2. SINCRONIZACIÓN EN SEGUNDO PLANO DESDE EL SERVIDOR
     this.entregasService.cargar().pipe(
       timeout(10000),
       catchError(() => of([] as Entrega[]))
@@ -260,79 +259,17 @@ export class DashboardSupervisor implements OnInit, AfterViewInit, OnDestroy {
         return false;
       });
 
-      if (delInst.length > 0) {
-        this.todasEntregas = delInst;
-        try {
-          localStorage.setItem(claveCache, JSON.stringify(delInst));
-        } catch {}
-        this.procesarMetricas();
-        this.programarRenderGraficos();
-      }
+      this.todasEntregas = delInst;
+      try {
+        localStorage.setItem(claveCache, JSON.stringify(delInst));
+      } catch {}
+      this.procesarMetricas();
+      this.programarRenderGraficos();
     });
   }
 
-  private generarEntregasEjemplo(inst: InstitucionAsignada): Entrega[] {
-    const sedes = inst.sedes && inst.sedes.length > 0
-      ? inst.sedes
-      : [
-          { id_sede: 1, nombre_sede: 'Sede Principal' },
-          { id_sede: 2, nombre_sede: 'Sede Primaria' },
-          { id_sede: 3, nombre_sede: 'Sede San José' },
-        ];
-
-    const alimentos = [
-      { n: 'Leche entera pasteurizada', tm: 'Perecederos', u: 'Litros', cant: 210 },
-      { n: 'Huevos frescos tipo A', tm: 'Perecederos', u: 'Unidades', cant: 360 },
-      { n: 'Arroz blanco fortificado', tm: 'No Perecederos', u: 'Kilos', cant: 250 },
-      { n: 'Fruta fresca - Naranja Valencia', tm: 'Perecederos', u: 'Kilos', cant: 150 },
-      { n: 'Fruta fresca - Banano', tm: 'Perecederos', u: 'Kilos', cant: 130 },
-      { n: 'Frijol rojo cargamanto', tm: 'No Perecederos', u: 'Kilos', cant: 90 },
-      { n: 'Pechuga de pollo fresca', tm: 'Perecederos', u: 'Kilos', cant: 120 },
-      { n: 'Carne de res magra', tm: 'Perecederos', u: 'Kilos', cant: 80 },
-      { n: 'Lenteja seleccionada', tm: 'No Perecederos', u: 'Kilos', cant: 75 },
-      { n: 'Aceite vegetal fortificado', tm: 'No Perecederos', u: 'Litros', cant: 55 },
-      { n: 'Queso campesino blanco', tm: 'Perecederos', u: 'Kilos', cant: 50 },
-      { n: 'Harina de maíz precocida', tm: 'No Perecederos', u: 'Kilos', cant: 110 },
-    ];
-
-    const estados: ('RECIBIDA' | 'CON_NOVEDAD' | 'EN_TRANSITO' | 'RECHAZADA')[] = [
-      'RECIBIDA', 'RECIBIDA', 'RECIBIDA', 'CON_NOVEDAD',
-      'RECIBIDA', 'RECIBIDA', 'EN_TRANSITO', 'RECIBIDA',
-      'RECIBIDA', 'CON_NOVEDAD', 'RECIBIDA', 'RECHAZADA'
-    ];
-
-    const entregas: Entrega[] = [];
-    const hoy = new Date();
-
-    for (let i = 0; i < 24; i++) {
-      const sede = sedes[i % sedes.length];
-      const al = alimentos[i % alimentos.length];
-      const est = estados[i % estados.length];
-      const fecha = new Date(hoy);
-      fecha.setDate(hoy.getDate() - (i * 2 + 1));
-      const fechaStr = fecha.toISOString().split('T')[0];
-
-      entregas.push({
-        id: 2000 + i,
-        idInstitucion: Number(inst.id_institucion),
-        institucionNombre: inst.nombre_institucion,
-        idSede: Number(sede.id_sede),
-        sedeNombre: (sede as any).nombre_sede || `Sede #${sede.id_sede}`,
-        ingrediente: al.n,
-        tipoMercado: al.tm,
-        frecuencia: 'Semanal',
-        cantidad: al.cant,
-        unidad: al.u,
-        fechaRecepcion: fechaStr,
-        fechaVencimiento: fechaStr,
-        estado: est,
-        cantidadRecibida: est === 'RECHAZADA' ? 0 : (est === 'CON_NOVEDAD' ? Math.round(al.cant * 0.85) : al.cant),
-        cantidadRechazada: est === 'RECHAZADA' ? al.cant : (est === 'CON_NOVEDAD' ? Math.round(al.cant * 0.15) : 0),
-        motivoRechazo: est === 'RECHAZADA' ? 'Alimento no cumple temperatura de refrigeración' : (est === 'CON_NOVEDAD' ? 'Diferencia menor en peso de empaque' : undefined),
-      });
-    }
-
-    return entregas;
+  private generarEntregasEjemplo(_inst: InstitucionAsignada): Entrega[] {
+    return [];
   }
 
   procesarMetricas(): void {
@@ -796,7 +733,7 @@ export class DashboardSupervisor implements OnInit, AfterViewInit, OnDestroy {
   }
 
   usuarioDe(e: Entrega): string {
-    return (e as any).usuarioNombre || (e as any).registradoPor || this.nombreSupervisor;
+    return e.usuarioReceptorNombre || (e as any).usuarioNombre || (e as any).registradoPor || 'Manipuladora Asignada';
   }
 
   iniciales(nombre: string): string {
