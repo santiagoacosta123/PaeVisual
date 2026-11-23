@@ -1093,18 +1093,6 @@ input[type="date"].campo::-webkit-calendar-picker-indicator:hover {
 
           <footer class="inv-footer">
             <div class="resumen">
-              <div class="resumen-sede-destino" style="margin-bottom: 12px; width: 100%;">
-                <label for="sede-despacho-selector" style="display: flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 5px;">
-                  <span class="material-symbols-outlined" style="font-size: 16px; color: #f59e0b;">domain</span> Destino del despacho
-                </label>
-                <select id="sede-despacho-selector" class="fx-input campo cursor-pointer" [ngModel]="idSede" (ngModelChange)="cambiarSedeDespacho($event)" [disabled]="guardandoEnvio" style="width: 100%; border-radius: 12px; font-size: 12px; font-weight: 700; padding: 8px 12px; border: 1.5px solid #cbd5e1; background: #fff; color: #1e293b;">
-                  <option [ngValue]="null">🏢 Todas las sedes ({{ sedesInstitucion.length > 0 ? sedesInstitucion.length + ' sedes' : 'General' }})</option>
-                  <option *ngFor="let s of sedesInstitucion" [ngValue]="s.id_sede">
-                    📍 {{ s.nombre_sede }}
-                  </option>
-                </select>
-              </div>
-
               <div class="resumen-fecha-envio">
                 <label for="fecha-envio-despacho"><span class="material-symbols-outlined" aria-hidden="true">calendar_today</span> Fecha de envío</label>
                 <input id="fecha-envio-despacho" type="date" class="fx-input campo" [(ngModel)]="envioFecha" [disabled]="guardandoEnvio" required>

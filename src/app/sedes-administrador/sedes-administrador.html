@@ -77,10 +77,8 @@
               type="button"
               (click)="seleccionarSede(sede)"
               [attr.aria-pressed]="sedeSeleccionada?.id_sede === sede.id_sede"
-              class="w-full rounded-xl px-4 py-2 text-xs font-bold shadow-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
-              [ngClass]="sedeSeleccionada?.id_sede === sede.id_sede
-                ? 'border border-amber-500 bg-amber-500 text-white hover:bg-amber-600'
-                : 'border border-slate-200 bg-white text-slate-700 hover:bg-amber-50'">
+              class="inline-flex h-10 w-full items-center justify-center rounded-full border-0 bg-[#F5B81F] px-4 text-xs font-extrabold text-white shadow-[0_8px_18px_-6px_rgba(245,184,31,0.48)] transition hover:-translate-y-px hover:bg-[#E2A714] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F5B81F]/50"
+              [ngClass]="sedeSeleccionada?.id_sede === sede.id_sede ? 'ring-2 ring-[#F5B81F]/40 ring-offset-1' : ''">
               {{ sedeSeleccionada?.id_sede === sede.id_sede ? 'Seleccionada' : 'Ver detalle' }}
             </button>
           </div>
