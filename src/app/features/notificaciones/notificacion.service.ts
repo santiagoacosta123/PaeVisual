@@ -34,7 +34,179 @@ export class NotificacionService {
   public toastActivo$ = this.toastSubject.asObservable();
   private toastTimer: any = null;
 
+  // Conexión WebSocket en tiempo real (con fallback automático a polling HTTP)
+  private socket: WebSocket | null = null;
+  private wsConectadoSubject = new BehaviorSubject<boolean>(false);
+  public wsConectado$ = this.wsConectadoSubject.asObservable();
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
+  private reconnectAttempts = 0;
+  private readonly maxReconnectAttempts = 5;
+  private cierreIntencional = false;
+  private tokenActual: string | null = null;
+
   constructor(private http: HttpClient) {}
+
+  estaWebSocketConectado(): boolean {
+    return this.wsConectadoSubject.value;
+  }
+
+  conectarWebSocket(token: string | null | undefined): void {
+    if (typeof WebSocket === 'undefined') return;
+    const tokenLimpio = (token ?? '').replace(/^(Bearer|Token)\s+/i, '').trim();
+    if (!tokenLimpio) return;
+
+    this.tokenActual = tokenLimpio;
+    if (
+      this.socket &&
+      (this.socket.readyState === WebSocket.OPEN || this.socket.readyState === WebSocket.CONNECTING)
+    ) {
+      return;
+    }
+
+    this.cierreIntencional = false;
+    const url = this.construirUrlWebSocket(tokenLimpio);
+
+    try {
+      const ws = new WebSocket(url);
+      this.socket = ws;
+
+      ws.onopen = () => {
+        this.reconnectAttempts = 0;
+        this.wsConectadoSubject.next(true);
+        this.iniciarHeartbeat();
+      };
+
+      ws.onmessage = (event: MessageEvent) => {
+        this.procesarMensajeWebSocket(event.data);
+      };
+
+      ws.onerror = () => {
+        this.wsConectadoSubject.next(false);
+      };
+
+      ws.onclose = () => {
+        this.detenerHeartbeat();
+        this.wsConectadoSubject.next(false);
+        this.socket = null;
+
+        if (!this.cierreIntencional && this.reconnectAttempts < this.maxReconnectAttempts) {
+          const delayMs = Math.min(3000 * Math.pow(2, this.reconnectAttempts), 30_000);
+          this.reconnectAttempts++;
+          this.reconnectTimer = setTimeout(() => {
+            if (!this.cierreIntencional && this.tokenActual) {
+              this.conectarWebSocket(this.tokenActual);
+            }
+          }, delayMs);
+        }
+      };
+    } catch {
+      this.wsConectadoSubject.next(false);
+    }
+  }
+
+  desconectarWebSocket(): void {
+    this.cierreIntencional = true;
+    this.tokenActual = null;
+    this.reconnectAttempts = 0;
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+    this.detenerHeartbeat();
+    if (this.socket) {
+      try {
+        this.socket.close(1000, 'Cierre de sesión');
+      } catch {
+        // Ignorar errores al cerrar un socket ya cerrado
+      }
+      this.socket = null;
+    }
+    this.wsConectadoSubject.next(false);
+  }
+
+  private construirUrlWebSocket(token: string): string {
+    const env = environment as { apiUrl: string; wsUrl?: string };
+    if (env.wsUrl) {
+      const sep = env.wsUrl.includes('?') ? '&' : '?';
+      return `${env.wsUrl}${sep}token=${encodeURIComponent(token)}`;
+    }
+    const base = env.apiUrl
+      .replace(/\/api\/?$/, '')
+      .replace(/^https:\/\//i, 'wss://')
+      .replace(/^http:\/\//i, 'ws://');
+    return `${base}/ws/notificaciones/?token=${encodeURIComponent(token)}`;
+  }
+
+  private iniciarHeartbeat(): void {
+    this.detenerHeartbeat();
+    this.heartbeatTimer = setInterval(() => {
+      if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+        try {
+          this.socket.send(JSON.stringify({ type: 'ping' }));
+        } catch {
+          // Si falla el envío, onclose gestionará la reconexión
+        }
+      }
+    }, 30_000);
+  }
+
+  private detenerHeartbeat(): void {
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer);
+      this.heartbeatTimer = null;
+    }
+  }
+
+  private procesarMensajeWebSocket(rawData: unknown): void {
+    if (typeof rawData !== 'string') return;
+    let payload: any;
+    try {
+      payload = JSON.parse(rawData);
+    } catch {
+      return;
+    }
+    if (!payload || typeof payload !== 'object') return;
+
+    const tipo = String(payload.type ?? payload.evento ?? '').toLowerCase();
+    if (tipo === 'pong') return;
+
+    if (tipo === 'notificacion_leida') {
+      const id = Number(payload.id ?? payload.id_notificacion);
+      if (Number.isFinite(id)) {
+        const actualizadas = this.notificacionesSubject.value.map((n) =>
+          (n.id === id || n.id_notificacion === id) ? { ...n, leida: true } : n
+        );
+        this.notificacionesSubject.next(actualizadas);
+        this.noLeidasSubject.next(actualizadas.filter(n => !n.leida).length);
+      }
+      return;
+    }
+
+    if (tipo === 'todas_leidas') {
+      const actualizadas = this.notificacionesSubject.value.map(n => ({ ...n, leida: true }));
+      this.notificacionesSubject.next(actualizadas);
+      this.noLeidasSubject.next(0);
+      return;
+    }
+
+    const notif: Notificacion | null =
+      payload.notificacion ?? payload.data ?? (payload.titulo && payload.mensaje ? payload : null);
+
+    if (notif && notif.titulo) {
+      const idNueva = notif.id ?? notif.id_notificacion;
+      const actuales = this.notificacionesSubject.value;
+      const yaExiste = idNueva !== undefined && actuales.some(
+        n => (n.id ?? n.id_notificacion) === idNueva
+      );
+      const nuevaLista = yaExiste ? actuales : [notif, ...actuales];
+      this.notificacionesSubject.next(nuevaLista);
+      this.noLeidasSubject.next(nuevaLista.filter(n => !n.leida).length);
+      if (!notif.leida && !yaExiste) {
+        this.mostrarToast(notif);
+      }
+    }
+  }
 
   mostrarToast(notif: Notificacion, duracionMs = 6000): void {
     if (this.toastTimer) clearTimeout(this.toastTimer);

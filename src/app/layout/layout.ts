@@ -208,11 +208,22 @@ export class LayoutComponent implements OnInit, OnDestroy {
     }
 
     this.cargarNotificacionesHeader();
+    if (this.authService.estaAutenticado() && this.notificacionService?.conectarWebSocket) {
+      this.notificacionService.conectarWebSocket(this.authService.obtenerToken?.());
+    }
     this.notificacionesSubscription = interval(20_000).subscribe(() => {
-      if (this.authService.estaAutenticado()) {
+      if (this.authService.estaAutenticado() && !this.notificacionService?.estaWebSocketConectado?.()) {
         this.cargarNotificacionesHeader(true);
       }
     });
+    if (this.notificacionService?.notificaciones$) {
+      this.notificacionService.notificaciones$.subscribe((lista) => {
+        if (Array.isArray(lista) && lista.length > 0) {
+          this.listaNotificaciones = lista;
+          this.cdr.markForCheck();
+        }
+      });
+    }
     if (this.notificacionService?.noLeidas$) {
       this.notificacionService.noLeidas$.subscribe((conteo) => {
         this.notificacionesNoLeidas = conteo;
@@ -276,6 +287,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
     this.sedesSubscription?.unsubscribe();
     this.refrescoInstitucionesSubscription?.unsubscribe();
     this.notificacionesSubscription?.unsubscribe();
+    this.notificacionService?.desconectarWebSocket?.();
   }
 
   private iniciarActualizacionInstituciones(): void {
@@ -768,6 +780,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
   }
 
   cerrarSesion(): void {
+    this.notificacionService?.desconectarWebSocket?.();
     this.cerrarPanel();
     this.perfil = { nombre: '', correo: '', rol: '', foto_perfil: null };
     this.editForm = { ...this.perfil };
