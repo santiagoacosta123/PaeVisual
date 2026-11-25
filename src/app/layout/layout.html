@@ -1113,7 +1113,7 @@
 <ng-template #centroNotificacionesSaaS>
   <div style="position:relative;" class="dropdown-container">
     <!-- Botón Campana con Badge numérico circular rojo -->
-    <button type="button" (click)="toggleNotificaciones($event)" class="saas-notif-bell-btn"
+    <button type="button" (mousedown)="$event.stopPropagation()" (click)="toggleNotificaciones($event)" class="saas-notif-bell-btn"
       [attr.aria-label]="'Notificaciones' + (notificacionesNoLeidas > 0 ? ' (' + notificacionesNoLeidas + ' sin leer)' : '')">
       <span class="material-symbols-outlined saas-bell-icon">notifications</span>
       <span *ngIf="notificacionesNoLeidas > 0" class="saas-notif-badge">
@@ -1122,7 +1122,7 @@
     </button>
 
     <!-- Dropdown Centro de Notificaciones -->
-    <div *ngIf="mostrarNotificaciones" class="saas-notif-dropdown" (click)="$event.stopPropagation()">
+    <div *ngIf="mostrarNotificaciones" class="saas-notif-dropdown" (mousedown)="$event.stopPropagation()" (click)="$event.stopPropagation()">
       <!-- Puntero superior que apunta a la campana -->
       <div class="saas-dropdown-arrow"></div>
 
@@ -1158,9 +1158,10 @@
           <span>{{ filtroNotificaciones === 'no_leidas' ? 'No tienes notificaciones sin leer' : (filtroNotificaciones === 'leidas' ? 'Aún no tienes notificaciones leídas' : 'No tienes notificaciones recibidas') }}</span>
         </div>
 
-        <div *ngFor="let noti of notificacionesFiltradas"
+        <div *ngFor="let noti of notificacionesFiltradas; trackBy: trackByNotificacion"
           class="saas-notif-row"
           [class.sin-leer]="!noti.leida"
+          (mousedown)="$event.stopPropagation()"
           (click)="abrirNotificacion(noti, $event)">
 
           <!-- Avatar o Icono según tipo -->
@@ -1228,9 +1229,9 @@
 <!-- ================================================================= -->
 <!-- MODAL DETALLE DE NOTIFICACIÓN (no sale de la interfaz)            -->
 <!-- ================================================================= -->
-<div *ngIf="notificacionAbierta" class="saas-notif-modal-backdrop" (click)="cerrarNotificacionAbierta()"
+<div *ngIf="notificacionAbierta" class="saas-notif-modal-backdrop" (mousedown)="$event.stopPropagation()" (click)="cerrarNotificacionDesdeBackdrop($event)"
   style="position:fixed;inset:0;background:rgba(15,23,42,.5);backdrop-filter:blur(2px);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px;">
-  <div class="saas-notif-modal-card" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
+  <div class="saas-notif-modal-card" (mousedown)="$event.stopPropagation()" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
     style="background:#fff;border-radius:18px;max-width:540px;width:100%;max-height:85vh;overflow:auto;box-shadow:0 24px 60px rgba(15,23,42,.28);padding:24px;border:1px solid #e2e8f0;">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
       <div style="display:flex;align-items:flex-start;gap:12px;min-width:0;">
@@ -1275,19 +1276,25 @@
         style="width:100%;max-height:320px;object-fit:contain;border-radius:12px;border:1px solid #e2e8f0;background:#f8fafc;" />
     </a>
 
-    <div style="display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;margin-top:22px;padding-top:14px;border-top:1px solid #f1f5f9;">
-      <button *ngIf="notificacionAbierta.leida" type="button" (click)="dejarComoNoLeidaYCerrar()"
-        style="padding:8px 14px;border-radius:9px;border:1px solid #cbd5e1;background:#fff;color:#334155;font-size:13px;font-weight:600;cursor:pointer;">
-        Dejar como no leída
+    <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;margin-top:22px;padding-top:14px;border-top:1px solid #f1f5f9;">
+      <button type="button" (click)="volverAListaNotificaciones($event)"
+        style="padding:8px 12px;border-radius:9px;border:1px solid #e2e8f0;background:#fff;color:#475569;font-size:12.5px;font-weight:600;cursor:pointer;">
+        ← Volver a la lista
       </button>
-      <button *ngIf="obtenerRutaSeguraNotificacion(notificacionAbierta)" type="button" (click)="irDesdeNotificacionAbierta()"
-        style="padding:8px 14px;border-radius:9px;border:1px solid #cbd5e1;background:#f8fafc;color:#1e293b;font-size:13px;font-weight:600;cursor:pointer;">
-        Ir al módulo relacionado
-      </button>
-      <button type="button" (click)="cerrarNotificacionAbierta()"
-        style="padding:8px 18px;border-radius:9px;border:none;background:#2563eb;color:#fff;font-size:13px;font-weight:700;cursor:pointer;">
-        Cerrar
-      </button>
+      <div style="display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;">
+        <button *ngIf="notificacionAbierta.leida" type="button" (click)="dejarComoNoLeidaYCerrar()"
+          style="padding:8px 14px;border-radius:9px;border:1px solid #cbd5e1;background:#fff;color:#334155;font-size:13px;font-weight:600;cursor:pointer;">
+          Dejar como no leída
+        </button>
+        <button *ngIf="obtenerRutaSeguraNotificacion(notificacionAbierta)" type="button" (click)="irDesdeNotificacionAbierta()"
+          style="padding:8px 14px;border-radius:9px;border:1px solid #cbd5e1;background:#f8fafc;color:#1e293b;font-size:13px;font-weight:600;cursor:pointer;">
+          Ir al módulo relacionado
+        </button>
+        <button type="button" (click)="cerrarNotificacionAbierta($event)"
+          style="padding:8px 18px;border-radius:9px;border:none;background:#2563eb;color:#fff;font-size:13px;font-weight:700;cursor:pointer;">
+          Cerrar
+        </button>
+      </div>
     </div>
   </div>
 </div>

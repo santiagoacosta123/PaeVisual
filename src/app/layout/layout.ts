@@ -102,6 +102,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
   notificacionesNoLeidas = 0;
   filtroNotificaciones: 'todas' | 'no_leidas' | 'leidas' = 'todas';
   notificacionAbierta: Notificacion | null = null;
+  private aperturaModalTimestamp = 0;
   toastNotificacion: Notificacion | null = null;
 
   // Datos del perfil y formularios
@@ -378,6 +379,26 @@ export class LayoutComponent implements OnInit, OnDestroy {
 
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
+    const path = typeof event.composedPath === 'function' ? event.composedPath() : [];
+    const dentroDePanel = path.some((node) => {
+      if (!(node instanceof HTMLElement)) return false;
+      const cl = node.classList;
+      return (
+        cl.contains('dropdown-container') ||
+        cl.contains('saas-notif-dropdown') ||
+        cl.contains('saas-notif-bell-btn') ||
+        cl.contains('saas-notif-modal-backdrop') ||
+        cl.contains('saas-notif-modal-card') ||
+        cl.contains('saas-floating-toast') ||
+        cl.contains('user-pill-btn') ||
+        cl.contains('notif-btn') ||
+        cl.contains('config-btn')
+      );
+    });
+    if (dentroDePanel) {
+      return;
+    }
+
     const target = event.target as HTMLElement | null;
     if (!target || !target.isConnected) {
       return;
@@ -386,6 +407,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
       !target.closest('.dropdown-container') &&
       !target.closest('.saas-notif-dropdown') &&
       !target.closest('.saas-notif-bell-btn') &&
+      !target.closest('.saas-notif-modal-backdrop') &&
       !target.closest('.user-pill-btn') &&
       !target.closest('.notif-btn') &&
       !target.closest('.config-btn')
@@ -398,17 +420,33 @@ export class LayoutComponent implements OnInit, OnDestroy {
     }
   }
 
+  trackByNotificacion(index: number, notif: Notificacion): number | string {
+    return notif.id_notificacion ?? notif.id ?? `${notif.titulo}-${index}`;
+  }
+
   cargarNotificacionesHeader(silent = false): void {
     this.notificacionService.obtenerNotificaciones().subscribe({
       next: (data: Notificacion[]) => {
-        const previosIds = new Set(this.listaNotificaciones.map(n => n.id ?? n.id_notificacion));
-        const nuevasSinLeer = data.filter(n => !n.leida && !previosIds.has(n.id ?? n.id_notificacion));
+        const previosPorId = new Map<number | string, Notificacion>();
+        for (const prev of this.listaNotificaciones) {
+          const key = prev.id ?? prev.id_notificacion;
+          if (key !== undefined) previosPorId.set(key, prev);
+        }
+        const nuevasSinLeer = data.filter(n => !n.leida && !previosPorId.has(n.id ?? n.id_notificacion ?? ''));
 
-        this.listaNotificaciones = data;
-        this.notificacionesNoLeidas = data.filter((n: Notificacion) => !n.leida).length;
+        // Preservar referencias cuando no cambiaron para no destruir nodos DOM durante un clic
+        this.listaNotificaciones = data.map((item) => {
+          const key = item.id ?? item.id_notificacion;
+          const existente = key !== undefined ? previosPorId.get(key) : undefined;
+          if (existente && existente.leida === item.leida && existente.titulo === item.titulo && existente.mensaje === item.mensaje) {
+            return existente;
+          }
+          return item;
+        });
+        this.notificacionesNoLeidas = this.listaNotificaciones.filter((n: Notificacion) => !n.leida).length;
 
         // Si llegó una nueva notificación sin leer en sondeo suave, mostrar el Toast emergente
-        if (silent && nuevasSinLeer.length > 0 && previosIds.size > 0) {
+        if (silent && nuevasSinLeer.length > 0 && previosPorId.size > 0) {
           const masReciente = nuevasSinLeer[0];
           this.notificacionService.mostrarToast(masReciente);
         }
@@ -425,6 +463,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
   }
 
   toggleNotificaciones(event?: MouseEvent): void {
+    event?.preventDefault();
     event?.stopPropagation();
     this.mostrarNotificaciones = !this.mostrarNotificaciones;
 
@@ -481,7 +520,9 @@ export class LayoutComponent implements OnInit, OnDestroy {
 
   /** Abre la notificación en un modal sin salir de la pantalla actual. */
   abrirNotificacion(notif: Notificacion, event?: MouseEvent): void {
+    event?.preventDefault();
     event?.stopPropagation();
+    this.aperturaModalTimestamp = Date.now();
     this.notificacionAbierta = notif;
     this.mostrarNotificaciones = false;
     this.refrescarVista();
@@ -489,7 +530,9 @@ export class LayoutComponent implements OnInit, OnDestroy {
 
   /** Abre la notificación desde el toast flotante sin sacar al usuario de su pantalla. */
   abrirNotificacionDesdeToast(notif: Notificacion, event?: MouseEvent): void {
+    event?.preventDefault();
     event?.stopPropagation();
+    this.aperturaModalTimestamp = Date.now();
     this.notificacionService.cerrarToast?.();
     this.toastNotificacion = null;
     this.notificacionAbierta = notif;
@@ -497,8 +540,32 @@ export class LayoutComponent implements OnInit, OnDestroy {
     this.refrescarVista();
   }
 
+  /** Evita que un doble clic o tap rápido en la esquina cierre el modal recién abierto. */
+  cerrarNotificacionDesdeBackdrop(event?: MouseEvent): void {
+    event?.stopPropagation();
+    if (Date.now() - this.aperturaModalTimestamp < 450) {
+      return;
+    }
+    this.cerrarNotificacionAbierta();
+  }
+
+  /** Cierra el detalle, marca como leída y regresa al desplegable de historial (Todas / No leídas / Leídas). */
+  volverAListaNotificaciones(event?: MouseEvent): void {
+    event?.preventDefault();
+    event?.stopPropagation();
+    const notif = this.notificacionAbierta;
+    this.notificacionAbierta = null;
+    if (notif && !notif.leida) {
+      this.marcarNotificacionLeida(notif);
+    }
+    this.mostrarNotificaciones = true;
+    this.refrescarVista();
+  }
+
   /** Al cerrar el detalle, la notificación pasa a leídas para quedar en el historial. */
-  cerrarNotificacionAbierta(): void {
+  cerrarNotificacionAbierta(event?: MouseEvent): void {
+    event?.preventDefault();
+    event?.stopPropagation();
     const notif = this.notificacionAbierta;
     this.notificacionAbierta = null;
     if (notif && !notif.leida) {
