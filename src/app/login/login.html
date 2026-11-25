@@ -160,6 +160,17 @@
           {{ errorMensaje }}
         </div>
 
+        <!-- AVISO DE SERVIDOR DESPERTANDO TRAS INACTIVIDAD -->
+        <div
+          class="bg-amber-50 border border-amber-200 text-amber-800 text-xs sm:text-sm font-medium p-3 rounded-xl text-center flex items-center justify-center gap-2"
+          *ngIf="cargando && avisoDespertando">
+          <svg class="animate-spin h-4 w-4 text-amber-600 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span>{{ avisoDespertando }}</span>
+        </div>
+
         <!-- BOTÓN PILL DE INICIAR SESIÓN (Texto en blanco solicitado por el usuario) -->
         <button type="submit"
           class="w-full h-[52px] bg-[#fab005] hover:bg-[#f3a800] text-white font-bold text-base sm:text-lg rounded-full flex items-center justify-center gap-2.5 shadow-[0_4px_14px_rgba(250,176,5,0.35)] hover:shadow-[0_6px_18px_rgba(250,176,5,0.45)] transition duration-200 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed group"
@@ -173,7 +184,7 @@
               <polyline points="13 6 19 12 13 18"></polyline>
             </svg>
           </span>
-          <span *ngIf="cargando" class="font-bold text-base text-white">Iniciando sesión...</span>
+          <span *ngIf="cargando" class="font-bold text-base text-white">{{ textoBotonCargando }}</span>
         </button>
 
         <!-- DIVISOR CON 'O' -->

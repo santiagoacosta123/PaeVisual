@@ -30,7 +30,10 @@ export class LoginComponent implements OnInit, OnDestroy {
 
   loginForm!: FormGroup;
   cargando: boolean = false;
+  textoBotonCargando: string = 'Iniciando sesión.';
+  private temporizadorAnimacionPuntos?: ReturnType<typeof setInterval>;
   errorMensaje: string = '';
+  avisoDespertando: string = '';
   mostrarClave: boolean = false;
 
   mostrarModalRecuperar: boolean = false;
@@ -41,7 +44,7 @@ export class LoginComponent implements OnInit, OnDestroy {
   enlaceRecuperacionDesarrollo: string = '';
   codigoRecuperacionDesarrollo: string = '';
   private solicitudLogin?: Subscription;
-  private temporizadorLogin?: ReturnType<typeof setTimeout>;
+  private temporizadorAvisoDespertar?: ReturnType<typeof setTimeout>;
 
   // Variables para la cámara y reconocimiento facial
   mostrarModalFacial: boolean = false;
@@ -83,7 +86,8 @@ export class LoginComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.solicitudLogin?.unsubscribe();
-    if (this.temporizadorLogin) clearTimeout(this.temporizadorLogin);
+    this.detenerAnimacionPuntos();
+    if (this.temporizadorAvisoDespertar) clearTimeout(this.temporizadorAvisoDespertar);
     if (this.temporizadorRedireccionFacial) clearTimeout(this.temporizadorRedireccionFacial);
     if (this.streamVideo) {
       this.streamVideo.getTracks().forEach(track => track.stop());
@@ -105,7 +109,9 @@ export class LoginComponent implements OnInit, OnDestroy {
     }
 
     this.cargando = true;
+    this.iniciarAnimacionPuntos();
     this.errorMensaje = '';
+    this.avisoDespertando = '';
     this.cdr.detectChanges();
 
     const credenciales = {
@@ -114,16 +120,27 @@ export class LoginComponent implements OnInit, OnDestroy {
     };
 
     this.solicitudLogin?.unsubscribe();
-    if (this.temporizadorLogin) clearTimeout(this.temporizadorLogin);
+    if (this.temporizadorAvisoDespertar) clearTimeout(this.temporizadorAvisoDespertar);
+
+    // Si tarda más de 12 segundos, informar al usuario que Render está despertando del modo inactivo
+    this.temporizadorAvisoDespertar = setTimeout(() => {
+      if (this.cargando) {
+        this.avisoDespertando = 'El servidor en la nube se está activando tras inactividad. Esto puede tardar unos segundos, por favor espera...';
+        this.cdr.detectChanges();
+      }
+    }, 12000);
+
     this.solicitudLogin = this.authService.login(credenciales).subscribe({
       next: (response) => {
-        if (this.temporizadorLogin) {
-          clearTimeout(this.temporizadorLogin);
-          this.temporizadorLogin = undefined;
+        if (this.temporizadorAvisoDespertar) {
+          clearTimeout(this.temporizadorAvisoDespertar);
+          this.temporizadorAvisoDespertar = undefined;
         }
+        this.avisoDespertando = '';
         if (!this.authService.rolPermitido(response.usuario?.rol)) {
           this.authService.limpiarSesion();
           this.cargando = false;
+          this.detenerAnimacionPuntos();
           this.errorMensaje = 'Esta cuenta no tiene permiso para acceder a esta aplicación.';
           this.cdr.detectChanges();
           return;
@@ -143,6 +160,7 @@ export class LoginComponent implements OnInit, OnDestroy {
         }));
 
         this.cargando = false;
+        this.detenerAnimacionPuntos();
         this.cdr.detectChanges();
 
         if (this.authService.esSupervisor(response.usuario?.rol)) {
@@ -155,8 +173,10 @@ export class LoginComponent implements OnInit, OnDestroy {
         }
       },
       error: (err) => {
-        if (this.temporizadorLogin) clearTimeout(this.temporizadorLogin);
+        if (this.temporizadorAvisoDespertar) clearTimeout(this.temporizadorAvisoDespertar);
+        this.avisoDespertando = '';
         this.cargando = false;
+        this.detenerAnimacionPuntos();
         if (err.name === 'TimeoutError') {
           this.errorMensaje = 'El servidor está tardando en responder. Intenta iniciar sesión nuevamente; puede tardar un momento mientras el backend se activa.';
         } else if (err.status === 0) {
@@ -171,13 +191,26 @@ export class LoginComponent implements OnInit, OnDestroy {
         this.cdr.detectChanges();
       }
     });
+  }
 
-    this.temporizadorLogin = setTimeout(() => {
-      this.solicitudLogin?.unsubscribe();
-      this.cargando = false;
-      this.errorMensaje = 'El servidor de inicio de sesión no respondió a tiempo. Presiona nuevamente «Iniciar sesión» para reintentar.';
+  private iniciarAnimacionPuntos(): void {
+    this.detenerAnimacionPuntos();
+    const estados = ['Iniciando sesión.', 'Iniciando sesión..', 'Iniciando sesión...'];
+    let index = 0;
+    this.textoBotonCargando = estados[index];
+    this.temporizadorAnimacionPuntos = setInterval(() => {
+      index = (index + 1) % estados.length;
+      this.textoBotonCargando = estados[index];
       this.cdr.detectChanges();
-    }, 45000);
+    }, 600);
+  }
+
+  private detenerAnimacionPuntos(): void {
+    if (this.temporizadorAnimacionPuntos) {
+      clearInterval(this.temporizadorAnimacionPuntos);
+      this.temporizadorAnimacionPuntos = undefined;
+    }
+    this.textoBotonCargando = 'Iniciando sesión.';
   }
 
   abrirModalRecuperar(): void {
