@@ -1,6 +1,8 @@
 import { Component, OnInit, AfterViewInit, OnDestroy, ViewChild, ElementRef, inject, ChangeDetectorRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router, Route } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
 import { of, forkJoin } from 'rxjs';
 import { catchError, timeout, finalize } from 'rxjs/operators';
 import Chart from 'chart.js/auto';
@@ -9,6 +11,8 @@ import { AuthService } from '../services/auth.service';
 import { SiraeService } from '../features/contratos/services/contratos_pae.service';
 import { BancoDatosService } from '../features/banco-datos/services/banco-datos.service';
 import { EntregasService, Entrega } from '../features/entregas/services/entregas.service';
+import { SweetAlertService } from '../sweet-alert.service';
+import { environment } from '../../environments/environment';
 
 // Fuente y color global de las gráficas
 Chart.defaults.font.family = "'Roboto', system-ui, -apple-system, sans-serif";
@@ -62,10 +66,78 @@ interface ResumenLotesVencimiento {
   optimos: number;  // Más de 30 días
 }
 
+export interface SedeAdminDashboard {
+  id: number;
+  nombre: string;
+  codigoDane?: string;
+  direccion: string;
+  beneficiarios: number;
+  racionesAsignadas: number;
+  racionesServidas: number;
+  porcentajeCumplimiento: number;
+  jornadas: string;
+  estadoComedor: 'OPERATIVO' | 'EN_SERVICIO' | 'ABASTECIDO';
+  responsableCocina: string;
+  stockEstado: 'OPTIMO' | 'BAJO' | 'CRITICO';
+}
+
+export interface InsumoAdminDashboard {
+  id: number;
+  nombre: string;
+  categoria: 'Abarrotes' | 'Lácteos' | 'Cárnicos y Huevos' | 'Frutas y Verduras';
+  stockActual: number;
+  stockMinimo: number;
+  unidad: string;
+  estado: 'OPTIMO' | 'BAJO' | 'CRITICO';
+  diasVencimientoProximo: number;
+  lote: string;
+}
+
+export interface MovimientoAdminReciente {
+  id: number;
+  tipo: 'ENTRADA' | 'SALIDA';
+  insumo: string;
+  cantidad: number;
+  unidad: string;
+  fechaHora: string;
+  origenDestino: string;
+  responsable: string;
+}
+
+export interface MetricasAdminInstitucional {
+  totalSedes: number;
+  sedesOperativas: number;
+  totalBeneficiarios: number;
+  totalRacionesDia: number;
+  racionesServidasDia: number;
+  porcentajeCumplimiento: number;
+  totalInsumos: number;
+  insumosCriticos: number;
+  insumosBajos: number;
+  insumosOptimos: number;
+  lotesPorVencer7Dias: number;
+  lotesPorVencer15Dias: number;
+  entregasRecibidasMes: number;
+}
+
+export interface MenuDelDiaAdmin {
+  ciclo: string;
+  diaSemana: string;
+  tipoRacion: string;
+  platoPrincipal: string;
+  guarnicion: string;
+  verduraEnsalada: string;
+  fruta: string;
+  bebida: string;
+  caloriasAprox: number;
+  horaServicio: string;
+  estadoAprobacion: string;
+}
+
 @Component({
   selector: 'app-inicio',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, FormsModule],
   templateUrl: './inicio.html',
   styleUrls: ['./inicio.css']
 })
@@ -75,6 +147,8 @@ export class InicioComponent implements OnInit, AfterViewInit, OnDestroy {
   private siraeService = inject(SiraeService);
   private bancoDatosService = inject(BancoDatosService);
   private entregasService = inject(EntregasService);
+  private http = inject(HttpClient);
+  private sweetAlert = inject(SweetAlertService);
   private cdRef = inject(ChangeDetectorRef);
 
   usuario = this.authService.obtenerUsuario();
@@ -90,18 +164,25 @@ export class InicioComponent implements OnInit, AfterViewInit, OnDestroy {
     year: 'numeric'
   }).format(new Date());
 
-  // Canvases para Chart.js
+  // Canvases para Chart.js (Super Admin)
   @ViewChild('chartContratosCanvas') chartContratosCanvas?: ElementRef<HTMLCanvasElement>;
   @ViewChild('chartFacturasCanvas') chartFacturasCanvas?: ElementRef<HTMLCanvasElement>;
   @ViewChild('chartLotesCanvas') chartLotesCanvas?: ElementRef<HTMLCanvasElement>;
   @ViewChild('chartSedesCanvas') chartSedesCanvas?: ElementRef<HTMLCanvasElement>;
+
+  // Canvases para Chart.js (Administrador Institucional)
+  @ViewChild('chartAdminSedesCanvas') chartAdminSedesCanvas?: ElementRef<HTMLCanvasElement>;
+  @ViewChild('chartAdminStockCanvas') chartAdminStockCanvas?: ElementRef<HTMLCanvasElement>;
 
   // Instancias de Chart.js
   private chartContratos: Chart | null = null;
   private chartFacturas: Chart | null = null;
   private chartLotes: Chart | null = null;
   private chartSedes: Chart | null = null;
+  private chartAdminSedes: Chart | null = null;
+  private chartAdminStock: Chart | null = null;
   private timerRender: any = null;
+  private timerRenderAdmin: any = null;
 
   // Estado de carga
   cargandoDatos = false;
@@ -117,6 +198,318 @@ export class InicioComponent implements OnInit, AfterViewInit, OnDestroy {
   entregasBase: Entrega[] = [];
   institucionesBase: any[] = [];
   sedesBase: any[] = [];
+
+  // =========================================================================
+  //  ESTADO DEL DASHBOARD DEL ADMINISTRADOR INSTITUCIONAL
+  // =========================================================================
+  sedeFiltroSeleccionada: string = 'TODAS';
+  categoriaFiltroInventario: string = 'TODAS';
+  filtroSoloAlertas: boolean = false;
+  busquedaInsumo: string = '';
+  refrescandoDatos: boolean = false;
+
+  // Persistencia Local
+  private readonly STORAGE_INVENTARIO = 'sirae_admin_inventario';
+  private readonly STORAGE_SEDES = 'sirae_admin_sedes';
+  private readonly STORAGE_MOVIMIENTOS = 'sirae_admin_movimientos';
+
+  // Modal 1: Ajuste Rápido de Stock
+  modalAjusteAbierto: boolean = false;
+  itemAjuste: InsumoAdminDashboard | null = null;
+  tipoAjuste: 'ENTRADA' | 'SALIDA' | 'DIRECTO' = 'ENTRADA';
+  cantidadAjuste: number | null = null;
+  motivoAjuste: string = '';
+
+  // Modal 2: Registrar Nuevo Insumo
+  modalNuevoInsumoAbierto: boolean = false;
+  nuevoInsumoForm = {
+    nombre: '',
+    categoria: 'Abarrotes' as 'Abarrotes' | 'Lácteos' | 'Cárnicos y Huevos' | 'Frutas y Verduras',
+    stockActual: null as number | null,
+    stockMinimo: null as number | null,
+    unidad: 'Kg',
+    lote: '',
+    diasVencimiento: 30
+  };
+
+  // Modal 3: Registrar Raciones por Sede
+  modalRacionesSedeAbierto: boolean = false;
+  sedeRacionesSeleccionada: SedeAdminDashboard | null = null;
+  racionesServidasInput: number | null = null;
+  estadoComedorInput: 'OPERATIVO' | 'EN_SERVICIO' | 'ABASTECIDO' = 'OPERATIVO';
+
+  get institucionNombre(): string {
+    return this.usuario?.institucion_nombre?.trim()
+      || this.usuario?.institucion?.trim()
+      || 'Institución Educativa Comercial del Norte';
+  }
+
+  metricasAdmin: MetricasAdminInstitucional = {
+    totalSedes: 4,
+    sedesOperativas: 4,
+    totalBeneficiarios: 980,
+    totalRacionesDia: 980,
+    racionesServidasDia: 920,
+    porcentajeCumplimiento: 93.9,
+    totalInsumos: 42,
+    insumosCriticos: 3,
+    insumosBajos: 8,
+    insumosOptimos: 31,
+    lotesPorVencer7Dias: 4,
+    lotesPorVencer15Dias: 9,
+    entregasRecibidasMes: 18
+  };
+
+  sedesAdmin: SedeAdminDashboard[] = [
+    {
+      id: 1,
+      nombre: 'Sede Principal',
+      codigoDane: '119001002341',
+      direccion: 'Calle 5 # 12-40 (Comercial del Norte)',
+      beneficiarios: 420,
+      racionesAsignadas: 420,
+      racionesServidas: 400,
+      porcentajeCumplimiento: 95.2,
+      jornadas: 'Mañana y Tarde',
+      estadoComedor: 'OPERATIVO',
+      responsableCocina: 'Martha Cecilia Ordóñez',
+      stockEstado: 'OPTIMO'
+    },
+    {
+      id: 2,
+      nombre: 'Sede Primaria Las Américas',
+      codigoDane: '119001002342',
+      direccion: 'Cra 9 # 18-22 Barrio Las Américas',
+      beneficiarios: 280,
+      racionesAsignadas: 280,
+      racionesServidas: 265,
+      porcentajeCumplimiento: 94.6,
+      jornadas: 'Mañana',
+      estadoComedor: 'OPERATIVO',
+      responsableCocina: 'Alba Nelly Gómez',
+      stockEstado: 'BAJO'
+    },
+    {
+      id: 3,
+      nombre: 'Sede Rural San Isidro',
+      codigoDane: '119001002343',
+      direccion: 'Vereda San Isidro Km 3',
+      beneficiarios: 160,
+      racionesAsignadas: 160,
+      racionesServidas: 155,
+      porcentajeCumplimiento: 96.9,
+      jornadas: 'Jornada Única',
+      estadoComedor: 'OPERATIVO',
+      responsableCocina: 'Carmen Lucía Campo',
+      stockEstado: 'OPTIMO'
+    },
+    {
+      id: 4,
+      nombre: 'Sede El Carmen',
+      codigoDane: '119001002344',
+      direccion: 'Calle 15 # 3-50',
+      beneficiarios: 120,
+      racionesAsignadas: 120,
+      racionesServidas: 100,
+      porcentajeCumplimiento: 83.3,
+      jornadas: 'Mañana',
+      estadoComedor: 'EN_SERVICIO',
+      responsableCocina: 'Rosa Helena Paz',
+      stockEstado: 'OPTIMO'
+    }
+  ];
+
+  insumosAdmin: InsumoAdminDashboard[] = [
+    {
+      id: 1,
+      nombre: 'Arroz Blanco Fortificado',
+      categoria: 'Abarrotes',
+      stockActual: 240,
+      stockMinimo: 80,
+      unidad: 'Kg',
+      estado: 'OPTIMO',
+      diasVencimientoProximo: 120,
+      lote: 'LOT-2026-AR-042'
+    },
+    {
+      id: 2,
+      nombre: 'Leche Entera Pasteurizada',
+      categoria: 'Lácteos',
+      stockActual: 35,
+      stockMinimo: 80,
+      unidad: 'Litros',
+      estado: 'CRITICO',
+      diasVencimientoProximo: 4,
+      lote: 'LOT-2026-LC-108'
+    },
+    {
+      id: 3,
+      nombre: 'Pechuga de Pollo Fresca',
+      categoria: 'Cárnicos y Huevos',
+      stockActual: 65,
+      stockMinimo: 40,
+      unidad: 'Kg',
+      estado: 'OPTIMO',
+      diasVencimientoProximo: 5,
+      lote: 'LOT-2026-CN-093'
+    },
+    {
+      id: 4,
+      nombre: 'Aceite Vegetal de Cocina',
+      categoria: 'Abarrotes',
+      stockActual: 18,
+      stockMinimo: 30,
+      unidad: 'Litros',
+      estado: 'BAJO',
+      diasVencimientoProximo: 180,
+      lote: 'LOT-2026-AC-019'
+    },
+    {
+      id: 5,
+      nombre: 'Huevos Frescos Tipo A',
+      categoria: 'Cárnicos y Huevos',
+      stockActual: 480,
+      stockMinimo: 200,
+      unidad: 'Unds',
+      estado: 'OPTIMO',
+      diasVencimientoProximo: 12,
+      lote: 'LOT-2026-HV-077'
+    },
+    {
+      id: 6,
+      nombre: 'Lenteja Seleccionada',
+      categoria: 'Abarrotes',
+      stockActual: 22,
+      stockMinimo: 45,
+      unidad: 'Kg',
+      estado: 'BAJO',
+      diasVencimientoProximo: 150,
+      lote: 'LOT-2026-LT-031'
+    },
+    {
+      id: 7,
+      nombre: 'Plátano Verde Hartón',
+      categoria: 'Frutas y Verduras',
+      stockActual: 52,
+      stockMinimo: 30,
+      unidad: 'Kg',
+      estado: 'OPTIMO',
+      diasVencimientoProximo: 7,
+      lote: 'LOT-2026-PL-084'
+    },
+    {
+      id: 8,
+      nombre: 'Zanahoria Fresca',
+      categoria: 'Frutas y Verduras',
+      stockActual: 38,
+      stockMinimo: 25,
+      unidad: 'Kg',
+      estado: 'OPTIMO',
+      diasVencimientoProximo: 6,
+      lote: 'LOT-2026-ZN-112'
+    },
+    {
+      id: 9,
+      nombre: 'Carne de Res Molida',
+      categoria: 'Cárnicos y Huevos',
+      stockActual: 42,
+      stockMinimo: 35,
+      unidad: 'Kg',
+      estado: 'OPTIMO',
+      diasVencimientoProximo: 4,
+      lote: 'LOT-2026-CR-066'
+    },
+    {
+      id: 10,
+      nombre: 'Panela en Bloque',
+      categoria: 'Abarrotes',
+      stockActual: 45,
+      stockMinimo: 20,
+      unidad: 'Kg',
+      estado: 'OPTIMO',
+      diasVencimientoProximo: 90,
+      lote: 'LOT-2026-PN-015'
+    },
+    {
+      id: 11,
+      nombre: 'Papa Pastusa',
+      categoria: 'Frutas y Verduras',
+      stockActual: 75,
+      stockMinimo: 40,
+      unidad: 'Kg',
+      estado: 'OPTIMO',
+      diasVencimientoProximo: 14,
+      lote: 'LOT-2026-PP-050'
+    },
+    {
+      id: 12,
+      nombre: 'Avena en Hojuelas',
+      categoria: 'Abarrotes',
+      stockActual: 30,
+      stockMinimo: 15,
+      unidad: 'Kg',
+      estado: 'OPTIMO',
+      diasVencimientoProximo: 75,
+      lote: 'LOT-2026-AV-022'
+    }
+  ];
+
+  movimientosAdmin: MovimientoAdminReciente[] = [
+    {
+      id: 1,
+      tipo: 'ENTRADA',
+      insumo: 'Arroz Blanco Fortificado',
+      cantidad: 120,
+      unidad: 'Kg',
+      fechaHora: 'Hoy · 08:30 AM',
+      origenDestino: 'Operador PAE (Remisión REM-8842)',
+      responsable: 'Bodega Central'
+    },
+    {
+      id: 2,
+      tipo: 'SALIDA',
+      insumo: 'Pechuga de Pollo Fresca',
+      cantidad: 35,
+      unidad: 'Kg',
+      fechaHora: 'Hoy · 09:15 AM',
+      origenDestino: 'Cocina Sede Principal (Minuta Almuerzo)',
+      responsable: 'Martha Cecilia Ordóñez'
+    },
+    {
+      id: 3,
+      tipo: 'ENTRADA',
+      insumo: 'Huevos Frescos Tipo A',
+      cantidad: 480,
+      unidad: 'Unds',
+      fechaHora: 'Ayer · 02:40 PM',
+      origenDestino: 'Distribuidor Avícola del Valle',
+      responsable: 'Bodega Central'
+    },
+    {
+      id: 4,
+      tipo: 'SALIDA',
+      insumo: 'Lenteja Seleccionada',
+      cantidad: 15,
+      unidad: 'Kg',
+      fechaHora: 'Ayer · 10:00 AM',
+      origenDestino: 'Cocina Sede Primaria Las Américas',
+      responsable: 'Alba Nelly Gómez'
+    }
+  ];
+
+  menuDelDia: MenuDelDiaAdmin = {
+    ciclo: 'Ciclo Regular 2026 · Minuta Patrón Aprobada',
+    diaSemana: 'Miércoles',
+    tipoRacion: 'Almuerzo Ración Caliente Preparada en Sitio',
+    platoPrincipal: 'Pechuga de Pollo en Salsa Criolla Campesina',
+    guarnicion: 'Arroz Blanco Fortificado y Lentejas Guisadas',
+    verduraEnsalada: 'Ensalada Fresca de Zanahoria, Maíz Dulce y Cilantro',
+    fruta: 'Mandarina Dulce de Temporada',
+    bebida: 'Jugo de Fruta Natural en Agua Hervida',
+    caloriasAprox: 685,
+    horaServicio: '11:45 AM - 01:30 PM',
+    estadoAprobacion: 'Verificado por Nutrición y Calidad PAE'
+  };
 
   // Nombres de meses en español
   mesesNombres = [
@@ -172,21 +565,640 @@ export class InicioComponent implements OnInit, AfterViewInit, OnDestroy {
 
       // 2. SINCRONIZACIÓN ASÍNCRONA EN SEGUNDO PLANO
       this.cargarDatosDashboard();
+    } else {
+      // CARGA DE DASHBOARD ADMINISTRADOR INSTITUCIONAL
+      this.cargarDatosAdmin();
     }
   }
 
   ngAfterViewInit(): void {
     if (this.esSuperAdministrador) {
       this.programarRenderGraficos(15);
+    } else {
+      this.programarRenderGraficosAdmin(25);
     }
   }
 
   ngOnDestroy(): void {
     if (this.timerRender) clearTimeout(this.timerRender);
+    if (this.timerRenderAdmin) clearTimeout(this.timerRenderAdmin);
     this.destruirGraficos();
+    this.destruirGraficosAdmin();
     if ((window as any).siraeSuperAdmin === this) {
       delete (window as any).siraeSuperAdmin;
     }
+  }
+
+  // =========================================================================
+  //  MÉTODOS Y ACCIONES DEL DASHBOARD DE ADMINISTRADOR INSTITUCIONAL
+  // =========================================================================
+
+  cargarPersistenciaAdmin(): void {
+    try {
+      const invGuardado = localStorage.getItem(this.STORAGE_INVENTARIO);
+      if (invGuardado) {
+        const parsed = JSON.parse(invGuardado);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          this.insumosAdmin = parsed;
+        }
+      }
+
+      const sedesGuardadas = localStorage.getItem(this.STORAGE_SEDES);
+      if (sedesGuardadas) {
+        const parsed = JSON.parse(sedesGuardadas);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          this.sedesAdmin = parsed;
+        }
+      }
+
+      const movGuardados = localStorage.getItem(this.STORAGE_MOVIMIENTOS);
+      if (movGuardados) {
+        const parsed = JSON.parse(movGuardados);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          this.movimientosAdmin = parsed;
+        }
+      }
+    } catch (e) {
+      console.warn('Error cargando persistencia del admin:', e);
+    }
+  }
+
+  guardarPersistenciaAdmin(): void {
+    try {
+      localStorage.setItem(this.STORAGE_INVENTARIO, JSON.stringify(this.insumosAdmin));
+      localStorage.setItem(this.STORAGE_SEDES, JSON.stringify(this.sedesAdmin));
+      localStorage.setItem(this.STORAGE_MOVIMIENTOS, JSON.stringify(this.movimientosAdmin));
+      window.dispatchEvent(new CustomEvent('sirae:datos-actualizados'));
+    } catch (e) {
+      console.warn('Error guardando persistencia del admin:', e);
+    }
+  }
+
+  cargarDatosAdmin(): void {
+    // 1. Cargar datos persistidos
+    this.cargarPersistenciaAdmin();
+    this.recalcularMetricasAdmin();
+
+    // 2. Intentar sincronizar sedes desde el backend si responde
+    this.http.get<unknown>(`${environment.apiUrl}/sedes/`).pipe(
+      timeout(1800),
+      catchError(() => of(null))
+    ).subscribe({
+      next: (res) => {
+        const lista = this.extraerLista(res);
+        if (Array.isArray(lista) && lista.length > 0 && !localStorage.getItem(this.STORAGE_SEDES)) {
+          const sedesApi: SedeAdminDashboard[] = lista.slice(0, 5).map((item: any, idx: number) => ({
+            id: item.id_sede || item.id || idx + 1,
+            nombre: item.nombre_sede || item.nombre || `Sede ${idx + 1}`,
+            codigoDane: item.codigo_dane || `11900100${2341 + idx}`,
+            direccion: item.direccion || 'Dirección no registrada',
+            beneficiarios: item.cupos_totales || item.cupos || [420, 280, 160, 120][idx % 4] || 150,
+            racionesAsignadas: item.cupos_totales || item.cupos || [420, 280, 160, 120][idx % 4] || 150,
+            racionesServidas: Math.round(([420, 280, 160, 120][idx % 4] || 150) * 0.94),
+            porcentajeCumplimiento: 94,
+            jornadas: 'Mañana',
+            estadoComedor: 'OPERATIVO',
+            responsableCocina: 'Manipuladora Asignada',
+            stockEstado: 'OPTIMO'
+          }));
+          if (sedesApi.length > 0) {
+            this.sedesAdmin = sedesApi;
+          }
+        }
+        this.recalcularMetricasAdmin();
+        this.actualizarGraficosAdmin();
+        this.cdRef.markForCheck();
+      },
+      error: () => {}
+    });
+
+    // 3. Intentar sincronizar inventario desde el backend si responde
+    this.http.get<unknown>(`${environment.apiUrl}/inventario/`).pipe(
+      timeout(1800),
+      catchError(() => of(null))
+    ).subscribe({
+      next: (res) => {
+        const lista = this.extraerLista(res);
+        if (Array.isArray(lista) && lista.length > 0 && !localStorage.getItem(this.STORAGE_INVENTARIO)) {
+          this.recalcularMetricasAdmin();
+          this.actualizarGraficosAdmin();
+          this.cdRef.markForCheck();
+        }
+      },
+      error: () => {}
+    });
+  }
+
+  // --- MODAL 1: AJUSTE DE STOCK ---
+  abrirModalAjuste(item: InsumoAdminDashboard): void {
+    this.itemAjuste = { ...item };
+    this.tipoAjuste = 'ENTRADA';
+    this.cantidadAjuste = null;
+    this.motivoAjuste = '';
+    this.modalAjusteAbierto = true;
+    this.cdRef.markForCheck();
+  }
+
+  cerrarModalAjuste(): void {
+    this.modalAjusteAbierto = false;
+    this.itemAjuste = null;
+    this.cantidadAjuste = null;
+    this.motivoAjuste = '';
+    this.cdRef.markForCheck();
+  }
+
+  guardarAjuste(): void {
+    if (!this.itemAjuste || this.cantidadAjuste === null || this.cantidadAjuste < 0) {
+      this.sweetAlert.warning('Cantidad inválida', 'Por favor ingresa una cantidad válida para el ajuste.');
+      return;
+    }
+
+    const idx = this.insumosAdmin.findIndex(i => i.id === this.itemAjuste!.id);
+    if (idx === -1) return;
+
+    const actual = this.insumosAdmin[idx].stockActual;
+    let nuevoStock = actual;
+    const cant = Number(this.cantidadAjuste);
+
+    if (this.tipoAjuste === 'ENTRADA') {
+      nuevoStock = actual + cant;
+    } else if (this.tipoAjuste === 'SALIDA') {
+      if (cant > actual) {
+        this.sweetAlert.warning('Stock Insuficiente', `No puedes retirar ${cant} ${this.itemAjuste.unidad} porque solo hay ${actual} en bodega.`);
+        return;
+      }
+      nuevoStock = Math.max(0, actual - cant);
+    } else {
+      nuevoStock = cant;
+    }
+
+    this.insumosAdmin[idx].stockActual = nuevoStock;
+
+    // Actualizar estado según stock mínimo
+    const minimo = this.insumosAdmin[idx].stockMinimo;
+    if (nuevoStock < minimo * 0.5) {
+      this.insumosAdmin[idx].estado = 'CRITICO';
+    } else if (nuevoStock < minimo) {
+      this.insumosAdmin[idx].estado = 'BAJO';
+    } else {
+      this.insumosAdmin[idx].estado = 'OPTIMO';
+    }
+
+    // Registrar en movimientos
+    const horaActual = new Intl.DateTimeFormat('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true }).format(new Date());
+    const tipoMov = this.tipoAjuste === 'SALIDA' ? 'SALIDA' : 'ENTRADA';
+    const motivoTexto = this.motivoAjuste?.trim() || (this.tipoAjuste === 'SALIDA' ? 'Despacho a cocina escolar' : 'Ajuste / Entrada en bodega');
+
+    this.movimientosAdmin.unshift({
+      id: Date.now(),
+      tipo: tipoMov,
+      insumo: this.insumosAdmin[idx].nombre,
+      cantidad: cant,
+      unidad: this.insumosAdmin[idx].unidad,
+      fechaHora: `Hoy · ${horaActual}`,
+      origenDestino: motivoTexto,
+      responsable: this.nombreUsuario || 'Administrador'
+    });
+
+    if (this.movimientosAdmin.length > 8) {
+      this.movimientosAdmin.pop();
+    }
+
+    this.guardarPersistenciaAdmin();
+    this.recalcularMetricasAdmin();
+    this.actualizarGraficosAdmin();
+    this.cerrarModalAjuste();
+    this.sweetAlert.success('Stock Actualizado', `${this.insumosAdmin[idx].nombre} ahora tiene ${nuevoStock} ${this.insumosAdmin[idx].unidad} en bodega.`);
+  }
+
+  // --- MODAL 2: NUEVO INSUMO ---
+  abrirModalNuevoInsumo(): void {
+    const anio = new Date().getFullYear();
+    const rand = Math.floor(100 + Math.random() * 900);
+    this.nuevoInsumoForm = {
+      nombre: '',
+      categoria: 'Abarrotes',
+      stockActual: null,
+      stockMinimo: null,
+      unidad: 'Kg',
+      lote: `LOT-${anio}-INS-${rand}`,
+      diasVencimiento: 45
+    };
+    this.modalNuevoInsumoAbierto = true;
+    this.cdRef.markForCheck();
+  }
+
+  cerrarModalNuevoInsumo(): void {
+    this.modalNuevoInsumoAbierto = false;
+    this.cdRef.markForCheck();
+  }
+
+  guardarNuevoInsumo(): void {
+    if (!this.nuevoInsumoForm.nombre?.trim()) {
+      this.sweetAlert.warning('Nombre Requerido', 'Por favor ingresa el nombre del insumo o alimento.');
+      return;
+    }
+    if (this.nuevoInsumoForm.stockActual === null || this.nuevoInsumoForm.stockActual < 0) {
+      this.sweetAlert.warning('Stock Inválido', 'Ingresa la cantidad física actual en bodega.');
+      return;
+    }
+    if (this.nuevoInsumoForm.stockMinimo === null || this.nuevoInsumoForm.stockMinimo <= 0) {
+      this.sweetAlert.warning('Stock Mínimo Requerido', 'Ingresa un stock mínimo de seguridad válido.');
+      return;
+    }
+
+    const stock = Number(this.nuevoInsumoForm.stockActual);
+    const min = Number(this.nuevoInsumoForm.stockMinimo);
+    let estado: 'OPTIMO' | 'BAJO' | 'CRITICO' = 'OPTIMO';
+    if (stock < min * 0.5) estado = 'CRITICO';
+    else if (stock < min) estado = 'BAJO';
+
+    const nuevo: InsumoAdminDashboard = {
+      id: Date.now(),
+      nombre: this.nuevoInsumoForm.nombre.trim(),
+      categoria: this.nuevoInsumoForm.categoria,
+      stockActual: stock,
+      stockMinimo: min,
+      unidad: this.nuevoInsumoForm.unidad,
+      estado,
+      diasVencimientoProximo: Number(this.nuevoInsumoForm.diasVencimiento) || 30,
+      lote: this.nuevoInsumoForm.lote || `LOT-${new Date().getFullYear()}-${Date.now().toString().slice(-4)}`
+    };
+
+    this.insumosAdmin.unshift(nuevo);
+
+    const horaActual = new Intl.DateTimeFormat('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true }).format(new Date());
+    this.movimientosAdmin.unshift({
+      id: Date.now(),
+      tipo: 'ENTRADA',
+      insumo: nuevo.nombre,
+      cantidad: stock,
+      unidad: nuevo.unidad,
+      fechaHora: `Hoy · ${horaActual}`,
+      origenDestino: 'Registro de nuevo insumo en bodega',
+      responsable: this.nombreUsuario || 'Administrador'
+    });
+
+    this.guardarPersistenciaAdmin();
+    this.recalcularMetricasAdmin();
+    this.actualizarGraficosAdmin();
+    this.cerrarModalNuevoInsumo();
+    this.sweetAlert.success('Insumo Registrado', `${nuevo.nombre} ha sido agregado al inventario institucional.`);
+  }
+
+  // --- MODAL 3: REGISTRO DE RACIONES POR SEDE ---
+  abrirModalRacionesSede(sede: SedeAdminDashboard): void {
+    this.sedeRacionesSeleccionada = { ...sede };
+    this.racionesServidasInput = sede.racionesServidas;
+    this.estadoComedorInput = sede.estadoComedor;
+    this.modalRacionesSedeAbierto = true;
+    this.cdRef.markForCheck();
+  }
+
+  cerrarModalRacionesSede(): void {
+    this.modalRacionesSedeAbierto = false;
+    this.sedeRacionesSeleccionada = null;
+    this.racionesServidasInput = null;
+    this.cdRef.markForCheck();
+  }
+
+  guardarRacionesSede(): void {
+    if (!this.sedeRacionesSeleccionada || this.racionesServidasInput === null || this.racionesServidasInput < 0) {
+      this.sweetAlert.warning('Dato Inválido', 'Ingresa una cantidad de raciones servidas válida.');
+      return;
+    }
+
+    const idx = this.sedesAdmin.findIndex(s => s.id === this.sedeRacionesSeleccionada!.id);
+    if (idx === -1) return;
+
+    const servidas = Number(this.racionesServidasInput);
+    const asignadas = this.sedesAdmin[idx].racionesAsignadas;
+    this.sedesAdmin[idx].racionesServidas = servidas;
+    this.sedesAdmin[idx].estadoComedor = this.estadoComedorInput;
+    this.sedesAdmin[idx].porcentajeCumplimiento = asignadas > 0 ? Number(((servidas / asignadas) * 100).toFixed(1)) : 100;
+
+    this.guardarPersistenciaAdmin();
+    this.recalcularMetricasAdmin();
+    this.actualizarGraficosAdmin();
+    this.cerrarModalRacionesSede();
+    this.sweetAlert.success('Raciones Actualizadas', `Se registró la entrega de ${servidas} raciones en ${this.sedesAdmin[idx].nombre}.`);
+  }
+
+  // --- ACCIONES GENERALES ---
+  refrescarDatosAdmin(): void {
+    this.refrescandoDatos = true;
+    setTimeout(() => {
+      this.cargarDatosAdmin();
+      this.refrescandoDatos = false;
+      this.sweetAlert.success('Datos Actualizados', 'Información de sedes e inventario sincronizada.');
+      this.cdRef.markForCheck();
+    }, 450);
+  }
+
+  restablecerDatosAdmin(): void {
+    this.sweetAlert.confirm('¿Restablecer datos?', 'Volverás a los datos institucionales por defecto.', 'Sí, restablecer').then((res: any) => {
+      if (res && res.isConfirmed) {
+        localStorage.removeItem(this.STORAGE_INVENTARIO);
+        localStorage.removeItem(this.STORAGE_SEDES);
+        localStorage.removeItem(this.STORAGE_MOVIMIENTOS);
+        window.location.reload();
+      }
+    });
+  }
+
+  limpiarFiltros(): void {
+    this.sedeFiltroSeleccionada = 'TODAS';
+    this.categoriaFiltroInventario = 'TODAS';
+    this.filtroSoloAlertas = false;
+    this.busquedaInsumo = '';
+    this.cdRef.markForCheck();
+  }
+
+  programarRenderGraficosAdmin(delay = 20): void {
+    if (this.timerRenderAdmin) clearTimeout(this.timerRenderAdmin);
+    this.timerRenderAdmin = setTimeout(() => {
+      this.inicializarGraficosAdmin();
+    }, delay);
+  }
+
+  private inicializarGraficosAdmin(intentos = 0): void {
+    if (!this.chartAdminSedesCanvas?.nativeElement || !this.chartAdminStockCanvas?.nativeElement) {
+      if (intentos < 12) {
+        if (this.timerRenderAdmin) clearTimeout(this.timerRenderAdmin);
+        this.timerRenderAdmin = setTimeout(() => this.inicializarGraficosAdmin(intentos + 1), 60);
+      }
+      return;
+    }
+
+    this.crearGraficoAdminSedes();
+    this.crearGraficoAdminStock();
+  }
+
+  private crearGraficoAdminSedes(): void {
+    if (!this.chartAdminSedesCanvas?.nativeElement) return;
+    const ctx = this.chartAdminSedesCanvas.nativeElement.getContext('2d');
+    if (!ctx) return;
+
+    if (this.chartAdminSedes) {
+      this.chartAdminSedes.destroy();
+    }
+
+    const labels = this.sedesAdmin.map(s => s.nombre);
+    const racionesServidas = this.sedesAdmin.map(s => s.racionesServidas);
+    const racionesAsignadas = this.sedesAdmin.map(s => s.racionesAsignadas);
+
+    this.chartAdminSedes = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Raciones Servidas Hoy',
+            data: racionesServidas,
+            backgroundColor: VERDE,
+            borderColor: VERDE_BORDE,
+            borderWidth: 1.5,
+            borderRadius: 6,
+            barPercentage: 0.5,
+            categoryPercentage: 0.7
+          },
+          {
+            label: 'Meta Programada',
+            data: racionesAsignadas,
+            backgroundColor: AMARILLO,
+            borderColor: AMARILLO_BORDE,
+            borderWidth: 1.5,
+            borderRadius: 6,
+            barPercentage: 0.5,
+            categoryPercentage: 0.7
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 300 },
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top',
+            labels: {
+              boxWidth: 12,
+              font: { family: 'Roboto', size: 11, weight: 'bold' }
+            }
+          },
+          tooltip: {
+            ...TOOLTIP_BLANCO,
+            callbacks: {
+              label: (c) => ` ${c.dataset.label}: ${c.parsed.y} raciones`
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { precision: 0, font: { family: 'Roboto', size: 11 } },
+            grid: { color: '#f1f5f9' }
+          },
+          x: {
+            ticks: {
+              font: { family: 'Roboto', weight: 'bold', size: 10 },
+              callback: function(val: any) {
+                const label = this.getLabelForValue(val) as string;
+                return label.length > 16 ? label.slice(0, 16) + '…' : label;
+              }
+            },
+            grid: { display: false }
+          }
+        }
+      }
+    });
+  }
+
+  private crearGraficoAdminStock(): void {
+    if (!this.chartAdminStockCanvas?.nativeElement) return;
+    const ctx = this.chartAdminStockCanvas.nativeElement.getContext('2d');
+    if (!ctx) return;
+
+    if (this.chartAdminStock) {
+      this.chartAdminStock.destroy();
+    }
+
+    const categorias = ['Abarrotes', 'Lácteos', 'Cárnicos', 'Frutas/Verduras'];
+    const actual = [
+      this.insumosAdmin.filter(i => i.categoria === 'Abarrotes').reduce((acc, i) => acc + i.stockActual, 0),
+      this.insumosAdmin.filter(i => i.categoria === 'Lácteos').reduce((acc, i) => acc + i.stockActual, 0),
+      this.insumosAdmin.filter(i => i.categoria === 'Cárnicos y Huevos').reduce((acc, i) => acc + i.stockActual, 0),
+      this.insumosAdmin.filter(i => i.categoria === 'Frutas y Verduras').reduce((acc, i) => acc + i.stockActual, 0),
+    ];
+
+    const minimos = [
+      this.insumosAdmin.filter(i => i.categoria === 'Abarrotes').reduce((acc, i) => acc + i.stockMinimo, 0),
+      this.insumosAdmin.filter(i => i.categoria === 'Lácteos').reduce((acc, i) => acc + i.stockMinimo, 0),
+      this.insumosAdmin.filter(i => i.categoria === 'Cárnicos y Huevos').reduce((acc, i) => acc + i.stockMinimo, 0),
+      this.insumosAdmin.filter(i => i.categoria === 'Frutas y Verduras').reduce((acc, i) => acc + i.stockMinimo, 0),
+    ];
+
+    this.chartAdminStock = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: categorias,
+        datasets: [
+          {
+            label: 'Stock Actual (Kg/L/Und)',
+            data: actual,
+            backgroundColor: [AMARILLO, ROJO, VERDE, LIMA],
+            borderColor: [AMARILLO_BORDE, ROJO_BORDE, VERDE_BORDE, LIMA_BORDE],
+            borderWidth: 1.5,
+            borderRadius: 6,
+            barPercentage: 0.45
+          },
+          {
+            label: 'Stock Mínimo Seguridad',
+            data: minimos,
+            backgroundColor: '#cbd5e1',
+            borderColor: '#94a3b8',
+            borderWidth: 1.5,
+            borderRadius: 6,
+            barPercentage: 0.45
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 300 },
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top',
+            labels: {
+              boxWidth: 12,
+              font: { family: 'Roboto', size: 11, weight: 'bold' }
+            }
+          },
+          tooltip: {
+            ...TOOLTIP_BLANCO,
+            callbacks: {
+              label: (c) => ` ${c.dataset.label}: ${c.parsed.y}`
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { precision: 0, font: { family: 'Roboto', size: 11 } },
+            grid: { color: '#f1f5f9' }
+          },
+          x: {
+            ticks: { font: { family: 'Roboto', weight: 'bold', size: 10 } },
+            grid: { display: false }
+          }
+        }
+      }
+    });
+  }
+
+  private actualizarGraficosAdmin(): void {
+    if (!this.chartAdminSedes || !this.chartAdminStock) {
+      this.programarRenderGraficosAdmin(15);
+      return;
+    }
+    this.chartAdminSedes.data.labels = this.sedesAdmin.map(s => s.nombre);
+    this.chartAdminSedes.data.datasets[0].data = this.sedesAdmin.map(s => s.racionesServidas);
+    this.chartAdminSedes.data.datasets[1].data = this.sedesAdmin.map(s => s.racionesAsignadas);
+    this.chartAdminSedes.update();
+
+    const actual = [
+      this.insumosAdmin.filter(i => i.categoria === 'Abarrotes').reduce((acc, i) => acc + i.stockActual, 0),
+      this.insumosAdmin.filter(i => i.categoria === 'Lácteos').reduce((acc, i) => acc + i.stockActual, 0),
+      this.insumosAdmin.filter(i => i.categoria === 'Cárnicos y Huevos').reduce((acc, i) => acc + i.stockActual, 0),
+      this.insumosAdmin.filter(i => i.categoria === 'Frutas y Verduras').reduce((acc, i) => acc + i.stockActual, 0),
+    ];
+    this.chartAdminStock.data.datasets[0].data = actual;
+    this.chartAdminStock.update();
+  }
+
+  private destruirGraficosAdmin(): void {
+    if (this.chartAdminSedes) {
+      this.chartAdminSedes.destroy();
+      this.chartAdminSedes = null;
+    }
+    if (this.chartAdminStock) {
+      this.chartAdminStock.destroy();
+      this.chartAdminStock = null;
+    }
+  }
+
+  recalcularMetricasAdmin(): void {
+    const totalBeneficiarios = this.sedesAdmin.reduce((sum, s) => sum + s.beneficiarios, 0);
+    const totalRacionesDia = this.sedesAdmin.reduce((sum, s) => sum + s.racionesAsignadas, 0);
+    const racionesServidasDia = this.sedesAdmin.reduce((sum, s) => sum + s.racionesServidas, 0);
+    const porcentajeCumplimiento = totalRacionesDia > 0 ? Number(((racionesServidasDia / totalRacionesDia) * 100).toFixed(1)) : 0;
+
+    const insumosCriticos = this.insumosAdmin.filter(i => i.estado === 'CRITICO').length;
+    const insumosBajos = this.insumosAdmin.filter(i => i.estado === 'BAJO').length;
+    const insumosOptimos = this.insumosAdmin.filter(i => i.estado === 'OPTIMO').length;
+    const lotesPorVencer7Dias = this.insumosAdmin.filter(i => i.diasVencimientoProximo <= 7).length;
+    const lotesPorVencer15Dias = this.insumosAdmin.filter(i => i.diasVencimientoProximo > 7 && i.diasVencimientoProximo <= 15).length;
+
+    this.metricasAdmin = {
+      totalSedes: this.sedesAdmin.length,
+      sedesOperativas: this.sedesAdmin.filter(s => s.estadoComedor === 'OPERATIVO' || s.estadoComedor === 'EN_SERVICIO').length,
+      totalBeneficiarios,
+      totalRacionesDia,
+      racionesServidasDia,
+      porcentajeCumplimiento,
+      totalInsumos: this.insumosAdmin.length,
+      insumosCriticos,
+      insumosBajos,
+      insumosOptimos,
+      lotesPorVencer7Dias,
+      lotesPorVencer15Dias,
+      entregasRecibidasMes: 18
+    };
+  }
+
+  seleccionarFiltroSede(sede: string): void {
+    this.sedeFiltroSeleccionada = sede;
+    this.cdRef.markForCheck();
+  }
+
+  seleccionarCategoria(cat: string): void {
+    this.categoriaFiltroInventario = cat;
+    this.cdRef.markForCheck();
+  }
+
+  toggleSoloAlertas(): void {
+    this.filtroSoloAlertas = !this.filtroSoloAlertas;
+    this.cdRef.markForCheck();
+  }
+
+  onBusquedaInsumo(e: Event): void {
+    this.busquedaInsumo = (e.target as HTMLInputElement).value || '';
+    this.cdRef.markForCheck();
+  }
+
+  Math = Math;
+
+  calcularPorcentajeStock(actual: number, minimo: number): number {
+    if (!minimo || minimo <= 0) return 100;
+    return Math.min(100, Math.max(10, Math.round((actual / minimo) * 50)));
+  }
+
+  get insumosFiltrados(): InsumoAdminDashboard[] {
+    return this.insumosAdmin.filter(item => {
+      const coincideCat = this.categoriaFiltroInventario === 'TODAS' || item.categoria === this.categoriaFiltroInventario;
+      const coincideAlerta = !this.filtroSoloAlertas || item.estado !== 'OPTIMO' || item.diasVencimientoProximo <= 7;
+      const q = this.busquedaInsumo.trim().toLowerCase();
+      const coincideTexto = !q || item.nombre.toLowerCase().includes(q) || item.lote.toLowerCase().includes(q);
+      return coincideCat && coincideAlerta && coincideTexto;
+    });
+  }
+
+  get sedesFiltradas(): SedeAdminDashboard[] {
+    if (this.sedeFiltroSeleccionada === 'TODAS') return this.sedesAdmin;
+    return this.sedesAdmin.filter(s => s.nombre === this.sedeFiltroSeleccionada);
   }
 
   // =========================================================================
