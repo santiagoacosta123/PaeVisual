@@ -100,7 +100,8 @@ export class LayoutComponent implements OnInit, OnDestroy {
   mostrarNotificaciones = false;
   listaNotificaciones: Notificacion[] = [];
   notificacionesNoLeidas = 0;
-  filtroNotificaciones: 'todas' | 'no_leidas' = 'todas';
+  filtroNotificaciones: 'todas' | 'no_leidas' | 'leidas' = 'todas';
+  notificacionAbierta: Notificacion | null = null;
   toastNotificacion: Notificacion | null = null;
 
   // Datos del perfil y formularios
@@ -419,15 +420,39 @@ export class LayoutComponent implements OnInit, OnDestroy {
     if (this.filtroNotificaciones === 'no_leidas') {
       return this.listaNotificaciones.filter(n => !n.leida);
     }
+    if (this.filtroNotificaciones === 'leidas') {
+      return this.listaNotificaciones.filter(n => n.leida);
+    }
     return this.listaNotificaciones;
   }
 
-  cambiarFiltroNotificaciones(filtro: 'todas' | 'no_leidas'): void {
+  get notificacionesLeidas(): number {
+    return this.listaNotificaciones.filter(n => n.leida).length;
+  }
+
+  cambiarFiltroNotificaciones(filtro: 'todas' | 'no_leidas' | 'leidas'): void {
     this.filtroNotificaciones = filtro;
     this.cdr.markForCheck();
   }
 
-  hacerClicNotificacion(notif: Notificacion): void {
+  /** Abre la notificación en un modal sin salir de la pantalla actual. */
+  abrirNotificacion(notif: Notificacion): void {
+    this.notificacionAbierta = notif;
+    this.mostrarNotificaciones = false;
+    this.cdr.markForCheck();
+  }
+
+  /** Al cerrar el detalle, la notificación pasa a leídas. */
+  cerrarNotificacionAbierta(): void {
+    const notif = this.notificacionAbierta;
+    this.notificacionAbierta = null;
+    if (notif) {
+      this.marcarNotificacionLeida(notif);
+    }
+    this.cdr.markForCheck();
+  }
+
+  private marcarNotificacionLeida(notif: Notificacion): void {
     const id = notif.id ?? notif.id_notificacion;
     if (id && !notif.leida) {
       this.notificacionService.marcarComoLeida(id).subscribe({
@@ -435,9 +460,22 @@ export class LayoutComponent implements OnInit, OnDestroy {
           notif.leida = true;
           this.notificacionesNoLeidas = Math.max(0, this.notificacionesNoLeidas - 1);
           this.cdr.markForCheck();
-        }
+        },
+        error: (err: any) => console.error('Error al marcar como leída', err)
       });
     }
+  }
+
+  /** Navegación opcional desde el detalle (botón "Ir al módulo"). */
+  irDesdeNotificacionAbierta(): void {
+    const notif = this.notificacionAbierta;
+    if (!notif) return;
+    this.notificacionAbierta = null;
+    this.hacerClicNotificacion(notif);
+  }
+
+  hacerClicNotificacion(notif: Notificacion): void {
+    this.marcarNotificacionLeida(notif);
 
     this.mostrarNotificaciones = false;
 

@@ -1141,19 +1141,26 @@
           No leídas
           <span *ngIf="notificacionesNoLeidas > 0" class="saas-tab-count">({{ notificacionesNoLeidas }})</span>
         </button>
+        <button type="button" 
+          class="saas-tab-btn" 
+          [class.activa]="filtroNotificaciones === 'leidas'"
+          (click)="cambiarFiltroNotificaciones('leidas')">
+          Leídas
+          <span *ngIf="notificacionesLeidas > 0" class="saas-tab-count">({{ notificacionesLeidas }})</span>
+        </button>
       </div>
 
       <!-- Lista de Notificaciones con Scroll -->
       <div class="saas-notif-list">
         <div *ngIf="notificacionesFiltradas.length === 0" class="saas-notif-empty">
           <span class="material-symbols-outlined saas-empty-icon">notifications_none</span>
-          <span>{{ filtroNotificaciones === 'no_leidas' ? 'No tienes notificaciones sin leer' : 'No tienes notificaciones pendientes' }}</span>
+          <span>{{ filtroNotificaciones === 'no_leidas' ? 'No tienes notificaciones sin leer' : (filtroNotificaciones === 'leidas' ? 'No tienes notificaciones leídas' : 'No tienes notificaciones pendientes') }}</span>
         </div>
 
         <div *ngFor="let noti of notificacionesFiltradas" 
           class="saas-notif-row" 
           [class.sin-leer]="!noti.leida"
-          (click)="hacerClicNotificacion(noti)">
+          (click)="abrirNotificacion(noti)">
           
           <!-- Avatar o Icono según tipo -->
           <div class="saas-notif-avatar" [style.background]="obtenerIconoNotificacion(noti).bg" [style.color]="obtenerIconoNotificacion(noti).color">
@@ -1212,3 +1219,31 @@
     <span class="material-symbols-outlined" style="font-size:16px;">close</span>
   </button>
 </aside>
+
+
+<!-- ================================================================= -->
+<!-- MODAL DETALLE DE NOTIFICACIÓN (no sale de la interfaz)            -->
+<!-- ================================================================= -->
+<div *ngIf="notificacionAbierta" (click)="cerrarNotificacionAbierta()"
+  style="position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px;">
+  <div (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
+    style="background:#fff;border-radius:16px;max-width:520px;width:100%;max-height:85vh;overflow:auto;box-shadow:0 20px 50px rgba(0,0,0,.25);padding:24px;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
+      <h3 style="margin:0;font-size:1.15rem;font-weight:700;color:#0f172a;">{{ notificacionAbierta.titulo }}</h3>
+      <button type="button" (click)="cerrarNotificacionAbierta()" aria-label="Cerrar"
+        style="background:none;border:none;cursor:pointer;color:#64748b;">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <small style="color:#64748b;">{{ tiempoRelativo(notificacionAbierta.fecha_creacion || notificacionAbierta.fecha_hora) }}</small>
+    <img *ngIf="notificacionAbierta.imagen_url" [src]="notificacionAbierta.imagen_url" alt="Imagen de la notificación"
+      style="width:100%;border-radius:12px;margin-top:14px;" />
+    <p style="white-space:pre-line;color:#334155;margin-top:14px;line-height:1.5;">{{ notificacionAbierta.mensaje }}</p>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:20px;">
+      <button type="button" (click)="irDesdeNotificacionAbierta()"
+        style="padding:8px 14px;border-radius:8px;border:1px solid #cbd5e1;background:#fff;cursor:pointer;">Ir al módulo</button>
+      <button type="button" (click)="cerrarNotificacionAbierta()"
+        style="padding:8px 14px;border-radius:8px;border:none;background:#2563eb;color:#fff;cursor:pointer;">Cerrar</button>
+    </div>
+  </div>
+</div>
