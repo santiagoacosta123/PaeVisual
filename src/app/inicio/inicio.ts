@@ -659,21 +659,33 @@ export class InicioComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  private cargandoAdminEnCurso = false;
+
   cargarDatosAdmin(): void {
     // 1. Cargar datos persistidos por institución mientras responde el servidor
     this.cargarPersistenciaAdmin();
     this.recalcularMetricasAdmin();
 
-    // 2. Sincronizar sedes reales de la institución desde el backend
-    this.http.get<unknown>(`${environment.apiUrl}/sedes/`).pipe(
-      timeout(20000),
-      catchError(() => of(null))
+    if (this.cargandoAdminEnCurso) {
+      return;
+    }
+    this.cargandoAdminEnCurso = true;
+
+    // 2. Sincronizar sedes, inventario (ya trae nombres de ingrediente/categoría/unidad) y entregas en 3 solas peticiones ligeras
+    forkJoin({
+      sedes: this.http.get<unknown>(`${environment.apiUrl}/sedes/`).pipe(timeout(45000), catchError(() => of(null))),
+      inventario: this.http.get<unknown>(`${environment.apiUrl}/inventario/`).pipe(timeout(45000), catchError(() => of(null))),
+      entregas: this.http.get<unknown>(`${environment.apiUrl}/entregas/`).pipe(timeout(45000), catchError(() => of(null))),
+    }).pipe(
+      finalize(() => {
+        this.cargandoAdminEnCurso = false;
+      })
     ).subscribe({
-      next: (res) => {
-        const lista = this.extraerLista(res);
-        if (Array.isArray(lista) && lista.length > 0) {
+      next: ({ sedes, inventario, entregas }) => {
+        const listaSedes = this.extraerLista(sedes);
+        if (Array.isArray(listaSedes) && listaSedes.length > 0) {
           const previasPorId = new Map(this.sedesAdmin.map(s => [Number(s.id), s]));
-          const sedesApi: SedeAdminDashboard[] = lista.map((item: any, idx: number) => {
+          const sedesApi: SedeAdminDashboard[] = listaSedes.map((item: any, idx: number) => {
             const idSede = Number(item.id_sede || item.id || idx + 1);
             const previa = previasPorId.get(idSede);
             const cuposReales = Number(item.cupos_totales ?? item.cupos ?? previa?.racionesAsignadas ?? 0);
@@ -704,40 +716,11 @@ export class InicioComponent implements OnInit, AfterViewInit, OnDestroy {
             this.sedesAdmin = sedesApi;
           }
         }
-        this.recalcularMetricasAdmin();
-        this.actualizarGraficosAdmin();
-        this.cdRef.markForCheck();
-        (this.cdRef as any).detectChanges?.();
-      },
-      error: () => {}
-    });
 
-    // 3. Sincronizar inventario real, catálogos y entregas reales desde el backend
-    forkJoin({
-      inventario: this.http.get<unknown>(`${environment.apiUrl}/inventario/`).pipe(timeout(20000), catchError(() => of(null))),
-      ingredientes: this.http.get<unknown>(`${environment.apiUrl}/ingredientes/`).pipe(timeout(20000), catchError(() => of(null))),
-      categorias: this.http.get<unknown>(`${environment.apiUrl}/categorias_inventario/`).pipe(timeout(20000), catchError(() => of(null))),
-      unidades: this.http.get<unknown>(`${environment.apiUrl}/unidades_medida/`).pipe(timeout(20000), catchError(() => of(null))),
-      entregas: this.http.get<unknown>(`${environment.apiUrl}/entregas/`).pipe(timeout(20000), catchError(() => of(null))),
-    }).subscribe({
-      next: ({ inventario, ingredientes, categorias, unidades, entregas }) => {
         const listaInv = this.extraerLista(inventario);
-        const listaIng = this.extraerLista(ingredientes);
-        const listaCat = this.extraerLista(categorias);
-        const listaUni = this.extraerLista(unidades);
-        const listaEnt = this.extraerLista(entregas);
-
         if (Array.isArray(listaInv) && listaInv.length > 0) {
-          const ingMap = new Map(listaIng.map((i: any) => [Number(i.id_ingrediente ?? i.id), i]));
-          const catMap = new Map(listaCat.map((c: any) => [Number(c.id_categoria_inventario ?? c.id), c]));
-          const uniMap = new Map(listaUni.map((u: any) => [Number(u.id_unidad_medida ?? u.id), u]));
-
           this.insumosAdmin = listaInv.map((inv: any, idx: number) => {
             const idIng = Number(inv.id_ingrediente);
-            const ing: any = ingMap.get(idIng);
-            const cat: any = ing ? catMap.get(Number(ing.id_categoria_inventario)) : null;
-            const uni: any = uniMap.get(Number(inv.id_unidad_medida));
-
             const stock = Number(inv.cantidad_actual ?? 0);
             const minimo = Number(inv.stock_minimo ?? 0);
             let estado: 'OPTIMO' | 'BAJO' | 'CRITICO' = 'OPTIMO';
@@ -745,9 +728,9 @@ export class InicioComponent implements OnInit, AfterViewInit, OnDestroy {
             else if (minimo > 0 && stock <= minimo) estado = 'BAJO';
             else if (stock <= 0) estado = 'CRITICO';
 
-            const nombreIng = inv.nombre_ingrediente || ing?.nombre_ingrediente || `Insumo #${idIng}`;
-            const nombreCat = cat?.nombre_categoria || '';
-            const unidadTxt = uni?.abreviatura || uni?.nombre || uni?.nombre_unidad || 'Kg';
+            const nombreIng = inv.ingrediente_nombre || inv.nombre_ingrediente || `Insumo #${idIng}`;
+            const nombreCat = inv.categoria_nombre || '';
+            const unidadTxt = inv.unidad_medida_nombre || 'Kg';
 
             return {
               id: Number(inv.id_inventario || idx + 1),
@@ -766,8 +749,11 @@ export class InicioComponent implements OnInit, AfterViewInit, OnDestroy {
           });
         }
 
+        const listaEnt = this.extraerLista(entregas);
         if (Array.isArray(listaEnt) && listaEnt.length > 0) {
-          const recibidas = listaEnt.filter((e: any) => String(e.estado || '').toUpperCase() === 'RECIBIDA' || String(e.estado || '').toUpperCase() === 'CON_NOVEDAD');
+          const recibidas = listaEnt.filter((e: any) =>
+            String(e.estado || '').toUpperCase() === 'RECIBIDA' || String(e.estado || '').toUpperCase() === 'CON_NOVEDAD'
+          );
           this.metricasAdmin.entregasRecibidasMes = recibidas.length;
         }
 

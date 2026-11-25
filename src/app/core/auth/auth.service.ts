@@ -733,9 +733,13 @@ export class AuthService {
       return of(false);
     }
 
-    return this.verificarSesionServidor().pipe(
-      timeout(10000),
+    // No bloquear el arranque de la interfaz ni abortar a los 10s si Render está despertando:
+    // validar en segundo plano y limpiar sesión solo si el servidor responde 401/403.
+    this.verificarSesionServidor().pipe(
+      timeout(45000),
       catchError(() => of(true))
-    );
+    ).subscribe();
+
+    return of(true);
   }
 }
