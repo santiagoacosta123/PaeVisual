@@ -268,10 +268,12 @@ export class EntregasService {
 
   cargarIngredientes(): Observable<IngredienteOpcion[]> {
     return this.http.get<any>(this.ingredientesUrl, this.getHeaders()).pipe(
-      map(data => this.listaDe(data).map(item => ({
-        id: Number(item.id_ingrediente ?? item.id),
-        nombre: String(item.nombre_ingrediente ?? item.nombre ?? ''),
-      })))
+      map(data => this.listaDe(data)
+        .filter(item => !String(item.nombre_ingrediente ?? item.nombre ?? '').startsWith('[ELIMINAR]'))
+        .map(item => ({
+          id: Number(item.id_ingrediente ?? item.id),
+          nombre: String(item.nombre_ingrediente ?? item.nombre ?? ''),
+        })))
     );
   }
 

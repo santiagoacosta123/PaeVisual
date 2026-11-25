@@ -174,7 +174,11 @@ export class FacturasCompraComponent implements OnInit {
     this.http.get<any>(`${environment.apiUrl}/ingredientes/`, { headers }).subscribe({
       next: (res) => {
         const lista = Array.isArray(res) ? res : (res?.results ?? res?.value ?? []);
-        this.catalogoIngredientes = Array.isArray(lista) ? lista : [];
+        const todas = Array.isArray(lista) ? lista : [];
+        // Ocultar ingredientes marcados para eliminar
+        this.catalogoIngredientes = todas.filter(
+          (ing: any) => !ing.nombre_ingrediente?.startsWith('[ELIMINAR]')
+        );
       },
       error: (err) => {
         console.error('Error al cargar catÃ¡logo de ingredientes:', err);
