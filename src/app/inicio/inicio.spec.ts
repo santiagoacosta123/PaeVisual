@@ -1,5 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { InicioComponent } from './inicio';
 import { AuthService } from '../services/auth.service';
 
@@ -12,6 +14,8 @@ describe('InicioComponent', () => {
       imports: [InicioComponent],
       providers: [
         provideRouter([]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
         {
           provide: AuthService,
           useValue: {
@@ -21,6 +25,9 @@ describe('InicioComponent', () => {
               correo: 'ana@example.com',
               rol: 'Administrador',
             }),
+            esSuperAdministrador: () => false,
+            esSupervisor: () => false,
+            normalizarRol: (r: string) => (r || '').toLowerCase(),
           },
         },
       ],

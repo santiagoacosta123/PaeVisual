@@ -239,32 +239,639 @@
 
 
   <!-- =========================================================================
-       CASO 2: ADMINISTRADOR INSTITUCIONAL Y OTROS ROLES (MANTIENE SU CABECERA)
+       CASO 2: ADMINISTRADOR INSTITUCIONAL Y OTROS ROLES (SIN ICONOS)
        ========================================================================= -->
-  <header *ngIf="!esSuperAdministrador" class="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-5 px-6 py-5 rounded-xl border border-[#f2ead0] sticky top-[-24px] z-20 shadow-xs"
-    style="background: linear-gradient(135deg, #fffcf0 0%, #ffffff 100%);">
-    <div class="flex items-center gap-4">
-      <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-amber-200 bg-amber-50 text-amber-700 shadow-xs">
-        <span class="material-symbols-outlined text-[26px]">dashboard</span>
+
+  <!-- =========================================================================
+       DASHBOARD EJECUTIVO Y OPERATIVO DEL ADMINISTRADOR INSTITUCIONAL
+       ========================================================================= -->
+  <main *ngIf="!esSuperAdministrador" class="flex flex-col gap-5">
+
+    <!-- 1. CONTEXTO INSTITUCIONAL Y FILTRO DE SEDES -->
+    <section class="w-full rounded-2xl border border-slate-200/80 bg-white px-5 py-4 shadow-sm">
+      <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div class="min-w-0">
+          <div class="flex flex-wrap items-center gap-2">
+            <h2 class="m-0 text-[16px] font-bold tracking-tight text-slate-900">{{ institucionNombre }}</h2>
+            <span class="rounded-full border border-emerald-200 bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800">
+              {{ metricasAdmin.sedesOperativas }}/{{ metricasAdmin.totalSedes }} sedes operativas
+            </span>
+          </div>
+          <p class="m-0 mt-1 text-xs text-slate-500">Gestión de comedores escolares, asignación de raciones y control de almacén PAE</p>
+        </div>
+
+        <!-- Selector de sede y acciones de sincronización -->
+        <div class="flex flex-wrap items-center gap-2 lg:justify-end">
+          <span class="text-xs font-semibold text-slate-500">Filtrar sede:</span>
+          <button type="button"
+            (click)="seleccionarFiltroSede('TODAS')"
+            class="h-8 cursor-pointer whitespace-nowrap rounded-full border px-3.5 text-xs font-bold transition-all"
+            [ngClass]="sedeFiltroSeleccionada === 'TODAS'
+              ? 'border-[#fac94b] bg-[#fac94b] text-slate-900 shadow-xs'
+              : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'">
+            Todas (consolidado)
+          </button>
+          <button *ngFor="let s of sedesAdmin" type="button"
+            (click)="seleccionarFiltroSede(s.nombre)"
+            class="h-8 cursor-pointer whitespace-nowrap rounded-full border px-3.5 text-xs font-bold transition-all"
+            [ngClass]="sedeFiltroSeleccionada === s.nombre
+              ? 'border-[#fac94b] bg-[#fac94b] text-slate-900 shadow-xs'
+              : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'">
+            {{ s.nombre }}
+          </button>
+
+          <!-- Botón Refrescar en tiempo real -->
+          <button type="button"
+            (click)="refrescarDatosAdmin()"
+            [disabled]="refrescandoDatos"
+            title="Sincronizar y refrescar datos"
+            class="h-8 cursor-pointer rounded-full border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 transition hover:bg-slate-50">
+            {{ refrescandoDatos ? 'Actualizando...' : 'Actualizar' }}
+          </button>
+        </div>
       </div>
-      <div>
-        <h1 class="m-0 text-xl font-bold tracking-tight text-slate-900">¡Bienvenido, {{ nombreUsuario }}!</h1>
-        <p class="m-0 mt-0.5 text-slate-500 text-[13px]">{{ rolUsuario }} · Centro de operaciones y gestión institucional PAE.</p>
+    </section>
+
+    <!-- 2. PRIORIDAD OPERATIVA -->
+    <section class="flex flex-col justify-between gap-3 rounded-2xl border border-[#F3DFA2] px-5 py-3.5 shadow-[0_2px_10px_rgba(250,201,75,0.14)] sm:flex-row sm:items-center"
+      style="background: linear-gradient(135deg, #FFF8E1 0%, #FFFBEF 100%);">
+      <div class="min-w-0">
+        <h3 class="m-0 flex flex-wrap items-center gap-2 text-[16px] font-bold tracking-tight text-slate-900">
+          Prioridad operativa
+          <span class="rounded-full bg-[#FBE08A] px-2.5 py-0.5 text-[11.5px] font-bold text-[#8A4B08]">Atención</span>
+        </h3>
+        <p class="m-0 mt-0.5 text-[13px] leading-relaxed text-slate-700">
+          Se radicó remesa de perecederos: 35 litros de leche y 42 kg de carne molida.
+        </p>
+      </div>
+      <div class="flex shrink-0 flex-wrap items-center gap-2.5">
+        <a routerLink="/historial-entregas"
+          class="inline-flex h-9 items-center justify-center rounded-full border border-[#E8C468] bg-white px-5 text-[13px] font-bold text-slate-800 no-underline transition hover:bg-[#FFF4D6]">
+          Recepción de entregas
+        </a>
+      </div>
+    </section>
+
+    <!-- 3. BLOQUE CENTRAL: SEDES + EXISTENCIAS/MOVIMIENTOS -->
+    <div class="grid grid-cols-1 items-stretch gap-5 xl:grid-cols-12">
+
+      <!-- COLUMNA IZQUIERDA -->
+      <div class="flex flex-col gap-5 xl:col-span-7">
+
+        <section class="flex flex-1 flex-col rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+          <div class="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 pb-3">
+            <div>
+              <h3 class="m-0 text-[18px] font-bold tracking-tight text-slate-900">Sedes de la institución</h3>
+              <p class="m-0 mt-0.5 text-xs text-slate-500">Estado operativo, cupos asignados y raciones servidas hoy</p>
+            </div>
+            <a routerLink="/sedes-institucion" class="text-[13px] font-bold text-[#B45309] no-underline hover:text-[#8A4B08]">
+              Gestionar sedes &rarr;
+            </a>
+          </div>
+
+          <!-- Tarjetas de sede -->
+          <div class="mt-4 grid grid-cols-1 gap-3"
+            [ngClass]="sedesFiltradas.length === 1 ? 'sm:grid-cols-1' : 'sm:grid-cols-2'">
+            <div *ngFor="let sede of sedesFiltradas"
+              class="rounded-xl border border-slate-200/80 p-3.5 shadow-[0_2px_8px_rgba(15,23,42,0.04)] transition-all hover:border-[#F3DFA2] hover:shadow-md"
+              style="background: linear-gradient(160deg, #FFFFFF 0%, #F6F8F6 100%);">
+              <div class="flex items-start justify-between gap-2">
+                <div class="min-w-0">
+                  <h4 class="m-0 text-[14px] font-bold leading-tight text-slate-900">{{ sede.nombre }}</h4>
+                  <p class="m-0 mt-0.5 truncate text-[11px] text-slate-500">{{ sede.direccion }}</p>
+                </div>
+                <span class="shrink-0 rounded-full border px-2.5 py-0.5 text-[10.5px] font-bold"
+                  [ngClass]="sede.estadoComedor === 'OPERATIVO'
+                    ? 'border-emerald-200 bg-emerald-100 text-emerald-800'
+                    : 'border-amber-200 bg-amber-100 text-amber-800'">
+                  {{ sede.estadoComedor === 'OPERATIVO' ? 'Comedor activo' : 'En servicio' }}
+                </span>
+              </div>
+
+              <div class="mt-3">
+                <div class="mb-1.5 flex items-center justify-between text-xs">
+                  <span class="font-medium text-slate-600">Raciones del día:</span>
+                  <span class="font-bold text-slate-900">{{ sede.racionesServidas }} / {{ sede.racionesAsignadas }} ({{ sede.porcentajeCumplimiento }}%)</span>
+                </div>
+                <div class="h-2 w-full overflow-hidden rounded-full bg-slate-200">
+                  <div class="h-full rounded-full transition-all duration-500"
+                    [style.width.%]="sede.porcentajeCumplimiento"
+                    [ngClass]="sede.porcentajeCumplimiento >= 90
+                      ? 'bg-emerald-500'
+                      : 'bg-amber-500'">
+                  </div>
+                </div>
+              </div>
+
+              <div class="mt-2.5 border-t border-slate-200/70 pt-2 flex items-center justify-between text-[11.5px] text-slate-600">
+                <span>Jornada: {{ sede.jornadas }}</span>
+                <button type="button"
+                  (click)="abrirModalRacionesSede(sede)"
+                  class="cursor-pointer border-none bg-amber-100/80 hover:bg-amber-200 text-[#8A4B08] font-bold px-2.5 py-1 rounded-md text-[11px] transition-all">
+                  Actualizar raciones
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Gráfico: raciones servidas vs meta -->
+          <div class="mt-4 flex flex-1 flex-col border-t border-slate-100 pt-3">
+            <h4 class="m-0 text-[15px] font-bold text-slate-900">Raciones servidas vs. meta por sede</h4>
+            <div class="mb-2 mt-1.5 flex flex-wrap items-center gap-5 text-xs text-slate-600">
+              <span class="inline-flex items-center gap-1.5"><span class="inline-block h-3 w-3 rounded-sm bg-[#16a34a]"></span>Raciones servidas hoy</span>
+              <span class="inline-flex items-center gap-1.5"><span class="inline-block h-3 w-3 rounded-sm bg-[#FACC15]"></span>Meta programada</span>
+            </div>
+            <div class="relative min-h-[200px] w-full flex-1">
+              <div class="absolute inset-0">
+                <canvas #chartAdminSedesCanvas></canvas>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- COLUMNA DERECHA -->
+      <div class="flex flex-col gap-5 xl:col-span-5">
+
+        <!-- Existencias vs mínimo -->
+        <section class="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+          <div class="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
+            <div>
+              <h3 class="m-0 text-[18px] font-bold leading-tight tracking-tight text-slate-900">Existencias vs. mínimo de seguridad</h3>
+              <p class="m-0 mt-0.5 text-xs text-slate-500">Balance por categorías alimentarias en bodega</p>
+            </div>
+            <a routerLink="/reporte-inventario" class="text-[13px] font-bold text-[#B45309] no-underline hover:text-[#8A4B08]">
+              Kardex
+            </a>
+          </div>
+
+          <div class="mb-1 mt-3 flex flex-wrap items-center justify-center gap-5 text-xs text-slate-600">
+            <span class="inline-flex items-center gap-1.5"><span class="inline-block h-3 w-3 rounded-sm bg-[#FACC15]"></span>Stock actual (kg/L/und)</span>
+            <span class="inline-flex items-center gap-1.5"><span class="inline-block h-3 w-3 rounded-sm bg-slate-300"></span>Mínimo de seguridad</span>
+          </div>
+
+          <div class="relative w-full" style="height: 200px;">
+            <canvas #chartAdminStockCanvas></canvas>
+          </div>
+
+          <div class="mt-3 flex items-center justify-between gap-2 border-t border-slate-100 pt-2.5 text-xs text-slate-600">
+            <span class="flex items-center gap-1.5">
+              <span class="inline-block h-2.5 w-2.5 rounded-full bg-rose-500"></span>
+              Alerta: Lácteos por debajo del mínimo.
+            </span>
+            <a routerLink="/ingredientes" class="font-bold text-slate-900 no-underline hover:text-[#B45309]">
+              Ver detalle &rarr;
+            </a>
+          </div>
+        </section>
+
+        <!-- Movimientos recientes -->
+        <section class="flex flex-1 flex-col rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+          <div class="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
+            <div>
+              <h3 class="m-0 text-[18px] font-bold tracking-tight text-slate-900">Movimientos recientes de bodega</h3>
+              <p class="m-0 mt-0.5 text-xs text-slate-500">Entradas de operador y despachos a comedores</p>
+            </div>
+            <button type="button"
+              (click)="abrirModalNuevoInsumo()"
+              class="cursor-pointer border-none bg-transparent text-[13px] font-bold text-[#B45309] hover:text-[#8A4B08]">
+              + Nuevo
+            </button>
+          </div>
+
+          <div class="mt-3 flex flex-col gap-2">
+            <div *ngFor="let m of movimientosAdmin"
+              class="flex items-center justify-between gap-3 rounded-lg border border-slate-200/70 bg-slate-50/70 px-3 py-2">
+              <div class="min-w-0">
+                <div class="truncate text-[13px] font-bold text-slate-900">{{ m.insumo }}</div>
+                <div class="truncate text-[11.5px] text-slate-500">{{ m.origenDestino }}</div>
+              </div>
+              <div class="shrink-0 text-right">
+                <div class="text-[14px] font-extrabold"
+                  [ngClass]="m.tipo === 'ENTRADA' ? 'text-emerald-700' : 'text-slate-900'">
+                  {{ m.tipo === 'ENTRADA' ? '+' : '−' }}{{ m.cantidad }} {{ m.unidad }}
+                </div>
+                <div class="text-[10.5px] text-slate-500">{{ m.fechaHora }}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-auto border-t border-slate-100 pt-3 text-center">
+            <a routerLink="/historial-entregas" class="text-[13px] font-bold text-slate-800 no-underline hover:text-[#B45309]">
+              Ver historial de remesas y entregas
+            </a>
+          </div>
+        </section>
+
+      </div>
+
+    </div>
+
+    <!-- 4. MINUTA Y MENÚ DE HOY -->
+    <section class="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
+        <div>
+          <h3 class="m-0 text-[18px] font-bold tracking-tight text-slate-900">Minuta y menú de hoy</h3>
+          <p class="m-0 mt-0.5 text-xs text-slate-500">{{ menuDelDia.tipoRacion }}</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-4">
+          <span class="inline-flex h-8 items-center rounded-full border border-emerald-300 bg-emerald-100 px-4 text-[12.5px] font-bold text-emerald-800">
+            Minuta aprobada
+          </span>
+          <span class="text-[13px] text-slate-700">Horario del almuerzo: {{ menuDelDia.horaServicio }}</span>
+        </div>
+      </div>
+
+      <div class="mt-3.5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="rounded-xl border border-slate-200/80 px-4 py-2.5" style="background: linear-gradient(160deg, #FFFFFF 0%, #F6F8F6 100%);">
+          <div class="text-[13px] font-bold text-slate-900">Proteína</div>
+          <div class="mt-0.5 text-[13px] text-slate-700">{{ menuDelDia.platoPrincipal }}</div>
+        </div>
+        <div class="rounded-xl border border-slate-200/80 px-4 py-2.5" style="background: linear-gradient(160deg, #FFFFFF 0%, #F6F8F6 100%);">
+          <div class="text-[13px] font-bold text-slate-900">Cereal y leguminosa</div>
+          <div class="mt-0.5 text-[13px] text-slate-700">{{ menuDelDia.guarnicion }}</div>
+        </div>
+        <div class="rounded-xl border border-slate-200/80 px-4 py-2.5" style="background: linear-gradient(160deg, #FFFFFF 0%, #F6F8F6 100%);">
+          <div class="text-[13px] font-bold text-slate-900">Ensalada</div>
+          <div class="mt-0.5 text-[13px] text-slate-700">{{ menuDelDia.verduraEnsalada }}</div>
+        </div>
+        <div class="rounded-xl border border-slate-200/80 px-4 py-2.5" style="background: linear-gradient(160deg, #FFFFFF 0%, #F6F8F6 100%);">
+          <div class="text-[13px] font-bold text-slate-900">Fruta y bebida</div>
+          <div class="mt-0.5 text-[13px] text-slate-700">{{ menuDelDia.fruta }} y {{ menuDelDia.bebida }}</div>
+        </div>
+      </div>
+
+      <div class="mt-3 text-[12.5px] text-slate-600">
+        Aporte calórico: <strong class="text-slate-900">{{ menuDelDia.caloriasAprox }} kcal</strong> por ración
+      </div>
+    </section>
+
+    <!-- 5. INVENTARIO DE ALIMENTOS Y MATERIAS PRIMAS -->
+    <section class="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+      <div class="flex flex-col justify-between gap-3 border-b border-slate-100 pb-3 md:flex-row md:items-center">
+        <div>
+          <h3 class="m-0 text-[18px] font-bold tracking-tight text-slate-900">Inventario de alimentos y materias primas</h3>
+          <p class="m-0 mt-0.5 text-xs text-slate-500">Control de existencias físicas, stock mínimo de reserva y semáforo de vencimientos</p>
+        </div>
+
+        <div class="flex items-center gap-2 w-full md:w-auto">
+          <!-- Buscador con botón de limpiar -->
+          <div class="relative w-full md:w-72">
+            <input type="text"
+              [value]="busquedaInsumo"
+              (input)="onBusquedaInsumo($event)"
+              placeholder="Buscar insumo o lote..."
+              aria-label="Buscar insumo o lote"
+              class="h-10 w-full rounded-full border border-slate-300 bg-slate-50 px-4 text-[13px] text-slate-800 transition-all placeholder:text-slate-500 focus:border-[#fac94b] focus:bg-white focus:outline-none" />
+            <button *ngIf="busquedaInsumo"
+              type="button"
+              (click)="busquedaInsumo = ''"
+              class="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 border-none bg-transparent cursor-pointer font-bold text-sm">
+              &times;
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filtros por categoría -->
+      <div class="mt-3.5 flex flex-wrap items-center justify-between gap-2">
+        <div class="flex flex-wrap items-center gap-2">
+          <button type="button"
+            (click)="seleccionarCategoria('TODAS')"
+            class="h-9 cursor-pointer whitespace-nowrap rounded-full border px-4 text-[13px] font-bold transition-all"
+            [ngClass]="categoriaFiltroInventario === 'TODAS'
+              ? 'border-[#12243A] bg-[#12243A] text-white shadow-sm'
+              : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'">
+            Todas
+          </button>
+          <button type="button"
+            (click)="seleccionarCategoria('Abarrotes')"
+            class="h-9 cursor-pointer whitespace-nowrap rounded-full border px-4 text-[13px] font-bold transition-all"
+            [ngClass]="categoriaFiltroInventario === 'Abarrotes'
+              ? 'border-[#12243A] bg-[#12243A] text-white shadow-sm'
+              : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'">
+            Abarrotes
+          </button>
+          <button type="button"
+            (click)="seleccionarCategoria('Lácteos')"
+            class="h-9 cursor-pointer whitespace-nowrap rounded-full border px-4 text-[13px] font-bold transition-all"
+            [ngClass]="categoriaFiltroInventario === 'Lácteos'
+              ? 'border-[#12243A] bg-[#12243A] text-white shadow-sm'
+              : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'">
+            Lácteos
+          </button>
+          <button type="button"
+            (click)="seleccionarCategoria('Cárnicos y Huevos')"
+            class="h-9 cursor-pointer whitespace-nowrap rounded-full border px-4 text-[13px] font-bold transition-all"
+            [ngClass]="categoriaFiltroInventario === 'Cárnicos y Huevos'
+              ? 'border-[#12243A] bg-[#12243A] text-white shadow-sm'
+              : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'">
+            Cárnicos y huevos
+          </button>
+          <button type="button"
+            (click)="seleccionarCategoria('Frutas y Verduras')"
+            class="h-9 cursor-pointer whitespace-nowrap rounded-full border px-4 text-[13px] font-bold transition-all"
+            [ngClass]="categoriaFiltroInventario === 'Frutas y Verduras'
+              ? 'border-[#12243A] bg-[#12243A] text-white shadow-sm'
+              : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'">
+            Frutas y verduras
+          </button>
+        </div>
+
+        <button type="button"
+          (click)="toggleSoloAlertas()"
+          class="h-9 cursor-pointer whitespace-nowrap rounded-full border px-5 text-[13px] font-bold transition-all"
+          [ngClass]="filtroSoloAlertas
+            ? 'border-rose-600 bg-rose-600 text-white shadow-sm'
+            : 'border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100'">
+          Solo en riesgo
+        </button>
+      </div>
+
+      <!-- Tabla de Insumos -->
+      <div class="mt-3 overflow-x-auto rounded-xl border border-slate-200/80">
+        <table class="w-full border-collapse text-left text-[13px]">
+          <thead>
+            <tr class="border-b border-slate-200/80 bg-slate-50 text-[12.5px] font-bold text-slate-600">
+              <th class="px-4 py-2.5">Insumo y lote</th>
+              <th class="px-3 py-2.5">Categoría</th>
+              <th class="px-3 py-2.5 text-center">Stock actual</th>
+              <th class="px-3 py-2.5 text-center">Mínimo</th>
+              <th class="px-3 py-2.5">Nivel</th>
+              <th class="px-3 py-2.5 text-center">Estado</th>
+              <th class="px-3 py-2.5">Vencimiento</th>
+              <th class="px-4 py-2.5 text-right">Acción</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr *ngFor="let item of insumosFiltrados" class="transition-colors hover:bg-amber-50/30">
+              <td class="px-4 py-2.5">
+                <div class="font-bold text-slate-900">{{ item.nombre }}</div>
+                <div class="text-[12px] text-slate-500">Lote: {{ item.lote }}</div>
+              </td>
+              <td class="px-3 py-2.5">
+                <span class="inline-block whitespace-nowrap rounded-full border border-slate-200 bg-slate-100 px-2.5 py-0.5 text-[11.5px] font-medium text-slate-700">
+                  {{ item.categoria }}
+                </span>
+              </td>
+              <td class="whitespace-nowrap px-3 py-2.5 text-center">
+                <span class="text-[14px] font-extrabold text-slate-900">{{ item.stockActual }}</span>
+                <span class="ml-1 text-[12.5px] text-slate-700">{{ item.unidad }}</span>
+              </td>
+              <td class="whitespace-nowrap px-3 py-2.5 text-center text-slate-600">
+                {{ item.stockMinimo }} {{ item.unidad }}
+              </td>
+              <td class="w-36 px-3 py-2.5">
+                <div class="mb-0.5 text-[11.5px] text-slate-600">{{ (item.stockActual / item.stockMinimo * 100).toFixed(0) }}%</div>
+                <div class="h-2 w-full overflow-hidden rounded-full bg-slate-200">
+                  <div class="h-full rounded-full"
+                    [style.width.%]="calcularPorcentajeStock(item.stockActual, item.stockMinimo)"
+                    [ngClass]="item.estado === 'CRITICO' ? 'bg-rose-500' : (item.estado === 'BAJO' ? 'bg-amber-500' : 'bg-emerald-500')">
+                  </div>
+                </div>
+              </td>
+              <td class="px-3 py-2.5 text-center">
+                <span class="inline-block rounded-full border px-3 py-0.5 text-[12px] font-bold"
+                  [ngClass]="item.estado === 'CRITICO'
+                    ? 'border-rose-200 bg-rose-50 text-rose-700'
+                    : (item.estado === 'BAJO'
+                      ? 'border-amber-200 bg-amber-100 text-amber-800'
+                      : 'border-emerald-200 bg-emerald-100 text-emerald-800')">
+                  {{ item.estado === 'CRITICO' ? 'Crítico' : (item.estado === 'BAJO' ? 'Reorden' : 'Óptimo') }}
+                </span>
+              </td>
+              <td class="whitespace-nowrap px-3 py-2.5 text-[12.5px] font-semibold"
+                [ngClass]="item.diasVencimientoProximo <= 7 ? 'text-rose-600' : (item.diasVencimientoProximo <= 15 ? 'text-orange-600' : 'text-slate-800')">
+                En {{ item.diasVencimientoProximo }} días
+              </td>
+              <td class="px-4 py-2.5 text-right">
+                <button type="button"
+                  (click)="abrirModalAjuste(item)"
+                  class="cursor-pointer inline-flex h-8 items-center justify-center rounded-full border border-[#F0CF72] bg-[#FFF4D6] px-4 text-[12.5px] font-bold text-[#7A4A06] transition-colors hover:bg-[#fac94b] hover:text-slate-900">
+                  Ajustar
+                </button>
+              </td>
+            </tr>
+            <tr *ngIf="insumosFiltrados.length === 0">
+              <td colspan="8" class="py-8 text-center text-slate-400">
+                No se encontraron alimentos que coincidan con el filtro seleccionado.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         MODAL 1: AJUSTE RÁPIDO DE STOCK (TOTALMENTE FUNCIONAL)
+         ========================================================================= -->
+    <div *ngIf="modalAjusteAbierto && itemAjuste"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
+      <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-slate-200 animate-fadeIn">
+        <div class="flex items-start justify-between border-b border-slate-100 pb-3">
+          <div>
+            <h3 class="m-0 text-base font-bold text-slate-900">Ajustar Stock de Insumo</h3>
+            <p class="m-0 mt-0.5 text-xs text-slate-500">{{ itemAjuste.nombre }} (Lote: {{ itemAjuste.lote }})</p>
+          </div>
+          <button type="button" (click)="cerrarModalAjuste()"
+            class="text-slate-400 hover:text-slate-600 border-none bg-transparent cursor-pointer text-xl font-bold">
+            &times;
+          </button>
+        </div>
+
+        <div class="mt-4 flex flex-col gap-3.5">
+          <div class="rounded-xl bg-amber-50/70 border border-amber-200/80 p-3 flex items-center justify-between text-xs">
+            <span class="text-slate-600 font-medium">Stock actual en bodega:</span>
+            <span class="text-sm font-extrabold text-slate-900">{{ itemAjuste.stockActual }} {{ itemAjuste.unidad }}</span>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1.5">Tipo de Movimiento</label>
+            <div class="grid grid-cols-3 gap-2">
+              <button type="button" (click)="tipoAjuste = 'ENTRADA'"
+                class="h-9 rounded-lg border text-xs font-bold cursor-pointer transition-all"
+                [ngClass]="tipoAjuste === 'ENTRADA' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'">
+                + Entrada
+              </button>
+              <button type="button" (click)="tipoAjuste = 'SALIDA'"
+                class="h-9 rounded-lg border text-xs font-bold cursor-pointer transition-all"
+                [ngClass]="tipoAjuste === 'SALIDA' ? 'bg-amber-600 text-white border-amber-600' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'">
+                − Salida
+              </button>
+              <button type="button" (click)="tipoAjuste = 'DIRECTO'"
+                class="h-9 rounded-lg border text-xs font-bold cursor-pointer transition-all"
+                [ngClass]="tipoAjuste === 'DIRECTO' ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'">
+                = Fijar Total
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">
+              {{ tipoAjuste === 'DIRECTO' ? 'Nueva Cantidad Física (' + itemAjuste.unidad + ')' : 'Cantidad a ' + (tipoAjuste === 'ENTRADA' ? 'Ingresar' : 'Retirar') + ' (' + itemAjuste.unidad + ')' }}
+            </label>
+            <input type="number" [(ngModel)]="cantidadAjuste" min="0" placeholder="Ej. 25"
+              class="w-full h-10 px-3.5 rounded-lg border border-slate-300 text-sm focus:border-amber-400 focus:outline-none" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Motivo / Destino (Opcional)</label>
+            <input type="text" [(ngModel)]="motivoAjuste" placeholder="Ej. Despacho a Sede Principal, Remesa recibida..."
+              class="w-full h-10 px-3.5 rounded-lg border border-slate-300 text-xs focus:border-amber-400 focus:outline-none" />
+          </div>
+        </div>
+
+        <div class="mt-6 flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+          <button type="button" (click)="cerrarModalAjuste()"
+            class="h-9 px-4 rounded-full border border-slate-300 bg-white text-xs font-bold text-slate-700 cursor-pointer hover:bg-slate-50">
+            Cancelar
+          </button>
+          <button type="button" (click)="guardarAjuste()"
+            class="h-9 px-5 rounded-full border-none bg-[#fac94b] text-xs font-bold text-slate-900 cursor-pointer hover:bg-[#f59e0b] shadow-xs">
+            Guardar Ajuste
+          </button>
+        </div>
       </div>
     </div>
 
-    <div class="flex items-center gap-3 flex-wrap">
-      <div class="flex items-center gap-2 bg-white border border-slate-200 rounded-full px-4 py-2 shadow-xs text-[12.5px] text-slate-700 font-semibold">
-        <span class="material-symbols-outlined text-[16px] text-amber-600">calendar_today</span>
-        <span class="capitalize">{{ fechaActual }}</span>
-      </div>
+    <!-- =========================================================================
+         MODAL 2: REGISTRAR NUEVO INSUMO (TOTALMENTE FUNCIONAL)
+         ========================================================================= -->
+    <div *ngIf="modalNuevoInsumoAbierto"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
+      <div class="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl border border-slate-200 animate-fadeIn">
+        <div class="flex items-start justify-between border-b border-slate-100 pb-3">
+          <div>
+            <h3 class="m-0 text-base font-bold text-slate-900">Registrar Nuevo Insumo en Bodega</h3>
+            <p class="m-0 mt-0.5 text-xs text-slate-500">Agrega un nuevo alimento al inventario y al kardex institucional</p>
+          </div>
+          <button type="button" (click)="cerrarModalNuevoInsumo()"
+            class="text-slate-400 hover:text-slate-600 border-none bg-transparent cursor-pointer text-xl font-bold">
+            &times;
+          </button>
+        </div>
 
-      <!-- Botón exclusivo para Administrador de Institución -->
-      <a *ngIf="esAdministrador" routerLink="/ingredientes" class="h-[38px] px-5 inline-flex items-center justify-center gap-2 border-none rounded-full bg-[#fac94b] text-slate-900 text-[13px] font-bold cursor-pointer whitespace-nowrap shadow-[0_2px_8px_rgba(251,191,36,0.28)] transition-all hover:bg-[#f59e0b] no-underline">
-        <span>Ir a Inventario</span>
-        <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
-      </a>
+        <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-bold text-slate-700 mb-1">Nombre del Alimento *</label>
+            <input type="text" [(ngModel)]="nuevoInsumoForm.nombre" placeholder="Ej. Frijol Rojo Calima, Atún en Agua..."
+              class="w-full h-10 px-3.5 rounded-lg border border-slate-300 text-sm focus:border-amber-400 focus:outline-none" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Categoría</label>
+            <select [(ngModel)]="nuevoInsumoForm.categoria"
+              class="w-full h-10 px-3 rounded-lg border border-slate-300 text-xs focus:border-amber-400 focus:outline-none bg-white">
+              <option value="Abarrotes">Abarrotes</option>
+              <option value="Lácteos">Lácteos</option>
+              <option value="Cárnicos y Huevos">Cárnicos y Huevos</option>
+              <option value="Frutas y Verduras">Frutas y Verduras</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Unidad de Medida</label>
+            <select [(ngModel)]="nuevoInsumoForm.unidad"
+              class="w-full h-10 px-3 rounded-lg border border-slate-300 text-xs focus:border-amber-400 focus:outline-none bg-white">
+              <option value="Kg">Kilogramos (Kg)</option>
+              <option value="Litros">Litros</option>
+              <option value="Unds">Unidades (Unds)</option>
+              <option value="Gramos">Gramos (g)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Stock Inicial *</label>
+            <input type="number" [(ngModel)]="nuevoInsumoForm.stockActual" min="0" placeholder="Ej. 60"
+              class="w-full h-10 px-3.5 rounded-lg border border-slate-300 text-sm focus:border-amber-400 focus:outline-none" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Stock Mínimo Seguridad *</label>
+            <input type="number" [(ngModel)]="nuevoInsumoForm.stockMinimo" min="1" placeholder="Ej. 20"
+              class="w-full h-10 px-3.5 rounded-lg border border-slate-300 text-sm focus:border-amber-400 focus:outline-none" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Código de Lote</label>
+            <input type="text" [(ngModel)]="nuevoInsumoForm.lote" placeholder="Ej. LOT-2026-001"
+              class="w-full h-10 px-3.5 rounded-lg border border-slate-300 text-xs focus:border-amber-400 focus:outline-none" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Días para Vencimiento</label>
+            <input type="number" [(ngModel)]="nuevoInsumoForm.diasVencimiento" min="1" placeholder="Ej. 45"
+              class="w-full h-10 px-3.5 rounded-lg border border-slate-300 text-xs focus:border-amber-400 focus:outline-none" />
+          </div>
+        </div>
+
+        <div class="mt-6 flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+          <button type="button" (click)="cerrarModalNuevoInsumo()"
+            class="h-9 px-4 rounded-full border border-slate-300 bg-white text-xs font-bold text-slate-700 cursor-pointer hover:bg-slate-50">
+            Cancelar
+          </button>
+          <button type="button" (click)="guardarNuevoInsumo()"
+            class="h-9 px-5 rounded-full border-none bg-[#fac94b] text-xs font-bold text-slate-900 cursor-pointer hover:bg-[#f59e0b] shadow-xs">
+            Guardar Insumo
+          </button>
+        </div>
+      </div>
     </div>
-  </header>
+
+    <!-- =========================================================================
+         MODAL 3: REGISTRO DE RACIONES POR SEDE (TOTALMENTE FUNCIONAL)
+         ========================================================================= -->
+    <div *ngIf="modalRacionesSedeAbierto && sedeRacionesSeleccionada"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
+      <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-slate-200 animate-fadeIn">
+        <div class="flex items-start justify-between border-b border-slate-100 pb-3">
+          <div>
+            <h3 class="m-0 text-base font-bold text-slate-900">Actualizar Raciones del Día</h3>
+            <p class="m-0 mt-0.5 text-xs text-slate-500">{{ sedeRacionesSeleccionada.nombre }}</p>
+          </div>
+          <button type="button" (click)="cerrarModalRacionesSede()"
+            class="text-slate-400 hover:text-slate-600 border-none bg-transparent cursor-pointer text-xl font-bold">
+            &times;
+          </button>
+        </div>
+
+        <div class="mt-4 flex flex-col gap-3.5">
+          <div class="rounded-xl bg-slate-50 border border-slate-200 p-3 flex items-center justify-between text-xs">
+            <span class="text-slate-600 font-medium">Meta programada de raciones:</span>
+            <span class="text-sm font-extrabold text-slate-900">{{ sedeRacionesSeleccionada.racionesAsignadas }} raciones</span>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Raciones Servidas Hoy *</label>
+            <input type="number" [(ngModel)]="racionesServidasInput" min="0" [max]="sedeRacionesSeleccionada.racionesAsignadas * 1.5"
+              class="w-full h-10 px-3.5 rounded-lg border border-slate-300 text-sm focus:border-amber-400 focus:outline-none" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Estado Operativo del Comedor</label>
+            <select [(ngModel)]="estadoComedorInput"
+              class="w-full h-10 px-3 rounded-lg border border-slate-300 text-xs focus:border-amber-400 focus:outline-none bg-white">
+              <option value="OPERATIVO">Comedor Activo / Abastecido</option>
+              <option value="EN_SERVICIO">En Servicio / Preparación</option>
+              <option value="ABASTECIDO">Servicio Concluido</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="mt-6 flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+          <button type="button" (click)="cerrarModalRacionesSede()"
+            class="h-9 px-4 rounded-full border border-slate-300 bg-white text-xs font-bold text-slate-700 cursor-pointer hover:bg-slate-50">
+            Cancelar
+          </button>
+          <button type="button" (click)="guardarRacionesSede()"
+            class="h-9 px-5 rounded-full border-none bg-[#fac94b] text-xs font-bold text-slate-900 cursor-pointer hover:bg-[#f59e0b] shadow-xs">
+            Guardar Raciones
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </main>
 
 </div>
