@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef, Input, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, OnChanges, SimpleChanges, ChangeDetectorRef, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -17,7 +17,7 @@ import { SweetAlertService } from '../sweet-alert.service';
   templateUrl: './contrato-detalle.html',
   styleUrls: ['./contrato-detalle.css']
 })
-export class ContratoDetalleComponent implements OnInit {
+export class ContratoDetalleComponent implements OnInit, OnChanges {
   @Input() contratoId: string | null = null;
   @Input() modo: 'consulta' | 'nuevo' | 'edicion' = 'consulta';
   @Input() pestanaInicial: string = 'resumen';
@@ -290,9 +290,57 @@ export class ContratoDetalleComponent implements OnInit {
 
     this.mensajeErrorDistribucion = '';
     this.cargarGradosParaDistribucion(() => {
-      this.inicializarSedesParaEdicion();
-      this.modalEditarDistribucionAbierto = true;
-      this.cdr.detectChanges();
+      if (this.sedesInstitucion.length === 0) {
+        this.actualizarSedesDeInstitucion();
+      }
+      if (this.sedesInstitucion.length > 0) {
+        this.inicializarSedesParaEdicion();
+        this.modalEditarDistribucionAbierto = true;
+        this.cdr.detectChanges();
+        return;
+      }
+
+      // Si aún no hay sedes en memoria, consultarlas directamente en tiempo real para esta institución
+      const instId = this.contrato?.id_institucion || this.institucionSeleccionadaInfo?.id_institucion || this.institucionSeleccionadaInfo?.id;
+      this.siraeService.getInstituciones(true).subscribe({
+        next: (datosInst: any) => {
+          const resInst = Array.isArray(datosInst) ? datosInst : (datosInst?.results || datosInst?.data || []);
+          if (resInst.length > 0) {
+            this.instituciones = resInst;
+          }
+          const targetInst = this.buscarInstitucionDelContrato();
+          const finalInstId = instId || targetInst?.id_institucion || targetInst?.id;
+
+          this.siraeService.getSedes(finalInstId ? Number(finalInstId) : undefined, true).subscribe({
+            next: (datosSedes: any) => {
+              const resSedes = Array.isArray(datosSedes) ? datosSedes : (datosSedes?.results || datosSedes?.data || []);
+              if (finalInstId && resSedes.length > 0) {
+                this.sedesInstitucion = resSedes;
+              } else if (resSedes.length > 0) {
+                this.sedes = resSedes;
+                this.actualizarSedesDeInstitucion();
+              } else if (targetInst) {
+                this.sedesInstitucion = this.obtenerSedesDeInst(targetInst);
+              }
+              this.inicializarSedesParaDistribucion();
+              this.inicializarSedesParaEdicion();
+              this.modalEditarDistribucionAbierto = true;
+              this.cdr.detectChanges();
+            },
+            error: () => {
+              this.actualizarSedesDeInstitucion();
+              this.inicializarSedesParaEdicion();
+              this.modalEditarDistribucionAbierto = true;
+              this.cdr.detectChanges();
+            }
+          });
+        },
+        error: () => {
+          this.inicializarSedesParaEdicion();
+          this.modalEditarDistribucionAbierto = true;
+          this.cdr.detectChanges();
+        }
+      });
     });
   }
 
@@ -307,14 +355,24 @@ export class ContratoDetalleComponent implements OnInit {
       this.actualizarSedesDeInstitucion();
     }
 
-    let distribucionGuardada: any = null;
-    try {
-      const dataRaw = localStorage.getItem(`sirae_distribucion_contrato_${this.contratoId}`);
-      if (dataRaw) {
-        distribucionGuardada = JSON.parse(dataRaw);
+    let distribucionGuardada: any = this.obtenerDistribucionLocal();
+    if (!distribucionGuardada) {
+      try {
+        const dataRaw = localStorage.getItem(`sirae_distribucion_contrato_${this.contratoId}`);
+        if (dataRaw) {
+          distribucionGuardada = JSON.parse(dataRaw);
+        }
+      } catch {
+        distribucionGuardada = null;
       }
-    } catch {
-      distribucionGuardada = null;
+    }
+
+    if (this.sedesInstitucion.length === 0 && Array.isArray(distribucionGuardada?.sedes) && distribucionGuardada.sedes.length > 0) {
+      this.sedesInstitucion = distribucionGuardada.sedes.map((sg: any) => ({
+        ...sg,
+        id_sede: Number(sg.id_sede || sg.id),
+        nombre_sede: sg.nombre_sede || sg.nombre || `Sede #${sg.id_sede || sg.id}`
+      }));
     }
 
     this.sedesEdicionDistribucion = (this.sedesInstitucion || []).map((s, index) => {
@@ -451,6 +509,25 @@ export class ContratoDetalleComponent implements OnInit {
 
     const datosLocales = this.obtenerDistribucionLocal();
 
+    if (this.sedesInstitucion.length === 0 && data.sedes.length > 0) {
+      const dataInstId = data.id_institucion ? Number(data.id_institucion) : null;
+      const cInstId = this.contrato?.id_institucion ? Number(this.contrato.id_institucion) : null;
+      const dataInstNom = this.normalizarTextoInstitucion(data.institucion || data.institucion_nombre);
+      const cInstNom = this.normalizarTextoInstitucion(this.contrato?.institucion || this.contrato?.institucion_nombre);
+
+      const mismaInst = (!cInstId && !cInstNom) ||
+        (cInstId && dataInstId && cInstId === dataInstId) ||
+        (cInstNom && dataInstNom && cInstNom === dataInstNom);
+
+      if (mismaInst) {
+        this.sedesInstitucion = data.sedes.map((sg: any) => ({
+          ...sg,
+          id_sede: Number(sg.id_sede || sg.id || sg.sede),
+          nombre_sede: sg.nombre_sede || sg.nombre || `Sede #${sg.id_sede || sg.id}`
+        }));
+      }
+    }
+
     let sumaCuposSedes = 0;
     this.sedesInstitucion.forEach(s => {
       const sId = Number(s.id_sede || s.id);
@@ -547,7 +624,7 @@ export class ContratoDetalleComponent implements OnInit {
       codigo_contrato: this.contrato?.codigo,
       id_institucion: instId,
       institucion_nombre: this.contrato?.institucion,
-      total_autorizado: this.totalCuposSedesEdicion || this.cuposAutorizados,
+      total_autorizado: this.cuposAutorizados || this.totalCuposSedesEdicion,
       total_distribuido: this.totalCuposSedesEdicion,
       pendientes: this.cuposPendientesSedesEdicion,
       fecha_actualizacion: ahora,
@@ -605,7 +682,9 @@ export class ContratoDetalleComponent implements OnInit {
     });
 
     if (this.totalCuposSedesEdicion > 0 && this.contrato) {
-      this.contrato.cupos = this.totalCuposSedesEdicion;
+      if (!this.contrato.cupos || this.totalCuposSedesEdicion > Number(this.contrato.cupos)) {
+        this.contrato.cupos = this.totalCuposSedesEdicion;
+      }
     }
 
     // Registrar en auditoría
@@ -1421,10 +1500,8 @@ export class ContratoDetalleComponent implements OnInit {
   }
 
   get institucionSeleccionadaInfo(): any {
-    if (!this.contrato?.institucion) return null;
-    return this.instituciones.find(i =>
-      i.nombre_institucion?.toLowerCase() === this.contrato.institucion?.toLowerCase()
-    );
+    if (!this.contrato?.institucion && !this.contrato?.id_institucion) return null;
+    return this.buscarInstitucionDelContrato();
   }
 
   mensajeAviso = '';
@@ -1475,11 +1552,50 @@ export class ContratoDetalleComponent implements OnInit {
 
   abrirModalSeleccionarInstitucion(): void {
     this.busquedaInstitucion = '';
-    this.institucionTemporalSeleccionada = this.instituciones.find(i =>
-      i.nombre_institucion?.toLowerCase() === this.contrato.institucion?.toLowerCase()
-    ) || null;
+    this.institucionTemporalSeleccionada = this.buscarInstitucionDelContrato();
     this.modalSeleccionarInstitucionAbierto = true;
     this.cdr.detectChanges();
+
+    // Refrescar catálogo de instituciones y sedes al abrir el selector para incluir cualquier registro recién creado
+    this.siraeService.getInstituciones(true).subscribe({
+      next: (datos: any) => {
+        const res = Array.isArray(datos) ? datos : (datos?.results || datos?.data || []);
+        if (res.length > 0) {
+          this.instituciones = res;
+          this.institucionTemporalSeleccionada = this.buscarInstitucionDelContrato();
+          this.cdr.detectChanges();
+        }
+      }
+    });
+    this.siraeService.getSedes(undefined, true).subscribe({
+      next: (datos: any) => {
+        const res = Array.isArray(datos) ? datos : (datos?.results || datos?.data || []);
+        if (res.length > 0) {
+          this.sedes = res;
+          this.cdr.detectChanges();
+        }
+      }
+    });
+  }
+
+  esInstitucionSeleccionadaEnModal(inst: any): boolean {
+    if (!inst) return false;
+    const instId = inst.id_institucion ?? inst.id;
+    const temp = this.institucionTemporalSeleccionada;
+    if (temp) {
+      const tempId = temp.id_institucion ?? temp.id;
+      if (instId != null && tempId != null) {
+        return Number(instId) === Number(tempId);
+      }
+      return (temp.nombre_institucion || '').trim().toLowerCase() === (inst.nombre_institucion || '').trim().toLowerCase();
+    }
+    const cInstId = typeof this.contrato?.id_institucion === 'object'
+      ? (this.contrato?.id_institucion?.id_institucion ?? this.contrato?.id_institucion?.id)
+      : this.contrato?.id_institucion;
+    if (instId != null && cInstId != null) {
+      return Number(instId) === Number(cInstId);
+    }
+    return !!this.contrato?.institucion && (this.contrato.institucion || '').trim().toLowerCase() === (inst.nombre_institucion || '').trim().toLowerCase();
   }
 
   cerrarModalSeleccionarInstitucion(): void {
@@ -1504,7 +1620,7 @@ export class ContratoDetalleComponent implements OnInit {
 
     this.cerrarModalSeleccionarInstitucion();
     this.contratoId = String(idExistente);
-    this.modo = 'consulta';
+    this.modo = 'edicion';
     this.modalEdicionAbierto = false;
     this.pestanaActiva = 'resumen';
     this.cargarDetalleContrato();
@@ -1521,6 +1637,8 @@ export class ContratoDetalleComponent implements OnInit {
     }
     this.institucionTemporalSeleccionada = inst;
     this.contrato.institucion = inst.nombre_institucion;
+    this.contrato.id_institucion = inst.id_institucion || inst.id || null;
+    this.sedesInstitucion = this.obtenerSedesDeInst(inst).map(s => ({ ...s }));
     this.mensajeAviso = '';
     this.institucionRequeridaAviso = false;
     this.onInstitucionChange();
@@ -1537,6 +1655,8 @@ export class ContratoDetalleComponent implements OnInit {
         }
       }
       this.contrato.institucion = this.institucionTemporalSeleccionada.nombre_institucion;
+      this.contrato.id_institucion = this.institucionTemporalSeleccionada.id_institucion || this.institucionTemporalSeleccionada.id || null;
+      this.sedesInstitucion = this.obtenerSedesDeInst(this.institucionTemporalSeleccionada).map(s => ({ ...s }));
       this.mensajeAviso = '';
       this.institucionRequeridaAviso = false;
       this.onInstitucionChange();
@@ -1549,6 +1669,7 @@ export class ContratoDetalleComponent implements OnInit {
       event.stopPropagation();
     }
     this.contrato.institucion = '';
+    this.contrato.id_institucion = null;
     this.institucionTemporalSeleccionada = null;
     this.onInstitucionChange();
     this.cdr.detectChanges();
@@ -1565,13 +1686,43 @@ export class ContratoDetalleComponent implements OnInit {
   }
 
   obtenerSedesDeInst(inst: any): any[] {
+    if (!inst) return [];
     const instId = inst?.id_institucion || inst?.id;
-    return this.sedes.filter(s => {
+    const instNomNorm = this.normalizarTextoInstitucion(inst?.nombre_institucion || inst?.nombre);
+    const sedesEnCatalogo = (this.sedes || []).filter(s => {
       const sInstId = typeof s.id_institucion === 'object' && s.id_institucion !== null
         ? (s.id_institucion.id_institucion ?? s.id_institucion.id)
-        : s.id_institucion;
-      return Number(sInstId) === Number(instId);
+        : (s.id_institucion ?? s.institucion_id ?? s.institucion);
+      if (instId != null && sInstId != null && Number(sInstId) === Number(instId)) {
+        return true;
+      }
+      const sNomNorm = this.normalizarTextoInstitucion(s.institucion_nombre || s.nombre_institucion);
+      return !!(instNomNorm && sNomNorm && sNomNorm === instNomNorm);
     });
+    const sedesEmbebidas: any[] = Array.isArray(inst?.sedes)
+      ? inst.sedes.map((s: any) => ({ ...s, id_institucion: s.id_institucion ?? instId }))
+      : [];
+    if (sedesEmbebidas.length === 0 && (this.instituciones || []).length > 0) {
+      for (const otra of this.instituciones) {
+        const otraId = otra?.id_institucion ?? otra?.id;
+        const otraNom = this.normalizarTextoInstitucion(otra?.nombre_institucion || otra?.nombre);
+        const coincide = (instId != null && otraId != null && Number(instId) === Number(otraId)) ||
+          (instNomNorm && otraNom && instNomNorm === otraNom);
+        if (coincide && Array.isArray(otra?.sedes) && otra.sedes.length > 0) {
+          for (const s of otra.sedes) {
+            sedesEmbebidas.push({ ...s, id_institucion: s.id_institucion ?? otraId ?? instId });
+          }
+        }
+      }
+    }
+    if (sedesEnCatalogo.length === 0) return sedesEmbebidas;
+    if (sedesEmbebidas.length === 0) return sedesEnCatalogo;
+    const mapa = new Map<number, any>();
+    for (const s of [...sedesEmbebidas, ...sedesEnCatalogo]) {
+      const id = Number(s.id_sede ?? s.id);
+      if (id) mapa.set(id, { ...(mapa.get(id) || {}), ...s });
+    }
+    return Array.from(mapa.values());
   }
 
   constructor(
@@ -1585,6 +1736,22 @@ export class ContratoDetalleComponent implements OnInit {
     private cdr: ChangeDetectorRef,
     private sweetAlert: SweetAlertService
   ) { }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['contratoId'] && !changes['contratoId'].firstChange) {
+      const nuevoId = changes['contratoId'].currentValue;
+      if (nuevoId === 'nuevo' || nuevoId === '0') {
+        this.modo = 'nuevo';
+        this.iniciarContrato();
+      } else if (nuevoId) {
+        this.cargarDetalleContrato();
+      }
+    }
+    if (changes['modo'] && !changes['modo'].firstChange) {
+      this.actualizarSedesDeInstitucion();
+      this.cdr.detectChanges();
+    }
+  }
 
   ngOnInit() {
     this.route.paramMap.subscribe(params => {
@@ -1913,7 +2080,7 @@ export class ContratoDetalleComponent implements OnInit {
     });
 
     // 3. Cargar Instituciones reales
-    this.siraeService.getInstituciones().subscribe({
+    this.siraeService.getInstituciones(true).subscribe({
       next: (datos: any) => {
         const res = Array.isArray(datos) ? datos : (datos.results || datos.data || []);
         this.instituciones = res;
@@ -1927,7 +2094,7 @@ export class ContratoDetalleComponent implements OnInit {
     });
 
     // 4. Cargar Sedes reales
-    this.siraeService.getSedes().subscribe({
+    this.siraeService.getSedes(undefined, true).subscribe({
       next: (datos: any) => {
         const res = Array.isArray(datos) ? datos : (datos.results || datos.data || []);
         this.sedes = res;
@@ -2057,50 +2224,164 @@ export class ContratoDetalleComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
+  private normalizarTextoInstitucion(str: any): string {
+    return String(str || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  private buscarInstitucionDelContrato(): any {
+    const instNombre = this.normalizarTextoInstitucion(this.contrato?.institucion || this.contrato?.institucion_nombre);
+    const cInstId = typeof this.contrato?.id_institucion === 'object'
+      ? (this.contrato?.id_institucion?.id_institucion ?? this.contrato?.id_institucion?.id)
+      : this.contrato?.id_institucion;
+
+    // 1. Si hay selección temporal y coincide con el contrato actual
+    if (this.institucionTemporalSeleccionada) {
+      const tempNom = this.normalizarTextoInstitucion(this.institucionTemporalSeleccionada.nombre_institucion || this.institucionTemporalSeleccionada.nombre);
+      const tempId = this.institucionTemporalSeleccionada.id_institucion || this.institucionTemporalSeleccionada.id;
+      if ((instNombre && tempNom === instNombre) || (cInstId && tempId && Number(tempId) === Number(cInstId))) {
+        return this.institucionTemporalSeleccionada;
+      }
+    }
+
+    // 2. Si coincide tanto por ID como por nombre y tiene sedes, usar esa coincidencia exacta
+    if (cInstId && instNombre) {
+      const porIdYNombre = (this.instituciones || []).find(i =>
+        Number(i.id_institucion ?? i.id) === Number(cInstId) &&
+        this.normalizarTextoInstitucion(i.nombre_institucion || i.nombre) === instNombre
+      );
+      if (porIdYNombre && this.obtenerSedesDeInst(porIdYNombre).length > 0) {
+        return porIdYNombre;
+      }
+    }
+
+    // 3. Priorizar búsqueda por nombre exacto de la institución (para evitar que un id_institucion desfasado apunte a otra institución con 0 sedes)
+    if (instNombre) {
+      const candidatasExactas = (this.instituciones || []).filter(i => {
+        const nom = this.normalizarTextoInstitucion(i.nombre_institucion || i.nombre);
+        return nom === instNombre;
+      });
+      if (candidatasExactas.length === 1) return candidatasExactas[0];
+      if (candidatasExactas.length > 1) {
+        const conSedes = candidatasExactas.find(i => this.obtenerSedesDeInst(i).length > 0);
+        return conSedes || candidatasExactas[0];
+      }
+    }
+
+    // 4. Buscar por ID si no coincidió por nombre exacto
+    if (cInstId) {
+      const porId = (this.instituciones || []).find(i => Number(i.id_institucion ?? i.id) === Number(cInstId));
+      if (porId) return porId;
+    }
+
+    // 5. Búsqueda parcial por nombre priorizando aquella que tenga sedes
+    if (instNombre) {
+      const candidatasParciales = (this.instituciones || []).filter(i => {
+        const nom = this.normalizarTextoInstitucion(i.nombre_institucion || i.nombre);
+        return nom && (nom.includes(instNombre) || instNombre.includes(nom));
+      });
+      if (candidatasParciales.length > 0) {
+        const conSedes = candidatasParciales.find(i => this.obtenerSedesDeInst(i).length > 0);
+        return conSedes || candidatasParciales[0];
+      }
+    }
+
+    return null;
+  }
+
+  private fusionarEstadoSedesPrevias(nuevasSedes: any[], previas: any[]): any[] {
+    if (!Array.isArray(nuevasSedes) || nuevasSedes.length === 0) return [];
+    if (!Array.isArray(previas) || previas.length === 0) return nuevasSedes.map(s => ({ ...s }));
+    return nuevasSedes.map(s => {
+      const sId = Number(s.id_sede ?? s.id);
+      const previa = previas.find(p =>
+        (sId && Number(p.id_sede ?? p.id) === sId) ||
+        (p.nombre_sede && s.nombre_sede && p.nombre_sede.trim().toLowerCase() === s.nombre_sede.trim().toLowerCase())
+      );
+      if (!previa) return { ...s };
+      return {
+        ...s,
+        cupos: s.cupos ?? previa.cupos,
+        cupos_asignados: s.cupos_asignados ?? previa.cupos_asignados,
+        jornada_manana: s.jornada_manana ?? previa.jornada_manana,
+        jornada_tarde: s.jornada_tarde ?? previa.jornada_tarde,
+        secciones_ids: Array.isArray(s.secciones_ids) && s.secciones_ids.length > 0
+          ? s.secciones_ids
+          : previa.secciones_ids,
+        grados: Array.isArray(s.grados) && s.grados.length > 0
+          ? s.grados
+          : previa.grados,
+        expandidoGrados: s.expandidoGrados ?? previa.expandidoGrados
+      };
+    });
+  }
+
   actualizarSedesDeInstitucion() {
-    if (!this.contrato?.institucion) {
+    if (!this.contrato?.institucion && !this.contrato?.id_institucion) {
       this.sedesInstitucion = [];
       return;
     }
-    const instNombre = (this.contrato?.institucion || '').trim().toLowerCase();
-    const cInstId = this.contrato?.id_institucion;
-    const inst = this.instituciones.find(i => {
-      const nom = (i.nombre_institucion || i.nombre || '').trim().toLowerCase();
-      const id = i.id_institucion || i.id;
-      return (instNombre && nom && (nom === instNombre || nom.includes(instNombre) || instNombre.includes(nom))) ||
-             (cInstId && id && Number(id) === Number(cInstId));
-    });
+    const previas = Array.isArray(this.sedesInstitucion) ? [...this.sedesInstitucion] : [];
+    const inst = this.buscarInstitucionDelContrato();
+    const cInstId = typeof this.contrato?.id_institucion === 'object'
+      ? (this.contrato?.id_institucion?.id_institucion ?? this.contrato?.id_institucion?.id)
+      : this.contrato?.id_institucion;
+    const instId = inst?.id_institucion || inst?.id || cInstId;
+
+    let encontradas: any[] = [];
     if (inst) {
-      const instId = inst.id_institucion || inst.id;
-      this.sedesInstitucion = this.sedes.filter(s => {
+      if (instId) {
+        this.contrato.id_institucion = Number(instId);
+      }
+      encontradas = this.obtenerSedesDeInst(inst);
+    } else if (instId) {
+      encontradas = (this.sedes || []).filter(s => {
         const sInstId = typeof s.id_institucion === 'object' && s.id_institucion !== null
           ? (s.id_institucion.id_institucion ?? s.id_institucion.id)
           : (s.id_institucion || s.institucion_id || s.institucion);
-        return Number(sInstId) === Number(instId) ||
-          String(s.nombre_institucion || '').toLowerCase() === String(inst.nombre_institucion || '').toLowerCase();
+        return Number(sInstId) === Number(instId);
       });
-
-      this.cargarDistribucionPersistida();
-
-      if (instId && this.sedesInstitucion.length === 0) {
-        this.siraeService.getSedes(Number(instId)).subscribe({
-          next: (datos: any) => {
-            const res = Array.isArray(datos) ? datos : (datos.results || datos.data || []);
-            if (res.length > 0) {
-              this.sedesInstitucion = res;
-              this.cargarDistribucionPersistida();
-              this.inicializarSedesParaDistribucion();
-              this.cargarHistorialLocal();
-              this.cdr.detectChanges();
-            }
-          }
-        });
-      } else {
-        this.inicializarSedesParaDistribucion();
-        this.cargarHistorialLocal();
-      }
     } else {
-      this.sedesInstitucion = [];
+      const instNorm = this.normalizarTextoInstitucion(this.contrato?.institucion);
+      encontradas = (this.sedes || []).filter(s => {
+        const sNom = this.normalizarTextoInstitucion(s.institucion_nombre || s.nombre_institucion);
+        return instNorm && sNom && (sNom === instNorm || sNom.includes(instNorm) || instNorm.includes(sNom));
+      });
+    }
+
+    if (encontradas.length > 0 || previas.length === 0) {
+      this.sedesInstitucion = this.fusionarEstadoSedesPrevias(encontradas, previas);
+    }
+
+    this.cargarDistribucionPersistida();
+
+    if (instId && this.sedesInstitucion.length === 0) {
+      this.siraeService.getSedes(Number(instId), true).subscribe({
+        next: (datos: any) => {
+          const res = Array.isArray(datos) ? datos : (datos.results || datos.data || []);
+          if (res.length > 0) {
+            this.sedesInstitucion = res;
+            this.cargarDistribucionPersistida();
+            this.inicializarSedesParaDistribucion();
+            if (this.modalEditarDistribucionAbierto) {
+              this.inicializarSedesParaEdicion();
+            }
+            this.cargarHistorialLocal();
+            this.cdr.detectChanges();
+          }
+        }
+      });
+    } else {
+      this.inicializarSedesParaDistribucion();
+      if (this.modalEditarDistribucionAbierto) {
+        this.inicializarSedesParaEdicion();
+      }
+      this.cargarHistorialLocal();
     }
     this.cdr.detectChanges();
   }
@@ -2187,7 +2468,7 @@ export class ContratoDetalleComponent implements OnInit {
     s.cupos_asignados = Math.max(0, Number(s.cupos_asignados) || 0);
     s.cupos = s.cupos_asignados;
     const totalSedes = this.totalCuposAsignadosFormulario;
-    if (totalSedes > 0 && this.contrato) {
+    if (totalSedes > 0 && this.contrato && (!this.contrato.cupos || totalSedes > Number(this.contrato.cupos))) {
       this.contrato.cupos = totalSedes;
     }
     this.cdr.detectChanges();
@@ -2215,12 +2496,46 @@ export class ContratoDetalleComponent implements OnInit {
         s.cupos_asignados = suma;
         s.cupos = suma;
         const totalSedes = this.totalCuposAsignadosFormulario;
-        if (totalSedes > 0 && this.contrato) {
+        if (totalSedes > 0 && this.contrato && (!this.contrato.cupos || totalSedes > Number(this.contrato.cupos))) {
           this.contrato.cupos = totalSedes;
         }
       }
     }
     this.cdr.detectChanges();
+  }
+
+  recargarSedesDeInstitucionActual(): void {
+    this.siraeService.getInstituciones(true).subscribe({
+      next: (datosInst: any) => {
+        const resInst = Array.isArray(datosInst) ? datosInst : (datosInst?.results || datosInst?.data || []);
+        if (resInst.length > 0) {
+          this.instituciones = resInst;
+        }
+        const inst = this.buscarInstitucionDelContrato();
+        const instId = inst?.id_institucion || inst?.id || this.contrato?.id_institucion;
+        this.siraeService.getSedes(undefined, true).subscribe({
+          next: (datosSedes: any) => {
+            const resSedes = Array.isArray(datosSedes) ? datosSedes : (datosSedes?.results || datosSedes?.data || []);
+            if (resSedes.length > 0) {
+              this.sedes = resSedes;
+            }
+            this.actualizarSedesDeInstitucion();
+            if (instId && this.sedesInstitucion.length === 0) {
+              this.siraeService.getSedes(Number(instId), true).subscribe({
+                next: (sedesPorId: any) => {
+                  const resPorId = Array.isArray(sedesPorId) ? sedesPorId : (sedesPorId?.results || sedesPorId?.data || []);
+                  if (resPorId.length > 0) {
+                    this.sedesInstitucion = resPorId;
+                    this.inicializarSedesParaDistribucion();
+                    this.cdr.detectChanges();
+                  }
+                }
+              });
+            }
+          }
+        });
+      }
+    });
   }
 
   onInstitucionChange() {
@@ -2269,7 +2584,8 @@ export class ContratoDetalleComponent implements OnInit {
 
           this.contrato = {
             ...contratoEncontrado,
-            institucion: contratoEncontrado.institucion || contratoEncontrado.nombre_institucion || contratoEncontrado.id_institucion?.nombre_institucion || 'No especificada',
+            codigo: contratoEncontrado.numero_cor || contratoEncontrado.codigo || contratoEncontrado.numero_contrato || `COR-${this.contratoId}`,
+            institucion: contratoEncontrado.institucion || contratoEncontrado.institucion_nombre || contratoEncontrado.nombre_institucion || contratoEncontrado.id_institucion?.nombre_institucion || 'No especificada',
             id_institucion: instId,
             zona: contratoEncontrado.zona || contratoEncontrado.nombre_zona || 'No especificada',
             fecha_inicio: contratoEncontrado.fecha_inicio || contratoEncontrado.inicio,
@@ -2338,13 +2654,12 @@ export class ContratoDetalleComponent implements OnInit {
 
   // Getters para Distribución de Cupos
   get cuposAutorizados(): number {
-    const sedesCupos = this.totalCuposAsignadosSedes;
-    const formCupos = this.totalCuposAsignadosFormulario;
     const cCupos = Number(this.contrato?.cupos);
-
-    if (sedesCupos && sedesCupos > 0) return sedesCupos;
-    if (formCupos && formCupos > 0) return formCupos;
     if (cCupos && cCupos > 0) return cCupos;
+    const sedesCupos = this.totalCuposAsignadosSedes;
+    if (sedesCupos && sedesCupos > 0) return sedesCupos;
+    const formCupos = this.totalCuposAsignadosFormulario;
+    if (formCupos && formCupos > 0) return formCupos;
     return 0;
   }
 
@@ -2894,9 +3209,9 @@ export class ContratoDetalleComponent implements OnInit {
     const idInst = instEncontrada?.id_institucion || instEncontrada?.id || this.contrato.id_institucion || null;
 
     const cuposAnteriores = Number(this.contrato.cupos) || 0;
-    const cuposCalculados = this.totalCuposAsignadosFormulario > 0
-      ? this.totalCuposAsignadosFormulario
-      : (Number(this.contrato.cupos) || this.totalCuposAsignadosSedes || 0);
+    const cuposCalculados = Number(this.contrato.cupos) > 0
+      ? Math.max(Number(this.contrato.cupos), this.totalCuposAsignadosFormulario)
+      : (this.totalCuposAsignadosFormulario > 0 ? this.totalCuposAsignadosFormulario : (this.totalCuposAsignadosSedes || 0));
 
     this.contrato.cupos = cuposCalculados;
 

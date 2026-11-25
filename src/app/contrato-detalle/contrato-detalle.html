@@ -1000,6 +1000,18 @@
               </div>
 
             </div>
+
+            <div *ngIf="sedesInstitucion.length === 0"
+              style="border: 1.5px dashed #b9d3b0; background: #f3f7f1; border-radius: 12px; padding: 32px 24px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;">
+              <div style="font-size: 13px; font-weight: 800; color: #2B5424;">No se encontraron sedes vinculadas a «{{ contrato.institucion }}»</div>
+              <p style="margin: 0; font-size: 12px; color: #64748b; max-width: 380px;">
+                Si acabas de crear o vincular sedes para esta institución en el Banco de Datos, haz clic en actualizar para cargarlas.
+              </p>
+              <button type="button" (click)="recargarSedesDeInstitucionActual()"
+                style="margin-top: 4px; background: #2B5424; color: #ffffff; border: none; padding: 7px 16px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer;">
+                Actualizar sedes
+              </button>
+            </div>
           </div>
 
         </div>
@@ -1177,8 +1189,8 @@
       <div *ngFor="let inst of institucionesFiltradasModal" (click)="marcarInstitucion(inst)"
         (dblclick)="seleccionarInstitucionDesdeModal(inst)"
         style="padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: all 0.15s; background: #ffffff;"
-        [style.border-color]="(institucionTemporalSeleccionada?.nombre_institucion === inst.nombre_institucion || contrato.institucion === inst.nombre_institucion) ? '#fac94b' : '#e2e8f0'"
-        [style.background]="(institucionTemporalSeleccionada?.nombre_institucion === inst.nombre_institucion || contrato.institucion === inst.nombre_institucion) ? '#fffdf0' : '#ffffff'">
+        [style.border-color]="esInstitucionSeleccionadaEnModal(inst) ? '#fac94b' : '#e2e8f0'"
+        [style.background]="esInstitucionSeleccionadaEnModal(inst) ? '#fffdf0' : '#ffffff'">
         <div>
           <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
             <span style="font-weight: 700; font-size: 12px; color: #0f172a;">{{ inst.nombre_institucion }}</span>
@@ -1202,12 +1214,11 @@
 
         <button *ngIf="!(modo === 'nuevo' && institucionTieneContrato(inst).tieneContrato)" type="button" (click)="seleccionarInstitucionDesdeModal(inst); $event.stopPropagation()"
           style="border-radius: 8px; font-size: 11px; padding: 5px 12px; cursor: pointer; transition: all 0.15s; white-space: nowrap;"
-          [style.background]="(institucionTemporalSeleccionada?.nombre_institucion === inst.nombre_institucion || contrato.institucion === inst.nombre_institucion) ? '#fac94b' : '#ffffff'"
-          [style.color]="(institucionTemporalSeleccionada?.nombre_institucion === inst.nombre_institucion || contrato.institucion === inst.nombre_institucion) ? '#000000' : '#334155'"
-          [style.font-weight]="(institucionTemporalSeleccionada?.nombre_institucion === inst.nombre_institucion || contrato.institucion === inst.nombre_institucion) ? '700' : '600'"
-          [style.border]="(institucionTemporalSeleccionada?.nombre_institucion === inst.nombre_institucion || contrato.institucion === inst.nombre_institucion) ? '1px solid #eab308' : '1px solid #cbd5e1'">
-          {{ (institucionTemporalSeleccionada?.nombre_institucion === inst.nombre_institucion || contrato.institucion
-          === inst.nombre_institucion) ? 'Seleccionada ✓' : 'Seleccionar' }}
+          [style.background]="esInstitucionSeleccionadaEnModal(inst) ? '#fac94b' : '#ffffff'"
+          [style.color]="esInstitucionSeleccionadaEnModal(inst) ? '#000000' : '#334155'"
+          [style.font-weight]="esInstitucionSeleccionadaEnModal(inst) ? '700' : '600'"
+          [style.border]="esInstitucionSeleccionadaEnModal(inst) ? '1px solid #eab308' : '1px solid #cbd5e1'">
+          {{ esInstitucionSeleccionadaEnModal(inst) ? 'Seleccionada ✓' : 'Seleccionar' }}
         </button>
 
         <button *ngIf="modo === 'nuevo' && institucionTieneContrato(inst).tieneContrato" type="button"

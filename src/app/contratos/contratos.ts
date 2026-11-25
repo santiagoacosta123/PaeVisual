@@ -30,7 +30,7 @@ export class ContratosComponent implements OnInit {
   }
 
   cargarInstitucionesYSedes() {
-    this.siraeService.getInstituciones().subscribe({
+    this.siraeService.getInstituciones(true).subscribe({
       next: (datos: any) => {
         const res = Array.isArray(datos) ? datos : (datos.results || datos.data || []);
         this.instituciones = res;
@@ -39,7 +39,7 @@ export class ContratosComponent implements OnInit {
       error: (err) => console.error('Error al cargar instituciones en contratos:', err)
     });
 
-    this.siraeService.getSedes().subscribe({
+    this.siraeService.getSedes(undefined, true).subscribe({
       next: (datos: any) => {
         const res = Array.isArray(datos) ? datos : (datos.results || datos.data || []);
         this.sedes = res;
@@ -428,23 +428,23 @@ export class ContratosComponent implements OnInit {
   sedesDeInstitucionSeleccionada: any[] = [];
 
   onInstitucionContratoChange() {
-    if (!this.contratoActual.institucion) {
+    if (!this.contratoActual.institucion && !this.contratoActual.id_institucion) {
       this.sedesDeInstitucionSeleccionada = [];
       return;
     }
-    const inst = this.instituciones.find(i =>
-      i.nombre_institucion === this.contratoActual.institucion ||
-      String(i.id_institucion) === String(this.contratoActual.institucion)
-    );
+    let inst = this.institucionTemporalSeleccionada;
+    if (!inst || (this.contratoActual.institucion && inst.nombre_institucion?.toLowerCase() !== this.contratoActual.institucion?.toLowerCase())) {
+      const candidatas = this.instituciones.filter(i =>
+        (this.contratoActual.id_institucion && Number(i.id_institucion ?? i.id) === Number(this.contratoActual.id_institucion)) ||
+        i.nombre_institucion?.toLowerCase() === this.contratoActual.institucion?.toLowerCase() ||
+        String(i.id_institucion) === String(this.contratoActual.institucion)
+      );
+      inst = candidatas.find(i => this.obtenerSedesDeInst(i).length > 0) || candidatas[0] || null;
+    }
     if (inst) {
       this.contratoActual.institucion = inst.nombre_institucion;
-      const instId = inst.id_institucion || inst.id;
-      this.sedesDeInstitucionSeleccionada = this.sedes.filter(s => {
-        const sInstId = typeof s.id_institucion === 'object' && s.id_institucion !== null
-          ? (s.id_institucion.id_institucion ?? s.id_institucion.id)
-          : s.id_institucion;
-        return Number(sInstId) === Number(instId);
-      });
+      this.contratoActual.id_institucion = inst.id_institucion || inst.id || null;
+      this.sedesDeInstitucionSeleccionada = this.obtenerSedesDeInst(inst);
     } else {
       this.sedesDeInstitucionSeleccionada = [];
     }
@@ -459,10 +459,30 @@ export class ContratosComponent implements OnInit {
   abrirModalSeleccionarInstitucion() {
     this.busquedaInstitucionModal = '';
     this.institucionTemporalSeleccionada = this.instituciones.find(i =>
+      (this.contratoActual.id_institucion && Number(i.id_institucion ?? i.id) === Number(this.contratoActual.id_institucion)) ||
       i.nombre_institucion?.toLowerCase() === this.contratoActual.institucion?.toLowerCase()
     ) || null;
     this.modalSeleccionarInstitucionAbierto = true;
     this.cdr.detectChanges();
+
+    this.siraeService.getInstituciones(true).subscribe({
+      next: (datos: any) => {
+        const res = Array.isArray(datos) ? datos : (datos?.results || datos?.data || []);
+        if (res.length > 0) {
+          this.instituciones = res;
+          this.cdr.detectChanges();
+        }
+      }
+    });
+    this.siraeService.getSedes(undefined, true).subscribe({
+      next: (datos: any) => {
+        const res = Array.isArray(datos) ? datos : (datos?.results || datos?.data || []);
+        if (res.length > 0) {
+          this.sedes = res;
+          this.cdr.detectChanges();
+        }
+      }
+    });
   }
 
   cerrarModalSeleccionarInstitucion() {
@@ -478,6 +498,8 @@ export class ContratosComponent implements OnInit {
   seleccionarInstitucionDesdeModal(inst: any) {
     this.institucionTemporalSeleccionada = inst;
     this.contratoActual.institucion = inst.nombre_institucion;
+    this.contratoActual.id_institucion = inst.id_institucion || inst.id || null;
+    this.sedesDeInstitucionSeleccionada = this.obtenerSedesDeInst(inst);
     this.onInstitucionContratoChange();
     this.cerrarModalSeleccionarInstitucion();
   }
@@ -485,6 +507,8 @@ export class ContratosComponent implements OnInit {
   confirmarSeleccionInstitucion() {
     if (this.institucionTemporalSeleccionada) {
       this.contratoActual.institucion = this.institucionTemporalSeleccionada.nombre_institucion;
+      this.contratoActual.id_institucion = this.institucionTemporalSeleccionada.id_institucion || this.institucionTemporalSeleccionada.id || null;
+      this.sedesDeInstitucionSeleccionada = this.obtenerSedesDeInst(this.institucionTemporalSeleccionada);
       this.onInstitucionContratoChange();
     }
     this.cerrarModalSeleccionarInstitucion();
@@ -495,6 +519,7 @@ export class ContratosComponent implements OnInit {
       event.stopPropagation();
     }
     this.contratoActual.institucion = '';
+    this.contratoActual.id_institucion = null;
     this.institucionTemporalSeleccionada = null;
     this.onInstitucionContratoChange();
     this.cdr.detectChanges();
@@ -511,13 +536,25 @@ export class ContratosComponent implements OnInit {
   }
 
   obtenerSedesDeInst(inst: any): any[] {
+    if (!inst) return [];
     const instId = inst?.id_institucion || inst?.id;
-    return this.sedes.filter(s => {
+    const sedesEnCatalogo = this.sedes.filter(s => {
       const sInstId = typeof s.id_institucion === 'object' && s.id_institucion !== null
         ? (s.id_institucion.id_institucion ?? s.id_institucion.id)
         : s.id_institucion;
       return Number(sInstId) === Number(instId);
     });
+    const sedesEmbebidas = Array.isArray(inst?.sedes)
+      ? inst.sedes.map((s: any) => ({ ...s, id_institucion: s.id_institucion ?? instId }))
+      : [];
+    if (sedesEnCatalogo.length === 0) return sedesEmbebidas;
+    if (sedesEmbebidas.length === 0) return sedesEnCatalogo;
+    const mapa = new Map<number, any>();
+    for (const s of [...sedesEmbebidas, ...sedesEnCatalogo]) {
+      const id = Number(s.id_sede ?? s.id);
+      if (id) mapa.set(id, { ...(mapa.get(id) || {}), ...s });
+    }
+    return Array.from(mapa.values());
   }
 
   toggleMostrarSedesModal() {
@@ -531,13 +568,7 @@ export class ContratosComponent implements OnInit {
       i.nombre_institucion?.toLowerCase() === nombreInstitucion.toLowerCase()
     );
     if (!inst) return [];
-    const instId = inst.id_institucion || inst.id;
-    return this.sedes.filter(s => {
-      const sInstId = typeof s.id_institucion === 'object' && s.id_institucion !== null
-        ? (s.id_institucion.id_institucion ?? s.id_institucion.id)
-        : s.id_institucion;
-      return Number(sInstId) === Number(instId);
-    });
+    return this.obtenerSedesDeInst(inst);
   }
 
   get totalContratosActivos(): number {
@@ -756,7 +787,13 @@ export class ContratosComponent implements OnInit {
       return;
     }
 
-    const payload = {
+    const instEncontrada = this.instituciones.find(i =>
+      i.nombre_institucion?.toLowerCase() === this.contratoActual.institucion?.toLowerCase() ||
+      String(i.id_institucion) === String(this.contratoActual.institucion)
+    );
+    const idInst = instEncontrada?.id_institucion || instEncontrada?.id || this.contratoActual.id_institucion || null;
+
+    const payload: any = {
       numero_cor: this.contratoActual.codigo,
       institucion: this.contratoActual.institucion,
       zona: this.contratoActual.zona,
@@ -764,6 +801,10 @@ export class ContratosComponent implements OnInit {
       fecha_fin: this.contratoActual.fechaFin,
       estado: this.contratoActual.estado
     };
+
+    if (idInst) {
+      payload.id_institucion = Number(idInst);
+    }
 
     if (this.modoEdicionContrato) {
       this.siraeService.actualizarContrato(this.contratoActual.id, payload).subscribe({

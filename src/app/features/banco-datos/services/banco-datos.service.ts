@@ -1,14 +1,16 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of, throwError } from 'rxjs';
 import { switchMap, tap } from 'rxjs/operators';
 import { environment } from '@env/environment'; // Asumimos que existe
+import { SiraeService } from '../../contratos/services/contratos_pae.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class BancoDatosService {
   private apiUrl = environment.apiUrl;
+  private siraeService = inject(SiraeService, { optional: true });
 
   // Caché en memoria por nombre de tabla
   private cacheTablas: { [tabla: string]: any } = {};
@@ -62,18 +64,33 @@ export class BancoDatosService {
 
   crearDato(tabla: string, data: any): Observable<any> {
     delete this.cacheTablas[tabla];
+    if (tabla === 'sedes' || tabla === 'instituciones') {
+      delete this.cacheTablas['instituciones'];
+      delete this.cacheTablas['sedes'];
+      this.siraeService?.limpiarCacheInstitucionesYSedes();
+    }
     const endpoint = this.getEndpoint(tabla);
     return this.http.post(`${this.apiUrl}/${endpoint}`, data);
   }
 
   actualizarDato(tabla: string, id: number, data: any): Observable<any> {
     delete this.cacheTablas[tabla];
+    if (tabla === 'sedes' || tabla === 'instituciones') {
+      delete this.cacheTablas['instituciones'];
+      delete this.cacheTablas['sedes'];
+      this.siraeService?.limpiarCacheInstitucionesYSedes();
+    }
     const endpoint = this.getEndpoint(tabla);
     return this.http.put(`${this.apiUrl}/${endpoint}${id}/`, data);
   }
 
   eliminarDato(tabla: string, id: number): Observable<any> {
     delete this.cacheTablas[tabla];
+    if (tabla === 'sedes' || tabla === 'instituciones') {
+      delete this.cacheTablas['instituciones'];
+      delete this.cacheTablas['sedes'];
+      this.siraeService?.limpiarCacheInstitucionesYSedes();
+    }
     const endpoint = this.getEndpoint(tabla);
     return this.http.delete(`${this.apiUrl}/${endpoint}${id}/`);
   }
