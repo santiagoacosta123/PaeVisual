@@ -83,6 +83,9 @@ export interface SedeAdminDashboard {
 
 export interface InsumoAdminDashboard {
   id: number;
+  idInventario?: number;
+  idIngrediente?: number;
+  idUnidadMedida?: number;
   nombre: string;
   categoria: 'Abarrotes' | 'Lácteos' | 'Cárnicos y Huevos' | 'Frutas y Verduras';
   stockActual: number;
@@ -593,9 +596,31 @@ export class InicioComponent implements OnInit, AfterViewInit, OnDestroy {
   //  MÉTODOS Y ACCIONES DEL DASHBOARD DE ADMINISTRADOR INSTITUCIONAL
   // =========================================================================
 
+  private obtenerClaveStorage(base: string): string {
+    const instId = this.usuario?.id_institucion;
+    if (instId) return `${base}_inst_${instId}`;
+    const usrId = this.usuario?.id_usuario;
+    if (usrId) return `${base}_usr_${usrId}`;
+    return base;
+  }
+
+  private clasificarCategoriaAdmin(nombreCat: string, nombreIng: string): 'Abarrotes' | 'Lácteos' | 'Cárnicos y Huevos' | 'Frutas y Verduras' {
+    const txt = `${nombreCat || ''} ${nombreIng || ''}`.toLowerCase();
+    if (txt.includes('lact') || txt.includes('láct') || txt.includes('leche') || txt.includes('queso') || txt.includes('yogur') || txt.includes('avena')) {
+      return 'Lácteos';
+    }
+    if (txt.includes('carn') || txt.includes('cárn') || txt.includes('pollo') || txt.includes('res') || txt.includes('cerdo') || txt.includes('pescado') || txt.includes('atun') || txt.includes('atún') || txt.includes('huevo') || txt.includes('prote')) {
+      return 'Cárnicos y Huevos';
+    }
+    if (txt.includes('frut') || txt.includes('verdu') || txt.includes('hortal') || txt.includes('papa') || txt.includes('platano') || txt.includes('plátano') || txt.includes('tomate') || txt.includes('cebolla') || txt.includes('zanahoria')) {
+      return 'Frutas y Verduras';
+    }
+    return 'Abarrotes';
+  }
+
   cargarPersistenciaAdmin(): void {
     try {
-      const invGuardado = localStorage.getItem(this.STORAGE_INVENTARIO);
+      const invGuardado = localStorage.getItem(this.obtenerClaveStorage(this.STORAGE_INVENTARIO));
       if (invGuardado) {
         const parsed = JSON.parse(invGuardado);
         if (Array.isArray(parsed) && parsed.length > 0) {
@@ -603,7 +628,7 @@ export class InicioComponent implements OnInit, AfterViewInit, OnDestroy {
         }
       }
 
-      const sedesGuardadas = localStorage.getItem(this.STORAGE_SEDES);
+      const sedesGuardadas = localStorage.getItem(this.obtenerClaveStorage(this.STORAGE_SEDES));
       if (sedesGuardadas) {
         const parsed = JSON.parse(sedesGuardadas);
         if (Array.isArray(parsed) && parsed.length > 0) {
@@ -611,7 +636,7 @@ export class InicioComponent implements OnInit, AfterViewInit, OnDestroy {
         }
       }
 
-      const movGuardados = localStorage.getItem(this.STORAGE_MOVIMIENTOS);
+      const movGuardados = localStorage.getItem(this.obtenerClaveStorage(this.STORAGE_MOVIMIENTOS));
       if (movGuardados) {
         const parsed = JSON.parse(movGuardados);
         if (Array.isArray(parsed) && parsed.length > 0) {
@@ -625,9 +650,9 @@ export class InicioComponent implements OnInit, AfterViewInit, OnDestroy {
 
   guardarPersistenciaAdmin(): void {
     try {
-      localStorage.setItem(this.STORAGE_INVENTARIO, JSON.stringify(this.insumosAdmin));
-      localStorage.setItem(this.STORAGE_SEDES, JSON.stringify(this.sedesAdmin));
-      localStorage.setItem(this.STORAGE_MOVIMIENTOS, JSON.stringify(this.movimientosAdmin));
+      localStorage.setItem(this.obtenerClaveStorage(this.STORAGE_INVENTARIO), JSON.stringify(this.insumosAdmin));
+      localStorage.setItem(this.obtenerClaveStorage(this.STORAGE_SEDES), JSON.stringify(this.sedesAdmin));
+      localStorage.setItem(this.obtenerClaveStorage(this.STORAGE_MOVIMIENTOS), JSON.stringify(this.movimientosAdmin));
       window.dispatchEvent(new CustomEvent('sirae:datos-actualizados'));
     } catch (e) {
       console.warn('Error guardando persistencia del admin:', e);
@@ -635,32 +660,46 @@ export class InicioComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   cargarDatosAdmin(): void {
-    // 1. Cargar datos persistidos
+    // 1. Cargar datos persistidos por institución mientras responde el servidor
     this.cargarPersistenciaAdmin();
     this.recalcularMetricasAdmin();
 
-    // 2. Intentar sincronizar sedes desde el backend si responde
+    // 2. Sincronizar sedes reales de la institución desde el backend
     this.http.get<unknown>(`${environment.apiUrl}/sedes/`).pipe(
-      timeout(1800),
+      timeout(20000),
       catchError(() => of(null))
     ).subscribe({
       next: (res) => {
         const lista = this.extraerLista(res);
-        if (Array.isArray(lista) && lista.length > 0 && !localStorage.getItem(this.STORAGE_SEDES)) {
-          const sedesApi: SedeAdminDashboard[] = lista.slice(0, 5).map((item: any, idx: number) => ({
-            id: item.id_sede || item.id || idx + 1,
-            nombre: item.nombre_sede || item.nombre || `Sede ${idx + 1}`,
-            codigoDane: item.codigo_dane || `11900100${2341 + idx}`,
-            direccion: item.direccion || 'Dirección no registrada',
-            beneficiarios: item.cupos_totales || item.cupos || [420, 280, 160, 120][idx % 4] || 150,
-            racionesAsignadas: item.cupos_totales || item.cupos || [420, 280, 160, 120][idx % 4] || 150,
-            racionesServidas: Math.round(([420, 280, 160, 120][idx % 4] || 150) * 0.94),
-            porcentajeCumplimiento: 94,
-            jornadas: 'Mañana',
-            estadoComedor: 'OPERATIVO',
-            responsableCocina: 'Manipuladora Asignada',
-            stockEstado: 'OPTIMO'
-          }));
+        if (Array.isArray(lista) && lista.length > 0) {
+          const previasPorId = new Map(this.sedesAdmin.map(s => [Number(s.id), s]));
+          const sedesApi: SedeAdminDashboard[] = lista.map((item: any, idx: number) => {
+            const idSede = Number(item.id_sede || item.id || idx + 1);
+            const previa = previasPorId.get(idSede);
+            const cuposReales = Number(item.cupos_totales ?? item.cupos ?? previa?.racionesAsignadas ?? 0);
+            const racionesAsignadas = cuposReales > 0 ? cuposReales : (previa?.racionesAsignadas || 0);
+            const racionesServidas = previa && previa.racionesAsignadas === racionesAsignadas
+              ? previa.racionesServidas
+              : racionesAsignadas;
+            const cumplimiento = racionesAsignadas > 0
+              ? Number(((racionesServidas / racionesAsignadas) * 100).toFixed(1))
+              : 100;
+
+            return {
+              id: idSede,
+              nombre: item.nombre_sede || item.nombre || `Sede ${idx + 1}`,
+              codigoDane: item.codigo_dane || previa?.codigoDane || '',
+              direccion: item.direccion || 'Dirección registrada en institución',
+              beneficiarios: racionesAsignadas,
+              racionesAsignadas,
+              racionesServidas,
+              porcentajeCumplimiento: cumplimiento,
+              jornadas: item.jornadas_nombres || previa?.jornadas || 'Jornada PAE',
+              estadoComedor: previa?.estadoComedor || 'OPERATIVO',
+              responsableCocina: item.jefa_nombre || previa?.responsableCocina || 'Equipo de Cocina PAE',
+              stockEstado: previa?.stockEstado || 'OPTIMO'
+            };
+          });
           if (sedesApi.length > 0) {
             this.sedesAdmin = sedesApi;
           }
@@ -668,22 +707,74 @@ export class InicioComponent implements OnInit, AfterViewInit, OnDestroy {
         this.recalcularMetricasAdmin();
         this.actualizarGraficosAdmin();
         this.cdRef.markForCheck();
+        (this.cdRef as any).detectChanges?.();
       },
       error: () => {}
     });
 
-    // 3. Intentar sincronizar inventario desde el backend si responde
-    this.http.get<unknown>(`${environment.apiUrl}/inventario/`).pipe(
-      timeout(1800),
-      catchError(() => of(null))
-    ).subscribe({
-      next: (res) => {
-        const lista = this.extraerLista(res);
-        if (Array.isArray(lista) && lista.length > 0 && !localStorage.getItem(this.STORAGE_INVENTARIO)) {
-          this.recalcularMetricasAdmin();
-          this.actualizarGraficosAdmin();
-          this.cdRef.markForCheck();
+    // 3. Sincronizar inventario real, catálogos y entregas reales desde el backend
+    forkJoin({
+      inventario: this.http.get<unknown>(`${environment.apiUrl}/inventario/`).pipe(timeout(20000), catchError(() => of(null))),
+      ingredientes: this.http.get<unknown>(`${environment.apiUrl}/ingredientes/`).pipe(timeout(20000), catchError(() => of(null))),
+      categorias: this.http.get<unknown>(`${environment.apiUrl}/categorias_inventario/`).pipe(timeout(20000), catchError(() => of(null))),
+      unidades: this.http.get<unknown>(`${environment.apiUrl}/unidades_medida/`).pipe(timeout(20000), catchError(() => of(null))),
+      entregas: this.http.get<unknown>(`${environment.apiUrl}/entregas/`).pipe(timeout(20000), catchError(() => of(null))),
+    }).subscribe({
+      next: ({ inventario, ingredientes, categorias, unidades, entregas }) => {
+        const listaInv = this.extraerLista(inventario);
+        const listaIng = this.extraerLista(ingredientes);
+        const listaCat = this.extraerLista(categorias);
+        const listaUni = this.extraerLista(unidades);
+        const listaEnt = this.extraerLista(entregas);
+
+        if (Array.isArray(listaInv) && listaInv.length > 0) {
+          const ingMap = new Map(listaIng.map((i: any) => [Number(i.id_ingrediente ?? i.id), i]));
+          const catMap = new Map(listaCat.map((c: any) => [Number(c.id_categoria_inventario ?? c.id), c]));
+          const uniMap = new Map(listaUni.map((u: any) => [Number(u.id_unidad_medida ?? u.id), u]));
+
+          this.insumosAdmin = listaInv.map((inv: any, idx: number) => {
+            const idIng = Number(inv.id_ingrediente);
+            const ing: any = ingMap.get(idIng);
+            const cat: any = ing ? catMap.get(Number(ing.id_categoria_inventario)) : null;
+            const uni: any = uniMap.get(Number(inv.id_unidad_medida));
+
+            const stock = Number(inv.cantidad_actual ?? 0);
+            const minimo = Number(inv.stock_minimo ?? 0);
+            let estado: 'OPTIMO' | 'BAJO' | 'CRITICO' = 'OPTIMO';
+            if (minimo > 0 && stock < minimo * 0.5) estado = 'CRITICO';
+            else if (minimo > 0 && stock <= minimo) estado = 'BAJO';
+            else if (stock <= 0) estado = 'CRITICO';
+
+            const nombreIng = inv.nombre_ingrediente || ing?.nombre_ingrediente || `Insumo #${idIng}`;
+            const nombreCat = cat?.nombre_categoria || '';
+            const unidadTxt = uni?.abreviatura || uni?.nombre || uni?.nombre_unidad || 'Kg';
+
+            return {
+              id: Number(inv.id_inventario || idx + 1),
+              idInventario: Number(inv.id_inventario) || undefined,
+              idIngrediente: idIng || undefined,
+              idUnidadMedida: Number(inv.id_unidad_medida) || 1,
+              nombre: nombreIng,
+              categoria: this.clasificarCategoriaAdmin(nombreCat, nombreIng),
+              stockActual: stock,
+              stockMinimo: minimo,
+              unidad: unidadTxt,
+              estado,
+              diasVencimientoProximo: 30,
+              lote: `INV-${inv.id_inventario || idx + 1}`
+            };
+          });
         }
+
+        if (Array.isArray(listaEnt) && listaEnt.length > 0) {
+          const recibidas = listaEnt.filter((e: any) => String(e.estado || '').toUpperCase() === 'RECIBIDA' || String(e.estado || '').toUpperCase() === 'CON_NOVEDAD');
+          this.metricasAdmin.entregasRecibidasMes = recibidas.length;
+        }
+
+        this.recalcularMetricasAdmin();
+        this.actualizarGraficosAdmin();
+        this.cdRef.markForCheck();
+        (this.cdRef as any).detectChanges?.();
       },
       error: () => {}
     });
@@ -764,11 +855,28 @@ export class InicioComponent implements OnInit, AfterViewInit, OnDestroy {
       this.movimientosAdmin.pop();
     }
 
+    const insumoRef = this.insumosAdmin[idx];
+    if (insumoRef.idInventario && insumoRef.idIngrediente) {
+      const payloadInv: any = {
+        id_ingrediente: insumoRef.idIngrediente,
+        cantidad_actual: nuevoStock,
+        stock_minimo: insumoRef.stockMinimo ?? 0,
+        id_unidad_medida: insumoRef.idUnidadMedida || 1,
+      };
+      if (this.usuario?.id_institucion) {
+        payloadInv.id_institucion = this.usuario.id_institucion;
+      }
+      this.http.put(`${environment.apiUrl}/inventario/${insumoRef.idInventario}/`, payloadInv)
+        .pipe(catchError(() => of(null)))
+        .subscribe();
+    }
+
     this.guardarPersistenciaAdmin();
     this.recalcularMetricasAdmin();
     this.actualizarGraficosAdmin();
     this.cerrarModalAjuste();
     this.sweetAlert.success('Stock Actualizado', `${this.insumosAdmin[idx].nombre} ahora tiene ${nuevoStock} ${this.insumosAdmin[idx].unidad} en bodega.`);
+    (this.cdRef as any).detectChanges?.();
   }
 
   // --- MODAL 2: NUEVO INSUMO ---
@@ -896,11 +1004,11 @@ export class InicioComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   restablecerDatosAdmin(): void {
-    this.sweetAlert.confirm('¿Restablecer datos?', 'Volverás a los datos institucionales por defecto.', 'Sí, restablecer').then((res: any) => {
+    this.sweetAlert.confirm('¿Restablecer datos?', 'Volverás a sincronizar los datos institucionales desde el servidor.', 'Sí, restablecer').then((res: any) => {
       if (res && res.isConfirmed) {
-        localStorage.removeItem(this.STORAGE_INVENTARIO);
-        localStorage.removeItem(this.STORAGE_SEDES);
-        localStorage.removeItem(this.STORAGE_MOVIMIENTOS);
+        localStorage.removeItem(this.obtenerClaveStorage(this.STORAGE_INVENTARIO));
+        localStorage.removeItem(this.obtenerClaveStorage(this.STORAGE_SEDES));
+        localStorage.removeItem(this.obtenerClaveStorage(this.STORAGE_MOVIMIENTOS));
         window.location.reload();
       }
     });

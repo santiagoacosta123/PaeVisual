@@ -218,6 +218,15 @@ export class LayoutComponent implements OnInit, OnDestroy {
         this.cargarNotificacionesHeader(true);
       }
     });
+    if ((this.authService as any)?.usuarioActual$) {
+      (this.authService as any).usuarioActual$.subscribe((usuarioActualizado: any) => {
+        if (usuarioActualizado) {
+          this.perfil.foto_perfil = usuarioActualizado.foto_perfil || null;
+          this.perfil.nombre = `${usuarioActualizado.nombre ?? ''} ${usuarioActualizado.apellido ?? ''}`.trim() || usuarioActualizado.correo;
+          this.refrescarVista();
+        }
+      });
+    }
     if (this.notificacionService?.notificaciones$) {
       this.notificacionService.notificaciones$.subscribe((lista) => {
         if (Array.isArray(lista) && (lista.length > 0 || this.listaNotificaciones.length > 0)) {

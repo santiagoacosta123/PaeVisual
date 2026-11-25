@@ -79,12 +79,20 @@ export class NotificacionesComponent implements OnInit {
   get esSuperAdmin(): boolean {
     const rol = this.rolUsuarioNormalizado;
     if (this.authService?.esSuperAdministrador) {
-      return this.authService.esSuperAdministrador(rol) || Boolean(this.authService.esAdministrador?.(rol));
+      return this.authService.esSuperAdministrador(rol);
     }
     return rol === 'superadministrador'
       || rol === 'super administrador'
-      || rol === 'super admin'
-      || Boolean(this.authService?.esAdministrador?.(rol));
+      || rol === 'super admin';
+  }
+
+  get esAdminInstitucional(): boolean {
+    if (this.esSuperAdmin) return false;
+    const rol = this.rolUsuarioNormalizado;
+    if (this.authService?.esAdministrador) {
+      return Boolean(this.authService.esAdministrador(rol));
+    }
+    return rol === 'administrador' || rol === 'admin' || rol === 'administrador institucional';
   }
 
   get esSupervisor(): boolean {
@@ -104,11 +112,11 @@ export class NotificacionesComponent implements OnInit {
   }
 
   get puedeEnviarNotificaciones(): boolean {
-    return this.esSuperAdmin || this.esSupervisor || this.esManipuladora;
+    return this.esSuperAdmin || this.esAdminInstitucional || this.esSupervisor || this.esManipuladora;
   }
 
   get requiereSeleccionDestinatario(): boolean {
-    return this.esSupervisor || this.esManipuladora;
+    return this.esAdminInstitucional || this.esSupervisor || this.esManipuladora;
   }
 
   // Plantillas Rápidas Contextuales según el Rol

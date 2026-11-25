@@ -13,12 +13,12 @@
           <span
             class="rounded-full px-2.5 py-0.5 text-xs font-bold"
             [ngClass]="{
-              'bg-purple-100 text-purple-800': esSuperAdmin,
+              'bg-purple-100 text-purple-800': esSuperAdmin || esAdminInstitucional,
               'bg-blue-100 text-blue-800': esSupervisor,
               'bg-amber-100 text-amber-800': esManipuladora
             }"
           >
-            {{ esSuperAdmin ? 'Super Administrador' : (esSupervisor ? 'Supervisor PAE' : 'Manipuladora / Cocina') }}
+            {{ esSuperAdmin ? 'Super Administrador' : (esAdminInstitucional ? 'Administrador' : (esSupervisor ? 'Supervisor PAE' : 'Manipuladora / Cocina')) }}
           </span>
         </div>
         <p class="mt-0.5 text-sm text-gray-500">
@@ -26,7 +26,9 @@
             ? 'Reporta novedades de cocina, faltantes de víveres o consulta avisos de supervisión.'
             : (esSupervisor
               ? 'Supervisa alertas de sedes asignadas, coordina entregas y escala contingencias.'
-              : 'Emite directrices oficiales, circulares y audita las comunicaciones del programa.')
+              : (esAdminInstitucional
+                ? 'Coordina avisos con el supervisor y el equipo de cocina de tu institución educativa.'
+                : 'Emite directrices oficiales, circulares y audita las comunicaciones del programa.'))
           }}
         </p>
       </div>

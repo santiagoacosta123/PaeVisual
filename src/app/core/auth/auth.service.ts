@@ -98,6 +98,8 @@ export class AuthService {
   public institucionActiva$ = this.institucionActivaSubject.asObservable();
   private sedeActivaSubject = new BehaviorSubject<SedeActiva | null>(this.obtenerSedeActiva());
   public sedeActiva$ = this.sedeActivaSubject.asObservable();
+  private usuarioActualSubject = new BehaviorSubject<AuthenticatedUser | null>(null);
+  public usuarioActual$ = this.usuarioActualSubject.asObservable();
 
   constructor() {
     this.institucionActivaSubject.next(this.obtenerInstitucionActiva());
@@ -188,6 +190,7 @@ export class AuthService {
    * Sincroniza el usuario autenticado y el token en el Store de NgRx.
    */
   sincronizarStore(usuario: AuthenticatedUser, token: string): void {
+    this.usuarioActualSubject.next(usuario);
     if (!this.store) {
       return;
     }

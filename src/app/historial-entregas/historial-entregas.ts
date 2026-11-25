@@ -283,9 +283,31 @@ export class HistorialEntregas implements OnInit {
     });
   }
 
+  private obtenerClaveCacheEntregas(): string {
+    if (this.institucionIdUsuario) {
+      return `sirae_entregas_cache_inst_${this.institucionIdUsuario}`;
+    }
+    const u = this.authService?.obtenerUsuario?.();
+    if (u?.id_usuario) {
+      return `sirae_entregas_cache_usr_${u.id_usuario}`;
+    }
+    return 'sirae_entregas_cache';
+  }
+
+  private obtenerClaveRecepcionesAdmin(): string {
+    if (this.institucionIdUsuario) {
+      return `sirae_recepciones_admin_inst_${this.institucionIdUsuario}`;
+    }
+    const u = this.authService?.obtenerUsuario?.();
+    if (u?.id_usuario) {
+      return `sirae_recepciones_admin_usr_${u.id_usuario}`;
+    }
+    return 'sirae_recepciones_admin';
+  }
+
   private leerCacheEntregas(): Entrega[] {
     try {
-      const raw = localStorage.getItem('sirae_entregas_cache');
+      const raw = localStorage.getItem(this.obtenerClaveCacheEntregas());
       if (raw) {
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed) && parsed.length > 0) {
@@ -300,7 +322,7 @@ export class HistorialEntregas implements OnInit {
 
   private guardarCacheEntregas(lista: Entrega[]): void {
     try {
-      localStorage.setItem('sirae_entregas_cache', JSON.stringify(lista));
+      localStorage.setItem(this.obtenerClaveCacheEntregas(), JSON.stringify(lista));
     } catch (e) {
       console.warn('Error guardando caché de entregas:', e);
     }
@@ -383,13 +405,17 @@ export class HistorialEntregas implements OnInit {
   private combinarConEntregasLocales(servidor: Entrega[]): Entrega[] {
     let recepciones: Record<string, any> = {};
     try {
-      recepciones = JSON.parse(localStorage.getItem('sirae_recepciones_admin') || '{}');
+      recepciones = JSON.parse(localStorage.getItem(this.obtenerClaveRecepcionesAdmin()) || '{}');
     } catch {
       recepciones = {};
     }
 
-    // Sincronizar estado de recepciones para las del servidor
+    // Sincronizar estado de recepciones: si el servidor ya reporta un estado final, prevalece el servidor
     const servidorActualizado = servidor.map((e) => {
+      const estadoServidor = (e.estado || '').toUpperCase();
+      if (e.id != null && ['RECIBIDA', 'CON_NOVEDAD', 'RECHAZADA', 'EN_TRANSITO'].includes(estadoServidor)) {
+        return e;
+      }
       const idKey = e.id != null ? `id:${e.id}` : '';
       const compKey = `${(e.ingrediente || '').toLowerCase().trim()}|${e.fechaRecepcion}|${e.cantidad}`;
       const rec = (idKey && recepciones[idKey]) || recepciones[compKey];
@@ -1025,7 +1051,7 @@ export class HistorialEntregas implements OnInit {
 
   private guardarRecepcionLocal(entrega: Entrega, rec: number, rech: number, motivo: string, estado: string): void {
     try {
-      const key = 'sirae_recepciones_admin';
+      const key = this.obtenerClaveRecepcionesAdmin();
       const recepciones = JSON.parse(localStorage.getItem(key) || '{}');
       const receptor = this.authService.obtenerUsuario();
       const nombreReceptor = receptor
@@ -1176,29 +1202,48 @@ export class HistorialEntregas implements OnInit {
               .pipe(
                 catchError((err) => {
                   console.warn(`Error confirmando entrega ${e.id}:`, err);
-                  return of(null);
+                  return of({ __fallo: true, err });
                 }),
               );
           }
-          return of(null);
+          return of({ __localOnly: true });
         });
 
         forkJoin(peticiones).subscribe({
-          next: () => {
-            pendientes.forEach((e) => {
-              this.guardarRecepcionLocal(e, e.cantidad || 0, 0, '', 'RECIBIDA');
+          next: (resultados) => {
+            let exitosos = 0;
+            let fallidos = 0;
+            resultados.forEach((res: any, idx: number) => {
+              const e = pendientes[idx];
+              if (res && res.__fallo) {
+                fallidos++;
+              } else {
+                exitosos++;
+                this.guardarRecepcionLocal(e, e.cantidad || 0, 0, '', 'RECIBIDA');
+              }
             });
             this.cargando = false;
-            void this.alertas.success(
-              'Factura Recibida',
-              `Factura / Remisión ${factura.numeroFactura} acreditada exitosamente en el inventario escolar.`,
-            );
+            if (fallidos === 0) {
+              void this.alertas.success(
+                'Factura Recibida',
+                `Factura / Remisión ${factura.numeroFactura} acreditada exitosamente en el inventario escolar.`,
+              );
+            } else if (exitosos > 0) {
+              void this.alertas.warning(
+                'Recepción parcial',
+                `Se acreditaron ${exitosos} producto(s), pero ${fallidos} no pudieron procesarse en el servidor.`,
+              );
+            } else {
+              void this.alertas.error('Error al recibir factura', 'El servidor no pudo confirmar los productos. Verifica tu sesión e inténtalo nuevamente.');
+            }
             this.cargarHistorial();
+            (this.cdr as any).detectChanges?.();
           },
           error: (err) => {
             this.cargando = false;
             console.error('Error al recibir factura completa:', err);
             void this.alertas.error('Error al recibir factura', 'No se pudieron confirmar todos los productos.');
+            (this.cdr as any).detectChanges?.();
           },
         });
       });
@@ -1241,30 +1286,49 @@ export class HistorialEntregas implements OnInit {
           .pipe(
             catchError((err) => {
               console.warn(`Error rechazando entrega ${e.id}:`, err);
-              return of(null);
+              return of({ __fallo: true, err });
             }),
           );
       }
-      return of(null);
+      return of({ __localOnly: true });
     });
 
     forkJoin(peticiones).subscribe({
-      next: () => {
+      next: (resultados) => {
         this.procesandoRechazoFactura = false;
-        pendientes.forEach((e) => {
-          this.guardarRecepcionLocal(e, 0, e.cantidad || 0, motivo, 'RECHAZADA');
+        let exitosos = 0;
+        let fallidos = 0;
+        resultados.forEach((res: any, idx: number) => {
+          const e = pendientes[idx];
+          if (res && res.__fallo) {
+            fallidos++;
+          } else {
+            exitosos++;
+            this.guardarRecepcionLocal(e, 0, e.cantidad || 0, motivo, 'RECHAZADA');
+          }
         });
         this.cerrarModalRechazoFactura();
-        void this.alertas.success(
-          'Factura Rechazada',
-          `Se registró el rechazo de la factura ${factura.numeroFactura} y sus ${pendientes.length} alimentos.`,
-        );
+        if (fallidos === 0) {
+          void this.alertas.success(
+            'Factura Rechazada',
+            `Se registró el rechazo de la factura ${factura.numeroFactura} y sus ${pendientes.length} alimentos.`,
+          );
+        } else if (exitosos > 0) {
+          void this.alertas.warning(
+            'Rechazo parcial',
+            `Se rechazaron ${exitosos} producto(s), pero ${fallidos} no pudieron procesarse en el servidor.`,
+          );
+        } else {
+          void this.alertas.error('Error al rechazar factura', 'El servidor no pudo registrar el rechazo.');
+        }
         this.cargarHistorial();
+        (this.cdr as any).detectChanges?.();
       },
       error: (err) => {
         this.procesandoRechazoFactura = false;
         console.error('Error al rechazar factura completa:', err);
         void this.alertas.error('Error al rechazar factura', 'Ocurrió un error al procesar el rechazo.');
+        (this.cdr as any).detectChanges?.();
       },
     });
   }

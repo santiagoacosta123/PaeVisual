@@ -1,8 +1,9 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SweetAlertService } from '../sweet-alert.service';
 import { ProductoService } from '../services/producto.service';
+import { AuthService } from '../core/auth/auth.service';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { CustomSelectComponent } from '../shared/custom-select/custom-select';
@@ -79,11 +80,12 @@ export class Ingredientes implements OnInit {
     descripcion: ''
   };
 
-  constructor(
-    private sweetAlert: SweetAlertService,
-    private cdr: ChangeDetectorRef,
-    private productoService: ProductoService
-  ) {}
+  private sweetAlert = inject(SweetAlertService);
+  private cdr = inject(ChangeDetectorRef);
+  private productoService = inject(ProductoService);
+  private authService = inject(AuthService, { optional: true });
+
+  constructor() {}
 
   ngOnInit(): void {
     this.cargarDatos();
@@ -145,7 +147,30 @@ export class Ingredientes implements OnInit {
   }
 
   get movimientosFiltrados() {
-    return [];
+    const mapearMov = (m: any, tipo: 'ENTRADA' | 'SALIDA') => {
+      const idIng = typeof m.id_ingrediente === 'object' ? m.id_ingrediente?.id_ingrediente : m.id_ingrediente;
+      const ing = this.ingredientesDisponibles.find(i => Number(i.id_ingrediente) === Number(idIng));
+      return {
+        ...m,
+        tipo_movimiento: tipo,
+        nombre_ingrediente: m.ingrediente_nombre || ing?.nombre_ingrediente || 'Insumo',
+        cantidad: Number(m.cantidad ?? m.cantidad_salida ?? 0),
+        fecha_movimiento: m.fecha || m.fecha_creacion || ''
+      };
+    };
+
+    const combinados = [
+      ...(this.entradasInventario || []).map(e => mapearMov(e, 'ENTRADA')),
+      ...(this.salidasInventario || []).map(s => mapearMov(s, 'SALIDA')),
+    ].sort((a, b) => String(b.fecha_movimiento).localeCompare(String(a.fecha_movimiento)));
+
+    if (!(this.filtroBusqueda || '').trim()) return combinados;
+    const texto = this.filtroBusqueda.toLowerCase();
+    return combinados.filter(mov =>
+      mov.nombre_ingrediente?.toLowerCase().includes(texto) ||
+      mov.tipo_movimiento?.toLowerCase().includes(texto) ||
+      mov.observaciones?.toLowerCase().includes(texto)
+    );
   }
 
   get gramajesFiltrados() {
@@ -245,29 +270,54 @@ export class Ingredientes implements OnInit {
   }
 
   guardarInventario(): void {
+    const usuarioSesion = this.authService?.obtenerUsuario?.()
+      || (() => { try { return JSON.parse(localStorage.getItem('usuario') || 'null'); } catch { return null; } })();
+    const instUsuario = usuarioSesion?.id_institucion ?? null;
+    const sedeUsuario = usuarioSesion?.id_sede ?? null;
+
     if (this.modalTipo === 'INSUMO') {
       if (!this.itemForm.id_ingrediente || this.itemForm.cantidad_actual === null) {
         this.sweetAlert.warning('Campos incompletos', 'Llene los campos obligatorios del inventario.');
         return;
       }
 
+      const ingSeleccionado = this.ingredientesDisponibles.find(
+        i => Number(i.id_ingrediente) === Number(this.itemForm.id_ingrediente)
+      );
+      const unidadFallback = ingSeleccionado?.id_unidad_medida
+        || (this.unidadesMedida.length > 0 ? this.unidadesMedida[0].id_unidad_medida : 1);
+
+      const payloadInsumo: any = {
+        id_ingrediente: Number(this.itemForm.id_ingrediente),
+        cantidad_actual: Number(this.itemForm.cantidad_actual),
+        stock_minimo: Number(this.itemForm.stock_minimo ?? 0),
+        id_unidad_medida: Number(this.itemForm.id_unidad_medida || unidadFallback),
+      };
+
       if (this.modoEdicion && this.itemForm.id_inventario) {
-        this.productoService.actualizarProducto(this.itemForm.id_inventario, this.itemForm).subscribe({
+        if (this.itemForm.id_institucion) payloadInsumo.id_institucion = this.itemForm.id_institucion;
+        else if (instUsuario) payloadInsumo.id_institucion = instUsuario;
+        if (this.itemForm.id_sede) payloadInsumo.id_sede = this.itemForm.id_sede;
+
+        this.productoService.actualizarProducto(this.itemForm.id_inventario, payloadInsumo).subscribe({
           next: () => {
             this.sweetAlert.success('Actualizado', 'Insumo modificado con éxito.');
             this.cargarDatos();
             this.cerrarFormulario();
           },
-          error: (err) => this.sweetAlert.error('Error', 'No se pudo actualizar el inventario.')
+          error: () => this.sweetAlert.error('Error', 'No se pudo actualizar el inventario.')
         });
       } else {
-        this.productoService.crearProducto(this.itemForm).subscribe({
+        if (instUsuario) payloadInsumo.id_institucion = instUsuario;
+        if (sedeUsuario) payloadInsumo.id_sede = sedeUsuario;
+
+        this.productoService.crearProducto(payloadInsumo).subscribe({
           next: () => {
             this.sweetAlert.success('Guardado', 'Nuevo insumo agregado al inventario.');
             this.cargarDatos();
             this.cerrarFormulario();
           },
-          error: (err) => this.sweetAlert.error('Error', 'No se pudo crear el insumo.')
+          error: () => this.sweetAlert.error('Error', 'No se pudo crear el insumo.')
         });
       }
     } else if (this.modalTipo === 'ENTRADA' || this.modalTipo === 'SALIDA') {
@@ -276,14 +326,10 @@ export class Ingredientes implements OnInit {
         return;
       }
 
-      const authData = JSON.parse(localStorage.getItem('usuario') || '{}');
-      const id_usuario = authData?.id_usuario || authData?.id || 1; // Fallback a 1 si no hay usuario
+      const id_usuario = usuarioSesion?.id_usuario || usuarioSesion?.id || 1;
+      const invItem = this.inventario.find(i => Number(i.id_ingrediente) === Number(this.movimientoForm.id_ingrediente));
 
-      // Buscar la unidad de medida del ingrediente en el inventario actual
-      const invItem = this.inventario.find(i => i.id_ingrediente == this.movimientoForm.id_ingrediente);
-
-      // Evita un error si el ingrediente elegido todavía no existe en el inventario
-      if (!invItem) {
+      if (!invItem && this.modalTipo === 'SALIDA') {
         this.sweetAlert.warning(
           'Insumo no encontrado',
           'Este ingrediente aún no está en el inventario. Agrégalo primero como nuevo insumo.'
@@ -291,10 +337,9 @@ export class Ingredientes implements OnInit {
         return;
       }
 
-      const id_unidad_medida = invItem.id_unidad_medida ?? (this.unidadesMedida.length > 0 ? this.unidadesMedida[0].id_unidad_medida : 1);
-
+      const id_unidad_medida = invItem?.id_unidad_medida ?? (this.unidadesMedida.length > 0 ? this.unidadesMedida[0].id_unidad_medida : 1);
       const cantidadMov = Number(this.movimientoForm.cantidad);
-      const stockActual = Number(invItem.cantidad_actual) || 0;
+      const stockActual = Number(invItem?.cantidad_actual) || 0;
       const nuevoStock = this.modalTipo === 'ENTRADA' ? stockActual + cantidadMov : stockActual - cantidadMov;
 
       if (this.modalTipo === 'SALIDA' && nuevoStock < 0) {
@@ -302,41 +347,47 @@ export class Ingredientes implements OnInit {
         return;
       }
 
-      let payload: any;
       if (this.modalTipo === 'ENTRADA') {
-        payload = {
-          id_ingrediente: this.movimientoForm.id_ingrediente,
+        const payload = {
+          id_inventario: invItem?.id_inventario ?? null,
+          id_ingrediente: Number(this.movimientoForm.id_ingrediente),
           cantidad: cantidadMov,
-          id_unidad_medida: id_unidad_medida,
+          id_unidad_medida,
           observaciones: this.movimientoForm.observaciones || '',
-          id_usuario: id_usuario
+          id_usuario
         };
 
         this.productoService.crearEntrada(payload).subscribe({
-          next: () => this.actualizarStockDirecto(invItem, nuevoStock),
+          next: () => {
+            this.sweetAlert.success('Completado', 'Entrada registrada e inventario actualizado correctamente.');
+            this.cargarDatos();
+            this.cerrarFormulario();
+          },
           error: (err) => {
-            console.warn('Error registrando entrada en historial, actualizando stock forzosamente:', err);
-            this.actualizarStockDirecto(invItem, nuevoStock);
+            const msg = err?.error?.cantidad?.[0] || err?.error?.detail || 'No se pudo registrar la entrada en el servidor.';
+            this.sweetAlert.error('Error', msg);
           }
         });
       } else {
-        payload = {
-          id_inventario: invItem.id_inventario ?? null,
-          id_ingrediente: this.movimientoForm.id_ingrediente,
+        const payload = {
+          id_inventario: invItem?.id_inventario ?? null,
+          id_ingrediente: Number(this.movimientoForm.id_ingrediente),
           cantidad_salida: cantidadMov,
           cantidad: cantidadMov,
-          id_unidad_medida: id_unidad_medida,
+          id_unidad_medida,
           observaciones: this.movimientoForm.observaciones || '',
-          id_usuario: id_usuario
+          id_usuario
         };
 
         this.productoService.crearSalida(payload).subscribe({
-          next: () => this.actualizarStockDirecto(invItem, nuevoStock),
+          next: () => {
+            this.sweetAlert.success('Completado', 'Salida registrada e inventario descontado correctamente.');
+            this.cargarDatos();
+            this.cerrarFormulario();
+          },
           error: (err) => {
-            console.warn('Backend dio error 500 en crearSalida. Forzando la actualización del stock:', err);
-            // Si el backend explota al guardar la salida, al menos actualizamos el inventario manualmente
-            // para que el sistema "cumpla con funcionar" para el usuario.
-            this.actualizarStockDirecto(invItem, nuevoStock);
+            const msg = err?.error?.cantidad?.[0] || err?.error?.id_ingrediente?.[0] || err?.error?.detail || 'No se pudo registrar la salida en el servidor.';
+            this.sweetAlert.error('Error', msg);
           }
         });
       }

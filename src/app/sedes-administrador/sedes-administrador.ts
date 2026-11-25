@@ -174,6 +174,11 @@ export class SedesAdministradorComponent implements OnInit, OnDestroy {
     this.cargarSedes(this.sedeSeleccionada?.id_sede);
   }
 
+  private refrescarVista(): void {
+    this.cdr.markForCheck();
+    (this.cdr as any).detectChanges?.();
+  }
+
   private cargarJornadasDisponibles(): void {
     this.http.get<unknown>(`${environment.apiUrl}/jornadas/`).subscribe({
       next: (response) => {
@@ -181,9 +186,11 @@ export class SedesAdministradorComponent implements OnInit, OnDestroy {
           !jornada.estado || jornada.estado.toUpperCase() === 'ACTIVA' || jornada.estado.toUpperCase() === 'ACTIVO',
         );
         this.sincronizarJornadasConfiguradas();
+        this.refrescarVista();
       },
       error: () => {
         this.jornadasDisponibles = [];
+        this.refrescarVista();
       },
     });
   }
@@ -195,9 +202,11 @@ export class SedesAdministradorComponent implements OnInit, OnDestroy {
           grado => !grado.estado || String(grado.estado).toUpperCase() === 'ACTIVO'
         );
         this.sincronizarJornadasConfiguradas();
+        this.refrescarVista();
       },
       error: () => {
         this.gradosDisponibles = [];
+        this.refrescarVista();
       },
     });
   }
@@ -207,6 +216,7 @@ export class SedesAdministradorComponent implements OnInit, OnDestroy {
       next: (response) => {
         this.seccionesDisponibles = listaDe<any>(response);
         this.sincronizarJornadasConfiguradas();
+        this.refrescarVista();
       },
       error: () => {
         this.seccionesDisponibles = [
@@ -215,6 +225,7 @@ export class SedesAdministradorComponent implements OnInit, OnDestroy {
           { id_seccion: 3, id: 3, nombre_seccion: 'Merienda', nombre: 'Merienda', jornada: 'Tarde' },
         ];
         this.sincronizarJornadasConfiguradas();
+        this.refrescarVista();
       },
     });
   }
