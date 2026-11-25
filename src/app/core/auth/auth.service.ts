@@ -255,12 +255,12 @@ export class AuthService {
       correo,
       clave,
       password: clave,
-    }).pipe(timeout(60000));
+    });
   }
 
   despertarBackend(): void {
     this.http.get(`${this.apiBaseUrl}/`, { responseType: 'text' })
-      .pipe(timeout(30000), catchError(() => EMPTY))
+      .pipe(timeout(60000), catchError(() => EMPTY))
       .subscribe();
   }
 
