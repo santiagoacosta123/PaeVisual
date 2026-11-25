@@ -1,8 +1,9 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { provideHttpClient } from '@angular/common/http';
 import { of } from 'rxjs';
 import { LayoutComponent } from './layout';
-import { AuthService } from '../services/auth.service';
+import { AuthService } from '../core/auth/auth.service';
 import { NotificacionService } from '../notificaciones/notificacion.service';
 import { SweetAlertService } from '../core/services/sweet-alert.service';
 
@@ -26,9 +27,12 @@ describe('LayoutComponent', () => {
       imports: [LayoutComponent],
       providers: [
         provideRouter([]),
+        provideHttpClient(),
         {
           provide: AuthService,
           useValue: {
+            estaAutenticado: () => true,
+            obtenerToken: () => 'fake-token',
             obtenerUsuario: () => ({
               nombre: 'Ana',
               apellido: 'Pérez',
@@ -50,8 +54,26 @@ describe('LayoutComponent', () => {
         {
           provide: NotificacionService,
           useValue: {
-            obtenerNotificaciones: () => of([]),
-            marcarTodasComoLeidas: () => of([]),
+            obtenerNotificaciones: vi.fn(() => of([
+              {
+                id_notificacion: 10,
+                titulo: 'Entrega programada',
+                mensaje: 'Llegó remisión de alimentos.',
+                leida: false,
+                fecha_hora: '2026-11-25T16:00:00Z',
+              },
+              {
+                id_notificacion: 11,
+                titulo: 'Aviso anterior',
+                mensaje: 'Ya revisado.',
+                leida: true,
+                fecha_hora: '2026-11-24T12:00:00Z',
+              },
+            ])),
+            marcarComoLeida: vi.fn(() => of({})),
+            marcarComoNoLeida: vi.fn(() => of({})),
+            marcarTodasComoLeidas: vi.fn(() => of([])),
+            tiempoRelativo: () => 'Hace un momento',
           },
         },
         {
@@ -106,5 +128,38 @@ describe('LayoutComponent', () => {
     });
     expect(component.passwordMensaje).toBe('Contraseña actualizada.');
     expect(component.passwordForm.actual).toBe('');
+  });
+
+  it('opens a notification in modal without backdrop blocking and marks it read on close', () => {
+    const bellBtn = fixture.nativeElement.querySelector('.saas-notif-bell-btn') as HTMLButtonElement;
+    expect(bellBtn).toBeTruthy();
+
+    bellBtn.click();
+    fixture.detectChanges();
+
+    expect(component.mostrarNotificaciones).toBe(true);
+    // El backdrop invisible no debe cubrir ni bloquear el dropdown de notificaciones
+    expect(fixture.nativeElement.querySelector('.popover-backdrop')).toBeNull();
+
+    const rows = fixture.nativeElement.querySelectorAll('.saas-notif-row');
+    expect(rows.length).toBe(2);
+
+    // Clic en la primera notificación (no leída): abre el modal sin salir de la pantalla
+    (rows[0] as HTMLElement).click();
+    fixture.detectChanges();
+
+    expect(component.notificacionAbierta?.id_notificacion).toBe(10);
+    expect(component.notificacionAbierta?.leida).toBe(false);
+    expect(fixture.nativeElement.querySelector('.saas-notif-modal-card')).toBeTruthy();
+
+    // Al cerrar el modal, pasa a leídas y actualiza contadores de historial
+    const notificacionService = TestBed.inject(NotificacionService);
+    component.cerrarNotificacionAbierta();
+    fixture.detectChanges();
+
+    expect(component.notificacionAbierta).toBeNull();
+    expect(notificacionService.marcarComoLeida).toHaveBeenCalledWith(10);
+    expect(component.notificacionesNoLeidas).toBe(0);
+    expect(component.notificacionesLeidas).toBe(2);
   });
 });

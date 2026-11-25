@@ -209,32 +209,33 @@ export class LayoutComponent implements OnInit, OnDestroy {
     }
 
     this.cargarNotificacionesHeader();
-    if (this.authService.estaAutenticado() && this.notificacionService?.conectarWebSocket) {
+    if (this.authService.estaAutenticado?.() && this.notificacionService?.conectarWebSocket) {
       this.notificacionService.conectarWebSocket(this.authService.obtenerToken?.());
     }
     this.notificacionesSubscription = interval(20_000).subscribe(() => {
-      if (this.authService.estaAutenticado() && !this.notificacionService?.estaWebSocketConectado?.()) {
+      if (this.authService.estaAutenticado?.() && !this.notificacionService?.estaWebSocketConectado?.()) {
         this.cargarNotificacionesHeader(true);
       }
     });
     if (this.notificacionService?.notificaciones$) {
       this.notificacionService.notificaciones$.subscribe((lista) => {
-        if (Array.isArray(lista) && lista.length > 0) {
+        if (Array.isArray(lista) && (lista.length > 0 || this.listaNotificaciones.length > 0)) {
           this.listaNotificaciones = lista;
-          this.cdr.markForCheck();
+          this.notificacionesNoLeidas = lista.filter(n => !n.leida).length;
+          this.refrescarVista();
         }
       });
     }
     if (this.notificacionService?.noLeidas$) {
       this.notificacionService.noLeidas$.subscribe((conteo) => {
         this.notificacionesNoLeidas = conteo;
-        this.cdr.markForCheck();
+        this.refrescarVista();
       });
     }
     if (this.notificacionService?.toastActivo$) {
       this.notificacionService.toastActivo$.subscribe((toast) => {
         this.toastNotificacion = toast;
-        this.cdr.markForCheck();
+        this.refrescarVista();
       });
     }
     this.actualizarTitulo(this.router.url);
@@ -354,12 +355,46 @@ export class LayoutComponent implements OnInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
+  private refrescarVista(): void {
+    this.cdr.markForCheck();
+    try {
+      this.cdr.detectChanges();
+    } catch {
+      // Ignorar si el componente aún está inicializándose o destruyéndose
+    }
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscapeKey(): void {
+    if (this.notificacionAbierta) {
+      this.cerrarNotificacionAbierta();
+      return;
+    }
+    if (this.mostrarNotificaciones || this.mostrarPerfil || this.mostrarSelectorInstitucion) {
+      this.cerrarPanel();
+      this.refrescarVista();
+    }
+  }
+
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
-    const target = event.target as HTMLElement;
-    if (!target.closest('.dropdown-container') && !target.closest('.user-pill-btn') && !target.closest('.notif-btn') && !target.closest('.config-btn')) {
-      this.mostrarPerfil = false;
-      this.mostrarNotificaciones = false;
+    const target = event.target as HTMLElement | null;
+    if (!target || !target.isConnected) {
+      return;
+    }
+    if (
+      !target.closest('.dropdown-container') &&
+      !target.closest('.saas-notif-dropdown') &&
+      !target.closest('.saas-notif-bell-btn') &&
+      !target.closest('.user-pill-btn') &&
+      !target.closest('.notif-btn') &&
+      !target.closest('.config-btn')
+    ) {
+      if (this.mostrarPerfil || this.mostrarNotificaciones) {
+        this.mostrarPerfil = false;
+        this.mostrarNotificaciones = false;
+        this.refrescarVista();
+      }
     }
   }
 
@@ -377,25 +412,28 @@ export class LayoutComponent implements OnInit, OnDestroy {
           const masReciente = nuevasSinLeer[0];
           this.notificacionService.mostrarToast(masReciente);
         }
-        this.cdr.markForCheck();
+        this.refrescarVista();
       },
       error: () => {
         if (!silent) {
           this.listaNotificaciones = [];
           this.notificacionesNoLeidas = 0;
-          this.cdr.markForCheck();
+          this.refrescarVista();
         }
       }
     });
   }
 
-  toggleNotificaciones(): void {
+  toggleNotificaciones(event?: MouseEvent): void {
+    event?.stopPropagation();
     this.mostrarNotificaciones = !this.mostrarNotificaciones;
 
     if (this.mostrarNotificaciones) {
       this.mostrarPerfil = false;
-      this.cargarNotificacionesHeader();
+      this.mostrarSelectorInstitucion = false;
+      this.cargarNotificacionesHeader(true);
     }
+    this.refrescarVista();
   }
 
   // Abre/cierra el desplegable de perfil (usado por el Administrador institucional)
@@ -409,9 +447,14 @@ export class LayoutComponent implements OnInit, OnDestroy {
     }
   }
 
-  marcarTodasComoLeidasDesdePanel(): void {
+  marcarTodasComoLeidasDesdePanel(event?: MouseEvent): void {
+    event?.stopPropagation();
+    this.listaNotificaciones = this.listaNotificaciones.map(n => ({ ...n, leida: true }));
+    this.notificacionesNoLeidas = 0;
+    this.refrescarVista();
+
     this.notificacionService.marcarTodasComoLeidas().subscribe({
-      next: () => this.cargarNotificacionesHeader(),
+      next: () => this.cargarNotificacionesHeader(true),
       error: (err: any) => console.error('Error al marcar todas como leídas', err)
     });
   }
@@ -430,40 +473,141 @@ export class LayoutComponent implements OnInit, OnDestroy {
     return this.listaNotificaciones.filter(n => n.leida).length;
   }
 
-  cambiarFiltroNotificaciones(filtro: 'todas' | 'no_leidas' | 'leidas'): void {
+  cambiarFiltroNotificaciones(filtro: 'todas' | 'no_leidas' | 'leidas', event?: MouseEvent): void {
+    event?.stopPropagation();
     this.filtroNotificaciones = filtro;
-    this.cdr.markForCheck();
+    this.refrescarVista();
   }
 
   /** Abre la notificación en un modal sin salir de la pantalla actual. */
-  abrirNotificacion(notif: Notificacion): void {
+  abrirNotificacion(notif: Notificacion, event?: MouseEvent): void {
+    event?.stopPropagation();
     this.notificacionAbierta = notif;
     this.mostrarNotificaciones = false;
-    this.cdr.markForCheck();
+    this.refrescarVista();
   }
 
-  /** Al cerrar el detalle, la notificación pasa a leídas. */
+  /** Abre la notificación desde el toast flotante sin sacar al usuario de su pantalla. */
+  abrirNotificacionDesdeToast(notif: Notificacion, event?: MouseEvent): void {
+    event?.stopPropagation();
+    this.notificacionService.cerrarToast?.();
+    this.toastNotificacion = null;
+    this.notificacionAbierta = notif;
+    this.mostrarNotificaciones = false;
+    this.refrescarVista();
+  }
+
+  /** Al cerrar el detalle, la notificación pasa a leídas para quedar en el historial. */
   cerrarNotificacionAbierta(): void {
     const notif = this.notificacionAbierta;
     this.notificacionAbierta = null;
-    if (notif) {
+    if (notif && !notif.leida) {
       this.marcarNotificacionLeida(notif);
     }
-    this.cdr.markForCheck();
+    this.refrescarVista();
+  }
+
+  /** Permite regresar una notificación leída al estado "No leída" y cerrar el detalle. */
+  dejarComoNoLeidaYCerrar(): void {
+    const notif = this.notificacionAbierta;
+    this.notificacionAbierta = null;
+    if (notif && notif.leida) {
+      this.marcarNotificacionNoLeida(notif);
+    }
+    this.refrescarVista();
   }
 
   private marcarNotificacionLeida(notif: Notificacion): void {
     const id = notif.id ?? notif.id_notificacion;
-    if (id && !notif.leida) {
+    notif.leida = true;
+    this.listaNotificaciones = this.listaNotificaciones.map(n =>
+      (n.id ?? n.id_notificacion) === id ? { ...n, leida: true } : n
+    );
+    this.notificacionesNoLeidas = this.listaNotificaciones.filter(n => !n.leida).length;
+    this.refrescarVista();
+
+    if (id && this.notificacionService.marcarComoLeida) {
       this.notificacionService.marcarComoLeida(id).subscribe({
-        next: () => {
-          notif.leida = true;
-          this.notificacionesNoLeidas = Math.max(0, this.notificacionesNoLeidas - 1);
-          this.cdr.markForCheck();
-        },
+        next: () => this.refrescarVista(),
         error: (err: any) => console.error('Error al marcar como leída', err)
       });
     }
+  }
+
+  private marcarNotificacionNoLeida(notif: Notificacion): void {
+    const id = notif.id ?? notif.id_notificacion;
+    notif.leida = false;
+    this.listaNotificaciones = this.listaNotificaciones.map(n =>
+      (n.id ?? n.id_notificacion) === id ? { ...n, leida: false } : n
+    );
+    this.notificacionesNoLeidas = this.listaNotificaciones.filter(n => !n.leida).length;
+    this.refrescarVista();
+
+    if (id && this.notificacionService.marcarComoNoLeida) {
+      this.notificacionService.marcarComoNoLeida(id).subscribe({
+        next: () => this.refrescarVista(),
+        error: (err: any) => console.error('Error al marcar como no leída', err)
+      });
+    }
+  }
+
+  verHistorialNotificaciones(event?: MouseEvent): void {
+    event?.stopPropagation();
+    this.mostrarNotificaciones = false;
+    this.refrescarVista();
+    void this.router.navigateByUrl('/notificaciones');
+  }
+
+  /** Calcula una ruta válida y permitida según el rol actual (evita redirecciones a /login o bloqueos de guard). */
+  obtenerRutaSeguraNotificacion(notif: Notificacion | null): string | null {
+    if (!notif) return null;
+
+    const texto = ((notif.titulo || '') + ' ' + (notif.mensaje || '')).toLowerCase();
+    const cat = (notif.categoria || '').toLowerCase();
+    const matchRem = (notif.mensaje || '').match(/#?(REM-[\w\-]+|ENT-[\w\-]+)/i)
+      || (notif.titulo || '').match(/#?(REM-[\w\-]+|ENT-[\w\-]+)/i);
+    const remisionDoc = matchRem ? matchRem[1] : '';
+
+    if (texto.includes('factura') || texto.includes('bodega central') || texto.includes('abastecid')) {
+      if (this.esSuperAdministrador) return '/facturas-compra';
+      if (this.esSupervisor || this.esAdministrador) return '/saldos-almacen';
+      return null;
+    }
+
+    if (texto.includes('recepci') || texto.includes('remisi') || cat.includes('entrega') || texto.includes('despacho')) {
+      if (this.esSupervisor && (texto.includes('despachad') || texto.includes('programado'))) {
+        return '/registrar-entrega-alimentos';
+      }
+      if (this.esSupervisor || this.esAdministrador || this.esSuperAdministrador) {
+        return remisionDoc
+          ? '/historial-entregas?buscar=' + encodeURIComponent(remisionDoc) + '&modo=facturas'
+          : '/historial-entregas';
+      }
+      return null;
+    }
+
+    if (texto.includes('stock') || texto.includes('insumo') || cat.includes('inventario')) {
+      if (this.esAdministrador) return '/ingredientes';
+      if (this.esSuperAdministrador) return '/bodega-central';
+      if (this.esSupervisor) return '/saldos-almacen';
+      return null;
+    }
+
+    if (cat.includes('contrato') || texto.includes('contrato')) {
+      return this.esSuperAdministrador ? '/contratos' : null;
+    }
+
+    if (cat.includes('asistencia') || texto.includes('asistencia')) {
+      if (this.esJefa) return '/asistencia-diaria';
+      return '/reportes-consumo';
+    }
+
+    if (cat.includes('menu') || texto.includes('minuta')) {
+      if (this.esSuperAdministrador || this.esSupervisor || this.esJefa) return '/menus';
+      return null;
+    }
+
+    return null;
   }
 
   /** Navegación opcional desde el detalle (botón "Ir al módulo"). */
@@ -475,44 +619,13 @@ export class LayoutComponent implements OnInit, OnDestroy {
   }
 
   hacerClicNotificacion(notif: Notificacion): void {
-    this.marcarNotificacionLeida(notif);
+    if (!notif.leida) {
+      this.marcarNotificacionLeida(notif);
+    }
 
     this.mostrarNotificaciones = false;
 
-    let ruta = notif.ruta_accion || notif.accion?.ruta;
-
-    // Redirección contextual inteligente según rol y tipo de evento
-    if (!ruta) {
-      const texto = ((notif.titulo || '') + ' ' + (notif.mensaje || '')).toLowerCase();
-      const cat = (notif.categoria || '').toLowerCase();
-
-      // Extraer remisión (#REM-2026-104 o ENT-...)
-      const matchRem = (notif.mensaje || '').match(/#?(REM-[\w\-]+|ENT-[\w\-]+)/i) || (notif.titulo || '').match(/#?(REM-[\w\-]+|ENT-[\w\-]+)/i);
-      const remisionDoc = matchRem ? matchRem[1] : '';
-
-      if (texto.includes('factura') || texto.includes('bodega central') || texto.includes('abastecid')) {
-        ruta = this.esSuperAdministrador ? '/facturas-compra' : '/bodega-central';
-      } else if (texto.includes('recepci') || texto.includes('remisi') || cat.includes('entrega') || texto.includes('despacho')) {
-        if (this.esSupervisor && (texto.includes('despachad') || texto.includes('programado'))) {
-          ruta = '/registrar-entrega-alimentos';
-        } else if (remisionDoc) {
-          ruta = '/historial-entregas?buscar=' + encodeURIComponent(remisionDoc) + '&modo=facturas';
-        } else {
-          ruta = '/historial-entregas';
-        }
-      } else if (texto.includes('stock') || texto.includes('insumo') || cat.includes('inventario')) {
-        ruta = this.esAdministrador ? '/ingredientes' : '/bodega-central';
-      } else if (cat.includes('contrato') || texto.includes('contrato')) {
-        ruta = '/contratos';
-      } else if (cat.includes('asistencia') || texto.includes('asistencia')) {
-        ruta = '/asistencia-diaria';
-      } else if (cat.includes('menu') || texto.includes('minuta')) {
-        ruta = '/menus';
-      } else {
-        ruta = this.esSupervisor ? '/dashboard-supervisor' : '/inicio';
-      }
-    }
-
+    const ruta = this.obtenerRutaSeguraNotificacion(notif);
     if (ruta) {
       void this.router.navigateByUrl(ruta);
     }

@@ -316,6 +316,19 @@ export class NotificacionService {
     );
   }
 
+  // Marcar individual como no leída (notificaciones/<pk>/marcar-no-leida/)
+  marcarComoNoLeida(id: number): Observable<any> {
+    return this.http.post(`${this.apiUrl}/${id}/marcar-no-leida/`, {}).pipe(
+      tap(() => {
+        const actualizadas = this.notificacionesSubject.value.map((n) =>
+          (n.id === id || n.id_notificacion === id) ? { ...n, leida: false } : n
+        );
+        this.notificacionesSubject.next(actualizadas);
+        this.noLeidasSubject.next(actualizadas.filter(n => !n.leida).length);
+      })
+    );
+  }
+
   // Marcar todas como leídas (Alineado con tu URL: notificaciones/marcar-todas-leidas/)
   marcarTodasComoLeidas(): Observable<any> {
     return this.http.post(`${this.apiUrl}/marcar-todas-leidas/`, {}).pipe(

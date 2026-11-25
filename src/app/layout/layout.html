@@ -716,7 +716,7 @@
   <main class="adm-main">
 
     <!-- Barra superior Header Supervisor: visible únicamente cuando hay una institución seleccionada -->
-    <div *ngIf="institucionActiva" class="svh-bar" style="position:sticky; top:0; z-index:50; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px 18px; min-height:68px; padding:10px 22px; border:1px solid #e9edf2; border-radius:20px; background:#fff; box-shadow:0 8px 22px -14px rgba(15,23,42,.18);">
+    <div *ngIf="institucionActiva" class="svh-bar" [style.z-index]="(mostrarNotificaciones || mostrarPerfil) ? 1050 : 50" style="position:sticky; top:0; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px 18px; min-height:68px; padding:10px 22px; border:1px solid #e9edf2; border-radius:20px; background:#fff; box-shadow:0 8px 22px -14px rgba(15,23,42,.18);">
       <div class="svh-left" style="display:flex; align-items:center; flex:1 1 15rem; min-width:0;">
         <div style="min-width:0;">
           <h1 class="svh-title" style="margin:0; color:#17263a; font-size:17px; line-height:1.25; overflow-wrap:anywhere;">{{ tituloEncabezado }}</h1>
@@ -831,10 +831,10 @@
   <main class="adm-main">
 
     <!-- Telón de fondo para cerrar popovers al hacer click fuera -->
-    <div *ngIf="mostrarPerfil || mostrarNotificaciones" class="popover-backdrop" (click)="cerrarPanel()"></div>
+    <div *ngIf="mostrarPerfil" class="popover-backdrop" (click)="cerrarPanel()"></div>
 
     <!-- Header Superior Super Administrador (mismo diseño que el supervisor) -->
-    <div class="svh-bar" style="position:sticky; top:0; z-index:50; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px 18px; min-height:68px; padding:10px 22px; border:1px solid #e9edf2; border-radius:20px; background:#fff; box-shadow:0 8px 22px -14px rgba(15,23,42,.18);">
+    <div class="svh-bar" [style.z-index]="(mostrarNotificaciones || mostrarPerfil) ? 1050 : 50" style="position:sticky; top:0; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px 18px; min-height:68px; padding:10px 22px; border:1px solid #e9edf2; border-radius:20px; background:#fff; box-shadow:0 8px 22px -14px rgba(15,23,42,.18);">
       <div class="svh-left" style="display:flex; align-items:center; flex:1 1 15rem; min-width:0;">
         <div style="min-width:0;">
           <h1 class="svh-title" style="margin:0; color:#17263a; font-size:17px; line-height:1.25; overflow-wrap:anywhere;">Bienvenido: {{ perfil.nombre || 'Super Administrador' }}</h1>
@@ -931,10 +931,10 @@
   <main class="adm-main">
 
     <!-- Telón de fondo para cerrar popovers al hacer click fuera -->
-    <div *ngIf="mostrarPerfil || mostrarNotificaciones" class="popover-backdrop" (click)="cerrarPanel()"></div>
+    <div *ngIf="mostrarPerfil" class="popover-backdrop" (click)="cerrarPanel()"></div>
 
     <!-- Header Superior Administrador (mismo diseño que el supervisor) -->
-    <div class="svh-bar" style="position:sticky; top:0; z-index:50; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px 18px; min-height:68px; padding:10px 22px; border:1px solid #e9edf2; border-radius:20px; background:#fff; box-shadow:0 8px 22px -14px rgba(15,23,42,.18);">
+    <div class="svh-bar" [style.z-index]="(mostrarNotificaciones || mostrarPerfil) ? 1050 : 50" style="position:sticky; top:0; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px 18px; min-height:68px; padding:10px 22px; border:1px solid #e9edf2; border-radius:20px; background:#fff; box-shadow:0 8px 22px -14px rgba(15,23,42,.18);">
       <div class="svh-left" style="display:flex; align-items:center; flex:1 1 15rem; min-width:0;">
         <div style="min-width:0;">
           <h1 class="svh-title" style="margin:0; color:#17263a; font-size:17px; line-height:1.25; overflow-wrap:anywhere;">Bienvenido: {{ perfil.nombre }}</h1>
@@ -1054,7 +1054,7 @@
   <div class="modern-main-container">
 
     <!-- Header Superior Limpio con Migas de Pan (Breadcrumbs) -->
-    <header class="modern-top-header">
+    <header class="modern-top-header" [style.z-index]="(mostrarNotificaciones || mostrarPerfil) ? 1050 : 50">
       
       <!-- Migas de Pan -->
       <nav class="modern-breadcrumb" aria-label="Ruta de navegación">
@@ -1076,7 +1076,7 @@
       <div class="modern-header-actions">
 
         <!-- Telón de fondo para cerrar popovers al hacer click fuera -->
-        <div *ngIf="mostrarPerfil || mostrarNotificaciones" class="popover-backdrop" (click)="cerrarPanel()"></div>
+        <div *ngIf="mostrarPerfil" class="popover-backdrop" (click)="cerrarPanel()"></div>
 
         <!-- Botón Notificaciones -->
         <ng-container *ngTemplateOutlet="centroNotificacionesSaaS"></ng-container>
@@ -1113,7 +1113,7 @@
 <ng-template #centroNotificacionesSaaS>
   <div style="position:relative;" class="dropdown-container">
     <!-- Botón Campana con Badge numérico circular rojo -->
-    <button type="button" (click)="toggleNotificaciones()" class="saas-notif-bell-btn"
+    <button type="button" (click)="toggleNotificaciones($event)" class="saas-notif-bell-btn"
       [attr.aria-label]="'Notificaciones' + (notificacionesNoLeidas > 0 ? ' (' + notificacionesNoLeidas + ' sin leer)' : '')">
       <span class="material-symbols-outlined saas-bell-icon">notifications</span>
       <span *ngIf="notificacionesNoLeidas > 0" class="saas-notif-badge">
@@ -1122,31 +1122,32 @@
     </button>
 
     <!-- Dropdown Centro de Notificaciones -->
-    <div *ngIf="mostrarNotificaciones" class="saas-notif-dropdown">
+    <div *ngIf="mostrarNotificaciones" class="saas-notif-dropdown" (click)="$event.stopPropagation()">
       <!-- Puntero superior que apunta a la campana -->
       <div class="saas-dropdown-arrow"></div>
 
-      <!-- Pestañas: Todas / No leídas -->
+      <!-- Pestañas: Todas / No leídas / Leídas -->
       <div class="saas-notif-tabs">
-        <button type="button" 
-          class="saas-tab-btn" 
+        <button type="button"
+          class="saas-tab-btn"
           [class.activa]="filtroNotificaciones === 'todas'"
-          (click)="cambiarFiltroNotificaciones('todas')">
+          (click)="cambiarFiltroNotificaciones('todas', $event)">
           Todas
+          <span class="saas-tab-count">({{ listaNotificaciones.length }})</span>
         </button>
-        <button type="button" 
-          class="saas-tab-btn" 
+        <button type="button"
+          class="saas-tab-btn"
           [class.activa]="filtroNotificaciones === 'no_leidas'"
-          (click)="cambiarFiltroNotificaciones('no_leidas')">
+          (click)="cambiarFiltroNotificaciones('no_leidas', $event)">
           No leídas
-          <span *ngIf="notificacionesNoLeidas > 0" class="saas-tab-count">({{ notificacionesNoLeidas }})</span>
+          <span class="saas-tab-count">({{ notificacionesNoLeidas }})</span>
         </button>
-        <button type="button" 
-          class="saas-tab-btn" 
+        <button type="button"
+          class="saas-tab-btn"
           [class.activa]="filtroNotificaciones === 'leidas'"
-          (click)="cambiarFiltroNotificaciones('leidas')">
+          (click)="cambiarFiltroNotificaciones('leidas', $event)">
           Leídas
-          <span *ngIf="notificacionesLeidas > 0" class="saas-tab-count">({{ notificacionesLeidas }})</span>
+          <span class="saas-tab-count">({{ notificacionesLeidas }})</span>
         </button>
       </div>
 
@@ -1154,14 +1155,14 @@
       <div class="saas-notif-list">
         <div *ngIf="notificacionesFiltradas.length === 0" class="saas-notif-empty">
           <span class="material-symbols-outlined saas-empty-icon">notifications_none</span>
-          <span>{{ filtroNotificaciones === 'no_leidas' ? 'No tienes notificaciones sin leer' : (filtroNotificaciones === 'leidas' ? 'No tienes notificaciones leídas' : 'No tienes notificaciones pendientes') }}</span>
+          <span>{{ filtroNotificaciones === 'no_leidas' ? 'No tienes notificaciones sin leer' : (filtroNotificaciones === 'leidas' ? 'Aún no tienes notificaciones leídas' : 'No tienes notificaciones recibidas') }}</span>
         </div>
 
-        <div *ngFor="let noti of notificacionesFiltradas" 
-          class="saas-notif-row" 
+        <div *ngFor="let noti of notificacionesFiltradas"
+          class="saas-notif-row"
           [class.sin-leer]="!noti.leida"
-          (click)="abrirNotificacion(noti)">
-          
+          (click)="abrirNotificacion(noti, $event)">
+
           <!-- Avatar o Icono según tipo -->
           <div class="saas-notif-avatar" [style.background]="obtenerIconoNotificacion(noti).bg" [style.color]="obtenerIconoNotificacion(noti).color">
             <img *ngIf="noti.imagen_url" [src]="noti.imagen_url" alt="Avatar" class="w-full h-full object-cover rounded-full" />
@@ -1184,10 +1185,14 @@
         </div>
       </div>
 
-      <!-- Pie con botón azul Marcar todas como leídas -->
-      <div class="saas-notif-footer">
-        <button type="button" class="saas-btn-marcar-todas" (click)="marcarTodasComoLeidasDesdePanel()">
+      <!-- Pie con acciones de historial y marcar todas -->
+      <div class="saas-notif-footer" style="display:flex;flex-direction:column;gap:8px;">
+        <button *ngIf="notificacionesNoLeidas > 0" type="button" class="saas-btn-marcar-todas" (click)="marcarTodasComoLeidasDesdePanel($event)">
           Marcar todas como leídas
+        </button>
+        <button type="button" (click)="verHistorialNotificaciones($event)"
+          style="width:100%;padding:8px;background:#f8fafc;color:#334155;border:1px solid #e2e8f0;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">
+          Ver historial completo
         </button>
       </div>
     </div>
@@ -1202,14 +1207,13 @@
   <div class="saas-toast-dot"></div>
 
   <!-- Contenido del Toast -->
-  <div class="saas-toast-content">
+  <div class="saas-toast-content" style="cursor:pointer;" (click)="abrirNotificacionDesdeToast(toastNotificacion, $event)">
     <strong class="saas-toast-title">{{ toastNotificacion.titulo }}</strong>
     <p class="saas-toast-body">{{ toastNotificacion.mensaje }}</p>
 
-    <!-- Botón de acción directa si aplica -->
-    <div class="saas-toast-actions" *ngIf="toastNotificacion.ruta_accion || toastNotificacion.accion?.ruta">
-      <button type="button" class="saas-toast-btn-action" (click)="hacerClicNotificacion(toastNotificacion)">
-        {{ toastNotificacion.accion?.textoBoton || 'Ver detalle' }}
+    <div class="saas-toast-actions">
+      <button type="button" class="saas-toast-btn-action" (click)="abrirNotificacionDesdeToast(toastNotificacion, $event)">
+        Abrir notificación
       </button>
     </div>
   </div>
@@ -1224,26 +1228,66 @@
 <!-- ================================================================= -->
 <!-- MODAL DETALLE DE NOTIFICACIÓN (no sale de la interfaz)            -->
 <!-- ================================================================= -->
-<div *ngIf="notificacionAbierta" (click)="cerrarNotificacionAbierta()"
-  style="position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px;">
-  <div (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
-    style="background:#fff;border-radius:16px;max-width:520px;width:100%;max-height:85vh;overflow:auto;box-shadow:0 20px 50px rgba(0,0,0,.25);padding:24px;">
+<div *ngIf="notificacionAbierta" class="saas-notif-modal-backdrop" (click)="cerrarNotificacionAbierta()"
+  style="position:fixed;inset:0;background:rgba(15,23,42,.5);backdrop-filter:blur(2px);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px;">
+  <div class="saas-notif-modal-card" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
+    style="background:#fff;border-radius:18px;max-width:540px;width:100%;max-height:85vh;overflow:auto;box-shadow:0 24px 60px rgba(15,23,42,.28);padding:24px;border:1px solid #e2e8f0;">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
-      <h3 style="margin:0;font-size:1.15rem;font-weight:700;color:#0f172a;">{{ notificacionAbierta.titulo }}</h3>
+      <div style="display:flex;align-items:flex-start;gap:12px;min-width:0;">
+        <div [style.background]="obtenerIconoNotificacion(notificacionAbierta).bg"
+          [style.color]="obtenerIconoNotificacion(notificacionAbierta).color"
+          style="width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <span class="material-symbols-outlined" style="font-size:22px;">{{ obtenerIconoNotificacion(notificacionAbierta).icono }}</span>
+        </div>
+        <div style="min-width:0;">
+          <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:4px;">
+            <span [style.background]="notificacionAbierta.leida ? '#dcfce7' : '#dbeafe'"
+              [style.color]="notificacionAbierta.leida ? '#15803d' : '#1d4ed8'"
+              style="font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;">
+              {{ notificacionAbierta.leida ? 'Leída' : 'Sin leer · pasará a leídas al cerrar' }}
+            </span>
+            <small style="color:#64748b;font-size:12px;">
+              {{ tiempoRelativo(notificacionAbierta.fecha_creacion || notificacionAbierta.fecha_hora) }}
+            </small>
+          </div>
+          <h3 style="margin:0;font-size:1.12rem;font-weight:700;color:#0f172a;line-height:1.35;overflow-wrap:anywhere;">
+            {{ notificacionAbierta.titulo }}
+          </h3>
+        </div>
+      </div>
       <button type="button" (click)="cerrarNotificacionAbierta()" aria-label="Cerrar"
-        style="background:none;border:none;cursor:pointer;color:#64748b;">
-        <span class="material-symbols-outlined">close</span>
+        style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#475569;flex-shrink:0;">
+        <span class="material-symbols-outlined" style="font-size:18px;">close</span>
       </button>
     </div>
-    <small style="color:#64748b;">{{ tiempoRelativo(notificacionAbierta.fecha_creacion || notificacionAbierta.fecha_hora) }}</small>
-    <img *ngIf="notificacionAbierta.imagen_url" [src]="notificacionAbierta.imagen_url" alt="Imagen de la notificación"
-      style="width:100%;border-radius:12px;margin-top:14px;" />
-    <p style="white-space:pre-line;color:#334155;margin-top:14px;line-height:1.5;">{{ notificacionAbierta.mensaje }}</p>
-    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:20px;">
-      <button type="button" (click)="irDesdeNotificacionAbierta()"
-        style="padding:8px 14px;border-radius:8px;border:1px solid #cbd5e1;background:#fff;cursor:pointer;">Ir al módulo</button>
+
+    <div *ngIf="notificacionAbierta.nombre_remitente || notificacionAbierta.nombre_sede"
+      style="margin-top:12px;padding:8px 12px;background:#f8fafc;border-radius:10px;font-size:12px;color:#475569;display:flex;flex-wrap:wrap;gap:12px;">
+      <span *ngIf="notificacionAbierta.nombre_remitente">Remitente: <strong>{{ notificacionAbierta.nombre_remitente }}</strong></span>
+      <span *ngIf="notificacionAbierta.nombre_sede">Sede: <strong>{{ notificacionAbierta.nombre_sede }}</strong></span>
+    </div>
+
+    <p style="white-space:pre-line;color:#334155;margin:16px 0 0 0;line-height:1.6;font-size:0.95rem;overflow-wrap:anywhere;">{{ notificacionAbierta.mensaje }}</p>
+
+    <a *ngIf="notificacionAbierta.imagen_url" [href]="notificacionAbierta.imagen_url" target="_blank" rel="noopener noreferrer"
+      style="display:block;margin-top:16px;">
+      <img [src]="notificacionAbierta.imagen_url" alt="Imagen adjunta de la notificación"
+        style="width:100%;max-height:320px;object-fit:contain;border-radius:12px;border:1px solid #e2e8f0;background:#f8fafc;" />
+    </a>
+
+    <div style="display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;margin-top:22px;padding-top:14px;border-top:1px solid #f1f5f9;">
+      <button *ngIf="notificacionAbierta.leida" type="button" (click)="dejarComoNoLeidaYCerrar()"
+        style="padding:8px 14px;border-radius:9px;border:1px solid #cbd5e1;background:#fff;color:#334155;font-size:13px;font-weight:600;cursor:pointer;">
+        Dejar como no leída
+      </button>
+      <button *ngIf="obtenerRutaSeguraNotificacion(notificacionAbierta)" type="button" (click)="irDesdeNotificacionAbierta()"
+        style="padding:8px 14px;border-radius:9px;border:1px solid #cbd5e1;background:#f8fafc;color:#1e293b;font-size:13px;font-weight:600;cursor:pointer;">
+        Ir al módulo relacionado
+      </button>
       <button type="button" (click)="cerrarNotificacionAbierta()"
-        style="padding:8px 14px;border-radius:8px;border:none;background:#2563eb;color:#fff;cursor:pointer;">Cerrar</button>
+        style="padding:8px 18px;border-radius:9px;border:none;background:#2563eb;color:#fff;font-size:13px;font-weight:700;cursor:pointer;">
+        Cerrar
+      </button>
     </div>
   </div>
 </div>

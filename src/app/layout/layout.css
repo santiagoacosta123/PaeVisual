@@ -398,6 +398,8 @@
   flex-shrink: 0;
   box-sizing: border-box;
   background: #f8fafc;
+  position: relative;
+  z-index: 50;
 }
 
 .modern-breadcrumb {
@@ -564,7 +566,7 @@
 .popover-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 999;
+  z-index: 900;
   background: transparent;
   cursor: default;
 }
@@ -1213,12 +1215,13 @@
   position: absolute;
   right: 0;
   top: 48px;
-  z-index: 300;
-  width: 380px;
+  z-index: 1200;
+  width: 390px;
+  max-width: calc(100vw - 24px);
   background: #fff;
   border: 1px solid #e2e8f0;
   border-radius: 16px;
-  box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.18);
   overflow: hidden;
   animation: saasDropIn 0.18s ease;
 }

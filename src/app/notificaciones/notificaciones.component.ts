@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -26,8 +26,10 @@ export class NotificacionesComponent implements OnInit {
   public authService = inject(AuthService);
   private alertas = inject(SweetAlertService, { optional: true });
   private router = inject(Router, { optional: true });
+  private cdr = inject(ChangeDetectorRef);
 
   listaNotificaciones: Notificacion[] = [];
+  notificacionDetalle: Notificacion | null = null;
 
   notificacionForm: Notificacion = {
     titulo: '',
@@ -263,10 +265,71 @@ export class NotificacionesComponent implements OnInit {
     return this.listaNotificaciones.filter(n => !n.leida).length;
   }
 
+  get totalLeidas(): number {
+    return this.listaNotificaciones.filter(n => n.leida).length;
+  }
+
+  private refrescarVista(): void {
+    this.cdr.markForCheck();
+    try {
+      this.cdr.detectChanges();
+    } catch {
+      // Ignorar si aún no está montado
+    }
+  }
+
+  cambiarFiltroEstado(estado: 'todas' | 'no_leidas' | 'leidas'): void {
+    this.filtroEstado = estado;
+    this.refrescarVista();
+  }
+
+  abrirDetalleNotificacion(noti: Notificacion): void {
+    this.notificacionDetalle = noti;
+    this.refrescarVista();
+  }
+
+  cerrarDetalleNotificacion(): void {
+    const noti = this.notificacionDetalle;
+    this.notificacionDetalle = null;
+    if (noti && !noti.leida) {
+      const id = noti.id_notificacion ?? noti.id;
+      noti.leida = true;
+      this.listaNotificaciones = this.listaNotificaciones.map(item =>
+        (item.id_notificacion ?? item.id) === id ? { ...item, leida: true } : item
+      );
+      this.refrescarVista();
+      if (id !== undefined) {
+        this.marcarLeida(id);
+      }
+    } else {
+      this.refrescarVista();
+    }
+  }
+
+  marcarNoLeida(noti: Notificacion): void {
+    const id = noti.id_notificacion ?? noti.id;
+    noti.leida = false;
+    this.listaNotificaciones = this.listaNotificaciones.map(item =>
+      (item.id_notificacion ?? item.id) === id ? { ...item, leida: false } : item
+    );
+    if (this.notificacionDetalle && (this.notificacionDetalle.id_notificacion ?? this.notificacionDetalle.id) === id) {
+      this.notificacionDetalle = null;
+    }
+    this.refrescarVista();
+
+    if (id !== undefined && this.notificacionService.marcarComoNoLeida) {
+      this.notificacionService.marcarComoNoLeida(id).subscribe({
+        next: () => this.cargarNotificaciones(),
+        error: (err: any) => console.error('Error al marcar como no leída:', err)
+      });
+    }
+  }
+
   cargarNotificaciones(): void {
     this.notificacionService.obtenerNotificaciones().subscribe({
       next: (data: Notificacion[]) => {
         this.listaNotificaciones = data;
+        this.refrescarVista();
       },
       error: (err: any) => {
         console.error('Error al cargar notificaciones:', err);
