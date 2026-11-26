@@ -1274,9 +1274,27 @@
 
 /* ---- Notification list ---- */
 .saas-notif-list {
-  max-height: 360px;
+  max-height: 380px;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 4px 0;
+  scrollbar-width: thin;
+  scrollbar-color: #FFA928 #f1f5f9;
+}
+.saas-notif-list::-webkit-scrollbar {
+  width: 6px;
+  display: block;
+}
+.saas-notif-list::-webkit-scrollbar-track {
+  background: #f8fafc;
+  border-radius: 99px;
+}
+.saas-notif-list::-webkit-scrollbar-thumb {
+  background: #FFA928;
+  border-radius: 99px;
+}
+.saas-notif-list::-webkit-scrollbar-thumb:hover {
+  background: #e5951c;
 }
 .saas-notif-empty {
   display: flex;
@@ -1458,3 +1476,194 @@
   transition: color 0.15s;
 }
 .saas-toast-close-btn:hover { color: #fff; }
+
+/* =====================================================================
+   MODAL DE DETALLE DE NOTIFICACIÓN (FLUJO MODAL ORIGINAL)
+   ===================================================================== */
+.saas-notif-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2200;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: notifFadeIn 0.15s ease-out;
+}
+
+@keyframes notifFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.saas-notif-modal-card {
+  position: relative;
+  background: #ffffff;
+  width: 100%;
+  max-width: 580px;
+  border-radius: 24px;
+  padding: 26px 30px;
+  box-shadow: 0 25px 60px -15px rgba(15, 23, 42, 0.35);
+  border: 1px solid #f1f5f9;
+  animation: notifScaleUp 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+}
+
+@keyframes notifScaleUp {
+  from { opacity: 0; transform: scale(0.96) translateY(8px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.saas-notif-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.saas-notif-modal-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.saas-notif-modal-tags {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.saas-notif-tag {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 99px;
+  letter-spacing: 0.02em;
+}
+.saas-notif-tag.leida {
+  background: #dcfce7;
+  color: #15803d;
+}
+.saas-notif-tag.no-leida {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.saas-notif-modal-time {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.saas-notif-modal-title {
+  margin: 4px 0 0 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.35;
+}
+
+.saas-notif-modal-close {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+.saas-notif-modal-close:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+  border-color: #cbd5e1;
+}
+
+.saas-notif-modal-context {
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border-radius: 10px;
+  font-size: 12px;
+  color: #475569;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.saas-notif-modal-body {
+  margin: 16px 0 20px 0;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.saas-notif-modal-message {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #334155;
+  margin: 0;
+  white-space: pre-line;
+}
+
+.saas-notif-modal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.saas-notif-modal-row-top {
+  display: flex;
+  align-items: center;
+}
+
+.saas-notif-modal-row-bottom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.saas-notif-btn-secondary {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #1e293b;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+.saas-notif-btn-secondary:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+.saas-notif-btn-primary {
+  background: #FFA928;
+  border: none;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 8px 22px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 4px 12px rgba(255, 169, 40, 0.28);
+  font-family: inherit;
+  margin-left: auto;
+}
+.saas-notif-btn-primary:hover {
+  background: #e5951c;
+  box-shadow: 0 6px 16px rgba(255, 169, 40, 0.35);
+  transform: translateY(-1px);
+}
