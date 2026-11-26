@@ -1808,7 +1808,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
         id_contrato: calculo.contrato?.id_contrato ?? undefined,
         dias_perecederos: calculo.periodicidad?.dias_perecederos ?? undefined,
         dias_no_perecederos: calculo.periodicidad?.dias_no_perecederos ?? undefined,
-        incluir_todos_gramajes: false,
+        incluir_todos_gramajes: true,
         validar_contra_calculo: true,
         autorizacion_exceso: this.autorizacionExceso,
         autorizado_por: this.autorizacionExceso ? this.autorizadoPor.trim() : '',

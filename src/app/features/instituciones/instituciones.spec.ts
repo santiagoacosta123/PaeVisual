@@ -43,7 +43,6 @@ describe('InstitucionesComponent', () => {
 
   afterEach(() => {
     http.verify();
-    // limpiar espías de consola si se crearon
   });
 
   it('should create', () => {
@@ -58,7 +57,7 @@ describe('InstitucionesComponent', () => {
   });
 
   it('usa instituciones de ejemplo y explica el error cuando falla el servidor', () => {
-    spyOn(console, 'error');
+    vi.spyOn(console, 'error').mockImplementation(() => {});
     http.expectOne(urlLista).flush('error', { status: 500, statusText: 'Server Error' });
 
     expect(component.instituciones.length).toBe(6);
@@ -116,7 +115,7 @@ describe('InstitucionesComponent', () => {
   });
 
   it('muestra un error si fallan las entregas', () => {
-    spyOn(console, 'error');
+    vi.spyOn(console, 'error').mockImplementation(() => {});
     responderLista([institucionApi]);
     component.abrir(component.instituciones[0]);
 

@@ -10,10 +10,10 @@ describe('HistorialEntregas', () => {
   let fixture: ComponentFixture<HistorialEntregas>;
   let httpTestingController: HttpTestingController;
   let alertas: {
-    success: jasmine.Spy;
-    error: jasmine.Spy;
-    warning: jasmine.Spy;
-    confirm: jasmine.Spy;
+    success: ReturnType<typeof vi.fn>;
+    error: ReturnType<typeof vi.fn>;
+    warning: ReturnType<typeof vi.fn>;
+    confirm: ReturnType<typeof vi.fn>;
   };
 
   const texto = () => fixture.nativeElement.textContent as string;
@@ -35,10 +35,10 @@ describe('HistorialEntregas', () => {
     localStorage.clear();
 
     alertas = {
-      success: jasmine.createSpy(),
-      error: jasmine.createSpy(),
-      warning: jasmine.createSpy(),
-      confirm: jasmine.createSpy().mockResolvedValue({ isConfirmed: true }),
+      success: vi.fn(),
+      error: vi.fn(),
+      warning: vi.fn(),
+      confirm: vi.fn().mockResolvedValue({ isConfirmed: true }),
     };
     await TestBed.configureTestingModule({
       imports: [HistorialEntregas],

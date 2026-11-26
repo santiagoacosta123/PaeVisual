@@ -31,10 +31,10 @@ describe('Ingredientes', () => {
         {
           provide: SweetAlertService,
           useValue: {
-            success: jasmine.createSpy('success'),
-            error: jasmine.createSpy('error'),
-            warning: jasmine.createSpy('warning'),
-            confirm: jasmine.createSpy('confirm'),
+            success: vi.fn(),
+            error: vi.fn(),
+            warning: vi.fn(),
+            confirm: vi.fn(),
           },
         },
         {
