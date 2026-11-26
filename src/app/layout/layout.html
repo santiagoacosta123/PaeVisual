@@ -460,7 +460,7 @@
   .svh-bar {
     position: sticky;
     top: 0;
-    z-index: 50;
+    z-index: 1000;
   }
 
   .svh-notif-btn {
@@ -645,6 +645,172 @@
     .svh-pop,
     .svh-notif-pop { animation: none !important; }
   }
+
+  /* =====================================================================
+     NOTIFICACIONES · TARJETAS CLARAS CON BARRA DE COLOR A LA IZQUIERDA
+     Fondo blanco como antes. Cada fila toma su color de la variable
+     --acento (se la pasa el HTML con [style.--acento]); si no llega,
+     usa el azul de respaldo.
+     ===================================================================== */
+
+  /* Desplegable: columna con alto máximo = pantalla visible.
+     Pestañas arriba y botón abajo siempre visibles; solo la lista hace scroll. */
+  .saas-notif-dropdown {
+    display: flex !important;
+    flex-direction: column !important;
+    max-height: min(560px, calc(100vh - 80px)) !important;
+    overflow: hidden !important;
+    z-index: 1005 !important;
+  }
+  .saas-notif-dropdown .saas-notif-tabs,
+  .saas-notif-dropdown .saas-notif-footer {
+    flex: 0 0 auto !important;
+  }
+
+  /* Lista: ocupa el espacio que queda y hace scroll por dentro con altura acotada */
+  .saas-notif-dropdown .saas-notif-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    max-height: min(380px, calc(100vh - 220px)) !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    pointer-events: auto !important;
+    scrollbar-width: thin;
+    scrollbar-color: #FFA928 #f1f5f9;
+  }
+  .saas-notif-dropdown .saas-notif-list::-webkit-scrollbar {
+    width: 6px;
+    display: block !important;
+  }
+  .saas-notif-dropdown .saas-notif-list::-webkit-scrollbar-track {
+    background: #f8fafc;
+    border-radius: 99px;
+  }
+  .saas-notif-dropdown .saas-notif-list::-webkit-scrollbar-thumb {
+    background: #FFA928;
+    border-radius: 99px;
+  }
+  .saas-notif-dropdown .saas-notif-list::-webkit-scrollbar-thumb:hover {
+    background: #e5951c;
+  }
+
+  /* Tarjeta (fila) */
+  .saas-notif-dropdown .saas-notif-row {
+    --acento: #38bdf8;
+    position: relative;
+    display: block !important;
+    flex: 0 0 auto !important;
+    height: auto !important;
+    min-height: min-content;
+    padding: 14px 32px 14px 28px !important;
+    border: 1px solid color-mix(in srgb, var(--acento) 30%, #ffffff) !important;
+    border-radius: 16px !important;
+    background: linear-gradient(135deg, color-mix(in srgb, var(--acento) 11%, #ffffff) 0%, #ffffff 75%) !important;
+    box-shadow: 0 4px 14px -10px color-mix(in srgb, var(--acento) 60%, transparent);
+    cursor: pointer;
+    transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+  }
+  .saas-notif-dropdown .saas-notif-row:hover {
+    transform: translateY(-1px);
+    border-color: color-mix(in srgb, var(--acento) 55%, #ffffff) !important;
+    box-shadow: 0 8px 20px -10px color-mix(in srgb, var(--acento) 70%, transparent);
+  }
+
+  /* Barra vertical de color a la izquierda */
+  .saas-notif-dropdown .saas-notif-row::before {
+    content: '';
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    width: 3px;
+    height: 36px;
+    transform: translateY(-50%);
+    border-radius: 99px;
+    background: var(--acento);
+  }
+
+  /* No leída: borde y sombra más marcados; leída: un poco más suave */
+  .saas-notif-dropdown .saas-notif-row.sin-leer {
+    border-color: color-mix(in srgb, var(--acento) 55%, #ffffff) !important;
+    box-shadow: 0 8px 22px -12px color-mix(in srgb, var(--acento) 70%, transparent);
+  }
+  .saas-notif-dropdown .saas-notif-row:not(.sin-leer) { opacity: .8; }
+  .saas-notif-dropdown .saas-notif-row:not(.sin-leer):hover { opacity: 1; }
+
+  /* El icono redondo se oculta: la barra de color ya identifica el tipo */
+  .saas-notif-dropdown .saas-notif-avatar { display: none !important; }
+
+  /* Textos */
+  .saas-notif-dropdown .saas-notif-body { min-width: 0; }
+  .saas-notif-dropdown .saas-notif-header-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .saas-notif-dropdown .saas-notif-title {
+    color: #0f172a !important;
+    font-size: 13.5px;
+    font-weight: 700;
+    line-height: 1.35;
+  }
+  .saas-notif-dropdown .saas-notif-time {
+    flex-shrink: 0;
+    color: #94a3b8 !important;
+    font-size: 11px;
+  }
+  .saas-notif-dropdown .saas-notif-msg {
+    margin: 4px 0 0 !important;
+    color: #64748b !important;
+    font-size: 12.5px;
+    line-height: 1.5;
+    display: block !important;
+    -webkit-line-clamp: unset !important;
+    overflow: visible !important;
+    white-space: normal !important;
+    text-overflow: clip !important;
+    overflow-wrap: anywhere;
+  }
+
+  /* Punto de "no leída" con el color del acento */
+  .saas-notif-dropdown .saas-unread-dot {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--acento) !important;
+  }
+
+  /* Toast flotante (esquina inferior derecha) */
+  .saas-floating-toast {
+    --acento: #2563eb;
+    padding: 14px 40px 14px 28px !important;
+    border: 1px solid color-mix(in srgb, var(--acento) 30%, #ffffff) !important;
+    border-radius: 16px !important;
+    background: linear-gradient(135deg, color-mix(in srgb, var(--acento) 11%, #ffffff) 0%, #ffffff 75%) !important;
+    box-shadow: 0 18px 44px -16px rgba(15, 23, 42, .35) !important;
+  }
+  .saas-floating-toast::before {
+    content: '';
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    width: 3px;
+    height: 36px;
+    transform: translateY(-50%);
+    border-radius: 99px;
+    background: var(--acento);
+  }
+  .saas-floating-toast .saas-toast-dot { display: none !important; }
 </style>
 
 
@@ -716,7 +882,7 @@
   <main class="adm-main">
 
     <!-- Barra superior Header Supervisor: visible únicamente cuando hay una institución seleccionada -->
-    <div *ngIf="institucionActiva" class="svh-bar" [style.z-index]="(mostrarNotificaciones || mostrarPerfil) ? 1050 : 50" style="position:sticky; top:0; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px 18px; min-height:68px; padding:10px 22px; border:1px solid #e9edf2; border-radius:20px; background:#fff; box-shadow:0 8px 22px -14px rgba(15,23,42,.18);">
+    <div *ngIf="institucionActiva" class="svh-bar" style="position:sticky; top:0; z-index:50; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px 18px; min-height:68px; padding:10px 22px; border:1px solid #e9edf2; border-radius:20px; background:#fff; box-shadow:0 8px 22px -14px rgba(15,23,42,.18);">
       <div class="svh-left" style="display:flex; align-items:center; flex:1 1 15rem; min-width:0;">
         <div style="min-width:0;">
           <h1 class="svh-title" style="margin:0; color:#17263a; font-size:17px; line-height:1.25; overflow-wrap:anywhere;">{{ tituloEncabezado }}</h1>
@@ -834,7 +1000,7 @@
     <div *ngIf="mostrarPerfil" class="popover-backdrop" (click)="cerrarPanel()"></div>
 
     <!-- Header Superior Super Administrador (mismo diseño que el supervisor) -->
-    <div class="svh-bar" [style.z-index]="(mostrarNotificaciones || mostrarPerfil) ? 1050 : 50" style="position:sticky; top:0; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px 18px; min-height:68px; padding:10px 22px; border:1px solid #e9edf2; border-radius:20px; background:#fff; box-shadow:0 8px 22px -14px rgba(15,23,42,.18);">
+    <div class="svh-bar" style="position:sticky; top:0; z-index:1000; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px 18px; min-height:68px; padding:10px 22px; border:1px solid #e9edf2; border-radius:20px; background:#fff; box-shadow:0 8px 22px -14px rgba(15,23,42,.18);">
       <div class="svh-left" style="display:flex; align-items:center; flex:1 1 15rem; min-width:0;">
         <div style="min-width:0;">
           <h1 class="svh-title" style="margin:0; color:#17263a; font-size:17px; line-height:1.25; overflow-wrap:anywhere;">Bienvenido: {{ perfil.nombre || 'Super Administrador' }}</h1>
@@ -934,7 +1100,7 @@
     <div *ngIf="mostrarPerfil" class="popover-backdrop" (click)="cerrarPanel()"></div>
 
     <!-- Header Superior Administrador (mismo diseño que el supervisor) -->
-    <div class="svh-bar" [style.z-index]="(mostrarNotificaciones || mostrarPerfil) ? 1050 : 50" style="position:sticky; top:0; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px 18px; min-height:68px; padding:10px 22px; border:1px solid #e9edf2; border-radius:20px; background:#fff; box-shadow:0 8px 22px -14px rgba(15,23,42,.18);">
+    <div class="svh-bar" style="position:sticky; top:0; z-index:1000; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px 18px; min-height:68px; padding:10px 22px; border:1px solid #e9edf2; border-radius:20px; background:#fff; box-shadow:0 8px 22px -14px rgba(15,23,42,.18);">
       <div class="svh-left" style="display:flex; align-items:center; flex:1 1 15rem; min-width:0;">
         <div style="min-width:0;">
           <h1 class="svh-title" style="margin:0; color:#17263a; font-size:17px; line-height:1.25; overflow-wrap:anywhere;">Bienvenido: {{ perfil.nombre }}</h1>
@@ -1056,7 +1222,7 @@
   <div class="modern-main-container">
 
     <!-- Header Superior Limpio con Migas de Pan (Breadcrumbs) -->
-    <header class="modern-top-header" [style.z-index]="(mostrarNotificaciones || mostrarPerfil) ? 1050 : 50">
+    <header class="modern-top-header">
       
       <!-- Migas de Pan -->
       <nav class="modern-breadcrumb" aria-label="Ruta de navegación">
@@ -1115,7 +1281,7 @@
 <ng-template #centroNotificacionesSaaS>
   <div style="position:relative;" class="dropdown-container">
     <!-- Botón Campana con Badge numérico circular rojo -->
-    <button type="button" (mousedown)="$event.stopPropagation()" (click)="toggleNotificaciones($event)" class="saas-notif-bell-btn"
+    <button type="button" (click)="toggleNotificaciones()" class="saas-notif-bell-btn"
       [attr.aria-label]="'Notificaciones' + (notificacionesNoLeidas > 0 ? ' (' + notificacionesNoLeidas + ' sin leer)' : '')">
       <span class="material-symbols-outlined saas-bell-icon">notifications</span>
       <span *ngIf="notificacionesNoLeidas > 0" class="saas-notif-badge">
@@ -1124,7 +1290,7 @@
     </button>
 
     <!-- Dropdown Centro de Notificaciones -->
-    <div *ngIf="mostrarNotificaciones" class="saas-notif-dropdown" (mousedown)="$event.stopPropagation()" (click)="$event.stopPropagation()">
+    <div *ngIf="mostrarNotificaciones" class="saas-notif-dropdown">
       <!-- Puntero superior que apunta a la campana -->
       <div class="saas-dropdown-arrow"></div>
 
@@ -1146,12 +1312,13 @@
           <span>No tienes notificaciones recibidas</span>
         </div>
 
-        <div *ngFor="let noti of notificacionesFiltradas; trackBy: trackByNotificacion"
-          class="saas-notif-row"
+        <!-- Cada fila toma su color de acento desde obtenerIconoNotificacion(noti).color -->
+        <div *ngFor="let noti of notificacionesFiltradas; trackBy: trackByNotificacion" 
+          class="saas-notif-row" 
           [class.sin-leer]="!noti.leida"
-          (mousedown)="$event.stopPropagation()"
+          [style.--acento]="obtenerIconoNotificacion(noti).color"
           (click)="abrirNotificacion(noti, $event)">
-
+          
           <!-- Avatar o Icono según tipo -->
           <div class="saas-notif-avatar" [style.background]="obtenerIconoNotificacion(noti).bg" [style.color]="obtenerIconoNotificacion(noti).color">
             <img *ngIf="noti.imagen_url" [src]="noti.imagen_url" alt="Avatar" class="w-full h-full object-cover rounded-full" />
@@ -1163,7 +1330,7 @@
           <!-- Contenido central: Título y Mensaje -->
           <div class="saas-notif-body">
             <div class="saas-notif-header-row">
-              <span class="saas-notif-title">{{ noti.titulo }}</span>
+              <span class="saas-notif-title">{{ (noti.titulo || '').replace('🔔', '').replace('📦', '').replace('✅', '').replace('⚠️', '').replace('❌', '').replace('📢', '').replace('🚚', '').replace('📍', '').replace('🕒', '').replace('⚡', '').replace('🔴', '').replace('🟠', '').replace('🟡', '').replace('🟢', '').replace('📋', '').replace('📝', '').replace('🧾', '').trim() }}</span>
               <span class="saas-notif-time">{{ tiempoRelativo(noti.fecha_creacion || noti.fecha_hora) }}</span>
             </div>
             <p class="saas-notif-msg">{{ noti.mensaje }}</p>
@@ -1174,14 +1341,10 @@
         </div>
       </div>
 
-      <!-- Pie con acciones de historial y marcar todas -->
-      <div class="saas-notif-footer" style="display:flex;flex-direction:column;gap:8px;">
-        <button *ngIf="notificacionesNoLeidas > 0" type="button" class="saas-btn-marcar-todas" (click)="marcarTodasComoLeidasDesdePanel($event)">
+      <!-- Pie con botón amarillo Marcar todas como leídas -->
+      <div class="saas-notif-footer">
+        <button type="button" class="saas-btn-marcar-todas" (click)="marcarTodasComoLeidasDesdePanel($event)">
           Marcar todas como leídas
-        </button>
-        <button type="button" (click)="verHistorialNotificaciones($event)"
-          style="width:100%;padding:8px;background:#f8fafc;color:#334155;border:1px solid #e2e8f0;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">
-          Ver historial completo
         </button>
       </div>
     </div>
@@ -1196,13 +1359,14 @@
   <div class="saas-toast-dot"></div>
 
   <!-- Contenido del Toast -->
-  <div class="saas-toast-content" style="cursor:pointer;" (click)="abrirNotificacionDesdeToast(toastNotificacion, $event)">
-    <strong class="saas-toast-title">{{ toastNotificacion.titulo }}</strong>
+  <div class="saas-toast-content">
+    <strong class="saas-toast-title">{{ (toastNotificacion.titulo || '').replace('🔔', '').replace('📦', '').replace('✅', '').replace('⚠️', '').replace('❌', '').replace('📢', '').replace('🚚', '').replace('📍', '').replace('🕒', '').replace('⚡', '').replace('🔴', '').replace('🟠', '').replace('🟡', '').replace('🟢', '').replace('📋', '').replace('📝', '').replace('🧾', '').trim() }}</strong>
     <p class="saas-toast-body">{{ toastNotificacion.mensaje }}</p>
 
-    <div class="saas-toast-actions">
+    <!-- Botón de acción directa si aplica -->
+    <div class="saas-toast-actions" *ngIf="toastNotificacion.ruta_accion || toastNotificacion.accion?.ruta">
       <button type="button" class="saas-toast-btn-action" (click)="abrirNotificacionDesdeToast(toastNotificacion, $event)">
-        Abrir notificación
+        {{ toastNotificacion.accion?.textoBoton || 'Ver detalle' }}
       </button>
     </div>
   </div>
@@ -1213,68 +1377,67 @@
   </button>
 </aside>
 
-
 <!-- ================================================================= -->
-<!-- MODAL DETALLE DE NOTIFICACIÓN (no sale de la interfaz)            -->
+<!-- MODAL DE DETALLE DE NOTIFICACIÓN (FLUJO MODAL ORIGINAL)           -->
 <!-- ================================================================= -->
-<div *ngIf="notificacionAbierta" class="saas-notif-modal-backdrop" (mousedown)="$event.stopPropagation()" (click)="cerrarNotificacionDesdeBackdrop($event)"
-  style="position:fixed;inset:0;background:rgba(15,23,42,.5);backdrop-filter:blur(2px);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px;">
-  <div class="saas-notif-modal-card" (mousedown)="$event.stopPropagation()" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
-    style="background:#fff;border-radius:18px;max-width:540px;width:100%;max-height:85vh;overflow:auto;box-shadow:0 24px 60px rgba(15,23,42,.28);padding:24px;border:1px solid #e2e8f0;">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
-      <div style="display:flex;align-items:flex-start;gap:12px;min-width:0;">
-        <div style="min-width:0;">
-          <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:4px;">
-            <span [style.background]="notificacionAbierta.leida ? '#dcfce7' : '#dbeafe'"
-              [style.color]="notificacionAbierta.leida ? '#15803d' : '#1d4ed8'"
-              style="font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;">
-              {{ notificacionAbierta.leida ? 'Leída' : 'Sin leer · pasará a leídas al cerrar' }}
-            </span>
-            <small style="color:#64748b;font-size:12px;">
-              {{ tiempoRelativo(notificacionAbierta.fecha_creacion || notificacionAbierta.fecha_hora) }}
-            </small>
-          </div>
-          <h3 style="margin:0;font-size:1.12rem;font-weight:700;color:#0f172a;line-height:1.35;overflow-wrap:anywhere;">
-            {{ notificacionAbierta.titulo }}
-          </h3>
+<div *ngIf="notificacionAbierta" class="saas-notif-modal-backdrop" (mousedown)="$event.stopPropagation()" (click)="cerrarNotificacionDesdeBackdrop($event)">
+  <div class="saas-notif-modal-card" (mousedown)="$event.stopPropagation()" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+    <!-- Cabecera limpia sin iconos -->
+    <div class="saas-notif-modal-header">
+      <div class="saas-notif-modal-meta">
+        <div class="saas-notif-modal-tags">
+          <span class="saas-notif-tag" [ngClass]="notificacionAbierta.leida ? 'leida' : 'no-leida'">
+            {{ notificacionAbierta.leida ? 'Leída' : 'Sin leer · pasará a leídas al cerrar' }}
+          </span>
+          <span class="saas-notif-modal-time">
+            {{ tiempoRelativo(notificacionAbierta.fecha_creacion || notificacionAbierta.fecha_hora) }}
+          </span>
         </div>
+        <h3 class="saas-notif-modal-title">
+          {{ (notificacionAbierta.titulo || '').replace('🔔', '').replace('📦', '').replace('✅', '').replace('⚠️', '').replace('❌', '').replace('📢', '').replace('🚚', '').replace('📍', '').replace('🕒', '').replace('⚡', '').replace('🔴', '').replace('🟠', '').replace('🟡', '').replace('🟢', '').replace('📋', '').replace('📝', '').replace('🧾', '').trim() }}
+        </h3>
       </div>
-      <button type="button" (click)="cerrarNotificacionAbierta()" aria-label="Cerrar"
-        style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#475569;flex-shrink:0;">
-        <span class="material-symbols-outlined" style="font-size:18px;">close</span>
+
+      <!-- Botón X Cerrar -->
+      <button type="button" class="saas-notif-modal-close" (click)="cerrarNotificacionAbierta($event)" title="Cerrar ventana">
+        <span class="material-symbols-outlined" style="font-size: 18px;">close</span>
       </button>
     </div>
 
-    <div *ngIf="notificacionAbierta.nombre_remitente || notificacionAbierta.nombre_sede"
-      style="margin-top:12px;padding:8px 12px;background:#f8fafc;border-radius:10px;font-size:12px;color:#475569;display:flex;flex-wrap:wrap;gap:12px;">
+    <!-- Metadatos de remitente / sede si existen -->
+    <div *ngIf="notificacionAbierta.nombre_remitente || notificacionAbierta.nombre_sede" class="saas-notif-modal-context">
       <span *ngIf="notificacionAbierta.nombre_remitente">Remitente: <strong>{{ notificacionAbierta.nombre_remitente }}</strong></span>
       <span *ngIf="notificacionAbierta.nombre_sede">Sede: <strong>{{ notificacionAbierta.nombre_sede }}</strong></span>
     </div>
 
-    <p style="white-space:pre-line;color:#334155;margin:16px 0 0 0;line-height:1.6;font-size:0.95rem;overflow-wrap:anywhere;">{{ notificacionAbierta.mensaje }}</p>
+    <!-- Cuerpo del mensaje -->
+    <div class="saas-notif-modal-body">
+      <p class="saas-notif-modal-message">{{ notificacionAbierta.mensaje }}</p>
+      
+      <!-- Si trae fotografía adjunta -->
+      <div *ngIf="notificacionAbierta.imagen_url" style="margin-top: 14px;">
+        <img [src]="notificacionAbierta.imagen_url" alt="Adjunto" style="max-height: 220px; border-radius: 12px; border: 1px solid #e2e8f0; object-fit: contain;" />
+      </div>
+    </div>
 
-    <a *ngIf="notificacionAbierta.imagen_url" [href]="notificacionAbierta.imagen_url" target="_blank" rel="noopener noreferrer"
-      style="display:block;margin-top:16px;">
-      <img [src]="notificacionAbierta.imagen_url" alt="Imagen adjunta de la notificación"
-        style="width:100%;max-height:320px;object-fit:contain;border-radius:12px;border:1px solid #e2e8f0;background:#f8fafc;" />
-    </a>
+    <!-- Botones de Acción (flujo fiel a la imagen de referencia) -->
+    <div class="saas-notif-modal-actions">
+      <!-- Fila 1: Volver a la lista -->
+      <div class="saas-notif-modal-row-top">
+        <button type="button" class="saas-notif-btn-secondary" (click)="volverAListaNotificaciones($event)">
+          ← Volver a la lista
+        </button>
+      </div>
 
-    <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;margin-top:22px;padding-top:14px;border-top:1px solid #f1f5f9;">
-      <button type="button" (click)="volverAListaNotificaciones($event)"
-        style="padding:8px 12px;border-radius:9px;border:1px solid #e2e8f0;background:#fff;color:#475569;font-size:12.5px;font-weight:600;cursor:pointer;">
-        ← Volver a la lista
-      </button>
-      <div style="display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;">
-        <button *ngIf="notificacionAbierta.leida" type="button" (click)="dejarComoNoLeidaYCerrar()"
-          style="padding:8px 14px;border-radius:9px;border:1px solid #cbd5e1;background:#fff;color:#334155;font-size:13px;font-weight:600;cursor:pointer;">
+      <!-- Fila 2: Dejar como no leída / Ir al módulo relacionado / Cerrar -->
+      <div class="saas-notif-modal-row-bottom">
+        <button *ngIf="notificacionAbierta.leida" type="button" class="saas-notif-btn-secondary" (click)="dejarComoNoLeidaYCerrar()">
           Dejar como no leída
         </button>
-        <button *ngIf="obtenerRutaSeguraNotificacion(notificacionAbierta)" type="button" (click)="irDesdeNotificacionAbierta()"
-          style="padding:8px 14px;border-radius:9px;border:1px solid #cbd5e1;background:#f8fafc;color:#1e293b;font-size:13px;font-weight:600;cursor:pointer;">
+        <button *ngIf="obtenerRutaSeguraNotificacion(notificacionAbierta)" type="button" class="saas-notif-btn-secondary" (click)="irDesdeNotificacionAbierta()">
           Ir al módulo relacionado
         </button>
-        <button type="button" (click)="cerrarNotificacionAbierta($event)"
-          style="padding:8px 18px;border-radius:9px;border:none;background:#FFA928;color:#fff;font-size:13px;font-weight:700;cursor:pointer;">
+        <button type="button" class="saas-notif-btn-primary" (click)="cerrarNotificacionAbierta($event)">
           Cerrar
         </button>
       </div>
