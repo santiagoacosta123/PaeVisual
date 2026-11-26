@@ -161,6 +161,9 @@ export class ContratosComponent implements OnInit {
 
           return {
             id: c.id_contrato || c.id,
+            id_institucion: typeof c.id_institucion === 'object' && c.id_institucion !== null
+              ? (c.id_institucion.id_institucion || c.id_institucion.id)
+              : (c.id_institucion ?? null),
             codigo: c.numero_cor || c.codigo,
             institucion: c.institucion || c.institucion_nombre || 'Sin institución',
             fechaInicio: c.fecha_inicio || c.inicio,
@@ -854,6 +857,24 @@ export class ContratosComponent implements OnInit {
       payload.id_institucion = Number(idInst);
     }
 
+    const nombreNorm = String(this.contratoActual.institucion || '').trim().toLowerCase();
+    const contratoDuplicado = (this.contratos || []).find((c: any) => {
+      if (this.modoEdicionContrato && String(c.id) === String(this.contratoActual.id)) {
+        return false;
+      }
+      const coincideId = idInst != null && c.id_institucion != null && Number(idInst) === Number(c.id_institucion);
+      const coincideNom = !!(nombreNorm && String(c.institucion || '').trim().toLowerCase() === nombreNorm);
+      return coincideId || coincideNom;
+    });
+
+    if (contratoDuplicado) {
+      void this.sweetAlert.warning(
+        'Institución con contrato existente',
+        `La institución ya tiene el contrato ${contratoDuplicado.codigo || ''} registrado. Solo se permite un contrato por institución y sus sedes se gestionan dentro de ese contrato.`
+      );
+      return;
+    }
+
     if (this.modoEdicionContrato) {
       this.siraeService.actualizarContrato(this.contratoActual.id, payload).subscribe({
         next: () => {
@@ -864,7 +885,7 @@ export class ContratosComponent implements OnInit {
         error: (err) => {
           console.error('Error al actualizar contrato', err);
           const msg = err?.error?.id_institucion?.[0] || err?.error?.detail || 'No se pudo actualizar el contrato.';
-          void this.sweetAlert.error('Error', msg);
+          void this.sweetAlert.error('Error', Array.isArray(msg) ? msg.join(', ') : String(msg));
         }
       });
     } else {
@@ -877,7 +898,7 @@ export class ContratosComponent implements OnInit {
         error: (err) => {
           console.error('Error al crear contrato', err);
           const msg = err?.error?.id_institucion?.[0] || err?.error?.detail || 'No se pudo crear el contrato.';
-          void this.sweetAlert.error('Error', msg);
+          void this.sweetAlert.error('Error', Array.isArray(msg) ? msg.join(', ') : String(msg));
         }
       });
     }

@@ -3300,6 +3300,19 @@ export class ContratoDetalleComponent implements OnInit, OnChanges {
     const instEncontrada = this.institucionSeleccionadaInfo;
     const idInst = instEncontrada?.id_institucion || instEncontrada?.id || this.contrato.id_institucion || null;
 
+    const infoDuplicado = this.institucionTieneContrato({
+      id_institucion: idInst,
+      nombre_institucion: this.contrato.institucion
+    });
+    if (infoDuplicado.tieneContrato) {
+      const codExistente = infoDuplicado.contratoExistente?.numero_cor || infoDuplicado.contratoExistente?.codigo || '';
+      void this.sweetAlert.warning(
+        'Institución con contrato existente',
+        `Esta institución ya tiene el contrato ${codExistente} registrado. Solo se permite un contrato por institución; las sedes se gestionan dentro de ese contrato.`
+      );
+      return;
+    }
+
     const cuposAnteriores = Number(this.contrato.cupos) || 0;
     const cuposCalculados = Number(this.contrato.cupos) > 0
       ? Math.max(Number(this.contrato.cupos), this.totalCuposAsignadosFormulario)
@@ -3452,6 +3465,8 @@ export class ContratoDetalleComponent implements OnInit, OnChanges {
           if (err?.error) {
             if (typeof err.error === 'string') {
               mensaje = err.error;
+            } else if (err.error.id_institucion) {
+              mensaje = Array.isArray(err.error.id_institucion) ? err.error.id_institucion.join(', ') : String(err.error.id_institucion);
             } else if (err.error.detail) {
               mensaje = err.error.detail;
             } else if (err.error.numero_cor) {
