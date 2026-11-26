@@ -4,6 +4,7 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "types": [
+      "jasmine",
       "vitest/globals"
     ]
   },
