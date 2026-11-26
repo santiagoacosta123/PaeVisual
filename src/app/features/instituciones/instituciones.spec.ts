@@ -1,5 +1,4 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { vi } from 'vitest';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { InstitucionesComponent } from './instituciones';
@@ -44,7 +43,7 @@ describe('InstitucionesComponent', () => {
 
   afterEach(() => {
     http.verify();
-    vi.restoreAllMocks();
+    // limpiar espías de consola si se crearon
   });
 
   it('should create', () => {
@@ -59,7 +58,7 @@ describe('InstitucionesComponent', () => {
   });
 
   it('usa instituciones de ejemplo y explica el error cuando falla el servidor', () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {});
+    spyOn(console, 'error');
     http.expectOne(urlLista).flush('error', { status: 500, statusText: 'Server Error' });
 
     expect(component.instituciones.length).toBe(6);
@@ -92,8 +91,8 @@ describe('InstitucionesComponent', () => {
     expect(component.filtradas.map(i => i.nombre)).toEqual(['I.E. El Rosal']);
 
     component.limpiarFiltros();
-    component.filtroEstado = 'Crítico';
-    expect(component.filtradas.every(i => i.estado === 'Crítico')).toBe(true);
+    component.filtroEstado = 'Crítico' as any;
+    expect(component.filtradas.every(i => i.estado === 'Crítico' as any)).toBe(true);
     expect(component.filtradas.length).toBeGreaterThan(0);
   });
 
@@ -117,7 +116,7 @@ describe('InstitucionesComponent', () => {
   });
 
   it('muestra un error si fallan las entregas', () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {});
+    spyOn(console, 'error');
     responderLista([institucionApi]);
     component.abrir(component.instituciones[0]);
 
