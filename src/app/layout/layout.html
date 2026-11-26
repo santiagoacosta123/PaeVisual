@@ -1297,8 +1297,8 @@
       <!-- Encabezado amarillo PAE con contador de no leídas -->
       <div class="saas-notif-panel-header">
         <div style="display:flex;align-items:center;gap:8px;">
-          <span class="material-symbols-outlined" style="font-size:20px;color:#92400e;">notifications_active</span>
-          <span style="font-weight:700;font-size:14px;color:#1a1a1a;">Notificaciones</span>
+          <span class="material-symbols-outlined" style="font-size:20px;color:#fff;">notifications_active</span>
+          <span style="font-weight:700;font-size:14px;color:#fff;">Notificaciones</span>
         </div>
         <span *ngIf="notificacionesNoLeidas > 0" class="saas-notif-count-badge">
           {{ notificacionesNoLeidas }} sin leer
@@ -1312,31 +1312,26 @@
           <span>No tienes notificaciones recibidas</span>
         </div>
 
-        <!-- Cada fila toma su color de acento desde obtenerIconoNotificacion(noti).color -->
+        <!-- Cada fila toma su color de acento desde obtenerIconoNotificacion(noti).color (sin icono circular) -->
         <div *ngFor="let noti of notificacionesFiltradas; trackBy: trackByNotificacion" 
           class="saas-notif-row" 
           [class.sin-leer]="!noti.leida"
           [style.--acento]="obtenerIconoNotificacion(noti).color"
           (click)="abrirNotificacion(noti, $event)">
-          
-          <!-- Avatar o Icono según tipo -->
-          <div class="saas-notif-avatar" [style.background]="obtenerIconoNotificacion(noti).bg" [style.color]="obtenerIconoNotificacion(noti).color">
-            <img *ngIf="noti.imagen_url" [src]="noti.imagen_url" alt="Avatar" class="w-full h-full object-cover rounded-full" />
-            <span *ngIf="!noti.imagen_url" class="material-symbols-outlined saas-avatar-icon">
-              {{ obtenerIconoNotificacion(noti).icono }}
-            </span>
-          </div>
 
-          <!-- Contenido central: Título y Mensaje -->
+          <!-- Contenido: Título + tiempo arriba; barrita vertical de color + mensaje debajo -->
           <div class="saas-notif-body">
             <div class="saas-notif-header-row">
               <span class="saas-notif-title">{{ (noti.titulo || '').replace('🔔', '').replace('📦', '').replace('✅', '').replace('⚠️', '').replace('❌', '').replace('📢', '').replace('🚚', '').replace('📍', '').replace('🕒', '').replace('⚡', '').replace('🔴', '').replace('🟠', '').replace('🟡', '').replace('🟢', '').replace('📋', '').replace('📝', '').replace('🧾', '').trim() }}</span>
               <span class="saas-notif-time">{{ tiempoRelativo(noti.fecha_creacion || noti.fecha_hora) }}</span>
             </div>
-            <p class="saas-notif-msg">{{ noti.mensaje }}</p>
+            <div class="saas-notif-msg-wrap">
+              <span class="saas-notif-accent-bar" [style.background]="obtenerIconoNotificacion(noti).color"></span>
+              <p class="saas-notif-msg">{{ noti.mensaje }}</p>
+            </div>
           </div>
 
-          <!-- Punto azul de estado (Unread Dot) -->
+          <!-- Punto amarillo de estado (Unread Dot) -->
           <div *ngIf="!noti.leida" class="saas-unread-dot" title="No leída"></div>
         </div>
       </div>
