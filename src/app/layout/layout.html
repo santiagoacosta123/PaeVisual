@@ -1223,11 +1223,6 @@
     style="background:#fff;border-radius:18px;max-width:540px;width:100%;max-height:85vh;overflow:auto;box-shadow:0 24px 60px rgba(15,23,42,.28);padding:24px;border:1px solid #e2e8f0;">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
       <div style="display:flex;align-items:flex-start;gap:12px;min-width:0;">
-        <div [style.background]="obtenerIconoNotificacion(notificacionAbierta).bg"
-          [style.color]="obtenerIconoNotificacion(notificacionAbierta).color"
-          style="width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-          <span class="material-symbols-outlined" style="font-size:22px;">{{ obtenerIconoNotificacion(notificacionAbierta).icono }}</span>
-        </div>
         <div style="min-width:0;">
           <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:4px;">
             <span [style.background]="notificacionAbierta.leida ? '#dcfce7' : '#dbeafe'"
@@ -1279,7 +1274,7 @@
           Ir al módulo relacionado
         </button>
         <button type="button" (click)="cerrarNotificacionAbierta($event)"
-          style="padding:8px 18px;border-radius:9px;border:none;background:#2563eb;color:#fff;font-size:13px;font-weight:700;cursor:pointer;">
+          style="padding:8px 18px;border-radius:9px;border:none;background:#FFA928;color:#fff;font-size:13px;font-weight:700;cursor:pointer;">
           Cerrar
         </button>
       </div>
