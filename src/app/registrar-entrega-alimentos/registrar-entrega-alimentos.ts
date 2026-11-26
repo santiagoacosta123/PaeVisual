@@ -1841,6 +1841,8 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
           this.incorporarEnviosConfirmados(confirmados, sigueEnLaVista());
           if (sigueEnLaVista()) {
             items.forEach(sel => this.fijarCantidadEnviar(sel, null));
+            this.seleccionados = [];
+            this.cantidadesEnviar = {};
             this.limpiarAutorizacionExceso();
             this.cargarHistorial();
             this.cargarCatalogos();
@@ -1938,7 +1940,9 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       this.incorporarEnviosConfirmados(confirmados, sigueEnLaVista());
 
       if (sigueEnLaVista()) {
+        const idsExitosos = new Set(exitosos.map(r => r.sel.idIngrediente));
         exitosos.forEach(r => this.fijarCantidadEnviar(r.sel, null));
+        this.seleccionados = this.seleccionados.filter(s => !idsExitosos.has(s.idIngrediente));
         if (exitosos.length) {
           this.cargarHistorial();
           this.cargarCatalogos();
