@@ -899,8 +899,8 @@ export class LayoutComponent implements OnInit, OnDestroy {
     if (texto.includes('aceptad') || texto.includes('conforme') || texto.includes('acreditad')) {
       return { icono: 'check_circle', color: '#10b981', bg: '#d1fae5' };
     }
-    if (cat.includes('entrega') || texto.includes('despacho') || texto.includes('remisi') || texto.includes('tránsito')) {
-      return { icono: 'local_shipping', color: '#2563eb', bg: '#dbeafe' };
+    if (cat.includes('entrega') || texto.includes('despacho') || texto.includes('remisi') || texto.includes('tránsito') || texto.includes('transito') || texto.includes('entrega')) {
+      return { icono: 'local_shipping', color: '#92400e', bg: '#fef3c7' };
     }
     if (cat.includes('contrato') || texto.includes('contrato')) {
       return { icono: 'description', color: '#8b5cf6', bg: '#ede9fe' };

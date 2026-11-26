@@ -1128,36 +1128,22 @@
       <!-- Puntero superior que apunta a la campana -->
       <div class="saas-dropdown-arrow"></div>
 
-      <!-- Pestañas: Todas / No leídas / Leídas -->
-      <div class="saas-notif-tabs">
-        <button type="button"
-          class="saas-tab-btn"
-          [class.activa]="filtroNotificaciones === 'todas'"
-          (click)="cambiarFiltroNotificaciones('todas', $event)">
-          Todas
-          <span class="saas-tab-count">({{ listaNotificaciones.length }})</span>
-        </button>
-        <button type="button"
-          class="saas-tab-btn"
-          [class.activa]="filtroNotificaciones === 'no_leidas'"
-          (click)="cambiarFiltroNotificaciones('no_leidas', $event)">
-          No leídas
-          <span class="saas-tab-count">({{ notificacionesNoLeidas }})</span>
-        </button>
-        <button type="button"
-          class="saas-tab-btn"
-          [class.activa]="filtroNotificaciones === 'leidas'"
-          (click)="cambiarFiltroNotificaciones('leidas', $event)">
-          Leídas
-          <span class="saas-tab-count">({{ notificacionesLeidas }})</span>
-        </button>
+      <!-- Encabezado amarillo PAE con contador de no leídas -->
+      <div class="saas-notif-panel-header">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="material-symbols-outlined" style="font-size:20px;color:#92400e;">notifications_active</span>
+          <span style="font-weight:700;font-size:14px;color:#1a1a1a;">Notificaciones</span>
+        </div>
+        <span *ngIf="notificacionesNoLeidas > 0" class="saas-notif-count-badge">
+          {{ notificacionesNoLeidas }} sin leer
+        </span>
       </div>
 
-      <!-- Lista de Notificaciones con Scroll -->
+      <!-- Lista de Notificaciones — todas juntas, sin filtros -->
       <div class="saas-notif-list">
         <div *ngIf="notificacionesFiltradas.length === 0" class="saas-notif-empty">
           <span class="material-symbols-outlined saas-empty-icon">notifications_none</span>
-          <span>{{ filtroNotificaciones === 'no_leidas' ? 'No tienes notificaciones sin leer' : (filtroNotificaciones === 'leidas' ? 'Aún no tienes notificaciones leídas' : 'No tienes notificaciones recibidas') }}</span>
+          <span>No tienes notificaciones recibidas</span>
         </div>
 
         <div *ngFor="let noti of notificacionesFiltradas; trackBy: trackByNotificacion"
