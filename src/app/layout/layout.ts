@@ -388,6 +388,9 @@ export class LayoutComponent implements OnInit, OnDestroy {
 
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
+    if (this.notificacionAbierta) {
+      return;
+    }
     const path = typeof event.composedPath === 'function' ? event.composedPath() : [];
     const dentroDePanel = path.some((node) => {
       if (!(node instanceof HTMLElement)) return false;
