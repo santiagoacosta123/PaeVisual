@@ -186,7 +186,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private cdr: ChangeDetectorRef,
     private route: ActivatedRoute,
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.tiposMercado = this.leerCache<Opcion[]>(this.claveCacheTipos) ?? this.tiposBase;
@@ -827,8 +827,10 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       const clave = `${e.fechaRecepcion}|${this.norm(destino)}`;
       let g = mapa.get(clave);
       if (!g) {
-        g = { clave, destino, fechaRegistro: e.fechaRegistro || e.fechaRecepcion, fechaRecepcion: e.fechaRecepcion,
-              hora: '', responsable: '', items: [], productos: [] };
+        g = {
+          clave, destino, fechaRegistro: e.fechaRegistro || e.fechaRecepcion, fechaRecepcion: e.fechaRecepcion,
+          hora: '', responsable: '', items: [], productos: []
+        };
         mapa.set(clave, g);
       }
       g.responsable ||= e.responsable || '';
@@ -1472,7 +1474,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       if ((ev?.currentTarget as HTMLElement)?.hasPointerCapture?.(ev.pointerId)) {
         (ev.currentTarget as HTMLElement).releasePointerCapture(ev.pointerId);
       }
-    } catch {}
+    } catch { }
     this.cancelarDeslizar(ev);
     if (!s) return;
     if (s.activo) {
@@ -1499,7 +1501,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
         if ((ev.currentTarget as HTMLElement)?.hasPointerCapture?.(ev.pointerId)) {
           (ev.currentTarget as HTMLElement).releasePointerCapture(ev.pointerId);
         }
-      } catch {}
+      } catch { }
     }
     this.swipeInicio = null;
     this.swipeId = null;
@@ -1712,7 +1714,11 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
         fechaVencimiento: this.fechaVencimientoParaEnvio(producto, sel.fechaVencimiento),
       };
     });
-    const fallo = (m: string) => { this.errorEnvioPanel = m; };
+    const fallo = (m: string) => {
+      this.errorEnvioPanel = m;
+      void this.alertas.warning('No se pudo confirmar la entrega', m);
+      this.cdr.markForCheck();
+    };
     this.errorEnvioPanel = '';
 
     if (!items.length) return fallo('Escribe la cantidad a enviar de al menos un producto.');
@@ -1764,6 +1770,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     if (!hoy) return fallo('Indica la fecha de envío.');
     if (!responsable) return fallo('Indica el responsable del envío.');
     this.guardandoEnvio = true;
+    this.cdr.markForCheck();
 
     const sigueEnLaVista = () => idInstitucionVista === this.idInstitucion && idSede === this.idSede;
     const fechaRegistro = new Date().toISOString();
@@ -2096,8 +2103,10 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     const mapa = new Map<string, RegistroDia>();
     for (const e of this.delDia('fechaRecepcion')) {
       const codigo = e.codigo || 'CI-' + e.fechaRecepcion.replace(/-/g, '');
-      const reg = mapa.get(codigo) ?? { codigo, descripcion: 'Lote de entrega SIRAE', estado: e.estadoEntrega || 'Recibida',
-        destino: '—', hora: '—', responsable: '—', fechaRegistro: '', items: [] };
+      const reg = mapa.get(codigo) ?? {
+        codigo, descripcion: 'Lote de entrega SIRAE', estado: e.estadoEntrega || 'Recibida',
+        destino: '—', hora: '—', responsable: '—', fechaRegistro: '', items: []
+      };
       reg.items.push(e);
       mapa.set(codigo, reg);
     }
@@ -2401,10 +2410,10 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     const filasResumen = Array.from(resumen.values())
       .sort((a, b) => a.e.ingrediente.localeCompare(b.e.ingrediente, 'es') || a.unidad.localeCompare(b.unidad, 'es'))
       .map(r => [`<b>${esc(r.e.ingrediente)}</b>`, esc(r.e.tipoMercado), esc(r.unidad), `<b>${Math.round(r.total * 100) / 100}</b>`,
-                 String(r.n), this.fechaCorta(r.ultima), r.vence ? this.fechaCorta(r.vence) : '—', esc(r.estado)]);
+      String(r.n), this.fechaCorta(r.ultima), r.vence ? this.fechaCorta(r.vence) : '—', esc(r.estado)]);
 
     const filasDetalle = lista.map(e => [this.fechaCorta(e.fechaRecepcion), esc(e.ingrediente), esc(e.tipoMercado), esc(e.frecuencia),
-      esc(e.cantidad), esc(e.unidad), this.fechaCorta(e.fechaVencimiento), esc(this.estadoDe(e))]);
+    esc(e.cantidad), esc(e.unidad), this.fechaCorta(e.fechaVencimiento), esc(this.estadoDe(e))]);
 
     let tablaEnvios = '';
     if (this.historialEnvios.length) {
@@ -2428,7 +2437,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
       <head><meta charset="UTF-8"></head><body>
       ${tabla(`Resumen por producto (total recibido) - ${esc(this.nombreInstitucion)}`,
-        ['Producto', 'Tipo de mercado', 'Unidad', 'Total recibido', 'N.º de entregas', 'Última entrega', 'Próximo vencimiento', 'Estado última entrega'], filasResumen)}
+      ['Producto', 'Tipo de mercado', 'Unidad', 'Total recibido', 'N.º de entregas', 'Última entrega', 'Próximo vencimiento', 'Estado última entrega'], filasResumen)}
       <br><br>
       ${tabla('Detalle de entregas', ['Fecha', 'Ingrediente', 'Tipo de mercado', 'Frecuencia', 'Cantidad', 'Unidad', 'Vencimiento', 'Estado'], filasDetalle)}
       ${tablaEnvios}
