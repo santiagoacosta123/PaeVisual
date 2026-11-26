@@ -690,6 +690,15 @@
       </ng-container>
     </ng-container>
 
+    <!-- Indicador de ubicación actual -->
+    <div class="mb-3 flex items-center justify-between flex-wrap gap-2 rounded-2xl bg-amber-50/70 border border-amber-200/80 px-4 py-2.5 text-xs text-amber-900">
+      <span class="flex items-center gap-1.5 font-bold">
+        <span class="material-symbols-outlined text-[18px] text-amber-600">location_on</span>
+        Sede actual: <span class="rounded-lg bg-white px-2 py-0.5 border border-amber-300 font-extrabold text-amber-800">{{ nombreSedeActiva }}</span>
+      </span>
+      <span class="text-[11px] text-amber-800/80 font-medium">Sedes disponibles para realizar entrega o cambiar destino:</span>
+    </div>
+
     <!-- Buscador (filtro de estado eliminado) -->
     <div class="sedes-controles ms-controles">
       <div class="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
@@ -699,8 +708,8 @@
             aria-label="Buscar sede" class="ms-input" />
         </div>
       </div>
-      <span *ngIf="sedes.length > 0" class="ms-count-badge">
-        {{ filtradas.length }} de {{ sedes.length }} {{ sedes.length === 1 ? 'sede' : 'sedes' }}
+      <span *ngIf="filtradas.length > 0" class="ms-count-badge">
+        {{ filtradas.length }} {{ filtradas.length === 1 ? 'sede disponible' : 'sedes disponibles' }}
       </span>
     </div>
 
@@ -766,7 +775,10 @@
         <span *ngIf="institucionActiva && sedes.length === 0">
           No se encontraron sedes asignadas a esta institución.
         </span>
-        <span *ngIf="sedes.length > 0">
+        <span *ngIf="sedes.length > 0 && !textoBusqueda">
+          Actualmente estás ubicado en {{ nombreSedeActiva }}. No hay otras sedes alternas registradas.
+        </span>
+        <span *ngIf="sedes.length > 0 && textoBusqueda">
           Ninguna sede coincide con tu búsqueda.
         </span>
       </p>

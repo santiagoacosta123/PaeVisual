@@ -542,7 +542,21 @@ export class AuthService {
     }
     localStorage.setItem(this.INSTITUCION_ACTIVA, JSON.stringify(institucion));
     this.institucionActivaSubject.next(institucion);
-    this.limpiarSedeActiva();
+
+    // Por regla de negocio, al ingresar a una institución se entra por defecto a su Sede Principal / Central
+    const sedes = Array.isArray(institucion.sedes) ? institucion.sedes : [];
+    const principal = sedes.find((s: any) =>
+      (s.nombre_sede || s.nombre || '').toLowerCase().includes('principal') ||
+      (s.nombre_sede || s.nombre || '').toLowerCase().includes('central')
+    ) || (sedes.length > 0 ? sedes[0] : null);
+
+    const sedeActiva: SedeActiva = {
+      id_sede: Number(principal?.id_sede ?? principal?.id ?? 1),
+      nombre_sede: principal?.nombre_sede ?? principal?.nombre ?? 'Sede Central',
+      id_institucion: institucion.id_institucion,
+      nombre_institucion: institucion.nombre_institucion,
+    };
+    this.establecerSedeActiva(sedeActiva);
   }
 
   actualizarInstitucionActiva(institucion: InstitucionAsignada): void {
@@ -557,7 +571,27 @@ export class AuthService {
     if (!this.estaDisponibleStorage()) return null;
     try {
       const guardada = localStorage.getItem(this.SEDE_ACTIVA);
-      return guardada ? JSON.parse(guardada) as SedeActiva : null;
+      if (guardada) return JSON.parse(guardada) as SedeActiva;
+
+      // Fallback: Si no hay sede guardada, resolver Sede Principal / Central de la institución activa
+      const inst = this.obtenerInstitucionActiva();
+      if (inst) {
+        const sedes = Array.isArray(inst.sedes) ? inst.sedes : [];
+        const principal = sedes.find((s: any) =>
+          (s.nombre_sede || s.nombre || '').toLowerCase().includes('principal') ||
+          (s.nombre_sede || s.nombre || '').toLowerCase().includes('central')
+        ) || (sedes.length > 0 ? sedes[0] : null);
+
+        const sedeDefecto: SedeActiva = {
+          id_sede: Number(principal?.id_sede ?? principal?.id ?? 1),
+          nombre_sede: principal?.nombre_sede ?? principal?.nombre ?? 'Sede Central',
+          id_institucion: inst.id_institucion,
+          nombre_institucion: inst.nombre_institucion,
+        };
+        this.establecerSedeActiva(sedeDefecto);
+        return sedeDefecto;
+      }
+      return null;
     } catch {
       return null;
     }

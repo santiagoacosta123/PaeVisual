@@ -1021,6 +1021,9 @@ input[type="date"].campo::-webkit-calendar-picker-indicator:hover {
             <div>
               <p class="despacho-rotulo">Nueva entrega</p>
               <h3>Resumen del despacho</h3>
+              <p *ngIf="nombreSede" class="m-0 mt-0.5 text-[11px] font-semibold text-slate-500">
+                Sede destino: <strong class="text-slate-800">{{ nombreSede }}</strong>
+              </p>
             </div>
             <span class="inv-count" [attr.aria-label]="seleccionados.length + ' productos seleccionados'">{{ seleccionados.length }}</span>
           </div>

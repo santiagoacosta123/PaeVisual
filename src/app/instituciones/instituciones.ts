@@ -6,7 +6,7 @@ import { Router } from '@angular/router';
 import { Subscription, forkJoin, of } from 'rxjs';
 import { catchError, finalize, map, throwIfEmpty, timeout } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
-import { AuthService, InstitucionAsignada } from '../core/auth/auth.service';
+import { AuthService, InstitucionAsignada, SedeActiva } from '../core/auth/auth.service';
 import { FacturasCompraService, InventarioCentralItem } from '../services/facturas-compra.service';
 import { IMAGENES_INSTITUCION } from '../dashboard-supervisor/imagenes-instituciones';
 
@@ -414,12 +414,39 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
     });
   }
 
+  get sedeActivaActual(): SedeActiva | null {
+    return this.authService.obtenerSedeActiva();
+  }
+
+  get nombreSedeActiva(): string {
+    return this.sedeActivaActual?.nombre_sede || 'Sede Central';
+  }
+
   // =====================================================
   //  FILTRADO
+  //  Muestra solo las sedes alternativas disponibles para entrega (excluye la sede actual)
   // =====================================================
   get filtradas(): SedeCard[] {
     const q = this.textoBusqueda.trim().toLowerCase();
+    const sedeActiva = this.authService.obtenerSedeActiva();
+    const idSedeActiva = sedeActiva ? Number(sedeActiva.id_sede) : null;
+    const nombreSedeActiva = (sedeActiva?.nombre_sede || '').trim().toLowerCase();
+
     return this.sedes.filter(s => {
+      // Excluir la sede actualmente activa (si estás en Sede Central, muestra sedes 1 y 2; etc.)
+      const idSedeItem = Number(s.id_sede);
+      const nombreSedeItem = (s.nombre_sede || '').trim().toLowerCase();
+      if (idSedeActiva != null && idSedeItem === idSedeActiva) {
+        return false;
+      }
+      if (nombreSedeActiva && (
+        nombreSedeItem === nombreSedeActiva ||
+        (nombreSedeActiva.includes('central') && nombreSedeItem.includes('principal')) ||
+        (nombreSedeActiva.includes('principal') && nombreSedeItem.includes('central'))
+      )) {
+        return false;
+      }
+
       const coincideEstado = this.filtroEstado === 'Todos' ||
         (s.estado || '').toUpperCase() === this.filtroEstado;
       const coincideTexto = !q ||
@@ -480,7 +507,18 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
 
   seleccionarSede(sede: SedeCard): void {
     if (sede.esInstitucion) {
-      this.authService.limpiarSedeActiva();
+      const principal = this.sedesDeInstitucion.find(s =>
+        (s.nombre_sede || '').toLowerCase().includes('principal')
+      ) || (this.sedesDeInstitucion.length ? this.sedesDeInstitucion[0] : null);
+
+      if (principal) {
+        this.authService.establecerSedeActiva({
+          id_sede: principal.id_sede,
+          nombre_sede: principal.nombre_sede,
+          id_institucion: sede.id_institucion ?? this.institucionActiva?.id_institucion,
+          nombre_institucion: sede.nombre_institucion ?? this.institucionSeleccionada?.nombre_institucion,
+        });
+      }
       this.router.navigate(['/dashboard-supervisor']);
       return;
     }
@@ -495,29 +533,23 @@ export class InstitucionesComponent implements OnInit, OnDestroy {
 
   // Lleva a "Registrar entrega" con la institución y la sede de la tarjeta ya enviadas
   irAEntregas(sede: SedeCard): void {
-    if (!sede.esInstitucion) {
-      this.authService.establecerSedeActiva({
-        id_sede: sede.id_sede,
-        nombre_sede: sede.nombre_sede,
-        id_institucion: sede.id_institucion ?? this.institucionActiva?.id_institucion,
-        nombre_institucion: sede.nombre_institucion ?? this.institucionSeleccionada?.nombre_institucion,
-      });
-    } else {
-      this.authService.limpiarSedeActiva();
-    }
+    const targetSede = !sede.esInstitucion
+      ? sede
+      : (this.sedesDeInstitucion.find(s => (s.nombre_sede || '').toLowerCase().includes('principal')) || this.sedesDeInstitucion[0] || sede);
+
+    this.authService.establecerSedeActiva({
+      id_sede: targetSede.id_sede,
+      nombre_sede: targetSede.nombre_sede,
+      id_institucion: targetSede.id_institucion ?? this.institucionActiva?.id_institucion,
+      nombre_institucion: targetSede.nombre_institucion ?? this.institucionSeleccionada?.nombre_institucion,
+    });
 
     const queryParams: Record<string, string | number> = {};
 
-    if (sede.id_institucion != null) queryParams['institucion'] = sede.id_institucion;
-
-    if (!sede.esInstitucion) {
-      queryParams['sede'] = sede.id_sede;
-      queryParams['nombreSede'] = sede.nombre_sede;
-      // Mismo formato "Institución - Sede" que usa leerEnviosDeSede() para el destino
-      queryParams['destino'] = `${sede.nombre_institucion} - ${sede.nombre_sede}`;
-    } else {
-      queryParams['destino'] = sede.nombre_institucion ?? '';
-    }
+    if (targetSede.id_institucion != null) queryParams['institucion'] = targetSede.id_institucion;
+    queryParams['sede'] = targetSede.id_sede;
+    queryParams['nombreSede'] = targetSede.nombre_sede;
+    queryParams['destino'] = `${targetSede.nombre_institucion || this.institucionActiva?.nombre_institucion || ''} - ${targetSede.nombre_sede}`;
 
     this.router.navigate(['/registrar-entrega-alimentos'], { queryParams });
   }

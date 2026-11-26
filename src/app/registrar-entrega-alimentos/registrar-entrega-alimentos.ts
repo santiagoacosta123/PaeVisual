@@ -284,22 +284,39 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
         id_sede: Number(s.id_sede ?? s.id),
         nombre_sede: s.nombre_sede ?? s.nombre ?? `Sede ${s.id_sede ?? s.id}`,
       }));
+      if (!this.idSede && this.sedesInstitucion.length > 0) {
+        const principal = this.sedesInstitucion.find(s =>
+          (s.nombre_sede || '').toLowerCase().includes('principal')
+        ) || this.sedesInstitucion[0];
+        if (principal) {
+          this.idSede = principal.id_sede;
+          this.authService.establecerSedeActiva({
+            id_sede: principal.id_sede,
+            nombre_sede: principal.nombre_sede,
+            id_institucion: this.idInstitucion ?? undefined,
+            nombre_institucion: this.nombreInstitucion,
+          });
+          this.cargarHistorial();
+          this.actualizarCalculoAbastecimiento();
+        }
+      }
       this.cdr.markForCheck();
     });
   }
 
   cambiarSedeDespacho(nuevaSede: number | null): void {
-    this.idSede = nuevaSede;
-    if (nuevaSede != null) {
-      const encontrada = this.sedesInstitucion.find(s => s.id_sede === nuevaSede);
+    const sedeDestino = nuevaSede != null
+      ? this.sedesInstitucion.find(s => s.id_sede === nuevaSede)
+      : (this.sedesInstitucion.find(s => (s.nombre_sede || '').toLowerCase().includes('principal')) || this.sedesInstitucion[0]);
+
+    if (sedeDestino) {
+      this.idSede = sedeDestino.id_sede;
       this.authService.establecerSedeActiva({
-        id_sede: nuevaSede,
-        nombre_sede: encontrada?.nombre_sede ?? 'Sede',
+        id_sede: sedeDestino.id_sede,
+        nombre_sede: sedeDestino.nombre_sede ?? 'Sede Principal',
         id_institucion: this.idInstitucion ?? undefined,
         nombre_institucion: this.nombreInstitucion,
       });
-    } else {
-      this.authService.limpiarSedeActiva();
     }
     this.cargarHistorial();
     this.actualizarCalculoAbastecimiento();
@@ -319,7 +336,9 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
   }
 
   get nombreSede(): string {
-    return this.institucionActiva?.sedes?.find(s => Number(s.id_sede ?? s.id) === this.idSede)?.nombre_sede ?? '';
+    const sedeEncontrada = this.institucionActiva?.sedes?.find(s => Number(s.id_sede ?? s.id) === this.idSede)
+      ?? this.sedesInstitucion.find(s => Number(s.id_sede) === this.idSede);
+    return sedeEncontrada?.nombre_sede ?? this.authService.obtenerSedeActiva()?.nombre_sede ?? 'Sede Principal';
   }
 
   get destinosDisponibles(): string[] {
@@ -1836,100 +1855,65 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Si no se eligió una sede específica en particular, replicar el despacho a TODAS las sedes de la institución
-    const sedesDestino: { id_sede?: number; nombre_sede?: string }[] = [];
-    if (idSede != null) {
-      sedesDestino.push({ id_sede: idSede, nombre_sede: this.nombreSede });
-    } else {
-      let sedesActivas: any[] = this.sedesInstitucion.filter((s: any) => s && (s.id_sede != null || s.id != null));
-      if (!sedesActivas.length) {
-        sedesActivas = (this.institucionActiva?.sedes || []).filter((s: any) => s && (s.id_sede != null || s.id != null));
-      }
-      if (!sedesActivas.length) {
-        const instSupervisor = this.authService.obtenerInstitucionesSupervisor()?.find(
-          i => Number(i.id_institucion) === Number(datos.id_institucion)
-        );
-        sedesActivas = ((instSupervisor as any)?.sedes || []).filter((s: any) => s && (s.id_sede != null || s.id != null));
-      }
-      if (!sedesActivas.length) {
-        try {
-          const guardadas = JSON.parse(localStorage.getItem('sirae_instituciones_supervisor') || '[]');
-          const instStorage = guardadas.find((i: any) => Number(i.id_institucion) === Number(datos.id_institucion));
-          sedesActivas = (instStorage?.sedes || []).filter((s: any) => s && (s.id_sede != null || s.id != null));
-        } catch {}
-      }
+    // El despacho siempre se dirige a la sede activa específica (por defecto Sede Principal)
+    const idSedeDestino = idSede ?? this.idSede ?? datos.id_sede ?? this.authService.obtenerSedeActiva()?.id_sede;
+    const nombreSedeDestino = this.nombreSede || 'Sede Principal';
+    const destinoSede = `${this.nombreInstitucion} - ${nombreSedeDestino}`;
 
-      if (sedesActivas.length > 0) {
-        sedesActivas.forEach((s: any) => {
-          sedesDestino.push({
-            id_sede: Number(s.id_sede ?? s.id),
-            nombre_sede: s.nombre_sede || s.nombre || '',
-          });
-        });
-      } else {
-        sedesDestino.push({ id_sede: undefined, nombre_sede: undefined });
-      }
-    }
-
-    const peticiones = sedesDestino.flatMap(targetSede => {
-      const destinoSede = targetSede.nombre_sede
-        ? `${this.nombreInstitucion} - ${targetSede.nombre_sede}`
-        : destino;
-      const idSedeItem = targetSede.id_sede ?? datos.id_sede;
-
-      return items.map(sel => {
-        const cantidad = this.cantidadEnviarDe(sel);
-        const unidad = this.normalizarUnidad(sel.unidad) || 'Kg';
-        return this.entregasService.registrar({
-          id_ingrediente: sel.idIngrediente!,
-          ingrediente: sel.idIngrediente!,
-          id_tipo_mercado: sel.idTipoMercado!,
-          tipo_mercado: sel.idTipoMercado!,
-          id_institucion: datos.id_institucion!,
-          institucion: datos.id_institucion!,
-          institucion_nombre: this.nombreInstitucion,
-          id_sede: idSedeItem,
-          sede: idSedeItem,
-          sede_nombre: targetSede.nombre_sede || this.nombreSede,
-          fecha_entrega: hoy,
-          fecha_salida: hoy,
-          fecha_vencimiento: sel.fechaVencimiento,
+    const peticiones = items.map(sel => {
+      const cantidad = this.cantidadEnviarDe(sel);
+      const unidad = this.normalizarUnidad(sel.unidad) || 'Kg';
+      return this.entregasService.registrar({
+        id_ingrediente: sel.idIngrediente!,
+        ingrediente: sel.idIngrediente!,
+        id_tipo_mercado: sel.idTipoMercado!,
+        tipo_mercado: sel.idTipoMercado!,
+        id_institucion: datos.id_institucion!,
+        institucion: datos.id_institucion!,
+        institucion_nombre: this.nombreInstitucion,
+        id_sede: idSedeDestino,
+        sede: idSedeDestino,
+        sede_nombre: nombreSedeDestino,
+        fecha_entrega: hoy,
+        fecha_salida: hoy,
+        fecha_vencimiento: sel.fechaVencimiento,
+        cantidad,
+        frecuencia: sel.frecuencia,
+        unidad,
+        destino: destinoSede,
+        responsable,
+        documento_entrega: codigoFactura,
+        codigo_documento: codigoFactura,
+        numero_factura: codigoFactura,
+        lote_registro: lote,
+        observaciones: `Factura: ${codigoFactura} | Responsable: ${responsable} | Destino: ${destinoSede}`,
+      } as any).pipe(
+        map((resp: any) => ({
+          ok: true,
+          sel,
           cantidad,
-          frecuencia: sel.frecuencia,
           unidad,
-          destino: destinoSede,
-          responsable,
-          documento_entrega: codigoFactura,
-          codigo_documento: codigoFactura,
-          numero_factura: codigoFactura,
-          lote_registro: lote,
-          observaciones: `Factura: ${codigoFactura} | Responsable: ${responsable} | Destino: ${destinoSede}`,
-        } as any).pipe(
-          map((resp: any) => ({
-            ok: true,
+          idSedeDestino,
+          destinoSede,
+          nombreSedeDestino,
+          motivo: '',
+          idResp: (resp?.id ?? resp?.id_entrega) as any,
+        })),
+        catchError(error => {
+          console.error(`Error al enviar ${sel.ingrediente} a ${destinoSede}:`, error?.error ?? error);
+          return of({
+            ok: false,
             sel,
             cantidad,
             unidad,
-            targetSede,
+            idSedeDestino,
             destinoSede,
-            motivo: '',
-            idResp: (resp?.id ?? resp?.id_entrega) as any,
-          })),
-          catchError(error => {
-            console.error(`Error al enviar ${sel.ingrediente} a ${destinoSede}:`, error?.error ?? error);
-            return of({
-              ok: false,
-              sel,
-              cantidad,
-              unidad,
-              targetSede,
-              destinoSede,
-              motivo: this.describirError(error),
-              idResp: undefined as any,
-            });
-          }),
-        );
-      });
+            nombreSedeDestino,
+            motivo: this.describirError(error),
+            idResp: undefined as any,
+          });
+        }),
+      );
     });
 
     // Uno tras otro, por si el servidor falla al recibir varios envíos a la vez
@@ -1940,7 +1924,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
 
       const confirmados = exitosos.map(r => ({
         ...datosEnvio(r.sel, r.cantidad, r.unidad, codigoFactura),
-        id_sede: r.targetSede.id_sede,
+        id_sede: r.idSedeDestino,
         destino: r.destinoSede,
         id: Number(r.idResp) || undefined,
       }));
@@ -1958,12 +1942,9 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
         this.errorEnvioPanel = `Se enviaron ${exitosos.length} despacho(s). No se pudo enviar: ${fallidos.map(r => `${r.sel.ingrediente} (${r.motivo})`).join('; ')}.`;
         void this.alertas.error('Envío incompleto', this.errorEnvioPanel);
       } else {
-        const sedesTexto = sedesDestino.length > 1
-          ? `a las ${sedesDestino.length} sedes de ${this.nombreInstitucion}`
-          : `a ${destino}`;
         void this.alertas.success(
           'Factura de envío registrada',
-          `Factura / Remisión ${codigoFactura} · ${items.length} producto(s) despachados con éxito ${sedesTexto}, con entrega el ${this.fechaCorta(hoy)}.`,
+          `Factura / Remisión ${codigoFactura} · ${items.length} producto(s) despachados con éxito a ${destinoSede}, con entrega el ${this.fechaCorta(hoy)}.`,
         );
       }
       this.cdr.markForCheck();

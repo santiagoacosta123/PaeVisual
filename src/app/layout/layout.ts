@@ -55,6 +55,23 @@ export class LayoutComponent implements OnInit, OnDestroy {
     return this.enInicioSupervisor ? `Bienvenido: ${this.perfil.nombre}` : this.pageTitle;
   }
 
+  get nombreSedeActiva(): string {
+    if (this.sedeActiva?.nombre_sede) {
+      return this.sedeActiva.nombre_sede;
+    }
+    const inst = this.institucionActiva;
+    if (inst && Array.isArray(inst.sedes) && inst.sedes.length > 0) {
+      const principal = inst.sedes.find((s: any) =>
+        (s.nombre_sede || s.nombre || '').toLowerCase().includes('principal') ||
+        (s.nombre_sede || s.nombre || '').toLowerCase().includes('central')
+      ) || inst.sedes[0];
+      return principal?.nombre_sede ?? principal?.nombre ?? 'Sede Central';
+    }
+    const u = this.authService.obtenerUsuario();
+    if (u?.sede_nombre) return u.sede_nombre;
+    return 'Sede Central';
+  }
+
   get iniciales(): string {
     const nom = this.perfil?.nombre?.trim();
     if (!nom) return 'SA';
@@ -238,7 +255,11 @@ export class LayoutComponent implements OnInit, OnDestroy {
     }
     if (this.notificacionService?.noLeidas$) {
       this.notificacionService.noLeidas$.subscribe((conteo) => {
-        this.notificacionesNoLeidas = conteo;
+        if (this.esAdministrador || this.esSupervisor) {
+          this.notificacionesNoLeidas = this.listaNotificaciones.filter(n => !n.leida).length;
+        } else {
+          this.notificacionesNoLeidas = conteo;
+        }
         this.refrescarVista();
       });
     }
@@ -250,6 +271,12 @@ export class LayoutComponent implements OnInit, OnDestroy {
     }
     this.actualizarTitulo(this.router.url);
 
+    this.sedeActiva = this.authService.obtenerSedeActiva();
+    this.authService.sedeActiva$.subscribe((sede) => {
+      this.sedeActiva = sede;
+      this.cdr.detectChanges();
+    });
+
     if (this.esSupervisor) {
       this.institucionesSupervisor = this.authService.obtenerInstitucionesSupervisor();
       this.institucionActiva = this.authService.obtenerInstitucionActiva();
@@ -259,11 +286,6 @@ export class LayoutComponent implements OnInit, OnDestroy {
         if (inst && Number(inst.id_institucion) !== Number(idAnterior)) {
           this.cargarSedesSupervisor();
         }
-        this.cdr.detectChanges();
-      });
-      this.sedeActiva = this.authService.obtenerSedeActiva();
-      this.authService.sedeActiva$.subscribe((sede) => {
-        this.sedeActiva = sede;
         this.cdr.detectChanges();
       });
       this.iniciarActualizacionInstituciones();
@@ -433,18 +455,165 @@ export class LayoutComponent implements OnInit, OnDestroy {
     return notif.id_notificacion ?? notif.id ?? `${notif.titulo}-${index}`;
   }
 
+  /**
+   * Filtra las notificaciones para que el Administrador y el Supervisor
+   * SOLO vean las alertas y eventos de sus instituciones y sedes asignadas,
+   * excluyendo completamente notificaciones pertenecientes a otras instituciones ajenas.
+   */
+  filtrarNotificacionesPorInstitucion(lista: Notificacion[]): Notificacion[] {
+    if (!lista || lista.length === 0) return [];
+    if (!this.esAdministrador && !this.esSupervisor) {
+      return lista;
+    }
+
+    const norm = (s: string) =>
+      (s || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .trim();
+
+    const usuario = this.authService.obtenerUsuario();
+
+    const otrasInstituciones = [
+      'francisco jose de caldas',
+      'caldas inen',
+      'comercial del norte',
+      'san jose',
+      'don bosco',
+      'inmaculada',
+      'la milagrosa',
+      'pedro antonio torre',
+      'sagrado corazon',
+      'guillermo valencia',
+      'tomas cipriano'
+    ];
+
+    // ========================================================
+    // CASO 1: ADMINISTRADOR INSTITUCIONAL
+    // ========================================================
+    if (this.esAdministrador) {
+      const instUsuario = (
+        this.institucionUsuario ||
+        usuario?.institucion_nombre ||
+        usuario?.institucion ||
+        this.perfil.institucion ||
+        ''
+      ).trim();
+      const instIdUsuario = usuario?.id_institucion;
+
+      if (
+        !instUsuario ||
+        instUsuario.toLowerCase() === 'ámbito central' ||
+        instUsuario.toLowerCase() === 'institución educativa asignada'
+      ) {
+        return lista;
+      }
+
+      const miInstNorm = norm(instUsuario);
+
+      return lista.filter((n) => {
+        const nInstId = (n as any).id_institucion;
+        if (nInstId && instIdUsuario && Number(nInstId) !== Number(instIdUsuario)) {
+          return false;
+        }
+
+        const texto = norm(`${n.titulo || ''} ${n.mensaje || ''}`);
+        if (texto.includes(miInstNorm)) {
+          return true;
+        }
+
+        for (const otra of otrasInstituciones) {
+          if (!miInstNorm.includes(otra) && texto.includes(otra)) {
+            return false;
+          }
+        }
+
+        const matchSede = texto.match(/en sede:\s*([^,\.\n]+)/i);
+        if (matchSede && matchSede[1]) {
+          const sedeMencionada = matchSede[1].trim();
+          if (!miInstNorm.includes(sedeMencionada) && !sedeMencionada.includes(miInstNorm)) {
+            for (const otra of otrasInstituciones) {
+              if (sedeMencionada.includes(otra) && !miInstNorm.includes(otra)) {
+                return false;
+              }
+            }
+          }
+        }
+
+        return true;
+      });
+    }
+
+    // ========================================================
+    // CASO 2: SUPERVISOR
+    // ========================================================
+    if (this.esSupervisor) {
+      const instsSupervisor = (this.institucionesSupervisor && this.institucionesSupervisor.length > 0)
+        ? this.institucionesSupervisor
+        : (this.authService.obtenerInstitucionesSupervisor() || []);
+
+      const misInstitucionesNombres = instsSupervisor.map((i) => norm(i.nombre_institucion)).filter(Boolean);
+      const misInstitucionesIds = new Set(instsSupervisor.map((i) => Number(i.id_institucion)).filter(Boolean));
+      const misSedesNombres = (this.sedesSupervisor || []).map((s) => norm(s.nombre_sede || s.nombre)).filter(Boolean);
+
+      if (misInstitucionesNombres.length > 0 || misInstitucionesIds.size > 0 || misSedesNombres.length > 0) {
+        return lista.filter((n) => {
+          const nInstId = (n as any).id_institucion;
+          if (nInstId && misInstitucionesIds.size > 0 && !misInstitucionesIds.has(Number(nInstId))) {
+            return false;
+          }
+
+          const texto = norm(`${n.titulo || ''} ${n.mensaje || ''}`);
+
+          const mencionaMiInst = misInstitucionesNombres.some((nom) => nom.length > 3 && texto.includes(nom));
+          const mencionaMiSede = misSedesNombres.some((nom) => nom.length > 3 && texto.includes(nom));
+          if (mencionaMiInst || mencionaMiSede) {
+            return true;
+          }
+
+          for (const otra of otrasInstituciones) {
+            const esMia = misInstitucionesNombres.some((nom) => nom.includes(otra));
+            if (!esMia && texto.includes(otra)) {
+              return false;
+            }
+          }
+
+          const matchSede = texto.match(/en sede:\s*([^,\.\n]+)/i);
+          if (matchSede && matchSede[1]) {
+            const sedeMencionada = matchSede[1].trim();
+            const esMiSede = misSedesNombres.some((s) => s.includes(sedeMencionada) || sedeMencionada.includes(s));
+            const esMiInst = misInstitucionesNombres.some((i) => i.includes(sedeMencionada) || sedeMencionada.includes(i));
+            if (!esMiSede && !esMiInst) {
+              for (const otra of otrasInstituciones) {
+                if (sedeMencionada.includes(otra)) {
+                  return false;
+                }
+              }
+            }
+          }
+
+          return true;
+        });
+      }
+    }
+
+    return lista;
+  }
+
   cargarNotificacionesHeader(silent = false): void {
     this.notificacionService.obtenerNotificaciones().subscribe({
       next: (data: Notificacion[]) => {
+        const dataFiltrada = this.filtrarNotificacionesPorInstitucion(data);
         const previosPorId = new Map<number | string, Notificacion>();
         for (const prev of this.listaNotificaciones) {
           const key = prev.id ?? prev.id_notificacion;
           if (key !== undefined) previosPorId.set(key, prev);
         }
-        const nuevasSinLeer = data.filter(n => !n.leida && !previosPorId.has(n.id ?? n.id_notificacion ?? ''));
+        const nuevasSinLeer = dataFiltrada.filter(n => !n.leida && !previosPorId.has(n.id ?? n.id_notificacion ?? ''));
 
         // Preservar referencias cuando no cambiaron para no destruir nodos DOM durante un clic
-        this.listaNotificaciones = data.map((item) => {
+        this.listaNotificaciones = dataFiltrada.map((item) => {
           const key = item.id ?? item.id_notificacion;
           const existente = key !== undefined ? previosPorId.get(key) : undefined;
           if (existente && existente.leida === item.leida && existente.titulo === item.titulo && existente.mensaje === item.mensaje) {
@@ -508,13 +677,14 @@ export class LayoutComponent implements OnInit, OnDestroy {
   }
 
   get notificacionesFiltradas(): Notificacion[] {
+    const lista = this.filtrarNotificacionesPorInstitucion(this.listaNotificaciones);
     if (this.filtroNotificaciones === 'no_leidas') {
-      return this.listaNotificaciones.filter(n => !n.leida);
+      return lista.filter(n => !n.leida);
     }
     if (this.filtroNotificaciones === 'leidas') {
-      return this.listaNotificaciones.filter(n => n.leida);
+      return lista.filter(n => n.leida);
     }
-    return this.listaNotificaciones;
+    return lista;
   }
 
   get notificacionesLeidas(): number {

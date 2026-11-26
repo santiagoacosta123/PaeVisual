@@ -122,6 +122,16 @@ export class HistorialEntregas implements OnInit {
   institucionIdUsuario: number | null = null;
   tieneSedes = false;
   idsSedesPropias = new Set<number>();
+  sedes: { id_sede: number; nombre_sede: string; es_principal?: boolean }[] = [];
+  sedeSeleccionadaId: number | null = null;
+
+  filtrarPorSede(idSede: number | null): void {
+    this.sedeSeleccionadaId = idSede;
+    this.cacheFiltradas = null;
+    this.cacheGrupos = null;
+    this.cacheFacturas = null;
+    this.cdr.markForCheck();
+  }
 
   // Filtros avanzados
   filtroEstado: FiltroEstado = 'TODAS';
@@ -248,6 +258,21 @@ export class HistorialEntregas implements OnInit {
           listaFinal.map((s: any) => Number(s.id_sede ?? s.id)).filter((id: number) => !isNaN(id)),
         );
         this.tieneSedes = this.idsSedesPropias.size > 0;
+        this.sedes = listaFinal.map((s: any) => ({
+          id_sede: Number(s.id_sede ?? s.id),
+          nombre_sede: s.nombre_sede || s.nombre || 'Sede sin nombre',
+          es_principal: Boolean(s.es_principal || (s.nombre_sede || s.nombre || '').toLowerCase().includes('principal')),
+        }));
+        if (!this.sedes || this.sedes.length === 0) {
+          this.sedes = [
+            { id_sede: 1, nombre_sede: 'Sede Principal', es_principal: true },
+            { id_sede: 2, nombre_sede: 'Sede Norte', es_principal: false },
+          ];
+        }
+        const principal = this.sedes.find(s => s.es_principal);
+        if (principal && this.sedeSeleccionadaId === null) {
+          this.sedeSeleccionadaId = principal.id_sede;
+        }
         // Re-filtra desde la lista completa, no desde la ya filtrada
         this.aplicarFiltroInstitucion();
       });
@@ -717,12 +742,23 @@ export class HistorialEntregas implements OnInit {
   get entregasFiltradas(): Entrega[] {
     const texto = this.filtroTexto.trim().toLocaleLowerCase();
     const c = this.cacheFiltradas;
-    if (c && c.src === this.entregas && c.estado === this.filtroEstado && c.texto === texto) {
+    if (c && c.src === this.entregas && c.estado === this.filtroEstado && c.texto === texto && (c as any).sedeId === this.sedeSeleccionadaId) {
       return c.res;
     }
 
     const res = this.entregas
       .filter((entrega) => {
+        // Filtrar por sede si hay una sede seleccionada
+        if (this.sedeSeleccionadaId !== null) {
+          const sTarget = this.sedes.find(s => s.id_sede === this.sedeSeleccionadaId);
+          const nomTarget = (sTarget?.nombre_sede || '').toLowerCase();
+          const coincideId = entrega.idSede != null && Number(entrega.idSede) === Number(this.sedeSeleccionadaId);
+          const coincideNom = Boolean(nomTarget && (entrega.sedeNombre || '').toLowerCase().includes(nomTarget));
+          if (!coincideId && !coincideNom && (entrega.idSede != null || (entrega.sedeNombre && entrega.sedeNombre.trim() !== ''))) {
+            return false;
+          }
+        }
+
         const st = (entrega.estado || 'EN_TRANSITO').toUpperCase();
 
         if (
@@ -753,7 +789,7 @@ export class HistorialEntregas implements OnInit {
         return comp !== 0 ? comp : (Number(b.id) || 0) - (Number(a.id) || 0);
       });
 
-    this.cacheFiltradas = { src: this.entregas, estado: this.filtroEstado, texto, res };
+    (this.cacheFiltradas as any) = { src: this.entregas, estado: this.filtroEstado, texto, sedeId: this.sedeSeleccionadaId, res };
     return res;
   }
 

@@ -95,6 +95,119 @@ export class NotificacionesComponent implements OnInit {
     return rol === 'administrador' || rol === 'admin' || rol === 'administrador institucional';
   }
 
+  get esAdministradorInstitucional(): boolean {
+    const rol = this.rolUsuarioNormalizado;
+    const esAdmin = this.authService?.esAdministrador ? this.authService.esAdministrador(rol) : rol.includes('admin');
+    return Boolean(esAdmin && !this.esSuperAdmin && !this.esSupervisor);
+  }
+
+  perteneceAMiInstitucion(noti: Notificacion): boolean {
+    if (!this.esAdministradorInstitucional && !this.esSupervisor) {
+      return true;
+    }
+
+    const norm = (s: string) => (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+    const usuario = this.authService?.obtenerUsuario ? this.authService.obtenerUsuario() : null;
+
+    const otrasInstituciones = [
+      'francisco jose de caldas',
+      'caldas inen',
+      'comercial del norte',
+      'san jose',
+      'don bosco',
+      'inmaculada',
+      'la milagrosa',
+      'pedro antonio torre',
+      'sagrado corazon',
+      'guillermo valencia',
+      'tomas cipriano'
+    ];
+
+    if (this.esAdministradorInstitucional) {
+      const instUsuario = (usuario?.institucion_nombre || usuario?.institucion || '').trim();
+      const instIdUsuario = usuario?.id_institucion;
+
+      if (!instUsuario || instUsuario.toLowerCase() === 'ámbito central' || instUsuario.toLowerCase() === 'institución educativa asignada') {
+        return true;
+      }
+
+      const miInstNorm = norm(instUsuario);
+      const nInstId = (noti as any).id_institucion;
+      if (nInstId && instIdUsuario && Number(nInstId) !== Number(instIdUsuario)) {
+        return false;
+      }
+
+      const texto = norm(`${noti.titulo || ''} ${noti.mensaje || ''}`);
+      if (texto.includes(miInstNorm)) {
+        return true;
+      }
+
+      for (const otra of otrasInstituciones) {
+        if (!miInstNorm.includes(otra) && texto.includes(otra)) {
+          return false;
+        }
+      }
+
+      const matchSede = texto.match(/en sede:\s*([^,\.\n]+)/i);
+      if (matchSede && matchSede[1]) {
+        const sedeMencionada = matchSede[1].trim();
+        if (!miInstNorm.includes(sedeMencionada) && !sedeMencionada.includes(miInstNorm)) {
+          for (const otra of otrasInstituciones) {
+            if (sedeMencionada.includes(otra) && !miInstNorm.includes(otra)) {
+              return false;
+            }
+          }
+        }
+      }
+
+      return true;
+    }
+
+    if (this.esSupervisor) {
+      const instsSupervisor = this.authService?.obtenerInstitucionesSupervisor
+        ? this.authService.obtenerInstitucionesSupervisor()
+        : (usuario?.instituciones_supervisor || []);
+
+      const misInstitucionesNombres = instsSupervisor.map((i: any) => norm(i.nombre_institucion)).filter(Boolean);
+      const misInstitucionesIds = new Set(instsSupervisor.map((i: any) => Number(i.id_institucion)).filter(Boolean));
+
+      if (misInstitucionesNombres.length > 0 || misInstitucionesIds.size > 0) {
+        const nInstId = (noti as any).id_institucion;
+        if (nInstId && misInstitucionesIds.size > 0 && !misInstitucionesIds.has(Number(nInstId))) {
+          return false;
+        }
+
+        const texto = norm(`${noti.titulo || ''} ${noti.mensaje || ''}`);
+        const mencionaMiInst = misInstitucionesNombres.some((nom: string) => nom.length > 3 && texto.includes(nom));
+        if (mencionaMiInst) {
+          return true;
+        }
+
+        for (const otra of otrasInstituciones) {
+          const esMia = misInstitucionesNombres.some((nom: string) => nom.includes(otra));
+          if (!esMia && texto.includes(otra)) {
+            return false;
+          }
+        }
+
+        const matchSede = texto.match(/en sede:\s*([^,\.\n]+)/i);
+        if (matchSede && matchSede[1]) {
+          const sedeMencionada = matchSede[1].trim();
+          const esMiInst = misInstitucionesNombres.some((i: string) => i.includes(sedeMencionada) || sedeMencionada.includes(i));
+          if (!esMiInst) {
+            for (const otra of otrasInstituciones) {
+              if (sedeMencionada.includes(otra)) {
+                return false;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    return true;
+  }
+
   get esSupervisor(): boolean {
     const rol = this.rolUsuarioNormalizado;
     if (this.authService?.esSupervisor) {
@@ -241,6 +354,11 @@ export class NotificacionesComponent implements OnInit {
     const termino = this.busqueda.trim().toLowerCase();
 
     return this.listaNotificaciones.filter(noti => {
+      // Aislamiento por institución (Administrador)
+      if (!this.perteneceAMiInstitucion(noti)) {
+        return false;
+      }
+
       // Filtro de estado
       const cumpleEstado = this.filtroEstado === 'todas'
         || (this.filtroEstado === 'no_leidas' && !noti.leida)

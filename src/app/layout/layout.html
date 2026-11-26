@@ -723,7 +723,7 @@
           <span *ngIf="institucionActiva as institucion; else sinInstitucionSupervisor"
             class="svh-sub"
             style="display:block; margin-top:2px; color:#475569; font-size:12px; font-weight:600; line-height:1.35; white-space:normal; overflow-wrap:anywhere;">
-            {{ institucion.nombre_institucion }}
+            {{ institucion.nombre_institucion }} <span style="color:#94a3b8; margin: 0 4px;">/</span> <span style="color:#0f172a; font-weight:700;">{{ nombreSedeActiva }}</span>
           </span>
           <ng-template #sinInstitucionSupervisor>
             <span class="svh-sub" style="display:block; margin-top:2px; color:#475569; font-size:12px; white-space:normal;">Selecciona una institución para comenzar</span>
@@ -938,7 +938,9 @@
       <div class="svh-left" style="display:flex; align-items:center; flex:1 1 15rem; min-width:0;">
         <div style="min-width:0;">
           <h1 class="svh-title" style="margin:0; color:#17263a; font-size:17px; line-height:1.25; overflow-wrap:anywhere;">Bienvenido: {{ perfil.nombre }}</h1>
-          <span *ngIf="institucionUsuario" class="svh-sub" style="display:block; margin-top:2px; color:#475569; font-size:12px; font-weight:600; line-height:1.35; white-space:normal; overflow-wrap:anywhere;">{{ institucionUsuario }}</span>
+          <span *ngIf="institucionUsuario" class="svh-sub" style="display:block; margin-top:2px; color:#475569; font-size:12px; font-weight:600; line-height:1.35; white-space:normal; overflow-wrap:anywhere;">
+            {{ institucionUsuario }} <span style="color:#94a3b8; margin: 0 4px;">/</span> <span style="color:#0f172a; font-weight:700;">{{ nombreSedeActiva }}</span>
+          </span>
         </div>
       </div>
 
@@ -1068,7 +1070,7 @@
 
         <!-- Indicador para Administrador institucional -->
         <span *ngIf="esAdministrador && institucionUsuario" class="modern-inst-badge">
-          {{ institucionUsuario }}
+          {{ institucionUsuario }} / {{ nombreSedeActiva }}
         </span>
       </nav>
 

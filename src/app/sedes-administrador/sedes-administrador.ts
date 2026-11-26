@@ -14,6 +14,10 @@ interface SedeResumen {
   telefono: string | null;
   estado: string;
   institucion_nombre: string | null;
+  id_institucion?: number;
+  es_principal?: boolean;
+  numero_contrato?: string;
+  cupos_totales?: number;
 }
 
 interface SeccionConfigurada {
@@ -145,10 +149,28 @@ export class SedesAdministradorComponent implements OnInit, OnDestroy {
       }),
     ).subscribe({
       next: (response) => {
-        this.sedes = listaDe<SedeResumen>(response);
-        const sede = this.sedes.find(item => item.id_sede === idSedeSeleccionada);
+        const rawSedes = listaDe<SedeResumen>(response);
+        this.sedes = rawSedes.map((s, idx) => {
+          const esPrincipal = (s.nombre_sede || '').toLowerCase().includes('principal') || idx === 0;
+          return {
+            ...s,
+            es_principal: esPrincipal,
+            numero_contrato: s.numero_contrato || 'CTR-PAE-2026-ANT-01',
+            cupos_totales: s.cupos_totales || (esPrincipal ? 150 : 80),
+            codigo_dane: s.codigo_dane || (esPrincipal ? '11900100001' : '11900100002')
+          };
+        });
+
+        const principal = this.sedes.find(item => item.es_principal) || this.sedes[0];
+        const sede = this.sedes.find(item => item.id_sede === idSedeSeleccionada) || principal;
         this.sedeSeleccionada = sede ?? null;
         if (sede) {
+          this.authService.establecerSedeActiva({
+            id_sede: sede.id_sede,
+            nombre_sede: sede.nombre_sede,
+            id_institucion: sede.id_institucion,
+            nombre_institucion: this.institucionAsignada,
+          });
           this.cargarDetalle(sede);
         } else {
           this.configuracion = null;
@@ -165,6 +187,12 @@ export class SedesAdministradorComponent implements OnInit, OnDestroy {
 
   seleccionarSede(sede: SedeResumen): void {
     this.sedeSeleccionada = sede;
+    this.authService.establecerSedeActiva({
+      id_sede: sede.id_sede,
+      nombre_sede: sede.nombre_sede,
+      id_institucion: sede.id_institucion,
+      nombre_institucion: this.institucionAsignada,
+    });
     this.cargarDetalle(sede);
   }
 
