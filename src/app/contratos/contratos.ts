@@ -495,7 +495,36 @@ export class ContratosComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
+  institucionTieneContrato(inst: any): { tieneContrato: boolean; contratoExistente?: any } {
+    if (!inst) return { tieneContrato: false };
+    const instId = inst?.id_institucion || inst?.id;
+    const instNom = (inst?.nombre_institucion || '').trim().toLowerCase();
+
+    const c = (this.contratos || []).find((con: any) => {
+      if (this.modoEdicionContrato && this.contratoActual?.id && String(con.id) === String(this.contratoActual.id)) {
+        return false;
+      }
+      const cInstId = typeof con.id_institucion === 'object' && con.id_institucion !== null
+        ? (con.id_institucion.id_institucion ?? con.id_institucion.id)
+        : con.id_institucion;
+      const cInstNom = (con.institucion || con.institucion_nombre || '').trim().toLowerCase();
+      const coincideId = instId != null && cInstId != null && Number(instId) === Number(cInstId);
+      const coincideNom = !!(instNom && cInstNom && instNom === cInstNom);
+      return coincideId || coincideNom;
+    });
+
+    return { tieneContrato: !!c, contratoExistente: c };
+  }
+
   seleccionarInstitucionDesdeModal(inst: any) {
+    const info = this.institucionTieneContrato(inst);
+    if (info.tieneContrato) {
+      void this.sweetAlert.warning(
+        'Institución con contrato asignado',
+        `La institución "${inst.nombre_institucion}" ya tiene el contrato "${info.contratoExistente?.codigo || 'registrado'}". Solo se permite un contrato por institución.`
+      );
+      return;
+    }
     this.institucionTemporalSeleccionada = inst;
     this.contratoActual.institucion = inst.nombre_institucion;
     this.contratoActual.id_institucion = inst.id_institucion || inst.id || null;
@@ -506,6 +535,14 @@ export class ContratosComponent implements OnInit {
 
   confirmarSeleccionInstitucion() {
     if (this.institucionTemporalSeleccionada) {
+      const info = this.institucionTieneContrato(this.institucionTemporalSeleccionada);
+      if (info.tieneContrato) {
+        void this.sweetAlert.warning(
+          'Institución con contrato asignado',
+          `La institución "${this.institucionTemporalSeleccionada.nombre_institucion}" ya tiene el contrato "${info.contratoExistente?.codigo || 'registrado'}". Solo se permite un contrato por institución.`
+        );
+        return;
+      }
       this.contratoActual.institucion = this.institucionTemporalSeleccionada.nombre_institucion;
       this.contratoActual.id_institucion = this.institucionTemporalSeleccionada.id_institucion || this.institucionTemporalSeleccionada.id || null;
       this.sedesDeInstitucionSeleccionada = this.obtenerSedesDeInst(this.institucionTemporalSeleccionada);
@@ -793,6 +830,17 @@ export class ContratosComponent implements OnInit {
     );
     const idInst = instEncontrada?.id_institucion || instEncontrada?.id || this.contratoActual.id_institucion || null;
 
+    const infoContrato = this.institucionTieneContrato(
+      instEncontrada || { id_institucion: idInst, nombre_institucion: this.contratoActual.institucion }
+    );
+    if (infoContrato.tieneContrato) {
+      void this.sweetAlert.warning(
+        'Institución con contrato asignado',
+        `La institución "${this.contratoActual.institucion}" ya tiene un contrato (${infoContrato.contratoExistente?.codigo || 'registrado'}). Solo se permite un contrato por institución.`
+      );
+      return;
+    }
+
     const payload: any = {
       numero_cor: this.contratoActual.codigo,
       institucion: this.contratoActual.institucion,
@@ -815,7 +863,8 @@ export class ContratosComponent implements OnInit {
         },
         error: (err) => {
           console.error('Error al actualizar contrato', err);
-          void this.sweetAlert.error('Error', 'No se pudo actualizar el contrato.');
+          const msg = err?.error?.id_institucion?.[0] || err?.error?.detail || 'No se pudo actualizar el contrato.';
+          void this.sweetAlert.error('Error', msg);
         }
       });
     } else {
@@ -827,7 +876,8 @@ export class ContratosComponent implements OnInit {
         },
         error: (err) => {
           console.error('Error al crear contrato', err);
-          void this.sweetAlert.error('Error', 'No se pudo crear el contrato.');
+          const msg = err?.error?.id_institucion?.[0] || err?.error?.detail || 'No se pudo crear el contrato.';
+          void this.sweetAlert.error('Error', msg);
         }
       });
     }

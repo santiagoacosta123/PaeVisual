@@ -1960,6 +1960,60 @@ export class ContratoDetalleComponent implements OnInit, OnChanges {
     this.contratosSeccionMenu = Array.from(idsUnicos).map(id => ({ id_seccion: id }));
   }
 
+  /**
+   * Sincroniza la configuración de jornadas y secciones de cada sede en el backend
+   * para que /sedes/{id}/configuracion/ refleje exactamente lo asignado en el contrato.
+   */
+  private sincronizarConfiguracionSedesBackend(headers: HttpHeaders): void {
+    (this.sedesInstitucion || []).forEach((s: any) => {
+      const idSede = Number(s.id_sede || s.id || 0);
+      if (!idSede) return;
+
+      const idsSede = Array.isArray(s.secciones_ids) ? s.secciones_ids.map((id: any) => Number(id)) : [];
+      const seccionesDe = (tipo: 'Mañana' | 'Tarde') =>
+        (this.seccionesMenu || [])
+          .filter(m => idsSede.includes(Number(m.id_seccion || m.id)) && this.esSeccionDeJornada(m, tipo))
+          .map(m => ({
+            id_seccion: Number(m.id_seccion || m.id),
+            nombre_seccion: m.nombre_seccion || m.nombre || ''
+          }));
+
+      const jornadasPayload: any[] = [];
+      const cuposSede = Number(s.cupos_asignados ?? s.cupos ?? 0) || 0;
+      const tieneManana = !!s.jornada_manana;
+      const tieneTarde = !!s.jornada_tarde;
+
+      if (tieneManana && this.jornadaManana?.id_jornada) {
+        jornadasPayload.push({
+          id_jornada: Number(this.jornadaManana.id_jornada),
+          nombre_jornada: this.jornadaManana.nombre || 'Mañana',
+          cupos: tieneTarde ? 0 : cuposSede,
+          habilitada: true,
+          secciones: seccionesDe('Mañana'),
+          grados: []
+        });
+      }
+      if (tieneTarde && this.jornadaTarde?.id_jornada) {
+        jornadasPayload.push({
+          id_jornada: Number(this.jornadaTarde.id_jornada),
+          nombre_jornada: this.jornadaTarde.nombre || 'Tarde',
+          cupos: tieneManana ? 0 : cuposSede,
+          habilitada: true,
+          secciones: seccionesDe('Tarde'),
+          grados: []
+        });
+      }
+
+      if (jornadasPayload.length === 0) return;
+
+      this.http.post(`${environment.apiUrl}/sedes/${idSede}/configuracion/`, {
+        id_sede: idSede,
+        cupos_totales: cuposSede,
+        jornadas: jornadasPayload
+      }, { headers }).subscribe({ next: () => {}, error: () => {} });
+    });
+  }
+
   get tieneJornadaMananaEnAlgunaSede(): boolean {
     return (this.sedesInstitucion || []).some(s => !!s.jornada_manana);
   }
@@ -3186,6 +3240,44 @@ export class ContratoDetalleComponent implements OnInit, OnChanges {
     this.mensajeAviso = '';
     this.institucionRequeridaAviso = false;
 
+    // Validación obligatoria: toda sede del contrato y cada jornada habilitada debe tener al menos una sección asignada
+    for (const s of this.sedesInstitucion || []) {
+      const secIds: number[] = Array.isArray(s.secciones_ids) ? s.secciones_ids.map(Number) : [];
+      if (secIds.length === 0) {
+        void this.sweetAlert.warning(
+          'Sección obligatoria por sede',
+          `La sede "${s.nombre_sede}" debe tener al menos una sección de menú asignada (Desayuno, Almuerzo o Merienda).`
+        );
+        return;
+      }
+      if (s.jornada_manana) {
+        const tieneSecManana = secIds.some(id => {
+          const sec = this.todasSeccionesDisponibles.find(m => Number(m.id_seccion || m.id) === id);
+          return sec ? this.esSeccionDeJornada(sec, 'Mañana') : id === 1;
+        });
+        if (!tieneSecManana) {
+          void this.sweetAlert.warning(
+            'Sección obligatoria por jornada',
+            `La sede "${s.nombre_sede}" tiene habilitada la jornada Mañana pero no tiene ninguna sección de menú asignada (ej. Desayuno). Es obligatorio asignar al menos una sección a cada jornada.`
+          );
+          return;
+        }
+      }
+      if (s.jornada_tarde) {
+        const tieneSecTarde = secIds.some(id => {
+          const sec = this.todasSeccionesDisponibles.find(m => Number(m.id_seccion || m.id) === id);
+          return sec ? this.esSeccionDeJornada(sec, 'Tarde') : (id === 2 || id === 3);
+        });
+        if (!tieneSecTarde) {
+          void this.sweetAlert.warning(
+            'Sección obligatoria por jornada',
+            `La sede "${s.nombre_sede}" tiene habilitada la jornada Tarde pero no tiene ninguna sección de menú asignada (ej. Almuerzo o Merienda). Es obligatorio asignar al menos una sección a cada jornada.`
+          );
+          return;
+        }
+      }
+    }
+
     // Validación de coherencia de vigencia
     if (this.contrato.fecha_fin && this.contrato.fecha_inicio && this.contrato.fecha_fin < this.contrato.fecha_inicio) {
       void this.sweetAlert.warning(
@@ -3311,6 +3403,7 @@ export class ContratoDetalleComponent implements OnInit, OnChanges {
                 });
               }
             });
+            this.sincronizarConfiguracionSedesBackend(headers);
           }
 
           // Historial de creación
@@ -3448,6 +3541,7 @@ export class ContratoDetalleComponent implements OnInit, OnChanges {
                 });
               }
             });
+            this.sincronizarConfiguracionSedesBackend(headers);
           }
 
           // Historial de modificación

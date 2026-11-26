@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { ChangeDetectorRef, Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { finalize, Subscription, catchError, of } from 'rxjs';
+import { finalize, Subscription, catchError, of, forkJoin, switchMap, map } from 'rxjs';
 import { AuthService } from '../core/auth/auth.service';
 import { environment } from '../../environments/environment';
 
@@ -115,9 +115,8 @@ export class SedesAdministradorComponent implements OnInit, OnDestroy {
 
   get cuposTotalesDistribuidos(): number {
     if (!this.configuracion) return 0;
-    return this.configuracion.jornadas
-      .filter(j => j.habilitada)
-      .reduce((sum, jornada) => sum + Number(jornada.cupos || 0), 0);
+    // Los cupos son por sede (no se suman ni multiplican por cada jornada o sección)
+    return Number(this.configuracion.cupos_totales || 0);
   }
 
   get cuposPendientes(): number {
@@ -337,49 +336,95 @@ export class SedesAdministradorComponent implements OnInit, OnDestroy {
       this.mensajeGuardado = '';
     }
 
-    this.detalleSubscription = this.http.get<ConfiguracionSede>(
-      `${this.apiUrl}${sede.id_sede}/configuracion/`,
-    ).pipe(
-      catchError(() => of({
-        sede,
-        cupos_totales: 0,
-        jornadas: [],
-        historial: [],
-      } as ConfiguracionSede)),
+    this.detalleSubscription = forkJoin({
+      config: this.http.get<ConfiguracionSede>(`${this.apiUrl}${sede.id_sede}/configuracion/`).pipe(
+        catchError(() => of({
+          sede,
+          cupos_totales: 0,
+          jornadas: [],
+          historial: [],
+        } as ConfiguracionSede))
+      ),
+      contratos: this.http.get<any>(`${environment.apiUrl}/contratos/`).pipe(
+        catchError(() => of([]))
+      )
+    }).pipe(
+      switchMap(({ config, contratos }) => {
+        const listaContratos = Array.isArray(contratos) ? contratos : (contratos?.results || contratos?.data || []);
+        const contratosOrdenados = [...listaContratos].sort((a: any, b: any) => {
+          const actA = String(a.estado || '').toLowerCase() === 'activo' ? 1 : 0;
+          const actB = String(b.estado || '').toLowerCase() === 'activo' ? 1 : 0;
+          if (actA !== actB) return actB - actA;
+          return Number(b.id_contrato || b.id || 0) - Number(a.id_contrato || a.id || 0);
+        });
+
+        if (contratosOrdenados.length === 0) {
+          return of({ config, distribucionContrato: null as any });
+        }
+
+        const peticiones = contratosOrdenados.slice(0, 8).map((c: any) => {
+          const idC = Number(c.id_contrato || c.id);
+          return this.http.get<any>(`${environment.apiUrl}/contratos/${idC}/distribucion/`).pipe(
+            catchError(() => of(null))
+          );
+        });
+
+        return forkJoin(peticiones).pipe(
+          map((distribuciones: any[]) => {
+            let encontrada: any = null;
+            for (const dist of distribuciones) {
+              if (!dist || !Array.isArray(dist.sedes)) continue;
+              const sedeEnDist = dist.sedes.find((sd: any) => Number(sd.id_sede || sd.id) === Number(sede.id_sede));
+              if (sedeEnDist) {
+                encontrada = sedeEnDist;
+                break;
+              }
+            }
+            return { config, distribucionContrato: encontrada };
+          })
+        );
+      }),
       finalize(() => {
         this.cargandoDetalle = false;
         this.cdr.markForCheck();
       }),
     ).subscribe({
-      next: (configuracion) => {
-        let cuposTotales = Number(configuracion.cupos_totales || 0);
-        let jornadas = configuracion.jornadas ?? [];
+      next: ({ config, distribucionContrato }) => {
+        let cuposTotales = Number(config.cupos_totales || 0);
+        let jornadas = config.jornadas ?? [];
 
-        // Si el backend no reporta cupos o jornadas para la sede, consultar la distribución local guardada para el contrato/sede
-        if (cuposTotales === 0 || jornadas.length === 0) {
+        // Priorizar siempre la última configuración oficial establecida en el contrato para esta sede
+        if (distribucionContrato) {
+          const cuposContrato = Number(
+            distribucionContrato.cupos_asignados ?? distribucionContrato.cuposAsignados ?? distribucionContrato.cupos ?? 0
+          );
+          if (cuposContrato > 0) {
+            cuposTotales = cuposContrato;
+          }
+
+          const jornadasContrato = this.construirJornadasDesdeDistribucion(distribucionContrato, cuposTotales);
+          if (jornadasContrato.length > 0) {
+            jornadas = jornadasContrato;
+          }
+        } else if (cuposTotales === 0 || jornadas.length === 0) {
           const distribucionLocal = this.obtenerDistribucionLocalParaSede(sede.id_sede);
           if (distribucionLocal) {
-            if (cuposTotales === 0) {
-              cuposTotales = distribucionLocal.cuposSede;
-            }
-            if (jornadas.length === 0 && distribucionLocal.jornadas.length > 0) {
-              jornadas = distribucionLocal.jornadas;
-            }
+            if (cuposTotales === 0) cuposTotales = distribucionLocal.cuposSede;
+            if (jornadas.length === 0 && distribucionLocal.jornadas.length > 0) jornadas = distribucionLocal.jornadas;
           }
         }
 
         this.configuracion = {
-          ...configuracion,
+          ...config,
           sede,
           cupos_totales: cuposTotales,
           jornadas: this.normalizarJornadas(jornadas),
-          historial: configuracion.historial ?? [],
+          historial: config.historial ?? [],
         };
         this.sincronizarJornadasConfiguradas();
         this.cdr.markForCheck();
       },
       error: () => {
-        // En caso de error de red, consultar almacenamiento local
         const distribucionLocal = this.obtenerDistribucionLocalParaSede(sede.id_sede);
         if (distribucionLocal) {
           this.configuracion = {
@@ -395,6 +440,63 @@ export class SedesAdministradorComponent implements OnInit, OnDestroy {
         this.cdr.markForCheck();
       },
     });
+  }
+
+  private construirJornadasDesdeDistribucion(sedeFound: any, cuposSede: number): JornadaConfigurada[] {
+    const jornadasSede: JornadaConfigurada[] = [];
+    const esManana = Boolean(
+      sedeFound.jornada_manana ||
+      (Array.isArray(sedeFound.jornadas) && sedeFound.jornadas.some((j: any) => String(j).toLowerCase().includes('mañan')))
+    );
+    const esTarde = Boolean(
+      sedeFound.jornada_tarde ||
+      (Array.isArray(sedeFound.jornadas) && sedeFound.jornadas.some((j: any) => String(j).toLowerCase().includes('tard')))
+    );
+
+    const catalogoJornadas = this.jornadasDisponibles;
+    const jMananaObj = catalogoJornadas.find(j => j.nombre_jornada.toLowerCase().includes('mañan')) || { id_jornada: 1, nombre_jornada: 'Mañana' };
+    const jTardeObj = catalogoJornadas.find(j => j.nombre_jornada.toLowerCase().includes('tard')) || { id_jornada: 2, nombre_jornada: 'Tarde' };
+
+    const secIds: number[] = Array.isArray(sedeFound.secciones_ids) ? sedeFound.secciones_ids.map(Number) : [];
+    const seccionesManana: SeccionConfigurada[] = [];
+    const seccionesTarde: SeccionConfigurada[] = [];
+
+    secIds.forEach(id => {
+      const sec = this.seccionesDisponibles.find((s: any) => Number(s.id_seccion || s.id) === Number(id));
+      const nombre = sec ? (sec.nombre_seccion || sec.nombre || '') : (id === 1 ? 'Desayuno' : id === 2 ? 'Almuerzo' : id === 3 ? 'Merienda' : `Sección ${id}`);
+      const jNom = sec ? (sec.nombre_jornada || sec.jornada || '').toLowerCase() : '';
+      const esMenuTarde = jNom.includes('tard') || nombre.toLowerCase().includes('almuerz') || nombre.toLowerCase().includes('meriend');
+
+      if (esMenuTarde) {
+        seccionesTarde.push({ id_seccion: Number(id), nombre_seccion: nombre, estado: 'Activo' });
+      } else {
+        seccionesManana.push({ id_seccion: Number(id), nombre_seccion: nombre, estado: 'Activo' });
+      }
+    });
+
+    if (esManana || seccionesManana.length > 0) {
+      jornadasSede.push({
+        id_jornada: jMananaObj.id_jornada,
+        nombre_jornada: jMananaObj.nombre_jornada,
+        cupos: cuposSede,
+        habilitada: true,
+        secciones: seccionesManana,
+        grados: [],
+      });
+    }
+
+    if (esTarde || seccionesTarde.length > 0) {
+      jornadasSede.push({
+        id_jornada: jTardeObj.id_jornada,
+        nombre_jornada: jTardeObj.nombre_jornada,
+        cupos: cuposSede,
+        habilitada: true,
+        secciones: seccionesTarde,
+        grados: [],
+      });
+    }
+
+    return jornadasSede;
   }
 
   private obtenerDistribucionLocalParaSede(idSede: number): { cuposSede: number; jornadas: JornadaConfigurada[] } | null {
