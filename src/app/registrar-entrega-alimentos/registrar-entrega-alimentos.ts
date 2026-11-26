@@ -1425,16 +1425,16 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     };
     this.seleccionados.push(item);
 
-    // Sugerir automáticamente la cantidad requerida exacta según el cálculo nutricional
-    const req = this.cantidadRequeridaDe(item);
-    const disp = this.disponibleDe(item);
-    let cantInicial = 1;
-    if (req > 0) {
-      cantInicial = Math.min(disp, req);
-    } else if (disp > 0) {
-      cantInicial = Math.min(disp, 1);
-    }
+    // Sugerir automáticamente la cantidad requerida neta según el cálculo nutricional (nunca superar el tope)
+    const maximo = this.maximoPermitidoParaEnvio(item);
+    const cantInicial = this.sedeTieneParametrizacionCalculo ? maximo : Math.min(this.disponibleDe(item), 1);
     this.fijarCantidadEnviar(item, Math.round(cantInicial * 100) / 100);
+    if (this.sedeTieneParametrizacionCalculo && maximo <= 0) {
+      void this.alertas.warning(
+        'Stock ya cubierto en sede',
+        `${item.ingrediente} ya tiene suficiente stock o no requiere despacho en este periodo (requerido neto: 0 ${item.unidad}).`,
+      );
+    }
     this.cdr.markForCheck();
   }
 
@@ -1589,11 +1589,17 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     return null;
   }
 
+  get sedeTieneParametrizacionCalculo(): boolean {
+    const c = this.calculoAbastecimiento;
+    if (!c) return false;
+    return (c.total_cupos ?? 0) > 0 || c.contrato != null || (c.productos_sugeridos?.length ?? 0) > 0;
+  }
+
   cantidadRequeridaDe(sel: FilaEntrega): number {
     const calc = this.calculadoDe(sel);
     if (!calc) return 0;
     const sug = Number(calc.cantidad_sugerida_despacho);
-    if (Number.isFinite(sug) && sug > 0) return sug;
+    if (Number.isFinite(sug) && sug >= 0) return sug;
     const req = Number(calc.cantidad_total_requerida);
     if (Number.isFinite(req) && req > 0) return req;
     return 0;
@@ -1601,20 +1607,20 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
 
   maximoPermitidoParaEnvio(sel: FilaEntrega): number {
     const disp = this.disponibleDe(sel);
-    const req = this.cantidadRequeridaDe(sel);
-    if (req > 0) {
-      return Math.min(disp, req);
+    if (this.sedeTieneParametrizacionCalculo) {
+      const req = this.cantidadRequeridaDe(sel);
+      return Math.max(0, Math.min(disp, req));
     }
     return disp;
   }
 
   get itemsConExcesoCalculo(): Array<{ sel: FilaEntrega; enviado: number; requerido: number }> {
-    if (!this.calculoAbastecimiento) return [];
+    if (!this.sedeTieneParametrizacionCalculo) return [];
     const salida: Array<{ sel: FilaEntrega; enviado: number; requerido: number }> = [];
     for (const sel of this.productosParaEnviar) {
       const enviado = this.cantidadEnviarDe(sel);
       const req = this.cantidadRequeridaDe(sel);
-      if (req > 0 && enviado > req + 0.0001) {
+      if (enviado > req + 0.0001) {
         salida.push({ sel, enviado, requerido: req });
       }
     }

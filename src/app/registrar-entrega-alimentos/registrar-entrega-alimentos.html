@@ -1078,14 +1078,17 @@ input[type="date"].campo::-webkit-calendar-picker-indicator:hover {
 
                 <ng-container *ngIf="calculadoDe(sel) as calcRow">
                   <p class="m-0 px-2.5 pb-1 text-[10px] font-semibold text-slate-500">
-                    Requerido neto cálculo: <b class="text-slate-800">{{ (calcRow.cantidad_sugerida_despacho || calcRow.cantidad_total_requerida) | number:'1.0-2' }} {{ sel.unidad }}</b>
+                    Requerido neto cálculo: <b class="text-slate-800">{{ calcRow.cantidad_sugerida_despacho | number:'1.0-2' }} {{ sel.unidad }}</b>
                     (periodo: {{ calcRow.cantidad_total_requerida | number:'1.0-2' }} {{ sel.unidad }})
                   </p>
-                  <p *ngIf="cantidadEnviarDe(sel) < (calcRow.cantidad_sugerida_despacho || calcRow.cantidad_total_requerida) - 0.0001 && cantidadEnviarDe(sel) > 0" class="m-0 px-2.5 pb-1 text-[10px] font-semibold text-emerald-700">
-                    Envío parcial: faltarán {{ ((calcRow.cantidad_sugerida_despacho || calcRow.cantidad_total_requerida) - cantidadEnviarDe(sel)) | number:'1.0-2' }} {{ sel.unidad }}
+                  <p *ngIf="calcRow.cantidad_sugerida_despacho <= 0" class="m-0 px-2.5 pb-1 text-[10px] font-bold text-emerald-700">
+                    Stock cubierto en sede (no requiere más envío).
                   </p>
-                  <p *ngIf="cantidadEnviarDe(sel) > (calcRow.cantidad_sugerida_despacho || calcRow.cantidad_total_requerida) + 0.0001" class="m-0 px-2.5 pb-2 text-[10px] font-bold text-amber-700">
-                    Supera lo requerido en +{{ (cantidadEnviarDe(sel) - (calcRow.cantidad_sugerida_despacho || calcRow.cantidad_total_requerida)) | number:'1.0-2' }} {{ sel.unidad }} (requiere autorización).
+                  <p *ngIf="calcRow.cantidad_sugerida_despacho > 0 && cantidadEnviarDe(sel) < calcRow.cantidad_sugerida_despacho - 0.0001 && cantidadEnviarDe(sel) > 0" class="m-0 px-2.5 pb-1 text-[10px] font-semibold text-emerald-700">
+                    Envío parcial: faltarán {{ (calcRow.cantidad_sugerida_despacho - cantidadEnviarDe(sel)) | number:'1.0-2' }} {{ sel.unidad }}
+                  </p>
+                  <p *ngIf="cantidadEnviarDe(sel) > calcRow.cantidad_sugerida_despacho + 0.0001" class="m-0 px-2.5 pb-2 text-[10px] font-bold text-amber-700">
+                    Supera lo requerido en +{{ (cantidadEnviarDe(sel) - calcRow.cantidad_sugerida_despacho) | number:'1.0-2' }} {{ sel.unidad }} (no permitido).
                   </p>
                 </ng-container>
               </article>
