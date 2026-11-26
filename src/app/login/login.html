@@ -1,3 +1,10 @@
+
+
+
+
+
+
+
 <div class="min-h-screen w-screen flex flex-col lg:flex-row bg-white overflow-x-hidden font-sans select-none">
 
   <!-- ================= LADO IZQUIERDO: FOTOGRAFÍA CON ACENTOS DIAGONALES ================= -->
@@ -199,7 +206,10 @@
           class="w-full h-[52px] rounded-full border-2 border-[#0b6638] bg-white hover:bg-emerald-50/50 px-5 sm:px-6 flex items-center justify-center gap-3 transition-all duration-200 shadow-2xs hover:shadow-sm cursor-pointer group">
           
           <!-- Icono de escáner facial definitivo sin fondo -->
-          <img src="icono-facial.png" alt="Icono Facial" class="w-8 h-8 object-contain shrink-0" />
+          <span aria-hidden="true" class="icono-escaneo relative block h-8 w-8 shrink-0">
+            <img src="icono-facial.png" alt="" class="block h-full w-full object-contain" />
+            <span class="linea-escaneo pointer-events-none absolute inset-x-1 top-1/2 h-px bg-emerald-500 opacity-0"></span>
+          </span>
           <span class="text-[#0b6638] font-bold text-sm sm:text-base tracking-tight">Reconocimiento Facial</span>
         </button>
 
@@ -452,3 +462,22 @@
 
   </div>
 </div>
+<style>
+  .icono-escaneo:hover .linea-escaneo { opacity: 1; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .icono-escaneo:hover img {
+      animation: escanear-muneco 1.8s ease-in-out infinite;
+    }
+  }
+
+  @keyframes escanear-muneco {
+    0%, 100% { transform: translateY(0); }
+    25% { transform: translateY(-3px); }
+    75% { transform: translateY(3px); }
+  }
+</style>
+
+
+
+
