@@ -13,14 +13,14 @@
     --adm-page-bg: #fafafa;
     --adm-rail: #ffffff;
     --adm-text: #64748b;
-    --adm-accent: #f4b41f;
-    --adm-accent-dark: #e69a0c;
+    --adm-accent: #F5B81F;
+    --adm-accent-dark: #F5B81F;
     --adm-accent-ink: #2B1D00;
     --adm-soft: #fff1d0;
     /* Borde de la barra: gris suave que se nota sobre el fondo claro */
     --adm-rail-border: #dfe3e8;
     /* Color del borde de la pestaña activa (cámbialo aquí: #f0e3bd da un toque amarillo suave) */
-    --adm-tab-border: #f4b41f;
+    --adm-tab-border: #F5B81F;
     position: relative;
     display: flex;
     height: 100vh;
@@ -119,6 +119,9 @@
     gap: 20px;
     box-sizing: border-box;
     background: transparent;
+  }
+  .adm-shell .adm-main > router-outlet {
+    display: none;
   }
 
   /* Hueco que ocupa la barra en el layout; al abrirse por hover flota encima */
@@ -1047,7 +1050,7 @@
     <nav class="adm-nav">
 
       <a routerLink="inicio" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="adm-link" title="Inicio" aria-label="Inicio">
-        <span class="adm-ico"><span class="material-symbols-outlined" aria-hidden="true">dashboard</span></span>
+        <span class="adm-ico"><span class="material-symbols-outlined" aria-hidden="true">space_dashboard</span></span>
         <span class="adm-label">Inicio</span>
       </a>
 
