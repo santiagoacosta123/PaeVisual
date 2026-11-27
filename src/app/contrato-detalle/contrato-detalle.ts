@@ -19,6 +19,7 @@ import { SweetAlertService } from '../sweet-alert.service';
 })
 export class ContratoDetalleComponent implements OnInit, OnChanges {
   @Input() contratoId: string | null = null;
+  @Input() contrato: any = null;
   @Input() modo: 'consulta' | 'nuevo' | 'edicion' = 'consulta';
   @Input() pestanaInicial: string = 'resumen';
   @Output() cerrar = new EventEmitter<any>();
@@ -88,7 +89,8 @@ export class ContratoDetalleComponent implements OnInit, OnChanges {
   supervisores: any[] = [];
   cargandoSupervisores = false;
   rolesCatalogo: any[] = [];
-  contrato: any = { 
+  // Inicialización por defecto en caso de no suministrarse @Input() contrato
+  private contratoPorDefecto: any = { 
     codigo: '', 
     institucion: '', 
     zona: '', 
@@ -1738,6 +1740,9 @@ export class ContratoDetalleComponent implements OnInit, OnChanges {
   ) { }
 
   ngOnChanges(changes: SimpleChanges): void {
+    if (changes['contrato'] && changes['contrato'].currentValue) {
+      this.aplicarContratoDirecto(changes['contrato'].currentValue);
+    }
     if (changes['contratoId'] && !changes['contratoId'].firstChange) {
       const nuevoId = changes['contratoId'].currentValue;
       if (nuevoId === 'nuevo' || nuevoId === '0') {
@@ -1766,10 +1771,61 @@ export class ContratoDetalleComponent implements OnInit, OnChanges {
       }
       this.iniciarContrato();
       this.cargarDatosMaestros();
-      if (this.contratoId && this.contratoId !== 'nuevo' && this.contratoId !== '0') {
+
+      // Si ya recibimos el contrato directamente desde el componente padre, lo usamos de inmediato
+      if (this.contrato && this.contrato.codigo && this.contrato.codigo !== '') {
+        this.aplicarContratoDirecto(this.contrato);
+      } else if (this.contratoId && this.contratoId !== 'nuevo' && this.contratoId !== '0') {
         this.cargarDetalleContrato();
       }
     });
+  }
+
+  aplicarContratoDirecto(c: any): void {
+    if (!c) return;
+    const instId = c.id_institucion ? (c.id_institucion?.id_institucion || c.id_institucion) : null;
+    const supId = c.id_usuario_supervisor ? (c.id_usuario_supervisor?.id_usuario || c.id_usuario_supervisor) : null;
+    const fechaFinStr = c.fecha_fin || c.fechaFin || c.fin || '';
+    const vigencia = this.evaluarVigencia(fechaFinStr, c.estado || c.estadoOriginal);
+
+    this.contrato = {
+      ...c,
+      codigo: c.numero_cor || c.codigo || c.numero_contrato || `COR-${this.contratoId || c.id}`,
+      institucion: c.institucion || c.institucion_nombre || c.nombre_institucion || c.id_institucion?.nombre_institucion || 'No especificada',
+      id_institucion: instId,
+      zona: c.zona || c.nombre_zona || 'No especificada',
+      fecha_inicio: c.fecha_inicio || c.fechaInicio || c.inicio,
+      fecha_fin: fechaFinStr,
+      estado: vigencia.estado,
+      condiciones: c.condiciones || c.descripcion || '',
+      cupos: Number(c.cupos) || 0,
+      id_usuario_supervisor: supId ? Number(supId) : null
+    };
+
+    this.esContratoProximoAVencer = vigencia.esProximoAVencer;
+    this.diasRestantesVigencia = vigencia.diasRestantes;
+    this.mensajeVigenciaContrato = vigencia.mensajeVigencia;
+
+    this.cargandoDetalle = false;
+    this.errorCargaDetalle = '';
+
+    this.actualizarSedesDeInstitucion();
+    this.cargarDistribucionPersistida();
+    this.cargarHistorialLocal();
+
+    // Cargar relaciones de menú si hay un ID numérico válido
+    const numericId = Number(this.contratoId || c.id || c.id_contrato);
+    if (numericId && !isNaN(numericId)) {
+      this.siraeService.getContratosSeccionMenu(numericId).subscribe({
+        next: (datos: any) => {
+          this.contratosSeccionMenu = Array.isArray(datos) ? datos : (datos.results || datos.data || []);
+          this.cdr.detectChanges();
+        },
+        error: () => {}
+      });
+    }
+
+    this.cdr.detectChanges();
   }
 
   private iniciarContrato(): void {
@@ -2545,12 +2601,34 @@ export class ContratoDetalleComponent implements OnInit, OnChanges {
   cargarDetalleContrato() {
     if (!this.contratoId || this.contratoId === 'nuevo' || this.contratoId === '0') return;
 
+    // Si ya tenemos los datos completos del contrato asignados, no necesitamos mostrar spinner bloqueante
+    if (this.contrato && this.contrato.codigo && (String(this.contrato.id) === String(this.contratoId) || String(this.contrato.id_contrato) === String(this.contratoId))) {
+      this.cargandoDetalle = false;
+      this.actualizarSedesDeInstitucion();
+      this.cargarDistribucionPersistida();
+      this.cargarHistorialLocal();
+      return;
+    }
+
     this.cargandoDetalle = true;
     this.errorCargaDetalle = '';
+
+    // Temporizador de seguridad: si la petición se demora más de 2 segundos, desbloquear la interfaz
+    const timerSeguridad = setTimeout(() => {
+      if (this.cargandoDetalle) {
+        this.cargandoDetalle = false;
+        if (!this.contrato || !this.contrato.codigo) {
+          this.contrato = { codigo: `COR-${this.contratoId}`, estado: 'Activo', cupos: 0, institucion: 'Institución Educativa' };
+        }
+        this.actualizarSedesDeInstitucion();
+        this.cdr.detectChanges();
+      }
+    }, 2000);
 
     // Cargar información básica del contrato desde la lista general
     this.siraeService.getContratos().subscribe({
       next: (datos: any) => {
+        clearTimeout(timerSeguridad);
         const listaContratos = Array.isArray(datos) ? datos : (datos.results || datos.data || []);
         let contratoEncontrado = listaContratos.find((c: any) =>
           String(c.id_contrato || c.id || c.pk) === String(this.contratoId)
@@ -2614,6 +2692,7 @@ export class ContratoDetalleComponent implements OnInit, OnChanges {
         this.cdr.detectChanges();
       },
       error: (err) => {
+        clearTimeout(timerSeguridad);
         console.error('Error al cargar el contrato:', err);
         this.cargandoDetalle = false;
         this.errorCargaDetalle = 'No se pudo cargar la información detallada del contrato.';

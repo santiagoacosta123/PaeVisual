@@ -533,6 +533,19 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
 
   filtroSemanaMenu: string = 'TODAS';
   filtroSeccionMenu: string = 'TODAS';
+
+  get tituloModalCrearEditar(): string {
+    if (this.tabActual === 'menus') {
+      return this.modoEdicion ? 'Configurar receta y componentes del menú' : 'Nuevo menú / plato del ciclo PAE';
+    }
+    if (this.tabActual === 'gramajes') {
+      return this.modoEdicion ? 'Editar gramajes del ingrediente' : 'Asignar gramajes por grado escolar';
+    }
+    const sing = (this.tab.singular || '').trim();
+    const esFem = ['institución', 'sede', 'unidad de medida', 'categoría', 'jornada', 'sección'].includes(sing.toLowerCase());
+    const prefijo = this.modoEdicion ? 'Editar ' : (esFem ? 'Nueva ' : 'Nuevo ');
+    return prefijo + sing;
+  }
   plantillaMenuSeleccionada: any = '';
   sincronizandoMinuta = false;
 
