@@ -1,7 +1,105 @@
 <div class="perfil-container p-4 sm:p-6 lg:p-8 w-full max-w-7xl mx-auto space-y-6">
 
-  <!-- ================= TARJETA SUPERIOR HERO: PERFIL DEL USUARIO ================= -->
-  <div class="bg-white rounded-3xl shadow-xs border border-slate-200/80 p-6 sm:p-8 relative overflow-hidden">
+  <!-- ================= HERO SOLO SUPER ADMINISTRADOR: BANNER VERDE ================= -->
+  <div *ngIf="esSuperAdmin"
+    class="bg-gradient-to-br from-[#2b5424] to-[#1d3f1b] rounded-3xl shadow-md border border-[#1d3f1b] p-6 sm:p-8 relative overflow-hidden">
+    <!-- Brillo sutil en esquina superior -->
+    <div
+      class="absolute -right-16 -top-16 w-56 h-56 rounded-full bg-white/5 blur-2xl pointer-events-none">
+    </div>
+
+    <div class="flex flex-col lg:flex-row items-center lg:items-start justify-between gap-6 relative z-10">
+
+      <!-- Avatar con Foto o Iniciales y botón de cambio rápido -->
+      <div class="flex flex-col sm:flex-row items-center gap-6 text-center sm:text-left">
+        <div class="relative group shrink-0">
+          <div
+            class="w-28 h-28 sm:w-32 sm:h-32 rounded-full p-1 bg-gradient-to-tr from-[#fab005] to-amber-300 shadow-md">
+            <div
+              class="w-full h-full rounded-full bg-amber-50 flex items-center justify-center text-[#8a5a00] text-3xl sm:text-4xl font-extrabold overflow-hidden border-2 border-white">
+              <img *ngIf="usuario?.foto_perfil" [src]="usuario?.foto_perfil" alt="Foto de perfil"
+                class="w-full h-full object-cover" />
+              <span *ngIf="!usuario?.foto_perfil">
+                {{ iniciales }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Botón circular flotante de cámara para subir foto -->
+          <label
+            class="absolute bottom-1 right-1 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#fab005] hover:bg-[#e69a0c] text-white flex items-center justify-center shadow-lg cursor-pointer transition-transform duration-150 hover:scale-110 border-2 border-white"
+            title="Cambiar foto de perfil">
+            <input type="file" accept="image/png, image/jpeg, image/webp" (change)="onFotoSeleccionada($event)"
+              class="hidden" />
+            <span class="material-symbols-outlined text-base sm:text-lg">photo_camera</span>
+          </label>
+        </div>
+
+        <!-- Información Principal del Usuario -->
+        <div class="space-y-1.5">
+          <!-- Etiqueta amarilla pequeña -->
+          <p class="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#fab005]">
+            Mi perfil
+          </p>
+
+          <h1 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+            {{ (usuario?.nombre ? usuario?.nombre + ' ' + (usuario?.apellido || '') : '') || rolDisplay }}
+          </h1>
+
+          <p class="text-sm font-medium text-white/80 flex items-center justify-center sm:justify-start gap-1.5">
+            <span class="material-symbols-outlined text-base text-white/70">mail</span>
+            <span>{{ usuario?.correo }}</span>
+          </p>
+
+          <!-- Badges del Usuario: Rol, Estado y Biometría -->
+          <div class="flex flex-wrap items-center gap-2 justify-center sm:justify-start pt-1">
+            <!-- Rol Institucional: Super Administrador en dorado -->
+            <span
+              class="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-bold bg-[#fab005] text-white border border-[#fab005] shadow-2xs">
+              <span class="material-symbols-outlined text-sm">shield_person</span>
+              {{ rolDisplay }}
+            </span>
+
+            <!-- Estado de la cuenta -->
+            <span
+              class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-white/10 text-white border border-white/25">
+              <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+              {{ usuario?.is_active ? 'Cuenta Activa' : 'Inactivo' }}
+            </span>
+
+            <!-- Institución Educativa -->
+            <span *ngIf="usuario?.institucion_nombre || usuario?.institucion"
+              class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-white/10 text-white border border-white/25">
+              <span class="material-symbols-outlined text-sm text-white/70">apartment</span>
+              {{ usuario?.institucion_nombre || usuario?.institucion }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Acciones de Foto de Perfil en la esquina superior derecha -->
+      <div class="flex items-center gap-2.5 shrink-0 self-center lg:self-start">
+        <label
+          class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs sm:text-sm font-bold bg-[#fab005] hover:bg-[#e69a0c] text-white shadow-md transition cursor-pointer">
+          <input type="file" accept="image/png, image/jpeg, image/webp" (change)="onFotoSeleccionada($event)"
+            class="hidden" />
+          <span class="material-symbols-outlined text-base text-white">photo_camera</span>
+          <span>Cambiar Foto</span>
+        </label>
+
+        <button *ngIf="usuario?.foto_perfil" type="button" (click)="eliminarFotoPerfil()"
+          class="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-xs sm:text-sm font-semibold text-white bg-white/10 hover:bg-red-500/80 border border-white/30 transition cursor-pointer">
+          <span class="material-symbols-outlined text-sm">delete</span>
+          <span>Quitar Foto</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ================= HERO PARA LOS DEMÁS ROLES: TARJETA BLANCA ORIGINAL ================= -->
+  <div *ngIf="!esSuperAdmin"
+    class="bg-white rounded-3xl shadow-xs border border-slate-200/80 p-6 sm:p-8 relative overflow-hidden">
     <!-- Acento sutil en amber en esquina superior -->
     <div
       class="absolute -right-16 -top-16 w-56 h-56 rounded-full bg-gradient-to-br from-amber-100/40 to-slate-100/60 blur-2xl pointer-events-none">
@@ -47,7 +145,7 @@
 
           <!-- Badges del Usuario: Rol, Estado y Biometría -->
           <div class="flex flex-wrap items-center gap-2 justify-center sm:justify-start pt-1">
-            <!-- Rol Institucional: Super Administrador en dorado -->
+            <!-- Rol Institucional en dorado -->
             <span
               class="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-bold bg-[#fff4d6] text-[#8a5a00] border border-[#fde68a] shadow-2xs">
               <span class="material-symbols-outlined text-sm">shield_person</span>
@@ -142,10 +240,7 @@
       </div>
 
       <!-- Botón amarillo con TEXTO BLANCO -->
-      <button 
-        *ngIf="!modoEdicion" 
-        type="button" 
-        (click)="activarEdicion()"
+      <button *ngIf="!modoEdicion" type="button" (click)="activarEdicion()"
         class="btn-editar-personal inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-[#fab005] hover:bg-[#e69a0c] text-white shadow-xs transition cursor-pointer">
         <span class="material-symbols-outlined text-base">edit</span>
         <span>Modificar datos</span>
@@ -194,9 +289,44 @@
           <span class="material-symbols-outlined text-xs text-slate-400">lock</span>
         </span>
         <p class="text-sm font-semibold text-slate-700">
-          {{ usuario?.institucion_nombre || usuario?.institucion || (esSupervisor ? 'Múltiples Instituciones Asignadas (PAE)' : (esSuperAdmin ? 'Ámbito central' : 'Institución Educativa Asignada')) }}
-          <span *ngIf="usuario?.sede_nombre" class="text-xs text-slate-500 block">Sede: {{ usuario?.sede_nombre }}</span>
+          {{ usuario?.institucion_nombre || usuario?.institucion || (esSupervisor ? 'Múltiples Instituciones Asignadas
+          (PAE)' : (esSuperAdmin ? 'Ámbito central' : 'Institución Educativa Asignada')) }}
+          <span *ngIf="usuario?.sede_nombre" class="text-xs text-slate-500 block">Sede: {{ usuario?.sede_nombre
+            }}</span>
         </p>
+      </div>
+
+      <!-- Contrato PAE Asignado y Sedes Vinculadas -->
+      <div class="p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80 space-y-1.5 sm:col-span-2 lg:col-span-3">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-extrabold text-amber-900 uppercase tracking-wider flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-sm text-amber-700">description</span>
+            <span>Contrato PAE Oficial y Cobertura de Sedes</span>
+          </span>
+          <span
+            class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-[#fff4d6] text-[#8a5a00] border border-[#fde68a]">
+            CTR-PAE-2026-ANT-01
+          </span>
+        </div>
+        <div class="pt-1 flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div>
+            <p class="text-sm font-black text-slate-900 m-0">Institución Educativa Asignada</p>
+            <p class="text-xs text-slate-500 m-0">Modalidad Ración Preparada en Sitio (RPS) · 20 días hábiles de
+              cobertura</p>
+          </div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <span
+              class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-white text-slate-800 border border-slate-200 shadow-2xs">
+              <span class="material-symbols-outlined text-xs text-amber-600">apartment</span>
+              <span>Sede Principal (150 cupos)</span>
+            </span>
+            <span
+              class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-white text-slate-700 border border-slate-200 shadow-2xs">
+              <span class="material-symbols-outlined text-xs text-slate-400">school</span>
+              <span>Sede Norte (80 cupos)</span>
+            </span>
+          </div>
+        </div>
       </div>
     </div>
 

@@ -1,8 +1,11 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { provideHttpClient } from '@angular/common/http';
 import { of } from 'rxjs';
 import { Ingredientes } from './ingredientes';
 import { ProductoService } from '../services/producto.service';
 import { SweetAlertService } from '../sweet-alert.service';
+import { AuthService } from '../core/auth/auth.service';
 
 describe('Ingredientes', () => {
   let component: Ingredientes;
@@ -12,6 +15,8 @@ describe('Ingredientes', () => {
     await TestBed.configureTestingModule({
       imports: [Ingredientes],
       providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
         {
           provide: ProductoService,
           useValue: {
@@ -25,7 +30,18 @@ describe('Ingredientes', () => {
         },
         {
           provide: SweetAlertService,
-          useValue: { success: vi.fn(), error: vi.fn(), warning: vi.fn(), confirm: vi.fn() },
+          useValue: {
+            success: vi.fn(),
+            error: vi.fn(),
+            warning: vi.fn(),
+            confirm: vi.fn(),
+          },
+        },
+        {
+          provide: AuthService,
+          useValue: {
+            obtenerUsuario: () => null,
+          },
         },
       ],
     }).compileComponents();

@@ -613,12 +613,16 @@ export class UsuariosComponent implements OnInit {
       const sedeValor = typeof usuario.id_sede === 'object'
         ? (usuario.id_sede?.id_sede || usuario.id_sede?.id)
         : usuario.id_sede;
+      const jornadaValor = typeof usuario.id_jornada === 'object'
+        ? (usuario.id_jornada?.id_jornada || usuario.id_jornada?.id)
+        : usuario.id_jornada;
 
       this.usuarioForm = { 
         ...usuario, 
         rol: Number(rolValor) || '',
         id_institucion: instValor ? Number(instValor) : null,
         id_sede: sedeValor ? Number(sedeValor) : null,
+        id_jornada: jornadaValor ? Number(jornadaValor) : null,
         password: '' 
       };
 
@@ -742,7 +746,10 @@ export class UsuariosComponent implements OnInit {
       ...this.usuarioForm,
       rol: Number(this.usuarioForm.rol),
       id_institucion: this.usuarioForm.id_institucion ? Number(this.usuarioForm.id_institucion) : null,
-      id_sede: (this.esRolAdmin() || !this.esRolConSede()) ? null : (this.usuarioForm.id_sede ? Number(this.usuarioForm.id_sede) : null)
+      id_sede: (this.esRolAdmin() || !this.esRolConSede()) ? null : (this.usuarioForm.id_sede ? Number(this.usuarioForm.id_sede) : null),
+      id_jornada: (this.esRolAdmin() || !this.esRolConSede())
+        ? null
+        : (this.usuarioForm.id_jornada ? Number(this.usuarioForm.id_jornada) : null)
     };
 
     if (this.modoEdicion && this.usuarioSeleccionadoId) {

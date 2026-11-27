@@ -30,7 +30,7 @@ export class ContratosComponent implements OnInit {
   }
 
   cargarInstitucionesYSedes() {
-    this.siraeService.getInstituciones().subscribe({
+    this.siraeService.getInstituciones(true).subscribe({
       next: (datos: any) => {
         const res = Array.isArray(datos) ? datos : (datos.results || datos.data || []);
         this.instituciones = res;
@@ -39,7 +39,7 @@ export class ContratosComponent implements OnInit {
       error: (err) => console.error('Error al cargar instituciones en contratos:', err)
     });
 
-    this.siraeService.getSedes().subscribe({
+    this.siraeService.getSedes(undefined, true).subscribe({
       next: (datos: any) => {
         const res = Array.isArray(datos) ? datos : (datos.results || datos.data || []);
         this.sedes = res;
@@ -161,6 +161,9 @@ export class ContratosComponent implements OnInit {
 
           return {
             id: c.id_contrato || c.id,
+            id_institucion: typeof c.id_institucion === 'object' && c.id_institucion !== null
+              ? (c.id_institucion.id_institucion || c.id_institucion.id)
+              : (c.id_institucion ?? null),
             codigo: c.numero_cor || c.codigo,
             institucion: c.institucion || c.institucion_nombre || 'Sin institución',
             fechaInicio: c.fecha_inicio || c.inicio,
@@ -172,7 +175,7 @@ export class ContratosComponent implements OnInit {
             mensajeVigencia: vigencia.mensajeVigencia,
             alertaNivel: vigencia.alertaNivel,
             zona: c.zona,
-            cupos: c.cupos || 0,
+            cupos: this.obtenerCuposContrato(c),
             supervisor: c.supervisor_nombre || (c.id_usuario_supervisor ? `Supervisor #${c.id_usuario_supervisor}` : 'Sin asignar'),
             expandido: false
           };
@@ -428,23 +431,23 @@ export class ContratosComponent implements OnInit {
   sedesDeInstitucionSeleccionada: any[] = [];
 
   onInstitucionContratoChange() {
-    if (!this.contratoActual.institucion) {
+    if (!this.contratoActual.institucion && !this.contratoActual.id_institucion) {
       this.sedesDeInstitucionSeleccionada = [];
       return;
     }
-    const inst = this.instituciones.find(i =>
-      i.nombre_institucion === this.contratoActual.institucion ||
-      String(i.id_institucion) === String(this.contratoActual.institucion)
-    );
+    let inst = this.institucionTemporalSeleccionada;
+    if (!inst || (this.contratoActual.institucion && inst.nombre_institucion?.toLowerCase() !== this.contratoActual.institucion?.toLowerCase())) {
+      const candidatas = this.instituciones.filter(i =>
+        (this.contratoActual.id_institucion && Number(i.id_institucion ?? i.id) === Number(this.contratoActual.id_institucion)) ||
+        i.nombre_institucion?.toLowerCase() === this.contratoActual.institucion?.toLowerCase() ||
+        String(i.id_institucion) === String(this.contratoActual.institucion)
+      );
+      inst = candidatas.find(i => this.obtenerSedesDeInst(i).length > 0) || candidatas[0] || null;
+    }
     if (inst) {
       this.contratoActual.institucion = inst.nombre_institucion;
-      const instId = inst.id_institucion || inst.id;
-      this.sedesDeInstitucionSeleccionada = this.sedes.filter(s => {
-        const sInstId = typeof s.id_institucion === 'object' && s.id_institucion !== null
-          ? (s.id_institucion.id_institucion ?? s.id_institucion.id)
-          : s.id_institucion;
-        return Number(sInstId) === Number(instId);
-      });
+      this.contratoActual.id_institucion = inst.id_institucion || inst.id || null;
+      this.sedesDeInstitucionSeleccionada = this.obtenerSedesDeInst(inst);
     } else {
       this.sedesDeInstitucionSeleccionada = [];
     }
@@ -459,10 +462,30 @@ export class ContratosComponent implements OnInit {
   abrirModalSeleccionarInstitucion() {
     this.busquedaInstitucionModal = '';
     this.institucionTemporalSeleccionada = this.instituciones.find(i =>
+      (this.contratoActual.id_institucion && Number(i.id_institucion ?? i.id) === Number(this.contratoActual.id_institucion)) ||
       i.nombre_institucion?.toLowerCase() === this.contratoActual.institucion?.toLowerCase()
     ) || null;
     this.modalSeleccionarInstitucionAbierto = true;
     this.cdr.detectChanges();
+
+    this.siraeService.getInstituciones(true).subscribe({
+      next: (datos: any) => {
+        const res = Array.isArray(datos) ? datos : (datos?.results || datos?.data || []);
+        if (res.length > 0) {
+          this.instituciones = res;
+          this.cdr.detectChanges();
+        }
+      }
+    });
+    this.siraeService.getSedes(undefined, true).subscribe({
+      next: (datos: any) => {
+        const res = Array.isArray(datos) ? datos : (datos?.results || datos?.data || []);
+        if (res.length > 0) {
+          this.sedes = res;
+          this.cdr.detectChanges();
+        }
+      }
+    });
   }
 
   cerrarModalSeleccionarInstitucion() {
@@ -478,6 +501,8 @@ export class ContratosComponent implements OnInit {
   seleccionarInstitucionDesdeModal(inst: any) {
     this.institucionTemporalSeleccionada = inst;
     this.contratoActual.institucion = inst.nombre_institucion;
+    this.contratoActual.id_institucion = inst.id_institucion || inst.id || null;
+    this.sedesDeInstitucionSeleccionada = this.obtenerSedesDeInst(inst);
     this.onInstitucionContratoChange();
     this.cerrarModalSeleccionarInstitucion();
   }
@@ -485,6 +510,8 @@ export class ContratosComponent implements OnInit {
   confirmarSeleccionInstitucion() {
     if (this.institucionTemporalSeleccionada) {
       this.contratoActual.institucion = this.institucionTemporalSeleccionada.nombre_institucion;
+      this.contratoActual.id_institucion = this.institucionTemporalSeleccionada.id_institucion || this.institucionTemporalSeleccionada.id || null;
+      this.sedesDeInstitucionSeleccionada = this.obtenerSedesDeInst(this.institucionTemporalSeleccionada);
       this.onInstitucionContratoChange();
     }
     this.cerrarModalSeleccionarInstitucion();
@@ -495,6 +522,7 @@ export class ContratosComponent implements OnInit {
       event.stopPropagation();
     }
     this.contratoActual.institucion = '';
+    this.contratoActual.id_institucion = null;
     this.institucionTemporalSeleccionada = null;
     this.onInstitucionContratoChange();
     this.cdr.detectChanges();
@@ -511,13 +539,25 @@ export class ContratosComponent implements OnInit {
   }
 
   obtenerSedesDeInst(inst: any): any[] {
+    if (!inst) return [];
     const instId = inst?.id_institucion || inst?.id;
-    return this.sedes.filter(s => {
+    const sedesEnCatalogo = this.sedes.filter(s => {
       const sInstId = typeof s.id_institucion === 'object' && s.id_institucion !== null
         ? (s.id_institucion.id_institucion ?? s.id_institucion.id)
         : s.id_institucion;
       return Number(sInstId) === Number(instId);
     });
+    const sedesEmbebidas = Array.isArray(inst?.sedes)
+      ? inst.sedes.map((s: any) => ({ ...s, id_institucion: s.id_institucion ?? instId }))
+      : [];
+    if (sedesEnCatalogo.length === 0) return sedesEmbebidas;
+    if (sedesEmbebidas.length === 0) return sedesEnCatalogo;
+    const mapa = new Map<number, any>();
+    for (const s of [...sedesEmbebidas, ...sedesEnCatalogo]) {
+      const id = Number(s.id_sede ?? s.id);
+      if (id) mapa.set(id, { ...(mapa.get(id) || {}), ...s });
+    }
+    return Array.from(mapa.values());
   }
 
   toggleMostrarSedesModal() {
@@ -531,13 +571,7 @@ export class ContratosComponent implements OnInit {
       i.nombre_institucion?.toLowerCase() === nombreInstitucion.toLowerCase()
     );
     if (!inst) return [];
-    const instId = inst.id_institucion || inst.id;
-    return this.sedes.filter(s => {
-      const sInstId = typeof s.id_institucion === 'object' && s.id_institucion !== null
-        ? (s.id_institucion.id_institucion ?? s.id_institucion.id)
-        : s.id_institucion;
-      return Number(sInstId) === Number(instId);
-    });
+    return this.obtenerSedesDeInst(inst);
   }
 
   get totalContratosActivos(): number {
@@ -674,6 +708,33 @@ export class ContratosComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
+  obtenerCuposContrato(c: any): number {
+    const id = c.id_contrato || c.id;
+    const codigo = c.numero_cor || c.codigo;
+    const inst = c.institucion || c.institucion_nombre;
+    const idInst = c.id_institucion;
+
+    const keys = [
+      id ? `sirae_distribucion_contrato_${id}` : '',
+      codigo ? `sirae_distribucion_contrato_${codigo}` : '',
+      inst ? `sirae_distribucion_contrato_${inst}` : '',
+      idInst ? `sirae_distribucion_contrato_inst_${idInst}` : ''
+    ].filter(Boolean);
+
+    for (const k of keys) {
+      try {
+        const raw = localStorage.getItem(k);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          const total = Number(parsed?.total_autorizado ?? parsed?.total_distribuido);
+          if (total > 0) return total;
+        }
+      } catch (_) {}
+    }
+
+    return Number(c.cupos) || 0;
+  }
+
   cerrarModalGrandeContrato(nuevoContrato?: any) {
     this.modalGrandeAbierto = false;
     this.contratoIdSeleccionado = null;
@@ -681,6 +742,8 @@ export class ContratosComponent implements OnInit {
       const index = this.contratos.findIndex(c => c.id === nuevoContrato.id);
       if (index === -1) {
         this.contratos.unshift(nuevoContrato);
+      } else {
+        this.contratos[index] = { ...this.contratos[index], ...nuevoContrato };
       }
     }
     this.cargarContratos();
@@ -727,7 +790,13 @@ export class ContratosComponent implements OnInit {
       return;
     }
 
-    const payload = {
+    const instEncontrada = this.instituciones.find(i =>
+      i.nombre_institucion?.toLowerCase() === this.contratoActual.institucion?.toLowerCase() ||
+      String(i.id_institucion) === String(this.contratoActual.institucion)
+    );
+    const idInst = instEncontrada?.id_institucion || instEncontrada?.id || this.contratoActual.id_institucion || null;
+
+    const payload: any = {
       numero_cor: this.contratoActual.codigo,
       institucion: this.contratoActual.institucion,
       zona: this.contratoActual.zona,
@@ -735,6 +804,28 @@ export class ContratosComponent implements OnInit {
       fecha_fin: this.contratoActual.fechaFin,
       estado: this.contratoActual.estado
     };
+
+    if (idInst) {
+      payload.id_institucion = Number(idInst);
+    }
+
+    const nombreNorm = String(this.contratoActual.institucion || '').trim().toLowerCase();
+    const contratoDuplicado = (this.contratos || []).find((c: any) => {
+      if (this.modoEdicionContrato && String(c.id) === String(this.contratoActual.id)) {
+        return false;
+      }
+      const coincideId = idInst != null && c.id_institucion != null && Number(idInst) === Number(c.id_institucion);
+      const coincideNom = !!(nombreNorm && String(c.institucion || '').trim().toLowerCase() === nombreNorm);
+      return coincideId || coincideNom;
+    });
+
+    if (contratoDuplicado) {
+      void this.sweetAlert.warning(
+        'Institución con contrato existente',
+        `La institución ya tiene el contrato ${contratoDuplicado.codigo || ''} registrado. Solo se permite un contrato por institución y sus sedes se gestionan dentro de ese contrato.`
+      );
+      return;
+    }
 
     if (this.modoEdicionContrato) {
       this.siraeService.actualizarContrato(this.contratoActual.id, payload).subscribe({
@@ -745,7 +836,8 @@ export class ContratosComponent implements OnInit {
         },
         error: (err) => {
           console.error('Error al actualizar contrato', err);
-          void this.sweetAlert.error('Error', 'No se pudo actualizar el contrato.');
+          const msg = err?.error?.id_institucion?.[0] || err?.error?.detail || 'No se pudo actualizar el contrato.';
+          void this.sweetAlert.error('Error', Array.isArray(msg) ? msg.join(', ') : String(msg));
         }
       });
     } else {
@@ -757,7 +849,8 @@ export class ContratosComponent implements OnInit {
         },
         error: (err) => {
           console.error('Error al crear contrato', err);
-          void this.sweetAlert.error('Error', 'No se pudo crear el contrato.');
+          const msg = err?.error?.id_institucion?.[0] || err?.error?.detail || 'No se pudo crear el contrato.';
+          void this.sweetAlert.error('Error', Array.isArray(msg) ? msg.join(', ') : String(msg));
         }
       });
     }

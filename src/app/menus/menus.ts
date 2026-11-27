@@ -407,10 +407,12 @@ export class MenusComponent implements OnInit {
       }));
 
       const listaIng = Array.isArray(ingredientes) ? ingredientes : (ingredientes?.results || []);
-      this.opcionesIngredientes = listaIng.map((i: any) => ({
-        id: i.id_ingrediente || i.id,
-        label: i.nombre_ingrediente || i.nombre || `Ingrediente #${i.id_ingrediente || i.id}`
-      }));
+      this.opcionesIngredientes = listaIng
+        .filter((i: any) => !String(i.nombre_ingrediente ?? i.nombre ?? '').startsWith('[ELIMINAR]'))
+        .map((i: any) => ({
+          id: i.id_ingrediente || i.id,
+          label: i.nombre_ingrediente || i.nombre || `Ingrediente #${i.id_ingrediente || i.id}`
+        }));
       if (this.opcionesIngredientes.length === 0) {
         this.opcionesIngredientes = [
           { id: 1, label: 'Huevos tipo A' },

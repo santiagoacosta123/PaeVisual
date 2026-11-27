@@ -1,0 +1,24 @@
+{
+  // Exclusiones del observador de archivos (evita que VS Code colapse por memoria al vigilar miles de archivos)
+  "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    "**/node_modules/**": true,
+    "**/dist/**": true,
+    "**/.angular/**": true,
+    "**/.codacy/**": true,
+    "**/tmp/**": true
+  },
+  // Exclusiones de búsqueda global
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/.angular": true,
+    "**/package-lock.json": true
+  },
+  // Optimización de memoria para archivos grandes y TypeScript Server
+  "editor.largeFileOptimizations": true,
+  "typescript.tsserver.maxTsServerMemory": 4096,
+  "typescript.disableAutomaticTypeAcquisition": true,
+  "javascript.suggest.enabled": true
+}

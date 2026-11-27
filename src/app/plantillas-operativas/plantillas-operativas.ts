@@ -243,8 +243,7 @@ export class PlanillasOperativasComponent implements OnInit, OnDestroy {
     const sedeObj = this.sedesBase.find(s => s.id === idSede);
     const nombreSede = this.sedeActiva?.nombre_sede ?? (sedeObj?.nombre || 'Sede Principal');
     const codigoDaneSede = sedeObj?.codigoDane || (this.institucionActiva as any)?.codigo_dane || (this.institucionActiva as any)?.dane || '';
-    const cuposSede = sedeObj?.cupos
-      || (nombreSede.toLowerCase().includes('valencia') ? 227 : 0);
+    const cuposSede = sedeObj?.cupos || 0;
     const usuarioActual = this.auth.obtenerUsuario();
     const nombreUsuario = usuarioActual?.nombre
       ? `${usuarioActual.nombre} ${usuarioActual.apellido || ''}`.trim()
@@ -274,6 +273,8 @@ export class PlanillasOperativasComponent implements OnInit, OnDestroy {
       kardex: this.planillasPaeService.obtenerPlanillaKardex({
         institucionId: idInstitucion,
         institucionNombre: nombreInstitucion,
+        institucionRector: this.institucionActiva?.representante_legal || '',
+        institucionTelefono: this.institucionActiva?.telefono || '',
         sedeId: idSede,
         sedeNombre: nombreSede,
         periodo: this.periodoSeleccionado,
@@ -281,7 +282,12 @@ export class PlanillasOperativasComponent implements OnInit, OnDestroy {
         fechaFin: this.fechaFinPlanilla,
         cuposBase: cuposSede,
         forzarRecarga: !mostrarCargando,
-        nombreUsuario
+        nombreUsuario,
+        usuarioActual: usuarioActual ? {
+          nombre: nombreUsuario,
+          cedula: usuarioActual.numero_documento || '',
+          rol: usuarioActual.rol || ''
+        } : undefined
       })
     }).subscribe({
       next: ({ remision, kardex }) => {

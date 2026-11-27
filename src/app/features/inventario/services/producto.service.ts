@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
-import { tap } from 'rxjs/operators';
+import { tap, map } from 'rxjs/operators';
 import { environment } from '@env/environment';
 
 @Injectable({
@@ -43,12 +43,22 @@ export class ProductoService {
   }
 
   // INGREDIENTES (Con caché en memoria)
+  // Nota: ingredientes marcados con [ELIMINAR] se ocultan en el frontend
+  // hasta que el backend permita borrarlos (error 500 en DELETE por FK constraints)
   getIngredientes(forzarRecarga = false): Observable<any> {
     if (!forzarRecarga && this.cacheIngredientes) {
       return of(this.cacheIngredientes);
     }
     console.log('➡️ GET:', this.apiIngredientes);
     return this.http.get<any>(this.apiIngredientes).pipe(
+      map((data: any) => {
+        // Filtrar ingredientes marcados para eliminar
+        const lista = Array.isArray(data) ? data : (data?.results ?? data);
+        const filtrados = lista.filter(
+          (ing: any) => !ing.nombre_ingrediente?.startsWith('[ELIMINAR]')
+        );
+        return Array.isArray(data) ? filtrados : { ...data, results: filtrados };
+      }),
       tap(data => this.cacheIngredientes = data)
     );
   }

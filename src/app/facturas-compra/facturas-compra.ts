@@ -174,7 +174,11 @@ export class FacturasCompraComponent implements OnInit {
     this.http.get<any>(`${environment.apiUrl}/ingredientes/`, { headers }).subscribe({
       next: (res) => {
         const lista = Array.isArray(res) ? res : (res?.results ?? res?.value ?? []);
-        this.catalogoIngredientes = Array.isArray(lista) ? lista : [];
+        const todas = Array.isArray(lista) ? lista : [];
+        // Ocultar ingredientes marcados para eliminar
+        this.catalogoIngredientes = todas.filter(
+          (ing: any) => !ing.nombre_ingrediente?.startsWith('[ELIMINAR]')
+        );
       },
       error: (err) => {
         console.error('Error al cargar catÃ¡logo de ingredientes:', err);
@@ -338,13 +342,16 @@ export class FacturasCompraComponent implements OnInit {
         return;
       }
 
+      const vencimientoSanitizado = (item.fecha_vencimiento && item.fecha_vencimiento.trim()) ? item.fecha_vencimiento.trim() : null;
+      const loteSanitizado = (item.numero_lote && item.numero_lote.trim()) ? item.numero_lote.trim() : null;
+
       detallesValidos.push({
         id_ingrediente: Number(item.id_ingrediente),
         cantidad: cant,
         precio_unitario: Number(item.precio_unitario) || 0,
         subtotal: this.calcularSubtotal(item),
-        numero_lote: item.numero_lote.trim() || undefined,
-        fecha_vencimiento: item.fecha_vencimiento || undefined,
+        numero_lote: loteSanitizado || undefined,
+        fecha_vencimiento: vencimientoSanitizado || undefined,
       });
     }
 
@@ -383,9 +390,16 @@ export class FacturasCompraComponent implements OnInit {
         console.error('Error al guardar factura:', err);
         const errObj = err?.error;
         let mensaje = 'No se pudo guardar la factura. Verifica los datos.';
-        if (typeof errObj === 'string') mensaje = errObj;
+        if (typeof errObj === 'string') {
+          if (errObj.includes('<html') || errObj.includes('Server Error') || errObj.includes('500')) {
+            mensaje = 'Error de procesamiento en el servidor (500). Por favor verifica los datos o intenta de nuevo.';
+          } else {
+            mensaje = errObj;
+          }
+        }
         else if (errObj?.numero_factura) mensaje = Array.isArray(errObj.numero_factura) ? errObj.numero_factura[0] : errObj.numero_factura;
         else if (errObj?.detalles) mensaje = Array.isArray(errObj.detalles) ? errObj.detalles[0] : errObj.detalles;
+        else if (errObj?.detail) mensaje = errObj.detail;
         void this.alertas.error('Error al registrar factura', mensaje);
         this.cdr.detectChanges();
       },

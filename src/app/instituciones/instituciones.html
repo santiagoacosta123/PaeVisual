@@ -340,7 +340,7 @@
 }
 .ms-dir .material-symbols-outlined { font-size: 17px; color: var(--a-dark); flex-shrink: 0; margin-top: 1px; }
 
-/* Botón: fondo amarillo suave + letras amarillas (ámbar) */
+/* Botón: fondo ámbar sólido + letras blancas */
 .ms-cta {
   display: flex;
   align-items: center;
@@ -349,18 +349,20 @@
   min-height: 46px;
   margin-top: auto;
   padding: 0 14px;
-  border: 1.5px solid var(--a);
+  border: 0;
   border-radius: 14px;
   cursor: pointer;
-  background: var(--a-soft);
-  color: #9A6500;
+  background: #F5B81F;
+  color: #FFFFFF;
   font-size: 13.5px;
   font-weight: 800;
+  box-shadow: 0 8px 18px -8px rgba(245, 184, 31, .75);
   transition: background .15s, box-shadow .15s, transform .15s;
 }
 .ms-cta:hover {
-  background: var(--a-mid);
-  box-shadow: 0 10px 20px -12px rgba(244, 180, 31, .95);
+  background: #E2A714;
+  transform: translateY(-1px);
+  box-shadow: 0 12px 22px -10px rgba(245, 184, 31, .95);
 }
 
 .fx-roboto button:focus-visible,
@@ -699,8 +701,8 @@
             aria-label="Buscar sede" class="ms-input" />
         </div>
       </div>
-      <span *ngIf="sedes.length > 0" class="ms-count-badge">
-        {{ filtradas.length }} de {{ sedes.length }} {{ sedes.length === 1 ? 'sede' : 'sedes' }}
+      <span *ngIf="filtradas.length > 0" class="ms-count-badge">
+        {{ filtradas.length }} {{ filtradas.length === 1 ? 'sede disponible' : 'sedes disponibles' }}
       </span>
     </div>
 
@@ -766,7 +768,10 @@
         <span *ngIf="institucionActiva && sedes.length === 0">
           No se encontraron sedes asignadas a esta institución.
         </span>
-        <span *ngIf="sedes.length > 0">
+        <span *ngIf="sedes.length > 0 && !textoBusqueda">
+          Actualmente estás ubicado en {{ nombreSedeActiva }}. No hay otras sedes alternas registradas.
+        </span>
+        <span *ngIf="sedes.length > 0 && textoBusqueda">
           Ninguna sede coincide con tu búsqueda.
         </span>
       </p>

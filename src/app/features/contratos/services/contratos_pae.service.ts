@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
-import { tap } from 'rxjs/operators';
+import { map, switchMap, tap } from 'rxjs/operators';
 import { environment } from '@env/environment';
 
 @Injectable({
@@ -26,7 +26,7 @@ export class SiraeService {
 
   // CONTRATOS
   getContratos(): Observable<any[]> {
-    return this.http.get<any[]>(this.apiUrl);
+    return this.cargarColeccionCompleta(this.apiUrl);
   }
 
   crearContrato(contrato: any): Observable<any> {
@@ -122,12 +122,46 @@ export class SiraeService {
     return this.http.delete<any>(`${this.contratosSeccionMenuUrl}${id}/`);
   }
 
+  limpiarCacheInstitucionesYSedes(): void {
+    this.cacheInstituciones = null;
+    this.cacheSedes = null;
+  }
+
+  private cargarColeccionCompleta(url: string): Observable<any[]> {
+    return this.http.get<any>(url).pipe(
+      switchMap(res => {
+        if (Array.isArray(res)) {
+          return of(res);
+        }
+        const listaInicial = Array.isArray(res?.results) ? res.results : (Array.isArray(res?.data) ? res.data : []);
+        if (!res?.next) {
+          return of(listaInicial);
+        }
+        const acumularPaginas = (siguienteUrl: string, acumulados: any[]): Observable<any[]> => {
+          return this.http.get<any>(siguienteUrl).pipe(
+            switchMap(subRes => {
+              const nuevos = Array.isArray(subRes?.results)
+                ? subRes.results
+                : (Array.isArray(subRes) ? subRes : []);
+              const todos = [...acumulados, ...nuevos];
+              if (subRes?.next) {
+                return acumularPaginas(subRes.next, todos);
+              }
+              return of(todos);
+            })
+          );
+        };
+        return acumularPaginas(res.next, listaInicial);
+      })
+    );
+  }
+
   // INSTITUCIONES (con caché)
   getInstituciones(forzarRecarga = false): Observable<any[]> {
     if (!forzarRecarga && this.cacheInstituciones) {
       return of(this.cacheInstituciones);
     }
-    return this.http.get<any[]>(this.institucionesUrl).pipe(
+    return this.cargarColeccionCompleta(this.institucionesUrl).pipe(
       tap(data => this.cacheInstituciones = data)
     );
   }
@@ -153,7 +187,7 @@ export class SiraeService {
       return of(this.cacheSedes);
     }
     const url = idInstitucion ? `${this.sedesUrl}?id_institucion=${idInstitucion}` : this.sedesUrl;
-    return this.http.get<any[]>(url).pipe(
+    return this.cargarColeccionCompleta(url).pipe(
       tap(data => {
         if (!idInstitucion) {
           this.cacheSedes = data;
@@ -163,17 +197,17 @@ export class SiraeService {
   }
 
   crearSede(sede: any): Observable<any> {
-    this.cacheSedes = null;
+    this.limpiarCacheInstitucionesYSedes();
     return this.http.post<any>(this.sedesUrl, sede);
   }
 
   actualizarSede(id: number, sede: any): Observable<any> {
-    this.cacheSedes = null;
+    this.limpiarCacheInstitucionesYSedes();
     return this.http.put<any>(`${this.sedesUrl}${id}/`, sede);
   }
 
   eliminarSede(id: number): Observable<any> {
-    this.cacheSedes = null;
+    this.limpiarCacheInstitucionesYSedes();
     return this.http.delete<any>(`${this.sedesUrl}${id}/`);
   }
 }

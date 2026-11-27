@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -26,8 +26,10 @@ export class NotificacionesComponent implements OnInit {
   public authService = inject(AuthService);
   private alertas = inject(SweetAlertService, { optional: true });
   private router = inject(Router, { optional: true });
+  private cdr = inject(ChangeDetectorRef);
 
   listaNotificaciones: Notificacion[] = [];
+  notificacionDetalle: Notificacion | null = null;
 
   notificacionForm: Notificacion = {
     titulo: '',
@@ -77,12 +79,133 @@ export class NotificacionesComponent implements OnInit {
   get esSuperAdmin(): boolean {
     const rol = this.rolUsuarioNormalizado;
     if (this.authService?.esSuperAdministrador) {
-      return this.authService.esSuperAdministrador(rol) || Boolean(this.authService.esAdministrador?.(rol));
+      return this.authService.esSuperAdministrador(rol);
     }
     return rol === 'superadministrador'
       || rol === 'super administrador'
-      || rol === 'super admin'
-      || Boolean(this.authService?.esAdministrador?.(rol));
+      || rol === 'super admin';
+  }
+
+  get esAdminInstitucional(): boolean {
+    if (this.esSuperAdmin) return false;
+    const rol = this.rolUsuarioNormalizado;
+    if (this.authService?.esAdministrador) {
+      return Boolean(this.authService.esAdministrador(rol));
+    }
+    return rol === 'administrador' || rol === 'admin' || rol === 'administrador institucional';
+  }
+
+  get esAdministradorInstitucional(): boolean {
+    const rol = this.rolUsuarioNormalizado;
+    const esAdmin = this.authService?.esAdministrador ? this.authService.esAdministrador(rol) : rol.includes('admin');
+    return Boolean(esAdmin && !this.esSuperAdmin && !this.esSupervisor);
+  }
+
+  perteneceAMiInstitucion(noti: Notificacion): boolean {
+    if (!this.esAdministradorInstitucional && !this.esSupervisor) {
+      return true;
+    }
+
+    const norm = (s: string) => (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+    const usuario = this.authService?.obtenerUsuario ? this.authService.obtenerUsuario() : null;
+
+    const otrasInstituciones = [
+      'francisco jose de caldas',
+      'caldas inen',
+      'comercial del norte',
+      'san jose',
+      'don bosco',
+      'inmaculada',
+      'la milagrosa',
+      'pedro antonio torre',
+      'sagrado corazon',
+      'guillermo valencia',
+      'tomas cipriano'
+    ];
+
+    if (this.esAdministradorInstitucional) {
+      const instUsuario = (usuario?.institucion_nombre || usuario?.institucion || '').trim();
+      const instIdUsuario = usuario?.id_institucion;
+
+      if (!instUsuario || instUsuario.toLowerCase() === 'ámbito central' || instUsuario.toLowerCase() === 'institución educativa asignada') {
+        return true;
+      }
+
+      const miInstNorm = norm(instUsuario);
+      const nInstId = (noti as any).id_institucion;
+      if (nInstId && instIdUsuario && Number(nInstId) !== Number(instIdUsuario)) {
+        return false;
+      }
+
+      const texto = norm(`${noti.titulo || ''} ${noti.mensaje || ''}`);
+      if (texto.includes(miInstNorm)) {
+        return true;
+      }
+
+      for (const otra of otrasInstituciones) {
+        if (!miInstNorm.includes(otra) && texto.includes(otra)) {
+          return false;
+        }
+      }
+
+      const matchSede = texto.match(/en sede:\s*([^,\.\n]+)/i);
+      if (matchSede && matchSede[1]) {
+        const sedeMencionada = matchSede[1].trim();
+        if (!miInstNorm.includes(sedeMencionada) && !sedeMencionada.includes(miInstNorm)) {
+          for (const otra of otrasInstituciones) {
+            if (sedeMencionada.includes(otra) && !miInstNorm.includes(otra)) {
+              return false;
+            }
+          }
+        }
+      }
+
+      return true;
+    }
+
+    if (this.esSupervisor) {
+      const instsSupervisor = this.authService?.obtenerInstitucionesSupervisor
+        ? this.authService.obtenerInstitucionesSupervisor()
+        : (usuario?.instituciones_supervisor || []);
+
+      const misInstitucionesNombres = instsSupervisor.map((i: any) => norm(i.nombre_institucion)).filter(Boolean);
+      const misInstitucionesIds = new Set(instsSupervisor.map((i: any) => Number(i.id_institucion)).filter(Boolean));
+
+      if (misInstitucionesNombres.length > 0 || misInstitucionesIds.size > 0) {
+        const nInstId = (noti as any).id_institucion;
+        if (nInstId && misInstitucionesIds.size > 0 && !misInstitucionesIds.has(Number(nInstId))) {
+          return false;
+        }
+
+        const texto = norm(`${noti.titulo || ''} ${noti.mensaje || ''}`);
+        const mencionaMiInst = misInstitucionesNombres.some((nom: string) => nom.length > 3 && texto.includes(nom));
+        if (mencionaMiInst) {
+          return true;
+        }
+
+        for (const otra of otrasInstituciones) {
+          const esMia = misInstitucionesNombres.some((nom: string) => nom.includes(otra));
+          if (!esMia && texto.includes(otra)) {
+            return false;
+          }
+        }
+
+        const matchSede = texto.match(/en sede:\s*([^,\.\n]+)/i);
+        if (matchSede && matchSede[1]) {
+          const sedeMencionada = matchSede[1].trim();
+          const esMiInst = misInstitucionesNombres.some((i: string) => i.includes(sedeMencionada) || sedeMencionada.includes(i));
+          if (!esMiInst) {
+            for (const otra of otrasInstituciones) {
+              if (sedeMencionada.includes(otra)) {
+                return false;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    return true;
   }
 
   get esSupervisor(): boolean {
@@ -102,11 +225,11 @@ export class NotificacionesComponent implements OnInit {
   }
 
   get puedeEnviarNotificaciones(): boolean {
-    return this.esSuperAdmin || this.esSupervisor || this.esManipuladora;
+    return this.esSuperAdmin || this.esAdminInstitucional || this.esSupervisor || this.esManipuladora;
   }
 
   get requiereSeleccionDestinatario(): boolean {
-    return this.esSupervisor || this.esManipuladora;
+    return this.esAdminInstitucional || this.esSupervisor || this.esManipuladora;
   }
 
   // Plantillas Rápidas Contextuales según el Rol
@@ -231,6 +354,11 @@ export class NotificacionesComponent implements OnInit {
     const termino = this.busqueda.trim().toLowerCase();
 
     return this.listaNotificaciones.filter(noti => {
+      // Aislamiento por institución (Administrador)
+      if (!this.perteneceAMiInstitucion(noti)) {
+        return false;
+      }
+
       // Filtro de estado
       const cumpleEstado = this.filtroEstado === 'todas'
         || (this.filtroEstado === 'no_leidas' && !noti.leida)
@@ -263,10 +391,71 @@ export class NotificacionesComponent implements OnInit {
     return this.listaNotificaciones.filter(n => !n.leida).length;
   }
 
+  get totalLeidas(): number {
+    return this.listaNotificaciones.filter(n => n.leida).length;
+  }
+
+  private refrescarVista(): void {
+    this.cdr.markForCheck();
+    try {
+      this.cdr.detectChanges();
+    } catch {
+      // Ignorar si aún no está montado
+    }
+  }
+
+  cambiarFiltroEstado(estado: 'todas' | 'no_leidas' | 'leidas'): void {
+    this.filtroEstado = estado;
+    this.refrescarVista();
+  }
+
+  abrirDetalleNotificacion(noti: Notificacion): void {
+    this.notificacionDetalle = noti;
+    this.refrescarVista();
+  }
+
+  cerrarDetalleNotificacion(): void {
+    const noti = this.notificacionDetalle;
+    this.notificacionDetalle = null;
+    if (noti && !noti.leida) {
+      const id = noti.id_notificacion ?? noti.id;
+      noti.leida = true;
+      this.listaNotificaciones = this.listaNotificaciones.map(item =>
+        (item.id_notificacion ?? item.id) === id ? { ...item, leida: true } : item
+      );
+      this.refrescarVista();
+      if (id !== undefined) {
+        this.marcarLeida(id);
+      }
+    } else {
+      this.refrescarVista();
+    }
+  }
+
+  marcarNoLeida(noti: Notificacion): void {
+    const id = noti.id_notificacion ?? noti.id;
+    noti.leida = false;
+    this.listaNotificaciones = this.listaNotificaciones.map(item =>
+      (item.id_notificacion ?? item.id) === id ? { ...item, leida: false } : item
+    );
+    if (this.notificacionDetalle && (this.notificacionDetalle.id_notificacion ?? this.notificacionDetalle.id) === id) {
+      this.notificacionDetalle = null;
+    }
+    this.refrescarVista();
+
+    if (id !== undefined && this.notificacionService.marcarComoNoLeida) {
+      this.notificacionService.marcarComoNoLeida(id).subscribe({
+        next: () => this.cargarNotificaciones(),
+        error: (err: any) => console.error('Error al marcar como no leída:', err)
+      });
+    }
+  }
+
   cargarNotificaciones(): void {
     this.notificacionService.obtenerNotificaciones().subscribe({
       next: (data: Notificacion[]) => {
         this.listaNotificaciones = data;
+        this.refrescarVista();
       },
       error: (err: any) => {
         console.error('Error al cargar notificaciones:', err);

@@ -150,6 +150,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit {
         .filter(t => t.nombre);
 
       const listaProductos = this.comoLista(productos)
+        .filter((x: any) => !String(x.nombre ?? x.name ?? '').startsWith('[ELIMINAR]'))
         .map((x: any): Producto => ({
           nombre: String(x.nombre ?? x.name ?? '').trim(),
           categoria: String(x.categoria?.nombre ?? x.categoria ?? 'Otros'),

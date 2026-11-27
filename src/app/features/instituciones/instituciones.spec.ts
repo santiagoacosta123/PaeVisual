@@ -1,5 +1,4 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { vi } from 'vitest';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { InstitucionesComponent } from './instituciones';
@@ -44,7 +43,6 @@ describe('InstitucionesComponent', () => {
 
   afterEach(() => {
     http.verify();
-    vi.restoreAllMocks();
   });
 
   it('should create', () => {
@@ -92,8 +90,8 @@ describe('InstitucionesComponent', () => {
     expect(component.filtradas.map(i => i.nombre)).toEqual(['I.E. El Rosal']);
 
     component.limpiarFiltros();
-    component.filtroEstado = 'Crítico';
-    expect(component.filtradas.every(i => i.estado === 'Crítico')).toBe(true);
+    component.filtroEstado = 'Crítico' as any;
+    expect(component.filtradas.every(i => i.estado === 'Crítico' as any)).toBe(true);
     expect(component.filtradas.length).toBeGreaterThan(0);
   });
 

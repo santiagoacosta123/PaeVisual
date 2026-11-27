@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef, Input, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, OnChanges, SimpleChanges, ChangeDetectorRef, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -17,7 +17,7 @@ import { SweetAlertService } from '../sweet-alert.service';
   templateUrl: './contrato-detalle.html',
   styleUrls: ['./contrato-detalle.css']
 })
-export class ContratoDetalleComponent implements OnInit {
+export class ContratoDetalleComponent implements OnInit, OnChanges {
   @Input() contratoId: string | null = null;
   @Input() modo: 'consulta' | 'nuevo' | 'edicion' = 'consulta';
   @Input() pestanaInicial: string = 'resumen';
@@ -290,9 +290,57 @@ export class ContratoDetalleComponent implements OnInit {
 
     this.mensajeErrorDistribucion = '';
     this.cargarGradosParaDistribucion(() => {
-      this.inicializarSedesParaEdicion();
-      this.modalEditarDistribucionAbierto = true;
-      this.cdr.detectChanges();
+      if (this.sedesInstitucion.length === 0) {
+        this.actualizarSedesDeInstitucion();
+      }
+      if (this.sedesInstitucion.length > 0) {
+        this.inicializarSedesParaEdicion();
+        this.modalEditarDistribucionAbierto = true;
+        this.cdr.detectChanges();
+        return;
+      }
+
+      // Si aún no hay sedes en memoria, consultarlas directamente en tiempo real para esta institución
+      const instId = this.contrato?.id_institucion || this.institucionSeleccionadaInfo?.id_institucion || this.institucionSeleccionadaInfo?.id;
+      this.siraeService.getInstituciones(true).subscribe({
+        next: (datosInst: any) => {
+          const resInst = Array.isArray(datosInst) ? datosInst : (datosInst?.results || datosInst?.data || []);
+          if (resInst.length > 0) {
+            this.instituciones = resInst;
+          }
+          const targetInst = this.buscarInstitucionDelContrato();
+          const finalInstId = instId || targetInst?.id_institucion || targetInst?.id;
+
+          this.siraeService.getSedes(finalInstId ? Number(finalInstId) : undefined, true).subscribe({
+            next: (datosSedes: any) => {
+              const resSedes = Array.isArray(datosSedes) ? datosSedes : (datosSedes?.results || datosSedes?.data || []);
+              if (finalInstId && resSedes.length > 0) {
+                this.sedesInstitucion = resSedes;
+              } else if (resSedes.length > 0) {
+                this.sedes = resSedes;
+                this.actualizarSedesDeInstitucion();
+              } else if (targetInst) {
+                this.sedesInstitucion = this.obtenerSedesDeInst(targetInst);
+              }
+              this.inicializarSedesParaDistribucion();
+              this.inicializarSedesParaEdicion();
+              this.modalEditarDistribucionAbierto = true;
+              this.cdr.detectChanges();
+            },
+            error: () => {
+              this.actualizarSedesDeInstitucion();
+              this.inicializarSedesParaEdicion();
+              this.modalEditarDistribucionAbierto = true;
+              this.cdr.detectChanges();
+            }
+          });
+        },
+        error: () => {
+          this.inicializarSedesParaEdicion();
+          this.modalEditarDistribucionAbierto = true;
+          this.cdr.detectChanges();
+        }
+      });
     });
   }
 
@@ -307,14 +355,24 @@ export class ContratoDetalleComponent implements OnInit {
       this.actualizarSedesDeInstitucion();
     }
 
-    let distribucionGuardada: any = null;
-    try {
-      const dataRaw = localStorage.getItem(`sirae_distribucion_contrato_${this.contratoId}`);
-      if (dataRaw) {
-        distribucionGuardada = JSON.parse(dataRaw);
+    let distribucionGuardada: any = this.obtenerDistribucionLocal();
+    if (!distribucionGuardada) {
+      try {
+        const dataRaw = localStorage.getItem(`sirae_distribucion_contrato_${this.contratoId}`);
+        if (dataRaw) {
+          distribucionGuardada = JSON.parse(dataRaw);
+        }
+      } catch {
+        distribucionGuardada = null;
       }
-    } catch {
-      distribucionGuardada = null;
+    }
+
+    if (this.sedesInstitucion.length === 0 && Array.isArray(distribucionGuardada?.sedes) && distribucionGuardada.sedes.length > 0) {
+      this.sedesInstitucion = distribucionGuardada.sedes.map((sg: any) => ({
+        ...sg,
+        id_sede: Number(sg.id_sede || sg.id),
+        nombre_sede: sg.nombre_sede || sg.nombre || `Sede #${sg.id_sede || sg.id}`
+      }));
     }
 
     this.sedesEdicionDistribucion = (this.sedesInstitucion || []).map((s, index) => {
@@ -349,8 +407,38 @@ export class ContratoDetalleComponent implements OnInit {
     });
   }
 
+  obtenerClavesContrato(prefijo: string): string[] {
+    const claves = new Set<string>();
+    if (this.contratoId && this.contratoId !== 'nuevo' && this.contratoId !== '0') {
+      claves.add(`${prefijo}${this.contratoId}`);
+    }
+    const c = this.contrato;
+    if (c) {
+      const id = c.id_contrato || c.id;
+      if (id) claves.add(`${prefijo}${id}`);
+      const cod = c.numero_cor || c.codigo;
+      if (cod) {
+        claves.add(`${prefijo}${cod.trim()}`);
+        claves.add(`${prefijo}${cod.trim().toLowerCase()}`);
+      }
+      const instId = c.id_institucion;
+      if (instId) claves.add(`${prefijo}inst_${instId}`);
+      const instNom = c.institucion || c.nombre_institucion;
+      if (instNom && typeof instNom === 'string' && instNom.trim()) {
+        claves.add(`${prefijo}${instNom.trim().toLowerCase()}`);
+        claves.add(`${prefijo}${instNom.trim()}`);
+      }
+    }
+    return Array.from(claves);
+  }
+
   cargarDistribucionPersistida(): void {
-    if (!this.contratoId || this.contratoId === 'nuevo' || this.contratoId === '0') return;
+    // 1. Cargar inmediatamente desde almacenamiento local (es síncrono y preserva jornadas/menús)
+    this.cargarDistribucionDesdeLocalStorage();
+
+    if (!this.contratoId || this.contratoId === 'nuevo' || this.contratoId === '0') {
+      return;
+    }
 
     const token = this.authService.obtenerToken()?.replace(/^(Bearer|Token)\s+/i, '').trim();
     let headers = new HttpHeaders({ 'Content-Type': 'application/json' });
@@ -359,57 +447,163 @@ export class ContratoDetalleComponent implements OnInit {
     this.http.get<any>(`${environment.apiUrl}/contratos/${this.contratoId}/distribucion/`, { headers }).subscribe({
       next: (data: any) => {
         if (data && Array.isArray(data.sedes) && data.sedes.length > 0) {
-          this.sedesInstitucion.forEach(s => {
-            const sId = Number(s.id_sede || s.id);
-            const match = data.sedes.find((sg: any) => Number(sg.id_sede) === sId);
-            if (match) {
-              const cupos = Number(match.cuposAsignados ?? match.cupos_asignados ?? match.cupos) || 0;
-              s.cupos = cupos;
-              s.cupos_asignados = cupos;
-              if (match.jornada_manana !== undefined) s.jornada_manana = !!match.jornada_manana;
-              if (match.jornada_tarde !== undefined) s.jornada_tarde = !!match.jornada_tarde;
-              if (Array.isArray(match.secciones_ids)) s.secciones_ids = match.secciones_ids;
-              s.grados = (match.grados || []).map((g: any) => ({
-                id_grado: Number(g.id_grado || g.id),
-                nombre_grado: g.nombre || g.nombre_grado || `Grado ${g.id_grado}`,
-                cupos: Number(g.cuposAsignados ?? g.cupos_asignados ?? g.cupos) || 0
-              }));
-            }
-          });
-          this.cdr.detectChanges();
-        } else {
-          this.cargarDistribucionDesdeLocalStorage();
+          this.aplicarDatosDistribucion(data);
         }
       },
       error: () => {
-        this.cargarDistribucionDesdeLocalStorage();
+        // En caso de error ya se precargó desde localStorage
       }
     });
   }
 
-  private cargarDistribucionDesdeLocalStorage(): void {
-    try {
-      const raw = localStorage.getItem(`sirae_distribucion_contrato_${this.contratoId}`);
-      if (!raw) return;
-      const data = JSON.parse(raw);
-      if (data && Array.isArray(data.sedes)) {
-        this.sedesInstitucion.forEach(s => {
-          const sId = Number(s.id_sede || s.id);
-          const sedeG = data.sedes.find((sg: any) => Number(sg.id_sede) === sId);
-          if (sedeG) {
-            s.cupos = Number(sedeG.cupos_asignados ?? sedeG.cuposAsignados ?? sedeG.cupos) || 0;
-            s.cupos_asignados = s.cupos;
-            if (sedeG.jornada_manana !== undefined) s.jornada_manana = !!sedeG.jornada_manana;
-            if (sedeG.jornada_tarde !== undefined) s.jornada_tarde = !!sedeG.jornada_tarde;
-            if (Array.isArray(sedeG.secciones_ids)) s.secciones_ids = sedeG.secciones_ids;
-            s.grados = sedeG.grados || [];
-          }
-        });
-        this.cdr.detectChanges();
-      }
-    } catch {
-      // noop
+  obtenerDistribucionLocal(): any {
+    const keys = this.obtenerClavesContrato('sirae_distribucion_contrato_');
+    for (const key of keys) {
+      try {
+        const raw = localStorage.getItem(key);
+        if (!raw) continue;
+        const data = JSON.parse(raw);
+        if (data && Array.isArray(data.sedes) && data.sedes.length > 0) {
+          return data;
+        }
+      } catch {}
     }
+
+    try {
+      const allKeys = Object.keys(localStorage).filter(k => k.startsWith('sirae_distribucion_contrato_'));
+      const instNom = (this.contrato?.institucion || '').trim().toLowerCase();
+      const instId = Number(this.contrato?.id_institucion);
+      const cId = Number(this.contratoId || this.contrato?.id_contrato || this.contrato?.id);
+
+      for (const k of allKeys) {
+        const raw = localStorage.getItem(k);
+        if (!raw) continue;
+        const d = JSON.parse(raw);
+        if (d && Array.isArray(d.sedes) && d.sedes.length > 0) {
+          if (cId && (Number(d.id_contrato) === cId || Number(d.contrato_id) === cId)) return d;
+          if (instId && Number(d.id_institucion) === instId) return d;
+          if (instNom && d.institucion && String(d.institucion).trim().toLowerCase() === instNom) return d;
+          const sedeMatches = (this.sedesInstitucion || []).some(s =>
+            d.sedes.some((ds: any) =>
+              Number(ds.id_sede || ds.id) === Number(s.id_sede || s.id) ||
+              (ds.nombre_sede && s.nombre_sede && ds.nombre_sede.trim().toLowerCase() === s.nombre_sede.trim().toLowerCase())
+            )
+          );
+          if (sedeMatches) return d;
+        }
+      }
+    } catch {}
+
+    return null;
+  }
+
+  private cargarDistribucionDesdeLocalStorage(): void {
+    const data = this.obtenerDistribucionLocal();
+    if (data) {
+      this.aplicarDatosDistribucion(data);
+    }
+  }
+
+  aplicarDatosDistribucion(data: any): void {
+    if (!data || !Array.isArray(data.sedes)) return;
+
+    const datosLocales = this.obtenerDistribucionLocal();
+
+    if (this.sedesInstitucion.length === 0 && data.sedes.length > 0) {
+      const dataInstId = data.id_institucion ? Number(data.id_institucion) : null;
+      const cInstId = this.contrato?.id_institucion ? Number(this.contrato.id_institucion) : null;
+      const dataInstNom = this.normalizarTextoInstitucion(data.institucion || data.institucion_nombre);
+      const cInstNom = this.normalizarTextoInstitucion(this.contrato?.institucion || this.contrato?.institucion_nombre);
+
+      const mismaInst = (!cInstId && !cInstNom) ||
+        (cInstId && dataInstId && cInstId === dataInstId) ||
+        (cInstNom && dataInstNom && cInstNom === dataInstNom);
+
+      if (mismaInst) {
+        this.sedesInstitucion = data.sedes.map((sg: any) => ({
+          ...sg,
+          id_sede: Number(sg.id_sede || sg.id || sg.sede),
+          nombre_sede: sg.nombre_sede || sg.nombre || `Sede #${sg.id_sede || sg.id}`
+        }));
+      }
+    }
+
+    let sumaCuposSedes = 0;
+    this.sedesInstitucion.forEach(s => {
+      const sId = Number(s.id_sede || s.id);
+      const sedeG = data.sedes.find((sg: any) =>
+        Number(sg.id_sede || sg.id || sg.sede) === sId ||
+        (sg.nombre_sede && s.nombre_sede && sg.nombre_sede.trim().toLowerCase() === s.nombre_sede.trim().toLowerCase())
+      );
+      const sedeLocal = datosLocales?.sedes?.find((sl: any) =>
+        Number(sl.id_sede || sl.id || sl.sede) === sId ||
+        (sl.nombre_sede && s.nombre_sede && sl.nombre_sede.trim().toLowerCase() === s.nombre_sede.trim().toLowerCase())
+      );
+
+      if (sedeG || sedeLocal) {
+        // Cupos
+        const cuposBackend = Number(sedeG?.cupos_asignados ?? sedeG?.cuposAsignados ?? sedeG?.cupos) || 0;
+        const cuposLocal = Number(sedeLocal?.cupos_asignados ?? sedeLocal?.cuposAsignados ?? sedeLocal?.cupos) || 0;
+        const cupos = cuposBackend > 0 ? cuposBackend : (cuposLocal > 0 ? cuposLocal : (Number(s.cupos_asignados ?? s.cupos) || 0));
+
+        s.cupos = cupos;
+        s.cupos_asignados = cupos;
+        sumaCuposSedes += cupos;
+
+        // Jornadas: combinar backend y local
+        if (sedeG?.jornada_manana !== undefined) {
+          s.jornada_manana = !!sedeG.jornada_manana;
+        } else if (sedeLocal?.jornada_manana !== undefined) {
+          s.jornada_manana = !!sedeLocal.jornada_manana;
+        }
+
+        if (sedeG?.jornada_tarde !== undefined) {
+          s.jornada_tarde = !!sedeG.jornada_tarde;
+        } else if (sedeLocal?.jornada_tarde !== undefined) {
+          s.jornada_tarde = !!sedeLocal.jornada_tarde;
+        }
+
+        const jList = Array.isArray(sedeG?.jornadas) && sedeG.jornadas.length > 0
+          ? sedeG.jornadas
+          : (Array.isArray(sedeLocal?.jornadas) ? sedeLocal.jornadas : []);
+
+        if (jList.length > 0) {
+          if (jList.some((j: string) => String(j).toLowerCase().includes('mañan'))) s.jornada_manana = true;
+          if (jList.some((j: string) => String(j).toLowerCase().includes('tard'))) s.jornada_tarde = true;
+        }
+
+        // Secciones / Menús
+        if (Array.isArray(sedeG?.secciones_ids) && sedeG.secciones_ids.length > 0) {
+          s.secciones_ids = [...sedeG.secciones_ids];
+        } else if (Array.isArray(sedeLocal?.secciones_ids) && sedeLocal.secciones_ids.length > 0) {
+          s.secciones_ids = [...sedeLocal.secciones_ids];
+        }
+
+        // Grados
+        const gradosFuente = (Array.isArray(sedeG?.grados) && sedeG.grados.length > 0)
+          ? sedeG.grados
+          : (Array.isArray(sedeLocal?.grados) ? sedeLocal.grados : []);
+
+        if (gradosFuente.length > 0) {
+          s.grados = gradosFuente.map((g: any) => ({
+            id_grado: Number(g.id_grado || g.id),
+            nombre_grado: g.nombre || g.nombre_grado || `Grado ${g.id_grado}`,
+            cupos: Number(g.cuposAsignados ?? g.cupos_asignados ?? g.cupos) || 0
+          }));
+        }
+      }
+    });
+
+    const totalAutorizado = Number(data.total_autorizado ?? data.total_distribuido ?? datosLocales?.total_autorizado) || sumaCuposSedes;
+    if (totalAutorizado > 0 && this.contrato) {
+      this.contrato.cupos = totalAutorizado;
+    }
+
+    // Actualizar jornadas globales y menús del contrato
+    this.sincronizarJornadasYMenusDesdeSedes();
+
+    this.cargarHistorialLocal();
+    this.cdr.detectChanges();
   }
 
   async guardarDistribucion(): Promise<void> {
@@ -423,13 +617,14 @@ export class ContratoDetalleComponent implements OnInit {
 
     const instId = this.contrato?.id_institucion || null;
     const ahora = new Date().toISOString();
+    const cuposAnteriores = this.cuposAutorizados;
 
     const payload = {
       id_contrato: Number(this.contratoId) || this.contrato?.id_contrato,
       codigo_contrato: this.contrato?.codigo,
       id_institucion: instId,
       institucion_nombre: this.contrato?.institucion,
-      total_autorizado: this.cuposAutorizados,
+      total_autorizado: this.cuposAutorizados || this.totalCuposSedesEdicion,
       total_distribuido: this.totalCuposSedesEdicion,
       pendientes: this.cuposPendientesSedesEdicion,
       fecha_actualizacion: ahora,
@@ -450,9 +645,10 @@ export class ContratoDetalleComponent implements OnInit {
       }))
     };
 
-    // 1. Persistencia en localStorage
+    // 1. Persistencia en localStorage en todas las claves
     try {
-      localStorage.setItem(`sirae_distribucion_contrato_${this.contratoId}`, JSON.stringify(payload));
+      const keys = this.obtenerClavesContrato('sirae_distribucion_contrato_');
+      keys.forEach(k => localStorage.setItem(k, JSON.stringify(payload)));
       this.sedesEdicionDistribucion.forEach(s => {
         localStorage.setItem(`sirae_distribucion_grados_${this.contratoId}_sede_${s.id_sede}`, JSON.stringify(s.grados));
       });
@@ -475,13 +671,6 @@ export class ContratoDetalleComponent implements OnInit {
       }
     });
 
-    for (const s of this.sedesEdicionDistribucion) {
-      this.siraeService.actualizarSede(s.id_sede, { cupos: s.cuposAsignados }).subscribe({
-        next: () => {},
-        error: () => {}
-      });
-    }
-
     // 3. Actualizar automáticamente la información de la ventana principal
     this.sedesInstitucion.forEach(s => {
       const match = this.sedesEdicionDistribucion.find(e => Number(e.id_sede) === Number(s.id_sede || s.id));
@@ -491,6 +680,31 @@ export class ContratoDetalleComponent implements OnInit {
         s.grados = match.grados;
       }
     });
+
+    if (this.totalCuposSedesEdicion > 0 && this.contrato) {
+      if (!this.contrato.cupos || this.totalCuposSedesEdicion > Number(this.contrato.cupos)) {
+        this.contrato.cupos = this.totalCuposSedesEdicion;
+      }
+    }
+
+    // Registrar en auditoría
+    const ahoraFmt = new Date().toLocaleString('es-CO');
+    const registroAudit = {
+      id_modificacion: Date.now(),
+      tipo: 'DISTRIBUCION',
+      usuario_responsable: this.nombreUsuarioResponsableActual,
+      fecha_registro: ahoraFmt,
+      cambios: [
+        {
+          campo: 'Distribución de cupos entre sedes',
+          anterior: `${cuposAnteriores} cupos`,
+          nuevo: `${this.totalCuposSedesEdicion} cupos distribuidos`
+        }
+      ],
+      estado_resultante: this.contrato?.estado || 'Activo'
+    };
+    this.historialModificaciones.unshift(registroAudit);
+    this.guardarHistorialLocal();
 
     this.guardandoDistribucion = false;
     this.modalEditarDistribucionAbierto = false;
@@ -528,26 +742,62 @@ export class ContratoDetalleComponent implements OnInit {
   }
 
   cargarHistorialLocal() {
-    if (!this.contratoId) return;
-    try {
-      const data = localStorage.getItem(`sirae_historial_modificaciones_${this.contratoId}`);
-      if (data) {
-        this.historialModificaciones = JSON.parse(data);
-      } else {
-        this.historialModificaciones = [];
-      }
-    } catch {
-      this.historialModificaciones = [];
+    this.historialModificaciones = [];
+    const keys = this.obtenerClavesContrato('sirae_historial_modificaciones_');
+
+    for (const key of keys) {
+      try {
+        const data = localStorage.getItem(key);
+        if (data) {
+          const parsed = JSON.parse(data);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            this.historialModificaciones = parsed;
+            return;
+          }
+        }
+      } catch {}
+    }
+
+    // Si aún no hay historial grabado pero el contrato existe, generar el registro inicial de auditoría
+    if (this.contrato && (this.contrato.codigo || this.contrato.institucion)) {
+      const fechaBase = this.contrato.fecha_inicio
+        ? `${this.contrato.fecha_inicio} 08:00:00`
+        : new Date().toLocaleString('es-CO');
+      const cuposContrato = this.cuposAutorizados;
+      this.historialModificaciones = [
+        {
+          id_modificacion: Date.now(),
+          tipo: 'MODIFICACION',
+          usuario_responsable: this.nombreSupervisorAsignado || this.nombreUsuarioResponsableActual,
+          fecha_registro: fechaBase,
+          cambios: [
+            {
+              campo: 'Registro inicial del contrato y cupos autorizados',
+              anterior: 'No registrado',
+              nuevo: `${this.contrato.institucion || 'Institución'} (${cuposContrato} cupos)`
+            },
+            {
+              campo: 'Vigencia contractual',
+              anterior: 'Sin vigencia',
+              nuevo: `${this.contrato.fecha_inicio || 'Inicio'} al ${this.contrato.fecha_fin || 'Fin'}`
+            }
+          ],
+          estado_resultante: this.contrato.estado || 'Activo'
+        }
+      ];
+      this.guardarHistorialLocal();
     }
   }
 
   guardarHistorialLocal() {
-    if (!this.contratoId) return;
-    try {
-      localStorage.setItem(`sirae_historial_modificaciones_${this.contratoId}`, JSON.stringify(this.historialModificaciones));
-    } catch (e) {
-      console.warn('Error guardando historial local de prórrogas:', e);
-    }
+    const keys = this.obtenerClavesContrato('sirae_historial_modificaciones_');
+    keys.forEach(k => {
+      try {
+        localStorage.setItem(k, JSON.stringify(this.historialModificaciones));
+      } catch (e) {
+        console.warn('Error guardando historial en localStorage:', e);
+      }
+    });
   }
 
   abrirModalProrroga(tipo: 'PRORROGA' | 'RENOVACION' = 'PRORROGA') {
@@ -1250,10 +1500,8 @@ export class ContratoDetalleComponent implements OnInit {
   }
 
   get institucionSeleccionadaInfo(): any {
-    if (!this.contrato?.institucion) return null;
-    return this.instituciones.find(i =>
-      i.nombre_institucion?.toLowerCase() === this.contrato.institucion?.toLowerCase()
-    );
+    if (!this.contrato?.institucion && !this.contrato?.id_institucion) return null;
+    return this.buscarInstitucionDelContrato();
   }
 
   mensajeAviso = '';
@@ -1264,6 +1512,38 @@ export class ContratoDetalleComponent implements OnInit {
   modalSeleccionarInstitucionAbierto = false;
   busquedaInstitucion = '';
   institucionTemporalSeleccionada: any = null;
+  listaContratosExistentes: any[] = [];
+
+  institucionTieneContrato(inst: any): { tieneContrato: boolean; contratoExistente?: any } {
+    if (!inst) return { tieneContrato: false };
+    const instId = inst?.id_institucion || inst?.id;
+    const instNom = (inst?.nombre_institucion || '').trim().toLowerCase();
+
+    const c = (this.listaContratosExistentes || []).find((con: any) => {
+      // Si estamos editando este contrato, no es conflicto consigo mismo
+      if (this.contratoId && String(con.id_contrato || con.id || con.pk) === String(this.contratoId)) {
+        return false;
+      }
+      const cInstId = typeof con.id_institucion === 'object' && con.id_institucion !== null
+        ? (con.id_institucion.id_institucion || con.id_institucion.id)
+        : con.id_institucion;
+      const cInstNom = (con.institucion || con.id_institucion?.nombre_institucion || '').trim().toLowerCase();
+
+      const coincideId = instId != null && cInstId != null && Number(instId) === Number(cInstId);
+      const coincideNom = !!(instNom && cInstNom && instNom === cInstNom);
+      return coincideId || coincideNom;
+    });
+
+    return { tieneContrato: !!c, contratoExistente: c };
+  }
+
+  trackBySede(index: number, sede: any): any {
+    return sede.id_sede || sede.id || index;
+  }
+
+  trackByGrado(index: number, grado: any): any {
+    return grado.id_grado || grado.id || index;
+  }
 
   toggleMostrarSedes(): void {
     this.mostrarSedesDetalle = !this.mostrarSedesDetalle;
@@ -1272,11 +1552,50 @@ export class ContratoDetalleComponent implements OnInit {
 
   abrirModalSeleccionarInstitucion(): void {
     this.busquedaInstitucion = '';
-    this.institucionTemporalSeleccionada = this.instituciones.find(i =>
-      i.nombre_institucion?.toLowerCase() === this.contrato.institucion?.toLowerCase()
-    ) || null;
+    this.institucionTemporalSeleccionada = this.buscarInstitucionDelContrato();
     this.modalSeleccionarInstitucionAbierto = true;
     this.cdr.detectChanges();
+
+    // Refrescar catálogo de instituciones y sedes al abrir el selector para incluir cualquier registro recién creado
+    this.siraeService.getInstituciones(true).subscribe({
+      next: (datos: any) => {
+        const res = Array.isArray(datos) ? datos : (datos?.results || datos?.data || []);
+        if (res.length > 0) {
+          this.instituciones = res;
+          this.institucionTemporalSeleccionada = this.buscarInstitucionDelContrato();
+          this.cdr.detectChanges();
+        }
+      }
+    });
+    this.siraeService.getSedes(undefined, true).subscribe({
+      next: (datos: any) => {
+        const res = Array.isArray(datos) ? datos : (datos?.results || datos?.data || []);
+        if (res.length > 0) {
+          this.sedes = res;
+          this.cdr.detectChanges();
+        }
+      }
+    });
+  }
+
+  esInstitucionSeleccionadaEnModal(inst: any): boolean {
+    if (!inst) return false;
+    const instId = inst.id_institucion ?? inst.id;
+    const temp = this.institucionTemporalSeleccionada;
+    if (temp) {
+      const tempId = temp.id_institucion ?? temp.id;
+      if (instId != null && tempId != null) {
+        return Number(instId) === Number(tempId);
+      }
+      return (temp.nombre_institucion || '').trim().toLowerCase() === (inst.nombre_institucion || '').trim().toLowerCase();
+    }
+    const cInstId = typeof this.contrato?.id_institucion === 'object'
+      ? (this.contrato?.id_institucion?.id_institucion ?? this.contrato?.id_institucion?.id)
+      : this.contrato?.id_institucion;
+    if (instId != null && cInstId != null) {
+      return Number(instId) === Number(cInstId);
+    }
+    return !!this.contrato?.institucion && (this.contrato.institucion || '').trim().toLowerCase() === (inst.nombre_institucion || '').trim().toLowerCase();
   }
 
   cerrarModalSeleccionarInstitucion(): void {
@@ -1285,13 +1604,41 @@ export class ContratoDetalleComponent implements OnInit {
   }
 
   marcarInstitucion(inst: any): void {
+    if (this.modo === 'nuevo') {
+      const info = this.institucionTieneContrato(inst);
+      if (info.tieneContrato) {
+        return;
+      }
+    }
     this.institucionTemporalSeleccionada = inst;
     this.cdr.detectChanges();
   }
 
+  irAEditarContratoExistente(info: any): void {
+    const idExistente = info?.contratoExistente?.id_contrato || info?.contratoExistente?.id;
+    if (!idExistente) return;
+
+    this.cerrarModalSeleccionarInstitucion();
+    this.contratoId = String(idExistente);
+    this.modo = 'edicion';
+    this.modalEdicionAbierto = false;
+    this.pestanaActiva = 'resumen';
+    this.cargarDetalleContrato();
+    this.cdr.detectChanges();
+  }
+
   seleccionarInstitucionDesdeModal(inst: any): void {
+    if (this.modo === 'nuevo') {
+      const info = this.institucionTieneContrato(inst);
+      if (info.tieneContrato) {
+        this.irAEditarContratoExistente(info);
+        return;
+      }
+    }
     this.institucionTemporalSeleccionada = inst;
     this.contrato.institucion = inst.nombre_institucion;
+    this.contrato.id_institucion = inst.id_institucion || inst.id || null;
+    this.sedesInstitucion = this.obtenerSedesDeInst(inst).map(s => ({ ...s }));
     this.mensajeAviso = '';
     this.institucionRequeridaAviso = false;
     this.onInstitucionChange();
@@ -1300,7 +1647,16 @@ export class ContratoDetalleComponent implements OnInit {
 
   confirmarSeleccionInstitucion(): void {
     if (this.institucionTemporalSeleccionada) {
+      if (this.modo === 'nuevo') {
+        const info = this.institucionTieneContrato(this.institucionTemporalSeleccionada);
+        if (info.tieneContrato) {
+          this.irAEditarContratoExistente(info);
+          return;
+        }
+      }
       this.contrato.institucion = this.institucionTemporalSeleccionada.nombre_institucion;
+      this.contrato.id_institucion = this.institucionTemporalSeleccionada.id_institucion || this.institucionTemporalSeleccionada.id || null;
+      this.sedesInstitucion = this.obtenerSedesDeInst(this.institucionTemporalSeleccionada).map(s => ({ ...s }));
       this.mensajeAviso = '';
       this.institucionRequeridaAviso = false;
       this.onInstitucionChange();
@@ -1313,6 +1669,7 @@ export class ContratoDetalleComponent implements OnInit {
       event.stopPropagation();
     }
     this.contrato.institucion = '';
+    this.contrato.id_institucion = null;
     this.institucionTemporalSeleccionada = null;
     this.onInstitucionChange();
     this.cdr.detectChanges();
@@ -1329,13 +1686,43 @@ export class ContratoDetalleComponent implements OnInit {
   }
 
   obtenerSedesDeInst(inst: any): any[] {
+    if (!inst) return [];
     const instId = inst?.id_institucion || inst?.id;
-    return this.sedes.filter(s => {
+    const instNomNorm = this.normalizarTextoInstitucion(inst?.nombre_institucion || inst?.nombre);
+    const sedesEnCatalogo = (this.sedes || []).filter(s => {
       const sInstId = typeof s.id_institucion === 'object' && s.id_institucion !== null
         ? (s.id_institucion.id_institucion ?? s.id_institucion.id)
-        : s.id_institucion;
-      return Number(sInstId) === Number(instId);
+        : (s.id_institucion ?? s.institucion_id ?? s.institucion);
+      if (instId != null && sInstId != null && Number(sInstId) === Number(instId)) {
+        return true;
+      }
+      const sNomNorm = this.normalizarTextoInstitucion(s.institucion_nombre || s.nombre_institucion);
+      return !!(instNomNorm && sNomNorm && sNomNorm === instNomNorm);
     });
+    const sedesEmbebidas: any[] = Array.isArray(inst?.sedes)
+      ? inst.sedes.map((s: any) => ({ ...s, id_institucion: s.id_institucion ?? instId }))
+      : [];
+    if (sedesEmbebidas.length === 0 && (this.instituciones || []).length > 0) {
+      for (const otra of this.instituciones) {
+        const otraId = otra?.id_institucion ?? otra?.id;
+        const otraNom = this.normalizarTextoInstitucion(otra?.nombre_institucion || otra?.nombre);
+        const coincide = (instId != null && otraId != null && Number(instId) === Number(otraId)) ||
+          (instNomNorm && otraNom && instNomNorm === otraNom);
+        if (coincide && Array.isArray(otra?.sedes) && otra.sedes.length > 0) {
+          for (const s of otra.sedes) {
+            sedesEmbebidas.push({ ...s, id_institucion: s.id_institucion ?? otraId ?? instId });
+          }
+        }
+      }
+    }
+    if (sedesEnCatalogo.length === 0) return sedesEmbebidas;
+    if (sedesEmbebidas.length === 0) return sedesEnCatalogo;
+    const mapa = new Map<number, any>();
+    for (const s of [...sedesEmbebidas, ...sedesEnCatalogo]) {
+      const id = Number(s.id_sede ?? s.id);
+      if (id) mapa.set(id, { ...(mapa.get(id) || {}), ...s });
+    }
+    return Array.from(mapa.values());
   }
 
   constructor(
@@ -1349,6 +1736,22 @@ export class ContratoDetalleComponent implements OnInit {
     private cdr: ChangeDetectorRef,
     private sweetAlert: SweetAlertService
   ) { }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['contratoId'] && !changes['contratoId'].firstChange) {
+      const nuevoId = changes['contratoId'].currentValue;
+      if (nuevoId === 'nuevo' || nuevoId === '0') {
+        this.modo = 'nuevo';
+        this.iniciarContrato();
+      } else if (nuevoId) {
+        this.cargarDetalleContrato();
+      }
+    }
+    if (changes['modo'] && !changes['modo'].firstChange) {
+      this.actualizarSedesDeInstitucion();
+      this.cdr.detectChanges();
+    }
+  }
 
   ngOnInit() {
     this.route.paramMap.subscribe(params => {
@@ -1677,7 +2080,7 @@ export class ContratoDetalleComponent implements OnInit {
     });
 
     // 3. Cargar Instituciones reales
-    this.siraeService.getInstituciones().subscribe({
+    this.siraeService.getInstituciones(true).subscribe({
       next: (datos: any) => {
         const res = Array.isArray(datos) ? datos : (datos.results || datos.data || []);
         this.instituciones = res;
@@ -1691,7 +2094,7 @@ export class ContratoDetalleComponent implements OnInit {
     });
 
     // 4. Cargar Sedes reales
-    this.siraeService.getSedes().subscribe({
+    this.siraeService.getSedes(undefined, true).subscribe({
       next: (datos: any) => {
         const res = Array.isArray(datos) ? datos : (datos.results || datos.data || []);
         this.sedes = res;
@@ -1704,7 +2107,18 @@ export class ContratoDetalleComponent implements OnInit {
       }
     });
 
-    // 5. Cargar Supervisores disponibles
+    // 5. Cargar lista de contratos existentes (para evitar duplicidad de contratos por IE)
+    this.siraeService.getContratos().subscribe({
+      next: (datos: any) => {
+        this.listaContratosExistentes = Array.isArray(datos) ? datos : (datos.results || datos.data || []);
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.warn('Error al precargar contratos existentes:', err);
+      }
+    });
+
+    // 6. Cargar Supervisores disponibles
     this.cargarSupervisores();
   }
 
@@ -1810,44 +2224,164 @@ export class ContratoDetalleComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
+  private normalizarTextoInstitucion(str: any): string {
+    return String(str || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  private buscarInstitucionDelContrato(): any {
+    const instNombre = this.normalizarTextoInstitucion(this.contrato?.institucion || this.contrato?.institucion_nombre);
+    const cInstId = typeof this.contrato?.id_institucion === 'object'
+      ? (this.contrato?.id_institucion?.id_institucion ?? this.contrato?.id_institucion?.id)
+      : this.contrato?.id_institucion;
+
+    // 1. Si hay selección temporal y coincide con el contrato actual
+    if (this.institucionTemporalSeleccionada) {
+      const tempNom = this.normalizarTextoInstitucion(this.institucionTemporalSeleccionada.nombre_institucion || this.institucionTemporalSeleccionada.nombre);
+      const tempId = this.institucionTemporalSeleccionada.id_institucion || this.institucionTemporalSeleccionada.id;
+      if ((instNombre && tempNom === instNombre) || (cInstId && tempId && Number(tempId) === Number(cInstId))) {
+        return this.institucionTemporalSeleccionada;
+      }
+    }
+
+    // 2. Si coincide tanto por ID como por nombre y tiene sedes, usar esa coincidencia exacta
+    if (cInstId && instNombre) {
+      const porIdYNombre = (this.instituciones || []).find(i =>
+        Number(i.id_institucion ?? i.id) === Number(cInstId) &&
+        this.normalizarTextoInstitucion(i.nombre_institucion || i.nombre) === instNombre
+      );
+      if (porIdYNombre && this.obtenerSedesDeInst(porIdYNombre).length > 0) {
+        return porIdYNombre;
+      }
+    }
+
+    // 3. Priorizar búsqueda por nombre exacto de la institución (para evitar que un id_institucion desfasado apunte a otra institución con 0 sedes)
+    if (instNombre) {
+      const candidatasExactas = (this.instituciones || []).filter(i => {
+        const nom = this.normalizarTextoInstitucion(i.nombre_institucion || i.nombre);
+        return nom === instNombre;
+      });
+      if (candidatasExactas.length === 1) return candidatasExactas[0];
+      if (candidatasExactas.length > 1) {
+        const conSedes = candidatasExactas.find(i => this.obtenerSedesDeInst(i).length > 0);
+        return conSedes || candidatasExactas[0];
+      }
+    }
+
+    // 4. Buscar por ID si no coincidió por nombre exacto
+    if (cInstId) {
+      const porId = (this.instituciones || []).find(i => Number(i.id_institucion ?? i.id) === Number(cInstId));
+      if (porId) return porId;
+    }
+
+    // 5. Búsqueda parcial por nombre priorizando aquella que tenga sedes
+    if (instNombre) {
+      const candidatasParciales = (this.instituciones || []).filter(i => {
+        const nom = this.normalizarTextoInstitucion(i.nombre_institucion || i.nombre);
+        return nom && (nom.includes(instNombre) || instNombre.includes(nom));
+      });
+      if (candidatasParciales.length > 0) {
+        const conSedes = candidatasParciales.find(i => this.obtenerSedesDeInst(i).length > 0);
+        return conSedes || candidatasParciales[0];
+      }
+    }
+
+    return null;
+  }
+
+  private fusionarEstadoSedesPrevias(nuevasSedes: any[], previas: any[]): any[] {
+    if (!Array.isArray(nuevasSedes) || nuevasSedes.length === 0) return [];
+    if (!Array.isArray(previas) || previas.length === 0) return nuevasSedes.map(s => ({ ...s }));
+    return nuevasSedes.map(s => {
+      const sId = Number(s.id_sede ?? s.id);
+      const previa = previas.find(p =>
+        (sId && Number(p.id_sede ?? p.id) === sId) ||
+        (p.nombre_sede && s.nombre_sede && p.nombre_sede.trim().toLowerCase() === s.nombre_sede.trim().toLowerCase())
+      );
+      if (!previa) return { ...s };
+      return {
+        ...s,
+        cupos: s.cupos ?? previa.cupos,
+        cupos_asignados: s.cupos_asignados ?? previa.cupos_asignados,
+        jornada_manana: s.jornada_manana ?? previa.jornada_manana,
+        jornada_tarde: s.jornada_tarde ?? previa.jornada_tarde,
+        secciones_ids: Array.isArray(s.secciones_ids) && s.secciones_ids.length > 0
+          ? s.secciones_ids
+          : previa.secciones_ids,
+        grados: Array.isArray(s.grados) && s.grados.length > 0
+          ? s.grados
+          : previa.grados,
+        expandidoGrados: s.expandidoGrados ?? previa.expandidoGrados
+      };
+    });
+  }
+
   actualizarSedesDeInstitucion() {
-    if (!this.contrato?.institucion) {
+    if (!this.contrato?.institucion && !this.contrato?.id_institucion) {
       this.sedesInstitucion = [];
       return;
     }
-    const inst = this.instituciones.find(i =>
-      i.nombre_institucion?.toLowerCase() === this.contrato.institucion?.toLowerCase() ||
-      String(i.id_institucion) === String(this.contrato.institucion)
-    );
+    const previas = Array.isArray(this.sedesInstitucion) ? [...this.sedesInstitucion] : [];
+    const inst = this.buscarInstitucionDelContrato();
+    const cInstId = typeof this.contrato?.id_institucion === 'object'
+      ? (this.contrato?.id_institucion?.id_institucion ?? this.contrato?.id_institucion?.id)
+      : this.contrato?.id_institucion;
+    const instId = inst?.id_institucion || inst?.id || cInstId;
+
+    let encontradas: any[] = [];
     if (inst) {
-      const instId = inst.id_institucion || inst.id;
-      this.sedesInstitucion = this.sedes.filter(s => {
+      if (instId) {
+        this.contrato.id_institucion = Number(instId);
+      }
+      encontradas = this.obtenerSedesDeInst(inst);
+    } else if (instId) {
+      encontradas = (this.sedes || []).filter(s => {
         const sInstId = typeof s.id_institucion === 'object' && s.id_institucion !== null
           ? (s.id_institucion.id_institucion ?? s.id_institucion.id)
           : (s.id_institucion || s.institucion_id || s.institucion);
-        return Number(sInstId) === Number(instId) ||
-          String(s.nombre_institucion || '').toLowerCase() === String(inst.nombre_institucion || '').toLowerCase();
+        return Number(sInstId) === Number(instId);
       });
-
-      this.cargarDistribucionPersistida();
-
-      if (instId && this.sedesInstitucion.length === 0) {
-        this.siraeService.getSedes(Number(instId)).subscribe({
-          next: (datos: any) => {
-            const res = Array.isArray(datos) ? datos : (datos.results || datos.data || []);
-            if (res.length > 0) {
-              this.sedesInstitucion = res;
-              this.cargarDistribucionPersistida();
-              this.inicializarSedesParaDistribucion();
-              this.cdr.detectChanges();
-            }
-          }
-        });
-      } else {
-        this.inicializarSedesParaDistribucion();
-      }
     } else {
-      this.sedesInstitucion = [];
+      const instNorm = this.normalizarTextoInstitucion(this.contrato?.institucion);
+      encontradas = (this.sedes || []).filter(s => {
+        const sNom = this.normalizarTextoInstitucion(s.institucion_nombre || s.nombre_institucion);
+        return instNorm && sNom && (sNom === instNorm || sNom.includes(instNorm) || instNorm.includes(sNom));
+      });
+    }
+
+    if (encontradas.length > 0 || previas.length === 0) {
+      this.sedesInstitucion = this.fusionarEstadoSedesPrevias(encontradas, previas);
+    }
+
+    this.cargarDistribucionPersistida();
+
+    if (instId && this.sedesInstitucion.length === 0) {
+      this.siraeService.getSedes(Number(instId), true).subscribe({
+        next: (datos: any) => {
+          const res = Array.isArray(datos) ? datos : (datos.results || datos.data || []);
+          if (res.length > 0) {
+            this.sedesInstitucion = res;
+            this.cargarDistribucionPersistida();
+            this.inicializarSedesParaDistribucion();
+            if (this.modalEditarDistribucionAbierto) {
+              this.inicializarSedesParaEdicion();
+            }
+            this.cargarHistorialLocal();
+            this.cdr.detectChanges();
+          }
+        }
+      });
+    } else {
+      this.inicializarSedesParaDistribucion();
+      if (this.modalEditarDistribucionAbierto) {
+        this.inicializarSedesParaEdicion();
+      }
+      this.cargarHistorialLocal();
     }
     this.cdr.detectChanges();
   }
@@ -1856,44 +2390,74 @@ export class ContratoDetalleComponent implements OnInit {
     if (!this.gradosCatalogoDistribucion || this.gradosCatalogoDistribucion.length === 0) {
       this.cargarGradosParaDistribucion();
     }
+    const datosLocales = this.obtenerDistribucionLocal();
+
     (this.sedesInstitucion || []).forEach(s => {
+      const sId = Number(s.id_sede || s.id);
+      const sedeLocal = datosLocales?.sedes?.find((sl: any) =>
+        Number(sl.id_sede || sl.id || sl.sede) === sId ||
+        (sl.nombre_sede && s.nombre_sede && sl.nombre_sede.trim().toLowerCase() === s.nombre_sede.trim().toLowerCase())
+      );
+
       if (s.cupos_asignados === undefined || s.cupos_asignados === null) {
-        s.cupos_asignados = Number(s.cupos) || 0;
+        s.cupos_asignados = Number(sedeLocal?.cupos_asignados ?? sedeLocal?.cupos ?? s.cupos) || 0;
       }
       if (!Array.isArray(s.grados) || s.grados.length === 0) {
-        s.grados = (this.gradosCatalogoDistribucion || []).map(g => ({
-          id_grado: g.id_grado,
-          nombre_grado: g.nombre_grado,
-          cupos: 0
-        }));
+        if (Array.isArray(sedeLocal?.grados) && sedeLocal.grados.length > 0) {
+          s.grados = sedeLocal.grados.map((g: any) => ({
+            id_grado: Number(g.id_grado || g.id),
+            nombre_grado: g.nombre || g.nombre_grado || `Grado ${g.id_grado}`,
+            cupos: Number(g.cuposAsignados ?? g.cupos_asignados ?? g.cupos) || 0
+          }));
+        } else {
+          s.grados = (this.gradosCatalogoDistribucion || []).map(g => ({
+            id_grado: g.id_grado,
+            nombre_grado: g.nombre_grado,
+            cupos: 0
+          }));
+        }
       }
       if (s.expandidoGrados === undefined) {
         s.expandidoGrados = false;
       }
       if (s.jornada_manana === undefined || s.jornada_manana === null) {
-        s.jornada_manana = this.jornadaManana ? !!this.jornadaManana.habilitada : false;
+        if (sedeLocal?.jornada_manana !== undefined) {
+          s.jornada_manana = !!sedeLocal.jornada_manana;
+        } else {
+          s.jornada_manana = this.jornadaManana ? !!this.jornadaManana.habilitada : false;
+        }
       }
       if (s.jornada_tarde === undefined || s.jornada_tarde === null) {
-        s.jornada_tarde = this.jornadaTarde ? !!this.jornadaTarde.habilitada : false;
-      }
-      if (!Array.isArray(s.secciones_ids)) {
-        s.secciones_ids = [];
-        if (s.jornada_manana) {
-          const secM = this.seccionesPorNombreJornada('Mañana');
-          secM.forEach(m => {
-            const mId = Number(m.id_seccion || m.id);
-            if (!s.secciones_ids.includes(mId)) s.secciones_ids.push(mId);
-          });
+        if (sedeLocal?.jornada_tarde !== undefined) {
+          s.jornada_tarde = !!sedeLocal.jornada_tarde;
+        } else {
+          s.jornada_tarde = this.jornadaTarde ? !!this.jornadaTarde.habilitada : false;
         }
-        if (s.jornada_tarde) {
-          const secT = this.seccionesPorNombreJornada('Tarde');
-          secT.forEach(m => {
-            const mId = Number(m.id_seccion || m.id);
-            if (!s.secciones_ids.includes(mId)) s.secciones_ids.push(mId);
-          });
+      }
+      if (!Array.isArray(s.secciones_ids) || s.secciones_ids.length === 0) {
+        if (Array.isArray(sedeLocal?.secciones_ids) && sedeLocal.secciones_ids.length > 0) {
+          s.secciones_ids = [...sedeLocal.secciones_ids];
+        } else if (!Array.isArray(s.secciones_ids)) {
+          s.secciones_ids = [];
+          if (s.jornada_manana) {
+            const secM = this.seccionesPorNombreJornada('Mañana');
+            secM.forEach(m => {
+              const mId = Number(m.id_seccion || m.id);
+              if (!s.secciones_ids.includes(mId)) s.secciones_ids.push(mId);
+            });
+          }
+          if (s.jornada_tarde) {
+            const secT = this.seccionesPorNombreJornada('Tarde');
+            secT.forEach(m => {
+              const mId = Number(m.id_seccion || m.id);
+              if (!s.secciones_ids.includes(mId)) s.secciones_ids.push(mId);
+            });
+          }
         }
       }
     });
+
+    this.sincronizarJornadasYMenusDesdeSedes();
   }
 
   get totalCuposAsignadosFormulario(): number {
@@ -1903,6 +2467,10 @@ export class ContratoDetalleComponent implements OnInit {
   onCambioCuposSedeFormulario(s: any) {
     s.cupos_asignados = Math.max(0, Number(s.cupos_asignados) || 0);
     s.cupos = s.cupos_asignados;
+    const totalSedes = this.totalCuposAsignadosFormulario;
+    if (totalSedes > 0 && this.contrato && (!this.contrato.cupos || totalSedes > Number(this.contrato.cupos))) {
+      this.contrato.cupos = totalSedes;
+    }
     this.cdr.detectChanges();
   }
 
@@ -1927,9 +2495,47 @@ export class ContratoDetalleComponent implements OnInit {
       if (suma > 0) {
         s.cupos_asignados = suma;
         s.cupos = suma;
+        const totalSedes = this.totalCuposAsignadosFormulario;
+        if (totalSedes > 0 && this.contrato && (!this.contrato.cupos || totalSedes > Number(this.contrato.cupos))) {
+          this.contrato.cupos = totalSedes;
+        }
       }
     }
     this.cdr.detectChanges();
+  }
+
+  recargarSedesDeInstitucionActual(): void {
+    this.siraeService.getInstituciones(true).subscribe({
+      next: (datosInst: any) => {
+        const resInst = Array.isArray(datosInst) ? datosInst : (datosInst?.results || datosInst?.data || []);
+        if (resInst.length > 0) {
+          this.instituciones = resInst;
+        }
+        const inst = this.buscarInstitucionDelContrato();
+        const instId = inst?.id_institucion || inst?.id || this.contrato?.id_institucion;
+        this.siraeService.getSedes(undefined, true).subscribe({
+          next: (datosSedes: any) => {
+            const resSedes = Array.isArray(datosSedes) ? datosSedes : (datosSedes?.results || datosSedes?.data || []);
+            if (resSedes.length > 0) {
+              this.sedes = resSedes;
+            }
+            this.actualizarSedesDeInstitucion();
+            if (instId && this.sedesInstitucion.length === 0) {
+              this.siraeService.getSedes(Number(instId), true).subscribe({
+                next: (sedesPorId: any) => {
+                  const resPorId = Array.isArray(sedesPorId) ? sedesPorId : (sedesPorId?.results || sedesPorId?.data || []);
+                  if (resPorId.length > 0) {
+                    this.sedesInstitucion = resPorId;
+                    this.inicializarSedesParaDistribucion();
+                    this.cdr.detectChanges();
+                  }
+                }
+              });
+            }
+          }
+        });
+      }
+    });
   }
 
   onInstitucionChange() {
@@ -1946,9 +2552,18 @@ export class ContratoDetalleComponent implements OnInit {
     this.siraeService.getContratos().subscribe({
       next: (datos: any) => {
         const listaContratos = Array.isArray(datos) ? datos : (datos.results || datos.data || []);
-        const contratoEncontrado = listaContratos.find((c: any) =>
+        let contratoEncontrado = listaContratos.find((c: any) =>
           String(c.id_contrato || c.id || c.pk) === String(this.contratoId)
         );
+
+        if (!contratoEncontrado && this.contratoId) {
+          const cid = String(this.contratoId).trim().toLowerCase();
+          contratoEncontrado = listaContratos.find((c: any) => {
+            const numCor = String(c.numero_cor || c.codigo || '').trim().toLowerCase();
+            const instNom = String(c.institucion || c.nombre_institucion || c.id_institucion?.nombre_institucion || '').trim().toLowerCase();
+            return numCor === cid || instNom === cid || instNom.includes(cid);
+          });
+        }
 
         if (contratoEncontrado) {
           const instId = contratoEncontrado.id_institucion ? (contratoEncontrado.id_institucion?.id_institucion || contratoEncontrado.id_institucion) : null;
@@ -1969,7 +2584,8 @@ export class ContratoDetalleComponent implements OnInit {
 
           this.contrato = {
             ...contratoEncontrado,
-            institucion: contratoEncontrado.institucion || contratoEncontrado.nombre_institucion || 'No especificada',
+            codigo: contratoEncontrado.numero_cor || contratoEncontrado.codigo || contratoEncontrado.numero_contrato || `COR-${this.contratoId}`,
+            institucion: contratoEncontrado.institucion || contratoEncontrado.institucion_nombre || contratoEncontrado.nombre_institucion || contratoEncontrado.id_institucion?.nombre_institucion || 'No especificada',
             id_institucion: instId,
             zona: contratoEncontrado.zona || contratoEncontrado.nombre_zona || 'No especificada',
             fecha_inicio: contratoEncontrado.fecha_inicio || contratoEncontrado.inicio,
@@ -1984,11 +2600,11 @@ export class ContratoDetalleComponent implements OnInit {
           this.mensajeVigenciaContrato = vigencia.mensajeVigencia;
 
           this.actualizarSedesDeInstitucion();
-          this.cargarHistorialLocal();
           this.cargarDistribucionPersistida();
+          this.cargarHistorialLocal();
 
           if (this.modo === 'edicion') {
-            this.abrirModalEdicion();
+            this.modalEdicionAbierto = false;
           }
         } else {
           // Fallback por si acaso entra directo por URL y el backend requiere detalle por ID específico
@@ -2038,7 +2654,88 @@ export class ContratoDetalleComponent implements OnInit {
 
   // Getters para Distribución de Cupos
   get cuposAutorizados(): number {
-    return Number(this.contrato?.cupos) || 0;
+    const cCupos = Number(this.contrato?.cupos);
+    if (cCupos && cCupos > 0) return cCupos;
+    const sedesCupos = this.totalCuposAsignadosSedes;
+    if (sedesCupos && sedesCupos > 0) return sedesCupos;
+    const formCupos = this.totalCuposAsignadosFormulario;
+    if (formCupos && formCupos > 0) return formCupos;
+    return 0;
+  }
+
+  get contratoTieneJornadaManana(): boolean {
+    if (this.jornadaManana?.habilitada) return true;
+    if ((this.sedesInstitucion || []).some(s => !!s.jornada_manana)) return true;
+    if ((this.sedesInstitucion || []).some(s => Array.isArray(s.jornadas) && s.jornadas.some((j: any) => String(j).toLowerCase().includes('mañan') || String(j).toLowerCase().includes('manan')))) return true;
+    const local = this.obtenerDistribucionLocal();
+    if (local && Array.isArray(local.sedes) && local.sedes.some((s: any) => !!s.jornada_manana || (Array.isArray(s.jornadas) && s.jornadas.some((j: any) => String(j).toLowerCase().includes('mañan') || String(j).toLowerCase().includes('manan'))))) return true;
+    return false;
+  }
+
+  get contratoTieneJornadaTarde(): boolean {
+    if (this.jornadaTarde?.habilitada) return true;
+    if ((this.sedesInstitucion || []).some(s => !!s.jornada_tarde)) return true;
+    if ((this.sedesInstitucion || []).some(s => Array.isArray(s.jornadas) && s.jornadas.some((j: any) => String(j).toLowerCase().includes('tard')))) return true;
+    const local = this.obtenerDistribucionLocal();
+    if (local && Array.isArray(local.sedes) && local.sedes.some((s: any) => !!s.jornada_tarde || (Array.isArray(s.jornadas) && s.jornadas.some((j: any) => String(j).toLowerCase().includes('tard'))))) return true;
+    return false;
+  }
+
+  get totalJornadasContrato(): number {
+    let count = 0;
+    if (this.contratoTieneJornadaManana) count++;
+    if (this.contratoTieneJornadaTarde) count++;
+    if (count > 0) return count;
+    const hab = (this.jornadas || []).filter(j => j.habilitada).length;
+    if (hab > 0) return hab;
+    if (this.seccionesAsignadas.length > 0) return 1;
+    return 0;
+  }
+
+  obtenerNombresSeccionesDeSede(s: any): { id: number; nombre: string; jornada?: string }[] {
+    if (!s) return [];
+    const catalogo = (this.todasSeccionesDisponibles && this.todasSeccionesDisponibles.length > 0)
+      ? this.todasSeccionesDisponibles
+      : (this.seccionesMenu || []);
+    const secIds = Array.isArray(s.secciones_ids) ? s.secciones_ids : [];
+
+    if (secIds.length > 0) {
+      return secIds.map((idSec: any) => {
+        const match = catalogo.find(
+          (sec: any) => Number(sec.id_seccion || sec.id) === Number(idSec)
+        );
+        return {
+          id: Number(idSec),
+          nombre: match ? (match.nombre_seccion || match.nombre) : `Menú #${idSec}`,
+          jornada: match ? (match.nombre_jornada || match.jornada_nombre || match.jornada || '') : ''
+        };
+      });
+    }
+
+    const res: { id: number; nombre: string; jornada?: string }[] = [];
+    if (this.contratosSeccionMenu && this.contratosSeccionMenu.length > 0) {
+      this.contratosSeccionMenu.forEach(csm => {
+        const secId = csm.id_seccion?.id_seccion || csm.id_seccion;
+        const sec = catalogo.find(
+          (x: any) => Number(x.id_seccion || x.id) === Number(secId)
+        );
+        if (sec) {
+          const jNom = (sec.nombre_jornada || sec.jornada_nombre || sec.jornada || '').toString().toLowerCase();
+          const matchesManana = s.jornada_manana && jNom.includes('mañan');
+          const matchesTarde = s.jornada_tarde && jNom.includes('tard');
+          if (matchesManana || matchesTarde || (!s.jornada_manana && !s.jornada_tarde)) {
+            if (!res.some(r => r.id === Number(secId))) {
+              res.push({
+                id: Number(secId),
+                nombre: sec.nombre_seccion || sec.nombre,
+                jornada: sec.nombre_jornada || sec.jornada_nombre || sec.jornada || ''
+              });
+            }
+          }
+        }
+      });
+    }
+    return res;
   }
 
   obtenerCuposDeSede(s: any): number {
@@ -2511,6 +3208,26 @@ export class ContratoDetalleComponent implements OnInit {
     const instEncontrada = this.institucionSeleccionadaInfo;
     const idInst = instEncontrada?.id_institucion || instEncontrada?.id || this.contrato.id_institucion || null;
 
+    const infoDuplicado = this.institucionTieneContrato({
+      id_institucion: idInst,
+      nombre_institucion: this.contrato.institucion
+    });
+    if (infoDuplicado.tieneContrato) {
+      const codExistente = infoDuplicado.contratoExistente?.numero_cor || infoDuplicado.contratoExistente?.codigo || '';
+      void this.sweetAlert.warning(
+        'Institución con contrato existente',
+        `Esta institución ya tiene el contrato ${codExistente} registrado. Solo se permite un contrato por institución; las sedes se gestionan dentro de ese contrato.`
+      );
+      return;
+    }
+
+    const cuposAnteriores = Number(this.contrato.cupos) || 0;
+    const cuposCalculados = Number(this.contrato.cupos) > 0
+      ? Math.max(Number(this.contrato.cupos), this.totalCuposAsignadosFormulario)
+      : (this.totalCuposAsignadosFormulario > 0 ? this.totalCuposAsignadosFormulario : (this.totalCuposAsignadosSedes || 0));
+
+    this.contrato.cupos = cuposCalculados;
+
     const payload: any = {
       numero_cor: this.contrato.codigo.trim(),
       institucion: this.contrato.institucion,
@@ -2518,7 +3235,7 @@ export class ContratoDetalleComponent implements OnInit {
       fecha_inicio: this.contrato.fecha_inicio,
       fecha_fin: this.contrato.fecha_fin || '2026-12-31',
       estado: this.contrato.estado || 'Activo',
-      cupos: Number(this.contrato.cupos) || 0
+      cupos: cuposCalculados
     };
 
     if (idInst) {
@@ -2590,6 +3307,8 @@ export class ContratoDetalleComponent implements OnInit {
 
             try {
               localStorage.setItem(`sirae_distribucion_contrato_${newId}`, JSON.stringify(distribucionPayload));
+              const keys = this.obtenerClavesContrato('sirae_distribucion_contrato_');
+              keys.forEach(k => localStorage.setItem(k, JSON.stringify(distribucionPayload)));
             } catch (_) {}
 
             const token = this.authService.obtenerToken()?.replace(/^(Bearer|Token)\s+/i, '').trim();
@@ -2605,17 +3324,27 @@ export class ContratoDetalleComponent implements OnInit {
                 });
               }
             });
-
-            for (const s of this.sedesInstitucion) {
-              const cSede = Number(s.cupos_asignados ?? s.cupos) || 0;
-              if (cSede > 0) {
-                this.siraeService.actualizarSede(Number(s.id_sede || s.id), { cupos: cSede }).subscribe({
-                  next: () => {},
-                  error: () => {}
-                });
-              }
-            }
           }
+
+          // Historial de creación
+          const ahoraFmt = new Date().toLocaleString('es-CO');
+          this.historialModificaciones = [
+            {
+              id_modificacion: Date.now(),
+              tipo: 'MODIFICACION',
+              usuario_responsable: this.nombreUsuarioResponsableActual,
+              fecha_registro: ahoraFmt,
+              cambios: [
+                {
+                  campo: 'Creación de contrato',
+                  anterior: 'Sin registro',
+                  nuevo: `${payload.institucion} (${cuposCalculados} cupos autorizados)`
+                }
+              ],
+              estado_resultante: payload.estado
+            }
+          ];
+          this.guardarHistorialLocal();
 
           const nuevoContratoFormateado = {
             id: newId,
@@ -2643,6 +3372,8 @@ export class ContratoDetalleComponent implements OnInit {
           if (err?.error) {
             if (typeof err.error === 'string') {
               mensaje = err.error;
+            } else if (err.error.id_institucion) {
+              mensaje = Array.isArray(err.error.id_institucion) ? err.error.id_institucion.join(', ') : String(err.error.id_institucion);
             } else if (err.error.detail) {
               mensaje = err.error.detail;
             } else if (err.error.numero_cor) {
@@ -2657,11 +3388,119 @@ export class ContratoDetalleComponent implements OnInit {
     } else {
       this.siraeService.actualizarContrato(Number(this.contratoId), payload).subscribe({
         next: async () => {
+          // Asignar las secciones/menús en backend si están seleccionadas
+          if (this.contratosSeccionMenu.length > 0 && this.contratoId) {
+            const promesas = this.contratosSeccionMenu.map(rel => {
+              const secId = typeof rel.id_seccion === 'object' ? (rel.id_seccion?.id_seccion || rel.id_seccion?.id) : rel.id_seccion;
+              return new Promise((resolve) => {
+                this.siraeService.crearContratoSeccionMenu({
+                  id_contrato: Number(this.contratoId),
+                  id_seccion: Number(secId),
+                  estado: 'Activo',
+                  valor: 0
+                }).subscribe({
+                  next: () => resolve(true),
+                  error: () => resolve(false)
+                });
+              });
+            });
+            try {
+              await Promise.all(promesas);
+            } catch (_) {}
+          }
+
+          // Persistir distribución de sedes y grados en edición si están presentes
+          if (this.contratoId && this.sedesInstitucion && this.sedesInstitucion.length > 0) {
+            const distribucionPayload = {
+              id_contrato: Number(this.contratoId),
+              codigo_contrato: payload.numero_cor || this.contrato?.codigo,
+              id_institucion: payload.id_institucion,
+              total_autorizado: payload.cupos,
+              total_distribuido: this.totalCuposAsignadosFormulario,
+              pendientes: Math.max(0, payload.cupos - this.totalCuposAsignadosFormulario),
+              fecha_actualizacion: new Date().toISOString(),
+              sedes: this.sedesInstitucion.map((s: any) => ({
+                id_sede: Number(s.id_sede || s.id),
+                nombre_sede: s.nombre_sede,
+                cuposAsignados: Number(s.cupos_asignados ?? s.cupos) || 0,
+                cupos_asignados: Number(s.cupos_asignados ?? s.cupos) || 0,
+                cupos: Number(s.cupos_asignados ?? s.cupos) || 0,
+                jornada_manana: !!s.jornada_manana,
+                jornada_tarde: !!s.jornada_tarde,
+                jornadas: [
+                  ...(s.jornada_manana ? ['Mañana'] : []),
+                  ...(s.jornada_tarde ? ['Tarde'] : [])
+                ],
+                secciones_ids: Array.isArray(s.secciones_ids) ? s.secciones_ids : [],
+                grados: Array.isArray(s.grados) ? s.grados.map((g: any) => ({
+                  id_grado: Number(g.id_grado || g.id),
+                  nombre_grado: g.nombre_grado,
+                  cuposAsignados: Number(g.cupos) || 0,
+                  cupos_asignados: Number(g.cupos) || 0,
+                  cupos: Number(g.cupos) || 0
+                })) : []
+              }))
+            };
+
+            try {
+              localStorage.setItem(`sirae_distribucion_contrato_${this.contratoId}`, JSON.stringify(distribucionPayload));
+              const keys = this.obtenerClavesContrato('sirae_distribucion_contrato_');
+              keys.forEach(k => localStorage.setItem(k, JSON.stringify(distribucionPayload)));
+            } catch (_) {}
+
+            this.sincronizarJornadasYMenusDesdeSedes();
+
+            const token = this.authService.obtenerToken()?.replace(/^(Bearer|Token)\s+/i, '').trim();
+            let headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+            if (token) headers = headers.set('Authorization', `Bearer ${token}`);
+
+            this.http.put(`${environment.apiUrl}/contratos/${this.contratoId}/distribucion/`, distribucionPayload, { headers }).subscribe({
+              next: () => {},
+              error: () => {
+                this.http.post(`${environment.apiUrl}/distribucion-cupos/`, distribucionPayload, { headers }).subscribe({
+                  next: () => {},
+                  error: () => {}
+                });
+              }
+            });
+          }
+
+          // Historial de modificación
+          const ahoraFmt = new Date().toLocaleString('es-CO');
+          const registroAudit = {
+            id_modificacion: Date.now(),
+            tipo: 'MODIFICACION',
+            usuario_responsable: this.nombreUsuarioResponsableActual,
+            fecha_registro: ahoraFmt,
+            cambios: [
+              {
+                campo: 'Cupos autorizados y configuración de sedes',
+                anterior: `${cuposAnteriores} cupos`,
+                nuevo: `${cuposCalculados} cupos`
+              }
+            ],
+            estado_resultante: payload.estado
+          };
+          this.historialModificaciones.unshift(registroAudit);
+          this.guardarHistorialLocal();
+
+          const contratoActualizado = {
+            id: Number(this.contratoId),
+            codigo: payload.numero_cor || this.contrato?.codigo,
+            institucion: payload.institucion,
+            cupos: payload.cupos,
+            zona: payload.zona,
+            fechaInicio: payload.fecha_inicio,
+            fechaFin: payload.fecha_fin,
+            estado: payload.estado,
+            supervisor: this.nombreSupervisorAsignado
+          };
+
           await this.sweetAlert.success(
             '¡Contrato actualizado!',
-            'Los cambios del contrato han sido guardados exitosamente.'
+            'Los cambios del contrato y su distribución han sido guardados exitosamente.'
           );
-          this.cerrar.emit();
+          this.cerrar.emit(contratoActualizado);
           this.router.navigate(['/contratos']);
         },
         error: (err) => {

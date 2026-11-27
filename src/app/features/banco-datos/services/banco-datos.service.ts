@@ -1,14 +1,16 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of, throwError } from 'rxjs';
-import { tap } from 'rxjs/operators';
+import { switchMap, tap } from 'rxjs/operators';
 import { environment } from '@env/environment'; // Asumimos que existe
+import { SiraeService } from '../../contratos/services/contratos_pae.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class BancoDatosService {
   private apiUrl = environment.apiUrl;
+  private siraeService = inject(SiraeService, { optional: true });
 
   // Caché en memoria por nombre de tabla
   private cacheTablas: { [tabla: string]: any } = {};
@@ -23,27 +25,72 @@ export class BancoDatosService {
     const endpoint = this.getEndpoint(tabla);
     if (!endpoint) return throwError(() => new Error('Endpoint no configurado'));
 
-    return this.http.get(`${this.apiUrl}/${endpoint}`).pipe(
+    const separador = endpoint.includes('?') ? '&' : '?';
+    const queryExtra = tabla === 'gramajes' ? `${separador}page_size=2000&todos=true` : '';
+    const url = `${this.apiUrl}/${endpoint}${queryExtra}`;
+
+    return this.cargarColeccionCompleta(url).pipe(
       tap(res => {
         this.cacheTablas[tabla] = res;
       })
     );
   }
 
+  private cargarColeccionCompleta(url: string): Observable<any> {
+    return this.http.get<any>(url).pipe(
+      switchMap(res => {
+        if (!res || !Array.isArray(res.results) || !res.next) {
+          return of(res);
+        }
+        // Si la respuesta viene paginada en DRF, recolectar recursivamente todas las páginas
+        const acumularPaginas = (siguienteUrl: string, acumulados: any[]): Observable<any> => {
+          return this.http.get<any>(siguienteUrl).pipe(
+            switchMap(subRes => {
+              const nuevos = Array.isArray(subRes?.results)
+                ? subRes.results
+                : (Array.isArray(subRes) ? subRes : []);
+              const todos = [...acumulados, ...nuevos];
+              if (subRes?.next) {
+                return acumularPaginas(subRes.next, todos);
+              }
+              return of({ ...res, results: todos, count: todos.length });
+            })
+          );
+        };
+        return acumularPaginas(res.next, res.results);
+      })
+    );
+  }
+
   crearDato(tabla: string, data: any): Observable<any> {
     delete this.cacheTablas[tabla];
+    if (tabla === 'sedes' || tabla === 'instituciones') {
+      delete this.cacheTablas['instituciones'];
+      delete this.cacheTablas['sedes'];
+      this.siraeService?.limpiarCacheInstitucionesYSedes();
+    }
     const endpoint = this.getEndpoint(tabla);
     return this.http.post(`${this.apiUrl}/${endpoint}`, data);
   }
 
   actualizarDato(tabla: string, id: number, data: any): Observable<any> {
     delete this.cacheTablas[tabla];
+    if (tabla === 'sedes' || tabla === 'instituciones') {
+      delete this.cacheTablas['instituciones'];
+      delete this.cacheTablas['sedes'];
+      this.siraeService?.limpiarCacheInstitucionesYSedes();
+    }
     const endpoint = this.getEndpoint(tabla);
     return this.http.put(`${this.apiUrl}/${endpoint}${id}/`, data);
   }
 
   eliminarDato(tabla: string, id: number): Observable<any> {
     delete this.cacheTablas[tabla];
+    if (tabla === 'sedes' || tabla === 'instituciones') {
+      delete this.cacheTablas['instituciones'];
+      delete this.cacheTablas['sedes'];
+      this.siraeService?.limpiarCacheInstitucionesYSedes();
+    }
     const endpoint = this.getEndpoint(tabla);
     return this.http.delete(`${this.apiUrl}/${endpoint}${id}/`);
   }

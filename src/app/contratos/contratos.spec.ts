@@ -191,4 +191,23 @@ describe('ContratosComponent', () => {
       expect(component.contratosFiltrados.length).toBe(4);
     });
   });
+
+  it('debe bloquear la creación de un segundo contrato para una institución que ya tiene contrato', () => {
+    siraeMock.crearContrato = vi.fn().mockReturnValue(of({}));
+    component.modoEdicionContrato = false;
+    component.contratoActual = {
+      id: null,
+      codigo: 'COR-2026-999',
+      institucion: 'I.E. Gabriel García Márquez',
+      fechaInicio: '2026-01-01',
+      fechaFin: '2026-12-31',
+      estado: 'Activo',
+      zona: 'Norte'
+    };
+
+    component.guardarContrato();
+
+    expect(sweetAlertMock.warning).toHaveBeenCalled();
+    expect(siraeMock.crearContrato).not.toHaveBeenCalled();
+  });
 });

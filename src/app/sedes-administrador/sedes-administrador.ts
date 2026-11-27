@@ -14,6 +14,10 @@ interface SedeResumen {
   telefono: string | null;
   estado: string;
   institucion_nombre: string | null;
+  id_institucion?: number;
+  es_principal?: boolean;
+  numero_contrato?: string;
+  cupos_totales?: number;
 }
 
 interface SeccionConfigurada {
@@ -92,6 +96,7 @@ export class SedesAdministradorComponent implements OnInit, OnDestroy {
   configuracion: ConfiguracionSede | null = null;
   jornadasDisponibles: JornadaCatalogo[] = [];
   gradosDisponibles: GradoCatalogo[] = [];
+  seccionesDisponibles: any[] = [];
   cargandoSedes = false;
   cargandoDetalle = false;
   errorSedes = '';
@@ -123,6 +128,7 @@ export class SedesAdministradorComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.cargarJornadasDisponibles();
     this.cargarGradosDisponibles();
+    this.cargarSeccionesDisponibles();
     this.cargarSedes();
   }
 
@@ -143,10 +149,28 @@ export class SedesAdministradorComponent implements OnInit, OnDestroy {
       }),
     ).subscribe({
       next: (response) => {
-        this.sedes = listaDe<SedeResumen>(response);
-        const sede = this.sedes.find(item => item.id_sede === idSedeSeleccionada);
+        const rawSedes = listaDe<SedeResumen>(response);
+        this.sedes = rawSedes.map((s, idx) => {
+          const esPrincipal = (s.nombre_sede || '').toLowerCase().includes('principal') || idx === 0;
+          return {
+            ...s,
+            es_principal: esPrincipal,
+            numero_contrato: s.numero_contrato || 'CTR-PAE-2026-ANT-01',
+            cupos_totales: s.cupos_totales || (esPrincipal ? 150 : 80),
+            codigo_dane: s.codigo_dane || (esPrincipal ? '11900100001' : '11900100002')
+          };
+        });
+
+        const principal = this.sedes.find(item => item.es_principal) || this.sedes[0];
+        const sede = this.sedes.find(item => item.id_sede === idSedeSeleccionada) || principal;
         this.sedeSeleccionada = sede ?? null;
         if (sede) {
+          this.authService.establecerSedeActiva({
+            id_sede: sede.id_sede,
+            nombre_sede: sede.nombre_sede,
+            id_institucion: sede.id_institucion,
+            nombre_institucion: this.institucionAsignada,
+          });
           this.cargarDetalle(sede);
         } else {
           this.configuracion = null;
@@ -163,6 +187,12 @@ export class SedesAdministradorComponent implements OnInit, OnDestroy {
 
   seleccionarSede(sede: SedeResumen): void {
     this.sedeSeleccionada = sede;
+    this.authService.establecerSedeActiva({
+      id_sede: sede.id_sede,
+      nombre_sede: sede.nombre_sede,
+      id_institucion: sede.id_institucion,
+      nombre_institucion: this.institucionAsignada,
+    });
     this.cargarDetalle(sede);
   }
 
@@ -172,6 +202,11 @@ export class SedesAdministradorComponent implements OnInit, OnDestroy {
     this.cargarSedes(this.sedeSeleccionada?.id_sede);
   }
 
+  private refrescarVista(): void {
+    this.cdr.markForCheck();
+    (this.cdr as any).detectChanges?.();
+  }
+
   private cargarJornadasDisponibles(): void {
     this.http.get<unknown>(`${environment.apiUrl}/jornadas/`).subscribe({
       next: (response) => {
@@ -179,9 +214,11 @@ export class SedesAdministradorComponent implements OnInit, OnDestroy {
           !jornada.estado || jornada.estado.toUpperCase() === 'ACTIVA' || jornada.estado.toUpperCase() === 'ACTIVO',
         );
         this.sincronizarJornadasConfiguradas();
+        this.refrescarVista();
       },
       error: () => {
         this.jornadasDisponibles = [];
+        this.refrescarVista();
       },
     });
   }
@@ -193,9 +230,30 @@ export class SedesAdministradorComponent implements OnInit, OnDestroy {
           grado => !grado.estado || String(grado.estado).toUpperCase() === 'ACTIVO'
         );
         this.sincronizarJornadasConfiguradas();
+        this.refrescarVista();
       },
       error: () => {
         this.gradosDisponibles = [];
+        this.refrescarVista();
+      },
+    });
+  }
+
+  private cargarSeccionesDisponibles(): void {
+    this.http.get<unknown>(`${environment.apiUrl}/secciones-menu/`).subscribe({
+      next: (response) => {
+        this.seccionesDisponibles = listaDe<any>(response);
+        this.sincronizarJornadasConfiguradas();
+        this.refrescarVista();
+      },
+      error: () => {
+        this.seccionesDisponibles = [
+          { id_seccion: 1, id: 1, nombre_seccion: 'Desayuno', nombre: 'Desayuno', jornada: 'Mañana' },
+          { id_seccion: 2, id: 2, nombre_seccion: 'Almuerzo', nombre: 'Almuerzo', jornada: 'Tarde' },
+          { id_seccion: 3, id: 3, nombre_seccion: 'Merienda', nombre: 'Merienda', jornada: 'Tarde' },
+        ];
+        this.sincronizarJornadasConfiguradas();
+        this.refrescarVista();
       },
     });
   }
@@ -243,12 +301,26 @@ export class SedesAdministradorComponent implements OnInit, OnDestroy {
         cuposJornada = Number(this.configuracion?.cupos_totales || 0);
       }
 
+      let secciones = (jornadaActual.secciones && jornadaActual.secciones.length > 0)
+        ? [...jornadaActual.secciones]
+        : [];
+
+      // Mapear nombres reales de menú según catálogo oficial de la API
+      secciones = secciones.map(sec => {
+        const match = this.seccionesDisponibles.find((cs: any) => Number(cs.id_seccion || cs.id) === Number(sec.id_seccion));
+        return {
+          ...sec,
+          nombre_seccion: match ? (match.nombre_seccion || match.nombre) : sec.nombre_seccion,
+        };
+      });
+
       return {
         ...jornadaActual,
         nombre_jornada: nombre,
         cupos: cuposJornada,
         grados: gradosCombinados,
-        habilitada: Boolean(jornadaActual.habilitada || cuposJornada > 0 || (jornadaActual.secciones && jornadaActual.secciones.length > 0)),
+        secciones,
+        habilitada: Boolean(jornadaActual.habilitada || cuposJornada > 0 || (secciones && secciones.length > 0)),
       };
     });
   }
@@ -280,21 +352,142 @@ export class SedesAdministradorComponent implements OnInit, OnDestroy {
       }),
     ).subscribe({
       next: (configuracion) => {
+        let cuposTotales = Number(configuracion.cupos_totales || 0);
+        let jornadas = configuracion.jornadas ?? [];
+
+        // Si el backend no reporta cupos o jornadas para la sede, consultar la distribución local guardada para el contrato/sede
+        if (cuposTotales === 0 || jornadas.length === 0) {
+          const distribucionLocal = this.obtenerDistribucionLocalParaSede(sede.id_sede);
+          if (distribucionLocal) {
+            if (cuposTotales === 0) {
+              cuposTotales = distribucionLocal.cuposSede;
+            }
+            if (jornadas.length === 0 && distribucionLocal.jornadas.length > 0) {
+              jornadas = distribucionLocal.jornadas;
+            }
+          }
+        }
+
         this.configuracion = {
           ...configuracion,
           sede,
-          cupos_totales: Number(configuracion.cupos_totales || 0),
-          jornadas: this.normalizarJornadas(configuracion.jornadas ?? []),
+          cupos_totales: cuposTotales,
+          jornadas: this.normalizarJornadas(jornadas),
           historial: configuracion.historial ?? [],
         };
         this.sincronizarJornadasConfiguradas();
         this.cdr.markForCheck();
       },
       error: () => {
-        this.errorDetalle = 'No se pudo cargar la configuración de esta sede.';
+        // En caso de error de red, consultar almacenamiento local
+        const distribucionLocal = this.obtenerDistribucionLocalParaSede(sede.id_sede);
+        if (distribucionLocal) {
+          this.configuracion = {
+            sede,
+            cupos_totales: distribucionLocal.cuposSede,
+            jornadas: this.normalizarJornadas(distribucionLocal.jornadas),
+            historial: [],
+          };
+          this.sincronizarJornadasConfiguradas();
+        } else {
+          this.errorDetalle = 'No se pudo cargar la configuración de esta sede.';
+        }
         this.cdr.markForCheck();
       },
     });
+  }
+
+  private obtenerDistribucionLocalParaSede(idSede: number): { cuposSede: number; jornadas: JornadaConfigurada[] } | null {
+    try {
+      const keys = Object.keys(localStorage).filter(k => k.startsWith('sirae_distribucion_contrato_'));
+      for (const k of keys) {
+        const raw = localStorage.getItem(k);
+        if (!raw) continue;
+        const parsed = JSON.parse(raw);
+        if (parsed && Array.isArray(parsed.sedes)) {
+          const sedeFound = parsed.sedes.find((s: any) => Number(s.id_sede || s.id) === Number(idSede));
+          if (sedeFound) {
+            const cuposSede = Number(sedeFound.cupos_asignados ?? sedeFound.cuposAsignados ?? sedeFound.cupos) || 0;
+            const jornadasSede: JornadaConfigurada[] = [];
+
+            const esManana = Boolean(sedeFound.jornada_manana || (Array.isArray(sedeFound.jornadas) && sedeFound.jornadas.some((j: any) => String(j).toLowerCase().includes('mañan'))));
+            const esTarde = Boolean(sedeFound.jornada_tarde || (Array.isArray(sedeFound.jornadas) && sedeFound.jornadas.some((j: any) => String(j).toLowerCase().includes('tard'))));
+
+            const catalogoJornadas = this.jornadasDisponibles;
+            const jMananaObj = catalogoJornadas.find(j => j.nombre_jornada.toLowerCase().includes('mañan'));
+            const jTardeObj = catalogoJornadas.find(j => j.nombre_jornada.toLowerCase().includes('tard'));
+
+            const secIds: number[] = Array.isArray(sedeFound.secciones_ids) ? sedeFound.secciones_ids : [];
+
+            const seccionesManana: SeccionConfigurada[] = [];
+            const seccionesTarde: SeccionConfigurada[] = [];
+
+            secIds.forEach(id => {
+              const sec = this.seccionesDisponibles.find((s: any) => Number(s.id_seccion || s.id) === Number(id));
+              if (!sec) return;
+              const nombre = sec.nombre_seccion || sec.nombre || '';
+              const jNom = (sec.nombre_jornada || sec.jornada || '').toLowerCase();
+              const esMenuTarde = jNom.includes('tard') || nombre.toLowerCase().includes('almuerzo') || nombre.toLowerCase().includes('merienda');
+              const esMenuManana = jNom.includes('mañan') || nombre.toLowerCase().includes('desayuno');
+
+              if (esMenuTarde) {
+                seccionesTarde.push({ id_seccion: Number(id), nombre_seccion: nombre, estado: 'Activo' });
+              } else if (esMenuManana) {
+                seccionesManana.push({ id_seccion: Number(id), nombre_seccion: nombre, estado: 'Activo' });
+              }
+            });
+
+            if (esManana && jMananaObj) {
+              jornadasSede.push({
+                id_jornada: jMananaObj.id_jornada,
+                nombre_jornada: jMananaObj.nombre_jornada,
+                cupos: cuposSede > 0 && !esTarde ? cuposSede : Math.round(cuposSede / 2),
+                habilitada: true,
+                secciones: seccionesManana,
+                grados: Array.isArray(sedeFound.grados) ? sedeFound.grados.map((g: any) => ({
+                  id_grado: Number(g.id_grado || g.id),
+                  nombre_grado: g.nombre_grado || g.nombre || `Grado ${g.id_grado}`,
+                  cupos: Number(g.cupos || 0)
+                })) : []
+              });
+            }
+
+            if (esTarde && jTardeObj) {
+              jornadasSede.push({
+                id_jornada: jTardeObj.id_jornada,
+                nombre_jornada: jTardeObj.nombre_jornada,
+                cupos: cuposSede > 0 && !esManana ? cuposSede : Math.round(cuposSede / 2),
+                habilitada: true,
+                secciones: seccionesTarde,
+                grados: Array.isArray(sedeFound.grados) ? sedeFound.grados.map((g: any) => ({
+                  id_grado: Number(g.id_grado || g.id),
+                  nombre_grado: g.nombre_grado || g.nombre || `Grado ${g.id_grado}`,
+                  cupos: Number(g.cupos || 0)
+                })) : []
+              });
+            }
+
+            // Si no tiene jornadas específicas marcadas pero sí cupos autorizados
+            if (jornadasSede.length === 0 && cuposSede > 0 && catalogoJornadas.length > 0) {
+              const defaultJ = jMananaObj || catalogoJornadas[0];
+              jornadasSede.push({
+                id_jornada: defaultJ.id_jornada,
+                nombre_jornada: defaultJ.nombre_jornada,
+                cupos: cuposSede,
+                habilitada: true,
+                secciones: [],
+                grados: []
+              });
+            }
+
+            if (cuposSede > 0 || jornadasSede.length > 0) {
+              return { cuposSede, jornadas: jornadasSede };
+            }
+          }
+        }
+      }
+    } catch (_) {}
+    return null;
   }
 
   private normalizarJornadas(jornadas: JornadaConfigurada[]): JornadaConfigurada[] {

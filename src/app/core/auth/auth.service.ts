@@ -98,6 +98,8 @@ export class AuthService {
   public institucionActiva$ = this.institucionActivaSubject.asObservable();
   private sedeActivaSubject = new BehaviorSubject<SedeActiva | null>(this.obtenerSedeActiva());
   public sedeActiva$ = this.sedeActivaSubject.asObservable();
+  private usuarioActualSubject = new BehaviorSubject<AuthenticatedUser | null>(null);
+  public usuarioActual$ = this.usuarioActualSubject.asObservable();
 
   constructor() {
     this.institucionActivaSubject.next(this.obtenerInstitucionActiva());
@@ -188,6 +190,7 @@ export class AuthService {
    * Sincroniza el usuario autenticado y el token en el Store de NgRx.
    */
   sincronizarStore(usuario: AuthenticatedUser, token: string): void {
+    this.usuarioActualSubject.next(usuario);
     if (!this.store) {
       return;
     }
@@ -255,12 +258,12 @@ export class AuthService {
       correo,
       clave,
       password: clave,
-    }).pipe(timeout(60000));
+    });
   }
 
   despertarBackend(): void {
     this.http.get(`${this.apiBaseUrl}/`, { responseType: 'text' })
-      .pipe(timeout(30000), catchError(() => EMPTY))
+      .pipe(timeout(60000), catchError(() => EMPTY))
       .subscribe();
   }
 
@@ -539,7 +542,21 @@ export class AuthService {
     }
     localStorage.setItem(this.INSTITUCION_ACTIVA, JSON.stringify(institucion));
     this.institucionActivaSubject.next(institucion);
-    this.limpiarSedeActiva();
+
+    // Por regla de negocio, al ingresar a una institución se entra por defecto a su Sede Principal / Central
+    const sedes = Array.isArray(institucion.sedes) ? institucion.sedes : [];
+    const principal = sedes.find((s: any) =>
+      (s.nombre_sede || s.nombre || '').toLowerCase().includes('principal') ||
+      (s.nombre_sede || s.nombre || '').toLowerCase().includes('central')
+    ) || (sedes.length > 0 ? sedes[0] : null);
+
+    const sedeActiva: SedeActiva = {
+      id_sede: Number(principal?.id_sede ?? principal?.id ?? 1),
+      nombre_sede: principal?.nombre_sede ?? principal?.nombre ?? 'Sede Central',
+      id_institucion: institucion.id_institucion,
+      nombre_institucion: institucion.nombre_institucion,
+    };
+    this.establecerSedeActiva(sedeActiva);
   }
 
   actualizarInstitucionActiva(institucion: InstitucionAsignada): void {
@@ -554,7 +571,27 @@ export class AuthService {
     if (!this.estaDisponibleStorage()) return null;
     try {
       const guardada = localStorage.getItem(this.SEDE_ACTIVA);
-      return guardada ? JSON.parse(guardada) as SedeActiva : null;
+      if (guardada) return JSON.parse(guardada) as SedeActiva;
+
+      // Fallback: Si no hay sede guardada, resolver Sede Principal / Central de la institución activa
+      const inst = this.obtenerInstitucionActiva();
+      if (inst) {
+        const sedes = Array.isArray(inst.sedes) ? inst.sedes : [];
+        const principal = sedes.find((s: any) =>
+          (s.nombre_sede || s.nombre || '').toLowerCase().includes('principal') ||
+          (s.nombre_sede || s.nombre || '').toLowerCase().includes('central')
+        ) || (sedes.length > 0 ? sedes[0] : null);
+
+        const sedeDefecto: SedeActiva = {
+          id_sede: Number(principal?.id_sede ?? principal?.id ?? 1),
+          nombre_sede: principal?.nombre_sede ?? principal?.nombre ?? 'Sede Central',
+          id_institucion: inst.id_institucion,
+          nombre_institucion: inst.nombre_institucion,
+        };
+        this.establecerSedeActiva(sedeDefecto);
+        return sedeDefecto;
+      }
+      return null;
     } catch {
       return null;
     }
@@ -730,9 +767,13 @@ export class AuthService {
       return of(false);
     }
 
-    return this.verificarSesionServidor().pipe(
-      timeout(10000),
+    // No bloquear el arranque de la interfaz ni abortar a los 10s si Render está despertando:
+    // validar en segundo plano y limpiar sesión solo si el servidor responde 401/403.
+    this.verificarSesionServidor().pipe(
+      timeout(45000),
       catchError(() => of(true))
-    );
+    ).subscribe();
+
+    return of(true);
   }
 }

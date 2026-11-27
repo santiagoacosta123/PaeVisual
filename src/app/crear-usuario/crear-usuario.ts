@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -26,6 +26,12 @@ export class CrearUsuarioComponent implements OnInit {
   private sweetAlert = inject(SweetAlertService);
   private router = inject(Router);
   private http = inject(HttpClient);
+  private cdr = inject(ChangeDetectorRef, { optional: true });
+
+  private refrescarVista(): void {
+    this.cdr?.markForCheck();
+    (this.cdr as any)?.detectChanges?.();
+  }
 
   currentUser = this.authService.obtenerUsuario();
   esSuperAdmin = this.authService.esSuperAdministrador(this.currentUser?.rol);
@@ -88,6 +94,7 @@ export class CrearUsuarioComponent implements OnInit {
         } else {
           this.rolesDisponibles = todos;
         }
+        this.refrescarVista();
       },
       error: (err) => console.error('Error al cargar roles:', err)
     });
@@ -97,6 +104,7 @@ export class CrearUsuarioComponent implements OnInit {
     this.bancoDatosService.obtenerDatos('instituciones').subscribe({
       next: (res) => {
         this.institucionesDisponibles = Array.isArray(res) ? res : res?.results || [];
+        this.refrescarVista();
       },
       error: (err) => console.error('Error al cargar instituciones:', err)
     });
@@ -109,6 +117,7 @@ export class CrearUsuarioComponent implements OnInit {
         } else {
           this.sedesDisponibles = todas;
         }
+        this.refrescarVista();
       },
       error: (err) => console.error('Error al cargar sedes:', err)
     });
@@ -116,6 +125,7 @@ export class CrearUsuarioComponent implements OnInit {
     this.bancoDatosService.obtenerDatos('jornadas').subscribe({
       next: (res) => {
         this.jornadasDisponibles = Array.isArray(res) ? res : res?.results || [];
+        this.refrescarVista();
       },
       error: (err) => console.error('Error al cargar jornadas:', err)
     });
@@ -123,6 +133,7 @@ export class CrearUsuarioComponent implements OnInit {
     this.usuarioService.getUsuarios().subscribe({
       next: (res: any) => {
         this.usuariosExistentes = Array.isArray(res) ? res : (res?.results || []);
+        this.refrescarVista();
       },
       error: (err) => console.error('Error al cargar usuarios:', err)
     });

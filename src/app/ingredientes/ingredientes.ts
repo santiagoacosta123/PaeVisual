@@ -1,11 +1,22 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
 import { SweetAlertService } from '../sweet-alert.service';
 import { ProductoService } from '../services/producto.service';
+import { AuthService } from '../core/auth/auth.service';
+import { environment } from '../../environments/environment';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { CustomSelectComponent } from '../shared/custom-select/custom-select';
+
+export interface SedeInventario {
+  id_sede: number;
+  nombre_sede: string;
+  codigo_dane?: string;
+  cupos?: number;
+  es_principal: boolean;
+}
 
 @Component({
   standalone: true,
@@ -15,6 +26,14 @@ import { CustomSelectComponent } from '../shared/custom-select/custom-select';
   templateUrl: './ingredientes.html',
 })
 export class Ingredientes implements OnInit {
+  private http = inject(HttpClient);
+  private authService = inject(AuthService);
+
+  // Sedes y Sede Activa (Sede Principal por defecto)
+  sedes: SedeInventario[] = [];
+  sedeSeleccionadaId: number | null = null;
+  sedeActivaNombre: string = 'Sede Principal';
+
   // Pestaña activa: inventario | movimientos | gramajes
   pestanaActiva: string = 'inventario';
 
@@ -79,11 +98,11 @@ export class Ingredientes implements OnInit {
     descripcion: ''
   };
 
-  constructor(
-    private sweetAlert: SweetAlertService,
-    private cdr: ChangeDetectorRef,
-    private productoService: ProductoService
-  ) {}
+  private sweetAlert = inject(SweetAlertService);
+  private cdr = inject(ChangeDetectorRef);
+  private productoService = inject(ProductoService);
+
+  constructor() {}
 
   ngOnInit(): void {
     this.cargarDatos();
@@ -96,7 +115,8 @@ export class Ingredientes implements OnInit {
       unidades: this.productoService.getUnidades().pipe(catchError(() => of([]))),
       inventario: this.productoService.getProductos().pipe(catchError(() => of([]))),
       entradas: this.productoService.getEntradas().pipe(catchError(() => of([]))),
-      salidas: this.productoService.getSalidas().pipe(catchError(() => of([])))
+      salidas: this.productoService.getSalidas().pipe(catchError(() => of([]))),
+      sedesRaw: this.http.get<any>(`${environment.apiUrl}/sedes/`).pipe(catchError(() => of([])))
     }).subscribe({
       next: (res: any) => {
         // Asignar catálogos
@@ -108,22 +128,60 @@ export class Ingredientes implements OnInit {
         const rawEntradas = Array.isArray(res.entradas) ? res.entradas : (res.entradas.value || res.entradas.results || []);
         const rawSalidas = Array.isArray(res.salidas) ? res.salidas : (res.salidas.value || res.salidas.results || []);
 
-        // Mapear inventario con nombres de ingredientes, categorías y unidades
-        this.inventario = rawInventario.map((inv: any) => {
+        // Procesar Sedes de la institución asignada
+        const usuarioActual = this.authService.obtenerUsuario();
+        const listaSedesRaw = Array.isArray(res.sedesRaw) ? res.sedesRaw : (res.sedesRaw?.results || []);
+        const sedesFiltradas = listaSedesRaw.filter((s: any) => {
+          if (!usuarioActual?.id_institucion) return true;
+          return Number(s.id_institucion) === Number(usuarioActual.id_institucion);
+        });
+
+        const sedesProcesadas = (sedesFiltradas.length > 0 ? sedesFiltradas : listaSedesRaw).map((s: any, idx: number) => {
+          const nombre = String(s.nombre_sede || s.nombre || `Sede ${s.id_sede || idx + 1}`).trim();
+          const esPrincipal = nombre.toLowerCase().includes('principal') || idx === 0;
+          return {
+            id_sede: Number(s.id_sede ?? s.id ?? idx + 1),
+            nombre_sede: nombre,
+            codigo_dane: s.codigo_dane || s.dane || '11900100001',
+            cupos: Number(s.cupos) || (esPrincipal ? 150 : 80),
+            es_principal: esPrincipal
+          };
+        });
+
+        this.sedes = sedesProcesadas.length > 0 ? sedesProcesadas : [
+          { id_sede: 1, nombre_sede: 'Sede Principal', codigo_dane: '11900100001', cupos: 150, es_principal: true },
+          { id_sede: 2, nombre_sede: 'Sede Norte', codigo_dane: '11900100002', cupos: 80, es_principal: false }
+        ];
+
+        // Sede Principal activa por defecto
+        const principal = this.sedes.find(s => s.es_principal) || this.sedes[0];
+        if (principal && this.sedeSeleccionadaId === null) {
+          this.sedeSeleccionadaId = principal.id_sede;
+          this.sedeActivaNombre = principal.nombre_sede;
+        }
+
+        // Mapear inventario con nombres de ingredientes, categorías, unidades y asignación de sede
+        this.inventario = rawInventario.map((inv: any, idx: number) => {
           const ing = this.ingredientesDisponibles.find(i => i.id_ingrediente == inv.id_ingrediente);
           const cat = ing ? this.categoriasInventario.find(c => c.id_categoria_inventario == ing.id_categoria_inventario) : null;
           const um = this.unidadesMedida.find(u => u.id_unidad_medida == inv.id_unidad_medida);
 
+          // Asignación de sede consistente: si no trae id_sede, por defecto asignado a Sede Principal
+          const idSedeItem = inv.id_sede != null ? Number(inv.id_sede) : (principal ? principal.id_sede : 1);
+          const sedeItemObj = this.sedes.find(s => s.id_sede === idSedeItem);
+
           return {
             ...inv,
-            nombre_ingrediente: ing ? ing.nombre_ingrediente : 'Desconocido',
-            marca_ingrediente: ing ? ing.marca_ingrediente : '',
-            nombre_categoria: cat ? cat.nombre_categoria : 'Sin categoría',
-            nombre_unidad: um ? (um.nombre || um.nombre_unidad) : ''
+            id_sede: idSedeItem,
+            nombre_sede: sedeItemObj ? sedeItemObj.nombre_sede : 'Sede Principal',
+            nombre_ingrediente: ing ? ing.nombre_ingrediente : (inv.nombre_ingrediente || 'Insumo PAE'),
+            marca_ingrediente: ing ? ing.marca_ingrediente : (inv.marca_ingrediente || 'Oficial'),
+            nombre_categoria: cat ? cat.nombre_categoria : (inv.nombre_categoria || 'Víveres'),
+            nombre_unidad: um ? (um.nombre || um.nombre_unidad) : (inv.nombre_unidad || 'Unidad')
           };
         });
 
-        // Guardar entradas y salidas (aunque actualmente no se listan en el HTML principal)
+        // Guardar entradas y salidas
         this.entradasInventario = rawEntradas;
         this.salidasInventario = rawSalidas;
 
@@ -133,11 +191,73 @@ export class Ingredientes implements OnInit {
     });
   }
 
+  // Filtrar inventario por la Sede seleccionada
+  get inventarioPorSede(): any[] {
+    if (this.sedeSeleccionadaId === null) {
+      return this.inventario;
+    }
+    return this.inventario.filter(item => {
+      if (item.id_sede != null) {
+        return Number(item.id_sede) === Number(this.sedeSeleccionadaId);
+      }
+      const actual = this.sedes.find(s => s.id_sede === this.sedeSeleccionadaId);
+      return !!actual?.es_principal;
+    });
+  }
+
+  // Resumen KPI de alertas de stock para la sede activa
+  get resumenAlertas() {
+    const items = this.inventarioPorSede;
+    const optimos = items.filter(i => {
+      const c = Number(i.cantidad_actual) || 0;
+      const m = Number(i.stock_minimo) || 10;
+      return c > m;
+    }).length;
+    const bajos = items.filter(i => {
+      const c = Number(i.cantidad_actual) || 0;
+      const m = Number(i.stock_minimo) || 10;
+      return c > 0 && c <= m;
+    }).length;
+    const agotados = items.filter(i => (Number(i.cantidad_actual) || 0) <= 0).length;
+    return {
+      total: items.length,
+      optimos,
+      bajos,
+      agotados
+    };
+  }
+
+  // Función para conmutar entre sedes desde las píldoras
+  filtrarPorSede(idSede: number | null): void {
+    this.sedeSeleccionadaId = idSede;
+    if (idSede === null) {
+      this.sedeActivaNombre = 'Todas las Sedes';
+    } else {
+      const encontrada = this.sedes.find(s => s.id_sede === idSede);
+      this.sedeActivaNombre = encontrada ? encontrada.nombre_sede : 'Sede';
+    }
+    this.cdr.detectChanges();
+  }
+
+  // Estado y color de alerta de stock para cada fila
+  obtenerEstadoStock(item: any): { texto: string; clase: 'ok' | 'low' | 'critico' } {
+    const c = Number(item.cantidad_actual) || 0;
+    const m = Number(item.stock_minimo) || 10;
+    if (c <= 0) {
+      return { texto: 'Agotado', clase: 'critico' };
+    }
+    if (c <= m) {
+      return { texto: 'Stock bajo', clase: 'low' };
+    }
+    return { texto: 'Óptimo', clase: 'ok' };
+  }
+
   // Getters para el filtrado en tiempo real según la pestaña y texto ingresado
   get inventarioFiltrado() {
-    if (!(this.filtroBusqueda || '').trim()) return this.inventario;
+    const base = this.inventarioPorSede;
+    if (!(this.filtroBusqueda || '').trim()) return base;
     const texto = this.filtroBusqueda.toLowerCase();
-    return this.inventario.filter(item =>
+    return base.filter(item =>
       item.nombre_ingrediente?.toLowerCase().includes(texto) ||
       item.nombre_categoria?.toLowerCase().includes(texto) ||
       item.marca_ingrediente?.toLowerCase().includes(texto)
@@ -145,7 +265,30 @@ export class Ingredientes implements OnInit {
   }
 
   get movimientosFiltrados() {
-    return [];
+    const mapearMov = (m: any, tipo: 'ENTRADA' | 'SALIDA') => {
+      const idIng = typeof m.id_ingrediente === 'object' ? m.id_ingrediente?.id_ingrediente : m.id_ingrediente;
+      const ing = this.ingredientesDisponibles.find(i => Number(i.id_ingrediente) === Number(idIng));
+      return {
+        ...m,
+        tipo_movimiento: tipo,
+        nombre_ingrediente: m.ingrediente_nombre || ing?.nombre_ingrediente || 'Insumo',
+        cantidad: Number(m.cantidad ?? m.cantidad_salida ?? 0),
+        fecha_movimiento: m.fecha || m.fecha_creacion || ''
+      };
+    };
+
+    const combinados = [
+      ...(this.entradasInventario || []).map(e => mapearMov(e, 'ENTRADA')),
+      ...(this.salidasInventario || []).map(s => mapearMov(s, 'SALIDA')),
+    ].sort((a, b) => String(b.fecha_movimiento).localeCompare(String(a.fecha_movimiento)));
+
+    if (!(this.filtroBusqueda || '').trim()) return combinados;
+    const texto = this.filtroBusqueda.toLowerCase();
+    return combinados.filter(mov =>
+      mov.nombre_ingrediente?.toLowerCase().includes(texto) ||
+      mov.tipo_movimiento?.toLowerCase().includes(texto) ||
+      mov.observaciones?.toLowerCase().includes(texto)
+    );
   }
 
   get gramajesFiltrados() {
@@ -245,29 +388,54 @@ export class Ingredientes implements OnInit {
   }
 
   guardarInventario(): void {
+    const usuarioSesion = this.authService?.obtenerUsuario?.()
+      || (() => { try { return JSON.parse(localStorage.getItem('usuario') || 'null'); } catch { return null; } })();
+    const instUsuario = usuarioSesion?.id_institucion ?? null;
+    const sedeUsuario = usuarioSesion?.id_sede ?? null;
+
     if (this.modalTipo === 'INSUMO') {
       if (!this.itemForm.id_ingrediente || this.itemForm.cantidad_actual === null) {
         this.sweetAlert.warning('Campos incompletos', 'Llene los campos obligatorios del inventario.');
         return;
       }
 
+      const ingSeleccionado = this.ingredientesDisponibles.find(
+        i => Number(i.id_ingrediente) === Number(this.itemForm.id_ingrediente)
+      );
+      const unidadFallback = ingSeleccionado?.id_unidad_medida
+        || (this.unidadesMedida.length > 0 ? this.unidadesMedida[0].id_unidad_medida : 1);
+
+      const payloadInsumo: any = {
+        id_ingrediente: Number(this.itemForm.id_ingrediente),
+        cantidad_actual: Number(this.itemForm.cantidad_actual),
+        stock_minimo: Number(this.itemForm.stock_minimo ?? 0),
+        id_unidad_medida: Number(this.itemForm.id_unidad_medida || unidadFallback),
+      };
+
       if (this.modoEdicion && this.itemForm.id_inventario) {
-        this.productoService.actualizarProducto(this.itemForm.id_inventario, this.itemForm).subscribe({
+        if (this.itemForm.id_institucion) payloadInsumo.id_institucion = this.itemForm.id_institucion;
+        else if (instUsuario) payloadInsumo.id_institucion = instUsuario;
+        if (this.itemForm.id_sede) payloadInsumo.id_sede = this.itemForm.id_sede;
+
+        this.productoService.actualizarProducto(this.itemForm.id_inventario, payloadInsumo).subscribe({
           next: () => {
             this.sweetAlert.success('Actualizado', 'Insumo modificado con éxito.');
             this.cargarDatos();
             this.cerrarFormulario();
           },
-          error: (err) => this.sweetAlert.error('Error', 'No se pudo actualizar el inventario.')
+          error: () => this.sweetAlert.error('Error', 'No se pudo actualizar el inventario.')
         });
       } else {
-        this.productoService.crearProducto(this.itemForm).subscribe({
+        if (instUsuario) payloadInsumo.id_institucion = instUsuario;
+        if (sedeUsuario) payloadInsumo.id_sede = sedeUsuario;
+
+        this.productoService.crearProducto(payloadInsumo).subscribe({
           next: () => {
             this.sweetAlert.success('Guardado', 'Nuevo insumo agregado al inventario.');
             this.cargarDatos();
             this.cerrarFormulario();
           },
-          error: (err) => this.sweetAlert.error('Error', 'No se pudo crear el insumo.')
+          error: () => this.sweetAlert.error('Error', 'No se pudo crear el insumo.')
         });
       }
     } else if (this.modalTipo === 'ENTRADA' || this.modalTipo === 'SALIDA') {
@@ -276,14 +444,10 @@ export class Ingredientes implements OnInit {
         return;
       }
 
-      const authData = JSON.parse(localStorage.getItem('usuario') || '{}');
-      const id_usuario = authData?.id_usuario || authData?.id || 1; // Fallback a 1 si no hay usuario
+      const id_usuario = usuarioSesion?.id_usuario || usuarioSesion?.id || 1;
+      const invItem = this.inventario.find(i => Number(i.id_ingrediente) === Number(this.movimientoForm.id_ingrediente));
 
-      // Buscar la unidad de medida del ingrediente en el inventario actual
-      const invItem = this.inventario.find(i => i.id_ingrediente == this.movimientoForm.id_ingrediente);
-
-      // Evita un error si el ingrediente elegido todavía no existe en el inventario
-      if (!invItem) {
+      if (!invItem && this.modalTipo === 'SALIDA') {
         this.sweetAlert.warning(
           'Insumo no encontrado',
           'Este ingrediente aún no está en el inventario. Agrégalo primero como nuevo insumo.'
@@ -291,10 +455,9 @@ export class Ingredientes implements OnInit {
         return;
       }
 
-      const id_unidad_medida = invItem.id_unidad_medida ?? (this.unidadesMedida.length > 0 ? this.unidadesMedida[0].id_unidad_medida : 1);
-
+      const id_unidad_medida = invItem?.id_unidad_medida ?? (this.unidadesMedida.length > 0 ? this.unidadesMedida[0].id_unidad_medida : 1);
       const cantidadMov = Number(this.movimientoForm.cantidad);
-      const stockActual = Number(invItem.cantidad_actual) || 0;
+      const stockActual = Number(invItem?.cantidad_actual) || 0;
       const nuevoStock = this.modalTipo === 'ENTRADA' ? stockActual + cantidadMov : stockActual - cantidadMov;
 
       if (this.modalTipo === 'SALIDA' && nuevoStock < 0) {
@@ -302,41 +465,47 @@ export class Ingredientes implements OnInit {
         return;
       }
 
-      let payload: any;
       if (this.modalTipo === 'ENTRADA') {
-        payload = {
-          id_ingrediente: this.movimientoForm.id_ingrediente,
+        const payload = {
+          id_inventario: invItem?.id_inventario ?? null,
+          id_ingrediente: Number(this.movimientoForm.id_ingrediente),
           cantidad: cantidadMov,
-          id_unidad_medida: id_unidad_medida,
+          id_unidad_medida,
           observaciones: this.movimientoForm.observaciones || '',
-          id_usuario: id_usuario
+          id_usuario
         };
 
         this.productoService.crearEntrada(payload).subscribe({
-          next: () => this.actualizarStockDirecto(invItem, nuevoStock),
+          next: () => {
+            this.sweetAlert.success('Completado', 'Entrada registrada e inventario actualizado correctamente.');
+            this.cargarDatos();
+            this.cerrarFormulario();
+          },
           error: (err) => {
-            console.warn('Error registrando entrada en historial, actualizando stock forzosamente:', err);
-            this.actualizarStockDirecto(invItem, nuevoStock);
+            const msg = err?.error?.cantidad?.[0] || err?.error?.detail || 'No se pudo registrar la entrada en el servidor.';
+            this.sweetAlert.error('Error', msg);
           }
         });
       } else {
-        payload = {
-          id_inventario: invItem.id_inventario ?? null,
-          id_ingrediente: this.movimientoForm.id_ingrediente,
+        const payload = {
+          id_inventario: invItem?.id_inventario ?? null,
+          id_ingrediente: Number(this.movimientoForm.id_ingrediente),
           cantidad_salida: cantidadMov,
           cantidad: cantidadMov,
-          id_unidad_medida: id_unidad_medida,
+          id_unidad_medida,
           observaciones: this.movimientoForm.observaciones || '',
-          id_usuario: id_usuario
+          id_usuario
         };
 
         this.productoService.crearSalida(payload).subscribe({
-          next: () => this.actualizarStockDirecto(invItem, nuevoStock),
+          next: () => {
+            this.sweetAlert.success('Completado', 'Salida registrada e inventario descontado correctamente.');
+            this.cargarDatos();
+            this.cerrarFormulario();
+          },
           error: (err) => {
-            console.warn('Backend dio error 500 en crearSalida. Forzando la actualización del stock:', err);
-            // Si el backend explota al guardar la salida, al menos actualizamos el inventario manualmente
-            // para que el sistema "cumpla con funcionar" para el usuario.
-            this.actualizarStockDirecto(invItem, nuevoStock);
+            const msg = err?.error?.cantidad?.[0] || err?.error?.id_ingrediente?.[0] || err?.error?.detail || 'No se pudo registrar la salida en el servidor.';
+            this.sweetAlert.error('Error', msg);
           }
         });
       }

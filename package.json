@@ -2,11 +2,11 @@
   "name": "paevisual",
   "version": "0.0.0",
   "scripts": {
-    "ng": "npx -y node@24.15.0 ./node_modules/@angular/cli/bin/ng",
-    "start": "npx -y node@24.15.0 ./node_modules/@angular/cli/bin/ng serve",
-    "build": "npx -y node@24.15.0 ./node_modules/@angular/cli/bin/ng build",
-    "watch": "npx -y node@24.15.0 ./node_modules/@angular/cli/bin/ng build --watch --configuration development",
-    "test": "npx -y node@24.15.0 ./node_modules/@angular/cli/bin/ng test --watch=false --browsers=chromium"
+    "ng": "node ./node_modules/@angular/cli/bin/ng",
+    "start": "node ./node_modules/@angular/cli/bin/ng serve",
+    "build": "node ./node_modules/@angular/cli/bin/ng build",
+    "watch": "node ./node_modules/@angular/cli/bin/ng build --watch --configuration development",
+    "test": "node ./node_modules/@angular/cli/bin/ng test --watch=false --browsers=chromium"
   },
   "engines": {
     "node": ">=22.22.3 || >=24.15.0 || >=26.0.0"

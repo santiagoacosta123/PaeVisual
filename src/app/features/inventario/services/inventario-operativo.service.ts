@@ -92,12 +92,14 @@ export class InventarioOperativoService {
       return of(this.cacheIngredientes);
     }
     return this.http.get<unknown>(`${this.baseUrl}/ingredientes/`).pipe(
-      map(data => this.listaDe(data).map(item => ({
-        id: Number(item.id_ingrediente ?? item.id),
-        nombre: String(item.nombre_ingrediente ?? item.nombre ?? ''),
-        unidadId: this.numeroOpcional(item.id_unidad_medida),
-        categoriaId: this.numeroOpcional(item.id_categoria_inventario),
-      }))),
+      map(data => this.listaDe(data)
+        .filter(item => !String(item.nombre_ingrediente ?? item.nombre ?? '').startsWith('[ELIMINAR]'))
+        .map(item => ({
+          id: Number(item.id_ingrediente ?? item.id),
+          nombre: String(item.nombre_ingrediente ?? item.nombre ?? ''),
+          unidadId: this.numeroOpcional(item.id_unidad_medida),
+          categoriaId: this.numeroOpcional(item.id_categoria_inventario),
+        }))),
       tap(lista => this.cacheIngredientes = lista)
     );
   }

@@ -8,13 +8,19 @@
      pasar el mouse, igual que el menú del supervisor.
      ===================================================================== */
   .adm-shell {
-    --adm-page-bg: transparent;
+    /* Color real del fondo de la página: con él se dibuja la muesca curva
+       del ítem activo (antes estaba en transparent y la muesca no se veía). */
+    --adm-page-bg: #fafafa;
     --adm-rail: #ffffff;
     --adm-text: #64748b;
     --adm-accent: #f4b41f;
     --adm-accent-dark: #e69a0c;
     --adm-accent-ink: #2B1D00;
     --adm-soft: #fff1d0;
+    /* Borde de la barra: gris suave que se nota sobre el fondo claro */
+    --adm-rail-border: #dfe3e8;
+    /* Color del borde de la pestaña activa (cámbialo aquí: #f0e3bd da un toque amarillo suave) */
+    --adm-tab-border: #f4b41f;
     position: relative;
     display: flex;
     height: 100vh;
@@ -94,7 +100,10 @@
     z-index: 10;
   }
 
-  /* Área principal del supervisor (misma posición que el contenedor del admin) */
+  /* Área principal (supervisor, super admin y administrador).
+     IMPORTANTE: z-index 40 (mayor que el del sidebar, 30) para que los modales
+     con position: fixed que se abren dentro de esta área cubran TODA la pantalla,
+     incluido el sidebar. Con 10 el modal quedaba atrapado debajo del riel. */
   .adm-shell .adm-main {
     flex: 1 1 0;
     min-width: 0;
@@ -102,7 +111,7 @@
     height: 100%;
     padding: 24px 32px 24px 24px;
     position: relative;
-    z-index: 10;
+    z-index: 40;
     overflow-y: auto;
     overflow-x: hidden;
     display: flex;
@@ -121,7 +130,11 @@
     transition: width .25s cubic-bezier(.2, .8, .2, 1);
   }
 
-  /* La barra siempre ocupa todo el hueco (menos el margen izquierdo de 12px) */
+  /* La barra siempre ocupa todo el hueco (menos el margen izquierdo de 12px).
+     BORDE: línea gris de 1px arriba, izquierda y abajo, más una sombra doble
+     (una de contorno y otra suave) para que la barra se despegue del fondo.
+     El borde derecho se deja transparente a propósito: así la muesca curva
+     del ítem activo se sigue fundiendo con la página sin que una línea la corte. */
   .adm-rail {
     position: absolute;
     top: 12px;
@@ -133,9 +146,14 @@
     display: flex;
     flex-direction: column;
     background: var(--adm-rail);
+    border: 1px solid var(--adm-rail-border);
+    border-right-color: transparent;
     border-radius: 28px;
     overflow: hidden;
-    box-shadow: 0 14px 30px -20px rgba(180, 120, 0, .45);
+    box-shadow:
+      0 0 0 1px rgba(16, 24, 40, .03),
+      0 2px 6px rgba(16, 24, 40, .06),
+      0 14px 30px -14px rgba(16, 24, 40, .22);
   }
 
   /* Barra abierta (mouse encima o teclado): el hueco crece y EMPUJA el contenido,
@@ -290,6 +308,16 @@
   }
   .adm-link.active:hover { background: var(--adm-page-bg); }
 
+  /* BORDE de la pestaña activa: dibuja una línea fina siguiendo toda la forma
+     (la píldora y las dos curvas de arriba y abajo). drop-shadow sigue el
+     contorno real, así el borde se ve también en las curvas. */
+  .adm-link.active {
+    filter:
+      drop-shadow(-1px 0 0 var(--adm-tab-border))
+      drop-shadow(0 -1px 0 var(--adm-tab-border))
+      drop-shadow(0 1px 0 var(--adm-tab-border));
+  }
+
   /* Curvas cóncavas arriba y abajo de la pestaña activa */
   .adm-link.active::before,
   .adm-link.active::after {
@@ -432,7 +460,7 @@
   .svh-bar {
     position: sticky;
     top: 0;
-    z-index: 50;
+    z-index: 1000;
   }
 
   .svh-notif-btn {
@@ -583,12 +611,206 @@
     color: #c62828;
   }
 
+  /* =====================================================================
+     TEMA VERDE (solo Super Administrador): .adm-shell.adm-verde
+     Supervisor y Administrador conservan el amarillo de SIRAE.
+     ===================================================================== */
+  .adm-shell.adm-verde {
+    --adm-accent: #168a43;
+    --adm-accent-dark: #0f6b35;
+    --adm-soft: #e8f7ee;
+    --adm-tab-border: #168a43;
+  }
+  .adm-verde .adm-search input:focus {
+    border-color: #168a43;
+    box-shadow: 0 0 0 3px rgba(22, 138, 67, .22);
+  }
+  .adm-verde .adm-user-avatar { border-color: #168a43; }
+  .adm-verde .svh-notif-dot { background: #168a43; }
+  .adm-verde .svh-avatar-ring { border-color: #168a43; }
+  .adm-verde .svh-avatar-ring::after { border-color: #168a43; }
+  .adm-verde .svh-user-btn:hover .svh-avatar-ring {
+    border-color: #0f6b35;
+    box-shadow: 0 6px 16px -4px rgba(22, 138, 67, .45);
+  }
+  .adm-verde .svh-role { background: #e8f7ee; color: #0f6b35; }
+  .adm-verde .svh-act::before { background: #168a43; }
+  .adm-verde .svh-act:hover { background: #e8f7ee; color: #0f6b35; }
+  .adm-verde .svh-out::before { background: #e53935; }
+  .adm-verde .svh-out:hover { background: #fdecea; color: #c62828; }
+
   @media (prefers-reduced-motion: reduce) {
     .svh-user-btn:hover .svh-avatar-ring::after,
     .svh-notif-btn:hover .material-symbols-outlined,
     .svh-pop,
     .svh-notif-pop { animation: none !important; }
   }
+
+  /* =====================================================================
+     NOTIFICACIONES · TARJETAS CLARAS CON BARRA DE COLOR A LA IZQUIERDA
+     Fondo blanco como antes. Cada fila toma su color de la variable
+     --acento (se la pasa el HTML con [style.--acento]); si no llega,
+     usa el azul de respaldo.
+     ===================================================================== */
+
+  /* Desplegable: columna con alto máximo = pantalla visible.
+     Pestañas arriba y botón abajo siempre visibles; solo la lista hace scroll. */
+  .saas-notif-dropdown {
+    display: flex !important;
+    flex-direction: column !important;
+    max-height: min(560px, calc(100vh - 80px)) !important;
+    overflow: hidden !important;
+    z-index: 1005 !important;
+  }
+  .saas-notif-dropdown .saas-notif-tabs,
+  .saas-notif-dropdown .saas-notif-footer {
+    flex: 0 0 auto !important;
+  }
+
+  /* Lista: ocupa el espacio que queda y hace scroll por dentro con altura acotada */
+  .saas-notif-dropdown .saas-notif-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    max-height: min(380px, calc(100vh - 220px)) !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    pointer-events: auto !important;
+    scrollbar-width: thin;
+    scrollbar-color: #FFA928 #f1f5f9;
+  }
+  .saas-notif-dropdown .saas-notif-list::-webkit-scrollbar {
+    width: 6px;
+    display: block !important;
+  }
+  .saas-notif-dropdown .saas-notif-list::-webkit-scrollbar-track {
+    background: #f8fafc;
+    border-radius: 99px;
+  }
+  .saas-notif-dropdown .saas-notif-list::-webkit-scrollbar-thumb {
+    background: #FFA928;
+    border-radius: 99px;
+  }
+  .saas-notif-dropdown .saas-notif-list::-webkit-scrollbar-thumb:hover {
+    background: #e5951c;
+  }
+
+  /* Tarjeta (fila) */
+  .saas-notif-dropdown .saas-notif-row {
+    --acento: #38bdf8;
+    position: relative;
+    display: block !important;
+    flex: 0 0 auto !important;
+    height: auto !important;
+    min-height: min-content;
+    padding: 14px 32px 14px 28px !important;
+    border: 1px solid color-mix(in srgb, var(--acento) 30%, #ffffff) !important;
+    border-radius: 16px !important;
+    background: linear-gradient(135deg, color-mix(in srgb, var(--acento) 11%, #ffffff) 0%, #ffffff 75%) !important;
+    box-shadow: 0 4px 14px -10px color-mix(in srgb, var(--acento) 60%, transparent);
+    cursor: pointer;
+    transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+  }
+  .saas-notif-dropdown .saas-notif-row:hover {
+    transform: translateY(-1px);
+    border-color: color-mix(in srgb, var(--acento) 55%, #ffffff) !important;
+    box-shadow: 0 8px 20px -10px color-mix(in srgb, var(--acento) 70%, transparent);
+  }
+
+  /* Barra vertical de color a la izquierda */
+  .saas-notif-dropdown .saas-notif-row::before {
+    content: '';
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    width: 3px;
+    height: 36px;
+    transform: translateY(-50%);
+    border-radius: 99px;
+    background: var(--acento);
+  }
+
+  /* No leída: borde y sombra más marcados; leída: un poco más suave */
+  .saas-notif-dropdown .saas-notif-row.sin-leer {
+    border-color: color-mix(in srgb, var(--acento) 55%, #ffffff) !important;
+    box-shadow: 0 8px 22px -12px color-mix(in srgb, var(--acento) 70%, transparent);
+  }
+  .saas-notif-dropdown .saas-notif-row:not(.sin-leer) { opacity: .8; }
+  .saas-notif-dropdown .saas-notif-row:not(.sin-leer):hover { opacity: 1; }
+
+  /* El icono redondo se oculta: la barra de color ya identifica el tipo */
+  .saas-notif-dropdown .saas-notif-avatar { display: none !important; }
+
+  /* Textos */
+  .saas-notif-dropdown .saas-notif-body { min-width: 0; }
+  .saas-notif-dropdown .saas-notif-header-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .saas-notif-dropdown .saas-notif-title {
+    color: #0f172a !important;
+    font-size: 13.5px;
+    font-weight: 700;
+    line-height: 1.35;
+  }
+  .saas-notif-dropdown .saas-notif-time {
+    flex-shrink: 0;
+    color: #94a3b8 !important;
+    font-size: 11px;
+  }
+  .saas-notif-dropdown .saas-notif-msg {
+    margin: 4px 0 0 !important;
+    color: #64748b !important;
+    font-size: 12.5px;
+    line-height: 1.5;
+    display: block !important;
+    -webkit-line-clamp: unset !important;
+    overflow: visible !important;
+    white-space: normal !important;
+    text-overflow: clip !important;
+    overflow-wrap: anywhere;
+  }
+
+  /* Punto de "no leída" con el color del acento */
+  .saas-notif-dropdown .saas-unread-dot {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--acento) !important;
+  }
+
+  /* Toast flotante (esquina inferior derecha) */
+  .saas-floating-toast {
+    --acento: #2563eb;
+    padding: 14px 40px 14px 28px !important;
+    border: 1px solid color-mix(in srgb, var(--acento) 30%, #ffffff) !important;
+    border-radius: 16px !important;
+    background: linear-gradient(135deg, color-mix(in srgb, var(--acento) 11%, #ffffff) 0%, #ffffff 75%) !important;
+    box-shadow: 0 18px 44px -16px rgba(15, 23, 42, .35) !important;
+  }
+  .saas-floating-toast::before {
+    content: '';
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    width: 3px;
+    height: 36px;
+    transform: translateY(-50%);
+    border-radius: 99px;
+    background: var(--acento);
+  }
+  .saas-floating-toast .saas-toast-dot { display: none !important; }
 </style>
 
 
@@ -637,11 +859,6 @@
         <span class="adm-label">Menú</span>
       </a>
 
-      <a *ngIf="institucionActiva" routerLink="/mensajeria" routerLinkActive="active" class="adm-link" title="Mensajería" aria-label="Mensajería">
-        <span class="adm-ico"><span class="material-symbols-outlined" aria-hidden="true">chat</span></span>
-        <span class="adm-label">Mensajería</span>
-      </a>
-
     </nav>
 
     <!-- Parte inferior: cambiar institución y cerrar sesión -->
@@ -672,7 +889,7 @@
           <span *ngIf="institucionActiva as institucion; else sinInstitucionSupervisor"
             class="svh-sub"
             style="display:block; margin-top:2px; color:#475569; font-size:12px; font-weight:600; line-height:1.35; white-space:normal; overflow-wrap:anywhere;">
-            {{ institucion.nombre_institucion }}
+            {{ institucion.nombre_institucion }} <span style="color:#94a3b8; margin: 0 4px;">/</span> <span style="color:#0f172a; font-weight:700;">{{ nombreSedeActiva }}</span>
           </span>
           <ng-template #sinInstitucionSupervisor>
             <span class="svh-sub" style="display:block; margin-top:2px; color:#475569; font-size:12px; white-space:normal;">Selecciona una institución para comenzar</span>
@@ -709,7 +926,7 @@
 <!-- ================================================================= -->
 <!-- CASO 2A: SUPER ADMINISTRADOR — RIEL LATERAL                       -->
 <!-- ================================================================= -->
-<div *ngIf="esSuperAdministrador && !esSupervisor" class="adm-shell">
+<div *ngIf="esSuperAdministrador && !esSupervisor" class="adm-shell adm-verde">
 
   <!-- ================= SIDEBAR ================= -->
   <div class="adm-slot">
@@ -780,10 +997,10 @@
   <main class="adm-main">
 
     <!-- Telón de fondo para cerrar popovers al hacer click fuera -->
-    <div *ngIf="mostrarPerfil || mostrarNotificaciones" class="popover-backdrop" (click)="cerrarPanel()"></div>
+    <div *ngIf="mostrarPerfil" class="popover-backdrop" (click)="cerrarPanel()"></div>
 
     <!-- Header Superior Super Administrador (mismo diseño que el supervisor) -->
-    <div class="svh-bar" style="position:sticky; top:0; z-index:50; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px 18px; min-height:68px; padding:10px 22px; border:1px solid #e9edf2; border-radius:20px; background:#fff; box-shadow:0 8px 22px -14px rgba(15,23,42,.18);">
+    <div class="svh-bar" style="position:sticky; top:0; z-index:1000; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px 18px; min-height:68px; padding:10px 22px; border:1px solid #e9edf2; border-radius:20px; background:#fff; box-shadow:0 8px 22px -14px rgba(15,23,42,.18);">
       <div class="svh-left" style="display:flex; align-items:center; flex:1 1 15rem; min-width:0;">
         <div style="min-width:0;">
           <h1 class="svh-title" style="margin:0; color:#17263a; font-size:17px; line-height:1.25; overflow-wrap:anywhere;">Bienvenido: {{ perfil.nombre || 'Super Administrador' }}</h1>
@@ -803,7 +1020,7 @@
           <a routerLink="/perfil" class="svh-user-btn" title="Mi perfil de usuario" aria-label="Mi perfil">
             <span class="svh-avatar-ring">
               <img *ngIf="perfil.foto_perfil" [src]="perfil.foto_perfil" alt="" width="36" height="36" style="width:36px; height:36px; border-radius:50%; object-fit:cover; display:block;" />
-              <span *ngIf="!perfil.foto_perfil" style="width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:#fff1d0; color:#8a5a00; font-size:13px; font-weight:700;">{{ iniciales }}</span>
+              <span *ngIf="!perfil.foto_perfil" style="width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:#e8f7ee; color:#0f6b35; font-size:13px; font-weight:700;">{{ iniciales }}</span>
             </span>
           </a>
         </div>
@@ -862,11 +1079,6 @@
         <span class="adm-label">Usuarios</span>
       </a>
 
-      <a routerLink="mensajeria" routerLinkActive="active" class="adm-link" title="Mensajería" aria-label="Mensajería">
-        <span class="adm-ico"><span class="material-symbols-outlined" aria-hidden="true">chat</span></span>
-        <span class="adm-label">Mensajería</span>
-      </a>
-
     </nav>
 
     <!-- Parte inferior: cerrar sesión -->
@@ -885,14 +1097,16 @@
   <main class="adm-main">
 
     <!-- Telón de fondo para cerrar popovers al hacer click fuera -->
-    <div *ngIf="mostrarPerfil || mostrarNotificaciones" class="popover-backdrop" (click)="cerrarPanel()"></div>
+    <div *ngIf="mostrarPerfil" class="popover-backdrop" (click)="cerrarPanel()"></div>
 
     <!-- Header Superior Administrador (mismo diseño que el supervisor) -->
-    <div class="svh-bar" style="position:sticky; top:0; z-index:50; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px 18px; min-height:68px; padding:10px 22px; border:1px solid #e9edf2; border-radius:20px; background:#fff; box-shadow:0 8px 22px -14px rgba(15,23,42,.18);">
+    <div class="svh-bar" style="position:sticky; top:0; z-index:1000; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px 18px; min-height:68px; padding:10px 22px; border:1px solid #e9edf2; border-radius:20px; background:#fff; box-shadow:0 8px 22px -14px rgba(15,23,42,.18);">
       <div class="svh-left" style="display:flex; align-items:center; flex:1 1 15rem; min-width:0;">
         <div style="min-width:0;">
           <h1 class="svh-title" style="margin:0; color:#17263a; font-size:17px; line-height:1.25; overflow-wrap:anywhere;">Bienvenido: {{ perfil.nombre }}</h1>
-          <span *ngIf="institucionUsuario" class="svh-sub" style="display:block; margin-top:2px; color:#475569; font-size:12px; font-weight:600; line-height:1.35; white-space:normal; overflow-wrap:anywhere;">{{ institucionUsuario }}</span>
+          <span *ngIf="institucionUsuario" class="svh-sub" style="display:block; margin-top:2px; color:#475569; font-size:12px; font-weight:600; line-height:1.35; white-space:normal; overflow-wrap:anywhere;">
+            {{ institucionUsuario }} <span style="color:#94a3b8; margin: 0 4px;">/</span> <span style="color:#0f172a; font-weight:700;">{{ nombreSedeActiva }}</span>
+          </span>
         </div>
       </div>
 
@@ -1022,7 +1236,7 @@
 
         <!-- Indicador para Administrador institucional -->
         <span *ngIf="esAdministrador && institucionUsuario" class="modern-inst-badge">
-          {{ institucionUsuario }}
+          {{ institucionUsuario }} / {{ nombreSedeActiva }}
         </span>
       </nav>
 
@@ -1030,7 +1244,7 @@
       <div class="modern-header-actions">
 
         <!-- Telón de fondo para cerrar popovers al hacer click fuera -->
-        <div *ngIf="mostrarPerfil || mostrarNotificaciones" class="popover-backdrop" (click)="cerrarPanel()"></div>
+        <div *ngIf="mostrarPerfil" class="popover-backdrop" (click)="cerrarPanel()"></div>
 
         <!-- Botón Notificaciones -->
         <ng-container *ngTemplateOutlet="centroNotificacionesSaaS"></ng-container>
@@ -1080,60 +1294,51 @@
       <!-- Puntero superior que apunta a la campana -->
       <div class="saas-dropdown-arrow"></div>
 
-      <!-- Pestañas: Todas / No leídas -->
-      <div class="saas-notif-tabs">
-        <button type="button" 
-          class="saas-tab-btn" 
-          [class.activa]="filtroNotificaciones === 'todas'"
-          (click)="cambiarFiltroNotificaciones('todas')">
-          Todas
-        </button>
-        <button type="button" 
-          class="saas-tab-btn" 
-          [class.activa]="filtroNotificaciones === 'no_leidas'"
-          (click)="cambiarFiltroNotificaciones('no_leidas')">
-          No leídas
-          <span *ngIf="notificacionesNoLeidas > 0" class="saas-tab-count">({{ notificacionesNoLeidas }})</span>
-        </button>
+      <!-- Encabezado amarillo PAE con contador de no leídas -->
+      <div class="saas-notif-panel-header">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="material-symbols-outlined" style="font-size:20px;color:#fff;">notifications_active</span>
+          <span style="font-weight:700;font-size:14px;color:#fff;">Notificaciones</span>
+        </div>
+        <span *ngIf="notificacionesNoLeidas > 0" class="saas-notif-count-badge">
+          {{ notificacionesNoLeidas }} sin leer
+        </span>
       </div>
 
-      <!-- Lista de Notificaciones con Scroll -->
+      <!-- Lista de Notificaciones — todas juntas, sin filtros -->
       <div class="saas-notif-list">
         <div *ngIf="notificacionesFiltradas.length === 0" class="saas-notif-empty">
           <span class="material-symbols-outlined saas-empty-icon">notifications_none</span>
-          <span>{{ filtroNotificaciones === 'no_leidas' ? 'No tienes notificaciones sin leer' : 'No tienes notificaciones pendientes' }}</span>
+          <span>No tienes notificaciones recibidas</span>
         </div>
 
-        <div *ngFor="let noti of notificacionesFiltradas" 
+        <!-- Cada fila toma su color de acento desde obtenerIconoNotificacion(noti).color (sin icono circular) -->
+        <div *ngFor="let noti of notificacionesFiltradas; trackBy: trackByNotificacion" 
           class="saas-notif-row" 
           [class.sin-leer]="!noti.leida"
-          (click)="hacerClicNotificacion(noti)">
-          
-          <!-- Avatar o Icono según tipo -->
-          <div class="saas-notif-avatar" [style.background]="obtenerIconoNotificacion(noti).bg" [style.color]="obtenerIconoNotificacion(noti).color">
-            <img *ngIf="noti.imagen_url" [src]="noti.imagen_url" alt="Avatar" class="w-full h-full object-cover rounded-full" />
-            <span *ngIf="!noti.imagen_url" class="material-symbols-outlined saas-avatar-icon">
-              {{ obtenerIconoNotificacion(noti).icono }}
-            </span>
-          </div>
+          [style.--acento]="obtenerIconoNotificacion(noti).color"
+          (click)="abrirNotificacion(noti, $event)">
 
-          <!-- Contenido central: Título y Mensaje -->
+          <!-- Contenido: Título + tiempo arriba; barrita vertical de color + mensaje debajo -->
           <div class="saas-notif-body">
             <div class="saas-notif-header-row">
-              <span class="saas-notif-title">{{ noti.titulo }}</span>
+              <span class="saas-notif-title">{{ (noti.titulo || '').replace('🔔', '').replace('📦', '').replace('✅', '').replace('⚠️', '').replace('❌', '').replace('📢', '').replace('🚚', '').replace('📍', '').replace('🕒', '').replace('⚡', '').replace('🔴', '').replace('🟠', '').replace('🟡', '').replace('🟢', '').replace('📋', '').replace('📝', '').replace('🧾', '').trim() }}</span>
               <span class="saas-notif-time">{{ tiempoRelativo(noti.fecha_creacion || noti.fecha_hora) }}</span>
             </div>
-            <p class="saas-notif-msg">{{ noti.mensaje }}</p>
+            <div class="saas-notif-msg-wrap">
+              <span class="saas-notif-accent-bar" [style.background]="obtenerIconoNotificacion(noti).color"></span>
+              <p class="saas-notif-msg">{{ noti.mensaje }}</p>
+            </div>
           </div>
 
-          <!-- Punto azul de estado (Unread Dot) -->
+          <!-- Punto amarillo de estado (Unread Dot) -->
           <div *ngIf="!noti.leida" class="saas-unread-dot" title="No leída"></div>
         </div>
       </div>
 
-      <!-- Pie con botón azul Marcar todas como leídas -->
+      <!-- Pie con botón amarillo Marcar todas como leídas -->
       <div class="saas-notif-footer">
-        <button type="button" class="saas-btn-marcar-todas" (click)="marcarTodasComoLeidasDesdePanel()">
+        <button type="button" class="saas-btn-marcar-todas" (click)="marcarTodasComoLeidasDesdePanel($event)">
           Marcar todas como leídas
         </button>
       </div>
@@ -1150,12 +1355,12 @@
 
   <!-- Contenido del Toast -->
   <div class="saas-toast-content">
-    <strong class="saas-toast-title">{{ toastNotificacion.titulo }}</strong>
+    <strong class="saas-toast-title">{{ (toastNotificacion.titulo || '').replace('🔔', '').replace('📦', '').replace('✅', '').replace('⚠️', '').replace('❌', '').replace('📢', '').replace('🚚', '').replace('📍', '').replace('🕒', '').replace('⚡', '').replace('🔴', '').replace('🟠', '').replace('🟡', '').replace('🟢', '').replace('📋', '').replace('📝', '').replace('🧾', '').trim() }}</strong>
     <p class="saas-toast-body">{{ toastNotificacion.mensaje }}</p>
 
     <!-- Botón de acción directa si aplica -->
     <div class="saas-toast-actions" *ngIf="toastNotificacion.ruta_accion || toastNotificacion.accion?.ruta">
-      <button type="button" class="saas-toast-btn-action" (click)="hacerClicNotificacion(toastNotificacion)">
+      <button type="button" class="saas-toast-btn-action" (click)="abrirNotificacionDesdeToast(toastNotificacion, $event)">
         {{ toastNotificacion.accion?.textoBoton || 'Ver detalle' }}
       </button>
     </div>
@@ -1166,3 +1371,71 @@
     <span class="material-symbols-outlined" style="font-size:16px;">close</span>
   </button>
 </aside>
+
+<!-- ================================================================= -->
+<!-- MODAL DE DETALLE DE NOTIFICACIÓN (FLUJO MODAL ORIGINAL)           -->
+<!-- ================================================================= -->
+<div *ngIf="notificacionAbierta" class="saas-notif-modal-backdrop" (mousedown)="$event.stopPropagation()" (click)="cerrarNotificacionDesdeBackdrop($event)">
+  <div class="saas-notif-modal-card" (mousedown)="$event.stopPropagation()" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+    <!-- Cabecera limpia sin iconos -->
+    <div class="saas-notif-modal-header">
+      <div class="saas-notif-modal-meta">
+        <div class="saas-notif-modal-tags">
+          <span class="saas-notif-tag" [ngClass]="notificacionAbierta.leida ? 'leida' : 'no-leida'">
+            {{ notificacionAbierta.leida ? 'Leída' : 'Sin leer · pasará a leídas al cerrar' }}
+          </span>
+          <span class="saas-notif-modal-time">
+            {{ tiempoRelativo(notificacionAbierta.fecha_creacion || notificacionAbierta.fecha_hora) }}
+          </span>
+        </div>
+        <h3 class="saas-notif-modal-title">
+          {{ (notificacionAbierta.titulo || '').replace('🔔', '').replace('📦', '').replace('✅', '').replace('⚠️', '').replace('❌', '').replace('📢', '').replace('🚚', '').replace('📍', '').replace('🕒', '').replace('⚡', '').replace('🔴', '').replace('🟠', '').replace('🟡', '').replace('🟢', '').replace('📋', '').replace('📝', '').replace('🧾', '').trim() }}
+        </h3>
+      </div>
+
+      <!-- Botón X Cerrar -->
+      <button type="button" class="saas-notif-modal-close" (click)="cerrarNotificacionAbierta($event)" title="Cerrar ventana">
+        <span class="material-symbols-outlined" style="font-size: 18px;">close</span>
+      </button>
+    </div>
+
+    <!-- Metadatos de remitente / sede si existen -->
+    <div *ngIf="notificacionAbierta.nombre_remitente || notificacionAbierta.nombre_sede" class="saas-notif-modal-context">
+      <span *ngIf="notificacionAbierta.nombre_remitente">Remitente: <strong>{{ notificacionAbierta.nombre_remitente }}</strong></span>
+      <span *ngIf="notificacionAbierta.nombre_sede">Sede: <strong>{{ notificacionAbierta.nombre_sede }}</strong></span>
+    </div>
+
+    <!-- Cuerpo del mensaje -->
+    <div class="saas-notif-modal-body">
+      <p class="saas-notif-modal-message">{{ notificacionAbierta.mensaje }}</p>
+      
+      <!-- Si trae fotografía adjunta -->
+      <div *ngIf="notificacionAbierta.imagen_url" style="margin-top: 14px;">
+        <img [src]="notificacionAbierta.imagen_url" alt="Adjunto" style="max-height: 220px; border-radius: 12px; border: 1px solid #e2e8f0; object-fit: contain;" />
+      </div>
+    </div>
+
+    <!-- Botones de Acción (flujo fiel a la imagen de referencia) -->
+    <div class="saas-notif-modal-actions">
+      <!-- Fila 1: Volver a la lista -->
+      <div class="saas-notif-modal-row-top">
+        <button type="button" class="saas-notif-btn-secondary" (click)="volverAListaNotificaciones($event)">
+          ← Volver a la lista
+        </button>
+      </div>
+
+      <!-- Fila 2: Dejar como no leída / Ir al módulo relacionado / Cerrar -->
+      <div class="saas-notif-modal-row-bottom">
+        <button *ngIf="notificacionAbierta.leida" type="button" class="saas-notif-btn-secondary" (click)="dejarComoNoLeidaYCerrar()">
+          Dejar como no leída
+        </button>
+        <button *ngIf="obtenerRutaSeguraNotificacion(notificacionAbierta)" type="button" class="saas-notif-btn-secondary" (click)="irDesdeNotificacionAbierta()">
+          Ir al módulo relacionado
+        </button>
+        <button type="button" class="saas-notif-btn-primary" (click)="cerrarNotificacionAbierta($event)">
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

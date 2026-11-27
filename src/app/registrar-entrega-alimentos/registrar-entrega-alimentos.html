@@ -3,32 +3,39 @@
 
 /* =====================================================================
    SIRAE · Entregas de inventario
-   Paleta equilibrada: #1B3317 · #FAF9F5 · #F5B81F
+   Paleta: amarillo #FFA928 protagonista · crema #FAF9F5 · marrón cálido
+   Hero y letras de pestañas en verde · verde suave en detalles
    ===================================================================== */
 .sirae-root, .modal-fondo {
-  --sirae-bosque: #1B3317;
-  --sirae-bosque-oscuro: #142611;
-  --sirae-verde: #2B5424;
-  --sirae-verde-hover: #1B3317;
-  --sirae-verde-claro: #3D7A33;
-  --sirae-lima: #F5B81F;
-  --sirae-lima-hover: #E2A714;
-  --sirae-menta-suave: #EDF4EA;
-  --sirae-menta-borde: #C5DAC0;
+  --sirae-bosque: #3A2A10;
+  --sirae-bosque-oscuro: #2B1F0B;
+  --sirae-verde: #FFA928;           /* acento principal (amarillo) */
+  --sirae-verde-hover: #EC9615;
+  --sirae-verde-claro: #D98200;
+  --sirae-lima: #FFA928;
+  --sirae-lima-hover: #EC9615;
+  --sirae-menta-suave: #FFF4DE;
+  --sirae-menta-borde: #FFE2B0;
   --sirae-crema: #FAF9F5;
   --sirae-superficie: #FFFFFF;
-  --sirae-azul: #1B3317;
-  --sirae-secundario: #5E6B5B;
-  --sirae-borde: #E4E5DE;
-  --sirae-dorado: #F5B81F;
-  --sirae-dorado-suave: #FEF6DC;
-  --sirae-dorado-claro: #F8D87C;
-  --sirae-dorado-oscuro: #7A5600;
-  --insumo-verde: #2B5424;
-  --insumo-verde-claro: #EDF4EA;
-  --insumo-verde-borde: #C5DAC0;
-  --shadow-sm: 0 2px 10px rgba(27, 51, 23, 0.05);
-  --shadow-md: 0 14px 30px -10px rgba(27, 51, 23, 0.14);
+  --sirae-azul: #2B2417;            /* texto principal */
+  --sirae-secundario: #6B6558;
+  --sirae-borde: #ECE7DC;
+  --sirae-dorado: #FFA928;
+  --sirae-dorado-suave: #FFF4DE;
+  --sirae-dorado-claro: #FFD9A0;
+  --sirae-dorado-oscuro: #8A5A00;
+
+  /* Verdes (hero, letras de pestañas y detalles) */
+  --sirae-hero-verde: #1B3317;
+  --sirae-hero-verde-medio: #2B5424;
+  --sirae-verde-sutil: #6FBF8E;
+  --insumo-verde: #3F8F5F;
+  --insumo-verde-claro: #F1F8F3;
+  --insumo-verde-borde: #CFE6D6;
+
+  --shadow-sm: 0 2px 10px rgba(58, 42, 16, 0.05);
+  --shadow-md: 0 14px 30px -10px rgba(255, 169, 40, 0.28);
   font-family: 'Roboto', Arial, sans-serif;
 }
 
@@ -65,9 +72,9 @@
 @keyframes fxUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 .fx-lift { transition: transform .2s ease, box-shadow .2s ease; }
 .fx-lift:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
-.custom-scroll { scrollbar-width: thin; scrollbar-color: var(--sirae-borde) transparent; }
+.custom-scroll { scrollbar-width: thin; scrollbar-color: var(--sirae-dorado-claro) transparent; }
 .custom-scroll::-webkit-scrollbar { width: 5px; }
-.custom-scroll::-webkit-scrollbar-thumb { background: var(--sirae-borde); border-radius: 99px; }
+.custom-scroll::-webkit-scrollbar-thumb { background: var(--sirae-dorado-claro); border-radius: 99px; }
 
 /* ---------- Hero compacto con velo verde y letras blancas ---------- */
 .hero-shell {
@@ -79,7 +86,7 @@
   min-height: 112px;
   margin-bottom: 16px;
   border-radius: 18px;
-  background-color: var(--sirae-bosque);
+  background-color: #1B3317;
   box-shadow: 0 12px 26px -10px rgba(27, 51, 23, 0.34);
   color: #FFFFFF;
 }
@@ -145,7 +152,7 @@
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
 }
 
-/* ---------- Barra de navegación (arriba de categorías / arriba en historial) ---------- */
+/* ---------- Barra de navegación ---------- */
 .nav-abasto-bar {
   display: flex;
   flex-wrap: wrap;
@@ -179,7 +186,7 @@
   align-items: center;
   justify-content: center;
   background: transparent;
-  color: var(--sirae-secundario);
+  color: #2B5424; /* letras verdes */
   font: inherit;
   font-size: 12.5px;
   font-weight: 700;
@@ -188,13 +195,13 @@
 }
 .seg button:hover:not(.on) {
   background: #FFFFFF;
-  color: var(--sirae-bosque);
+  color: #1B3317;
 }
 .seg button.on {
-  background: var(--sirae-verde);
+  background: var(--sirae-verde); /* amarillo #FFA928 */
   color: #FFFFFF;
   font-weight: 800;
-  box-shadow: 0 4px 12px -4px rgba(43, 84, 36, 0.45);
+  box-shadow: 0 4px 12px -4px rgba(255, 169, 40, 0.6);
 }
 
 /* ---------- Layout principal ---------- */
@@ -246,7 +253,7 @@
 .cat-rail { display: flex; align-items: center; gap: 8px; }
 .abasto-flecha {
   display: grid; place-items: center; flex: 0 0 32px; height: 32px; padding: 0;
-  border: 1px solid var(--sirae-borde); border-radius: 50%; background: var(--sirae-crema); color: var(--sirae-bosque); cursor: pointer;
+  border: 1px solid var(--sirae-menta-borde); border-radius: 50%; background: #FFFFFF; color: var(--sirae-verde); cursor: pointer;
   box-shadow: var(--shadow-sm);
 }
 .abasto-flecha:hover { background: var(--sirae-verde); border-color: var(--sirae-verde); color: #FFFFFF; }
@@ -255,10 +262,10 @@
   flex: 1; min-width: 0;
   display: grid; grid-auto-flow: column; grid-auto-columns: 128px; gap: 10px;
   overflow-x: auto; padding: 4px 2px 8px; scroll-behavior: smooth;
-  scrollbar-width: thin; scrollbar-color: var(--sirae-borde) transparent;
+  scrollbar-width: thin; scrollbar-color: var(--sirae-dorado-claro) transparent;
 }
 .cat-grid::-webkit-scrollbar { height: 4px; }
-.cat-grid::-webkit-scrollbar-thumb { border-radius: 99px; background: var(--sirae-borde); }
+.cat-grid::-webkit-scrollbar-thumb { border-radius: 99px; background: var(--sirae-dorado-claro); }
 
 .cat2 {
   display: flex;
@@ -278,7 +285,7 @@
 .cat2.on {
   border-color: var(--sirae-verde);
   background: var(--sirae-menta-suave);
-  box-shadow: 0 0 0 3px rgba(43, 84, 36, 0.12);
+  box-shadow: 0 0 0 3px rgba(255, 169, 40, 0.18);
 }
 .cat2-foto {
   width: 100%;
@@ -313,7 +320,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.cat2.on .cat2-nombre { color: var(--sirae-verde); }
+.cat2.on .cat2-nombre { color: var(--sirae-dorado-oscuro); }
 .cat2-total { display: block; font-size: 10px; font-weight: 600; color: var(--sirae-secundario); }
 
 /* ---------- Filtros y buscador ---------- */
@@ -332,14 +339,16 @@
   cursor: pointer; transition: all .18s ease;
 }
 
-.pills button.pill-all { background: var(--sirae-crema); color: var(--sirae-bosque); border-color: var(--sirae-borde); }
-.pills button.pill-all.on { background: var(--sirae-bosque); color: #FFFFFF; border-color: var(--sirae-bosque); }
+.pills button.pill-all { background: var(--sirae-crema); color: var(--sirae-dorado-oscuro); border-color: var(--sirae-borde); }
+.pills button.pill-all.on { background: var(--sirae-verde); color: #FFFFFF; border-color: var(--sirae-verde); }
 
+/* Perecederos: verde discreto */
 .pills button.pill-peco { background: var(--insumo-verde-claro); color: var(--insumo-verde); border-color: var(--insumo-verde-borde); }
-.pills button.pill-peco.on { background: var(--sirae-verde); color: #FFFFFF; border-color: var(--sirae-verde); }
+.pills button.pill-peco.on { background: #5FAE80; color: #FFFFFF; border-color: #5FAE80; }
 
+/* No perecederos: amarillo */
 .pills button.pill-nope { background: var(--sirae-dorado-suave); color: var(--sirae-dorado-oscuro); border-color: var(--sirae-dorado-claro); }
-.pills button.pill-nope.on { background: var(--sirae-dorado); color: var(--sirae-bosque); border-color: var(--sirae-dorado); font-weight: 800; }
+.pills button.pill-nope.on { background: var(--sirae-dorado); color: #FFFFFF; border-color: var(--sirae-dorado); font-weight: 800; }
 
 .search-box { position: relative; flex: 0 1 240px; min-width: min(100%, 190px); }
 .search-box input {
@@ -353,7 +362,7 @@
 .search-box input:focus {
   background: #FFFFFF;
   border-color: var(--sirae-verde);
-  box-shadow: 0 0 0 3px rgba(43, 84, 36, 0.12);
+  box-shadow: 0 0 0 3px rgba(255, 169, 40, 0.20);
 }
 .search-box .material-symbols-outlined { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); font-size: 16px; color: var(--sirae-secundario); }
 
@@ -366,7 +375,7 @@
   padding: 4px 11px; border-radius: 999px;
   background: var(--sirae-dorado-suave);
   border: 1px solid var(--sirae-dorado-claro);
-  color: var(--sirae-bosque);
+  color: var(--sirae-dorado-oscuro);
   font-size: 11px;
   font-weight: 800;
 }
@@ -377,9 +386,9 @@
   background: var(--sirae-menta-suave); color: var(--sirae-azul); font-size: 11.5px;
 }
 .sirae-aviso-deslizar .material-symbols-outlined { font-size: 17px; color: var(--sirae-verde); flex-shrink: 0; }
-.sirae-aviso-deslizar strong { color: var(--sirae-verde); }
+.sirae-aviso-deslizar strong { color: var(--sirae-dorado-oscuro); }
 
-/* ---------- Tarjetas de producto limpias con imagen circular ---------- */
+/* ---------- Tarjetas de producto ---------- */
 .pc-grid.abasto-vitrina {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -404,10 +413,10 @@
 .pc.arrastrando { transition: none; cursor: grabbing; z-index: 2; transform: none; }
 .pc.activa, .pc.swipe-agregar {
   border-color: var(--sirae-verde);
-  background: #F6FAF5;
+  background: #FFFAF0;
   box-shadow: 0 0 0 3px var(--sirae-menta-suave);
 }
-.pc.swipe-quitar { border-color: var(--sirae-dorado); background: var(--sirae-dorado-suave); }
+.pc.swipe-quitar { border-color: #E5A0A0; background: #FFF5F5; }
 .pc.sin-stock .pc-foto { opacity: .60; }
 
 .pc-foto {
@@ -416,8 +425,8 @@
   height: 128px;
   padding: 14px 10px 10px;
   overflow: hidden;
-  background: linear-gradient(160deg, #FAF9F5 0%, #EFF5EC 100%);
-  border-bottom: 1px solid #EEF1EA;
+  background: linear-gradient(160deg, #FAF9F5 0%, #FFF1D8 100%);
+  border-bottom: 1px solid #F3ECDD;
   display: flex; align-items: center; justify-content: center;
 }
 .pc-foto img {
@@ -429,7 +438,7 @@
   object-position: center;
   border: 3px solid #FFFFFF;
   background: #FFFFFF;
-  box-shadow: 0 8px 18px -6px rgba(27, 51, 23, 0.20);
+  box-shadow: 0 8px 18px -6px rgba(255, 169, 40, 0.35);
   pointer-events: none; -webkit-user-drag: none;
   transition: transform .25s ease, border-color .2s ease;
 }
@@ -445,7 +454,7 @@
   border-radius: 50%;
   background: #FFFFFF;
   border: 3px solid #FFFFFF;
-  box-shadow: 0 8px 18px -6px rgba(27, 51, 23, 0.14);
+  box-shadow: 0 8px 18px -6px rgba(255, 169, 40, 0.28);
   font-size: 35px;
 }
 
@@ -453,7 +462,7 @@
   position: absolute; top: 8px; left: 8px; z-index: 2;
   padding: 2px 8px; border-radius: 999px;
   font-size: 9px; font-weight: 800; letter-spacing: .03em; text-transform: uppercase;
-  box-shadow: 0 2px 6px rgba(27, 51, 23, 0.06);
+  box-shadow: 0 2px 6px rgba(58, 42, 16, 0.06);
 }
 .pc-tipo.peco { background: #FFFFFF; color: var(--insumo-verde); border: 1px solid var(--insumo-verde-borde); }
 .pc-tipo.nope { background: #FFFFFF; color: var(--sirae-dorado-oscuro); border: 1px solid var(--sirae-dorado-claro); }
@@ -472,8 +481,8 @@
 .pc.activa .pc-check {
   background: var(--sirae-verde);
   border-color: var(--sirae-verde);
-  color: var(--sirae-dorado);
-  box-shadow: 0 3px 10px rgba(43, 84, 36, 0.32);
+  color: #FFFFFF;
+  box-shadow: 0 3px 10px rgba(255, 169, 40, 0.45);
 }
 
 .pc-body {
@@ -490,8 +499,8 @@
 .pc-stock-txt { display: flex; align-items: baseline; justify-content: space-between; gap: 4px; font-size: 10px; color: var(--sirae-secundario); }
 .pc-stock-cant { font-weight: 800; color: var(--sirae-azul); font-size: 10.5px; }
 .pc.sin-stock .pc-stock-txt, .pc.sin-stock .pc-stock-cant { color: #9F2843; }
-.barra-stock { height: 4px; margin-top: 4px; border-radius: 99px; background: #EAECE6; overflow: hidden; }
-.barra-stock > span, .barra-stock > span.alto { display: block; height: 100%; border-radius: 99px; background: var(--sirae-verde-claro); transition: width .35s ease; }
+.barra-stock { height: 4px; margin-top: 4px; border-radius: 99px; background: #F1EBDD; overflow: hidden; }
+.barra-stock > span, .barra-stock > span.alto { display: block; height: 100%; border-radius: 99px; background: var(--sirae-verde-sutil); transition: width .35s ease; }
 .barra-stock > span.medio { background: var(--sirae-dorado); }
 .barra-stock > span.bajo { background: #BE123C; }
 
@@ -501,25 +510,26 @@
   border: 1px solid var(--sirae-borde); background: var(--sirae-superficie); color: var(--sirae-azul);
   font: inherit; font-size: 11.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px; cursor: pointer;
 }
-.pag-btn:hover:not(:disabled):not(.pill-on) { background: var(--sirae-menta-suave); border-color: var(--sirae-menta-borde); color: var(--sirae-verde); }
+.pag-btn:hover:not(:disabled):not(.pill-on) { background: var(--sirae-menta-suave); border-color: var(--sirae-menta-borde); color: var(--sirae-dorado-oscuro); }
 .pag-btn:disabled { opacity: .4; cursor: not-allowed; }
 .pill-on { background: var(--sirae-verde) !important; border-color: var(--sirae-verde) !important; color: #FFFFFF !important; }
 
-/* ---------- Panel derecho flotante (Resumen del despacho) ---------- */
+/* ---------- Panel derecho (Resumen del despacho) ---------- */
 .inv-despacho { display: flex; flex-direction: column; overflow: hidden; }
 .inv-head {
   display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;
   padding: 16px 18px 12px;
-  background: linear-gradient(135deg, var(--sirae-bosque) 0%, var(--sirae-verde) 100%);
+  background: linear-gradient(135deg, #F59E0B 0%, var(--sirae-verde) 100%);
   color: #FFFFFF;
 }
-.despacho-rotulo { margin: 0 0 2px; color: var(--sirae-dorado); font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+.despacho-rotulo { margin: 0 0 2px; color: #FFFFFF; opacity: .92; font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
 .inv-head h3 { margin: 0; font-size: 16px; font-weight: 800; color: #FFFFFF !important; }
+.inv-head .text-slate-500, .inv-head .text-slate-800 { color: #FFFFFF !important; }
 .inv-count {
   min-width: 28px; height: 26px; padding: 0 8px; display: inline-grid; place-items: center;
   border-radius: 999px;
-  background: var(--sirae-dorado);
-  color: #FFFFFF;
+  background: #FFFFFF;
+  color: var(--sirae-dorado-oscuro);
   font-size: 12px; font-weight: 900;
 }
 
@@ -562,7 +572,7 @@
 .inv-stepper { display: flex; align-items: center; gap: 6px; }
 .cant-btn {
   width: 27px; height: 27px; border: 1px solid var(--sirae-borde); border-radius: 8px;
-  background: var(--sirae-crema); color: var(--sirae-bosque); display: grid; place-items: center; cursor: pointer;
+  background: var(--sirae-crema); color: var(--sirae-dorado-oscuro); display: grid; place-items: center; cursor: pointer;
 }
 .cant-btn:hover { background: var(--sirae-verde); border-color: var(--sirae-verde); color: #FFFFFF; }
 .inv-input {
@@ -583,25 +593,77 @@
 .resumen-total small { display: block; color: var(--sirae-secundario); font-size: 10px; font-weight: 500; }
 .resumen-total b { font-size: 18px; color: var(--sirae-bosque); }
 
+/* ---------- Botón Confirmar entrega (camión + spinner) ---------- */
 .btn-enviar {
+  position: relative;
+  overflow: hidden;
   width: 100%; height: 40px; border: 0; border-radius: 999px;
   background: var(--sirae-dorado); color: #FFFFFF; font: inherit; font-size: 13px; font-weight: 800;
   display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;
-  box-shadow: 0 8px 18px -6px rgba(245, 184, 31, 0.48);
+  box-shadow: 0 8px 18px -6px rgba(255, 169, 40, 0.55);
   transition: background .15s, transform .15s;
 }
 .btn-enviar:hover:not(:disabled) { background: var(--sirae-lima-hover); transform: translateY(-1px); }
-.btn-enviar:disabled { background: #E0E2DB; color: #7F877B; box-shadow: none; cursor: not-allowed; }
+.btn-enviar:disabled { background: #E7E2D6; color: #8C8678; box-shadow: none; cursor: not-allowed; }
+
+/* Mientras guarda: se mantiene amarillo */
+.btn-enviar.enviando:disabled {
+  background: var(--sirae-dorado);
+  color: #FFFFFF;
+  box-shadow: 0 8px 18px -6px rgba(255, 169, 40, 0.55);
+  cursor: progress;
+}
+
+/* Icono: camión + spinner en el mismo lugar */
+.btn-icono {
+  position: relative;
+  width: 20px; height: 20px;
+  display: inline-grid; place-items: center;
+  flex-shrink: 0;
+}
+.camion {
+  font-size: 19px;
+  animation: camionVuelve .35s ease both;
+}
+.spinner-envio {
+  position: absolute;
+  width: 16px; height: 16px;
+  border: 2.5px solid rgba(255, 255, 255, 0.45);
+  border-top-color: #FFFFFF;
+  border-radius: 50%;
+  opacity: 0;
+  animation: giroEnvio .7s linear infinite;
+}
+
+/* Al enviar: el camión se va a la derecha y aparece el spinner */
+.btn-enviar.enviando .camion {
+  animation: camionSale .7s cubic-bezier(.5, 0, .9, .4) forwards;
+}
+.btn-enviar.enviando .spinner-envio {
+  opacity: 1;
+  transition: opacity .2s ease .45s;
+}
+
+@keyframes camionSale {
+  0%   { transform: translateX(0); opacity: 1; }
+  25%  { transform: translateX(-5px); opacity: 1; }  /* pequeño impulso hacia atrás */
+  100% { transform: translateX(260px); opacity: 0; }
+}
+@keyframes camionVuelve {
+  from { transform: translateX(-24px); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+@keyframes giroEnvio { to { transform: rotate(360deg); } }
 
 /* ---------- Calendario / Historial ---------- */
 .arrow-btn {
-  width: 34px; height: 34px; border: 1px solid var(--sirae-borde); border-radius: 999px;
-  background: var(--sirae-superficie); color: var(--sirae-secundario); display: grid; place-items: center; cursor: pointer;
+  width: 34px; height: 34px; border: 1px solid var(--sirae-menta-borde); border-radius: 999px;
+  background: var(--sirae-superficie); color: var(--sirae-verde); display: grid; place-items: center; cursor: pointer;
 }
-.arrow-btn:hover { background: var(--sirae-menta-suave); color: var(--sirae-verde); border-color: var(--sirae-menta-borde); }
+.arrow-btn:hover { background: var(--sirae-menta-suave); color: var(--sirae-dorado-oscuro); border-color: var(--sirae-verde); }
 .btn-hoy {
   border-radius: 99px; border: 1px solid var(--sirae-menta-borde); background: var(--sirae-menta-suave);
-  padding: 6px 15px; font: inherit; font-size: 12px; font-weight: 800; color: var(--sirae-verde); cursor: pointer;
+  padding: 6px 15px; font: inherit; font-size: 12px; font-weight: 800; color: var(--sirae-dorado-oscuro); cursor: pointer;
 }
 .btn-hoy:hover { background: var(--sirae-verde); color: #FFFFFF; border-color: var(--sirae-verde); }
 .entrega-calendario { border: 1px solid var(--sirae-borde) !important; border-radius: 18px !important; }
@@ -611,7 +673,7 @@
   background: var(--sirae-superficie); text-align: left; cursor: pointer; font: inherit;
 }
 .cal-cell.fuera { background: var(--sirae-crema); }
-.cal-cell.fuera .cal-num { color: #C4C7BE; }
+.cal-cell.fuera .cal-num { color: #CFC9BA; }
 .cal-cell.sel { background: var(--sirae-menta-suave); outline: 2px solid var(--sirae-verde); outline-offset: -2px; }
 .cal-num { width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; border-radius: 99px; font-size: 12.5px; font-weight: 700; }
 .cal-num.hoy { background: var(--sirae-verde); color: #FFFFFF; }
@@ -627,10 +689,10 @@
   background: var(--sirae-superficie); padding: 7px 11px; font: inherit; font-size: 12px; font-weight: 600;
   color: var(--sirae-azul); outline: none;
 }
-.campo:focus, .fx-input:focus { border-color: var(--sirae-verde) !important; box-shadow: 0 0 0 3px rgba(43, 84, 36, 0.12) !important; }
+.campo:focus, .fx-input:focus { border-color: var(--sirae-verde) !important; box-shadow: 0 0 0 3px rgba(255, 169, 40, 0.20) !important; }
 .campo.invalido { border-color: #E11D48; background: #FFF0F3; }
 
-/* Estilo mejorado del campo de fecha */
+/* Campo de fecha */
 input[type="date"].campo {
   color-scheme: light;
   accent-color: var(--sirae-verde);
@@ -642,23 +704,16 @@ input[type="date"].campo {
 }
 input[type="date"].campo:hover:not(:disabled) {
   border-color: var(--sirae-menta-borde);
-  background-color: #FCFDFB;
+  background-color: #FFFCF5;
 }
-input[type="date"].campo::-webkit-datetime-edit {
-  padding: 0 2px;
-}
-input[type="date"].campo::-webkit-datetime-edit-fields-wrapper {
-  padding: 0;
-}
-input[type="date"].campo::-webkit-datetime-edit-text {
-  color: var(--sirae-secundario);
-  padding: 0 2px;
-}
+input[type="date"].campo::-webkit-datetime-edit { padding: 0 2px; }
+input[type="date"].campo::-webkit-datetime-edit-fields-wrapper { padding: 0; }
+input[type="date"].campo::-webkit-datetime-edit-text { color: var(--sirae-secundario); padding: 0 2px; }
 input[type="date"].campo::-webkit-datetime-edit-day-field:focus,
 input[type="date"].campo::-webkit-datetime-edit-month-field:focus,
 input[type="date"].campo::-webkit-datetime-edit-year-field:focus {
   background-color: var(--sirae-menta-suave);
-  color: var(--sirae-verde);
+  color: var(--sirae-dorado-oscuro);
   border-radius: 4px;
 }
 input[type="date"].campo::-webkit-calendar-picker-indicator {
@@ -675,12 +730,12 @@ input[type="date"].campo::-webkit-calendar-picker-indicator:hover {
 
 .modal-fondo {
   position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center;
-  background: rgba(27, 51, 23, 0.52); backdrop-filter: blur(5px); padding: 16px;
+  background: rgba(58, 42, 16, 0.50); backdrop-filter: blur(5px); padding: 16px;
 }
 .modal-caja {
   width: 100%; max-height: 92vh; overflow-y: auto; background: var(--sirae-superficie);
   border: 1px solid var(--sirae-borde); border-radius: 22px; padding: 24px;
-  box-shadow: 0 28px 64px -14px rgba(27, 51, 23, 0.34);
+  box-shadow: 0 28px 64px -14px rgba(58, 42, 16, 0.34);
 }
 .btn-cerrar {
   width: 36px; height: 36px; border: 0; border-radius: 10px; background: var(--sirae-crema);
@@ -690,9 +745,9 @@ input[type="date"].campo::-webkit-calendar-picker-indicator:hover {
 
 :is(.sirae-root, .modal-fondo) .bg-\[\#FFF4D6\] { background-color: var(--sirae-dorado-suave); }
 :is(.sirae-root, .modal-fondo) .bg-\[\#F5B81F\] { background-color: var(--sirae-dorado); color: #FFFFFF !important; }
-:is(.sirae-root, .modal-fondo) .bg-\[\#FDE7A6\] { background-color: var(--sirae-menta-suave); color: var(--sirae-verde) !important; }
+:is(.sirae-root, .modal-fondo) .bg-\[\#FDE7A6\] { background-color: var(--sirae-menta-suave); color: var(--sirae-dorado-oscuro) !important; }
 :is(.sirae-root, .modal-fondo) .bg-\[\#E8F7EE\] { background-color: var(--sirae-menta-suave); }
-:is(.sirae-root, .modal-fondo) .text-\[\#15803D\] { color: var(--sirae-verde); }
+:is(.sirae-root, .modal-fondo) .text-\[\#15803D\] { color: var(--sirae-dorado-oscuro); }
 :is(.sirae-root, .modal-fondo) .text-\[\#B45309\] { color: var(--sirae-dorado-oscuro); }
 :is(.sirae-root, .modal-fondo) .border-\[\#F5D27A\] { border-color: var(--sirae-dorado-claro); }
 
@@ -714,6 +769,9 @@ input[type="date"].campo::-webkit-calendar-picker-indicator:hover {
 @media (prefers-reduced-motion: reduce) {
   .pc, .fx-lift, .cat-grid { transition: none; scroll-behavior: auto; }
   .fx-up { animation: none; }
+  .camion, .btn-enviar.enviando .camion { animation: none; }
+  .btn-enviar.enviando .camion { opacity: 0; }
+  .spinner-envio { animation-duration: 1.4s; }
 }
 </style>
 
@@ -725,7 +783,7 @@ input[type="date"].campo::-webkit-calendar-picker-indicator:hover {
   </div>
 </ng-template>
 
-<!-- Barra de vistas reutilizable (arriba de categorías en Insumos / arriba en Historial) -->
+<!-- Barra de vistas reutilizable -->
 <ng-template #barraVistas>
   <div class="seg" role="group" aria-label="Vista">
     <button type="button" [class.on]="!mostrarCalendario" (click)="mostrarCalendario = false">
@@ -743,7 +801,7 @@ input[type="date"].campo::-webkit-calendar-picker-indicator:hover {
 <div class="sirae-root" style="background: transparent !important; background-color: transparent !important; border: none !important; border-radius: 0 !important; box-shadow: none !important; padding: 0 0 36px !important; margin: 0 !important;">
   <div class="relative mx-auto max-w-[1520px]">
 
-    <!-- 1) Hero compacto solo con imagen y letras blancas -->
+    <!-- 1) Hero compacto -->
     <div class="hero-shell" *ngIf="!mostrarCalendario">
       <img class="hero-bg-img" src="/image%20copy.png" alt="" fetchpriority="high" decoding="sync">
 
@@ -781,7 +839,7 @@ input[type="date"].campo::-webkit-calendar-picker-indicator:hover {
           </div>
 
           <div class="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[10.5px] font-semibold text-slate-500">
-            <span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-emerald-600"></span> Vigente</span>
+            <span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-emerald-500"></span> Vigente</span>
             <span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-amber-500"></span> Próximo a vencer</span>
             <span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-red-500"></span> Vencido</span>
             <span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-orange-500"></span> Vencen ese día</span>
@@ -789,7 +847,7 @@ input[type="date"].campo::-webkit-calendar-picker-indicator:hover {
           </div>
 
           <div class="entrega-calendario overflow-hidden bg-white shadow-sm">
-            <div class="grid grid-cols-7 bg-slate-50 text-center text-[10px] font-black uppercase tracking-wide text-slate-500">
+            <div class="grid grid-cols-7 bg-[#FFF8EA] text-center text-[10px] font-black uppercase tracking-wide text-slate-500">
               <div *ngFor="let nombre of nombresDias" class="py-3">{{ nombre }}</div>
             </div>
             <div class="grid grid-cols-7">
@@ -807,12 +865,11 @@ input[type="date"].campo::-webkit-calendar-picker-indicator:hover {
         <!-- VISTA: CATÁLOGO -->
         <div *ngIf="!mostrarCalendario" class="card-panel">
 
-          <!-- Botones Insumos · Historial · Ver inventario arriba de categorías -->
           <div class="nav-abasto-bar">
             <ng-container *ngTemplateOutlet="barraVistas"></ng-container>
           </div>
 
-          <!-- Categorías en tarjetas compactas -->
+          <!-- Categorías -->
           <section *ngIf="!cargandoCatalogos" class="abasto-categorias" aria-labelledby="abasto-titulo">
             <div class="sec-heading">
               <div>
@@ -886,7 +943,7 @@ input[type="date"].campo::-webkit-calendar-picker-indicator:hover {
                 <span>Desliza una tarjeta a la <strong>derecha</strong> para agregarla al despacho, o a la <strong>izquierda</strong> para quitarla.</span>
               </div>
 
-              <!-- Tarjetas de producto limpias -->
+              <!-- Tarjetas de producto -->
               <div #cuadriculaCatalogo id="catalogo-top" class="pc-grid abasto-vitrina">
                 <article *ngFor="let producto of productosMenu | slice:((pagina.actual - 1) * 6):(pagina.actual * 6); trackBy: trackPor" class="pc fx-up"
                   [class.activa]="tarjetaActiva(producto)" [class.sin-stock]="totalDisponible(producto) <= 0" [class.arrastrando]="swipeId === producto.id"
@@ -945,7 +1002,7 @@ input[type="date"].campo::-webkit-calendar-picker-indicator:hover {
         </div>
       </section>
 
-      <!-- ================= COLUMNA DERECHA FLOTANTE (FIJA) ================= -->
+      <!-- ================= COLUMNA DERECHA FLOTANTE ================= -->
       <aside class="panel-sticky flex flex-col gap-4">
 
         <!-- HISTORIAL -->
@@ -1021,6 +1078,9 @@ input[type="date"].campo::-webkit-calendar-picker-indicator:hover {
             <div>
               <p class="despacho-rotulo">Nueva entrega</p>
               <h3>Resumen del despacho</h3>
+              <p *ngIf="nombreSede" class="m-0 mt-0.5 text-[11px] font-semibold text-slate-500">
+                Sede destino: <strong class="text-slate-800">{{ nombreSede }}</strong>
+              </p>
             </div>
             <span class="inv-count" [attr.aria-label]="seleccionados.length + ' productos seleccionados'">{{ seleccionados.length }}</span>
           </div>
@@ -1075,14 +1135,17 @@ input[type="date"].campo::-webkit-calendar-picker-indicator:hover {
 
                 <ng-container *ngIf="calculadoDe(sel) as calcRow">
                   <p class="m-0 px-2.5 pb-1 text-[10px] font-semibold text-slate-500">
-                    Requerido neto cálculo: <b class="text-slate-800">{{ (calcRow.cantidad_sugerida_despacho || calcRow.cantidad_total_requerida) | number:'1.0-2' }} {{ sel.unidad }}</b>
+                    Requerido neto cálculo: <b class="text-slate-800">{{ calcRow.cantidad_sugerida_despacho | number:'1.0-2' }} {{ sel.unidad }}</b>
                     (periodo: {{ calcRow.cantidad_total_requerida | number:'1.0-2' }} {{ sel.unidad }})
                   </p>
-                  <p *ngIf="cantidadEnviarDe(sel) < (calcRow.cantidad_sugerida_despacho || calcRow.cantidad_total_requerida) - 0.0001 && cantidadEnviarDe(sel) > 0" class="m-0 px-2.5 pb-1 text-[10px] font-semibold text-emerald-700">
-                    Envío parcial: faltarán {{ ((calcRow.cantidad_sugerida_despacho || calcRow.cantidad_total_requerida) - cantidadEnviarDe(sel)) | number:'1.0-2' }} {{ sel.unidad }}
+                  <p *ngIf="calcRow.cantidad_sugerida_despacho <= 0" class="m-0 px-2.5 pb-1 text-[10px] font-bold text-emerald-600">
+                    Stock cubierto en sede (no requiere más envío).
                   </p>
-                  <p *ngIf="cantidadEnviarDe(sel) > (calcRow.cantidad_sugerida_despacho || calcRow.cantidad_total_requerida) + 0.0001" class="m-0 px-2.5 pb-2 text-[10px] font-bold text-amber-700">
-                    Supera lo requerido en +{{ (cantidadEnviarDe(sel) - (calcRow.cantidad_sugerida_despacho || calcRow.cantidad_total_requerida)) | number:'1.0-2' }} {{ sel.unidad }} (requiere autorización).
+                  <p *ngIf="calcRow.cantidad_sugerida_despacho > 0 && cantidadEnviarDe(sel) < calcRow.cantidad_sugerida_despacho - 0.0001 && cantidadEnviarDe(sel) > 0" class="m-0 px-2.5 pb-1 text-[10px] font-semibold text-[#B45309]">
+                    Envío parcial: faltarán {{ (calcRow.cantidad_sugerida_despacho - cantidadEnviarDe(sel)) | number:'1.0-2' }} {{ sel.unidad }}
+                  </p>
+                  <p *ngIf="cantidadEnviarDe(sel) > calcRow.cantidad_sugerida_despacho + 0.0001" class="m-0 px-2.5 pb-2 text-[10px] font-bold text-amber-700">
+                    Supera lo requerido en +{{ (cantidadEnviarDe(sel) - calcRow.cantidad_sugerida_despacho) | number:'1.0-2' }} {{ sel.unidad }} (no permitido).
                   </p>
                 </ng-container>
               </article>
@@ -1105,9 +1168,12 @@ input[type="date"].campo::-webkit-calendar-picker-indicator:hover {
                 <b>{{ productosParaEnviar.length }}</b>
               </div>
             </div>
-            <button type="button" class="btn-enviar" (click)="enviarSeleccionados()" [disabled]="guardandoEnvio || !envioFecha || productosParaEnviar.length === 0">
-              <span class="material-symbols-outlined text-[19px]">{{ guardandoEnvio ? 'hourglass_top' : 'local_shipping' }}</span>
-              {{ guardandoEnvio ? 'Guardando...' : 'Confirmar entrega' }}
+            <button type="button" class="btn-enviar" [class.enviando]="guardandoEnvio" (click)="enviarSeleccionados()" [disabled]="guardandoEnvio || !envioFecha || productosParaEnviar.length === 0">
+              <span class="btn-icono">
+                <span class="material-symbols-outlined camion" aria-hidden="true">local_shipping</span>
+                <span class="spinner-envio" aria-hidden="true"></span>
+              </span>
+              <span>{{ guardandoEnvio ? 'Guardando...' : 'Confirmar entrega' }}</span>
             </button>
           </footer>
         </div>
@@ -1121,7 +1187,7 @@ input[type="date"].campo::-webkit-calendar-picker-indicator:hover {
   <div class="modal-caja fx-up max-w-[760px]" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Registrar entrada">
     <div class="flex items-start justify-between border-b border-slate-200 pb-4">
       <div>
-        <p class="m-0 text-[10px] font-black uppercase tracking-wider text-emerald-700">Nueva entrada</p>
+        <p class="m-0 text-[10px] font-black uppercase tracking-wider text-[#B45309]">Nueva entrada</p>
         <h3 class="m-0 mt-1 text-lg font-black text-slate-900">Registrar entrada de alimentos</h3>
         <p class="m-0 mt-1 text-[11px] font-semibold text-slate-500">{{ nombreInstitucion }}</p>
       </div>
@@ -1155,11 +1221,11 @@ input[type="date"].campo::-webkit-calendar-picker-indicator:hover {
     <div class="mt-3 grid max-h-[200px] grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-3 md:grid-cols-4">
       <button type="button" *ngFor="let ing of productosRapidos; trackBy: trackPor" (click)="alternarProductoEntrada(ing.id)" [attr.aria-pressed]="estaEnEntrada(ing.id)"
         class="flex cursor-pointer items-center gap-2 rounded-2xl border p-2 text-left transition" [disabled]="yaRegistrado(ing.id)"
-        [ngClass]="yaRegistrado(ing.id) ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400 opacity-60' : estaEnEntrada(ing.id) ? 'border-emerald-500 bg-emerald-50 text-emerald-800' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'">
-        <ng-container *ngTemplateOutlet="foto; context: { n: ing.nombre, c: 'h-8 w-8 bg-emerald-50' }"></ng-container>
+        [ngClass]="yaRegistrado(ing.id) ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400 opacity-60' : estaEnEntrada(ing.id) ? 'border-[#FFA928] bg-[#FFF4DE] text-[#8A5A00]' : 'border-slate-200 bg-white text-slate-700 hover:bg-[#FFFAF0]'">
+        <ng-container *ngTemplateOutlet="foto; context: { n: ing.nombre, c: 'h-8 w-8 bg-[#FFF4DE]' }"></ng-container>
         <span class="min-w-0 flex-1 truncate text-[11px] font-bold">{{ ing.nombre }}</span>
         <span *ngIf="yaRegistrado(ing.id)" class="shrink-0 text-[9px] font-black">Ya registrado</span>
-        <span *ngIf="estaEnEntrada(ing.id)" class="material-symbols-outlined text-[16px] text-emerald-700">check_circle</span>
+        <span *ngIf="estaEnEntrada(ing.id)" class="material-symbols-outlined text-[16px] text-[#D98200]">check_circle</span>
       </button>
       <p *ngIf="productosRapidos.length === 0" class="col-span-full m-0 py-3 text-center text-xs text-slate-500">No hay productos con ese nombre.</p>
     </div>
@@ -1205,7 +1271,7 @@ input[type="date"].campo::-webkit-calendar-picker-indicator:hover {
   <div class="modal-caja fx-up max-w-[640px]" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Registro del día">
     <div class="flex items-start justify-between border-b border-slate-200 pb-4">
       <div>
-        <p class="m-0 text-[10px] font-black uppercase tracking-wider text-emerald-700">Registro del día</p>
+        <p class="m-0 text-[10px] font-black uppercase tracking-wider text-[#B45309]">Registro del día</p>
         <h3 class="m-0 mt-1 text-lg font-black text-slate-900">{{ fechaDiaModal(diaSeleccionado) }}</h3>
       </div>
       <button type="button" class="btn-cerrar" aria-label="Cerrar" (click)="modalDiaAbierto = false"><span class="material-symbols-outlined text-[20px]">close</span></button>
@@ -1216,10 +1282,10 @@ input[type="date"].campo::-webkit-calendar-picker-indicator:hover {
     <div *ngFor="let reg of registrosDelDia; trackBy: trackPor" class="mt-5">
       <div class="flex items-center justify-between gap-3">
         <div class="flex items-center gap-3">
-          <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700"><span class="material-symbols-outlined text-[24px]">local_shipping</span></div>
+          <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#FFF4DE] text-[#D98200]"><span class="material-symbols-outlined text-[24px]">local_shipping</span></div>
           <div><p class="m-0 text-sm font-black text-slate-900">{{ reg.codigo }}</p><p class="m-0 text-[10px] text-slate-400">{{ reg.descripcion }}</p></div>
         </div>
-        <span class="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-0.5 text-[10px] font-black text-emerald-800">{{ reg.estado }}</span>
+        <span class="rounded-full border border-[#FFD9A0] bg-[#FFF4DE] px-3 py-0.5 text-[10px] font-black text-[#8A5A00]">{{ reg.estado }}</span>
       </div>
 
       <div class="mt-4 grid grid-cols-2 gap-4 rounded-2xl border border-slate-100 bg-slate-50 p-4">
@@ -1231,14 +1297,14 @@ input[type="date"].campo::-webkit-calendar-picker-indicator:hover {
 
       <div class="mt-5 flex items-center justify-between">
         <h4 class="m-0 text-sm font-black text-slate-900">Productos registrados</h4>
-        <span class="text-[10px] font-semibold text-emerald-700">{{ reg.items.length }} productos</span>
+        <span class="text-[10px] font-semibold text-[#B45309]">{{ reg.items.length }} productos</span>
       </div>
       <div class="mt-2 overflow-hidden rounded-2xl border border-slate-200">
         <div *ngFor="let e of reg.items; let i = index; trackBy: trackPor" class="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3 last:border-b-0">
           <div class="flex min-w-0 items-center gap-3">
-            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-[10px] font-black text-emerald-800">{{ i + 1 }}</span>
-            <ng-container *ngTemplateOutlet="foto; context: { n: e.ingrediente, c: 'h-9 w-9 bg-emerald-50' }"></ng-container>
-            <div class="min-w-0"><p class="m-0 truncate text-xs font-black text-slate-900">{{ e.ingrediente }}</p><p class="m-0 truncate text-[10px] text-emerald-700">Lote {{ e.lote || '—' }}</p></div>
+            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#FFE9C2] text-[10px] font-black text-[#8A5A00]">{{ i + 1 }}</span>
+            <ng-container *ngTemplateOutlet="foto; context: { n: e.ingrediente, c: 'h-9 w-9 bg-[#FFF4DE]' }"></ng-container>
+            <div class="min-w-0"><p class="m-0 truncate text-xs font-black text-slate-900">{{ e.ingrediente }}</p><p class="m-0 truncate text-[10px] text-[#B45309]">Lote {{ e.lote || '—' }}</p></div>
           </div>
           <span class="shrink-0 text-xs font-black text-slate-900">{{ e.cantidad }} {{ e.unidad }}</span>
         </div>
@@ -1269,7 +1335,7 @@ input[type="date"].campo::-webkit-calendar-picker-indicator:hover {
   <div class="modal-caja fx-up flex max-w-[860px] flex-col !p-0" style="max-height: 90vh" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Inventario">
     <div class="flex items-start justify-between border-b border-slate-200 p-6 pb-4">
       <div>
-        <p class="m-0 text-[10px] font-black uppercase tracking-wider text-emerald-700">Existencias</p>
+        <p class="m-0 text-[10px] font-black uppercase tracking-wider text-[#B45309]">Existencias</p>
         <h3 class="m-0 mt-1 text-lg font-black text-slate-900">Inventario</h3>
         <p class="m-0 mt-1 text-[11px] font-semibold text-slate-500">{{ nombreInstitucion }}<span *ngIf="nombreSede"> · {{ nombreSede }}</span></p>
       </div>
@@ -1279,19 +1345,19 @@ input[type="date"].campo::-webkit-calendar-picker-indicator:hover {
     <div class="grid min-h-0 flex-1 grid-cols-1 gap-6 overflow-y-auto p-6 md:grid-cols-2">
       <section>
         <div class="mb-3 flex items-center justify-between">
-          <h5 class="m-0 text-[11px] font-black uppercase tracking-wider text-emerald-700">Disponibles</h5>
-          <span class="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-black text-emerald-800">{{ inventarioDisponible.length }} productos</span>
+          <h5 class="m-0 text-[11px] font-black uppercase tracking-wider text-[#B45309]">Disponibles</h5>
+          <span class="rounded-full bg-[#FFF4DE] px-2.5 py-0.5 text-[11px] font-black text-[#8A5A00]">{{ inventarioDisponible.length }} productos</span>
         </div>
         <p *ngIf="inventarioDisponible.length === 0" class="rounded-xl border border-dashed border-slate-200 p-4 text-center text-xs text-slate-500">No hay productos disponibles. Registra una entrada desde el historial.</p>
         <div class="flex max-h-[52vh] flex-col gap-2 overflow-y-auto pr-1">
           <div *ngFor="let item of inventarioDisponible; trackBy: trackPor" class="rounded-xl border border-slate-100 bg-white p-2.5">
             <div class="flex items-center justify-between gap-2">
               <div class="flex min-w-0 items-center gap-2">
-                <ng-container *ngTemplateOutlet="foto; context: { n: item.producto.nombre, c: 'h-10 w-10 bg-emerald-50' }"></ng-container>
+                <ng-container *ngTemplateOutlet="foto; context: { n: item.producto.nombre, c: 'h-10 w-10 bg-[#FFF4DE]' }"></ng-container>
                 <div class="min-w-0"><h5 class="m-0 truncate text-xs font-bold text-slate-800">{{ nombreMostrado(item.producto.nombre) }}</h5><p class="m-0 truncate text-[10px] text-slate-400">{{ item.producto.categoria }}</p></div>
               </div>
               <div class="shrink-0 text-right">
-                <span class="block text-sm font-black text-emerald-700">{{ item.cantidad | number:'1.0-2' }} {{ item.unidad }}</span>
+                <span class="block text-sm font-black text-[#D98200]">{{ item.cantidad | number:'1.0-2' }} {{ item.unidad }}</span>
                 <span *ngIf="item.estado" class="cal-chip !w-auto justify-end" [ngClass]="claseChipEstado(item.estado)"><span class="cal-dot"></span>{{ item.estado }}</span>
               </div>
             </div>
@@ -1362,7 +1428,7 @@ input[type="date"].campo::-webkit-calendar-picker-indicator:hover {
             {{ textoBadgeAprobacion(d.estadoAprobacion || estadoAprobacionGrupo(d)) }}
           </span>
           <span class="text-[11px] font-semibold text-amber-700" *ngIf="(d.estadoAprobacion || estadoAprobacionGrupo(d)) === 'EN_PROCESO'">En espera de revisión y aprobación por el colegio</span>
-          <span class="text-[11px] font-semibold text-emerald-700" *ngIf="(d.estadoAprobacion || estadoAprobacionGrupo(d)) === 'ACEPTADA'">Aprobada y recibida a conformidad por el colegio</span>
+          <span class="text-[11px] font-semibold text-emerald-600" *ngIf="(d.estadoAprobacion || estadoAprobacionGrupo(d)) === 'ACEPTADA'">Aprobada y recibida a conformidad por el colegio</span>
           <span class="text-[11px] font-semibold text-red-600" *ngIf="(d.estadoAprobacion || estadoAprobacionGrupo(d)) === 'RECHAZADA'">Rechazada por el colegio en control de calidad</span>
           <span class="text-[11px] font-semibold text-orange-700" *ngIf="(d.estadoAprobacion || estadoAprobacionGrupo(d)) === 'CON_NOVEDAD'">Recibida con novedad o averías reportadas</span>
         </div>
@@ -1374,7 +1440,7 @@ input[type="date"].campo::-webkit-calendar-picker-indicator:hover {
       <div *ngFor="let p of detalleLista; trackBy: trackPor" class="rounded-2xl border border-slate-200 bg-white p-3">
         <div class="flex items-center justify-between gap-3">
           <div class="flex min-w-0 items-center gap-3">
-            <ng-container *ngTemplateOutlet="foto; context: { n: p.ingrediente, c: 'h-11 w-11 bg-emerald-50 text-xl' }"></ng-container>
+            <ng-container *ngTemplateOutlet="foto; context: { n: p.ingrediente, c: 'h-11 w-11 bg-[#FFF4DE] text-xl' }"></ng-container>
             <div class="min-w-0">
               <p class="m-0 truncate text-sm font-black text-slate-900">{{ p.ingrediente }}</p>
               <p class="m-0 truncate text-[10px] font-semibold text-slate-400">{{ p.categoria }}<ng-container *ngIf="p.tipoMercado"> · {{ p.tipoMercado }}</ng-container></p>
@@ -1440,7 +1506,7 @@ input[type="date"].campo::-webkit-calendar-picker-indicator:hover {
       <h4 class="m-0 mt-4 text-sm font-black text-slate-900">Consolidado guardado en el despacho</h4>
       <div class="mt-2 overflow-x-auto rounded-2xl border border-slate-200">
         <table class="w-full border-collapse text-left text-xs">
-          <thead class="bg-slate-50 text-[10px] font-black uppercase text-slate-500">
+          <thead class="bg-[#FFF8EA] text-[10px] font-black uppercase text-slate-500">
             <tr>
               <th class="p-2.5">Producto</th>
               <th class="p-2.5">Tipo</th>

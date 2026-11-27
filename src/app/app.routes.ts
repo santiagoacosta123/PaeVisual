@@ -213,7 +213,7 @@ export const routes: Routes = [
         path: 'rol',
         component: Rol,
         canActivate: [roleGuard],
-        data: { roles: ['superadministrador', 'super administrador', 'super admin', 'administrador', 'admin'] }
+        data: { roles: ['superadministrador', 'super administrador', 'super admin'] }
       },
 
       {
@@ -227,7 +227,7 @@ export const routes: Routes = [
         path: 'nuevo-producto',
         component: NuevoProducto,
         canActivate: [roleGuard],
-        data: { roles: ['superadministrador', 'super administrador', 'super admin', 'administrador', 'admin'] }
+        data: { roles: ['superadministrador', 'super administrador', 'super admin'] }
       },
 
       {
@@ -241,7 +241,7 @@ export const routes: Routes = [
         path: 'unidades-medida',
         component: UnidadesMedidaComponent,
         canActivate: [roleGuard],
-        data: { roles: ['superadministrador', 'super administrador', 'super admin', 'administrador', 'admin'] }
+        data: { roles: ['superadministrador', 'super administrador', 'super admin'] }
       },
 
       {

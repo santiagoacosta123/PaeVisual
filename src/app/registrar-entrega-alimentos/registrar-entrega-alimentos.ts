@@ -156,6 +156,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
   institucionActiva: InstitucionAsignada | null = null;
   idInstitucion: number | null = null;
   idSede: number | null = null;             // viene de ?sede=ID
+  sedesInstitucion: { id_sede: number; nombre_sede: string }[] = [];
   ahoraTexto = '';
   private subInstitucion?: Subscription;
   private subSede?: Subscription;
@@ -185,7 +186,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private cdr: ChangeDetectorRef,
     private route: ActivatedRoute,
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.tiposMercado = this.leerCache<Opcion[]>(this.claveCacheTipos) ?? this.tiposBase;
@@ -194,10 +195,12 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     this.idInstitucion = this.institucionActiva?.id_institucion ?? this.authService.obtenerUsuario()?.id_institucion ?? null;
     const sedeActual = this.authService.obtenerSedeActiva();
     this.idSede = sedeActual?.id_sede ?? null;
+    this.cargarSedesInstitucion();
 
     this.subInstitucion = this.authService.institucionActiva$.subscribe(institucion => {
       this.institucionActiva = institucion;
       this.idInstitucion = institucion?.id_institucion ?? this.authService.obtenerUsuario()?.id_institucion ?? null;
+      this.cargarSedesInstitucion();
       this.cargarHistorial();
       this.actualizarCalculoAbastecimiento();
       this.cdr.markForCheck();
@@ -220,6 +223,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       }
       const reponer = params.get('reponer');
       if (reponer) { this.textoFiltro = reponer; }
+      this.cargarSedesInstitucion();
       this.cdr.markForCheck();
     });
 
@@ -266,6 +270,59 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     else this.modalDiaAbierto = false;
   }
 
+  cargarSedesInstitucion(): void {
+    const idInst = this.idInstitucion;
+    if (!idInst) {
+      this.sedesInstitucion = [];
+      return;
+    }
+    this.http.get<any>(`${environment.apiUrl}/sedes/?id_institucion=${idInst}`).pipe(
+      catchError(() => of([]))
+    ).subscribe(resp => {
+      const lista = Array.isArray(resp) ? resp : (resp?.results ?? []);
+      this.sedesInstitucion = lista.map((s: any) => ({
+        id_sede: Number(s.id_sede ?? s.id),
+        nombre_sede: s.nombre_sede ?? s.nombre ?? `Sede ${s.id_sede ?? s.id}`,
+      }));
+      if (!this.idSede && this.sedesInstitucion.length > 0) {
+        const principal = this.sedesInstitucion.find(s =>
+          (s.nombre_sede || '').toLowerCase().includes('principal')
+        ) || this.sedesInstitucion[0];
+        if (principal) {
+          this.idSede = principal.id_sede;
+          this.authService.establecerSedeActiva({
+            id_sede: principal.id_sede,
+            nombre_sede: principal.nombre_sede,
+            id_institucion: this.idInstitucion ?? undefined,
+            nombre_institucion: this.nombreInstitucion,
+          });
+          this.cargarHistorial();
+          this.actualizarCalculoAbastecimiento();
+        }
+      }
+      this.cdr.markForCheck();
+    });
+  }
+
+  cambiarSedeDespacho(nuevaSede: number | null): void {
+    const sedeDestino = nuevaSede != null
+      ? this.sedesInstitucion.find(s => s.id_sede === nuevaSede)
+      : (this.sedesInstitucion.find(s => (s.nombre_sede || '').toLowerCase().includes('principal')) || this.sedesInstitucion[0]);
+
+    if (sedeDestino) {
+      this.idSede = sedeDestino.id_sede;
+      this.authService.establecerSedeActiva({
+        id_sede: sedeDestino.id_sede,
+        nombre_sede: sedeDestino.nombre_sede ?? 'Sede Principal',
+        id_institucion: this.idInstitucion ?? undefined,
+        nombre_institucion: this.nombreInstitucion,
+      });
+    }
+    this.cargarHistorial();
+    this.actualizarCalculoAbastecimiento();
+    this.cdr.markForCheck();
+  }
+
   // Una sola función de seguimiento para todas las listas de la plantilla
   trackPor(_: number, x: any): any {
     return x.idIngrediente ?? x.producto?.id ?? x.clave ?? x.iso ?? x.codigo ?? x.id ?? x.nombre
@@ -279,7 +336,9 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
   }
 
   get nombreSede(): string {
-    return this.institucionActiva?.sedes?.find(s => Number(s.id_sede ?? s.id) === this.idSede)?.nombre_sede ?? '';
+    const sedeEncontrada = this.institucionActiva?.sedes?.find(s => Number(s.id_sede ?? s.id) === this.idSede)
+      ?? this.sedesInstitucion.find(s => Number(s.id_sede) === this.idSede);
+    return sedeEncontrada?.nombre_sede ?? this.authService.obtenerSedeActiva()?.nombre_sede ?? 'Sede Principal';
   }
 
   get destinosDisponibles(): string[] {
@@ -768,8 +827,10 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       const clave = `${e.fechaRecepcion}|${this.norm(destino)}`;
       let g = mapa.get(clave);
       if (!g) {
-        g = { clave, destino, fechaRegistro: e.fechaRegistro || e.fechaRecepcion, fechaRecepcion: e.fechaRecepcion,
-              hora: '', responsable: '', items: [], productos: [] };
+        g = {
+          clave, destino, fechaRegistro: e.fechaRegistro || e.fechaRecepcion, fechaRecepcion: e.fechaRecepcion,
+          hora: '', responsable: '', items: [], productos: []
+        };
         mapa.set(clave, g);
       }
       g.responsable ||= e.responsable || '';
@@ -1364,16 +1425,16 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     };
     this.seleccionados.push(item);
 
-    // Sugerir automáticamente la cantidad requerida exacta según el cálculo nutricional
-    const req = this.cantidadRequeridaDe(item);
-    const disp = this.disponibleDe(item);
-    let cantInicial = 1;
-    if (req > 0) {
-      cantInicial = Math.min(disp, req);
-    } else if (disp > 0) {
-      cantInicial = Math.min(disp, 1);
-    }
+    // Sugerir automáticamente la cantidad requerida neta según el cálculo nutricional (nunca superar el tope)
+    const maximo = this.maximoPermitidoParaEnvio(item);
+    const cantInicial = this.sedeTieneParametrizacionCalculo ? maximo : Math.min(this.disponibleDe(item), 1);
     this.fijarCantidadEnviar(item, Math.round(cantInicial * 100) / 100);
+    if (this.sedeTieneParametrizacionCalculo && maximo <= 0) {
+      void this.alertas.warning(
+        'Stock ya cubierto en sede',
+        `${item.ingrediente} ya tiene suficiente stock o no requiere despacho en este periodo (requerido neto: 0 ${item.unidad}).`,
+      );
+    }
     this.cdr.markForCheck();
   }
 
@@ -1413,7 +1474,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       if ((ev?.currentTarget as HTMLElement)?.hasPointerCapture?.(ev.pointerId)) {
         (ev.currentTarget as HTMLElement).releasePointerCapture(ev.pointerId);
       }
-    } catch {}
+    } catch { }
     this.cancelarDeslizar(ev);
     if (!s) return;
     if (s.activo) {
@@ -1440,7 +1501,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
         if ((ev.currentTarget as HTMLElement)?.hasPointerCapture?.(ev.pointerId)) {
           (ev.currentTarget as HTMLElement).releasePointerCapture(ev.pointerId);
         }
-      } catch {}
+      } catch { }
     }
     this.swipeInicio = null;
     this.swipeId = null;
@@ -1528,11 +1589,17 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     return null;
   }
 
+  get sedeTieneParametrizacionCalculo(): boolean {
+    const c = this.calculoAbastecimiento;
+    if (!c) return false;
+    return (c.total_cupos ?? 0) > 0 || c.contrato != null || (c.productos_sugeridos?.length ?? 0) > 0;
+  }
+
   cantidadRequeridaDe(sel: FilaEntrega): number {
     const calc = this.calculadoDe(sel);
     if (!calc) return 0;
     const sug = Number(calc.cantidad_sugerida_despacho);
-    if (Number.isFinite(sug) && sug > 0) return sug;
+    if (Number.isFinite(sug) && sug >= 0) return sug;
     const req = Number(calc.cantidad_total_requerida);
     if (Number.isFinite(req) && req > 0) return req;
     return 0;
@@ -1540,20 +1607,20 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
 
   maximoPermitidoParaEnvio(sel: FilaEntrega): number {
     const disp = this.disponibleDe(sel);
-    const req = this.cantidadRequeridaDe(sel);
-    if (req > 0) {
-      return Math.min(disp, req);
+    if (this.sedeTieneParametrizacionCalculo) {
+      const req = this.cantidadRequeridaDe(sel);
+      return Math.max(0, Math.min(disp, req));
     }
     return disp;
   }
 
   get itemsConExcesoCalculo(): Array<{ sel: FilaEntrega; enviado: number; requerido: number }> {
-    if (!this.calculoAbastecimiento) return [];
+    if (!this.sedeTieneParametrizacionCalculo) return [];
     const salida: Array<{ sel: FilaEntrega; enviado: number; requerido: number }> = [];
     for (const sel of this.productosParaEnviar) {
       const enviado = this.cantidadEnviarDe(sel);
       const req = this.cantidadRequeridaDe(sel);
-      if (req > 0 && enviado > req + 0.0001) {
+      if (enviado > req + 0.0001) {
         salida.push({ sel, enviado, requerido: req });
       }
     }
@@ -1653,7 +1720,11 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
         fechaVencimiento: this.fechaVencimientoParaEnvio(producto, sel.fechaVencimiento),
       };
     });
-    const fallo = (m: string) => { this.errorEnvioPanel = m; };
+    const fallo = (m: string) => {
+      this.errorEnvioPanel = m;
+      void this.alertas.warning('No se pudo confirmar la entrega', m);
+      this.cdr.markForCheck();
+    };
     this.errorEnvioPanel = '';
 
     if (!items.length) return fallo('Escribe la cantidad a enviar de al menos un producto.');
@@ -1705,6 +1776,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     if (!hoy) return fallo('Indica la fecha de envío.');
     if (!responsable) return fallo('Indica el responsable del envío.');
     this.guardandoEnvio = true;
+    this.cdr.markForCheck();
 
     const sigueEnLaVista = () => idInstitucionVista === this.idInstitucion && idSede === this.idSede;
     const fechaRegistro = new Date().toISOString();
@@ -1749,7 +1821,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
         id_contrato: calculo.contrato?.id_contrato ?? undefined,
         dias_perecederos: calculo.periodicidad?.dias_perecederos ?? undefined,
         dias_no_perecederos: calculo.periodicidad?.dias_no_perecederos ?? undefined,
-        incluir_todos_gramajes: false,
+        incluir_todos_gramajes: true,
         validar_contra_calculo: true,
         autorizacion_exceso: this.autorizacionExceso,
         autorizado_por: this.autorizacionExceso ? this.autorizadoPor.trim() : '',
@@ -1775,6 +1847,8 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
           this.incorporarEnviosConfirmados(confirmados, sigueEnLaVista());
           if (sigueEnLaVista()) {
             items.forEach(sel => this.fijarCantidadEnviar(sel, null));
+            this.seleccionados = [];
+            this.cantidadesEnviar = {};
             this.limpiarAutorizacionExceso();
             this.cargarHistorial();
             this.cargarCatalogos();
@@ -1796,6 +1870,11 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       return;
     }
 
+    // El despacho siempre se dirige a la sede activa específica (por defecto Sede Principal)
+    const idSedeDestino = idSede ?? this.idSede ?? datos.id_sede ?? this.authService.obtenerSedeActiva()?.id_sede;
+    const nombreSedeDestino = this.nombreSede || 'Sede Principal';
+    const destinoSede = `${this.nombreInstitucion} - ${nombreSedeDestino}`;
+
     const peticiones = items.map(sel => {
       const cantidad = this.cantidadEnviarDe(sel);
       const unidad = this.normalizarUnidad(sel.unidad) || 'Kg';
@@ -1807,27 +1886,47 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
         id_institucion: datos.id_institucion!,
         institucion: datos.id_institucion!,
         institucion_nombre: this.nombreInstitucion,
-        id_sede: datos.id_sede,
-        sede: datos.id_sede,
-        sede_nombre: this.nombreSede,
+        id_sede: idSedeDestino,
+        sede: idSedeDestino,
+        sede_nombre: nombreSedeDestino,
         fecha_entrega: hoy,
         fecha_salida: hoy,
         fecha_vencimiento: sel.fechaVencimiento,
         cantidad,
         frecuencia: sel.frecuencia,
         unidad,
-        destino,
+        destino: destinoSede,
         responsable,
         documento_entrega: codigoFactura,
         codigo_documento: codigoFactura,
         numero_factura: codigoFactura,
         lote_registro: lote,
-        observaciones: `Factura: ${codigoFactura} | Responsable: ${responsable} | Destino: ${destino}`,
+        observaciones: `Factura: ${codigoFactura} | Responsable: ${responsable} | Destino: ${destinoSede}`,
       } as any).pipe(
-        map((resp: any) => ({ ok: true, sel, cantidad, unidad, motivo: '', idResp: (resp?.id ?? resp?.id_entrega) as any })),
+        map((resp: any) => ({
+          ok: true,
+          sel,
+          cantidad,
+          unidad,
+          idSedeDestino,
+          destinoSede,
+          nombreSedeDestino,
+          motivo: '',
+          idResp: (resp?.id ?? resp?.id_entrega) as any,
+        })),
         catchError(error => {
-          console.error(`Error al enviar ${sel.ingrediente}:`, error?.error ?? error);   // respuesta completa en la consola (F12)
-          return of({ ok: false, sel, cantidad, unidad, motivo: this.describirError(error), idResp: undefined as any });
+          console.error(`Error al enviar ${sel.ingrediente} a ${destinoSede}:`, error?.error ?? error);
+          return of({
+            ok: false,
+            sel,
+            cantidad,
+            unidad,
+            idSedeDestino,
+            destinoSede,
+            nombreSedeDestino,
+            motivo: this.describirError(error),
+            idResp: undefined as any,
+          });
         }),
       );
     });
@@ -1840,12 +1939,16 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
 
       const confirmados = exitosos.map(r => ({
         ...datosEnvio(r.sel, r.cantidad, r.unidad, codigoFactura),
+        id_sede: r.idSedeDestino,
+        destino: r.destinoSede,
         id: Number(r.idResp) || undefined,
       }));
       this.incorporarEnviosConfirmados(confirmados, sigueEnLaVista());
 
       if (sigueEnLaVista()) {
+        const idsExitosos = new Set(exitosos.map(r => r.sel.idIngrediente));
         exitosos.forEach(r => this.fijarCantidadEnviar(r.sel, null));
+        this.seleccionados = this.seleccionados.filter(s => !idsExitosos.has(s.idIngrediente));
         if (exitosos.length) {
           this.cargarHistorial();
           this.cargarCatalogos();
@@ -1853,12 +1956,12 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       }
 
       if (fallidos.length) {
-        this.errorEnvioPanel = `Se enviaron ${exitosos.length} producto(s). No se pudo enviar: ${fallidos.map(r => `${r.sel.ingrediente} (${r.motivo})`).join('; ')}.`;
+        this.errorEnvioPanel = `Se enviaron ${exitosos.length} despacho(s). No se pudo enviar: ${fallidos.map(r => `${r.sel.ingrediente} (${r.motivo})`).join('; ')}.`;
         void this.alertas.error('Envío incompleto', this.errorEnvioPanel);
       } else {
         void this.alertas.success(
           'Factura de envío registrada',
-          `Factura / Remisión ${codigoFactura} · ${exitosos.length} producto(s) enviados a ${destino}, con entrega el ${this.fechaCorta(hoy)}.`,
+          `Factura / Remisión ${codigoFactura} · ${items.length} producto(s) despachados con éxito a ${destinoSede}, con entrega el ${this.fechaCorta(hoy)}.`,
         );
       }
       this.cdr.markForCheck();
@@ -2010,8 +2113,10 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     const mapa = new Map<string, RegistroDia>();
     for (const e of this.delDia('fechaRecepcion')) {
       const codigo = e.codigo || 'CI-' + e.fechaRecepcion.replace(/-/g, '');
-      const reg = mapa.get(codigo) ?? { codigo, descripcion: 'Lote de entrega SIRAE', estado: e.estadoEntrega || 'Recibida',
-        destino: '—', hora: '—', responsable: '—', fechaRegistro: '', items: [] };
+      const reg = mapa.get(codigo) ?? {
+        codigo, descripcion: 'Lote de entrega SIRAE', estado: e.estadoEntrega || 'Recibida',
+        destino: '—', hora: '—', responsable: '—', fechaRegistro: '', items: []
+      };
       reg.items.push(e);
       mapa.set(codigo, reg);
     }
@@ -2315,10 +2420,10 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     const filasResumen = Array.from(resumen.values())
       .sort((a, b) => a.e.ingrediente.localeCompare(b.e.ingrediente, 'es') || a.unidad.localeCompare(b.unidad, 'es'))
       .map(r => [`<b>${esc(r.e.ingrediente)}</b>`, esc(r.e.tipoMercado), esc(r.unidad), `<b>${Math.round(r.total * 100) / 100}</b>`,
-                 String(r.n), this.fechaCorta(r.ultima), r.vence ? this.fechaCorta(r.vence) : '—', esc(r.estado)]);
+      String(r.n), this.fechaCorta(r.ultima), r.vence ? this.fechaCorta(r.vence) : '—', esc(r.estado)]);
 
     const filasDetalle = lista.map(e => [this.fechaCorta(e.fechaRecepcion), esc(e.ingrediente), esc(e.tipoMercado), esc(e.frecuencia),
-      esc(e.cantidad), esc(e.unidad), this.fechaCorta(e.fechaVencimiento), esc(this.estadoDe(e))]);
+    esc(e.cantidad), esc(e.unidad), this.fechaCorta(e.fechaVencimiento), esc(this.estadoDe(e))]);
 
     let tablaEnvios = '';
     if (this.historialEnvios.length) {
@@ -2342,7 +2447,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
       <head><meta charset="UTF-8"></head><body>
       ${tabla(`Resumen por producto (total recibido) - ${esc(this.nombreInstitucion)}`,
-        ['Producto', 'Tipo de mercado', 'Unidad', 'Total recibido', 'N.º de entregas', 'Última entrega', 'Próximo vencimiento', 'Estado última entrega'], filasResumen)}
+      ['Producto', 'Tipo de mercado', 'Unidad', 'Total recibido', 'N.º de entregas', 'Última entrega', 'Próximo vencimiento', 'Estado última entrega'], filasResumen)}
       <br><br>
       ${tabla('Detalle de entregas', ['Fecha', 'Ingrediente', 'Tipo de mercado', 'Frecuencia', 'Cantidad', 'Unidad', 'Vencimiento', 'Estado'], filasDetalle)}
       ${tablaEnvios}

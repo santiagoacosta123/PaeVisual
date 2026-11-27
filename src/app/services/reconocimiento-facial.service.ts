@@ -32,7 +32,8 @@ export class ReconocimientoFacialService {
     // Verifica el rostro escaneado para iniciar sesión
     verificarRostro(imagenBase64: string): Observable<any> {
         return this.http.post(`${this.apiUrl}/verify-face/`, {
-            image: imagenBase64
+            image: imagenBase64,
+            plataforma: 'web'
         });
     }
 }

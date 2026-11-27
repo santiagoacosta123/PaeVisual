@@ -119,7 +119,7 @@ describe('HistorialEntregas', () => {
   });
 
   it('expands the groups automatically when searching', () => {
-    component.contraerGrupos();
+    (component as any).fechaAbiertaKey = null;
     expect(component.grupoEstaExpandido('2026-10-10')).toBe(false);
 
     component.filtroTexto = 'arroz';
@@ -132,7 +132,7 @@ describe('HistorialEntregas', () => {
       ...component.entregas,
       { ...component.entregas[0], id: 2, ingrediente: 'Lentejas', estado: 'RECIBIDA' },
     ];
-    component.contraerGrupos();
+    (component as any).fechaAbiertaKey = null;
 
     component.cambiarFiltroEstado('RECIBIDA');
 
@@ -162,7 +162,7 @@ describe('HistorialEntregas', () => {
     expect(grupoDia?.novedades).toBe(1);
 
     // CAMBIO: el día ya viene abierto, así que primero se contrae y luego se alterna
-    component.contraerGrupos();
+    (component as any).fechaAbiertaKey = null;
     expect(component.grupoEstaExpandido('2026-10-10')).toBe(false);
 
     component.alternarGrupoFecha('2026-10-10');
@@ -176,18 +176,25 @@ describe('HistorialEntregas', () => {
     expect(fixture.nativeElement.textContent).toContain('Fríjol');
   });
 
-  it('expands and collapses all visible date groups', () => {
+  it('expands and collapses date groups via acordeon (one at a time)', () => {
     component.entregas = [
       ...component.entregas,
       { ...component.entregas[0], id: 2, fechaRecepcion: '2026-10-11' },
     ];
     fixture.detectChanges();
 
-    component.expandirGrupos();
+    // Abrir el primer grupo
+    component.alternarGrupoFecha('2026-10-10');
     expect(component.grupoEstaExpandido('2026-10-10')).toBe(true);
+    expect(component.grupoEstaExpandido('2026-10-11')).toBe(false);
+
+    // Abrir el segundo grupo (cierra el primero por ser acordeón)
+    component.alternarGrupoFecha('2026-10-11');
+    expect(component.grupoEstaExpandido('2026-10-10')).toBe(false);
     expect(component.grupoEstaExpandido('2026-10-11')).toBe(true);
 
-    component.contraerGrupos();
+    // Cerrar todo
+    (component as any).fechaAbiertaKey = null;
     expect(component.grupoEstaExpandido('2026-10-10')).toBe(false);
     expect(component.grupoEstaExpandido('2026-10-11')).toBe(false);
   });

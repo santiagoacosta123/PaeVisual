@@ -6,7 +6,7 @@
       <img src="/cocineras.jpg" alt="Personal de cocina SIRAE" class="w-full h-full object-cover object-center block" />
       <!-- Difuminado suave hacia el blanco -->
       <div
-        class="absolute inset-y-0 right-0 w-32 bg-gradient-to-r from-transparent via-white/50 to-white pointer-events-none hidden lg:block">
+        class="absolute inset-y-0 right-0 w-[clamp(72px,9vw,150px)] bg-gradient-to-r from-transparent via-white/30 to-white pointer-events-none hidden lg:block">
       </div>
       <div
         class="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white to-transparent pointer-events-none lg:hidden">
@@ -30,53 +30,57 @@
   <div
     class="w-full lg:w-[47%] min-h-[calc(100vh-16rem)] lg:min-h-screen flex items-center justify-center p-6 sm:p-10 lg:p-12 relative bg-white">
 
-    <!-- Circuito tecnológico superior derecho -->
-    <div class="absolute top-0 right-0 w-56 sm:w-72 lg:w-80 max-w-[45%] pointer-events-none z-0" aria-hidden="true">
-      <svg viewBox="0 0 320 220" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-auto block">
-        <!-- Pistas verdes -->
-        <path d="M320 30 H220 L195 5 M195 5 H140 L120 25 H80" stroke="#0b6638" stroke-width="2.2" stroke-linecap="round"
-          stroke-linejoin="round" />
-        <circle cx="80" cy="25" r="4.5" fill="#0b6638" />
-        <circle cx="220" cy="30" r="3.5" fill="none" stroke="#0b6638" stroke-width="2" />
+    <!-- El fondo y los destellos comparten las coordenadas de la imagen original. -->
+    <svg class="pointer-events-none absolute inset-0 z-0 block h-full w-full"
+      viewBox="0 0 1600 901" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+      <image href="fondo-sistema.png" width="1600" height="901" opacity="0.62" />
+      <g class="motion-reduce:hidden" fill="none" stroke="#F5B81F" stroke-width="4" style="filter: drop-shadow(0 0 2px #f5b81f99)"
+        stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="10 112" stroke-dashoffset="10">
+        <path d="M551 81 L575 82 L669 173 L923 174" pathLength="100" opacity="0">
+          <animate attributeName="stroke-dashoffset" values="10;-100;-100" keyTimes="0;0.58;1"
+            begin="-2s" dur="36s" repeatCount="indefinite" />
+          <animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.05;0.53;0.58;1"
+            begin="-2s" dur="36s" repeatCount="indefinite" />
+        </path>
+        <path d="M886 584 L888 584 L922 618 L1122 618 L1152 589" pathLength="100" opacity="0">
+          <animate attributeName="stroke-dashoffset" values="10;-100;-100" keyTimes="0;0.58;1"
+            begin="-8s" dur="36s" repeatCount="indefinite" />
+          <animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.05;0.53;0.58;1"
+            begin="-8s" dur="36s" repeatCount="indefinite" />
+        </path>
+        <path d="M150 284 L158 285 L183 260 L395 260 L423 288" pathLength="100" opacity="0">
+          <animate attributeName="stroke-dashoffset" values="10;-100;-100" keyTimes="0;0.58;1"
+            begin="-14s" dur="36s" repeatCount="indefinite" />
+          <animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.05;0.53;0.58;1"
+            begin="-14s" dur="36s" repeatCount="indefinite" />
+        </path>
+        <path d="M949 200 L1004 200 L1059 146" pathLength="100" opacity="0">
+          <animate attributeName="stroke-dashoffset" values="10;-100;-100" keyTimes="0;0.58;1"
+            begin="-20s" dur="36s" repeatCount="indefinite" />
+          <animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.05;0.53;0.58;1"
+            begin="-20s" dur="36s" repeatCount="indefinite" />
+        </path>
+        <path d="M413 728 L454 728 L512 670 L801 670" pathLength="100" opacity="0">
+          <animate attributeName="stroke-dashoffset" values="10;-100;-100" keyTimes="0;0.58;1"
+            begin="-26s" dur="36s" repeatCount="indefinite" />
+          <animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.05;0.53;0.58;1"
+            begin="-26s" dur="36s" repeatCount="indefinite" />
+        </path>
+        <path d="M851 647 L852 648 L858 643 L1087 643 L1143 699 L1146 700" pathLength="100" opacity="0">
+          <animate attributeName="stroke-dashoffset" values="10;-100;-100" keyTimes="0;0.58;1"
+            begin="-32s" dur="36s" repeatCount="indefinite" />
+          <animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.05;0.53;0.58;1"
+            begin="-32s" dur="36s" repeatCount="indefinite" />
+        </path>
+      </g>
+    </svg>
 
-        <path d="M320 85 H240 L210 115 H160" stroke="#0b6638" stroke-width="2.2" stroke-linecap="round"
-          stroke-linejoin="round" />
-        <circle cx="160" cy="115" r="4.5" fill="#0b6638" />
-
-        <!-- Pistas amarillas -->
-        <path d="M320 55 H260 L240 75 H200" stroke="#fab005" stroke-width="2.2" stroke-linecap="round"
-          stroke-linejoin="round" />
-        <circle cx="200" cy="75" r="3.5" fill="none" stroke="#fab005" stroke-width="2" />
-        <circle cx="260" cy="55" r="4" fill="#fab005" />
-
-        <path d="M295 105 L280 120 H250" stroke="#fab005" stroke-width="2" stroke-linecap="round"
-          stroke-linejoin="round" />
-        <circle cx="250" cy="120" r="3.5" fill="#fab005" />
-      </svg>
+    <!-- La trama aparece gradualmente desde el borde de la fotografía. -->
+    <div aria-hidden="true" class="pointer-events-none absolute inset-0 z-0"
+      style="background: radial-gradient(ellipse at 50% 51%, white 2%, rgba(255,255,255,.84) 32%, transparent 74%);">
     </div>
-
-    <!-- Circuito tecnológico inferior derecho -->
-    <div class="absolute bottom-0 right-0 w-56 sm:w-72 lg:w-80 max-w-[45%] pointer-events-none z-0" aria-hidden="true">
-      <svg viewBox="0 0 320 220" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-auto block">
-        <!-- Pistas verdes -->
-        <path d="M320 160 H260 L240 140 H180 L160 160 H110" stroke="#0b6638" stroke-width="2.2" stroke-linecap="round"
-          stroke-linejoin="round" />
-        <circle cx="110" cy="160" r="4.5" fill="#0b6638" />
-        <circle cx="180" cy="140" r="3.5" fill="none" stroke="#0b6638" stroke-width="2" />
-
-        <path d="M280 220 V190 L260 170 H220" stroke="#0b6638" stroke-width="2.2" stroke-linecap="round"
-          stroke-linejoin="round" />
-        <circle cx="220" cy="170" r="4.5" fill="#0b6638" />
-
-        <!-- Pistas amarillas -->
-        <path d="M320 185 H275 L255 205 H190" stroke="#fab005" stroke-width="2.2" stroke-linecap="round"
-          stroke-linejoin="round" />
-        <circle cx="190" cy="205" r="4.5" fill="#fab005" />
-        <circle cx="275" cy="185" r="3.5" fill="none" stroke="#fab005" stroke-width="2" />
-
-        <path d="M230 220 V205 H210" stroke="#fab005" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-        <circle cx="210" cy="205" r="3.5" fill="none" stroke="#fab005" stroke-width="2" />
-      </svg>
+    <div aria-hidden="true"
+      class="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-white to-transparent lg:inset-y-0 lg:left-0 lg:right-auto lg:h-full lg:w-24 lg:bg-gradient-to-r">
     </div>
 
     <!-- Contenido central del formulario -->
@@ -160,6 +164,17 @@
           {{ errorMensaje }}
         </div>
 
+        <!-- AVISO DE SERVIDOR DESPERTANDO TRAS INACTIVIDAD -->
+        <div
+          class="bg-amber-50 border border-amber-200 text-amber-800 text-xs sm:text-sm font-medium p-3 rounded-xl text-center flex items-center justify-center gap-2"
+          *ngIf="cargando && avisoDespertando">
+          <svg class="animate-spin h-4 w-4 text-amber-600 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span>{{ avisoDespertando }}</span>
+        </div>
+
         <!-- BOTÓN PILL DE INICIAR SESIÓN (Texto en blanco solicitado por el usuario) -->
         <button type="submit"
           class="w-full h-[52px] bg-[#fab005] hover:bg-[#f3a800] text-white font-bold text-base sm:text-lg rounded-full flex items-center justify-center gap-2.5 shadow-[0_4px_14px_rgba(250,176,5,0.35)] hover:shadow-[0_6px_18px_rgba(250,176,5,0.45)] transition duration-200 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed group"
@@ -173,7 +188,7 @@
               <polyline points="13 6 19 12 13 18"></polyline>
             </svg>
           </span>
-          <span *ngIf="cargando" class="font-bold text-base text-white">Iniciando sesión...</span>
+          <span *ngIf="cargando" class="font-bold text-base text-white">{{ textoBotonCargando }}</span>
         </button>
 
         <!-- DIVISOR CON 'O' -->
@@ -188,7 +203,12 @@
           class="w-full h-[52px] rounded-full border-2 border-[#0b6638] bg-white hover:bg-emerald-50/50 px-5 sm:px-6 flex items-center justify-center gap-3 transition-all duration-200 shadow-2xs hover:shadow-sm cursor-pointer group">
           
           <!-- Icono de escáner facial definitivo sin fondo -->
-          <img src="icono-facial.png" alt="Icono Facial" class="w-8 h-8 object-contain shrink-0" />
+          <span aria-hidden="true" class="relative block h-8 w-8 shrink-0 overflow-hidden">
+            <img src="icono-facial.png" alt="" class="block h-full w-full object-contain" />
+            <span class="pointer-events-none absolute inset-x-1 top-1 h-2 opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100 motion-reduce:hidden">
+              <span class="block h-full w-full rounded-sm border-b-2 border-emerald-500 bg-gradient-to-b from-transparent to-emerald-300/50 motion-safe:transition-transform motion-safe:duration-[1100ms] motion-safe:ease-in-out group-hover:translate-y-4 group-focus-visible:translate-y-4"></span>
+            </span>
+          </span>
           <span class="text-[#0b6638] font-bold text-sm sm:text-base tracking-tight">Reconocimiento Facial</span>
         </button>
 
