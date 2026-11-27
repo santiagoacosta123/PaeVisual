@@ -15,9 +15,9 @@ import { SweetAlertService } from '../core/services/sweet-alert.service';
 import { normalizarInstitucionSupervisor } from '../layout/institucion-supervisor.utils';
 
 // Paleta: verde (conforme), amarillo (novedad), azul (en camino), rojo (rechazo)
-const COLORES_ESTADO = ['#16A34A', '#F59E0B', '#3B82F6', '#EF4444'];
-const COLORES_SEDES = ['#16A34A', '#3B82F6', '#F59E0B', '#14B8A6', '#8B5CF6', '#F97316'];
-const COLORES_CATEGORIAS = ['#3B82F6', '#F59E0B'];
+const COLORES_ESTADO = ['#2B5424', '#F5B81F', '#3B82F6', '#EF4444'];
+const COLORES_SEDES = ['#2B5424', '#3B82F6', '#F5B81F', '#14B8A6', '#8B5CF6', '#F97316'];
+const COLORES_CATEGORIAS = ['#3B82F6', '#F5B81F'];
 
 interface LeyendaEstado {
   label: string;

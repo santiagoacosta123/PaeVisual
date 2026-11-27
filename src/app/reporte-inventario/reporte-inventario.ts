@@ -43,18 +43,18 @@ export class ReporteInventario implements OnInit, AfterViewInit, OnDestroy {
       text: 'text-red-600'
     },
     'Disponible': {
-      bg: '#10B981',
-      hover: '#059669',
-      border: '#34D399',
-      badge: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-      text: 'text-emerald-600'
+      bg: '#2B5424',
+      hover: '#2B5424',
+      border: '#2B5424',
+      badge: 'bg-[#eaf2e8] text-[#2B5424] border-[#2B5424]/30',
+      text: 'text-[#2B5424]'
     },
     'Suficiente': {
-      bg: '#FAB41F',
+      bg: '#F5B81F',
       hover: '#E59F0B',
       border: '#FCD34D',
-      badge: 'bg-amber-100 text-amber-800 border-amber-200',
-      text: 'text-amber-600'
+      badge: 'bg-[#fdf3d7] text-[#7a5a0b] border-[#F5B81F]/30',
+      text: 'text-[#F5B81F]'
     }
   };
 

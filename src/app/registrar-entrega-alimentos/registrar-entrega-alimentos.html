@@ -519,7 +519,7 @@
 .inv-head {
   display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;
   padding: 16px 18px 12px;
-  background: linear-gradient(135deg, #F59E0B 0%, var(--sirae-verde) 100%);
+  background: linear-gradient(135deg, #F5B81F 0%, var(--sirae-verde) 100%);
   color: #FFFFFF;
 }
 .despacho-rotulo { margin: 0 0 2px; color: #FFFFFF; opacity: .92; font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
@@ -746,9 +746,9 @@ input[type="date"].campo::-webkit-calendar-picker-indicator:hover {
 :is(.sirae-root, .modal-fondo) .bg-\[\#FFF4D6\] { background-color: var(--sirae-dorado-suave); }
 :is(.sirae-root, .modal-fondo) .bg-\[\#F5B81F\] { background-color: var(--sirae-dorado); color: #FFFFFF !important; }
 :is(.sirae-root, .modal-fondo) .bg-\[\#FDE7A6\] { background-color: var(--sirae-menta-suave); color: var(--sirae-dorado-oscuro) !important; }
-:is(.sirae-root, .modal-fondo) .bg-\[\#E8F7EE\] { background-color: var(--sirae-menta-suave); }
+:is(.sirae-root, .modal-fondo) .bg-\[\#eaf2e8\] { background-color: var(--sirae-menta-suave); }
 :is(.sirae-root, .modal-fondo) .text-\[\#15803D\] { color: var(--sirae-dorado-oscuro); }
-:is(.sirae-root, .modal-fondo) .text-\[\#B45309\] { color: var(--sirae-dorado-oscuro); }
+:is(.sirae-root, .modal-fondo) .text-\[\#7a5a0b\] { color: var(--sirae-dorado-oscuro); }
 :is(.sirae-root, .modal-fondo) .border-\[\#F5D27A\] { border-color: var(--sirae-dorado-claro); }
 
 @media (min-width: 1024px) {
@@ -839,8 +839,8 @@ input[type="date"].campo::-webkit-calendar-picker-indicator:hover {
           </div>
 
           <div class="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[10.5px] font-semibold text-slate-500">
-            <span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-emerald-500"></span> Vigente</span>
-            <span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-amber-500"></span> Próximo a vencer</span>
+            <span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-[#2B5424]"></span> Vigente</span>
+            <span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-[#F5B81F]"></span> Próximo a vencer</span>
             <span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-red-500"></span> Vencido</span>
             <span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-orange-500"></span> Vencen ese día</span>
             <span class="inline-flex items-center gap-1 text-slate-400">· Toca un día para ver su detalle</span>
@@ -1029,14 +1029,14 @@ input[type="date"].campo::-webkit-calendar-picker-indicator:hover {
             </div>
           </div>
 
-          <div class="mb-4 rounded-2xl bg-[#E8F7EE] p-3.5 text-center">
+          <div class="mb-4 rounded-2xl bg-[#eaf2e8] p-3.5 text-center">
             <span class="block text-2xl font-black leading-none text-[#15803D]">{{ totalProductosRegistrados }}</span>
             <span class="text-[10.5px] font-bold text-slate-500">productos registrados</span>
           </div>
 
           <div class="mb-2 flex items-center justify-between">
             <h4 class="m-0 text-[10px] font-black uppercase tracking-wider text-slate-400">Entradas registradas</h4>
-            <span class="rounded-full bg-[#FDE7A6] px-2 py-0.5 text-[10px] font-black text-[#B45309]">{{ entradasFiltradas.length }} {{ entradasFiltradas.length === 1 ? 'registro' : 'registros' }}</span>
+            <span class="rounded-full bg-[#FDE7A6] px-2 py-0.5 text-[10px] font-black text-[#7a5a0b]">{{ entradasFiltradas.length }} {{ entradasFiltradas.length === 1 ? 'registro' : 'registros' }}</span>
           </div>
           <p *ngIf="entradasFiltradas.length === 0" class="rounded-xl border border-dashed border-slate-200 p-4 text-center text-xs text-slate-500">{{ filtroFecha ? 'No hay entradas en esa fecha.' : 'Aún no has registrado entradas.' }}</p>
 
@@ -1052,7 +1052,7 @@ input[type="date"].campo::-webkit-calendar-picker-indicator:hover {
                   <p class="m-0 truncate text-xs font-black text-slate-900">{{ g.productos.length }} {{ g.productos.length === 1 ? 'producto' : 'productos' }} · {{ fechaCorta(g.fechaRecepcion) }}</p>
                   <p class="m-0 truncate text-[10px] font-semibold text-slate-500">{{ resumenEntrada(g) }}</p>
                   <div class="mt-1 flex items-center justify-between gap-2">
-                    <p class="m-0 flex items-center gap-1 truncate text-[10px] font-bold text-[#B45309]">
+                    <p class="m-0 flex items-center gap-1 truncate text-[10px] font-bold text-[#7a5a0b]">
                       <span class="material-symbols-outlined text-[12px]">person</span>{{ g.responsable || 'Sin responsable' }}
                     </p>
                     <span class="inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-black tracking-tight" [ngClass]="claseBadgeAprobacion(g.estadoAprobacion || estadoAprobacionGrupo(g))">
@@ -1067,7 +1067,7 @@ input[type="date"].campo::-webkit-calendar-picker-indicator:hover {
           </div>
 
           <button *ngIf="entradasFiltradas.length > limiteEntradas" type="button" (click)="verTodasEntradas = !verTodasEntradas"
-            class="mt-1 w-full cursor-pointer rounded-full border border-[#F5D27A] bg-white px-3 py-1.5 text-[11px] font-bold text-[#B45309]">
+            class="mt-1 w-full cursor-pointer rounded-full border border-[#F5D27A] bg-white px-3 py-1.5 text-[11px] font-bold text-[#7a5a0b]">
             {{ verTodasEntradas ? 'Ver menos' : 'Ver todas las entradas (' + entradasFiltradas.length + ')' }}
           </button>
         </div>
@@ -1138,13 +1138,13 @@ input[type="date"].campo::-webkit-calendar-picker-indicator:hover {
                     Requerido neto cálculo: <b class="text-slate-800">{{ calcRow.cantidad_sugerida_despacho | number:'1.0-2' }} {{ sel.unidad }}</b>
                     (periodo: {{ calcRow.cantidad_total_requerida | number:'1.0-2' }} {{ sel.unidad }})
                   </p>
-                  <p *ngIf="calcRow.cantidad_sugerida_despacho <= 0" class="m-0 px-2.5 pb-1 text-[10px] font-bold text-emerald-600">
+                  <p *ngIf="calcRow.cantidad_sugerida_despacho <= 0" class="m-0 px-2.5 pb-1 text-[10px] font-bold text-[#2B5424]">
                     Stock cubierto en sede (no requiere más envío).
                   </p>
-                  <p *ngIf="calcRow.cantidad_sugerida_despacho > 0 && cantidadEnviarDe(sel) < calcRow.cantidad_sugerida_despacho - 0.0001 && cantidadEnviarDe(sel) > 0" class="m-0 px-2.5 pb-1 text-[10px] font-semibold text-[#B45309]">
+                  <p *ngIf="calcRow.cantidad_sugerida_despacho > 0 && cantidadEnviarDe(sel) < calcRow.cantidad_sugerida_despacho - 0.0001 && cantidadEnviarDe(sel) > 0" class="m-0 px-2.5 pb-1 text-[10px] font-semibold text-[#7a5a0b]">
                     Envío parcial: faltarán {{ (calcRow.cantidad_sugerida_despacho - cantidadEnviarDe(sel)) | number:'1.0-2' }} {{ sel.unidad }}
                   </p>
-                  <p *ngIf="cantidadEnviarDe(sel) > calcRow.cantidad_sugerida_despacho + 0.0001" class="m-0 px-2.5 pb-2 text-[10px] font-bold text-amber-700">
+                  <p *ngIf="cantidadEnviarDe(sel) > calcRow.cantidad_sugerida_despacho + 0.0001" class="m-0 px-2.5 pb-2 text-[10px] font-bold text-[#7a5a0b]">
                     Supera lo requerido en +{{ (cantidadEnviarDe(sel) - calcRow.cantidad_sugerida_despacho) | number:'1.0-2' }} {{ sel.unidad }} (no permitido).
                   </p>
                 </ng-container>
@@ -1187,7 +1187,7 @@ input[type="date"].campo::-webkit-calendar-picker-indicator:hover {
   <div class="modal-caja fx-up max-w-[760px]" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Registrar entrada">
     <div class="flex items-start justify-between border-b border-slate-200 pb-4">
       <div>
-        <p class="m-0 text-[10px] font-black uppercase tracking-wider text-[#B45309]">Nueva entrada</p>
+        <p class="m-0 text-[10px] font-black uppercase tracking-wider text-[#7a5a0b]">Nueva entrada</p>
         <h3 class="m-0 mt-1 text-lg font-black text-slate-900">Registrar entrada de alimentos</h3>
         <p class="m-0 mt-1 text-[11px] font-semibold text-slate-500">{{ nombreInstitucion }}</p>
       </div>
@@ -1271,7 +1271,7 @@ input[type="date"].campo::-webkit-calendar-picker-indicator:hover {
   <div class="modal-caja fx-up max-w-[640px]" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Registro del día">
     <div class="flex items-start justify-between border-b border-slate-200 pb-4">
       <div>
-        <p class="m-0 text-[10px] font-black uppercase tracking-wider text-[#B45309]">Registro del día</p>
+        <p class="m-0 text-[10px] font-black uppercase tracking-wider text-[#7a5a0b]">Registro del día</p>
         <h3 class="m-0 mt-1 text-lg font-black text-slate-900">{{ fechaDiaModal(diaSeleccionado) }}</h3>
       </div>
       <button type="button" class="btn-cerrar" aria-label="Cerrar" (click)="modalDiaAbierto = false"><span class="material-symbols-outlined text-[20px]">close</span></button>
@@ -1297,14 +1297,14 @@ input[type="date"].campo::-webkit-calendar-picker-indicator:hover {
 
       <div class="mt-5 flex items-center justify-between">
         <h4 class="m-0 text-sm font-black text-slate-900">Productos registrados</h4>
-        <span class="text-[10px] font-semibold text-[#B45309]">{{ reg.items.length }} productos</span>
+        <span class="text-[10px] font-semibold text-[#7a5a0b]">{{ reg.items.length }} productos</span>
       </div>
       <div class="mt-2 overflow-hidden rounded-2xl border border-slate-200">
         <div *ngFor="let e of reg.items; let i = index; trackBy: trackPor" class="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3 last:border-b-0">
           <div class="flex min-w-0 items-center gap-3">
             <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#FFE9C2] text-[10px] font-black text-[#8A5A00]">{{ i + 1 }}</span>
             <ng-container *ngTemplateOutlet="foto; context: { n: e.ingrediente, c: 'h-9 w-9 bg-[#FFF4DE]' }"></ng-container>
-            <div class="min-w-0"><p class="m-0 truncate text-xs font-black text-slate-900">{{ e.ingrediente }}</p><p class="m-0 truncate text-[10px] text-[#B45309]">Lote {{ e.lote || '—' }}</p></div>
+            <div class="min-w-0"><p class="m-0 truncate text-xs font-black text-slate-900">{{ e.ingrediente }}</p><p class="m-0 truncate text-[10px] text-[#7a5a0b]">Lote {{ e.lote || '—' }}</p></div>
           </div>
           <span class="shrink-0 text-xs font-black text-slate-900">{{ e.cantidad }} {{ e.unidad }}</span>
         </div>
@@ -1335,7 +1335,7 @@ input[type="date"].campo::-webkit-calendar-picker-indicator:hover {
   <div class="modal-caja fx-up flex max-w-[860px] flex-col !p-0" style="max-height: 90vh" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Inventario">
     <div class="flex items-start justify-between border-b border-slate-200 p-6 pb-4">
       <div>
-        <p class="m-0 text-[10px] font-black uppercase tracking-wider text-[#B45309]">Existencias</p>
+        <p class="m-0 text-[10px] font-black uppercase tracking-wider text-[#7a5a0b]">Existencias</p>
         <h3 class="m-0 mt-1 text-lg font-black text-slate-900">Inventario</h3>
         <p class="m-0 mt-1 text-[11px] font-semibold text-slate-500">{{ nombreInstitucion }}<span *ngIf="nombreSede"> · {{ nombreSede }}</span></p>
       </div>
@@ -1345,7 +1345,7 @@ input[type="date"].campo::-webkit-calendar-picker-indicator:hover {
     <div class="grid min-h-0 flex-1 grid-cols-1 gap-6 overflow-y-auto p-6 md:grid-cols-2">
       <section>
         <div class="mb-3 flex items-center justify-between">
-          <h5 class="m-0 text-[11px] font-black uppercase tracking-wider text-[#B45309]">Disponibles</h5>
+          <h5 class="m-0 text-[11px] font-black uppercase tracking-wider text-[#7a5a0b]">Disponibles</h5>
           <span class="rounded-full bg-[#FFF4DE] px-2.5 py-0.5 text-[11px] font-black text-[#8A5A00]">{{ inventarioDisponible.length }} productos</span>
         </div>
         <p *ngIf="inventarioDisponible.length === 0" class="rounded-xl border border-dashed border-slate-200 p-4 text-center text-xs text-slate-500">No hay productos disponibles. Registra una entrada desde el historial.</p>
@@ -1401,16 +1401,16 @@ input[type="date"].campo::-webkit-calendar-picker-indicator:hover {
   <div class="modal-caja fx-up max-w-[640px]" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Detalle de la entrada">
     <div class="flex items-start justify-between border-b border-slate-200 pb-4">
       <div>
-        <p class="m-0 text-[10px] font-black uppercase tracking-wider text-[#B45309]">Detalle de la entrada</p>
+        <p class="m-0 text-[10px] font-black uppercase tracking-wider text-[#7a5a0b]">Detalle de la entrada</p>
         <h3 class="m-0 mt-1 text-lg font-black text-slate-900">{{ fechaDiaModal(d.fechaRecepcion) }}</h3>
         <p class="m-0 mt-1 text-[11px] font-semibold text-slate-500">
           {{ d.destino }}
-          <span *ngIf="d.documentoEntrega" class="ml-2 rounded-full bg-[#FFF4D6] px-2 py-0.5 text-[10px] font-black text-[#B45309]">{{ d.documentoEntrega }}</span>
+          <span *ngIf="d.documentoEntrega" class="ml-2 rounded-full bg-[#FFF4D6] px-2 py-0.5 text-[10px] font-black text-[#7a5a0b]">{{ d.documentoEntrega }}</span>
         </p>
       </div>
       <div class="flex items-center gap-2">
         <button *ngIf="d.primerIdEntrega && (d.documentoEntrega || d.idCalculoEntrega)" type="button" (click)="verSoporteCalculoPorEntrega(d.primerIdEntrega)"
-          class="cursor-pointer rounded-full border border-amber-300 bg-[#FFF4D6] px-3 py-1 text-[11px] font-black text-[#B45309]">Soporte cálculo</button>
+          class="cursor-pointer rounded-full border border-[#F5B81F]/40 bg-[#FFF4D6] px-3 py-1 text-[11px] font-black text-[#7a5a0b]">Soporte cálculo</button>
         <button type="button" class="btn-cerrar" aria-label="Cerrar" (click)="cerrarDetalleEntrada()"><span class="material-symbols-outlined text-[20px]">close</span></button>
       </div>
     </div>
@@ -1427,8 +1427,8 @@ input[type="date"].campo::-webkit-calendar-picker-indicator:hover {
             <span class="material-symbols-outlined text-[13px] leading-none">{{ iconoBadgeAprobacion(d.estadoAprobacion || estadoAprobacionGrupo(d)) }}</span>
             {{ textoBadgeAprobacion(d.estadoAprobacion || estadoAprobacionGrupo(d)) }}
           </span>
-          <span class="text-[11px] font-semibold text-amber-700" *ngIf="(d.estadoAprobacion || estadoAprobacionGrupo(d)) === 'EN_PROCESO'">En espera de revisión y aprobación por el colegio</span>
-          <span class="text-[11px] font-semibold text-emerald-600" *ngIf="(d.estadoAprobacion || estadoAprobacionGrupo(d)) === 'ACEPTADA'">Aprobada y recibida a conformidad por el colegio</span>
+          <span class="text-[11px] font-semibold text-[#7a5a0b]" *ngIf="(d.estadoAprobacion || estadoAprobacionGrupo(d)) === 'EN_PROCESO'">En espera de revisión y aprobación por el colegio</span>
+          <span class="text-[11px] font-semibold text-[#2B5424]" *ngIf="(d.estadoAprobacion || estadoAprobacionGrupo(d)) === 'ACEPTADA'">Aprobada y recibida a conformidad por el colegio</span>
           <span class="text-[11px] font-semibold text-red-600" *ngIf="(d.estadoAprobacion || estadoAprobacionGrupo(d)) === 'RECHAZADA'">Rechazada por el colegio en control de calidad</span>
           <span class="text-[11px] font-semibold text-orange-700" *ngIf="(d.estadoAprobacion || estadoAprobacionGrupo(d)) === 'CON_NOVEDAD'">Recibida con novedad o averías reportadas</span>
         </div>
@@ -1455,8 +1455,8 @@ input[type="date"].campo::-webkit-calendar-picker-indicator:hover {
           </div>
         </div>
         <p class="m-0 mt-2 rounded-xl bg-[#FFF4D6] px-3 py-2 text-xs font-bold text-slate-700">
-          Registraste <span class="text-base font-black text-[#B45309]">{{ p.cantidad | number:'1.0-2' }}</span>
-          <span class="font-black text-[#B45309]"> {{ unidadTexto(p.unidad, p.cantidad) }}</span> de {{ nombreMinuscula(p.ingrediente) }}
+          Registraste <span class="text-base font-black text-[#7a5a0b]">{{ p.cantidad | number:'1.0-2' }}</span>
+          <span class="font-black text-[#7a5a0b]"> {{ unidadTexto(p.unidad, p.cantidad) }}</span> de {{ nombreMinuscula(p.ingrediente) }}
         </p>
         <div *ngIf="p.motivoRechazo" class="mt-2 rounded-xl border border-red-200 bg-red-50 p-2.5 text-[11px] text-red-700">
           <span class="block font-black">Motivo de rechazo:</span>
@@ -1478,7 +1478,7 @@ input[type="date"].campo::-webkit-calendar-picker-indicator:hover {
   <div class="modal-caja fx-up max-w-[760px]" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Soporte de cálculo">
     <div class="flex items-start justify-between border-b border-slate-200 pb-4">
       <div>
-        <p class="m-0 text-[10px] font-black uppercase tracking-wider text-[#B45309]">Soporte auditable de cálculo (HU 5)</p>
+        <p class="m-0 text-[10px] font-black uppercase tracking-wider text-[#7a5a0b]">Soporte auditable de cálculo (HU 5)</p>
         <h3 class="m-0 mt-1 text-lg font-black text-slate-900">{{ soporteSeleccionado?.codigo_documento || 'Cargando soporte...' }}</h3>
         <p *ngIf="soporteSeleccionado as sop" class="m-0 mt-1 text-[11px] font-semibold text-slate-500">
           {{ sop.sede_nombre || 'Sede' }} · {{ sop.contrato_numero || 'Sin contrato' }} · {{ sop.periodo_descripcion }}
@@ -1497,10 +1497,10 @@ input[type="date"].campo::-webkit-calendar-picker-indicator:hover {
         <div><span class="block text-[10px] font-bold text-slate-400">Fecha registro</span><span class="text-xs font-black text-slate-900">{{ (sop.fecha_creacion || '').slice(0, 10) }}</span></div>
       </div>
 
-      <div *ngIf="sop.autorizacion_exceso" class="mt-3 rounded-2xl border border-amber-300 bg-amber-50 p-3 text-xs">
-        <div class="font-black text-amber-900">Despacho autorizado con excedente</div>
-        <div class="mt-1 text-amber-800"><b>Autorizado por:</b> {{ sop.autorizado_por }}</div>
-        <div class="text-amber-800"><b>Justificación:</b> {{ sop.justificacion_exceso }}</div>
+      <div *ngIf="sop.autorizacion_exceso" class="mt-3 rounded-2xl border border-[#F5B81F]/40 bg-[#fdf3d7] p-3 text-xs">
+        <div class="font-black text-[#7a5a0b]">Despacho autorizado con excedente</div>
+        <div class="mt-1 text-[#7a5a0b]"><b>Autorizado por:</b> {{ sop.autorizado_por }}</div>
+        <div class="text-[#7a5a0b]"><b>Justificación:</b> {{ sop.justificacion_exceso }}</div>
       </div>
 
       <h4 class="m-0 mt-4 text-sm font-black text-slate-900">Consolidado guardado en el despacho</h4>
@@ -1522,7 +1522,7 @@ input[type="date"].campo::-webkit-calendar-picker-indicator:hover {
               <td class="p-2.5">{{ c.clasificacion_tipo || (c.es_perecedero ? 'Perecedero' : 'No perecedero') }}</td>
               <td class="p-2.5">{{ c.dias_periodo }} d</td>
               <td class="p-2.5 font-bold">{{ c.cantidad_total_requerida | number:'1.0-2' }} {{ c.unidad_abreviatura || c.unidad_medida }}</td>
-              <td class="p-2.5 font-black text-[#B45309]">{{ c.cantidad_sugerida_despacho | number:'1.0-2' }} {{ c.unidad_abreviatura || c.unidad_medida }}</td>
+              <td class="p-2.5 font-black text-[#7a5a0b]">{{ c.cantidad_sugerida_despacho | number:'1.0-2' }} {{ c.unidad_abreviatura || c.unidad_medida }}</td>
               <td class="p-2.5">{{ (c.stock_bodega_central || 0) | number:'1.0-2' }} ({{ c.estado_bodega_central }})</td>
             </tr>
           </tbody>

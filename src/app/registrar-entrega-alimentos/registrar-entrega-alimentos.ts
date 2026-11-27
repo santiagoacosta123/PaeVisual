@@ -970,14 +970,14 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
   claseBadgeAprobacion(estado: string | undefined): string {
     switch (estado) {
       case 'ACEPTADA':
-        return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+        return 'border-[#2B5424]/30 bg-[#eaf2e8] text-[#2B5424]';
       case 'RECHAZADA':
         return 'border-red-200 bg-red-50 text-red-700';
       case 'CON_NOVEDAD':
         return 'border-orange-200 bg-orange-50 text-orange-700';
       case 'EN_PROCESO':
       default:
-        return 'border-amber-200 bg-amber-50 text-amber-700';
+        return 'border-[#F5B81F]/30 bg-[#fdf3d7] text-[#7a5a0b]';
     }
   }
 
@@ -997,21 +997,21 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     const est = g.estadoAprobacion || this.estadoAprobacionGrupo(g);
     if (sel) {
       switch (est) {
-        case 'ACEPTADA': return 'border-emerald-400 ring-2 ring-emerald-200';
+        case 'ACEPTADA': return 'border-[#2B5424] ring-2 ring-[#2B5424]/30';
         case 'RECHAZADA': return 'border-red-400 ring-2 ring-red-200';
         case 'CON_NOVEDAD': return 'border-orange-400 ring-2 ring-orange-200';
         case 'EN_PROCESO':
         default:
-          return 'border-amber-400 ring-2 ring-amber-200';
+          return 'border-[#F5B81F] ring-2 ring-[#F5B81F]/30';
       }
     }
     switch (est) {
-      case 'ACEPTADA': return 'border-emerald-200 hover:border-emerald-400';
+      case 'ACEPTADA': return 'border-[#2B5424]/30 hover:border-[#2B5424]';
       case 'RECHAZADA': return 'border-red-200 hover:border-red-400';
       case 'CON_NOVEDAD': return 'border-orange-200 hover:border-orange-400';
       case 'EN_PROCESO':
       default:
-        return 'border-amber-200 hover:border-amber-400';
+        return 'border-[#F5B81F]/30 hover:border-[#F5B81F]';
     }
   }
 

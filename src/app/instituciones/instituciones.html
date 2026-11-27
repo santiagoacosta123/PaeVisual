@@ -2,7 +2,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Roboto:wght@400;500;700;800&display=swap');
 
 /* =====================================================================
-   SIRAE · Instituciones y Sedes — Ámbar #F4B41F + Verde #168A43
+   SIRAE · Instituciones y Sedes — Amarillo #F5B81F + Verde #2B5424
    ===================================================================== */
 .fx-roboto, .fx-roboto *:not(.material-symbols-outlined) {
   font-family: 'Plus Jakarta Sans', 'Roboto', system-ui, sans-serif;
@@ -13,13 +13,13 @@
   --a-dark: #B87A00;
   --a-soft: #FFF8E6;
   --a-mid: #FFE9A8;
-  --g: #168A43;
+  --g: #2B5424;
   --g-soft: #E8F7EE;
   --g-border: #BFE7CE;
   --ink: #0F172A;
   --mute: #64748B;
   --line: #E7EAF0;
-  --amber-line: #F1E6C3;
+  --amber-line: #F5B81F;
   --shadow-sm: 0 2px 10px rgba(15, 23, 42, .05);
   --shadow-card: 0 6px 20px -10px rgba(15, 23, 42, .12), 0 2px 8px -4px rgba(184, 122, 0, .08);
   --shadow-a: 0 12px 28px -10px rgba(244, 180, 31, .55);
@@ -691,7 +691,7 @@
             <dt>Estado</dt>
             <dd>
               <span class="ms-estado-pill" [ngClass]="estado === 'ACTIVO' ? 'ok' : 'bg-slate-100 text-slate-700'">
-                <span [class.bg-[#168A43]]="estado === 'ACTIVO'" [class.bg-slate-400]="estado !== 'ACTIVO'"
+                <span [class.bg-[#2B5424]]="estado === 'ACTIVO'" [class.bg-slate-400]="estado !== 'ACTIVO'"
                   class="h-2 w-2 rounded-full" aria-hidden="true"></span>
                 {{ estado === 'ACTIVO' ? 'Activo' : (estado === 'INACTIVO' ? 'Inactivo' : estado) }}
               </span>

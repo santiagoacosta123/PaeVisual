@@ -112,7 +112,7 @@
                   [ngClass]="filtroEstadoVigencia === 'ACTIVO' ? 'bg-[#2B5424] text-white shadow-sm' : 'bg-transparent text-slate-600 hover:text-[#2B5424]'">
             <span>Activos</span>
             <span class="rounded-full px-2 py-0.5 text-[11px] font-extrabold"
-                  [ngClass]="filtroEstadoVigencia === 'ACTIVO' ? 'bg-[#F5B81F] text-[#1f3f1a]' : 'bg-emerald-50 text-emerald-700'">{{ totalContratosActivos }}</span>
+                  [ngClass]="filtroEstadoVigencia === 'ACTIVO' ? 'bg-[#F5B81F] text-[#1f3f1a]' : 'bg-[#eaf2e8] text-[#2B5424]'">{{ totalContratosActivos }}</span>
           </button>
 
           <button type="button" role="tab" (click)="cambiarFiltroVigencia('PROXIMO_VENCER')"
@@ -120,7 +120,7 @@
                   [ngClass]="filtroEstadoVigencia === 'PROXIMO_VENCER' ? 'bg-[#2B5424] text-white shadow-sm' : 'bg-transparent text-slate-600 hover:text-[#2B5424]'">
             <span>Por vencer</span>
             <span class="rounded-full px-2 py-0.5 text-[11px] font-extrabold"
-                  [ngClass]="filtroEstadoVigencia === 'PROXIMO_VENCER' ? 'bg-[#F5B81F] text-[#1f3f1a]' : 'bg-amber-100 text-amber-800'">{{ totalContratosProximosVencer }}</span>
+                  [ngClass]="filtroEstadoVigencia === 'PROXIMO_VENCER' ? 'bg-[#F5B81F] text-[#1f3f1a]' : 'bg-[#fdf3d7] text-[#7a5a0b]'">{{ totalContratosProximosVencer }}</span>
           </button>
 
           <button type="button" role="tab" (click)="cambiarFiltroVigencia('INACTIVO')"

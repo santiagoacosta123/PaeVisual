@@ -246,7 +246,7 @@
   background-color: #fffdf0;
   color: #0f172a;
   font-weight: 600;
-  border-left-color: #fac94b;
+  border-left-color: #F5B81F;
 }
 
 .cs-item.cs-selected:hover {
@@ -262,7 +262,7 @@
 
 .cs-check-icon {
   font-size: 17px;
-  color: #d97706;
+  color: #F5B81F;
   flex-shrink: 0;
 }
 
