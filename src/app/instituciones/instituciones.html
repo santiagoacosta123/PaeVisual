@@ -2,24 +2,24 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Roboto:wght@400;500;700;800&display=swap');
 
 /* =====================================================================
-   SIRAE · Instituciones y Sedes — Ámbar #F4B41F + Verde #168A43
+   SIRAE · Instituciones y Sedes — Amarillo #F5B81F + Verde #2B5424
    ===================================================================== */
 .fx-roboto, .fx-roboto *:not(.material-symbols-outlined) {
   font-family: 'Plus Jakarta Sans', 'Roboto', system-ui, sans-serif;
 }
 .fx-roboto {
-  --a: #F4B41F;
+  --a: #F5B81F;
   --a-light: #FFCB4D;
   --a-dark: #B87A00;
   --a-soft: #FFF8E6;
   --a-mid: #FFE9A8;
-  --g: #168A43;
+  --g: #2B5424;
   --g-soft: #E8F7EE;
   --g-border: #BFE7CE;
   --ink: #0F172A;
   --mute: #64748B;
   --line: #E7EAF0;
-  --amber-line: #F1E6C3;
+  --amber-line: #F5B81F;
   --shadow-sm: 0 2px 10px rgba(15, 23, 42, .05);
   --shadow-card: 0 6px 20px -10px rgba(15, 23, 42, .12), 0 2px 8px -4px rgba(184, 122, 0, .08);
   --shadow-a: 0 12px 28px -10px rgba(244, 180, 31, .55);
@@ -340,7 +340,7 @@
 }
 .ms-dir .material-symbols-outlined { font-size: 17px; color: var(--a-dark); flex-shrink: 0; margin-top: 1px; }
 
-/* Botón: fondo amarillo suave + letras amarillas (ámbar) */
+/* Botón: fondo ámbar sólido + letras blancas */
 .ms-cta {
   display: flex;
   align-items: center;
@@ -349,18 +349,20 @@
   min-height: 46px;
   margin-top: auto;
   padding: 0 14px;
-  border: 1.5px solid var(--a);
+  border: 0;
   border-radius: 14px;
   cursor: pointer;
-  background: var(--a-soft);
-  color: #9A6500;
+  background: #F5B81F;
+  color: #FFFFFF;
   font-size: 13.5px;
   font-weight: 800;
+  box-shadow: 0 8px 18px -8px rgba(245, 184, 31, .75);
   transition: background .15s, box-shadow .15s, transform .15s;
 }
 .ms-cta:hover {
-  background: var(--a-mid);
-  box-shadow: 0 10px 20px -12px rgba(244, 180, 31, .95);
+  background: #E2A714;
+  transform: translateY(-1px);
+  box-shadow: 0 12px 22px -10px rgba(245, 184, 31, .95);
 }
 
 .fx-roboto button:focus-visible,
@@ -573,6 +575,28 @@
   .ms-card, .ms-card2, .ms-inst, .ms-info-item, .ms-card-foto img { transition: none; }
   .ms-card:hover, .ms-card2:hover, .ms-inst:hover, .ms-info-item:hover { transform: none; }
 }
+/* ===== Todo lo amarillo: #F5B81F con letras blancas ===== */
+.ico-naranja,
+.ico-suave,
+.ms-chip,
+.ms-count-badge,
+.ms-btn-p,
+.ms-back,
+.ms-vacio-ico,
+.ms-inst:hover .go {
+  background: #F5B81F;
+  border-color: #F5B81F;
+  color: #FFFFFF;
+}
+.ico-suave { border: 1px solid #F5B81F; }
+.ms-chip .material-symbols-outlined { color: #FFFFFF; }
+.ms-hero-eyebrow { color: #F5B81F; }
+.ms-btn-p:hover,
+.ms-back:hover {
+  background: #E2A714;
+  border-color: #E2A714;
+  filter: none;
+}
 </style>
 
 <div class="fx-roboto flex w-full flex-col gap-6">
@@ -624,7 +648,7 @@
         </span>
         <span class="min-w-0 flex-1">
           <span class="block truncate text-[15px] font-extrabold text-slate-900">{{ institucion.nombre_institucion }}</span>
-          <span class="mt-1 inline-flex items-center gap-1 rounded-full bg-[#FFF8E6] px-2.5 py-0.5 text-[11.5px] font-bold text-[#B87A00]">
+          <span class="mt-1 inline-flex items-center gap-1 rounded-full bg-[#F5B81F] px-2.5 py-0.5 text-[11.5px] font-bold text-white">
             <span class="material-symbols-outlined text-[14px]">domain</span>
             {{ institucion.sedes?.length ?? 0 }} {{ (institucion.sedes?.length ?? 0) === 1 ? 'sede' : 'sedes' }}
           </span>
@@ -667,7 +691,7 @@
             <dt>Estado</dt>
             <dd>
               <span class="ms-estado-pill" [ngClass]="estado === 'ACTIVO' ? 'ok' : 'bg-slate-100 text-slate-700'">
-                <span [class.bg-[#168A43]]="estado === 'ACTIVO'" [class.bg-slate-400]="estado !== 'ACTIVO'"
+                <span [class.bg-[#2B5424]]="estado === 'ACTIVO'" [class.bg-slate-400]="estado !== 'ACTIVO'"
                   class="h-2 w-2 rounded-full" aria-hidden="true"></span>
                 {{ estado === 'ACTIVO' ? 'Activo' : (estado === 'INACTIVO' ? 'Inactivo' : estado) }}
               </span>
@@ -689,15 +713,6 @@
       </dl>
       </ng-container>
     </ng-container>
-
-    <!-- Indicador de ubicación actual -->
-    <div class="mb-3 flex items-center justify-between flex-wrap gap-2 rounded-2xl bg-amber-50/70 border border-amber-200/80 px-4 py-2.5 text-xs text-amber-900">
-      <span class="flex items-center gap-1.5 font-bold">
-        <span class="material-symbols-outlined text-[18px] text-amber-600">location_on</span>
-        Sede actual: <span class="rounded-lg bg-white px-2 py-0.5 border border-amber-300 font-extrabold text-amber-800">{{ nombreSedeActiva }}</span>
-      </span>
-      <span class="text-[11px] text-amber-800/80 font-medium">Sedes disponibles para realizar entrega o cambiar destino:</span>
-    </div>
 
     <!-- Buscador (filtro de estado eliminado) -->
     <div class="sedes-controles ms-controles">
@@ -893,7 +908,7 @@
             </div>
             <div class="flex items-center gap-1.5">
               <span *ngIf="s.id_sede === sede.id_sede"
-                class="rounded-full border border-amber-300 bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold text-amber-900">
+                class="rounded-full border border-[#F5B81F] bg-[#F5B81F] px-2.5 py-0.5 text-[10px] font-bold text-white">
                 Seleccionada
               </span>
               <span [ngClass]="claseEstado(s.estado)" class="rounded-full border px-2.5 py-0.5 text-[11px] font-bold">
@@ -938,7 +953,7 @@
             <span class="material-symbols-outlined text-[18px]">location_on</span>
             {{ s.esInstitucion ? 'Trabajar en la institución' : 'Trabajar en esta sede' }}
           </button>
-          <button type="button" (click)="irAEntregas(s)" class="ms-btn-s flex-1 justify-center !border-[#F0CF73] !bg-[#FFF8E6] !text-[#7A5200] hover:!bg-[#FFE9A8]">
+          <button type="button" (click)="irAEntregas(s)" class="ms-btn-p flex-1 justify-center">
             <span class="material-symbols-outlined text-[18px]">local_shipping</span>
             Entregas
           </button>

@@ -1,6 +1,6 @@
 <section class="mx-auto flex w-full max-w-6xl flex-col gap-6">
-  <header class="rounded-3xl border border-amber-200 bg-white p-6 shadow-sm sm:p-8">
-    <span class="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold uppercase tracking-wide text-amber-800">
+  <header class="rounded-3xl border border-[#F5B81F]/30 bg-white p-6 shadow-sm sm:p-8">
+    <span class="inline-flex items-center gap-2 rounded-full border border-[#F5B81F]/30 bg-[#fdf3d7] px-3 py-1 text-xs font-bold uppercase tracking-wide text-[#7a5a0b]">
       <span class="material-symbols-outlined text-base">fact_check</span>
       Gestión diaria PAE
     </span>
@@ -25,14 +25,14 @@
       <input name="ninos_presentes" type="number" min="0" step="1" [(ngModel)]="formulario.ninos_presentes" required class="rounded-xl border border-slate-300 px-3 py-2.5">
     </label>
     <div class="flex items-end gap-2">
-      <button type="submit" [disabled]="guardando || cargando || grados.length === 0" class="rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-bold text-amber-950 hover:bg-amber-500 disabled:opacity-50">
+      <button type="submit" [disabled]="guardando || cargando || grados.length === 0" class="rounded-xl bg-[#F5B81F] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#F5B81F] disabled:opacity-50">
         {{ guardando ? 'Guardando...' : editandoId === null ? 'Registrar asistencia' : 'Guardar cambios' }}
       </button>
       <button *ngIf="editandoId !== null" type="button" (click)="cancelarEdicion()" class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700">
         Cancelar
       </button>
     </div>
-    <p *ngIf="!cargando && grados.length === 0" class="m-0 text-sm text-amber-800 md:col-span-4">
+    <p *ngIf="!cargando && grados.length === 0" class="m-0 text-sm text-[#7a5a0b] md:col-span-4">
       No hay grados configurados; solicita al Administrador completar el catálogo.
     </p>
   </form>

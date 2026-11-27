@@ -39,6 +39,7 @@
           <span class="rounded-full px-2.5 py-0.5 text-[11px] font-bold" style="background: #F5B81F; color: #1f3f1a;">
             {{ contratos.length }} {{ contratos.length === 1 ? 'contrato' : 'contratos' }}
           </span>
+          <span class="text-xs text-slate-500 sm:ml-auto">Haz clic en un contrato para ver su detalle</span>
         </div>
 
         <!-- Aviso: error al cargar contratos -->
@@ -111,7 +112,7 @@
                   [ngClass]="filtroEstadoVigencia === 'ACTIVO' ? 'bg-[#2B5424] text-white shadow-sm' : 'bg-transparent text-slate-600 hover:text-[#2B5424]'">
             <span>Activos</span>
             <span class="rounded-full px-2 py-0.5 text-[11px] font-extrabold"
-                  [ngClass]="filtroEstadoVigencia === 'ACTIVO' ? 'bg-[#F5B81F] text-[#1f3f1a]' : 'bg-emerald-50 text-emerald-700'">{{ totalContratosActivos }}</span>
+                  [ngClass]="filtroEstadoVigencia === 'ACTIVO' ? 'bg-[#F5B81F] text-[#1f3f1a]' : 'bg-[#eaf2e8] text-[#2B5424]'">{{ totalContratosActivos }}</span>
           </button>
 
           <button type="button" role="tab" (click)="cambiarFiltroVigencia('PROXIMO_VENCER')"
@@ -119,7 +120,7 @@
                   [ngClass]="filtroEstadoVigencia === 'PROXIMO_VENCER' ? 'bg-[#2B5424] text-white shadow-sm' : 'bg-transparent text-slate-600 hover:text-[#2B5424]'">
             <span>Por vencer</span>
             <span class="rounded-full px-2 py-0.5 text-[11px] font-extrabold"
-                  [ngClass]="filtroEstadoVigencia === 'PROXIMO_VENCER' ? 'bg-[#F5B81F] text-[#1f3f1a]' : 'bg-amber-100 text-amber-800'">{{ totalContratosProximosVencer }}</span>
+                  [ngClass]="filtroEstadoVigencia === 'PROXIMO_VENCER' ? 'bg-[#F5B81F] text-[#1f3f1a]' : 'bg-[#fdf3d7] text-[#7a5a0b]'">{{ totalContratosProximosVencer }}</span>
           </button>
 
           <button type="button" role="tab" (click)="cambiarFiltroVigencia('INACTIVO')"
@@ -137,16 +138,15 @@
 
         <!-- Tabla de contratos -->
         <div class="overflow-x-auto">
-          <table class="w-full min-w-[1000px] table-fixed border-separate border-spacing-0 text-center text-sm">
+          <table class="w-full min-w-[860px] table-fixed border-separate border-spacing-0 text-center text-sm">
             <colgroup>
-              <col style="width: 12%">
-              <col style="width: 22%">
-              <col style="width: 11%">
               <col style="width: 14%">
-              <col style="width: 10%">
-              <col style="width: 10%">
-              <col style="width: 9%">
+              <col style="width: 26%">
               <col style="width: 12%">
+              <col style="width: 17%">
+              <col style="width: 10%">
+              <col style="width: 10%">
+              <col style="width: 11%">
             </colgroup>
 
             <!-- Encabezado verde con letras blancas -->
@@ -158,8 +158,7 @@
                 <th class="px-3 py-3 text-center" style="background: #2B5424;">Supervisor</th>
                 <th class="px-3 py-3 text-center" style="background: #2B5424;">Inicio</th>
                 <th class="px-3 py-3 text-center" style="background: #2B5424;">Fin</th>
-                <th class="px-3 py-3 text-center" style="background: #2B5424;">Estado</th>
-                <th class="rounded-r-xl px-3 py-3 text-center" style="background: #2B5424;">Acciones</th>
+                <th class="rounded-r-xl px-3 py-3 text-center" style="background: #2B5424;">Estado</th>
               </tr>
             </thead>
 
@@ -167,7 +166,7 @@
 
               <!-- Estado de carga -->
               <tr *ngIf="cargandoContratos">
-                <td colspan="8" class="px-4 py-12 text-center">
+                <td colspan="7" class="px-4 py-12 text-center">
                   <div class="inline-flex flex-col items-center gap-3">
                     <div class="h-8 w-8 animate-spin rounded-full border-[3px]" style="border-color: #dbe6d7; border-top-color: #2B5424;"></div>
                     <div>
@@ -180,7 +179,12 @@
 
               <!-- Filas -->
               <ng-container *ngIf="!cargandoContratos">
-                <tr *ngFor="let c of contratosPaginados; trackBy: trackPorId" class="transition hover:bg-[#f3f7f1]">
+                <tr *ngFor="let c of contratosPaginados; trackBy: trackPorId"
+                    (click)="abrirModalGrandeContrato(c.id, 'consulta', 'resumen')"
+                    (keydown.enter)="abrirModalGrandeContrato(c.id, 'consulta', 'resumen')"
+                    tabindex="0"
+                    title="Clic para ver el detalle del contrato"
+                    class="cursor-pointer transition hover:bg-[#f3f7f1] focus:outline-none focus-visible:bg-[#eef3ec]">
 
                   <!-- N.º contrato -->
                   <td class="border-b border-slate-100 px-3 py-4 text-center align-middle">
@@ -233,35 +237,11 @@
                     <span *ngIf="c.estado === 'Finalizado'"
                           class="inline-block rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-[11px] font-bold uppercase text-slate-600">Finalizado</span>
                   </td>
-
-                  <!-- Acciones -->
-                  <td class="border-b border-slate-100 px-3 py-4 text-center align-middle">
-                    <div class="flex flex-col items-center gap-1.5">
-                      <!-- Ver detalle: verde sólido -->
-                      <button type="button" (click)="abrirModalGrandeContrato(c.id, 'consulta', 'resumen')"
-                              class="w-24 cursor-pointer rounded-lg border-0 bg-[#2B5424] py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-[#1f3f1a] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F5B81F]"
-                              title="Consultar detalle del contrato">
-                        Ver detalle
-                      </button>
-                      <!-- Editar: contorno verde -->
-                      <button type="button" (click)="abrirModalGrandeContrato(c.id, 'edicion', 'resumen')"
-                              class="w-24 cursor-pointer rounded-lg border border-[#2B5424] bg-white py-1.5 text-xs font-bold text-[#2B5424] shadow-sm transition hover:bg-[#eef3ec] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F5B81F]"
-                              title="Editar información contractual">
-                        Editar
-                      </button>
-                      <!-- Prorrogar: amarillo -->
-                      <button type="button" (click)="abrirModalGrandeContrato(c.id, 'consulta', 'prorrogas')"
-                              class="w-24 cursor-pointer rounded-lg border-0 bg-[#F5B81F] py-1.5 text-xs font-extrabold text-[#1f3f1a] shadow-sm transition hover:bg-[#e0a512] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2B5424]"
-                              title="Prorrogar o renovar contrato">
-                        Prorrogar
-                      </button>
-                    </div>
-                  </td>
                 </tr>
 
                 <!-- Catálogo vacío -->
                 <tr *ngIf="contratos.length === 0 && !errorCargaContratos">
-                  <td colspan="8" class="px-4 py-12 text-center">
+                  <td colspan="7" class="px-4 py-12 text-center">
                     <p class="m-0 text-sm font-bold" style="color: #2B5424;">No hay contratos registrados</p>
                     <p class="mx-auto mb-0 mt-1 max-w-sm text-xs text-slate-500">Actualmente no existen contratos PAE registrados en el sistema SIRAE.</p>
                   </td>
@@ -269,7 +249,7 @@
 
                 <!-- Búsqueda sin coincidencias -->
                 <tr *ngIf="contratos.length > 0 && contratosFiltrados.length === 0">
-                  <td colspan="8" class="px-4 py-10 text-center">
+                  <td colspan="7" class="px-4 py-10 text-center">
                     <p class="m-0 text-sm font-bold" style="color: #2B5424;">No se encontraron resultados</p>
                     <p class="mb-0 mt-1 text-xs text-slate-500">No se encontraron contratos que coincidan con «<strong>{{ filtroBusquedaContratos }}</strong>».</p>
                     <button type="button" (click)="limpiarBusquedaContratos()"

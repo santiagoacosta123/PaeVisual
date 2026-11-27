@@ -161,8 +161,19 @@ export class SedesAdministradorComponent implements OnInit, OnDestroy {
         });
 
         const principal = this.sedes.find(item => item.es_principal) || this.sedes[0];
-        const sede = this.sedes.find(item => item.id_sede === idSedeSeleccionada) || principal;
-        this.sedeSeleccionada = sede ?? null;
+        if (principal) {
+          this.authService.establecerSedeActiva({
+            id_sede: principal.id_sede,
+            nombre_sede: principal.nombre_sede,
+            id_institucion: principal.id_institucion,
+            nombre_institucion: this.institucionAsignada,
+          });
+        }
+
+        const sede = idSedeSeleccionada != null
+          ? this.sedes.find(item => item.id_sede === idSedeSeleccionada) ?? null
+          : null;
+        this.sedeSeleccionada = sede;
         if (sede) {
           this.authService.establecerSedeActiva({
             id_sede: sede.id_sede,
@@ -185,6 +196,12 @@ export class SedesAdministradorComponent implements OnInit, OnDestroy {
   }
 
   seleccionarSede(sede: SedeResumen): void {
+    if (this.sedeSeleccionada?.id_sede === sede.id_sede) {
+      this.sedeSeleccionada = null;
+      this.configuracion = null;
+      this.errorDetalle = '';
+      return;
+    }
     this.sedeSeleccionada = sede;
     this.authService.establecerSedeActiva({
       id_sede: sede.id_sede,

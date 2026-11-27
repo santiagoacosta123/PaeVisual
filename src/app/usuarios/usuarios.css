@@ -42,24 +42,24 @@
 }
 
 .filter-btn.active {
-  background: #e0a316;
-  color: #0f172a;
+  background: #F5B81F;
+  color: #ffffff;
   font-weight: 700;
-  box-shadow: 0 1px 3px rgba(224, 163, 22, 0.3);
+  box-shadow: 0 1px 3px rgba(245, 184, 31, 0.3);
 }
 
 /* Botón Principal (Guardar / Nuevo) */
 .btn-primary {
-  background: #e0a316;
+  background: #F5B81F;
   border: none;
-  color: #0f172a;
+  color: #ffffff;
   padding: 11px 24px;
   border-radius: 12px;
   font-family: 'Roboto', sans-serif;
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 2px 4px rgba(224, 163, 22, 0.25);
+  box-shadow: 0 2px 4px rgba(245, 184, 31, 0.25);
   transition: opacity 0.2s ease;
   white-space: nowrap;
 }
@@ -121,8 +121,8 @@
 
 .form-input:focus {
   outline: none;
-  border-color: #e0a316;
-  box-shadow: 0 0 0 3px rgba(224, 163, 22, 0.15);
+  border-color: #F5B81F;
+  box-shadow: 0 0 0 3px rgba(245, 184, 31, 0.15);
 }
 
 /* Tarjetas y Tablas complementarias */
@@ -192,9 +192,9 @@
 }
 
 .status-badge.active {
-  background: #f0fdf4;
-  color: #16a34a;
-  border: 1px solid #dcfce7;
+  background: #eaf2e8;
+  color: #2B5424;
+  border: 1px solid #2B5424;
 }
 
 .status-badge.inactive {
@@ -296,7 +296,7 @@
 .bd-modal-eyebrow {
   font-size: 11px;
   font-weight: 700;
-  color: #d97706;
+  color: #7a5a0b;
   letter-spacing: 0.5px;
   display: block;
   text-transform: uppercase;
@@ -384,8 +384,8 @@
 }
 
 .bd-input:focus {
-  border-color: #fbbf24;
-  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.15);
+  border-color: #F5B81F;
+  box-shadow: 0 0 0 3px rgba(245, 184, 31, 0.15);
 }
 
 .bd-input::placeholder {
@@ -427,8 +427,8 @@
   padding: 0 22px;
   border: none;
   border-radius: 8px;
-  background: #fbbf24;
-  color: #000000 !important;
+  background: #F5B81F;
+  color: #ffffff !important;
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
@@ -436,17 +436,17 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.28);
+  box-shadow: 0 2px 8px rgba(245, 184, 31, 0.28);
   transition: all 0.15s ease;
   font-family: inherit;
 }
 
 .bd-save:hover {
-  background: #f59e0b;
+  background: #e0a91b;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.35);
+  box-shadow: 0 4px 12px rgba(245, 184, 31, 0.35);
 }
 
 .bd-save:active {
   transform: translateY(0);
-}
+}

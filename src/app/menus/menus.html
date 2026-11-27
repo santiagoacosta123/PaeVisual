@@ -34,7 +34,7 @@
 .menu-hero-eyebrow {
   display: block;
   margin: 0 0 4px;
-  color: #fac94b;
+  color: #F5B81F;
   font-size: 11px;
   font-weight: 800;
   letter-spacing: .14em;
@@ -59,42 +59,43 @@
   text-shadow: 0 1px 6px rgba(0, 0, 0, .35);
 }
 
-/* Selector de pestañas dentro del hero (estilo vidrio) */
+/* Selector de pestañas debajo del hero */
 .menu-hero-tabs {
   display: inline-flex;
+  flex-wrap: wrap;
+  align-self: flex-start;
   align-items: center;
   gap: 4px;
+  max-width: 100%;
   padding: 4px;
   border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, .3);
-  background: rgba(255, 255, 255, .14);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  box-shadow: 0 6px 14px -12px rgba(15, 23, 42, .5);
 }
 .menu-hero-tab {
-  padding: 8px 16px;
+  padding: 9px 18px;
   border: 1px solid transparent;
   border-radius: 10px;
   background: transparent;
-  color: #ffffff;
+  color: #475569;
   font-size: 12.5px;
-  font-weight: 600;
+  font-weight: 700;
   white-space: nowrap;
   cursor: pointer;
   transition: background .15s ease, color .15s ease;
 }
-.menu-hero-tab:hover { background: rgba(255, 255, 255, .2); }
+.menu-hero-tab:hover { background: #f1f5f9; }
 
-/* Pestaña activa: letras BLANCAS (con sombra suave para que se lean sobre el amarillo) */
-.menu-hero-tab.activa {
-  background: #f0a500;
-  border-color: #d98f00;
+/* Pestaña activa: amarillo #F5B81F con letras blancas */
+.menu-hero-tab.activa,
+.menu-hero-tab.activa:hover {
+  background: #F5B81F;
+  border-color: #F5B81F;
   color: #ffffff;
   font-weight: 800;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, .35);
-  box-shadow: 0 6px 14px -8px rgba(0, 0, 0, .5);
 }
-.menu-hero-tab:focus-visible { outline: 2px solid #fac94b; outline-offset: 2px; }
+.menu-hero-tab:focus-visible { outline: 2px solid #F5B81F; outline-offset: 2px; }
 
 /* ===== Botón redondo con chevron (a la izquierda de cada fila / sección) ===== */
 .tri-sum {
@@ -157,6 +158,128 @@ details[open] > .tri-sum .chev::before,
 @media (prefers-reduced-motion: reduce) {
   .chev, .chev::before, .menu-hero-tab { transition: none; }
 }
+/* ===== Modal de plato: amarillo #F5B81F con letras blancas ===== */
+.bd-modal-window button.bd-btn-add-comp,
+.bd-modal-window button.bd-btn-add-ing,
+.bd-modal-window button.bd-btn-add-step,
+.bd-modal-window button.bd-btn-save,
+.bd-modal-window .bd-comp-badge-num {
+  background: #F5B81F !important;
+  border-color: #F5B81F !important;
+  color: #ffffff !important;
+}
+.bd-modal-window button.bd-btn-add-comp span,
+.bd-modal-window button.bd-btn-add-ing span,
+.bd-modal-window button.bd-btn-add-step span,
+.bd-modal-window button.bd-btn-save span {
+  color: #ffffff !important;
+}
+.bd-modal-window button.bd-btn-add-comp:hover,
+.bd-modal-window button.bd-btn-add-ing:hover,
+.bd-modal-window button.bd-btn-add-step:hover,
+.bd-modal-window button.bd-btn-save:not(:disabled):hover {
+  background: #E2A714 !important;
+  border-color: #E2A714 !important;
+}
+/* ===== Modal de plato: tarjeta de componente organizada ===== */
+/* Encabezado: etiqueta y X arriba, campos alineados debajo */
+.bd-modal-window .bd-comp-card-head {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 14px 12px !important;
+  padding: 16px !important;
+}
+.bd-modal-window .bd-comp-badge-num {
+  grid-area: 1 / 1;
+  justify-self: start;
+  margin: 0 !important;
+}
+.bd-modal-window .bd-comp-delete-btn {
+  grid-area: 1 / 2;
+  width: 34px !important;
+  height: 34px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+.bd-modal-window .bd-comp-head-fields {
+  grid-area: 2 / 1 / 3 / -1;
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) !important;
+  align-items: end !important;   /* las casillas quedan a la misma altura */
+  gap: 12px !important;
+  width: 100%;
+}
+.bd-modal-window .bd-comp-head-fields .bd-field-box { min-width: 0; margin: 0 !important; }
+
+/* Ingredientes y pasos: uno debajo del otro, a todo el ancho */
+.bd-modal-window .bd-comp-card-split {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 14px !important;
+  padding: 16px !important;
+}
+.bd-modal-window .bd-comp-subbox { padding: 16px !important; }
+.bd-modal-window .bd-comp-subbox-head { margin: 0 0 14px !important; }
+
+.bd-modal-window .bd-ing-adder-row {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 150px !important;
+  align-items: center !important;
+  gap: 10px !important;
+  margin: 0 0 12px !important;
+}
+.bd-modal-window .bd-ing-adder-row > * { min-width: 0; margin: 0 !important; }
+.bd-modal-window .bd-ing-obs-input input { width: 100%; }
+
+.bd-modal-window .bd-pasos-list {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+}
+.bd-modal-window .bd-paso-item-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  margin: 0 !important;
+}
+.bd-modal-window .bd-paso-num-badge { flex-shrink: 0; }
+.bd-modal-window .bd-paso-input { flex: 1 1 auto; min-width: 0; }
+.bd-modal-window .bd-paso-actions { display: flex !important; flex-shrink: 0; gap: 6px !important; }
+.bd-modal-window .bd-paso-btn {
+  width: 38px !important;
+  height: 38px !important;
+  padding: 0 !important;
+}
+
+/* Botones: mismo tamaño y alineados a la derecha */
+.bd-modal-window button.bd-btn-add-ing,
+.bd-modal-window button.bd-btn-add-step {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 150px !important;
+  height: 40px !important;
+  padding: 0 12px !important;
+}
+.bd-modal-window button.bd-btn-add-step { margin: 12px 0 0 auto !important; }
+.bd-modal-window .bd-subbox-empty { margin: 0 !important; }
+
+@media (max-width: 640px) {
+  .bd-modal-window .bd-ing-adder-row { grid-template-columns: minmax(0, 1fr) !important; }
+  .bd-modal-window button.bd-btn-add-ing,
+  .bd-modal-window button.bd-btn-add-step { width: 100% !important; }
+  .bd-modal-window .bd-paso-item-row { flex-wrap: wrap; }
+}
+/* Lista de recetas guardadas: no se recorta aunque haya muchas */
+.bd-modal-window select.bd-select-reuso {
+  width: 100%;
+  height: 42px;
+  padding: 0 10px;
+  background-color: #ffffff;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
 </style>
 
 <div class="fx-roboto flex flex-col gap-4 max-w-7xl mx-auto text-slate-800">
@@ -175,26 +298,26 @@ details[open] > .tri-sum .chev::before,
           : 'Catálogo oficial de platos, componentes y recetas del ciclo PAE.' }}
       </p>
     </div>
-
-    <!-- Selector de Pestañas -->
-    <div class="menu-hero-tabs" role="tablist">
-      <button type="button" role="tab"
-        (click)="pestanaActiva = 'platos'"
-        [class.activa]="pestanaActiva === 'platos'"
-        [attr.aria-selected]="pestanaActiva === 'platos'"
-        class="menu-hero-tab">
-        Platos y Recetas PAE
-      </button>
-
-      <button type="button" role="tab"
-        (click)="pestanaActiva = 'minuta'"
-        [class.activa]="pestanaActiva === 'minuta'"
-        [attr.aria-selected]="pestanaActiva === 'minuta'"
-        class="menu-hero-tab">
-        Minuta Semanal de Sedes
-      </button>
-    </div>
   </header>
+
+  <!-- Selector de Pestañas (debajo de la tarjeta) -->
+  <div class="menu-hero-tabs" role="tablist">
+    <button type="button" role="tab"
+      (click)="pestanaActiva = 'platos'"
+      [class.activa]="pestanaActiva === 'platos'"
+      [attr.aria-selected]="pestanaActiva === 'platos'"
+      class="menu-hero-tab">
+      Platos y Recetas PAE
+    </button>
+
+    <button type="button" role="tab"
+      (click)="pestanaActiva = 'minuta'"
+      [class.activa]="pestanaActiva === 'minuta'"
+      [attr.aria-selected]="pestanaActiva === 'minuta'"
+      class="menu-hero-tab">
+      Minuta Semanal de Sedes
+    </button>
+  </div>
 
   <!-- BARRA DE SELECCIÓN DE SEDE (tarjeta aparte, desplegable con chevron) -->
   <details *ngIf="pestanaActiva === 'minuta'" open
@@ -211,8 +334,8 @@ details[open] > .tri-sum .chev::before,
       <div *ngIf="sedesInstitucion.length > 0" class="flex items-stretch gap-2.5 overflow-x-auto pb-1">
         <button *ngFor="let s of sedesInstitucion; let idx = index" type="button"
           (click)="seleccionarSede(s.id_sede || s.id)" [ngClass]="(s.id_sede || s.id) === sedeSeleccionadaId
-            ? 'bg-[#fac94b] text-slate-950 border-amber-400 shadow-xs font-bold'
-            : 'bg-white hover:bg-amber-50/40 text-slate-700 border-slate-200 hover:border-amber-300'"
+            ? 'bg-[#F5B81F] text-slate-950 border-[#F5B81F] shadow-xs font-bold'
+            : 'bg-white hover:bg-[#fdf3d7]/40 text-slate-700 border-slate-200 hover:border-[#F5B81F]'"
           class="px-3.5 py-2 rounded-xl border text-left transition cursor-pointer shrink-0 flex items-center gap-2.5 min-w-[200px]">
           <span
             [ngClass]="(s.id_sede || s.id) === sedeSeleccionadaId ? 'bg-slate-950/10 text-slate-950 font-black' : 'bg-slate-100 text-slate-600 font-bold'"
@@ -222,7 +345,7 @@ details[open] > .tri-sum .chev::before,
           <div class="overflow-hidden flex flex-col">
             <span class="text-xs font-extrabold truncate leading-tight">{{ s.nombre_sede || s.nombre }}</span>
             <span class="text-[11px] font-medium truncate leading-tight mt-0.5"
-              [ngClass]="(s.id_sede || s.id) === sedeSeleccionadaId ? 'text-amber-950/80' : 'text-slate-500'">
+              [ngClass]="(s.id_sede || s.id) === sedeSeleccionadaId ? 'text-[#7a5a0b]' : 'text-slate-500'">
               {{ obtenerNombreJefaDeSede(s.id_sede || s.id) }}
             </span>
           </div>
@@ -240,7 +363,7 @@ details[open] > .tri-sum .chev::before,
               type="button"
               (click)="toggleMomentoEnSede(sedeSeleccionadaId, mom)"
               [ngClass]="sedeManejaMomento(sedeSeleccionadaId, mom)
-                ? 'bg-white text-slate-900 font-bold border-amber-300 shadow-2xs ring-1 ring-amber-200'
+                ? 'bg-white text-slate-900 font-bold border-[#F5B81F]/40 shadow-2xs ring-1 ring-[#F5B81F]/30'
                 : 'bg-slate-100/80 text-slate-400 line-through border-slate-200 hover:bg-white hover:text-slate-600'"
               class="px-3 py-1 rounded-lg text-xs border transition cursor-pointer inline-flex items-center"
               [title]="'Haz clic para habilitar o deshabilitar ' + mom + ' en esta sede'">
@@ -268,7 +391,7 @@ details[open] > .tri-sum .chev::before,
           <span class="text-xs font-extrabold uppercase tracking-wide text-slate-800">
             Ciclo de 20 días — {{ sedeActualObj?.nombre_sede || 'Sede' }}
           </span>
-          <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-950 border border-amber-200">
+          <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#fdf3d7] text-[#7a5a0b] border border-[#F5B81F]/30">
             {{ resumenProgramacionCicloSede.diasProgramados }} / 20 programados ({{ resumenProgramacionCicloSede.porcentaje }}%)
           </span>
         </div>
@@ -280,7 +403,7 @@ details[open] > .tri-sum .chev::before,
       <div class="flex flex-col gap-3 mt-3">
         <!-- Barra de progreso visual -->
         <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-          <div class="bg-gradient-to-r from-amber-400 to-emerald-500 h-full transition-all duration-500 rounded-full"
+          <div class="bg-gradient-to-r from-[#F5B81F] to-[#2B5424] h-full transition-all duration-500 rounded-full"
             [style.width.%]="resumenProgramacionCicloSede.porcentaje"></div>
         </div>
 
@@ -290,12 +413,12 @@ details[open] > .tri-sum .chev::before,
             (click)="irADiaYProgramar(dia.semana, dia.numeroMenu)"
             class="p-2 rounded-xl border text-left cursor-pointer transition hover:shadow-2xs flex flex-col gap-1"
             [ngClass]="dia.programado
-              ? 'bg-emerald-50/50 border-emerald-200 hover:border-emerald-400'
-              : 'bg-slate-50/70 border-slate-200/80 hover:border-amber-300 hover:bg-amber-50/20'"
+              ? 'bg-[#eaf2e8]/50 border-[#2B5424]/30 hover:border-[#2B5424]'
+              : 'bg-slate-50/70 border-slate-200/80 hover:border-[#F5B81F] hover:bg-[#fdf3d7]/20'"
             [title]="'Semana ' + dia.semana + ' • ' + dia.diaSemana + ' • Menú ' + dia.numeroMenu">
             <div class="flex items-center justify-between gap-1">
               <span class="text-[10px] font-black uppercase tracking-tight"
-                [ngClass]="dia.programado ? 'text-emerald-900' : 'text-slate-500'">
+                [ngClass]="dia.programado ? 'text-[#2B5424]' : 'text-slate-500'">
                 M{{ dia.numeroMenu }} · {{ dia.diaSemana.substring(0, 3) }}
               </span>
             </div>
@@ -314,7 +437,7 @@ details[open] > .tri-sum .chev::before,
       <div class="flex flex-wrap items-center gap-1.5">
         <span class="text-xs font-bold text-slate-600 mr-1">Semana:</span>
         <button *ngFor="let s of [1, 2, 3, 4]" type="button" (click)="semanaSeleccionada = s" [ngClass]="semanaSeleccionada === s
-            ? 'bg-[#fac94b] text-slate-950 font-bold border-amber-400 shadow-2xs'
+            ? 'bg-[#F5B81F] text-slate-950 font-bold border-[#F5B81F] shadow-2xs'
             : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200 font-semibold'"
           class="px-3 py-1.5 rounded-xl text-xs border transition cursor-pointer inline-flex items-center gap-1.5">
           <span>Semana {{ s }}</span>
@@ -349,7 +472,7 @@ details[open] > .tri-sum .chev::before,
             <h2 class="text-base font-extrabold text-slate-900 m-0">
               Semana {{ semana.numeroSemana }}
             </h2>
-            <span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-50 text-amber-900 border border-amber-200">
+            <span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-[#fdf3d7] text-[#7a5a0b] border border-[#F5B81F]/30">
               Menús {{ (semana.numeroSemana - 1) * 5 + 1 }} al {{ semana.numeroSemana * 5 }}
             </span>
           </div>
@@ -362,14 +485,14 @@ details[open] > .tri-sum .chev::before,
         <div class="flex items-center gap-2 flex-wrap">
           <div class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold border"
             [ngClass]="obtenerAprobacionSemana(semana.numeroSemana).aprobado_jefa
-              ? 'bg-emerald-50 text-emerald-900 border-emerald-200'
-              : 'bg-amber-50 text-amber-900 border-amber-200'">
+              ? 'bg-[#eaf2e8] text-[#2B5424] border-[#2B5424]/30'
+              : 'bg-[#fdf3d7] text-[#7a5a0b] border-[#F5B81F]/30'">
             <span>Jefa: {{ obtenerAprobacionSemana(semana.numeroSemana).aprobado_jefa ? 'Aprobado' : 'Pendiente' }}</span>
           </div>
 
           <div class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold border"
             [ngClass]="obtenerAprobacionSemana(semana.numeroSemana).aprobado_supervisor
-              ? 'bg-emerald-50 text-emerald-900 border-emerald-200'
+              ? 'bg-[#eaf2e8] text-[#2B5424] border-[#2B5424]/30'
               : 'bg-slate-50 text-slate-700 border-slate-200'">
             <span>Supervisor: {{ obtenerAprobacionSemana(semana.numeroSemana).aprobado_supervisor ? 'Aprobado' : 'Pendiente' }}</span>
           </div>
@@ -377,14 +500,14 @@ details[open] > .tri-sum .chev::before,
           <button *ngIf="esSupervisor && !obtenerAprobacionSemana(semana.numeroSemana).aprobado_supervisor"
             type="button"
             (click)="aprobarSemanaComoSupervisor(semana.numeroSemana)"
-            class="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-[#fac94b] hover:bg-amber-400 text-slate-950 border border-amber-400 cursor-pointer shadow-2xs transition inline-flex items-center whitespace-nowrap">
+            class="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-[#F5B81F] hover:bg-[#d4a01b] text-white border border-[#F5B81F] cursor-pointer shadow-2xs transition inline-flex items-center whitespace-nowrap">
             <span>Aprobar Minuta Semana {{ semana.numeroSemana }}</span>
           </button>
 
           <button *ngIf="esJefaManipuladoras && !obtenerAprobacionSemana(semana.numeroSemana).aprobado_jefa"
             type="button"
             (click)="aprobarSemanaComoJefa(semana.numeroSemana)"
-            class="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-[#fac94b] hover:bg-amber-400 text-slate-950 border border-amber-400 cursor-pointer shadow-2xs transition inline-flex items-center whitespace-nowrap">
+            class="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-[#F5B81F] hover:bg-[#d4a01b] text-white border border-[#F5B81F] cursor-pointer shadow-2xs transition inline-flex items-center whitespace-nowrap">
             <span>Dar Visto Bueno (Jefa)</span>
           </button>
         </div>
@@ -416,7 +539,7 @@ details[open] > .tri-sum .chev::before,
                       {{ dia.diaSemana }}
                     </span>
                     <div class="inline-flex items-center gap-1.5">
-                      <span class="px-2 py-0.5 rounded-md font-bold text-[10px] bg-amber-100/80 text-amber-950 border border-amber-200">
+                      <span class="px-2 py-0.5 rounded-md font-bold text-[10px] bg-[#fdf3d7] text-[#7a5a0b] border border-[#F5B81F]/30">
                         Menú {{ dia.numeroMenu }}
                       </span>
                       <span class="text-[10.5px] text-slate-500 font-medium">
@@ -441,7 +564,7 @@ details[open] > .tri-sum .chev::before,
                         [title]="momentoMinutaAbierto(mom) ? 'Plegar ' + mom : 'Desplegar ' + mom">
                         <span class="chev" [class.on]="momentoMinutaAbierto(mom)" aria-hidden="true"></span>
                         <div class="flex flex-col gap-0.5 pl-2.5 border-l-4"
-                          [ngClass]="mom === 'Desayuno' ? 'border-sky-500' : (mom === 'Almuerzo' ? 'border-emerald-500' : 'border-amber-500')">
+                          [ngClass]="mom === 'Desayuno' ? 'border-sky-500' : (mom === 'Almuerzo' ? 'border-[#2B5424]' : 'border-[#F5B81F]')">
                           <span class="text-[10px] uppercase tracking-wider font-bold text-slate-400">Momento</span>
                           <span class="text-xs font-extrabold text-slate-900">{{ mom }}</span>
                           <span class="text-[10px] font-medium text-slate-500">
@@ -460,7 +583,7 @@ details[open] > .tri-sum .chev::before,
                         <div *ngIf="dia.momentos[mom].tiene_menu_registrado && dia.momentos[mom].estado_aprobacion !== 'CANCELADO' && dia.momentos[mom].estado_aprobacion !== 'SIN_SERVICIO'"
                           class="bg-white border rounded-xl p-3 shadow-2xs flex flex-col gap-2 text-left transition"
                           [ngClass]="dia.momentos[mom].estado_aprobacion === 'APROBADO'
-                            ? 'border-emerald-300'
+                            ? 'border-[#2B5424]/40'
                             : (dia.momentos[mom].estado_aprobacion === 'RECHAZADO'
                                 ? 'border-rose-300 bg-rose-50/15'
                                 : 'border-slate-200')">
@@ -468,15 +591,15 @@ details[open] > .tri-sum .chev::before,
                           <div class="flex items-center justify-between gap-1 flex-wrap">
                             <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border"
                               [ngClass]="dia.momentos[mom].estado_aprobacion === 'APROBADO'
-                                ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                ? 'bg-[#eaf2e8] text-[#2B5424] border-[#2B5424]/30'
                                 : (dia.momentos[mom].estado_aprobacion === 'RECHAZADO'
                                     ? 'bg-rose-50 text-rose-800 border-rose-200'
-                                    : 'bg-amber-50 text-amber-800 border-amber-200')">
+                                    : 'bg-[#fdf3d7] text-[#7a5a0b] border-[#F5B81F]/30')">
                               {{ dia.momentos[mom].estado_aprobacion === 'APROBADO' ? 'Aprobado' : (dia.momentos[mom].estado_aprobacion === 'RECHAZADO' ? 'Rechazado' : 'Pendiente') }}
                             </span>
 
                             <button type="button" (click)="verFichaRecetaMomento(dia, mom)"
-                              class="text-[10.5px] font-bold text-amber-800 hover:text-amber-950 hover:underline cursor-pointer">
+                              class="text-[10.5px] font-bold text-[#7a5a0b] hover:text-[#7a5a0b] hover:underline cursor-pointer">
                               Ver receta
                             </button>
                           </div>
@@ -498,7 +621,7 @@ details[open] > .tri-sum .chev::before,
                           <div *ngIf="esSupervisor" class="flex items-center gap-1.5 pt-2 border-t border-slate-100">
                             <button *ngIf="dia.momentos[mom].estado_aprobacion !== 'APROBADO'"
                               type="button" (click)="aprobarMomentoPlato(dia, mom)"
-                              class="flex-1 py-1 px-2 rounded-lg text-[10.5px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer transition text-center">
+                              class="flex-1 py-1 px-2 rounded-lg text-[10.5px] font-bold bg-[#2B5424] hover:bg-[#1d3f1b] text-white cursor-pointer transition text-center">
                               Aprobar
                             </button>
                             <button *ngIf="dia.momentos[mom].estado_aprobacion !== 'RECHAZADO'"
@@ -512,7 +635,7 @@ details[open] > .tri-sum .chev::before,
                             class="flex items-center justify-between gap-1 pt-2 border-t border-slate-100 text-[10.5px]">
                             <ng-container *ngIf="!esJefaManipuladoras || !obtenerAprobacionSemana(semana.numeroSemana).aprobado_supervisor; else semanaBloqueadaTpl">
                               <button type="button" (click)="abrirModalProgramarMenuDiaMomento(dia, mom)"
-                                class="font-bold text-amber-900 hover:underline cursor-pointer">
+                                class="font-bold text-[#7a5a0b] hover:underline cursor-pointer">
                                 Cambiar menú
                               </button>
                               <button *ngIf="esJefaManipuladoras || esSuperAdmin" type="button" (click)="abrirModalNovedadMomento(dia, mom, 'CANCELADO')"
@@ -521,7 +644,7 @@ details[open] > .tri-sum .chev::before,
                               </button>
                             </ng-container>
                             <ng-template #semanaBloqueadaTpl>
-                              <span class="text-[10px] text-emerald-800 font-bold inline-flex items-center gap-1">
+                              <span class="text-[10px] text-[#2B5424] font-bold inline-flex items-center gap-1">
                                 <span class="material-symbols-outlined text-[12px]">lock</span>
                                 <span>Fijado por Supervisor</span>
                               </span>
@@ -538,7 +661,7 @@ details[open] > .tri-sum .chev::before,
                             </span>
                             <button *ngIf="esJefaManipuladoras || esSuperAdmin" type="button"
                               (click)="reactivarMomento(dia, mom)"
-                              class="text-[10px] font-bold text-amber-800 hover:underline cursor-pointer">
+                              class="text-[10px] font-bold text-[#7a5a0b] hover:underline cursor-pointer">
                               Reactivar
                             </button>
                           </div>
@@ -552,14 +675,14 @@ details[open] > .tri-sum .chev::before,
 
                         <!-- CASO 3: SIN SERVICIO ANTICIPADO -->
                         <div *ngIf="dia.momentos[mom].estado_aprobacion === 'SIN_SERVICIO'"
-                          class="bg-amber-50/40 border border-dashed border-amber-300 rounded-xl p-3 flex flex-col gap-1.5 text-left">
+                          class="bg-[#fdf3d7]/40 border border-dashed border-[#F5B81F]/40 rounded-xl p-3 flex flex-col gap-1.5 text-left">
                           <div class="flex items-center justify-between">
-                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900">
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#fdf3d7] text-[#7a5a0b]">
                               Sin Servicio
                             </span>
                             <button *ngIf="esJefaManipuladoras || esSuperAdmin" type="button"
                               (click)="reactivarMomento(dia, mom)"
-                              class="text-[10px] font-bold text-amber-800 hover:underline cursor-pointer">
+                              class="text-[10px] font-bold text-[#7a5a0b] hover:underline cursor-pointer">
                               Habilitar
                             </button>
                           </div>
@@ -574,7 +697,7 @@ details[open] > .tri-sum .chev::before,
                           class="bg-white/70 border border-dashed border-slate-300 rounded-xl p-3 flex flex-col items-center justify-center gap-1.5 text-center min-h-[92px]">
                           <div *ngIf="esSupervisor || esJefaManipuladoras || esSuperAdmin" class="flex flex-col items-center gap-1.5 w-full">
                             <button type="button" (click)="abrirModalProgramarMenuDiaMomento(dia, mom)"
-                              class="w-full py-1.5 px-2 rounded-lg text-xs font-bold bg-amber-50 hover:bg-[#fac94b] text-amber-950 border border-amber-300 cursor-pointer transition">
+                              class="w-full py-1.5 px-2 rounded-lg text-xs font-bold bg-[#fdf3d7] hover:bg-[#F5B81F] text-[#7a5a0b] border border-[#F5B81F]/40 cursor-pointer transition">
                               + Asignar {{ mom }}
                             </button>
                             <button *ngIf="esJefaManipuladoras || esSuperAdmin" type="button" (click)="abrirModalNovedadMomento(dia, mom, 'SIN_SERVICIO')"
@@ -648,7 +771,7 @@ details[open] > .tri-sum .chev::before,
       <div class="flex flex-wrap items-center justify-between gap-3 pb-3.5 border-b border-slate-100">
 
         <!-- Buscador blindado -->
-        <div class="flex items-center gap-2.5 flex-1 min-w-[240px] px-3.5 py-2 rounded-xl border border-slate-200 bg-slate-50/60 focus-within:bg-white focus-within:border-amber-400 focus-within:ring-2 focus-within:ring-amber-200/50 transition">
+        <div class="flex items-center gap-2.5 flex-1 min-w-[240px] px-3.5 py-2 rounded-xl border border-slate-200 bg-slate-50/60 focus-within:bg-white focus-within:border-[#F5B81F] focus-within:ring-2 focus-within:ring-[#F5B81F]/30 transition">
           <span class="material-symbols-outlined text-[18px] text-slate-400 shrink-0">search</span>
           <input
             type="text"
@@ -705,8 +828,7 @@ details[open] > .tri-sum .chev::before,
           </div>
 
           <button type="button" (click)="abrirModalCrearPlato()"
-            class="px-4 py-2 rounded-xl text-xs font-bold bg-[#fac94b] hover:bg-amber-400 text-slate-950 border border-amber-400 transition cursor-pointer shadow-2xs inline-flex items-center gap-1.5 whitespace-nowrap">
-            <span class="material-symbols-outlined text-[17px]">add</span>
+            class="px-4 py-2 rounded-xl text-xs font-bold bg-[#F5B81F] hover:bg-[#E2A714] text-white border border-[#F5B81F] transition cursor-pointer shadow-2xs inline-flex items-center whitespace-nowrap">
             <span>Crear nuevo plato</span>
           </button>
         </div>
@@ -775,11 +897,11 @@ details[open] > .tri-sum .chev::before,
                           Desayuno
                         </span>
                         <span *ngIf="sec === 'Almuerzo'"
-                          class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 whitespace-nowrap">
+                          class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#eaf2e8] text-[#2B5424] border border-[#2B5424]/30 whitespace-nowrap">
                           Almuerzo
                         </span>
                         <span *ngIf="sec === 'Merienda'"
-                          class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200 whitespace-nowrap">
+                          class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#fdf3d7] text-[#7a5a0b] border border-[#F5B81F]/30 whitespace-nowrap">
                           Merienda
                         </span>
                       </ng-container>
@@ -805,21 +927,21 @@ details[open] > .tri-sum .chev::before,
 
                       <div *ngIf="plato.componentes?.cereal && plato.componentes.cereal !== '—'"
                         class="flex items-center gap-1.5 truncate" [title]="plato.componentes.cereal">
-                        <span class="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"></span>
+                        <span class="w-1.5 h-1.5 rounded-full bg-[#F5B81F] shrink-0"></span>
                         <span class="text-slate-500 shrink-0">Cereal:</span>
                         <span class="font-semibold text-slate-800 truncate">{{ plato.componentes.cereal }}</span>
                       </div>
 
                       <div *ngIf="plato.componentes?.fruta && plato.componentes.fruta !== '—'"
                         class="flex items-center gap-1.5 truncate" [title]="plato.componentes.fruta">
-                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>
+                        <span class="w-1.5 h-1.5 rounded-full bg-[#2B5424] shrink-0"></span>
                         <span class="text-slate-500 shrink-0">Fruta:</span>
                         <span class="font-semibold text-slate-800 truncate">{{ plato.componentes.fruta }}</span>
                       </div>
 
                       <div *ngIf="plato.componentes?.agua && plato.componentes.agua !== '—' && plato.componentes.agua !== 'Agua' && plato.componentes.agua !== 'Agua potable tratada'"
                         class="flex items-center gap-1.5">
-                        <span class="px-1.5 py-0.5 rounded text-[10px] bg-amber-50 text-amber-900 border border-amber-200 font-bold">
+                        <span class="px-1.5 py-0.5 rounded text-[10px] bg-[#fdf3d7] text-[#7a5a0b] border border-[#F5B81F]/30 font-bold">
                           +1 componente
                         </span>
                       </div>
@@ -831,7 +953,7 @@ details[open] > .tri-sum .chev::before,
                     <button
                       type="button"
                       (click)="abrirModalRecetaPlato(plato)"
-                      class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 bg-white hover:bg-amber-50 hover:text-amber-950 border border-slate-200 hover:border-amber-300 cursor-pointer transition shadow-2xs inline-flex items-center whitespace-nowrap">
+                      class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 bg-white hover:bg-[#fdf3d7] hover:text-[#7a5a0b] border border-slate-200 hover:border-[#F5B81F] cursor-pointer transition shadow-2xs inline-flex items-center whitespace-nowrap">
                       <span>Configurar receta</span>
                     </button>
                   </td>
@@ -886,11 +1008,11 @@ details[open] > .tri-sum .chev::before,
                         </span>
                         <div class="inline-flex items-center gap-2">
                           <button type="button" (click)="abrirModalVerReceta(plato)"
-                            class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 bg-white hover:bg-amber-50 border border-slate-200 hover:border-amber-300 cursor-pointer transition inline-flex items-center gap-1.5 whitespace-nowrap">
+                            class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 bg-white hover:bg-[#fdf3d7] border border-slate-200 hover:border-[#F5B81F] cursor-pointer transition inline-flex items-center gap-1.5 whitespace-nowrap">
                             <span>Ver receta</span>
                           </button>
                           <button type="button" (click)="abrirModalRecetaPlato(plato)"
-                            class="px-3 py-1.5 rounded-lg text-xs font-bold bg-[#fac94b] hover:bg-amber-400 text-slate-950 border border-amber-400 cursor-pointer transition inline-flex items-center gap-1.5 whitespace-nowrap">
+                            class="px-3 py-1.5 rounded-lg text-xs font-bold bg-[#F5B81F] hover:bg-[#d4a01b] text-white border border-[#F5B81F] cursor-pointer transition inline-flex items-center gap-1.5 whitespace-nowrap">
                             <span>Editar</span>
                           </button>
                         </div>
@@ -911,13 +1033,13 @@ details[open] > .tri-sum .chev::before,
                         </div>
                         <div class="p-3 rounded-xl bg-slate-50 border border-slate-100">
                           <span class="flex items-center gap-1.5 font-bold text-slate-800 text-[11px]">
-                            <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>Cereal acompañante
+                            <span class="w-1.5 h-1.5 rounded-full bg-[#F5B81F]"></span>Cereal acompañante
                           </span>
                           <div class="text-slate-700 mt-0.5 text-xs">{{ plato.componentes?.cereal || '—' }}</div>
                         </div>
                         <div class="p-3 rounded-xl bg-slate-50 border border-slate-100">
                           <span class="flex items-center gap-1.5 font-bold text-slate-800 text-[11px]">
-                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>Fruta
+                            <span class="w-1.5 h-1.5 rounded-full bg-[#2B5424]"></span>Fruta
                           </span>
                           <div class="text-slate-700 mt-0.5 text-xs">{{ plato.componentes?.fruta || '—' }}</div>
                         </div>
@@ -1005,17 +1127,11 @@ details[open] > .tri-sum .chev::before,
                 type="button"
                 (click)="toggleMomentoEnPlatoForm(momento)"
                 [ngClass]="platoAplicaMomento(momento)
-                  ? 'bg-amber-100 text-amber-950 border-amber-400 font-bold shadow-2xs'
+                  ? 'bg-[#F5B81F] text-white border-[#F5B81F] font-bold shadow-2xs'
                   : 'bg-white hover:bg-slate-50 text-slate-600 border-slate-200 font-medium'"
                 class="px-3.5 py-1.5 rounded-xl text-xs border transition cursor-pointer inline-flex items-center gap-1.5"
               >
                 <span>{{ momento }}</span>
-                <span
-                  *ngIf="platoAplicaMomento(momento)"
-                  class="w-4 h-4 rounded-full bg-amber-500 text-slate-950 text-[10px] inline-flex items-center justify-center font-black"
-                >
-                  ✓
-                </span>
               </button>
             </div>
           </div>
@@ -1033,7 +1149,6 @@ details[open] > .tri-sum .chev::before,
             </div>
 
             <button type="button" class="bd-btn-add-comp" (click)="agregarComponenteAlPlato()">
-              <span class="text-base font-black">+</span>
               <span>Añadir componente</span>
             </button>
           </div>
@@ -1073,16 +1188,15 @@ details[open] > .tri-sum .chev::before,
 
                   <div class="bd-field-box" *ngIf="opcionesComponentesReutilizables.length > 0">
                     <label class="bd-field-label">Reutilizar receta guardada (Opcional)</label>
-                    <app-custom-select
+                    <select
+                      class="bd-field-input bd-select-reuso"
                       [name]="'comp_reutilizar_' + comp.id_temporal"
-                      [options]="opcionesComponentesReutilizables"
-                      valueField="id"
-                      labelField="label"
-                      placeholder="Copiar ingredientes y pasos de…"
-                      [allowClear]="true"
                       [ngModel]="''"
                       (ngModelChange)="reutilizarComponenteGuardado(comp, $event)"
-                    ></app-custom-select>
+                    >
+                      <option [ngValue]="''">Copiar ingredientes y pasos de…</option>
+                      <option *ngFor="let op of opcionesComponentesReutilizables" [ngValue]="op.id">{{ op.label }}</option>
+                    </select>
                   </div>
                 </div>
 
@@ -1137,7 +1251,6 @@ details[open] > .tri-sum .chev::before,
                       class="bd-btn-add-ing"
                       (click)="agregarIngredienteAComponente(comp)"
                     >
-                      <span>+</span>
                       <span>Agregar</span>
                     </button>
                   </div>
@@ -1148,7 +1261,7 @@ details[open] > .tri-sum .chev::before,
                       class="bd-ing-chip-item"
                     >
                       <div class="bd-ing-chip-info">
-                        <span class="text-emerald-600 font-bold">•</span>
+                        <span class="text-[#2B5424] font-bold">•</span>
                         <span class="bd-ing-chip-name">{{ ing.nombre_ingrediente }}</span>
                         <span class="bd-ing-chip-obs" *ngIf="ing.observacion">({{ ing.observacion }})</span>
                       </div>
@@ -1228,7 +1341,6 @@ details[open] > .tri-sum .chev::before,
                     class="bd-btn-add-step"
                     (click)="agregarPasoAComponente(comp)"
                   >
-                    <span>+</span>
                     <span>Añadir otro paso</span>
                   </button>
                 </details>
@@ -1243,7 +1355,6 @@ details[open] > .tri-sum .chev::before,
       <div class="bd-modal-foot">
         <button type="button" class="bd-modal-btn-cancel" (click)="cerrarModalRecetaPlato()">Cancelar</button>
         <button type="button" class="bd-btn-save" (click)="guardarRecetaPlato()" [disabled]="guardandoReceta">
-          <span>✓</span>
           <span>{{ guardandoReceta ? 'Guardando…' : 'Guardar cambios' }}</span>
         </button>
       </div>
@@ -1335,7 +1446,7 @@ details[open] > .tri-sum .chev::before,
 
       <div class="flex items-center justify-between pb-3.5 border-b border-slate-100">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-amber-100 border border-amber-300 text-amber-900 flex items-center justify-center shrink-0">
+          <div class="w-10 h-10 rounded-xl bg-[#fdf3d7] border border-[#F5B81F]/40 text-[#7a5a0b] flex items-center justify-center shrink-0">
             <span class="material-symbols-outlined text-[20px]">restaurant_menu</span>
           </div>
           <div>
@@ -1362,7 +1473,7 @@ details[open] > .tri-sum .chev::before,
             type="button"
             (click)="programarDiaForm.id_seccion = (mom === 'Desayuno' ? 1 : (mom === 'Merienda' ? 3 : 2))"
             [ngClass]="(programarDiaForm.id_seccion === 1 && mom === 'Desayuno') || (programarDiaForm.id_seccion === 2 && mom === 'Almuerzo') || (programarDiaForm.id_seccion === 3 && mom === 'Merienda')
-              ? 'bg-[#fac94b] text-slate-950 font-bold border-amber-400 shadow-2xs'
+              ? 'bg-[#F5B81F] text-slate-950 font-bold border-[#F5B81F] shadow-2xs'
               : 'bg-slate-50 hover:bg-white text-slate-700 border-slate-200 font-medium'"
             class="px-4 py-1.5 rounded-xl text-xs border transition cursor-pointer">
             {{ mom }}
@@ -1371,9 +1482,9 @@ details[open] > .tri-sum .chev::before,
       </div>
 
       <div *ngIf="obtenerPlatoDiaAnterior(programarDiaForm.numero_menu_ciclo, programarDiaForm.id_seccion === 1 ? 'Desayuno' : (programarDiaForm.id_seccion === 3 ? 'Merienda' : 'Almuerzo')) as platoAyer"
-        class="p-3.5 rounded-xl bg-amber-50/90 border border-amber-200 text-xs text-amber-950 flex flex-col gap-1">
+        class="p-3.5 rounded-xl bg-[#fdf3d7] border border-[#F5B81F]/30 text-xs text-[#7a5a0b] flex flex-col gap-1">
         <div class="flex items-center gap-1.5 font-extrabold">
-          <span class="material-symbols-outlined text-amber-700 text-[18px]">rule</span>
+          <span class="material-symbols-outlined text-[#7a5a0b] text-[18px]">rule</span>
           <span>Regla de Rotación PAE activa</span>
         </div>
         <p class="m-0 text-slate-700 leading-relaxed">
@@ -1389,7 +1500,7 @@ details[open] > .tri-sum .chev::before,
         </label>
         <select [(ngModel)]="programarDiaForm.nombre_plato"
           (change)="onPlatoSeleccionadoEnSelect()"
-          class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-amber-400 bg-white font-semibold">
+          class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-[#F5B81F] bg-white font-semibold">
           <option value="">-- Elige un plato del catálogo PAE --</option>
           <option *ngFor="let p of obtenerPlatosParaProgramar(programarDiaForm.id_seccion, programarDiaForm.numero_menu_ciclo)"
             [value]="p.nombre_plato"
@@ -1404,7 +1515,7 @@ details[open] > .tri-sum .chev::before,
         <summary class="tri-sum">
           <span class="chev" aria-hidden="true"></span>
           <span class="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
-            <span class="material-symbols-outlined text-[16px] text-amber-600">lunch_dining</span>
+            <span class="material-symbols-outlined text-[16px] text-[#7a5a0b]">lunch_dining</span>
             <span>Componentes del plato</span>
           </span>
         </summary>
@@ -1434,7 +1545,7 @@ details[open] > .tri-sum .chev::before,
           Cancelar
         </button>
         <button type="button" (click)="guardarProgramacionDiaSede()"
-          class="px-5 py-2 rounded-xl text-xs font-bold bg-[#fac94b] hover:bg-amber-400 text-slate-950 border border-amber-400 transition cursor-pointer shadow-xs inline-flex items-center gap-1.5">
+          class="px-5 py-2 rounded-xl text-xs font-bold bg-[#F5B81F] hover:bg-[#d4a01b] text-white border border-[#F5B81F] transition cursor-pointer shadow-xs inline-flex items-center gap-1.5">
           <span class="material-symbols-outlined text-[16px]">save</span>
           <span>Guardar Menú del Día</span>
         </button>
@@ -1516,7 +1627,7 @@ details[open] > .tri-sum .chev::before,
 
       <div class="flex items-center justify-between pb-3.5 border-b border-slate-100">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-amber-100 border border-amber-300 text-amber-900 flex items-center justify-center shrink-0">
+          <div class="w-10 h-10 rounded-xl bg-[#fdf3d7] border border-[#F5B81F]/40 text-[#7a5a0b] flex items-center justify-center shrink-0">
             <span class="material-symbols-outlined text-[20px]">notification_important</span>
           </div>
           <div>
@@ -1542,7 +1653,7 @@ details[open] > .tri-sum .chev::before,
           <button type="button"
             (click)="novedadForm.tipo = 'CANCELADO'"
             [ngClass]="novedadForm.tipo === 'CANCELADO'
-              ? 'bg-amber-50 border-amber-400 ring-1 ring-amber-300 text-amber-950 font-bold'
+              ? 'bg-[#fdf3d7] border-[#F5B81F] ring-1 ring-[#F5B81F] text-[#7a5a0b] font-bold'
               : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'"
             class="p-3 rounded-xl border text-xs text-left cursor-pointer transition">
             <div class="font-bold">Cancelado de última hora</div>
@@ -1551,7 +1662,7 @@ details[open] > .tri-sum .chev::before,
           <button type="button"
             (click)="novedadForm.tipo = 'SIN_SERVICIO'"
             [ngClass]="novedadForm.tipo === 'SIN_SERVICIO'
-              ? 'bg-amber-50 border-amber-400 ring-1 ring-amber-300 text-amber-950 font-bold'
+              ? 'bg-[#fdf3d7] border-[#F5B81F] ring-1 ring-[#F5B81F] text-[#7a5a0b] font-bold'
               : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'"
             class="p-3 rounded-xl border text-xs text-left cursor-pointer transition">
             <div class="font-bold">Sin servicio anticipado</div>
@@ -1568,7 +1679,7 @@ details[open] > .tri-sum .chev::before,
           [(ngModel)]="novedadForm.motivo"
           rows="3"
           placeholder="Escribe la justificación (ej. 'Aviso de rectoría: primaria no tuvo clase hoy por mantenimiento')..."
-          class="w-full p-3 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-amber-400 bg-white"
+          class="w-full p-3 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-[#F5B81F] bg-white"
         ></textarea>
       </div>
 
@@ -1578,7 +1689,7 @@ details[open] > .tri-sum .chev::before,
           Cancelar
         </button>
         <button type="button" (click)="confirmarNovedadMomento()"
-          class="px-5 py-2 rounded-xl text-xs font-bold bg-[#fac94b] hover:bg-amber-400 text-slate-950 border border-amber-400 transition cursor-pointer shadow-xs inline-flex items-center gap-1.5">
+          class="px-5 py-2 rounded-xl text-xs font-bold bg-[#F5B81F] hover:bg-[#d4a01b] text-white border border-[#F5B81F] transition cursor-pointer shadow-xs inline-flex items-center gap-1.5">
           <span class="material-symbols-outlined text-[16px]">save</span>
           <span>Guardar Novedad</span>
         </button>
@@ -1596,7 +1707,7 @@ details[open] > .tri-sum .chev::before,
 
       <div class="flex items-center justify-between pb-3.5 border-b border-slate-100">
         <div>
-          <span class="inline-flex items-center gap-1 text-[10.5px] uppercase tracking-wider font-extrabold text-amber-900 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200">
+          <span class="inline-flex items-center gap-1 text-[10.5px] uppercase tracking-wider font-extrabold text-[#7a5a0b] bg-[#fdf3d7] px-2.5 py-0.5 rounded-full border border-[#F5B81F]/30">
             {{ celdaRecetaSeleccionada.seccion }} • {{ celdaRecetaSeleccionada.diaSemana }}
           </span>
           <h3 class="text-base font-extrabold text-slate-900 m-0 mt-1.5">
@@ -1614,7 +1725,7 @@ details[open] > .tri-sum .chev::before,
         <summary class="tri-sum mb-2.5">
           <span class="chev" aria-hidden="true"></span>
           <span class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-            <span class="material-symbols-outlined text-[16px] text-amber-600">nutrition</span>
+            <span class="material-symbols-outlined text-[16px] text-[#7a5a0b]">nutrition</span>
             <span>Componentes estipulados PAE</span>
           </span>
         </summary>
@@ -1640,7 +1751,7 @@ details[open] > .tri-sum .chev::before,
 
       <div class="flex items-center justify-end pt-3 border-t border-slate-100">
         <button type="button" (click)="mostrarModalFichaReceta = false"
-          class="px-5 py-2 rounded-xl text-xs font-bold bg-[#fac94b] hover:bg-amber-400 text-slate-950 border border-amber-400 cursor-pointer shadow-xs transition">
+          class="px-5 py-2 rounded-xl text-xs font-bold bg-[#F5B81F] hover:bg-[#d4a01b] text-white border border-[#F5B81F] cursor-pointer shadow-xs transition">
           Cerrar
         </button>
       </div>

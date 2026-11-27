@@ -6,13 +6,13 @@
       style="background-color: rgba(244, 180, 31, 0.1); border-color: rgba(244, 180, 31, 0.3);">
       <div>
         <h1 class="m-0 flex items-center gap-2.5 text-lg font-bold tracking-tight text-slate-900">
-          <span class="material-symbols-outlined text-[22px]" style="color: #F4B41F;">inventory</span>
+          <span class="material-symbols-outlined text-[22px]" style="color: #F5B81F;">inventory</span>
           Entradas y Ajustes de Inventario
         </h1>
         <p class="mb-0 mt-1 text-xs font-medium text-slate-600">Registra entradas de alimentos y visualiza los movimientos recientes.</p>
       </div>
       <button type="button" (click)="exportarExcelEntradas()"
-        class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-[13px] font-black text-white shadow-md transition hover:bg-emerald-700">
+        class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#2B5424] px-4 py-2.5 text-[13px] font-black text-white shadow-md transition hover:bg-[#1d3f1b]">
         <span class="material-symbols-outlined text-[18px]">download</span>
         Exportar Entradas (Excel)
       </button>
@@ -28,7 +28,7 @@
     <!-- Formulario de Entrada / Ajuste -->
     <div *ngIf="!cargando" class="mb-8 rounded-2xl border border-slate-200 bg-slate-50/50 p-5">
       <h2 class="mb-4 text-sm font-black uppercase tracking-wide text-slate-800 flex items-center gap-2">
-        <span class="material-symbols-outlined text-amber-600">add_box</span>
+        <span class="material-symbols-outlined text-[#F5B81F]">add_box</span>
         Registrar nueva entrada
       </h2>
 
@@ -36,7 +36,7 @@
         <label class="flex flex-col gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-600">
           Ingrediente (con saldo) *
           <select [(ngModel)]="ajusteForm.id_ingrediente" (change)="cambiarIngrediente()" name="ingredienteSelect"
-            class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium normal-case tracking-normal text-slate-800 outline-none focus:border-[#F4B41F]">
+            class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium normal-case tracking-normal text-slate-800 outline-none focus:border-[#F5B81F]">
             <option [ngValue]="null" disabled>Selecciona ingrediente</option>
             <option *ngFor="let item of ingredientesConSaldo" [ngValue]="item.id">
               {{ item.nombre }} (Saldo actual: {{ saldoIngrediente(item.id) }})
@@ -48,13 +48,13 @@
           Cantidad a ingresar *
           <input [(ngModel)]="ajusteForm.cantidad" name="cantidadInput" type="number" min="0.01" step="0.01"
             placeholder="Ej. 10.00"
-            class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium normal-case tracking-normal text-slate-800 outline-none focus:border-[#F4B41F]" />
+            class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium normal-case tracking-normal text-slate-800 outline-none focus:border-[#F5B81F]" />
         </label>
 
         <label class="flex flex-col gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-600">
           Unidad de medida *
           <select [(ngModel)]="ajusteForm.id_unidad_medida" name="unidadSelect"
-            class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium normal-case tracking-normal text-slate-800 outline-none focus:border-[#F4B41F]">
+            class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium normal-case tracking-normal text-slate-800 outline-none focus:border-[#F5B81F]">
             <option [ngValue]="null" disabled>Selecciona unidad</option>
             <option *ngFor="let u of unidades" [ngValue]="u.id">{{ u.abreviatura || u.nombre }}</option>
           </select>
@@ -64,14 +64,14 @@
           Observaciones
           <input [(ngModel)]="ajusteForm.observaciones" name="observacionesInput" type="text"
             placeholder="Opcional..."
-            class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium normal-case tracking-normal text-slate-800 outline-none focus:border-[#F4B41F]" />
+            class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium normal-case tracking-normal text-slate-800 outline-none focus:border-[#F5B81F]" />
         </label>
       </div>
 
       <div class="mt-4 flex justify-end">
         <button type="button" (click)="aplicarCambio()" [disabled]="guardando"
           class="inline-flex cursor-pointer items-center gap-2 rounded-xl px-6 py-2.5 text-[13px] font-black text-slate-900 shadow-sm transition hover:brightness-95 disabled:opacity-50"
-          style="background-color: #F4B41F;">
+          style="background-color: #F5B81F;">
           <span class="material-symbols-outlined text-[18px]">{{ guardando ? 'hourglass_top' : 'save' }}</span>
           {{ guardando ? 'Guardando...' : 'Aplicar Entrada' }}
         </button>

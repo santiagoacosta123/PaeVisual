@@ -19,10 +19,10 @@ Chart.defaults.font.family = "'Roboto', system-ui, -apple-system, sans-serif";
 Chart.defaults.color = '#64748b';
 
 // Paleta institucional tipo semáforo
-const VERDE = '#16a34a';
-const VERDE_BORDE = '#15803d';
-const AMARILLO = '#facc15';
-const AMARILLO_BORDE = '#eab308';
+const VERDE = '#2B5424';
+const VERDE_BORDE = '#1d3f1b';
+const AMARILLO = '#F5B81F';
+const AMARILLO_BORDE = '#d4a01b';
 const ROJO = '#dc2626';
 const ROJO_BORDE = '#b91c1c';
 const LIMA = '#84cc16';

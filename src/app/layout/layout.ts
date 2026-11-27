@@ -897,22 +897,22 @@ export class LayoutComponent implements OnInit, OnDestroy {
       return { icono: 'warning', color: '#ef4444', bg: '#fee2e2' };
     }
     if (texto.includes('factura') || texto.includes('bodega')) {
-      return { icono: 'warehouse', color: '#b45309', bg: '#fef3c7' };
+      return { icono: 'warehouse', color: '#7a5a0b', bg: '#fdf3d7' };
     }
     if (texto.includes('aceptad') || texto.includes('conforme') || texto.includes('acreditad')) {
-      return { icono: 'check_circle', color: '#10b981', bg: '#d1fae5' };
+      return { icono: 'check_circle', color: '#2B5424', bg: '#eaf2e8' };
     }
     if (cat.includes('entrega') || texto.includes('despacho') || texto.includes('remisi') || texto.includes('tránsito') || texto.includes('transito') || texto.includes('entrega')) {
-      return { icono: 'local_shipping', color: '#92400e', bg: '#fef3c7' };
+      return { icono: 'local_shipping', color: '#7a5a0b', bg: '#fdf3d7' };
     }
     if (cat.includes('contrato') || texto.includes('contrato')) {
       return { icono: 'description', color: '#8b5cf6', bg: '#ede9fe' };
     }
     if (cat.includes('menu') || texto.includes('minuta')) {
-      return { icono: 'restaurant_menu', color: '#059669', bg: '#ecfdf5' };
+      return { icono: 'restaurant_menu', color: '#2B5424', bg: '#eaf2e8' };
     }
     if (cat.includes('asistencia') || texto.includes('asistencia')) {
-      return { icono: 'fact_check', color: '#10b981', bg: '#d1fae5' };
+      return { icono: 'fact_check', color: '#2B5424', bg: '#eaf2e8' };
     }
     return { icono: 'notifications', color: '#3b82f6', bg: '#eff6ff' };
   }

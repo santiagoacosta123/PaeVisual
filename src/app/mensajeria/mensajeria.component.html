@@ -2,7 +2,7 @@
   <!-- Encabezado Principal -->
   <div class="flex items-center justify-between mb-3 bg-white px-5 py-3 rounded-xl border border-slate-200 shadow-sm">
     <div class="flex items-center space-x-3">
-      <div class="w-10 h-10 rounded-full bg-emerald-600 flex items-center justify-center text-white shadow-sm">
+      <div class="w-10 h-10 rounded-full bg-[#2B5424] flex items-center justify-center text-white shadow-sm">
         <span class="material-symbols-outlined text-2xl">chat</span>
       </div>
       <div>
@@ -30,7 +30,7 @@
             [(ngModel)]="busqueda"
             (ngModelChange)="filtrarContactos()"
             placeholder="Buscar contactos autorizados..."
-            class="w-full pl-9 pr-3 py-2 text-xs bg-slate-100 rounded-lg border-0 focus:ring-2 focus:ring-emerald-500 text-slate-800 placeholder-slate-400 outline-none"
+            class="w-full pl-9 pr-3 py-2 text-xs bg-slate-100 rounded-lg border-0 focus:ring-2 focus:ring-[#2B5424] text-slate-800 placeholder-slate-400 outline-none"
           />
         </div>
       </div>
@@ -39,7 +39,7 @@
       <div class="flex-1 overflow-y-auto divide-y divide-slate-100">
         <!-- Indicador de carga -->
         <div *ngIf="cargandoContactos" class="flex flex-col items-center justify-center p-8 text-slate-400">
-          <div class="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mb-2"></div>
+          <div class="w-6 h-6 border-2 border-[#2B5424] border-t-transparent rounded-full animate-spin mb-2"></div>
           <span class="text-xs">Cargando contactos...</span>
         </div>
 
@@ -55,9 +55,9 @@
           type="button"
           *ngFor="let contacto of contactosFiltrados"
           (click)="seleccionarContacto(contacto)"
-          [class.bg-emerald-50]="contactoSeleccionado?.id_usuario === contacto.id_usuario"
+          [class.bg-[#eaf2e8]]="contactoSeleccionado?.id_usuario === contacto.id_usuario"
           [class.border-l-4]="contactoSeleccionado?.id_usuario === contacto.id_usuario"
-          [class.border-l-emerald-600]="contactoSeleccionado?.id_usuario === contacto.id_usuario"
+          [class.border-l-[#2B5424]]="contactoSeleccionado?.id_usuario === contacto.id_usuario"
           class="w-full text-left p-3.5 flex items-start space-x-3 transition-colors hover:bg-slate-100/80 cursor-pointer"
         >
           <!-- Avatar inicial -->
@@ -137,7 +137,7 @@
         <!-- Área de mensajes scrollable (CA-08) -->
         <div #mensajesContainer class="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-50/60">
           <div *ngIf="cargandoMensajes" class="flex justify-center p-4">
-            <div class="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+            <div class="w-6 h-6 border-2 border-[#2B5424] border-t-transparent rounded-full animate-spin"></div>
           </div>
 
           <div *ngIf="!cargandoMensajes && mensajes.length === 0" class="text-center py-12 text-slate-400">
@@ -156,7 +156,7 @@
               class="max-w-md lg:max-w-lg rounded-2xl px-4 py-2.5 shadow-xs text-xs"
               [ngClass]="
                 msg.es_emisor
-                  ? 'bg-emerald-600 text-white rounded-br-xs'
+                  ? 'bg-[#2B5424] text-white rounded-br-xs'
                   : 'bg-white text-slate-800 border border-slate-200 rounded-bl-xs'
               "
             >
@@ -178,7 +178,7 @@
               <!-- Timestamp y estado de lectura -->
               <div
                 class="flex items-center justify-end space-x-1 mt-1 text-[10px]"
-                [ngClass]="msg.es_emisor ? 'text-emerald-100' : 'text-slate-400'"
+                [ngClass]="msg.es_emisor ? 'text-[#eaf2e8]' : 'text-slate-400'"
               >
                 <span>{{ formatearHora(msg.fecha_envio) }}</span>
                 <span *ngIf="msg.es_emisor" class="material-symbols-outlined text-xs">
@@ -231,7 +231,7 @@
             <button
               type="button"
               (click)="fileInput.click()"
-              class="p-2.5 rounded-full text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 transition-colors"
+              class="p-2.5 rounded-full text-slate-600 hover:text-[#2B5424] hover:bg-[#eaf2e8] transition-colors"
               title="Adjuntar imagen (.jpg, .jpeg, .png, máx. 5MB)"
             >
               <span class="material-symbols-outlined text-xl">attach_file</span>
@@ -244,14 +244,14 @@
               name="mensajeTexto"
               placeholder="Escribe un mensaje..."
               [disabled]="enviando"
-              class="flex-1 px-4 py-2.5 text-xs bg-slate-100 rounded-full border-0 focus:ring-2 focus:ring-emerald-500 text-slate-800 placeholder-slate-400 outline-none"
+              class="flex-1 px-4 py-2.5 text-xs bg-slate-100 rounded-full border-0 focus:ring-2 focus:ring-[#2B5424] text-slate-800 placeholder-slate-400 outline-none"
             />
 
             <!-- Botón Enviar -->
             <button
               type="submit"
               [disabled]="enviando || (!nuevoMensajeTexto.trim() && !archivoImagen)"
-              class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white rounded-full text-xs font-bold transition-all shadow-sm flex items-center space-x-1.5 cursor-pointer disabled:cursor-not-allowed"
+              class="px-4 py-2.5 bg-[#2B5424] hover:bg-[#1d3f1b] disabled:bg-slate-300 text-white rounded-full text-xs font-bold transition-all shadow-sm flex items-center space-x-1.5 cursor-pointer disabled:cursor-not-allowed"
             >
               <span *ngIf="!enviando" class="material-symbols-outlined text-sm">send</span>
               <span *ngIf="enviando" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
