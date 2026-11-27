@@ -274,8 +274,8 @@
 
 /* ================= MODALES (BASE) ================= */
 .bd-modal-overlay {
-  position: fixed; inset: 0; z-index: 1000;
-  background: rgba(15, 23, 42, 0.5);
+  position: fixed; inset: 0; z-index: 2000;
+  background: rgba(15, 23, 42, 0.65);
   display: flex; align-items: center; justify-content: center;
   padding: 20px;
 }
