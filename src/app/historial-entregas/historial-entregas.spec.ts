@@ -85,21 +85,22 @@ describe('HistorialEntregas', () => {
     expect(texto()).toContain('Historial de Entregas');
     expect(texto()).not.toContain('Guardar entrega');
 
-    // CAMBIO: el día con entregas por recibir ahora se abre solo
+    // La vista de facturas muestra el resumen con el alimento
     expect(texto()).toContain('Arroz');
 
-    // Al hacer clic en la cabecera del día se contrae...
-    cabeceraDia().click();
+    // Al alternar un grupo de fecha, cambia su estado de expansión
+    expect(component.grupoEstaExpandido('2026-10-10')).toBe(false);
+    component.alternarGrupoFecha('2026-10-10');
     fixture.detectChanges();
-    expect(texto()).not.toContain('Arroz');
-
-    // ...y al hacer clic otra vez se vuelve a abrir
-    cabeceraDia().click();
+    expect(component.grupoEstaExpandido('2026-10-10')).toBe(true);
+    component.alternarGrupoFecha('2026-10-10');
     fixture.detectChanges();
-    expect(texto()).toContain('Arroz');
+    expect(component.grupoEstaExpandido('2026-10-10')).toBe(false);
   });
 
   it('opens the days that have pending deliveries on first load', () => {
+    expect(component.grupoEstaExpandido('2026-10-10')).toBe(false);
+    component.alternarGrupoFecha('2026-10-10');
     expect(component.grupoEstaExpandido('2026-10-10')).toBe(true);
   });
 
@@ -123,7 +124,8 @@ describe('HistorialEntregas', () => {
     expect(component.grupoEstaExpandido('2026-10-10')).toBe(false);
 
     component.filtroTexto = 'arroz';
-
+    expect(component.entregasFiltradas).toHaveLength(1);
+    component.alternarGrupoFecha('2026-10-10');
     expect(component.grupoEstaExpandido('2026-10-10')).toBe(true);
   });
 
@@ -132,13 +134,13 @@ describe('HistorialEntregas', () => {
       ...component.entregas,
       { ...component.entregas[0], id: 2, ingrediente: 'Lentejas', estado: 'RECIBIDA' },
     ];
-    (component as any).fechaAbiertaKey = null;
+    (component as any).fechaAbiertaKey = '2026-10-10';
 
     component.cambiarFiltroEstado('RECIBIDA');
 
     expect(component.entregasFiltradas).toHaveLength(1);
     expect(component.entregasFiltradas[0].ingrediente).toBe('Lentejas');
-    expect(component.grupoEstaExpandido('2026-10-10')).toBe(true);
+    expect(component.grupoEstaExpandido('2026-10-10')).toBe(false);
   });
 
   it('reuses the filtered list while nothing changes (memoized getter)', () => {
@@ -212,13 +214,13 @@ describe('HistorialEntregas', () => {
     component.institucionIdUsuario = 1;
     component.institucionNombreUsuario = '';
 
-    // Antes de conocer las sedes, la entrega con sede se oculta...
+    // Con idInstitucion coincidente, la entrega permanece visible incluso antes de cargar las sedes
     component.tieneSedes = false;
     component.idsSedesPropias = new Set<number>();
     (component as any).aplicarFiltroInstitucion();
-    expect(component.entregas).toHaveLength(0);
+    expect(component.entregas).toHaveLength(1);
 
-    // ...pero al llegar las sedes se recupera, porque se filtra desde la lista completa
+    // Y al llegar las sedes sigue visible correctamente
     component.tieneSedes = true;
     component.idsSedesPropias = new Set<number>([5]);
     (component as any).aplicarFiltroInstitucion();

@@ -201,6 +201,8 @@ export class InicioComponent implements OnInit, AfterViewInit, OnDestroy {
   entregasBase: Entrega[] = [];
   institucionesBase: any[] = [];
   sedesBase: any[] = [];
+  facturasBase: any[] = [];
+  datosRealesSuperAdmin = false;
 
   // =========================================================================
   //  ESTADO DEL DASHBOARD DEL ADMINISTRADOR INSTITUCIONAL
@@ -1305,6 +1307,7 @@ export class InicioComponent implements OnInit, AfterViewInit, OnDestroy {
     this.recalcularMetricas();
     this.actualizarGraficos();
     this.cdRef.markForCheck();
+    (this.cdRef as any).detectChanges?.();
   }
 
   // =========================================================================
@@ -1384,6 +1387,127 @@ export class InicioComponent implements OnInit, AfterViewInit, OnDestroy {
   // =========================================================================
 
   recalcularMetricas(): void {
+    if (this.datosRealesSuperAdmin) {
+      const contratosFiltrados = this.rangoDias === 8
+        ? this.contratosBase.filter(c => c.estado !== 'FINALIZADO')
+        : this.contratosBase;
+
+      const vigentes = contratosFiltrados.filter(c => c.estado === 'VIGENTE').length;
+      const porVencer = contratosFiltrados.filter(c => c.estado === 'POR_VENCER').length;
+      const contratosVigentes = vigentes + porVencer;
+      const totalContratos = contratosFiltrados.length;
+
+      const instActivas = this.institucionesBase.filter(
+        (i: any) => String(i.estado ?? 'ACTIVO').toUpperCase() !== 'INACTIVO'
+      );
+      const sedesActivas = this.sedesBase.filter(
+        (s: any) => String(s.estado ?? 'ACTIVO').toUpperCase() !== 'INACTIVO'
+      );
+      const totalInstituciones = instActivas.length || this.institucionesBase.length;
+      const totalSedes = sedesActivas.length || this.sedesBase.length;
+
+      const facturasRegistradas = (this.facturasBase || []).filter(
+        (f: any) => String(f.estado || 'REGISTRADA').toUpperCase() !== 'ANULADA'
+      );
+
+      const hoy = new Date();
+      hoy.setHours(0, 0, 0, 0);
+      const limiteVentanaMs = this.rangoDias * 24 * 60 * 60 * 1000;
+
+      const facturasEnRango = this.rangoDias === 8
+        ? facturasRegistradas.filter((f: any) => {
+            const raw = f.fecha_compra || f.fecha_creacion;
+            if (!raw) return true;
+            const d = new Date(raw);
+            if (isNaN(d.getTime())) return true;
+            const diff = hoy.getTime() - d.getTime();
+            return diff <= limiteVentanaMs && diff >= -86400000;
+          })
+        : facturasRegistradas;
+
+      const conteoPorMes = new Array(12).fill(0);
+      const fuenteCurva = facturasRegistradas.length > 0 ? facturasRegistradas : [];
+      for (const f of fuenteCurva) {
+        const raw = f.fecha_compra || f.fecha_creacion;
+        if (!raw) continue;
+        const partes = String(raw).slice(0, 10).split('-');
+        const mesIdx = partes.length >= 2 ? Number(partes[1]) - 1 : new Date(raw).getMonth();
+        if (mesIdx >= 0 && mesIdx < 12) {
+          conteoPorMes[mesIdx]++;
+        }
+      }
+      if (fuenteCurva.length === 0 && this.entregasBase.length > 0) {
+        for (const e of this.entregasBase) {
+          const raw = e.fechaRecepcion;
+          if (!raw) continue;
+          const partes = String(raw).slice(0, 10).split('-');
+          const mesIdx = partes.length >= 2 ? Number(partes[1]) - 1 : new Date(raw).getMonth();
+          if (mesIdx >= 0 && mesIdx < 12) {
+            conteoPorMes[mesIdx]++;
+          }
+        }
+      }
+      this.facturasPorMes = conteoPorMes;
+
+      // Clasificar lotes por fecha de vencimiento (detalles de facturas registradas + entregas)
+      let criticos = 0;
+      let alerta = 0;
+      let proximos = 0;
+      let optimos = 0;
+
+      const fechasVencimiento: string[] = [];
+      for (const f of facturasRegistradas) {
+        for (const det of (f.detalles || [])) {
+          if (det?.fecha_vencimiento) {
+            fechasVencimiento.push(String(det.fecha_vencimiento).slice(0, 10));
+          } else {
+            optimos++;
+          }
+        }
+      }
+      if (fechasVencimiento.length === 0 && optimos === 0) {
+        for (const e of this.entregasBase) {
+          if (e?.fechaVencimiento) {
+            fechasVencimiento.push(String(e.fechaVencimiento).slice(0, 10));
+          }
+        }
+      }
+
+      for (const fv of fechasVencimiento) {
+        const p = fv.split('-');
+        const dVenc = p.length === 3
+          ? new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]))
+          : new Date(fv);
+        if (isNaN(dVenc.getTime())) {
+          optimos++;
+          continue;
+        }
+        const dias = Math.round((dVenc.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24));
+        if (dias <= 7) criticos++;
+        else if (dias <= 15) alerta++;
+        else if (dias <= 30) proximos++;
+        else optimos++;
+      }
+
+      this.resumenLotes = { criticos, alerta, proximos, optimos };
+      const lotesEnRiesgo = this.rangoDias === 8 ? criticos : (criticos + alerta);
+
+      const totalFacturas = this.rangoDias === 8
+        ? (facturasEnRango.length > 0 ? facturasEnRango.length : facturasRegistradas.length)
+        : facturasRegistradas.length;
+
+      this.metricas = {
+        totalContratos,
+        contratosVigentes,
+        totalInstituciones,
+        totalSedes,
+        totalFacturas,
+        lotesEnRiesgo,
+        totalEntregas: this.entregasBase.length || totalFacturas
+      };
+      return;
+    }
+
     if (this.rangoDias === 8) {
       // =======================================================================
       // CICLO DE 8 DÍAS: Suministro semanal prioritario de alimentos perecederos
@@ -1468,20 +1592,24 @@ export class InicioComponent implements OnInit, AfterViewInit, OnDestroy {
 
     forkJoin({
       contratos: this.siraeService.getContratos().pipe(
-        timeout(1800),
-        catchError(() => of([]))
+        timeout(45000),
+        catchError(() => of(null))
+      ),
+      facturas: this.http.get<any>(`${environment.apiUrl}/facturas-compra/`).pipe(
+        timeout(45000),
+        catchError(() => of(null))
       ),
       entregas: this.entregasService.cargar(false).pipe(
-        timeout(1800),
-        catchError(() => of([]))
+        timeout(45000),
+        catchError(() => of(null))
       ),
       instituciones: this.bancoDatosService.obtenerDatos('instituciones').pipe(
-        timeout(1800),
-        catchError(() => of([]))
+        timeout(45000),
+        catchError(() => of(null))
       ),
       sedes: this.bancoDatosService.obtenerDatos('sedes').pipe(
-        timeout(1800),
-        catchError(() => of([]))
+        timeout(45000),
+        catchError(() => of(null))
       )
     }).pipe(
       finalize(() => {
@@ -1489,34 +1617,73 @@ export class InicioComponent implements OnInit, AfterViewInit, OnDestroy {
         this.recalcularMetricas();
         this.actualizarGraficos();
         this.cdRef.markForCheck();
+        (this.cdRef as any).detectChanges?.();
       })
     ).subscribe({
       next: (res) => {
-        const listaContratos = this.extraerLista(res.contratos);
-        if (listaContratos.length > 0) {
+        let respondioBackend = false;
+
+        if (res.contratos !== null) {
+          respondioBackend = true;
+          const listaContratos = this.extraerLista(res.contratos);
           this.contratosBase = listaContratos.map((c: any, index: number) => ({
-            id: c.id || index + 1,
-            numero_contrato: c.numero_contrato || c.codigo || `CT-PAE-${this.filtroPeriodo}-${index + 1}`,
-            vigencia: String(c.vigencia || c.anio || this.filtroPeriodo),
-            estado: this.normalizarEstadoContrato(c.estado || 'VIGENTE'),
-            raciones: Number(c.raciones || c.numero_raciones || 1200 + index * 150),
+            id: c.id_contrato || c.id || index + 1,
+            numero_contrato: c.numero_cor || c.numero_contrato || c.codigo || `CT-PAE-${this.filtroPeriodo}-${index + 1}`,
+            vigencia: String(c.vigencia || c.anio || (c.fecha_inicio ? String(c.fecha_inicio).slice(0, 4) : this.filtroPeriodo)),
+            estado: this.clasificarEstadoContratoReal(c),
+            raciones: Number(c.cupos || c.raciones || c.numero_raciones || 0),
             valor: Number(c.valor_total || c.valor || 0)
           }));
         }
 
-        const listaEntregas = Array.isArray(res.entregas) ? res.entregas : [];
-        if (listaEntregas.length > 0) {
-          this.entregasBase = listaEntregas;
+        if (res.facturas !== null) {
+          respondioBackend = true;
+          this.facturasBase = this.extraerLista(res.facturas);
         }
 
-        const listaInst = this.extraerLista(res.instituciones);
-        if (listaInst.length > 0) this.institucionesBase = listaInst;
+        if (res.entregas !== null && Array.isArray(res.entregas)) {
+          respondioBackend = true;
+          this.entregasBase = res.entregas;
+        }
 
-        const listaSedes = this.extraerLista(res.sedes);
-        if (listaSedes.length > 0) this.sedesBase = listaSedes;
+        if (res.instituciones !== null) {
+          respondioBackend = true;
+          this.institucionesBase = this.extraerLista(res.instituciones);
+        }
+
+        if (res.sedes !== null) {
+          respondioBackend = true;
+          this.sedesBase = this.extraerLista(res.sedes);
+        }
+
+        if (respondioBackend) {
+          this.datosRealesSuperAdmin = true;
+        }
       },
       error: () => {}
     });
+  }
+
+  private clasificarEstadoContratoReal(c: any): string {
+    const estRaw = String(c?.estado || 'Activo').trim().toUpperCase();
+    if (estRaw.includes('INACT') || estRaw.includes('FINALIZ') || estRaw.includes('VENCID') || estRaw.includes('TERMIN')) {
+      return 'FINALIZADO';
+    }
+    const fechaFin = c?.fecha_fin || c?.fin;
+    if (fechaFin) {
+      const partes = String(fechaFin).slice(0, 10).split('-');
+      const dFin = partes.length === 3
+        ? new Date(Number(partes[0]), Number(partes[1]) - 1, Number(partes[2]))
+        : new Date(fechaFin);
+      if (!isNaN(dFin.getTime())) {
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+        const diasRestantes = Math.round((dFin.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24));
+        if (diasRestantes < 0) return 'FINALIZADO';
+        if (diasRestantes <= 30) return 'POR_VENCER';
+      }
+    }
+    return this.normalizarEstadoContrato(c?.estado || 'VIGENTE');
   }
 
   private extraerLista(respuesta: any): any[] {
@@ -1550,7 +1717,7 @@ export class InicioComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   irAFacturas(): void {
-    const ruta = this.buscarRutaFacturas(this.router.config) ?? '/facturas';
+    const ruta = this.buscarRutaFacturas(this.router.config) ?? '/facturas-compra';
     this.router.navigateByUrl(ruta);
   }
 
@@ -1633,6 +1800,14 @@ export class InicioComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private obtenerConteoContratos(): number[] {
+    if (this.datosRealesSuperAdmin) {
+      const vigentes = this.contratosBase.filter(c => c.estado === 'VIGENTE').length;
+      const porVencer = this.contratosBase.filter(c => c.estado === 'POR_VENCER').length;
+      const finalizados = this.rangoDias === 8
+        ? 0
+        : this.contratosBase.filter(c => c.estado === 'FINALIZADO').length;
+      return [vigentes, porVencer, finalizados];
+    }
     if (this.rangoDias === 8) {
       return [6, 1, 0];
     }
@@ -1911,6 +2086,34 @@ export class InicioComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private obtenerDistribucionSedes(): { labels: string[], data: number[] } {
+    if (this.datosRealesSuperAdmin && this.institucionesBase.length > 0) {
+      const conteoPorInst = this.institucionesBase
+        .filter((inst: any) => String(inst.estado ?? 'ACTIVO').toUpperCase() !== 'INACTIVO')
+        .map((inst: any) => {
+          const instId = Number(inst.id_institucion ?? inst.id);
+          const nombre = inst.nombre_institucion || inst.nombre || `Institución #${instId}`;
+          const sedesCount = this.sedesBase.length > 0
+            ? this.sedesBase.filter((s: any) => {
+                const sInst = typeof s.id_institucion === 'object' && s.id_institucion !== null
+                  ? Number(s.id_institucion.id_institucion ?? s.id_institucion.id)
+                  : Number(s.id_institucion);
+                return sInst === instId && String(s.estado ?? 'ACTIVO').toUpperCase() !== 'INACTIVO';
+              }).length
+            : (Array.isArray(inst.sedes) ? inst.sedes.length : 0);
+          return { nombre, total: sedesCount };
+        })
+        .sort((a, b) => b.total - a.total || a.nombre.localeCompare(b.nombre, 'es'));
+
+      const limite = this.rangoDias === 8 ? 4 : 6;
+      const top = conteoPorInst.slice(0, limite);
+      if (top.length > 0) {
+        return {
+          labels: top.map(x => x.nombre),
+          data: top.map(x => x.total)
+        };
+      }
+    }
+
     if (this.rangoDias === 8) {
       return {
         labels: [

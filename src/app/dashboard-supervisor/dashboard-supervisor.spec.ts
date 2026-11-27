@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpClient } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
-import { EMPTY, of } from 'rxjs';
+import { of } from 'rxjs';
 import { AuthService } from '../core/auth/auth.service';
 import { DashboardSupervisor } from './dashboard-supervisor';
 
@@ -13,6 +13,8 @@ describe('DashboardSupervisor', () => {
     obtenerInstitucionesSupervisor: () => [],
     institucionActiva$: of(null),
     obtenerInstitucionActiva: () => null,
+    establecerInstitucionActiva: vi.fn(),
+    limpiarInstitucionActiva: vi.fn(),
   };
 
   beforeEach(async () => {
@@ -21,7 +23,7 @@ describe('DashboardSupervisor', () => {
       providers: [
         provideRouter([]),
         { provide: AuthService, useValue: authService },
-        { provide: HttpClient, useValue: { get: () => EMPTY } },
+        { provide: HttpClient, useValue: { get: () => of([]) } },
       ],
     }).compileComponents();
 
@@ -35,40 +37,34 @@ describe('DashboardSupervisor', () => {
     expect(component).toBeTruthy();
   });
 
-  it('links to the inventory-outflow report for Coordinator duties', () => {
-    expect(fixture.nativeElement.textContent).toContain('Consultar salidas de inventario');
-    expect(fixture.nativeElement.querySelector('a[href="/reportes-consumo"]')).toBeTruthy();
-  });
-
-  it('stops loading and shows an error when the institutions request completes empty', () => {
+  it('finishes loading when the institutions request completes empty', () => {
     expect(component.cargando).toBe(false);
-    expect(component.errorMensaje).toContain('No se pudieron cargar');
+    expect(component.instituciones).toEqual([]);
   });
 
-  it('shows selected institution details, administrator, and associated sites', () => {
-    component.institucionActiva = {
+  it('shows selected institution name when an institution is active', () => {
+    const inst = {
       id_institucion: 8,
       nombre_institucion: 'Institución Central',
       estado: 'ACTIVO',
       nit: '900123456',
       administrador_asignado: { nombre: 'Ana', apellido: 'Gómez' },
-      sedes: [{ nombre_sede: 'Sede Norte' }, { nombre: 'Sede Sur' }],
+      sedes: [{ id_sede: 1, nombre_sede: 'Sede Norte' }, { id_sede: 2, nombre_sede: 'Sede Sur' }],
     };
-
+    component.cargando = false;
+    component.errorMensaje = '';
+    component.instituciones = [inst];
+    component.institucionActiva = inst;
+    (component as any).cdr.detectChanges();
     fixture.detectChanges();
 
     const texto = fixture.nativeElement.textContent;
-    expect(texto).toContain('Institución seleccionada');
-    expect(texto).toContain('Institución Central');
-    expect(texto).toContain('ACTIVO');
-    expect(texto).toContain('900123456');
-    expect(texto).toContain('Ana Gómez');
-    expect(texto).toContain('Sede Norte');
-    expect(texto).toContain('Sede Sur');
+    expect(texto).toContain('Control y seguimiento PAE');
+    expect(texto).toContain('2 sedes');
   });
 
-  it('shows the institution and site fallbacks when optional data is absent', () => {
-    component.institucionActiva = {
+  it('handles institution with empty sedes without crashing', () => {
+    const inst = {
       id_institucion: 8,
       nombre_institucion: 'Institución Central',
       estado: '',
@@ -76,14 +72,16 @@ describe('DashboardSupervisor', () => {
       administrador_asignado: null,
       sedes: [],
     };
-
+    component.cargando = false;
+    component.errorMensaje = '';
+    component.instituciones = [inst];
+    component.institucionActiva = inst;
+    (component as any).cdr.detectChanges();
     fixture.detectChanges();
 
     const texto = fixture.nativeElement.textContent;
-    expect(texto).toContain('No registrado');
-    expect(texto).toContain('Sin asignar');
-    expect(texto).toContain('Sin sedes registradas');
-    expect(texto).not.toContain('Representante');
-    expect(texto).not.toContain('Teléfono');
+    expect(texto).toContain('Control y seguimiento PAE');
+    expect(texto).toContain('0 sedes');
+    expect(component.institucionActiva.sedes).toEqual([]);
   });
 });

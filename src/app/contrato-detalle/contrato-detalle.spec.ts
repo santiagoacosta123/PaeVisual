@@ -13,6 +13,16 @@ describe('ContratoDetalleComponent', () => {
   let cdrMock: any;
   let sweetAlertMock: any;
 
+  const fechaEnDias = (dias: number): string => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + dias);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
   beforeEach(() => {
     siraeMock = {
       getContratos: vi.fn().mockReturnValue(of([
@@ -24,7 +34,7 @@ describe('ContratoDetalleComponent', () => {
           cupos: 600,
           id_usuario_supervisor: 3,
           fecha_inicio: '2026-01-20',
-          fecha_fin: '2026-11-25',
+          fecha_fin: fechaEnDias(15),
           estado: 'Activo',
           zona: 'Norte'
         }

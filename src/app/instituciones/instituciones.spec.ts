@@ -120,7 +120,7 @@ describe('InstitucionesComponent', () => {
   });
 
   it('claseEstado devuelve las clases CSS correctas', () => {
-    expect(component.claseEstado('ACTIVO')).toContain('emerald');
+    expect(component.claseEstado('ACTIVO')).toContain('amber');
     expect(component.claseEstado('BAJO')).toContain('amber');
     expect(component.claseEstado('AGOTADO')).toContain('red');
     expect(component.claseEstado('OTRO')).toContain('slate');

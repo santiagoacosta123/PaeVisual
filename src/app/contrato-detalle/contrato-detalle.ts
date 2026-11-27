@@ -631,20 +631,30 @@ export class ContratoDetalleComponent implements OnInit, OnChanges {
       pendientes: this.cuposPendientesSedesEdicion,
       fecha_actualizacion: ahora,
       usuario_responsable: this.nombreUsuarioResponsableActual,
-      sedes: this.sedesEdicionDistribucion.map(s => ({
-        id_sede: s.id_sede,
-        nombre_sede: s.nombre_sede,
-        cuposAsignados: Number(s.cuposAsignados) || 0,
-        cupos_asignados: Number(s.cuposAsignados) || 0,
-        cupos: Number(s.cuposAsignados) || 0,
-        grados: s.grados.map(g => ({
-          id_grado: g.id_grado,
-          nombre_grado: g.nombre_grado,
-          cuposAsignados: Number(g.cupos) || 0,
-          cupos_asignados: Number(g.cupos) || 0,
-          cupos: Number(g.cupos) || 0
-        }))
-      }))
+      sedes: this.sedesEdicionDistribucion.map(s => {
+        const existente = (this.sedesInstitucion || []).find(
+          si => Number(si.id_sede || si.id) === Number(s.id_sede)
+        );
+        const esManana = existente?.jornada_manana !== undefined ? !!existente.jornada_manana : undefined;
+        const esTarde = existente?.jornada_tarde !== undefined ? !!existente.jornada_tarde : undefined;
+        return {
+          id_sede: s.id_sede,
+          nombre_sede: s.nombre_sede,
+          cuposAsignados: Number(s.cuposAsignados) || 0,
+          cupos_asignados: Number(s.cuposAsignados) || 0,
+          cupos: Number(s.cuposAsignados) || 0,
+          ...(esManana !== undefined ? { jornada_manana: esManana } : {}),
+          ...(esTarde !== undefined ? { jornada_tarde: esTarde } : {}),
+          ...(Array.isArray(existente?.secciones_ids) ? { secciones_ids: [...existente.secciones_ids] } : {}),
+          grados: s.grados.map(g => ({
+            id_grado: g.id_grado,
+            nombre_grado: g.nombre_grado,
+            cuposAsignados: Number(g.cupos) || 0,
+            cupos_asignados: Number(g.cupos) || 0,
+            cupos: Number(g.cupos) || 0
+          }))
+        };
+      })
     };
 
     // 1. Persistencia en localStorage en todas las claves

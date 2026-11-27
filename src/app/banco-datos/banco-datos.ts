@@ -1000,7 +1000,15 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
     // Agrupación de Gramajes por Ingrediente (muestra 1 sola fila por ingrediente con sus grados)
     if (this.tabActual === 'gramajes') {
       const mapa = new Map<number, any>();
+      const mostrarSoloInactivos = this.filtroEstado === 'INACTIVO';
       for (const item of resultado) {
+        const estItem = String(item.estado ?? 'ACTIVO').trim().toUpperCase();
+        if (!mostrarSoloInactivos && estItem === 'INACTIVO') {
+          continue;
+        }
+        if (mostrarSoloInactivos && estItem !== 'INACTIVO') {
+          continue;
+        }
         const ingId = typeof item.id_ingrediente === 'object' && item.id_ingrediente !== null
           ? (item.id_ingrediente?.id_ingrediente || item.id_ingrediente?.id)
           : item.id_ingrediente;
@@ -1630,6 +1638,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
       this.gramajeDescripcion = '';
     }
     this.mostrarModal = true;
+    (this.cdr as any).detectChanges?.();
   }
 
   aplicarGramajeEstandar(): void {
@@ -1642,6 +1651,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
     for (const g of grados) {
       this.gramajesPorGrado[Number(g.id)] = valor;
     }
+    (this.cdr as any).detectChanges?.();
   }
 
   guardarGramajesMultiples(): void {
@@ -2817,7 +2827,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
     if (cuerpo && typeof cuerpo === 'object') {
       const lineas = Object.entries(cuerpo).map(([campo, msg]) => {
         const texto = Array.isArray(msg) ? msg.join(' ') : String(msg);
-        return campo === 'detail' || campo === 'non_field_errors'
+        return campo === 'detail' || campo === 'non_field_errors' || campo === 'error'
           ? texto
           : `${campo}: ${texto}`;
       });

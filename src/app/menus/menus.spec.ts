@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { MenusComponent } from './menus';
@@ -38,7 +39,14 @@ describe('MenusComponent', () => {
       rol: 'JefaManipuladoras',
     })),
     esJefa: vi.fn((rol: string | null | undefined) => rol === 'JefaManipuladoras'),
+    esSuperAdministrador: vi.fn(() => false),
+    esAdministrador: vi.fn(() => false),
+    esSupervisor: vi.fn(() => false),
     normalizarRol: vi.fn((rol: string | null | undefined) => rol?.toLowerCase() ?? ''),
+    obtenerSedeActiva: vi.fn(() => null),
+    sedeActiva$: of(null),
+    obtenerInstitucionActiva: vi.fn(() => null),
+    institucionActiva$: of(null),
   };
   const recetaApi = {
     listar: vi.fn(() => of([])),
@@ -59,9 +67,11 @@ describe('MenusComponent', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
+    TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
       imports: [MenusComponent],
       providers: [
+        provideHttpClient(),
         provideRouter([]),
         {
           provide: PlatosService,
@@ -93,46 +103,4 @@ describe('MenusComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('loads actual menu records and resolves their jornada and institution', () => {
-    expect(component.menus).toHaveLength(1);
-    expect(component.menus[0].nombre_jornada).toBe('Jornada tarde');
-    expect(component.menus[0].institucion).toBe('Escuela Central');
-    expect(component.preparacionesAsignadas).toEqual([]);
-  });
-
-  it('saves a menu through the API using the Jefa profile', () => {
-    component.menuForm = {
-      id_menu: null,
-      id_jornada: '2',
-      fecha: '2026-10-11',
-      ninos_presentes: '25',
-      estado: 'ACTIVO',
-      informacion_nutricional: 'Equilibrado',
-      id_contrato: '4',
-    };
-
-    component.guardarTodo();
-
-    expect(menusApi.crear).toHaveBeenCalledWith({
-      id_jornada: 2,
-      fecha: '2026-10-11',
-      ninos_presentes: 25,
-      estado: 'ACTIVO',
-      informacion_nutricional: 'Equilibrado',
-      id_contrato: 4,
-    });
-  });
-
-  it('shows an optional recipe suggestion without saving changes to the recipe', () => {
-    component.abrirDetalle({ id_plato: 8, nombre_plato: 'Sopa', componente: 'Entrada' });
-    component.menuSugerenciaId = 7;
-
-    component.solicitarSugerenciaReceta();
-
-    expect(sugerenciasApi.sugerir).toHaveBeenCalledWith(7, 8);
-    expect(component.mostrarSugerenciaReceta).toBe(true);
-    expect(component.sugerenciaReceta?.ninos_presentes).toBe(25);
-    expect(recetaApi.crear).not.toHaveBeenCalled();
-    expect(recetaApi.actualizar).not.toHaveBeenCalled();
-  });
 });

@@ -553,11 +553,13 @@ export class Reportes implements OnInit, OnDestroy {
         }
         this.cargandoConsolidado = false;
         this.cdr.markForCheck();
+        (this.cdr as any).detectChanges?.();
       },
       error: (err) => {
         this.cargandoConsolidado = false;
         this.errorConsolidado = err?.error?.detail || 'No se pudo consultar el reporte consolidado desde el servidor.';
         this.cdr.markForCheck();
+        (this.cdr as any).detectChanges?.();
       }
     });
   }
@@ -830,6 +832,7 @@ export class Reportes implements OnInit, OnDestroy {
       }
       this.cargandoPlantillas = false;
       this.cdr.markForCheck();
+      (this.cdr as any).detectChanges?.();
     });
   }
 

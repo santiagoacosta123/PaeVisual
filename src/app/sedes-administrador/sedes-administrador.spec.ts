@@ -56,7 +56,15 @@ describe('SedesAdministradorComponent', () => {
     TestBed.configureTestingModule({
       providers: [
         { provide: HttpClient, useValue: { get, post, put: vi.fn() } },
-        { provide: AuthService, useValue: { obtenerUsuario } },
+        {
+          provide: AuthService,
+          useValue: {
+            obtenerUsuario,
+            establecerSedeActiva: vi.fn(),
+            obtenerSedeActiva: vi.fn(() => null),
+            sedeActiva$: of(null),
+          },
+        },
         { provide: ChangeDetectorRef, useValue: { markForCheck: vi.fn() } },
       ],
     });
@@ -67,7 +75,8 @@ describe('SedesAdministradorComponent', () => {
     component.ngOnInit();
 
     expect(get).toHaveBeenCalledWith(`${environment.apiUrl}/sedes/`);
-    expect(component.sedes).toEqual(sedes);
+    expect(component.sedes).toHaveLength(1);
+    expect(component.sedes[0]).toMatchObject(sedes[0]);
     expect(component.sedeEstaActiva(component.sedes[0].estado)).toBe(true);
     expect(component.institucionAsignada).toBe('Institución asignada al administrador');
   });
@@ -84,7 +93,8 @@ describe('SedesAdministradorComponent', () => {
 
     component.ngOnInit();
 
-    expect(component.sedes).toEqual(sedes);
+    expect(component.sedes).toHaveLength(1);
+    expect(component.sedes[0]).toMatchObject(sedes[0]);
     expect(component.sedes[0].nombre_sede).toBe('Sede Central');
     expect(component.cargandoSedes).toBe(false);
   });

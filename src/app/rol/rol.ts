@@ -214,12 +214,14 @@ export class Rol implements OnInit {
             );
             this.cerrarModalConfigurarPermisos();
             this.cargarRoles(this.soloAsignables);
+            (this.cdr as any).detectChanges?.();
           },
           error: (err) => {
             this.guardandoPermisos = false;
             console.error('Error al actualizar permisos:', err);
             const msg = err?.error?.detail || err?.error?.error || (typeof err?.error === 'string' ? err.error : 'No se pudo actualizar la configuración de permisos.');
             this.sweetAlert.error('Error de Seguridad', msg);
+            (this.cdr as any).detectChanges?.();
           }
         });
       }
