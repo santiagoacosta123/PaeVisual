@@ -5,15 +5,15 @@
    Sin animaciones y con letras blancas en los botones principales.
    ===================================================================== */
 .usuarios-layout {
-  --v-900: #1d3f1b;
-  --v-800: #244a21;
-  --v-700: #2b5526;
-  --v-100: #e6efe3;
+  --v-900: #1d3a18;
+  --v-800: #24471e;
+  --v-700: #2B5424;
+  --v-100: #eaf2e8;
   --v-50:  #f3f8f1;
-  --a:     #f4b41f;
-  --a-btn: #e8a30c;
-  --a-dark:#b87a00;
-  --a-soft:#fff6dc;
+  --a:     #F5B81F;
+  --a-btn: #F5B81F;
+  --a-dark:#7a5a0b;
+  --a-soft:#fdf3d7;
   --ink:   #1c2a1a;
   --mute:  #64748b;
   --line:  #dfe7da;
@@ -105,9 +105,9 @@
   font-weight: 800;
   white-space: nowrap;
   cursor: pointer;
-  box-shadow: 0 8px 18px -12px rgba(232, 163, 12, .9);
+  box-shadow: 0 8px 18px -12px rgba(245, 184, 31, .9);
 }
-.usuarios-layout .us-btn-add:hover { background: #d69508; }
+.usuarios-layout .us-btn-add:hover { background: #e0a91b; }
 
 /* ---------- Tarjeta del listado ---------- */
 .usuarios-layout .us-card {
@@ -200,7 +200,7 @@
   font-weight: 800;
   text-transform: uppercase;
 }
-.usuarios-layout .us-state.on { border-color: #bbf7d0; background: #dcfce7; color: #166534; }
+.usuarios-layout .us-state.on { border-color: #2B5424; background: #eaf2e8; color: #2B5424; }
 .usuarios-layout .us-state.off { border-color: #fecdd3; background: #fff1f2; color: #be123c; }
 .usuarios-layout .us-link {
   margin-top: 2px;
@@ -297,7 +297,7 @@
   font-size: 13.5px;
   outline: none;
 }
-.usuarios-layout .bd-input:focus { border-color: var(--v-700); box-shadow: 0 0 0 4px rgba(244, 180, 31, .22); }
+.usuarios-layout .bd-input:focus { border-color: var(--v-700); box-shadow: 0 0 0 4px rgba(245, 184, 31, .22); }
 .usuarios-layout .bd-modal-footer {
   display: flex;
   align-items: center;
@@ -331,9 +331,9 @@
   font-size: 13px;
   font-weight: 800;
   cursor: pointer;
-  box-shadow: 0 8px 18px -12px rgba(232, 163, 12, .9);
+  box-shadow: 0 8px 18px -12px rgba(245, 184, 31, .9);
 }
-.usuarios-layout .bd-save:hover { background: #d69508; }
+.usuarios-layout .bd-save:hover { background: #e0a91b; }
 
 .usuarios-layout button:focus-visible,
 .usuarios-layout input:focus-visible { outline: 2px solid var(--a); outline-offset: 2px; }
@@ -388,8 +388,8 @@
 .usuarios-layout.modo-admin .us-name { color: #0f172a; }
 .usuarios-layout.modo-admin .us-sub { color: #94a3b8; }
 .usuarios-layout.modo-admin .us-role { border-color: #e2e8f0; background: #f1f5f9; color: #475569; }
-.usuarios-layout.modo-admin .us-state.on { border-color: #a7f3d0; background: #ecfdf5; color: #047857; }
-.usuarios-layout.modo-admin .us-link { color: #b45309; }
+.usuarios-layout.modo-admin .us-state.on { border-color: #2B5424; background: #eaf2e8; color: #2B5424; }
+.usuarios-layout.modo-admin .us-link { color: #7a5a0b; }
 .usuarios-layout.modo-admin .us-btn-edit {
   border: 1px solid #e2e8f0;
   border-radius: 10px;
@@ -408,7 +408,7 @@
 }
 .usuarios-layout.modo-admin .bd-modal-header div,
 .usuarios-layout.modo-admin .bd-modal-header span { color: #64748b !important; }
-.usuarios-layout.modo-admin .bd-modal-header .bd-modal-eyebrow { color: #b45309 !important; }
+.usuarios-layout.modo-admin .bd-modal-header .bd-modal-eyebrow { color: #7a5a0b !important; }
 .usuarios-layout.modo-admin .bd-modal-header h2 { color: #0f172a !important; }
 .usuarios-layout.modo-admin .bd-modal-close { background: #f1f5f9; color: #475569; }
 .usuarios-layout.modo-admin .bd-modal-close:hover { background: #e2e8f0; }
@@ -650,7 +650,7 @@
 
           <!-- CASO 2: Supervisor con múltiples instituciones -->
           <div class="bd-form-group" style="grid-column: 1 / -1; background: #f3f8f1; border: 1px solid #dfe7da; border-radius: 12px; padding: 16px;" *ngIf="esRolSupervisor()">
-            <label style="color: #1d3f1b; font-weight: 700; margin-bottom: 4px; display: block;">
+            <label style="color: #1d3a18; font-weight: 700; margin-bottom: 4px; display: block;">
               Instituciones asignadas a este supervisor
             </label>
             <p style="margin: 0 0 12px 0; font-size: 11.5px; color: #64748b;">
@@ -663,14 +663,14 @@
                 style="display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; border-radius: 10px; border: 1px solid #cbd5e1; user-select: none; font-size: 12px;"
                 [style.opacity]="institucionAsignadaAotroSupervisor(inst) ? '0.6' : '1'"
                 [style.cursor]="institucionAsignadaAotroSupervisor(inst) ? 'not-allowed' : 'pointer'"
-                [style.background]="institucionSupervisorSeleccionada(inst.id_institucion || inst.id) ? '#fff6dc' : (institucionAsignadaAotroSupervisor(inst) ? '#f1f5f9' : '#ffffff')"
-                [style.border-color]="institucionSupervisorSeleccionada(inst.id_institucion || inst.id) ? '#e8a30c' : '#cbd5e1'">
+                [style.background]="institucionSupervisorSeleccionada(inst.id_institucion || inst.id) ? '#fdf3d7' : (institucionAsignadaAotroSupervisor(inst) ? '#f1f5f9' : '#ffffff')"
+                [style.border-color]="institucionSupervisorSeleccionada(inst.id_institucion || inst.id) ? '#F5B81F' : '#cbd5e1'">
 
                 <div style="display: flex; align-items: center; gap: 10px;">
                   <input
                     type="checkbox"
                     tabindex="-1"
-                    style="width: 16px; height: 16px; accent-color: #2b5526; pointer-events: none; flex-shrink: 0;"
+                    style="width: 16px; height: 16px; accent-color: #2B5424; pointer-events: none; flex-shrink: 0;"
                     [checked]="institucionSupervisorSeleccionada(inst.id_institucion || inst.id)">
                   <span style="font-weight: 600; color: #0f172a; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
                     {{ inst.nombre_institucion || inst.nombre }}
@@ -683,7 +683,7 @@
               </div>
             </div>
 
-            <div style="margin-top: 10px; font-size: 11.5px; color: #2b5526; font-weight: 700;">
+            <div style="margin-top: 10px; font-size: 11.5px; color: #2B5424; font-weight: 700;">
               {{ supervisorInstitucionesSeleccionadas.length }} {{ supervisorInstitucionesSeleccionadas.length === 1 ? 'institución seleccionada' : 'instituciones seleccionadas' }}
             </div>
           </div>
@@ -702,7 +702,7 @@
               name="id_sede"
               [(ngModel)]="usuarioForm.id_sede"
             ></app-custom-select>
-            <span *ngIf="esRolJefa()" style="font-size: 11px; color: #b45309; margin-top: 4px; display: block; font-weight: 600;">
+            <span *ngIf="esRolJefa()" style="font-size: 11px; color: #7a5a0b; margin-top: 4px; display: block; font-weight: 600;">
               Cada sede cuenta con 1 única Jefa de Manipuladoras, quien elige el menú diario (estipulado PAE o sugerencia IA) y conforma la minuta de 20 días de su sede.
             </span>
           </div>
@@ -712,7 +712,7 @@
             <label style="position: relative; display: inline-flex; cursor: pointer; align-items: center; margin: 0;">
               <input type="checkbox" [(ngModel)]="usuarioForm.is_active" name="is_active" style="opacity: 0; width: 0; height: 0; position: absolute;">
               <div style="width: 36px; height: 20px; border-radius: 9999px; position: relative;"
-                   [style.background-color]="usuarioForm.is_active ? '#2b5526' : '#e2e8f0'">
+                   [style.background-color]="usuarioForm.is_active ? '#2B5424' : '#e2e8f0'">
                 <div style="width: 16px; height: 16px; background-color: #ffffff; border-radius: 50%; position: absolute; top: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);"
                      [style.left]="usuarioForm.is_active ? '18px' : '2px'"></div>
               </div>
@@ -757,17 +757,17 @@
         <!-- Resumen -->
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 22px;">
           <div style="background: #f3f8f1; border: 1px solid #dfe7da; border-radius: 14px; padding: 14px 16px;">
-            <div style="font-size: 11.5px; font-weight: 600; color: #2b5526;">
+            <div style="font-size: 11.5px; font-weight: 600; color: #2B5424;">
               {{ institucionesDetalleModal.length === 1 ? 'Institución asignada' : 'Instituciones asignadas' }}
             </div>
-            <div style="font-size: 26px; font-weight: 800; color: #1d3f1b; line-height: 1.1; margin-top: 4px;">
+            <div style="font-size: 26px; font-weight: 800; color: #1d3a18; line-height: 1.1; margin-top: 4px;">
               {{ institucionesDetalleModal.length }}
             </div>
           </div>
 
-          <div style="background: #fff6dc; border: 1px solid #f3dfa2; border-radius: 14px; padding: 14px 16px;">
-            <div style="font-size: 11.5px; font-weight: 600; color: #b87a00;">Sedes en total</div>
-            <div style="font-size: 26px; font-weight: 800; color: #7a5200; line-height: 1.1; margin-top: 4px;">
+          <div style="background: #fdf3d7; border: 1px solid #F5B81F; border-radius: 14px; padding: 14px 16px;">
+            <div style="font-size: 11.5px; font-weight: 600; color: #7a5a0b;">Sedes en total</div>
+            <div style="font-size: 26px; font-weight: 800; color: #7a5a0b; line-height: 1.1; margin-top: 4px;">
               {{ contarSedesTotalDetalle() }}
             </div>
           </div>
@@ -787,7 +787,7 @@
 
             <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;">
               <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
-                <div style="width: 28px; height: 28px; border-radius: 8px; background: #2b5526; color: #ffffff; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <div style="width: 28px; height: 28px; border-radius: 8px; background: #2B5424; color: #ffffff; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                   {{ idx + 1 }}
                 </div>
                 <div style="min-width: 0;">
@@ -799,7 +799,7 @@
                   </span>
                 </div>
               </div>
-              <span style="font-size: 10.5px; font-weight: 700; color: #15803d; background: #f0fdf4; padding: 3px 10px; border-radius: 9999px; white-space: nowrap; border: 1px solid #bbf7d0;">
+              <span style="font-size: 10.5px; font-weight: 700; color: #2B5424; background: #eaf2e8; padding: 3px 10px; border-radius: 9999px; white-space: nowrap; border: 1px solid #2B5424;">
                 Asignada
               </span>
             </div>
@@ -813,7 +813,7 @@
               <div *ngIf="inst.sedes && inst.sedes.length > 0; else sinSedesEspecificas"
                    style="display: flex; flex-wrap: wrap; gap: 6px;">
                 <span *ngFor="let s of inst.sedes"
-                      style="font-size: 11.5px; font-weight: 600; color: #1d3f1b; background: #f3f8f1; border: 1px solid #dfe7da; padding: 4px 10px; border-radius: 9999px;">
+                      style="font-size: 11.5px; font-weight: 600; color: #2B5424; background: #eaf2e8; border: 1px solid #dfe7da; padding: 4px 10px; border-radius: 9999px;">
                   {{ s.nombre_sede }}
                 </span>
               </div>
@@ -828,7 +828,7 @@
 
         <ng-template #sinAsignacionesModal>
           <div style="text-align: center; padding: 36px 16px; background: #f3f8f1; border: 1px dashed #c9d9c5; border-radius: 14px;">
-            <h4 style="margin: 0 0 4px 0; font-size: 14.5px; font-weight: 700; color: #2b5526;">Sin instituciones asignadas</h4>
+            <h4 style="margin: 0 0 4px 0; font-size: 14.5px; font-weight: 700; color: #2B5424;">Sin instituciones asignadas</h4>
             <p style="margin: 0; font-size: 12px; color: #64748b;">Este usuario aún no tiene colegios asignados bajo su responsabilidad.</p>
           </div>
         </ng-template>
