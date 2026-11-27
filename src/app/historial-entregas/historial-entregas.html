@@ -578,7 +578,7 @@
   }
 
   .he-inv-sub.green { color: #2B5424; font-weight: 700; }
-  .he-inv-sub.amber { color: #7a5a0b; font-weight: 700; }
+  .he-inv-sub.en-transito { color: #7a5a0b; font-weight: 700; }
 
   .he-inv-sede {
     display: inline-flex;
@@ -1466,7 +1466,7 @@
                 <td>
                   <div class="he-inv-qty">{{ fac.totalCantidad }} {{ fac.unidadPrincipal }}</div>
                   <div *ngIf="fac.estado === 'RECIBIDA'" class="he-inv-sub green">Acreditado</div>
-                  <div *ngIf="fac.estado === 'EN_TRANSITO'" class="he-inv-sub amber">{{ fac.pendientes }} pend.</div>
+                  <div *ngIf="fac.estado === 'EN_TRANSITO'" class="he-inv-sub en-transito">{{ fac.pendientes }} pend.</div>
                 </td>
 
                 <!-- Acciones -->

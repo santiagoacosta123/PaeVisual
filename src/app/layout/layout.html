@@ -4,7 +4,7 @@
      Barra blanca flotante: solo iconos y, al pasar el mouse, se despliegan
      los nombres. El ítem activo se funde con la página (muesca curva) y
      lleva un círculo amarillo. El logo SIRAE siempre está visible.
-     Colores: gris azulado en reposo y ámbar suave (#fff1d0 / #e69a0c) al
+     Colores: gris azulado en reposo y ámbar suave (#fff1d0 / #d4a01b) al
      pasar el mouse, igual que el menú del supervisor.
      ===================================================================== */
   .adm-shell {
@@ -396,7 +396,7 @@
   }
   .adm-search input::placeholder { color: #94a3b8; }
   .adm-search input:focus {
-    border-color: #f59e0b;
+    border-color: #F5B81F;
     box-shadow: 0 0 0 3px rgba(250, 201, 75, .3);
   }
   .adm-search .material-symbols-outlined {
@@ -428,7 +428,7 @@
     border-radius: 50%;
     object-fit: cover;
     display: block;
-    border: 2px solid #f4b41f;
+    border: 2px solid #F5B81F;
     background: #fff;
   }
   .adm-user-name {
@@ -488,7 +488,7 @@
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: #e69a0c;
+    background: #d4a01b;
     box-shadow: 0 0 0 2px #fff;
     pointer-events: none;
   }
@@ -510,7 +510,7 @@
     justify-content: center;
     padding: 2px;
     border-radius: 50%;
-    border: 2px solid #f4b41f;
+    border: 2px solid #F5B81F;
     background: #fff;
     flex: none;
     transition: transform .24s cubic-bezier(.22, 1, .36, 1), border-color .24s ease, box-shadow .24s ease;
@@ -520,14 +520,14 @@
     position: absolute;
     inset: -2px;
     border-radius: 50%;
-    border: 2px solid #f4b41f;
+    border: 2px solid #F5B81F;
     opacity: 0;
     transform: scale(1);
     pointer-events: none;
   }
   .svh-user-btn:hover .svh-avatar-ring {
     transform: scale(1.08);
-    border-color: #e69a0c;
+    border-color: #d4a01b;
     box-shadow: 0 6px 16px -4px rgba(244, 180, 31, .45);
   }
   .svh-user-btn:hover .svh-avatar-ring::after {
@@ -583,7 +583,7 @@
     width: 3px;
     height: 14px;
     border-radius: 99px;
-    background: #e69a0c;
+    background: #d4a01b;
     opacity: 0;
     transform: scaleY(.5);
     transition: opacity .18s ease, transform .18s ease;
@@ -618,26 +618,26 @@
      Supervisor y Administrador conservan el amarillo de SIRAE.
      ===================================================================== */
   .adm-shell.adm-verde {
-    --adm-accent: #168a43;
-    --adm-accent-dark: #0f6b35;
-    --adm-soft: #e8f7ee;
-    --adm-tab-border: #168a43;
+    --adm-accent: #2B5424;
+    --adm-accent-dark: #1d3f1b;
+    --adm-soft: #eaf2e8;
+    --adm-tab-border: #2B5424;
   }
   .adm-verde .adm-search input:focus {
-    border-color: #168a43;
+    border-color: #2B5424;
     box-shadow: 0 0 0 3px rgba(22, 138, 67, .22);
   }
-  .adm-verde .adm-user-avatar { border-color: #168a43; }
-  .adm-verde .svh-notif-dot { background: #168a43; }
-  .adm-verde .svh-avatar-ring { border-color: #168a43; }
-  .adm-verde .svh-avatar-ring::after { border-color: #168a43; }
+  .adm-verde .adm-user-avatar { border-color: #2B5424; }
+  .adm-verde .svh-notif-dot { background: #2B5424; }
+  .adm-verde .svh-avatar-ring { border-color: #2B5424; }
+  .adm-verde .svh-avatar-ring::after { border-color: #2B5424; }
   .adm-verde .svh-user-btn:hover .svh-avatar-ring {
-    border-color: #0f6b35;
+    border-color: #1d3f1b;
     box-shadow: 0 6px 16px -4px rgba(22, 138, 67, .45);
   }
-  .adm-verde .svh-role { background: #e8f7ee; color: #0f6b35; }
-  .adm-verde .svh-act::before { background: #168a43; }
-  .adm-verde .svh-act:hover { background: #e8f7ee; color: #0f6b35; }
+  .adm-verde .svh-role { background: #eaf2e8; color: #1d3f1b; }
+  .adm-verde .svh-act::before { background: #2B5424; }
+  .adm-verde .svh-act:hover { background: #eaf2e8; color: #1d3f1b; }
   .adm-verde .svh-out::before { background: #e53935; }
   .adm-verde .svh-out:hover { background: #fdecea; color: #c62828; }
 
@@ -1152,7 +1152,7 @@
           <a routerLink="/perfil" class="svh-user-btn" title="Mi perfil de usuario" aria-label="Mi perfil">
             <span class="svh-avatar-ring">
               <img *ngIf="perfil.foto_perfil" [src]="perfil.foto_perfil" alt="" width="36" height="36" style="width:36px; height:36px; border-radius:50%; object-fit:cover; display:block;" />
-              <span *ngIf="!perfil.foto_perfil" style="width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:#e8f7ee; color:#0f6b35; font-size:13px; font-weight:700;">{{ iniciales }}</span>
+              <span *ngIf="!perfil.foto_perfil" style="width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:#eaf2e8; color:#1d3f1b; font-size:13px; font-weight:700;">{{ iniciales }}</span>
             </span>
           </a>
         </div>

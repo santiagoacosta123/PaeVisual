@@ -43,14 +43,14 @@ const MAX_NOTAS = 4;
 const ALERT_STYLES = `
 /* ---------- Paletas (compartidas por notas y alertas) ---------- */
 .bd-note--info, .bd-alert--info {
-  --bd-bg: #ffffff; --bd-title: #b77900; --bd-text: #475569; --bd-accent: #f4b41f;
-  --bd-btn: #f4b41f; --bd-btn-ink: #2b1d00;
-  --bd-close: rgba(15, 23, 42, 0.4); --bd-bar: #f4b41f; --bd-glow: 15, 23, 42;
+  --bd-bg: #ffffff; --bd-title: #7a5a0b; --bd-text: #475569; --bd-accent: #F5B81F;
+  --bd-btn: #F5B81F; --bd-btn-ink: #ffffff;
+  --bd-close: rgba(15, 23, 42, 0.4); --bd-bar: #F5B81F; --bd-glow: 15, 23, 42;
 }
 .bd-note--question, .bd-alert--question {
-  --bd-bg: #ffffff; --bd-title: #b77900; --bd-text: #475569; --bd-accent: #f4b41f;
-  --bd-btn: #f4b41f; --bd-btn-ink: #2b1d00;
-  --bd-close: rgba(15, 23, 42, 0.4); --bd-bar: #f4b41f; --bd-glow: 15, 23, 42;
+  --bd-bg: #ffffff; --bd-title: #7a5a0b; --bd-text: #475569; --bd-accent: #F5B81F;
+  --bd-btn: #F5B81F; --bd-btn-ink: #ffffff;
+  --bd-close: rgba(15, 23, 42, 0.4); --bd-bar: #F5B81F; --bd-glow: 15, 23, 42;
 }
 .bd-note--warning, .bd-alert--warning {
   --bd-bg: #ffffff; --bd-title: #e11d48; --bd-text: #475569; --bd-accent: #ee4a72;
@@ -58,9 +58,9 @@ const ALERT_STYLES = `
   --bd-close: rgba(15, 23, 42, 0.4); --bd-bar: #ee4a72; --bd-glow: 15, 23, 42;
 }
 .bd-note--success, .bd-alert--success {
-  --bd-bg: #ffffff; --bd-title: #15803d; --bd-text: #475569; --bd-accent: #22c55e;
-  --bd-btn: #22c55e; --bd-btn-ink: #052e16;
-  --bd-close: rgba(15, 23, 42, 0.4); --bd-bar: #22c55e; --bd-glow: 15, 23, 42;
+  --bd-bg: #ffffff; --bd-title: #2B5424; --bd-text: #475569; --bd-accent: #2B5424;
+  --bd-btn: #2B5424; --bd-btn-ink: #ffffff;
+  --bd-close: rgba(15, 23, 42, 0.4); --bd-bar: #2B5424; --bd-glow: 15, 23, 42;
 }
 .bd-note--danger, .bd-alert--danger {
   --bd-bg: #ffffff; --bd-title: #e72d5a; --bd-text: #475569; --bd-accent: #e72d5a;
@@ -429,28 +429,28 @@ const ICONOS = {
     '<circle cx="24" cy="24" r="20" fill="#e72d5a"/>' +
     '<g transform="translate(11.5 11.5) scale(1.05)" fill="#fff"><path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4ZM6 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5Zm13.5-9 1.96 2.5H17V9.5h2.5Zm-1.5 9c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5Z"/></g>'
   ),
-  /** Burbuja de información (gris suave con "i") */
+  /** Burbuja de información (amarillo institucional con "i") */
   info: SVG(
-    '<circle cx="24" cy="23" r="19" fill="#f4b41f"/>' +
-    '<path d="M8 44l2.5-10 8 5L8 44Z" fill="#f4b41f"/>' +
+    '<circle cx="24" cy="23" r="19" fill="#F5B81F"/>' +
+    '<path d="M8 44l2.5-10 8 5L8 44Z" fill="#F5B81F"/>' +
     '<circle cx="24" cy="14.5" r="2.7" fill="#fff"/>' +
     '<path d="M20 20.5h6.5v13H29v3h-9.5v-3H22v-10h-2Z" fill="#fff"/>'
   ),
-  /** Signo de pregunta en círculo ámbar (confirmaciones) */
+  /** Signo de pregunta en círculo amarillo (confirmaciones) */
   question: SVG(
-    '<circle cx="24" cy="24" r="20" fill="#f4b41f"/>' +
-    '<path d="M17.5 19c0-3.6 2.9-6 6.5-6s6.5 2.3 6.5 5.6c0 2.4-1.5 3.6-3 4.6-1.4.9-2.3 1.7-2.3 3.3" fill="none" stroke="#2b1d00" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>' +
-    '<circle cx="25" cy="34" r="2.5" fill="#2b1d00"/>'
+    '<circle cx="24" cy="24" r="20" fill="#F5B81F"/>' +
+    '<path d="M17.5 19c0-3.6 2.9-6 6.5-6s6.5 2.3 6.5 5.6c0 2.4-1.5 3.6-3 4.6-1.4.9-2.3 1.7-2.3 3.3" fill="none" stroke="#ffffff" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>' +
+    '<circle cx="25" cy="34" r="2.5" fill="#ffffff"/>'
   ),
   /** Círculo verde con check */
   success: SVG(
-    '<circle cx="24" cy="24" r="20" fill="#22c55e"/>' +
+    '<circle cx="24" cy="24" r="20" fill="#2B5424"/>' +
     '<path d="m15 24.5 6.5 6.5L33.5 18" fill="none" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>'
   ),
   /** Anillo que gira (cargando) */
   loading: SVG(
     '<circle cx="24" cy="24" r="18" fill="none" stroke="rgba(15,23,42,.1)" stroke-width="5"/>' +
-    '<path d="M24 6a18 18 0 0 1 18 18" fill="none" stroke="#f4b41f" stroke-width="5" stroke-linecap="round"/>',
+    '<path d="M24 6a18 18 0 0 1 18 18" fill="none" stroke="#F5B81F" stroke-width="5" stroke-linecap="round"/>',
     'bd-spinner'
   )
 } as const;

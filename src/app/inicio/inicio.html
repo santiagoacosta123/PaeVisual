@@ -10,11 +10,11 @@
       style="background: linear-gradient(135deg, #2b5526 0%, #1d3f1b 100%);">
 
       <div>
-        <p class="m-0 text-[11px] font-bold uppercase tracking-[0.14em]" style="color: #fac94b;">
+        <p class="m-0 text-[11px] font-bold uppercase tracking-[0.14em]" style="color: #F5B81F;">
           Gestión central
         </p>
         <h1 class="m-0 mt-1 text-[26px] font-bold tracking-tight text-white leading-tight">
-          ¡Bienvenido, <span style="color: #fac94b;">Super Administrador</span>!
+          ¡Bienvenido, <span style="color: #F5B81F;">Super Administrador</span>!
         </h1>
         <p class="m-0 mt-1.5 text-[14px] font-normal text-white/90 leading-relaxed">
           Centro de operaciones y gestión central del programa PAE.
@@ -26,13 +26,13 @@
         <button type="button"
           (click)="cambiarRangoDias(8)"
           class="h-8 px-4 rounded-full border-0 text-[13px] font-bold cursor-pointer transition-all"
-          [ngClass]="rangoDias === 8 ? 'bg-[#fac94b] text-slate-900 shadow-sm' : 'bg-transparent text-slate-500 hover:text-slate-800'">
+          [ngClass]="rangoDias === 8 ? 'bg-[#F5B81F] text-white shadow-sm' : 'bg-transparent text-slate-500 hover:text-slate-800'">
           8 días
         </button>
         <button type="button"
           (click)="cambiarRangoDias(20)"
           class="h-8 px-4 rounded-full border-0 text-[13px] font-bold cursor-pointer transition-all"
-          [ngClass]="rangoDias === 20 ? 'bg-[#fac94b] text-slate-900 shadow-sm' : 'bg-transparent text-slate-500 hover:text-slate-800'">
+          [ngClass]="rangoDias === 20 ? 'bg-[#F5B81F] text-white shadow-sm' : 'bg-transparent text-slate-500 hover:text-slate-800'">
           20 días
         </button>
       </div>
@@ -253,7 +253,7 @@
         <div class="min-w-0">
           <div class="flex flex-wrap items-center gap-2">
             <h2 class="m-0 text-[16px] font-bold tracking-tight text-slate-900">{{ institucionNombre }}</h2>
-            <span class="rounded-full border border-emerald-200 bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800">
+            <span class="rounded-full border border-[#2B5424]/30 bg-[#eaf2e8] px-2.5 py-0.5 text-[11px] font-bold text-[#2B5424]">
               {{ metricasAdmin.sedesOperativas }}/{{ metricasAdmin.totalSedes }} sedes operativas
             </span>
           </div>
@@ -267,7 +267,7 @@
             (click)="seleccionarFiltroSede('TODAS')"
             class="h-8 cursor-pointer whitespace-nowrap rounded-full border px-3.5 text-xs font-bold transition-all"
             [ngClass]="sedeFiltroSeleccionada === 'TODAS'
-              ? 'border-[#fac94b] bg-[#fac94b] text-slate-900 shadow-xs'
+              ? 'border-[#F5B81F] bg-[#F5B81F] text-white shadow-xs'
               : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'">
             Todas (consolidado)
           </button>
@@ -275,7 +275,7 @@
             (click)="seleccionarFiltroSede(s.nombre)"
             class="h-8 cursor-pointer whitespace-nowrap rounded-full border px-3.5 text-xs font-bold transition-all"
             [ngClass]="sedeFiltroSeleccionada === s.nombre
-              ? 'border-[#fac94b] bg-[#fac94b] text-slate-900 shadow-xs'
+              ? 'border-[#F5B81F] bg-[#F5B81F] text-white shadow-xs'
               : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'">
             {{ s.nombre }}
           </button>
@@ -342,8 +342,8 @@
                 </div>
                 <span class="shrink-0 rounded-full border px-2.5 py-0.5 text-[10.5px] font-bold"
                   [ngClass]="sede.estadoComedor === 'OPERATIVO'
-                    ? 'border-emerald-200 bg-emerald-100 text-emerald-800'
-                    : 'border-amber-200 bg-amber-100 text-amber-800'">
+                    ? 'border-[#2B5424]/30 bg-[#eaf2e8] text-[#2B5424]'
+                    : 'border-[#F5B81F]/30 bg-[#fdf3d7] text-[#7a5a0b]'">
                   {{ sede.estadoComedor === 'OPERATIVO' ? 'Comedor activo' : 'En servicio' }}
                 </span>
               </div>
@@ -357,8 +357,8 @@
                   <div class="h-full rounded-full transition-all duration-500"
                     [style.width.%]="sede.porcentajeCumplimiento"
                     [ngClass]="sede.porcentajeCumplimiento >= 90
-                      ? 'bg-emerald-500'
-                      : 'bg-amber-500'">
+                      ? 'bg-[#2B5424]'
+                      : 'bg-[#F5B81F]'">
                   </div>
                 </div>
               </div>
@@ -367,7 +367,7 @@
                 <span>Jornada: {{ sede.jornadas }}</span>
                 <button type="button"
                   (click)="abrirModalRacionesSede(sede)"
-                  class="cursor-pointer border-none bg-amber-100/80 hover:bg-amber-200 text-[#8A4B08] font-bold px-2.5 py-1 rounded-md text-[11px] transition-all">
+                  class="cursor-pointer border-none bg-[#fdf3d7] hover:bg-[#fdf3d7] text-[#8A4B08] font-bold px-2.5 py-1 rounded-md text-[11px] transition-all">
                   Actualizar raciones
                 </button>
               </div>
@@ -449,7 +449,7 @@
               </div>
               <div class="shrink-0 text-right">
                 <div class="text-[14px] font-extrabold"
-                  [ngClass]="m.tipo === 'ENTRADA' ? 'text-emerald-700' : 'text-slate-900'">
+                  [ngClass]="m.tipo === 'ENTRADA' ? 'text-[#2B5424]' : 'text-slate-900'">
                   {{ m.tipo === 'ENTRADA' ? '+' : '−' }}{{ m.cantidad }} {{ m.unidad }}
                 </div>
                 <div class="text-[10.5px] text-slate-500">{{ m.fechaHora }}</div>
@@ -476,7 +476,7 @@
           <p class="m-0 mt-0.5 text-xs text-slate-500">{{ menuDelDia.tipoRacion }}</p>
         </div>
         <div class="flex flex-wrap items-center gap-4">
-          <span class="inline-flex h-8 items-center rounded-full border border-emerald-300 bg-emerald-100 px-4 text-[12.5px] font-bold text-emerald-800">
+          <span class="inline-flex h-8 items-center rounded-full border border-[#2B5424]/40 bg-[#eaf2e8] px-4 text-[12.5px] font-bold text-[#2B5424]">
             Minuta aprobada
           </span>
           <span class="text-[13px] text-slate-700">Horario del almuerzo: {{ menuDelDia.horaServicio }}</span>
@@ -523,7 +523,7 @@
               (input)="onBusquedaInsumo($event)"
               placeholder="Buscar insumo o lote..."
               aria-label="Buscar insumo o lote"
-              class="h-10 w-full rounded-full border border-slate-300 bg-slate-50 px-4 text-[13px] text-slate-800 transition-all placeholder:text-slate-500 focus:border-[#fac94b] focus:bg-white focus:outline-none" />
+              class="h-10 w-full rounded-full border border-slate-300 bg-slate-50 px-4 text-[13px] text-slate-800 transition-all placeholder:text-slate-500 focus:border-[#F5B81F] focus:bg-white focus:outline-none" />
             <button *ngIf="busquedaInsumo"
               type="button"
               (click)="busquedaInsumo = ''"
@@ -605,7 +605,7 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100">
-            <tr *ngFor="let item of insumosFiltrados" class="transition-colors hover:bg-amber-50/30">
+            <tr *ngFor="let item of insumosFiltrados" class="transition-colors hover:bg-[#fdf3d7]/30">
               <td class="px-4 py-2.5">
                 <div class="font-bold text-slate-900">{{ item.nombre }}</div>
                 <div class="text-[12px] text-slate-500">Lote: {{ item.lote }}</div>
@@ -627,7 +627,7 @@
                 <div class="h-2 w-full overflow-hidden rounded-full bg-slate-200">
                   <div class="h-full rounded-full"
                     [style.width.%]="calcularPorcentajeStock(item.stockActual, item.stockMinimo)"
-                    [ngClass]="item.estado === 'CRITICO' ? 'bg-rose-500' : (item.estado === 'BAJO' ? 'bg-amber-500' : 'bg-emerald-500')">
+                    [ngClass]="item.estado === 'CRITICO' ? 'bg-rose-500' : (item.estado === 'BAJO' ? 'bg-[#F5B81F]' : 'bg-[#2B5424]')">
                   </div>
                 </div>
               </td>
@@ -636,8 +636,8 @@
                   [ngClass]="item.estado === 'CRITICO'
                     ? 'border-rose-200 bg-rose-50 text-rose-700'
                     : (item.estado === 'BAJO'
-                      ? 'border-amber-200 bg-amber-100 text-amber-800'
-                      : 'border-emerald-200 bg-emerald-100 text-emerald-800')">
+                      ? 'border-[#F5B81F]/30 bg-[#fdf3d7] text-[#7a5a0b]'
+                      : 'border-[#2B5424]/30 bg-[#eaf2e8] text-[#2B5424]')">
                   {{ item.estado === 'CRITICO' ? 'Crítico' : (item.estado === 'BAJO' ? 'Reorden' : 'Óptimo') }}
                 </span>
               </td>
@@ -648,7 +648,7 @@
               <td class="px-4 py-2.5 text-right">
                 <button type="button"
                   (click)="abrirModalAjuste(item)"
-                  class="cursor-pointer inline-flex h-8 items-center justify-center rounded-full border border-[#F0CF72] bg-[#FFF4D6] px-4 text-[12.5px] font-bold text-[#7A4A06] transition-colors hover:bg-[#fac94b] hover:text-slate-900">
+                  class="cursor-pointer inline-flex h-8 items-center justify-center rounded-full border border-[#F0CF72] bg-[#FFF4D6] px-4 text-[12.5px] font-bold text-[#7A4A06] transition-colors hover:bg-[#F5B81F] hover:text-slate-900">
                   Ajustar
                 </button>
               </td>
@@ -681,7 +681,7 @@
         </div>
 
         <div class="mt-4 flex flex-col gap-3.5">
-          <div class="rounded-xl bg-amber-50/70 border border-amber-200/80 p-3 flex items-center justify-between text-xs">
+          <div class="rounded-xl bg-[#fdf3d7] border border-[#F5B81F]/30/80 p-3 flex items-center justify-between text-xs">
             <span class="text-slate-600 font-medium">Stock actual en bodega:</span>
             <span class="text-sm font-extrabold text-slate-900">{{ itemAjuste.stockActual }} {{ itemAjuste.unidad }}</span>
           </div>
@@ -691,12 +691,12 @@
             <div class="grid grid-cols-3 gap-2">
               <button type="button" (click)="tipoAjuste = 'ENTRADA'"
                 class="h-9 rounded-lg border text-xs font-bold cursor-pointer transition-all"
-                [ngClass]="tipoAjuste === 'ENTRADA' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'">
+                [ngClass]="tipoAjuste === 'ENTRADA' ? 'bg-[#2B5424] text-white border-[#2B5424]' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'">
                 + Entrada
               </button>
               <button type="button" (click)="tipoAjuste = 'SALIDA'"
                 class="h-9 rounded-lg border text-xs font-bold cursor-pointer transition-all"
-                [ngClass]="tipoAjuste === 'SALIDA' ? 'bg-amber-600 text-white border-amber-600' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'">
+                [ngClass]="tipoAjuste === 'SALIDA' ? 'bg-[#F5B81F] text-white border-[#F5B81F]' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'">
                 − Salida
               </button>
               <button type="button" (click)="tipoAjuste = 'DIRECTO'"
@@ -712,13 +712,13 @@
               {{ tipoAjuste === 'DIRECTO' ? 'Nueva Cantidad Física (' + itemAjuste.unidad + ')' : 'Cantidad a ' + (tipoAjuste === 'ENTRADA' ? 'Ingresar' : 'Retirar') + ' (' + itemAjuste.unidad + ')' }}
             </label>
             <input type="number" [(ngModel)]="cantidadAjuste" min="0" placeholder="Ej. 25"
-              class="w-full h-10 px-3.5 rounded-lg border border-slate-300 text-sm focus:border-amber-400 focus:outline-none" />
+              class="w-full h-10 px-3.5 rounded-lg border border-slate-300 text-sm focus:border-[#F5B81F] focus:outline-none" />
           </div>
 
           <div>
             <label class="block text-xs font-bold text-slate-700 mb-1">Motivo / Destino (Opcional)</label>
             <input type="text" [(ngModel)]="motivoAjuste" placeholder="Ej. Despacho a Sede Principal, Remesa recibida..."
-              class="w-full h-10 px-3.5 rounded-lg border border-slate-300 text-xs focus:border-amber-400 focus:outline-none" />
+              class="w-full h-10 px-3.5 rounded-lg border border-slate-300 text-xs focus:border-[#F5B81F] focus:outline-none" />
           </div>
         </div>
 
@@ -728,7 +728,7 @@
             Cancelar
           </button>
           <button type="button" (click)="guardarAjuste()"
-            class="h-9 px-5 rounded-full border-none bg-[#fac94b] text-xs font-bold text-slate-900 cursor-pointer hover:bg-[#f59e0b] shadow-xs">
+            class="h-9 px-5 rounded-full border-none bg-[#F5B81F] text-xs font-bold text-slate-900 cursor-pointer hover:bg-[#F5B81F] shadow-xs">
             Guardar Ajuste
           </button>
         </div>
@@ -756,13 +756,13 @@
           <div class="sm:col-span-2">
             <label class="block text-xs font-bold text-slate-700 mb-1">Nombre del Alimento *</label>
             <input type="text" [(ngModel)]="nuevoInsumoForm.nombre" placeholder="Ej. Frijol Rojo Calima, Atún en Agua..."
-              class="w-full h-10 px-3.5 rounded-lg border border-slate-300 text-sm focus:border-amber-400 focus:outline-none" />
+              class="w-full h-10 px-3.5 rounded-lg border border-slate-300 text-sm focus:border-[#F5B81F] focus:outline-none" />
           </div>
 
           <div>
             <label class="block text-xs font-bold text-slate-700 mb-1">Categoría</label>
             <select [(ngModel)]="nuevoInsumoForm.categoria"
-              class="w-full h-10 px-3 rounded-lg border border-slate-300 text-xs focus:border-amber-400 focus:outline-none bg-white">
+              class="w-full h-10 px-3 rounded-lg border border-slate-300 text-xs focus:border-[#F5B81F] focus:outline-none bg-white">
               <option value="Abarrotes">Abarrotes</option>
               <option value="Lácteos">Lácteos</option>
               <option value="Cárnicos y Huevos">Cárnicos y Huevos</option>
@@ -773,7 +773,7 @@
           <div>
             <label class="block text-xs font-bold text-slate-700 mb-1">Unidad de Medida</label>
             <select [(ngModel)]="nuevoInsumoForm.unidad"
-              class="w-full h-10 px-3 rounded-lg border border-slate-300 text-xs focus:border-amber-400 focus:outline-none bg-white">
+              class="w-full h-10 px-3 rounded-lg border border-slate-300 text-xs focus:border-[#F5B81F] focus:outline-none bg-white">
               <option value="Kg">Kilogramos (Kg)</option>
               <option value="Litros">Litros</option>
               <option value="Unds">Unidades (Unds)</option>
@@ -784,25 +784,25 @@
           <div>
             <label class="block text-xs font-bold text-slate-700 mb-1">Stock Inicial *</label>
             <input type="number" [(ngModel)]="nuevoInsumoForm.stockActual" min="0" placeholder="Ej. 60"
-              class="w-full h-10 px-3.5 rounded-lg border border-slate-300 text-sm focus:border-amber-400 focus:outline-none" />
+              class="w-full h-10 px-3.5 rounded-lg border border-slate-300 text-sm focus:border-[#F5B81F] focus:outline-none" />
           </div>
 
           <div>
             <label class="block text-xs font-bold text-slate-700 mb-1">Stock Mínimo Seguridad *</label>
             <input type="number" [(ngModel)]="nuevoInsumoForm.stockMinimo" min="1" placeholder="Ej. 20"
-              class="w-full h-10 px-3.5 rounded-lg border border-slate-300 text-sm focus:border-amber-400 focus:outline-none" />
+              class="w-full h-10 px-3.5 rounded-lg border border-slate-300 text-sm focus:border-[#F5B81F] focus:outline-none" />
           </div>
 
           <div>
             <label class="block text-xs font-bold text-slate-700 mb-1">Código de Lote</label>
             <input type="text" [(ngModel)]="nuevoInsumoForm.lote" placeholder="Ej. LOT-2026-001"
-              class="w-full h-10 px-3.5 rounded-lg border border-slate-300 text-xs focus:border-amber-400 focus:outline-none" />
+              class="w-full h-10 px-3.5 rounded-lg border border-slate-300 text-xs focus:border-[#F5B81F] focus:outline-none" />
           </div>
 
           <div>
             <label class="block text-xs font-bold text-slate-700 mb-1">Días para Vencimiento</label>
             <input type="number" [(ngModel)]="nuevoInsumoForm.diasVencimiento" min="1" placeholder="Ej. 45"
-              class="w-full h-10 px-3.5 rounded-lg border border-slate-300 text-xs focus:border-amber-400 focus:outline-none" />
+              class="w-full h-10 px-3.5 rounded-lg border border-slate-300 text-xs focus:border-[#F5B81F] focus:outline-none" />
           </div>
         </div>
 
@@ -812,7 +812,7 @@
             Cancelar
           </button>
           <button type="button" (click)="guardarNuevoInsumo()"
-            class="h-9 px-5 rounded-full border-none bg-[#fac94b] text-xs font-bold text-slate-900 cursor-pointer hover:bg-[#f59e0b] shadow-xs">
+            class="h-9 px-5 rounded-full border-none bg-[#F5B81F] text-xs font-bold text-slate-900 cursor-pointer hover:bg-[#F5B81F] shadow-xs">
             Guardar Insumo
           </button>
         </div>
@@ -845,13 +845,13 @@
           <div>
             <label class="block text-xs font-bold text-slate-700 mb-1">Raciones Servidas Hoy *</label>
             <input type="number" [(ngModel)]="racionesServidasInput" min="0" [max]="sedeRacionesSeleccionada.racionesAsignadas * 1.5"
-              class="w-full h-10 px-3.5 rounded-lg border border-slate-300 text-sm focus:border-amber-400 focus:outline-none" />
+              class="w-full h-10 px-3.5 rounded-lg border border-slate-300 text-sm focus:border-[#F5B81F] focus:outline-none" />
           </div>
 
           <div>
             <label class="block text-xs font-bold text-slate-700 mb-1">Estado Operativo del Comedor</label>
             <select [(ngModel)]="estadoComedorInput"
-              class="w-full h-10 px-3 rounded-lg border border-slate-300 text-xs focus:border-amber-400 focus:outline-none bg-white">
+              class="w-full h-10 px-3 rounded-lg border border-slate-300 text-xs focus:border-[#F5B81F] focus:outline-none bg-white">
               <option value="OPERATIVO">Comedor Activo / Abastecido</option>
               <option value="EN_SERVICIO">En Servicio / Preparación</option>
               <option value="ABASTECIDO">Servicio Concluido</option>
@@ -865,7 +865,7 @@
             Cancelar
           </button>
           <button type="button" (click)="guardarRacionesSede()"
-            class="h-9 px-5 rounded-full border-none bg-[#fac94b] text-xs font-bold text-slate-900 cursor-pointer hover:bg-[#f59e0b] shadow-xs">
+            class="h-9 px-5 rounded-full border-none bg-[#F5B81F] text-xs font-bold text-slate-900 cursor-pointer hover:bg-[#F5B81F] shadow-xs">
             Guardar Raciones
           </button>
         </div>

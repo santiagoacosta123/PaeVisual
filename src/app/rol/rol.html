@@ -57,7 +57,7 @@
           *ngIf="esSuperAdmin && vistaActiva === 'roles'"
           type="button" 
           (click)="abrirFormulario()" 
-          class="bg-amber-400 hover:bg-amber-500 text-amber-950 font-semibold px-4 py-2 rounded-xl text-xs transition cursor-pointer whitespace-nowrap inline-flex items-center gap-1.5 shadow-2xs">
+          class="bg-[#F5B81F] hover:bg-[#d4a01b] text-white font-semibold px-4 py-2 rounded-xl text-xs transition cursor-pointer whitespace-nowrap inline-flex items-center gap-1.5 shadow-2xs">
           <span>+ Nuevo rol</span>
         </button>
       </div>
@@ -108,9 +108,9 @@
 
             <!-- Usuarios Activos Asignados (Criterio 11) -->
             <td class="py-3 px-3 text-center">
-              <span [class.bg-emerald-50]="r.total_usuarios_activos && r.total_usuarios_activos > 0"
-                    [class.text-emerald-700]="r.total_usuarios_activos && r.total_usuarios_activos > 0"
-                    [class.border-emerald-200]="r.total_usuarios_activos && r.total_usuarios_activos > 0"
+              <span [class.bg-[#eaf2e8]]="r.total_usuarios_activos && r.total_usuarios_activos > 0"
+                    [class.text-[#2B5424]]="r.total_usuarios_activos && r.total_usuarios_activos > 0"
+                    [class.border-[#2B5424]/30]="r.total_usuarios_activos && r.total_usuarios_activos > 0"
                     [class.bg-slate-50]="!r.total_usuarios_activos || r.total_usuarios_activos === 0"
                     [class.text-slate-500]="!r.total_usuarios_activos || r.total_usuarios_activos === 0"
                     class="border px-2.5 py-0.5 rounded-full text-[11px] font-semibold inline-flex items-center gap-1">
@@ -141,9 +141,9 @@
                 <button 
                   type="button" 
                   (click)="verPermisos(r)" 
-                  class="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 px-2 py-1 rounded-lg text-[11px] font-semibold inline-flex items-center gap-1 transition cursor-pointer"
+                  class="bg-[#eaf2e8] hover:bg-[#eaf2e8] text-[#2B5424] border border-[#2B5424]/30 px-2 py-1 rounded-lg text-[11px] font-semibold inline-flex items-center gap-1 transition cursor-pointer"
                   title="Consultar permisos granulares">
-                  <svg class="w-3 h-3 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <svg class="w-3 h-3 text-[#2B5424]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
                   </svg>
                   <span>Permisos ({{ r.permisos?.length || 0 }})</span>
@@ -154,9 +154,9 @@
                   *ngIf="esSuperAdmin"
                   type="button" 
                   (click)="abrirConfigurarPermisos(r)" 
-                  class="bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 px-2 py-1 rounded-lg text-[11px] font-semibold inline-flex items-center gap-1 transition cursor-pointer"
+                  class="bg-[#fdf3d7] hover:bg-[#fdf3d7] text-[#7a5a0b] border border-[#F5B81F]/40 px-2 py-1 rounded-lg text-[11px] font-semibold inline-flex items-center gap-1 transition cursor-pointer"
                   title="Configurar y asignar permisos">
-                  <svg class="w-3 h-3 text-amber-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <svg class="w-3 h-3 text-[#7a5a0b]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="12" r="3"></circle>
                     <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
                   </svg>
@@ -224,7 +224,7 @@
 
     <!-- VISTA 2: MATRIZ DE MÓDULOS Y FUNCIONALIDADES (Criterio 2) -->
     <div *ngIf="!cargando && vistaActiva === 'matriz'" class="space-y-4">
-      <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-900 flex items-center gap-2">
+      <div class="bg-[#fdf3d7] border border-[#F5B81F]/30 rounded-xl p-3 text-xs text-[#7a5a0b] flex items-center gap-2">
         <span class="text-base">ℹ</span>
         <span>
           Estructura oficial de módulos y funcionalidades del sistema SIRAE PAE. Cada permiso cuenta con un nivel de autorización estricto para garantizar la integridad institucional.
@@ -284,7 +284,7 @@
     <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto space-y-4">
       <div class="flex items-center justify-between pb-3 border-b border-slate-100">
         <div class="flex items-center gap-2">
-          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+          <span class="w-2.5 h-2.5 rounded-full bg-[#2B5424]"></span>
           <h3 class="text-sm font-bold text-slate-900 m-0">
             Permisos del Rol: {{ rolSeleccionadoPermisos.nombre_display || rolSeleccionadoPermisos.nombre }}
           </h3>
@@ -330,7 +330,7 @@
       
       <div class="flex items-center justify-between pb-3 border-b border-slate-100">
         <div class="flex items-center gap-2">
-          <span class="w-3 h-3 rounded-full bg-amber-500"></span>
+          <span class="w-3 h-3 rounded-full bg-[#F5B81F]"></span>
           <h3 class="text-sm font-bold text-slate-900 m-0">
             Configurar Permisos: {{ rolConfigurando.nombre_display || rolConfigurando.nombre }}
           </h3>
@@ -347,7 +347,7 @@
         </div>
       </div>
 
-      <div *ngIf="rolConfigurando.nombre !== 'SuperAdministrador'" class="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 flex items-start gap-2">
+      <div *ngIf="rolConfigurando.nombre !== 'SuperAdministrador'" class="p-3 bg-[#fdf3d7] border border-[#F5B81F]/30 rounded-xl text-xs text-[#7a5a0b] flex items-start gap-2">
         <span class="text-base">⚠️</span>
         <div>
           <strong class="block">Prevención de Escalada de Privilegios</strong>
@@ -367,8 +367,8 @@
             <div *ngFor="let p of mod.permisos" 
                  (click)="togglePermiso(p.codigo)"
                  [class.bg-white]="!codigosPermisosSeleccionados.has(p.codigo)"
-                 [class.bg-amber-50]="codigosPermisosSeleccionados.has(p.codigo)"
-                 [class.border-amber-300]="codigosPermisosSeleccionados.has(p.codigo)"
+                 [class.bg-[#fdf3d7]]="codigosPermisosSeleccionados.has(p.codigo)"
+                 [class.border-[#F5B81F]/40]="codigosPermisosSeleccionados.has(p.codigo)"
                  [class.border-slate-200]="!codigosPermisosSeleccionados.has(p.codigo)"
                  [class.opacity-60]="esPermisoBloqueado(p.codigo)"
                  [class.cursor-not-allowed]="esPermisoBloqueado(p.codigo)"
@@ -379,7 +379,7 @@
                 [checked]="codigosPermisosSeleccionados.has(p.codigo)"
                 [disabled]="esPermisoBloqueado(p.codigo)"
                 (click)="$event.stopPropagation(); togglePermiso(p.codigo)"
-                class="mt-0.5 rounded text-amber-600 focus:ring-amber-500 cursor-pointer">
+                class="mt-0.5 rounded text-[#7a5a0b] focus:ring-[#F5B81F] cursor-pointer">
               
               <div class="flex-1 flex flex-col gap-0.5">
                 <div class="flex items-center justify-between">
@@ -415,7 +415,7 @@
             type="button" 
             (click)="guardarPermisosRol()" 
             [disabled]="guardandoPermisos"
-            class="bg-amber-400 hover:bg-amber-500 text-amber-950 font-semibold px-4 py-2 rounded-xl text-xs transition cursor-pointer shadow-2xs inline-flex items-center gap-1.5">
+            class="bg-[#F5B81F] hover:bg-[#d4a01b] text-white font-semibold px-4 py-2 rounded-xl text-xs transition cursor-pointer shadow-2xs inline-flex items-center gap-1.5">
             <span *ngIf="guardandoPermisos" class="animate-spin">⟳</span>
             <span>{{ guardandoPermisos ? 'Aplicando...' : 'Guardar y Aplicar Permisos' }}</span>
           </button>
@@ -450,8 +450,8 @@
       <div *ngIf="!cargandoAuditoria && auditoriasRol.length > 0" class="space-y-3 max-h-[55vh] overflow-y-auto pr-1">
         <div *ngFor="let a of auditoriasRol" class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2 text-xs">
           <div class="flex items-center justify-between flex-wrap gap-2">
-            <span [class.bg-amber-100]="a.accion === 'MODIFICACION_PERMISOS'"
-                  [class.text-amber-900]="a.accion === 'MODIFICACION_PERMISOS'"
+            <span [class.bg-[#fdf3d7]]="a.accion === 'MODIFICACION_PERMISOS'"
+                  [class.text-[#7a5a0b]]="a.accion === 'MODIFICACION_PERMISOS'"
                   [class.bg-rose-100]="a.accion === 'INTENTO_ESCALADA_PRIVILEGIOS'"
                   [class.text-rose-900]="a.accion === 'INTENTO_ESCALADA_PRIVILEGIOS'"
                   class="font-mono text-[10px] uppercase font-bold px-2 py-0.5 rounded">
@@ -503,7 +503,7 @@
             name="nombre" 
             placeholder="Ej. Coordinador PAE, Auxiliar..." 
             class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500 disabled:bg-slate-100 disabled:text-slate-500">
-          <p *ngIf="modoEdicion && rolForm.es_protegido" class="text-[11px] text-amber-600 mt-1">
+          <p *ngIf="modoEdicion && rolForm.es_protegido" class="text-[11px] text-[#7a5a0b] mt-1">
             * El código estructural de un rol protegido del sistema no puede ser modificado.
           </p>
         </div>

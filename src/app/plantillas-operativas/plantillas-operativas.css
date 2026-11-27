@@ -15,12 +15,12 @@
 }
 
 .ico-naranja {
-  background: linear-gradient(135deg, #faa911 0%, #e69a0c 100%);
+  background: linear-gradient(135deg, #F5B81F 0%, #d4a01b 100%);
   color: #fff;
 }
 
 .btn-naranja {
-  background: linear-gradient(135deg, #faa911 0%, #e69a0c 100%);
+  background: linear-gradient(135deg, #F5B81F 0%, #d4a01b 100%);
   color: #fff;
   box-shadow: 0 10px 20px -8px rgba(250, 169, 17, .6);
   transition: all .2s ease;
@@ -37,13 +37,13 @@
 
 .btn-outline-naranja {
   background: #fff;
-  border: 1.5px solid #faa911;
-  color: #b45309;
+  border: 1.5px solid #F5B81F;
+  color: #7a5a0b;
   transition: all .2s ease;
 }
 
 .btn-outline-naranja:hover:not(:disabled) {
-  background: #fffbeb;
+  background: #fdf3d7;
   transform: translateY(-2px);
 }
 
@@ -212,7 +212,7 @@
   background: #f0fdf4 !important;
 }
 .planilla-pae-oficial [style*="background:#fef9c3"],
-.planilla-pae-oficial [style*="background:#fef3c7"] {
+.planilla-pae-oficial [style*="background:#fdf3d7"] {
   background: #fef9c3 !important;
 }
 
@@ -302,8 +302,8 @@
 /* Inputs de edición en tabla */
 .input-tabla {
   width: 100%;
-  border: 1px solid #faa911;
-  background: #fffbeb;
+  border: 1px solid #F5B81F;
+  background: #fdf3d7;
   border-radius: 4px;
   padding: 2px 4px;
   font-size: 11.5px;
@@ -597,15 +597,15 @@
   display: inline-flex;
   flex-direction: column;
   align-items: center;
-  border: 1px solid #d97706;
+  border: 1px solid #F5B81F;
   border-radius: 6px;
   padding: 2px 6px;
-  background: #fffbeb;
+  background: #fdf3d7;
 }
 .rem-badge-texto {
   font-size: 6.5px;
   font-weight: 800;
-  color: #92400e;
+  color: #7a5a0b;
   text-transform: uppercase;
 }
 

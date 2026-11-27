@@ -14,7 +14,7 @@
     <div *ngIf="cargandoDetalle" style="padding: 40px 20px; text-align: center;">
       <div style="display: inline-flex; flex-direction: column; align-items: center; gap: 12px;">
         <div
-          style="width: 32px; height: 32px; border: 3px solid #fde68a; border-top-color: #d97706; border-radius: 50%; animation: spin 0.8s linear infinite;">
+          style="width: 32px; height: 32px; border: 3px solid rgba(245, 184, 31, 0.35); border-top-color: #F5B81F; border-radius: 50%; animation: spin 0.8s linear infinite;">
         </div>
         <div>
           <strong style="color: #0f172a; font-size: 14px; display: block;">Cargando información del contrato...</strong>
@@ -55,7 +55,7 @@
 
             <span *ngIf="contrato?.estado === 'Activo'"
               style="padding: 1px 9px; border-radius: 20px; font-size: 10px; font-weight: 700; background: rgba(255,255,255,0.15); color: #ffffff; border: 1px solid rgba(255,255,255,0.4); display: inline-flex; align-items: center; gap: 5px;">
-              <span style="width: 5px; height: 5px; border-radius: 50%; background: #10b981;"></span>
+              <span style="width: 5px; height: 5px; border-radius: 50%; background: #2B5424;"></span>
               Activo
             </span>
             <span *ngIf="contrato?.estado === 'Inactivo'"
@@ -241,13 +241,13 @@
 
             <div style="display: flex; align-items: center; gap: 8px;">
               <span
-                style="padding: 3px 10px; border-radius: 9999px; font-size: 10px; font-weight: 700; background: #059669; color: #ffffff; letter-spacing: 0.3px;">
+                style="padding: 3px 10px; border-radius: 9999px; font-size: 10px; font-weight: 700; background: #2B5424; color: #ffffff; letter-spacing: 0.3px;">
                 {{ rolUsuarioActualNombre }}
               </span>
 
               <button *ngIf="puedeEditarDistribucion" type="button" (click)="abrirEditarDistribucion()"
-                style="background: #eab308; color: #ffffff; border: none; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 4px rgba(234, 179, 8, 0.25); transition: background-color 0.15s;"
-                onmouseover="this.style.background='#ca8a04'" onmouseout="this.style.background='#eab308'">
+                style="background: #d4a01b; color: #ffffff; border: none; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 4px rgba(234, 179, 8, 0.25); transition: background-color 0.15s;"
+                onmouseover="this.style.background='#ca8a04'" onmouseout="this.style.background='#d4a01b'">
                 Editar distribución
               </button>
             </div>
@@ -256,7 +256,7 @@
           <div *ngIf="!puedeEditarDistribucion"
             style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 8px; padding: 9px 14px; font-size: 12px; line-height: 1.4;">
             <strong style="color: #065f46; font-weight: 700;">Consulta de solo lectura.</strong>
-            <span style="color: #047857;"> La distribución es gestionada por el Administrador institucional y no puede
+            <span style="color: #2B5424;"> La distribución es gestionada por el Administrador institucional y no puede
               modificarse aquí.</span>
           </div>
 
@@ -264,18 +264,18 @@
             <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 16px;">
               <div style="font-size: 12px; font-weight: 600; color: #64748b; margin-bottom: 4px;">Cupos distribuidos
               </div>
-              <div style="font-size: 24px; font-weight: 800; color: #047857; margin-bottom: 8px; line-height: 1.1;">{{
+              <div style="font-size: 24px; font-weight: 800; color: #2B5424; margin-bottom: 8px; line-height: 1.1;">{{
                 totalCuposAsignadosSedes }}</div>
               <div style="background: #e2e8f0; border-radius: 9999px; height: 5px; overflow: hidden; width: 100%;">
                 <div [style.width.%]="porcentajeDistribuido"
-                  style="background: #059669; height: 100%; transition: width 0.3s;"></div>
+                  style="background: #2B5424; height: 100%; transition: width 0.3s;"></div>
               </div>
             </div>
 
             <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 16px;">
               <div style="font-size: 12px; font-weight: 600; color: #64748b; margin-bottom: 4px;">Pendientes por
                 distribuir</div>
-              <div style="font-size: 24px; font-weight: 800; color: #d97706; margin-bottom: 4px; line-height: 1.1;">{{
+              <div style="font-size: 24px; font-weight: 800; color: #F5B81F; margin-bottom: 4px; line-height: 1.1;">{{
                 cuposPendientesDistribucion }}</div>
               <div style="font-size: 11px; color: #64748b;">de {{ cuposAutorizados }} cupos autorizados</div>
             </div>
@@ -296,7 +296,7 @@
                   </div>
 
                   <div>
-                    <span style="color: #059669; font-weight: 700; font-size: 13px;">
+                    <span style="color: #2B5424; font-weight: 700; font-size: 13px;">
                       {{ obtenerCuposDeSede(s) }} cupos
                     </span>
                   </div>
@@ -382,7 +382,7 @@
                     </div>
                     <div style="display: flex; flex-wrap: wrap; gap: 6px;">
                       <span *ngIf="s.jornada_manana"
-                        style="display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 6px; font-size: 11.5px; font-weight: 700; background: #ecfdf5; color: #065f46; border: 1.5px solid #10b981;">
+                        style="display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 6px; font-size: 11.5px; font-weight: 700; background: #ecfdf5; color: #065f46; border: 1.5px solid #2B5424;">
                         Mañana
                       </span>
                       <span *ngIf="s.jornada_tarde"
@@ -903,7 +903,7 @@
       style="position: absolute; top: 12px; right: 16px; background: none; border: none; font-size: 18px; color: #64748b; cursor: pointer; line-height: 1;">✕</button>
 
     <div style="margin-bottom: 12px;">
-      <div style="font-size: 10px; font-weight: 800; color: #b45309; letter-spacing: 0.5px; margin-bottom: 3px;">CONTROL
+      <div style="font-size: 10px; font-weight: 800; color: #7a5a0b; letter-spacing: 0.5px; margin-bottom: 3px;">CONTROL
         DE VIGENCIA</div>
       <h2 style="margin: 0 0 1px 0; font-size: 17px; font-weight: 800; color: #0f172a;">Prorrogar o renovar contrato
       </h2>
@@ -990,8 +990,8 @@
       </button>
 
       <button type="button" (click)="guardarProrrogaORenovacion()" [disabled]="guardandoProrroga"
-        style="background: #fac94b; color: #000000; border: none; padding: 7px 20px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 6px;"
-        onmouseover="this.style.background='#eab308'" onmouseout="this.style.background='#fac94b'">
+        style="background: #F5B81F; color: #000000; border: none; padding: 7px 20px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 6px;"
+        onmouseover="this.style.background='#d4a01b'" onmouseout="this.style.background='#F5B81F'">
         <span *ngIf="guardandoProrroga"
           style="width: 12px; height: 12px; border: 2px solid #ffffff; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite;"></span>
         Continuar
@@ -1036,7 +1036,7 @@
       <div *ngFor="let inst of institucionesFiltradasModal" (click)="marcarInstitucion(inst)"
         (dblclick)="seleccionarInstitucionDesdeModal(inst)"
         style="padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: all 0.15s; background: #ffffff;"
-        [style.border-color]="esInstitucionSeleccionadaEnModal(inst) ? '#fac94b' : '#e2e8f0'"
+        [style.border-color]="esInstitucionSeleccionadaEnModal(inst) ? '#F5B81F' : '#e2e8f0'"
         [style.background]="esInstitucionSeleccionadaEnModal(inst) ? '#fffdf0' : '#ffffff'">
         <div>
           <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
@@ -1045,7 +1045,7 @@
               style="font-size: 10px; font-weight: 600; color: #475569; background: #f1f5f9; padding: 1px 6px; border-radius: 4px;">NIT:
               {{ inst.nit }}</span>
             <span *ngIf="modo === 'nuevo' && institucionTieneContrato(inst).tieneContrato"
-              style="font-size: 10px; font-weight: 700; color: #b45309; background: #fef3c7; border: 1px solid #fde68a; padding: 1px 7px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px;">
+              style="font-size: 10px; font-weight: 700; color: #7a5a0b; background: #fdf3d7; border: 1px solid rgba(245, 184, 31, 0.35); padding: 1px 7px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px;">
               Ya tiene contrato: {{ institucionTieneContrato(inst).contratoExistente?.numero_cor || institucionTieneContrato(inst).contratoExistente?.codigo || 'Registrado' }}
             </span>
           </div>
@@ -1053,7 +1053,7 @@
             <span *ngIf="inst.representante_legal">Rep: {{ inst.representante_legal }}</span>
             <span *ngIf="inst.telefono">Tel: {{ inst.telefono }}</span>
             <span style="color: #ca8a04; font-weight: 600;">{{ obtenerSedesDeInst(inst).length }} sedes</span>
-            <span *ngIf="modo === 'nuevo' && institucionTieneContrato(inst).tieneContrato" style="color: #b45309; font-weight: 600;">
+            <span *ngIf="modo === 'nuevo' && institucionTieneContrato(inst).tieneContrato" style="color: #7a5a0b; font-weight: 600;">
               (Para modificar sus cupos, edita el contrato registrado)
             </span>
           </div>
@@ -1061,18 +1061,18 @@
 
         <button *ngIf="!(modo === 'nuevo' && institucionTieneContrato(inst).tieneContrato)" type="button" (click)="seleccionarInstitucionDesdeModal(inst); $event.stopPropagation()"
           style="border-radius: 8px; font-size: 11px; padding: 5px 12px; cursor: pointer; transition: all 0.15s; white-space: nowrap;"
-          [style.background]="esInstitucionSeleccionadaEnModal(inst) ? '#fac94b' : '#ffffff'"
+          [style.background]="esInstitucionSeleccionadaEnModal(inst) ? '#F5B81F' : '#ffffff'"
           [style.color]="esInstitucionSeleccionadaEnModal(inst) ? '#000000' : '#334155'"
           [style.font-weight]="esInstitucionSeleccionadaEnModal(inst) ? '700' : '600'"
-          [style.border]="esInstitucionSeleccionadaEnModal(inst) ? '1px solid #eab308' : '1px solid #cbd5e1'">
+          [style.border]="esInstitucionSeleccionadaEnModal(inst) ? '1px solid #d4a01b' : '1px solid #cbd5e1'">
           {{ esInstitucionSeleccionadaEnModal(inst) ? 'Seleccionada' : 'Seleccionar' }}
         </button>
 
         <button *ngIf="modo === 'nuevo' && institucionTieneContrato(inst).tieneContrato" type="button"
           (click)="irAEditarContratoExistente(institucionTieneContrato(inst)); $event.stopPropagation()"
           title="Esta institución ya cuenta con un contrato registrado. Haz clic para ver y editar su detalle."
-          style="border-radius: 9999px; font-size: 11.5px; padding: 6px 16px; cursor: pointer; transition: all 0.15s; white-space: nowrap; background: #fffcf0; color: #b45309; font-weight: 700; border: 1.5px solid #fcd34d;"
-          onmouseover="this.style.background='#fef3c7'" onmouseout="this.style.background='#fffcf0'">
+          style="border-radius: 9999px; font-size: 11.5px; padding: 6px 16px; cursor: pointer; transition: all 0.15s; white-space: nowrap; background: #fffcf0; color: #7a5a0b; font-weight: 700; border: 1.5px solid #fcd34d;"
+          onmouseover="this.style.background='#fdf3d7'" onmouseout="this.style.background='#fffcf0'">
           Editar contrato
         </button>
       </div>
@@ -1095,7 +1095,7 @@
         </button>
         <button type="button" (click)="confirmarSeleccionInstitucion()"
           [disabled]="!institucionTemporalSeleccionada && !contrato.institucion"
-          style="background: #fac94b; border: none; color: #000000; font-weight: 700; padding: 6px 16px; border-radius: 8px; font-size: 12px; cursor: pointer;"
+          style="background: #F5B81F; border: none; color: #000000; font-weight: 700; padding: 6px 16px; border-radius: 8px; font-size: 12px; cursor: pointer;"
           [style.opacity]="(institucionTemporalSeleccionada || contrato.institucion) ? '1' : '0.5'"
           [style.cursor]="(institucionTemporalSeleccionada || contrato.institucion) ? 'pointer' : 'not-allowed'">
           Guardar
@@ -1265,7 +1265,7 @@
         Cancelar
       </button>
       <button type="button" (click)="guardarProrrogaORenovacion()" [disabled]="guardandoProrroga"
-        style="background: #fac94b; border: none; color: #000000; font-weight: 700; padding: 6px 18px; border-radius: 8px; font-size: 12px; cursor: pointer; box-shadow: 0 1px 3px rgba(250, 201, 75, 0.4); display: flex; align-items: center; gap: 6px;"
+        style="background: #F5B81F; border: none; color: #000000; font-weight: 700; padding: 6px 18px; border-radius: 8px; font-size: 12px; cursor: pointer; box-shadow: 0 1px 3px rgba(250, 201, 75, 0.4); display: flex; align-items: center; gap: 6px;"
         [style.opacity]="guardandoProrroga ? '0.7' : '1'">
         <span *ngIf="guardandoProrroga"
           style="display: inline-block; width: 13px; height: 13px; border: 2px solid #000; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite;"></span>
@@ -1315,16 +1315,16 @@
 
           <button type="button" (click)="seleccionarEstadoEdicion('Activo')"
             style="border-radius: 8px; padding: 8px 10px; cursor: pointer; text-align: left; display: flex; flex-direction: column; gap: 2px; transition: all 0.15s; background: #ffffff;"
-            [style.border]="datosEdicion.estado === 'Activo' ? '2px solid #10b981' : '1px solid #cbd5e1'"
+            [style.border]="datosEdicion.estado === 'Activo' ? '2px solid #2B5424' : '1px solid #cbd5e1'"
             [style.background]="datosEdicion.estado === 'Activo' ? '#ecfdf5' : '#ffffff'">
             <div style="display: flex; align-items: center; justify-content: space-between;">
               <span
                 style="font-size: 12px; font-weight: 800; color: #166534; display: inline-flex; align-items: center; gap: 6px;">
-                <span style="width: 7px; height: 7px; border-radius: 50%; background: #10b981;"></span>
+                <span style="width: 7px; height: 7px; border-radius: 50%; background: #2B5424;"></span>
                 Activo
               </span>
             </div>
-            <span style="font-size: 10px; color: #047857;">Vigente para operación</span>
+            <span style="font-size: 10px; color: #2B5424;">Vigente para operación</span>
           </button>
 
           <button type="button" (click)="seleccionarEstadoEdicion('Inactivo')"
@@ -1508,7 +1508,7 @@
         Cancelar
       </button>
       <button type="button" (click)="guardarEdicionContrato()" [disabled]="guardandoEdicion"
-        style="background: #fac94b; border: none; color: #000000; font-weight: 700; padding: 6px 18px; border-radius: 8px; font-size: 12px; cursor: pointer; box-shadow: 0 1px 3px rgba(250, 201, 75, 0.4); display: flex; align-items: center; gap: 6px;"
+        style="background: #F5B81F; border: none; color: #000000; font-weight: 700; padding: 6px 18px; border-radius: 8px; font-size: 12px; cursor: pointer; box-shadow: 0 1px 3px rgba(250, 201, 75, 0.4); display: flex; align-items: center; gap: 6px;"
         [style.opacity]="guardandoEdicion ? '0.7' : '1'">
         <span *ngIf="guardandoEdicion"
           style="display: inline-block; width: 13px; height: 13px; border: 2px solid #000; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite;"></span>
@@ -1559,7 +1559,7 @@
         <div>
           <div style="font-size: 11px; color: #64748b; margin-bottom: 3px;">Pendientes</div>
           <div style="font-size: 24px; font-weight: 800; line-height: 1.1;"
-            [style.color]="cuposPendientesSedesEdicion >= 0 ? '#059669' : '#dc2626'">
+            [style.color]="cuposPendientesSedesEdicion >= 0 ? '#2B5424' : '#dc2626'">
             {{ cuposPendientesSedesEdicion }}
           </div>
         </div>
@@ -1587,7 +1587,7 @@
 
             <div>
               <span
-                style="background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; padding: 2px 10px; border-radius: 9999px; font-size: 11px; font-weight: 700; display: inline-block;">
+                style="background: #ecfdf5; color: #2B5424; border: 1px solid #a7f3d0; padding: 2px 10px; border-radius: 9999px; font-size: 11px; font-weight: 700; display: inline-block;">
                 {{ sede.cuposAsignados }} cupos
               </span>
             </div>
@@ -1607,7 +1607,7 @@
               <span style="color: #475569; font-size: 12px; font-weight: 600;">Cupos asignados a la sede</span>
               <input type="number" min="0" [(ngModel)]="sede.cuposAsignados" (ngModelChange)="onCambioCuposSede(sede)"
                 style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; color: #0f172a; padding: 4px 10px; width: 80px; text-align: right; font-size: 13px; font-weight: 700; outline: none; transition: border-color 0.15s;"
-                onfocus="this.style.borderColor='#059669'" onblur="this.style.borderColor='#cbd5e1'" />
+                onfocus="this.style.borderColor='#2B5424'" onblur="this.style.borderColor='#cbd5e1'" />
             </div>
 
             <div style="font-size: 12px; font-weight: 700; color: #0f172a; margin-bottom: 8px;">
@@ -1620,18 +1620,18 @@
                 <span style="color: #334155; font-size: 12px;">{{ grado.nombre_grado }}</span>
                 <input type="number" min="0" [(ngModel)]="grado.cupos" (ngModelChange)="onCambioCuposGrado(sede)"
                   style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; color: #0f172a; padding: 4px 10px; width: 70px; text-align: right; font-size: 12px; font-weight: 600; outline: none; transition: border-color 0.15s;"
-                  onfocus="this.style.borderColor='#059669'" onblur="this.style.borderColor='#cbd5e1'" />
+                  onfocus="this.style.borderColor='#2B5424'" onblur="this.style.borderColor='#cbd5e1'" />
               </div>
             </div>
 
             <div
               style="display: flex; justify-content: space-between; align-items: center; padding-top: 8px; border-top: 1px solid #f1f5f9;">
               <span style="font-size: 12px; font-weight: 700;"
-                [style.color]="esCoherenteGradosSede(sede) ? '#059669' : '#dc2626'">
+                [style.color]="esCoherenteGradosSede(sede) ? '#2B5424' : '#dc2626'">
                 Total asignado
               </span>
               <span style="font-size: 12px; font-weight: 700;"
-                [style.color]="esCoherenteGradosSede(sede) ? '#059669' : '#dc2626'">
+                [style.color]="esCoherenteGradosSede(sede) ? '#2B5424' : '#dc2626'">
                 {{ totalGradosDeSede(sede) }} / {{ sede.cuposAsignados }}
               </span>
             </div>
@@ -1667,8 +1667,8 @@
         </button>
 
         <button type="button" (click)="guardarDistribucion()" [disabled]="guardandoDistribucion"
-          style="background: #059669; color: #ffffff; border: none; padding: 7px 20px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 2px 4px rgba(5, 150, 105, 0.25); transition: background-color 0.15s;"
-          onmouseover="this.style.background='#047857'" onmouseout="this.style.background='#059669'">
+          style="background: #2B5424; color: #ffffff; border: none; padding: 7px 20px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 2px 4px rgba(5, 150, 105, 0.25); transition: background-color 0.15s;"
+          onmouseover="this.style.background='#2B5424'" onmouseout="this.style.background='#2B5424'">
           <span *ngIf="guardandoDistribucion"
             style="display: inline-block; width: 13px; height: 13px; border: 2px solid #ffffff; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite;"></span>
           <span>Guardar distribución</span>

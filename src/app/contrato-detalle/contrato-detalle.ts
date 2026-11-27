@@ -2849,7 +2849,7 @@ export class ContratoDetalleComponent implements OnInit, OnChanges {
   obtenerEstiloEstado(estado?: string): { bg: string; color: string; border: string; dot: string } {
     const est = (estado || this.contrato?.estado || 'Activo').toLowerCase();
     if (est.includes('activo')) {
-      return { bg: '#dcfce7', color: '#166534', border: '#bbf7d0', dot: '#10b981' };
+      return { bg: '#eaf2e8', color: '#2B5424', border: '#c5dbc0', dot: '#2B5424' };
     }
     if (est.includes('finalizado') || est.includes('terminado')) {
       return { bg: '#f1f5f9', color: '#475569', border: '#e2e8f0', dot: '#94a3b8' };

@@ -42,7 +42,7 @@
                 <div>
                     <div class="flex items-center gap-2">
                         <h1 class="text-xl font-black text-slate-900 tracking-tight m-0">Menú Institucional</h1>
-                        <span class="text-[11px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-200 px-2 py-0.5 rounded-full">En línea</span>
+                        <span class="text-[11px] font-bold bg-[#eaf2e8] text-[#2B5424] border border-[#2B5424]/30 px-2 py-0.5 rounded-full">En línea</span>
                     </div>
                     <p class="text-xs text-slate-500 font-medium m-0">SIRAE · Sistema de Control y Abastecimiento de Alimentos</p>
                 </div>
@@ -51,7 +51,7 @@
             <div class="flex items-center gap-3 self-end md:self-auto">
                 <div class="text-right hidden xl:block text-xs font-medium text-slate-500">
                     <div class="flex items-center gap-1 font-bold text-slate-700">
-                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span> 19/10/2026 - 02:59 p.m.
+                        <span class="w-2 h-2 rounded-full bg-[#2B5424]"></span> 19/10/2026 - 02:59 p.m.
                     </div>
                     <span>Sede Principal SIRAE</span>
                 </div>
@@ -78,7 +78,7 @@
                         <button type="button" (click)="setMercado('Todos')" [class.pill-on]="filtroMercado === 'Todos'" [class.text-slate-500]="filtroMercado !== 'Todos'" class="rounded-full px-3 py-1 text-xs font-bold transition cursor-pointer">Todos</button>
                         <button type="button" (click)="setMercado('Perecederos')" [class.pill-on]="filtroMercado === 'Perecederos'" [class.text-slate-500]="filtroMercado !== 'Perecederos'" class="rounded-full px-3 py-1 text-xs font-bold transition cursor-pointer">Perecederos</button>
                         <button type="button" (click)="setMercado('Granos')" [class.pill-on]="filtroMercado === 'Granos'" [class.text-slate-500]="filtroMercado !== 'Granos'" class="rounded-full px-3 py-1 text-xs font-bold transition cursor-pointer">No perecederos</button>
-                        <button type="button" (click)="exportarExcelHistorial()" class="bg-emerald-600 hover:bg-emerald-700 text-white rounded-full px-3 py-1 text-xs font-bold transition inline-flex items-center gap-1 cursor-pointer">
+                        <button type="button" (click)="exportarExcelHistorial()" class="bg-[#2B5424] hover:bg-[#1d3f1b] text-white rounded-full px-3 py-1 text-xs font-bold transition inline-flex items-center gap-1 cursor-pointer">
                             <span class="material-symbols-outlined text-[14px]">table_view</span> Excel
                         </button>
                     </div>
@@ -128,7 +128,7 @@
                         <div class="grid grid-cols-1 gap-2.5 pt-3 sm:grid-cols-2 xl:grid-cols-3">
                             <article *ngFor="let producto of grupo.productos; trackBy: trackProducto" class="prod-card fx-up">
                                 <span class="prod-badge" [title]="nombreTipo(producto)"
-                                    [ngClass]="esPerecedero(producto) ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600'">
+                                    [ngClass]="esPerecedero(producto) ? 'bg-[#fdf3d7] text-[#F5B81F]' : 'bg-[#eaf2e8] text-[#2B5424]'">
                                     <span class="material-symbols-outlined text-[14px]">{{ esPerecedero(producto) ? 'schedule' : 'check_circle' }}</span>
                                 </span>
                                 
@@ -139,7 +139,7 @@
                                 <div class="min-w-0 flex-1">
                                     <h4 class="m-0 text-xs font-black text-slate-900 truncate">{{ producto.nombre }}</h4>
                                     <div class="mt-0.5 flex items-center gap-2">
-                                        <span class="text-[10px] font-black" [ngClass]="esPerecedero(producto) ? 'text-amber-600' : 'text-emerald-600'">{{ nombreTipo(producto) }}</span>
+                                        <span class="text-[10px] font-black" [ngClass]="esPerecedero(producto) ? 'text-[#F5B81F]' : 'text-[#2B5424]'">{{ nombreTipo(producto) }}</span>
                                         <span class="text-[10px] font-semibold text-slate-400">· Unidad: {{ producto.unidad }}</span>
                                     </div>
                                 </div>

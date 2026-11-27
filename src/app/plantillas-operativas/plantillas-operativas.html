@@ -12,8 +12,8 @@
 
   <!-- ============ AVISO: SIN INSTITUCIÓN SELECCIONADA ============ -->
   <div *ngIf="!institucionActiva"
-    class="flex flex-col items-center justify-center gap-4 rounded-3xl border border-dashed border-amber-300 bg-amber-50/50 p-12 text-center no-print">
-    <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
+    class="flex flex-col items-center justify-center gap-4 rounded-3xl border border-dashed border-[#F5B81F]/40 bg-[#fdf3d7]/50 p-12 text-center no-print">
+    <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#fdf3d7] text-[#7a5a0b]">
       <span class="material-symbols-outlined text-[36px]">school</span>
     </div>
     <div>
@@ -49,7 +49,7 @@
 
     <!-- BARRA DE ACCIONES (fuera de la tarjeta) -->
     <div class="flex flex-wrap items-center justify-between gap-3 no-print">
-      <span *ngIf="modoEdicion" class="inline-flex items-center rounded-full bg-emerald-100 px-3 py-1 text-xs font-black text-emerald-800 animate-pulse">
+      <span *ngIf="modoEdicion" class="inline-flex items-center rounded-full bg-[#eaf2e8] px-3 py-1 text-xs font-black text-[#2B5424] animate-pulse">
         Modo Edición Activo
       </span>
       <span *ngIf="!modoEdicion"></span>
@@ -88,21 +88,21 @@
         <label class="flex flex-col gap-1 text-xs font-bold text-slate-700">
           Fecha Inicio (Semana 1)
           <input type="date" [(ngModel)]="fechaInicioPlanilla" (change)="alCambiarPeriodoOFecha()"
-            class="h-10 rounded-xl border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800 shadow-xs focus:border-[#faa911] focus:outline-none" />
+            class="h-10 rounded-xl border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800 shadow-xs focus:border-[#F5B81F] focus:outline-none" />
         </label>
 
         <!-- Fecha Fin (Semana 4) -->
         <label class="flex flex-col gap-1 text-xs font-bold text-slate-700">
           Fecha Fin (Semana 4)
           <input type="date" [(ngModel)]="fechaFinPlanilla" (change)="alCambiarPeriodoOFecha()"
-            class="h-10 rounded-xl border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800 shadow-xs focus:border-[#faa911] focus:outline-none" />
+            class="h-10 rounded-xl border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800 shadow-xs focus:border-[#F5B81F] focus:outline-none" />
         </label>
 
         <!-- Selector de Sede -->
         <label class="flex flex-col gap-1 text-xs font-bold text-slate-700">
           Sede a Generar
           <select [(ngModel)]="sedeFiltro" (change)="alCambiarPeriodoOFecha()"
-            class="h-10 rounded-xl border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800 shadow-xs focus:border-[#faa911] focus:outline-none">
+            class="h-10 rounded-xl border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800 shadow-xs focus:border-[#F5B81F] focus:outline-none">
             <option [ngValue]="'Todas'">Todas las sedes</option>
             <option *ngFor="let s of sedesDisponibles" [ngValue]="s.id">{{ s.nombre }} ({{ s.cupos }} cupos)</option>
           </select>
@@ -113,7 +113,7 @@
 
     <!-- Indicador de carga de planillas -->
     <div *ngIf="cargandoPlanillas" class="flex flex-col items-center justify-center p-12 text-center no-print">
-      <div class="h-10 w-10 animate-spin rounded-full border-4 border-[#faa911] border-t-transparent mb-3"></div>
+      <div class="h-10 w-10 animate-spin rounded-full border-4 border-[#F5B81F] border-t-transparent mb-3"></div>
       <p class="text-sm font-bold text-slate-800">Cargando información en tiempo real de manipuladoras...</p>
       <p class="text-xs text-slate-500">Sincronizando recepciones, entregas y reportes diarios de asistencia</p>
     </div>
@@ -142,7 +142,7 @@
             </td>
             <td class="rem-logo-col-der">
               <div class="rem-logo-badge">
-                <span class="material-symbols-outlined" style="font-size:20px;color:#d97706;">volunteer_activism</span>
+                <span class="material-symbols-outlined" style="font-size:20px;color:#F5B81F;">volunteer_activism</span>
                 <span class="rem-badge-texto">PAE Popayán</span>
               </div>
             </td>
@@ -649,7 +649,7 @@
               Actualizar
             </button>
             <button type="button" (click)="exportarExcelOficial()" [disabled]="exportandoExcel"
-              class="inline-flex h-11 cursor-pointer items-center justify-center gap-1.5 rounded-2xl border border-emerald-300 bg-emerald-50 px-3 text-xs font-black text-emerald-800 shadow-sm hover:bg-emerald-100">
+              class="inline-flex h-11 cursor-pointer items-center justify-center gap-1.5 rounded-2xl border border-[#2B5424]/40 bg-[#eaf2e8] px-3 text-xs font-black text-[#2B5424] shadow-sm hover:bg-[#eaf2e8]">
               <span class="material-symbols-outlined text-[18px]">table_view</span>
               Excel
             </button>
@@ -665,7 +665,7 @@
         </div>
         <div class="fx-panel flex flex-col p-4 text-center">
           <span class="text-[11px] font-bold text-slate-500">Cupos Totales</span>
-          <span class="text-xl font-black text-amber-700">{{ totales.cupos }}</span>
+          <span class="text-xl font-black text-[#7a5a0b]">{{ totales.cupos }}</span>
         </div>
         <div class="fx-panel flex flex-col p-4 text-center">
           <span class="text-[11px] font-bold text-slate-500">Entregas</span>
@@ -673,7 +673,7 @@
         </div>
         <div class="fx-panel flex flex-col p-4 text-center">
           <span class="text-[11px] font-bold text-slate-500">Kg Recibidos</span>
-          <span class="text-xl font-black text-emerald-700">{{ totales.kilos }}</span>
+          <span class="text-xl font-black text-[#2B5424]">{{ totales.kilos }}</span>
         </div>
         <div class="fx-panel flex flex-col p-4 text-center">
           <span class="text-[11px] font-bold text-slate-500">Novedades</span>
@@ -714,13 +714,13 @@
                 <td style="font-weight: 800; color: #1e293b;">{{ s.nombre }}</td>
                 <td style="text-align: right; font-weight: bold;">{{ s.cupos }}</td>
                 <td style="text-align: right;">{{ s.entregas }}</td>
-                <td style="text-align: right; font-weight: bold; color: #047857;">{{ s.kilos }} Kg</td>
+                <td style="text-align: right; font-weight: bold; color: #2B5424;">{{ s.kilos }} Kg</td>
                 <td style="text-align: right; font-weight: bold;" [class.text-red-600]="s.novedades > 0">{{ s.novedades }}</td>
                 <td>{{ s.ingredienteTop }}</td>
                 <td>{{ s.ultimaEntrega ? fechaCorta(s.ultimaEntrega) : '—' }}</td>
                 <td style="text-align: center;">
                   <button type="button" (click)="abrirSede(s)"
-                    class="rounded-lg bg-amber-100 px-2.5 py-1 text-[11px] font-black text-amber-900 hover:bg-amber-200 cursor-pointer">
+                    class="rounded-lg bg-[#fdf3d7] px-2.5 py-1 text-[11px] font-black text-[#7a5a0b] hover:bg-[#fdf3d7] cursor-pointer">
                     Ver Detalle
                   </button>
                 </td>
@@ -744,9 +744,9 @@
               class="h-9 rounded-xl border border-slate-300 bg-white px-3 text-xs text-slate-800 shadow-xs focus:outline-none" />
 
             <div class="flex rounded-xl border border-slate-300 bg-white p-0.5 text-xs">
-              <button type="button" (click)="cambiarEstadoFiltro('TODAS')" [class.font-black]="estadoFiltro === 'TODAS'" [class.bg-amber-100]="estadoFiltro === 'TODAS'" class="rounded-lg px-2.5 py-1">Todas ({{ contarEstado('TODAS') }})</button>
-              <button type="button" (click)="cambiarEstadoFiltro('RECIBIDA')" [class.font-black]="estadoFiltro === 'RECIBIDA'" [class.bg-emerald-100]="estadoFiltro === 'RECIBIDA'" class="rounded-lg px-2.5 py-1">Recibidas</button>
-              <button type="button" (click)="cambiarEstadoFiltro('CON_NOVEDAD')" [class.font-black]="estadoFiltro === 'CON_NOVEDAD'" [class.bg-amber-100]="estadoFiltro === 'CON_NOVEDAD'" class="rounded-lg px-2.5 py-1">Novedad</button>
+              <button type="button" (click)="cambiarEstadoFiltro('TODAS')" [class.font-black]="estadoFiltro === 'TODAS'" [class.bg-[#fdf3d7]]="estadoFiltro === 'TODAS'" class="rounded-lg px-2.5 py-1">Todas ({{ contarEstado('TODAS') }})</button>
+              <button type="button" (click)="cambiarEstadoFiltro('RECIBIDA')" [class.font-black]="estadoFiltro === 'RECIBIDA'" [class.bg-[#eaf2e8]]="estadoFiltro === 'RECIBIDA'" class="rounded-lg px-2.5 py-1">Recibidas</button>
+              <button type="button" (click)="cambiarEstadoFiltro('CON_NOVEDAD')" [class.font-black]="estadoFiltro === 'CON_NOVEDAD'" [class.bg-[#fdf3d7]]="estadoFiltro === 'CON_NOVEDAD'" class="rounded-lg px-2.5 py-1">Novedad</button>
               <button type="button" (click)="cambiarEstadoFiltro('RECHAZADA')" [class.font-black]="estadoFiltro === 'RECHAZADA'" [class.bg-red-100]="estadoFiltro === 'RECHAZADA'" class="rounded-lg px-2.5 py-1">Rechazadas</button>
             </div>
           </div>
@@ -828,13 +828,13 @@
             <span class="block text-[10px] font-bold text-slate-500">Cupos</span>
             <strong class="text-base font-black text-slate-800">{{ s.cupos }}</strong>
           </div>
-          <div class="rounded-xl bg-amber-50 p-3">
-            <span class="block text-[10px] font-bold text-amber-700">Entregas</span>
-            <strong class="text-base font-black text-amber-800">{{ s.entregas }}</strong>
+          <div class="rounded-xl bg-[#fdf3d7] p-3">
+            <span class="block text-[10px] font-bold text-[#7a5a0b]">Entregas</span>
+            <strong class="text-base font-black text-[#7a5a0b]">{{ s.entregas }}</strong>
           </div>
-          <div class="rounded-xl bg-emerald-50 p-3">
-            <span class="block text-[10px] font-bold text-emerald-700">Kg Recibidos</span>
-            <strong class="text-base font-black text-emerald-800">{{ s.kilos }} Kg</strong>
+          <div class="rounded-xl bg-[#eaf2e8] p-3">
+            <span class="block text-[10px] font-bold text-[#2B5424]">Kg Recibidos</span>
+            <strong class="text-base font-black text-[#2B5424]">{{ s.kilos }} Kg</strong>
           </div>
         </div>
 
