@@ -59,42 +59,43 @@
   text-shadow: 0 1px 6px rgba(0, 0, 0, .35);
 }
 
-/* Selector de pestañas dentro del hero (estilo vidrio) */
+/* Selector de pestañas debajo del hero */
 .menu-hero-tabs {
   display: inline-flex;
+  flex-wrap: wrap;
+  align-self: flex-start;
   align-items: center;
   gap: 4px;
+  max-width: 100%;
   padding: 4px;
   border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, .3);
-  background: rgba(255, 255, 255, .14);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  box-shadow: 0 6px 14px -12px rgba(15, 23, 42, .5);
 }
 .menu-hero-tab {
-  padding: 8px 16px;
+  padding: 9px 18px;
   border: 1px solid transparent;
   border-radius: 10px;
   background: transparent;
-  color: #ffffff;
+  color: #475569;
   font-size: 12.5px;
-  font-weight: 600;
+  font-weight: 700;
   white-space: nowrap;
   cursor: pointer;
   transition: background .15s ease, color .15s ease;
 }
-.menu-hero-tab:hover { background: rgba(255, 255, 255, .2); }
+.menu-hero-tab:hover { background: #f1f5f9; }
 
-/* Pestaña activa: letras BLANCAS (con sombra suave para que se lean sobre el amarillo) */
-.menu-hero-tab.activa {
-  background: #f0a500;
-  border-color: #d98f00;
+/* Pestaña activa: amarillo #F5B81F con letras blancas */
+.menu-hero-tab.activa,
+.menu-hero-tab.activa:hover {
+  background: #F5B81F;
+  border-color: #F5B81F;
   color: #ffffff;
   font-weight: 800;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, .35);
-  box-shadow: 0 6px 14px -8px rgba(0, 0, 0, .5);
 }
-.menu-hero-tab:focus-visible { outline: 2px solid #fac94b; outline-offset: 2px; }
+.menu-hero-tab:focus-visible { outline: 2px solid #F5B81F; outline-offset: 2px; }
 
 /* ===== Botón redondo con chevron (a la izquierda de cada fila / sección) ===== */
 .tri-sum {
@@ -157,6 +158,128 @@ details[open] > .tri-sum .chev::before,
 @media (prefers-reduced-motion: reduce) {
   .chev, .chev::before, .menu-hero-tab { transition: none; }
 }
+/* ===== Modal de plato: amarillo #F5B81F con letras blancas ===== */
+.bd-modal-window button.bd-btn-add-comp,
+.bd-modal-window button.bd-btn-add-ing,
+.bd-modal-window button.bd-btn-add-step,
+.bd-modal-window button.bd-btn-save,
+.bd-modal-window .bd-comp-badge-num {
+  background: #F5B81F !important;
+  border-color: #F5B81F !important;
+  color: #ffffff !important;
+}
+.bd-modal-window button.bd-btn-add-comp span,
+.bd-modal-window button.bd-btn-add-ing span,
+.bd-modal-window button.bd-btn-add-step span,
+.bd-modal-window button.bd-btn-save span {
+  color: #ffffff !important;
+}
+.bd-modal-window button.bd-btn-add-comp:hover,
+.bd-modal-window button.bd-btn-add-ing:hover,
+.bd-modal-window button.bd-btn-add-step:hover,
+.bd-modal-window button.bd-btn-save:not(:disabled):hover {
+  background: #E2A714 !important;
+  border-color: #E2A714 !important;
+}
+/* ===== Modal de plato: tarjeta de componente organizada ===== */
+/* Encabezado: etiqueta y X arriba, campos alineados debajo */
+.bd-modal-window .bd-comp-card-head {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 14px 12px !important;
+  padding: 16px !important;
+}
+.bd-modal-window .bd-comp-badge-num {
+  grid-area: 1 / 1;
+  justify-self: start;
+  margin: 0 !important;
+}
+.bd-modal-window .bd-comp-delete-btn {
+  grid-area: 1 / 2;
+  width: 34px !important;
+  height: 34px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+.bd-modal-window .bd-comp-head-fields {
+  grid-area: 2 / 1 / 3 / -1;
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) !important;
+  align-items: end !important;   /* las casillas quedan a la misma altura */
+  gap: 12px !important;
+  width: 100%;
+}
+.bd-modal-window .bd-comp-head-fields .bd-field-box { min-width: 0; margin: 0 !important; }
+
+/* Ingredientes y pasos: uno debajo del otro, a todo el ancho */
+.bd-modal-window .bd-comp-card-split {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 14px !important;
+  padding: 16px !important;
+}
+.bd-modal-window .bd-comp-subbox { padding: 16px !important; }
+.bd-modal-window .bd-comp-subbox-head { margin: 0 0 14px !important; }
+
+.bd-modal-window .bd-ing-adder-row {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 150px !important;
+  align-items: center !important;
+  gap: 10px !important;
+  margin: 0 0 12px !important;
+}
+.bd-modal-window .bd-ing-adder-row > * { min-width: 0; margin: 0 !important; }
+.bd-modal-window .bd-ing-obs-input input { width: 100%; }
+
+.bd-modal-window .bd-pasos-list {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+}
+.bd-modal-window .bd-paso-item-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  margin: 0 !important;
+}
+.bd-modal-window .bd-paso-num-badge { flex-shrink: 0; }
+.bd-modal-window .bd-paso-input { flex: 1 1 auto; min-width: 0; }
+.bd-modal-window .bd-paso-actions { display: flex !important; flex-shrink: 0; gap: 6px !important; }
+.bd-modal-window .bd-paso-btn {
+  width: 38px !important;
+  height: 38px !important;
+  padding: 0 !important;
+}
+
+/* Botones: mismo tamaño y alineados a la derecha */
+.bd-modal-window button.bd-btn-add-ing,
+.bd-modal-window button.bd-btn-add-step {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 150px !important;
+  height: 40px !important;
+  padding: 0 12px !important;
+}
+.bd-modal-window button.bd-btn-add-step { margin: 12px 0 0 auto !important; }
+.bd-modal-window .bd-subbox-empty { margin: 0 !important; }
+
+@media (max-width: 640px) {
+  .bd-modal-window .bd-ing-adder-row { grid-template-columns: minmax(0, 1fr) !important; }
+  .bd-modal-window button.bd-btn-add-ing,
+  .bd-modal-window button.bd-btn-add-step { width: 100% !important; }
+  .bd-modal-window .bd-paso-item-row { flex-wrap: wrap; }
+}
+/* Lista de recetas guardadas: no se recorta aunque haya muchas */
+.bd-modal-window select.bd-select-reuso {
+  width: 100%;
+  height: 42px;
+  padding: 0 10px;
+  background-color: #ffffff;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
 </style>
 
 <div class="fx-roboto flex flex-col gap-4 max-w-7xl mx-auto text-slate-800">
@@ -175,26 +298,26 @@ details[open] > .tri-sum .chev::before,
           : 'Catálogo oficial de platos, componentes y recetas del ciclo PAE.' }}
       </p>
     </div>
-
-    <!-- Selector de Pestañas -->
-    <div class="menu-hero-tabs" role="tablist">
-      <button type="button" role="tab"
-        (click)="pestanaActiva = 'platos'"
-        [class.activa]="pestanaActiva === 'platos'"
-        [attr.aria-selected]="pestanaActiva === 'platos'"
-        class="menu-hero-tab">
-        Platos y Recetas PAE
-      </button>
-
-      <button type="button" role="tab"
-        (click)="pestanaActiva = 'minuta'"
-        [class.activa]="pestanaActiva === 'minuta'"
-        [attr.aria-selected]="pestanaActiva === 'minuta'"
-        class="menu-hero-tab">
-        Minuta Semanal de Sedes
-      </button>
-    </div>
   </header>
+
+  <!-- Selector de Pestañas (debajo de la tarjeta) -->
+  <div class="menu-hero-tabs" role="tablist">
+    <button type="button" role="tab"
+      (click)="pestanaActiva = 'platos'"
+      [class.activa]="pestanaActiva === 'platos'"
+      [attr.aria-selected]="pestanaActiva === 'platos'"
+      class="menu-hero-tab">
+      Platos y Recetas PAE
+    </button>
+
+    <button type="button" role="tab"
+      (click)="pestanaActiva = 'minuta'"
+      [class.activa]="pestanaActiva === 'minuta'"
+      [attr.aria-selected]="pestanaActiva === 'minuta'"
+      class="menu-hero-tab">
+      Minuta Semanal de Sedes
+    </button>
+  </div>
 
   <!-- BARRA DE SELECCIÓN DE SEDE (tarjeta aparte, desplegable con chevron) -->
   <details *ngIf="pestanaActiva === 'minuta'" open
@@ -705,8 +828,7 @@ details[open] > .tri-sum .chev::before,
           </div>
 
           <button type="button" (click)="abrirModalCrearPlato()"
-            class="px-4 py-2 rounded-xl text-xs font-bold bg-[#fac94b] hover:bg-amber-400 text-slate-950 border border-amber-400 transition cursor-pointer shadow-2xs inline-flex items-center gap-1.5 whitespace-nowrap">
-            <span class="material-symbols-outlined text-[17px]">add</span>
+            class="px-4 py-2 rounded-xl text-xs font-bold bg-[#F5B81F] hover:bg-[#E2A714] text-white border border-[#F5B81F] transition cursor-pointer shadow-2xs inline-flex items-center whitespace-nowrap">
             <span>Crear nuevo plato</span>
           </button>
         </div>
@@ -1005,17 +1127,11 @@ details[open] > .tri-sum .chev::before,
                 type="button"
                 (click)="toggleMomentoEnPlatoForm(momento)"
                 [ngClass]="platoAplicaMomento(momento)
-                  ? 'bg-amber-100 text-amber-950 border-amber-400 font-bold shadow-2xs'
+                  ? 'bg-[#F5B81F] text-white border-[#F5B81F] font-bold shadow-2xs'
                   : 'bg-white hover:bg-slate-50 text-slate-600 border-slate-200 font-medium'"
                 class="px-3.5 py-1.5 rounded-xl text-xs border transition cursor-pointer inline-flex items-center gap-1.5"
               >
                 <span>{{ momento }}</span>
-                <span
-                  *ngIf="platoAplicaMomento(momento)"
-                  class="w-4 h-4 rounded-full bg-amber-500 text-slate-950 text-[10px] inline-flex items-center justify-center font-black"
-                >
-                  ✓
-                </span>
               </button>
             </div>
           </div>
@@ -1033,7 +1149,6 @@ details[open] > .tri-sum .chev::before,
             </div>
 
             <button type="button" class="bd-btn-add-comp" (click)="agregarComponenteAlPlato()">
-              <span class="text-base font-black">+</span>
               <span>Añadir componente</span>
             </button>
           </div>
@@ -1073,16 +1188,15 @@ details[open] > .tri-sum .chev::before,
 
                   <div class="bd-field-box" *ngIf="opcionesComponentesReutilizables.length > 0">
                     <label class="bd-field-label">Reutilizar receta guardada (Opcional)</label>
-                    <app-custom-select
+                    <select
+                      class="bd-field-input bd-select-reuso"
                       [name]="'comp_reutilizar_' + comp.id_temporal"
-                      [options]="opcionesComponentesReutilizables"
-                      valueField="id"
-                      labelField="label"
-                      placeholder="Copiar ingredientes y pasos de…"
-                      [allowClear]="true"
                       [ngModel]="''"
                       (ngModelChange)="reutilizarComponenteGuardado(comp, $event)"
-                    ></app-custom-select>
+                    >
+                      <option [ngValue]="''">Copiar ingredientes y pasos de…</option>
+                      <option *ngFor="let op of opcionesComponentesReutilizables" [ngValue]="op.id">{{ op.label }}</option>
+                    </select>
                   </div>
                 </div>
 
@@ -1137,7 +1251,6 @@ details[open] > .tri-sum .chev::before,
                       class="bd-btn-add-ing"
                       (click)="agregarIngredienteAComponente(comp)"
                     >
-                      <span>+</span>
                       <span>Agregar</span>
                     </button>
                   </div>
@@ -1228,7 +1341,6 @@ details[open] > .tri-sum .chev::before,
                     class="bd-btn-add-step"
                     (click)="agregarPasoAComponente(comp)"
                   >
-                    <span>+</span>
                     <span>Añadir otro paso</span>
                   </button>
                 </details>
@@ -1243,7 +1355,6 @@ details[open] > .tri-sum .chev::before,
       <div class="bd-modal-foot">
         <button type="button" class="bd-modal-btn-cancel" (click)="cerrarModalRecetaPlato()">Cancelar</button>
         <button type="button" class="bd-btn-save" (click)="guardarRecetaPlato()" [disabled]="guardandoReceta">
-          <span>✓</span>
           <span>{{ guardandoReceta ? 'Guardando…' : 'Guardar cambios' }}</span>
         </button>
       </div>

@@ -29,22 +29,9 @@
     font-family: 'Roboto', system-ui, -apple-system, 'Segoe UI', sans-serif;
   }
 
-  /* Fondo Tecnológico Animado (Supervisor · Super Administrador · Administrador) */
+  /* Fondo Tecnológico: La imagen y los destellos se renderizan juntos en el mismo SVG */
   .adm-shell::before {
-    content: '';
-    position: absolute;
-    top: -28px;
-    left: -28px;
-    right: -28px;
-    bottom: -28px;
-    background-image: url('/fondo-sistema.png');
-    background-repeat: no-repeat;
-    background-position: center center;
-    background-size: cover;
-    z-index: 0;
-    pointer-events: none;
-    animation: circuitSoftFloat 28s ease-in-out infinite alternate;
-    will-change: transform;
+    display: none;
   }
 
   /* Capa de iluminación y pulso sutil de energía en los circuitos */
@@ -84,9 +71,21 @@
 
   @media (prefers-reduced-motion: reduce) {
     .adm-shell::before,
-    .adm-shell::after {
+    .adm-shell::after,
+    .adm-destellos-bg {
       animation: none !important;
     }
+  }
+
+  /* Contenedor de destellos interactivos idénticos a los del Login */
+  .adm-destellos-bg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+    overflow: hidden;
   }
 
   .adm-shell .modern-main-container {
@@ -813,6 +812,144 @@
 <!-- CASO 1: SUPERVISOR — RIEL LATERAL                                 -->
 <!-- ================================================================= -->
 <div *ngIf="esSupervisor" class="adm-shell">
+
+  <!-- Fondo del sistema y destellos integrados en el mismo SVG (alineación 100% matemática, sin desbordes) -->
+  <svg class="adm-destellos-bg" viewBox="0 0 1600 901" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+    <!-- Imagen de fondo que comparte la misma escala, posición y viewBox que los trazos -->
+    <image href="fondo-sistema.png" width="1600" height="901" opacity="1" />
+
+    <!-- Destellos dorados / amarillos (#F5B81F) centrados dentro del canal de las pistas -->
+    <g class="motion-reduce:hidden" fill="none" stroke="#F5B81F" stroke-width="3.5"
+      style="filter: drop-shadow(0 0 3px rgba(245, 184, 31, 0.95))" stroke-linecap="round" stroke-linejoin="round"
+      stroke-dasharray="14 125" stroke-dashoffset="14">
+      
+      <!-- Pista 1: superior central -->
+      <path d="M551 81 L575 82 L669 173 L923 174" pathLength="100" opacity="0">
+        <animate attributeName="stroke-dashoffset" values="16;-100;-100" keyTimes="0;0.58;1"
+          begin="-3.7s" dur="29s" repeatCount="indefinite" />
+        <animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.05;0.52;0.58;1"
+          begin="-3.7s" dur="29s" repeatCount="indefinite" />
+      </path>
+
+      <!-- Pista 2: superior izquierda -->
+      <path d="M150 284 L158 285 L183 260 L395 260 L423 288" pathLength="100" opacity="0">
+        <animate attributeName="stroke-dashoffset" values="16;-100;-100" keyTimes="0;0.58;1"
+          begin="-17.2s" dur="31s" repeatCount="indefinite" />
+        <animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.05;0.52;0.58;1"
+          begin="-17.2s" dur="31s" repeatCount="indefinite" />
+      </path>
+
+      <!-- Pista 3: inferior izquierda -->
+      <path d="M413 728 L454 728 L512 670 L801 670" pathLength="100" opacity="0">
+        <animate attributeName="stroke-dashoffset" values="16;-100;-100" keyTimes="0;0.58;1"
+          begin="-8.9s" dur="37s" repeatCount="indefinite" />
+        <animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.05;0.52;0.58;1"
+          begin="-8.9s" dur="37s" repeatCount="indefinite" />
+      </path>
+
+      <!-- Pista 4: superior derecha -->
+      <path d="M1198 47 L1336 47" pathLength="100" opacity="0">
+        <animate attributeName="stroke-dashoffset" values="16;-100;-100" keyTimes="0;0.58;1"
+          begin="-22.4s" dur="26s" repeatCount="indefinite" />
+        <animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.05;0.52;0.58;1"
+          begin="-22.4s" dur="26s" repeatCount="indefinite" />
+      </path>
+
+      <!-- Pista 5: media derecha -->
+      <path d="M1203 290 L1349 290" pathLength="100" opacity="0">
+        <animate attributeName="stroke-dashoffset" values="16;-100;-100" keyTimes="0;0.58;1"
+          begin="-12.1s" dur="33s" repeatCount="indefinite" />
+        <animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.05;0.52;0.58;1"
+          begin="-12.1s" dur="33s" repeatCount="indefinite" />
+      </path>
+
+      <!-- Pista 6 (Nueva): lateral derecha media-alta -->
+      <path d="M1190 360 L1380 360" pathLength="100" opacity="0">
+        <animate attributeName="stroke-dashoffset" values="16;-100;-100" keyTimes="0;0.58;1"
+          begin="-5.5s" dur="27s" repeatCount="indefinite" />
+        <animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.05;0.52;0.58;1"
+          begin="-5.5s" dur="27s" repeatCount="indefinite" />
+      </path>
+
+      <!-- Pista 7 (Nueva): central inferior longitudinal -->
+      <path d="M505 670 L801 670 L1090 670" pathLength="100" opacity="0">
+        <animate attributeName="stroke-dashoffset" values="16;-100;-100" keyTimes="0;0.58;1"
+          begin="-19.8s" dur="32s" repeatCount="indefinite" />
+        <animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.05;0.52;0.58;1"
+          begin="-19.8s" dur="32s" repeatCount="indefinite" />
+      </path>
+
+      <!-- Pista 8 (Nueva): central media horizontal -->
+      <path d="M570 260 L680 260" pathLength="100" opacity="0">
+        <animate attributeName="stroke-dashoffset" values="16;-100;-100" keyTimes="0;0.58;1"
+          begin="-1.2s" dur="24s" repeatCount="indefinite" />
+        <animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.05;0.52;0.58;1"
+          begin="-1.2s" dur="24s" repeatCount="indefinite" />
+      </path>
+    </g>
+
+    <!-- Destellos verdes institucionales (#2B5424) centrados dentro del canal de las pistas -->
+    <g class="motion-reduce:hidden" fill="none" stroke="#2B5424" stroke-width="3.5"
+      style="filter: drop-shadow(0 0 3px rgba(43, 84, 36, 0.95))" stroke-linecap="round" stroke-linejoin="round"
+      stroke-dasharray="14 125" stroke-dashoffset="14">
+      
+      <!-- Pista 1: media centro-derecha -->
+      <path d="M886 584 L888 584 L922 618 L1122 618 L1152 589" pathLength="100" opacity="0">
+        <animate attributeName="stroke-dashoffset" values="16;-100;-100" keyTimes="0;0.58;1"
+          begin="-6.3s" dur="34s" repeatCount="indefinite" />
+        <animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.05;0.52;0.58;1"
+          begin="-6.3s" dur="34s" repeatCount="indefinite" />
+      </path>
+
+      <!-- Pista 2: media superior hacia diagonal -->
+      <path d="M520 200 L949 200 L1004 200 L1059 146" pathLength="100" opacity="0">
+        <animate attributeName="stroke-dashoffset" values="16;-100;-100" keyTimes="0;0.58;1"
+          begin="-25.8s" dur="28s" repeatCount="indefinite" />
+        <animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.05;0.52;0.58;1"
+          begin="-25.8s" dur="28s" repeatCount="indefinite" />
+      </path>
+
+      <!-- Pista 3: inferior centro -->
+      <path d="M851 647 L852 648 L858 643 L1087 643 L1143 699 L1146 700" pathLength="100" opacity="0">
+        <animate attributeName="stroke-dashoffset" values="16;-100;-100" keyTimes="0;0.58;1"
+          begin="-14.6s" dur="35s" repeatCount="indefinite" />
+        <animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.05;0.52;0.58;1"
+          begin="-14.6s" dur="35s" repeatCount="indefinite" />
+      </path>
+
+      <!-- Pista 4: inferior derecha -->
+      <path d="M1248 690 L1336 690" pathLength="100" opacity="0">
+        <animate attributeName="stroke-dashoffset" values="16;-100;-100" keyTimes="0;0.58;1"
+          begin="-19.5s" dur="30s" repeatCount="indefinite" />
+        <animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.05;0.52;0.58;1"
+          begin="-19.5s" dur="30s" repeatCount="indefinite" />
+      </path>
+
+      <!-- Pista 5 (Nueva): superior extrema derecha -->
+      <path d="M1070 140 L1200 140" pathLength="100" opacity="0">
+        <animate attributeName="stroke-dashoffset" values="16;-100;-100" keyTimes="0;0.58;1"
+          begin="-10.7s" dur="25s" repeatCount="indefinite" />
+        <animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.05;0.52;0.58;1"
+          begin="-10.7s" dur="25s" repeatCount="indefinite" />
+      </path>
+
+      <!-- Pista 6 (Nueva): media derecha baja -->
+      <path d="M1130 380 L1350 380" pathLength="100" opacity="0">
+        <animate attributeName="stroke-dashoffset" values="16;-100;-100" keyTimes="0;0.58;1"
+          begin="-23.1s" dur="31s" repeatCount="indefinite" />
+        <animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.05;0.52;0.58;1"
+          begin="-23.1s" dur="31s" repeatCount="indefinite" />
+      </path>
+
+      <!-- Pista 7 (Nueva): centro-izquierda media-baja -->
+      <path d="M505 640 L750 640" pathLength="100" opacity="0">
+        <animate attributeName="stroke-dashoffset" values="16;-100;-100" keyTimes="0;0.58;1"
+          begin="-16.3s" dur="29s" repeatCount="indefinite" />
+        <animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.05;0.52;0.58;1"
+          begin="-16.3s" dur="29s" repeatCount="indefinite" />
+      </path>
+    </g>
+  </svg>
 
   <!-- ================= SIDEBAR ================= -->
   <div class="adm-slot">
