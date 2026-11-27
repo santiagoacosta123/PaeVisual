@@ -52,6 +52,7 @@ export class ContratosComponent implements OnInit {
   cargandoContratos = false;
   errorCargaContratos = '';
   modoModalDetalle: 'nuevo' | 'consulta' | 'edicion' = 'consulta';
+  contratoSeleccionadoParaDetalle: any = null;
   filtroEstadoVigencia: 'TODOS' | 'ACTIVO' | 'PROXIMO_VENCER' | 'FINALIZADO' | 'INACTIVO' = 'TODOS';
 
   /**
@@ -704,6 +705,16 @@ export class ContratosComponent implements OnInit {
     this.contratoIdSeleccionado = String(id);
     this.modoModalDetalle = id === 'nuevo' ? 'nuevo' : modo;
     this.pestanaModalInicial = pestanaInicial;
+    if (id !== 'nuevo') {
+      const match = (this.contratos || []).find((c: any) =>
+        String(c.id) === String(id) ||
+        String(c.id_contrato) === String(id) ||
+        String(c.codigo || '').toLowerCase() === String(id).toLowerCase()
+      );
+      this.contratoSeleccionadoParaDetalle = match ? { ...match } : null;
+    } else {
+      this.contratoSeleccionadoParaDetalle = null;
+    }
     this.modalGrandeAbierto = true;
     this.cdr.detectChanges();
   }
@@ -738,6 +749,7 @@ export class ContratosComponent implements OnInit {
   cerrarModalGrandeContrato(nuevoContrato?: any) {
     this.modalGrandeAbierto = false;
     this.contratoIdSeleccionado = null;
+    this.contratoSeleccionadoParaDetalle = null;
     if (nuevoContrato && nuevoContrato.id) {
       const index = this.contratos.findIndex(c => c.id === nuevoContrato.id);
       if (index === -1) {
