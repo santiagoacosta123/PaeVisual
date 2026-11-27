@@ -13,15 +13,19 @@
   --yellow: #ffd03a;
   --amber: #f5a300;
   --deep: #7a5200;
+  --green: #1f5a3a;
   --ink: #1f2937;
   --ink-soft: #4b5563;
   --mute: #6b7280;
   --line: #e9e7dd;
-  --bg-canvas: transparent;
+  /* Fondo del sistema (circuitos). Está en /public/fondo-sistema.png */
+  --bg-canvas: #ffffff url('/fondo-sistema.png') top center / 100% auto repeat-y;
   --surface: #ffffff;
   --shadow-sm: 0 8px 24px -14px rgba(122, 82, 0, 0.14);
   --shadow-md: 0 18px 36px -22px rgba(122, 82, 0, 0.22);
   --shadow-pae: 0 18px 32px -16px rgba(245, 163, 0, 0.45);
+  --glint-glow: 0 0 12px rgba(245, 163, 0, 0.55);
+  position: relative;
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   color: var(--ink);
   width: 100%;
@@ -38,6 +42,58 @@
 .t-warn   { background: #fef3c7; color: #b45309; }
 .t-info   { background: #dbeafe; color: #1d4ed8; }
 .t-danger { background: #fee2e2; color: #b91c1c; }
+
+/* ---------- 2c. PULSOS QUE RECORREN LAS LÍNEAS DEL FONDO ---------- */
+/* La imagen se repite hacia abajo al 100% del ancho y el SVG se repite igual,
+   así que TODAS las líneas se ven y los pulsos caen sobre ellas en cualquier tamaño. */
+.sd, .sg1 { isolation: isolate; }
+.fx-bg {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.fx-bg svg { display: block; width: 100%; height: auto; }
+.fx-defs path {
+  fill: none;
+  stroke: #ffc21a;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: var(--dash, 7) 300;
+  stroke-dashoffset: var(--dash, 7);
+  filter: drop-shadow(0 0 3px rgba(245, 163, 0, 0.95));
+  animation: circuitPulse var(--t, 30s) linear infinite;
+}
+@keyframes circuitPulse {
+  0%   { stroke-dashoffset: var(--dash, 7); }
+  70%  { stroke-dashoffset: -100; }
+  100% { stroke-dashoffset: -100; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fx-defs path { animation: none; opacity: 0; }
+}
+
+/* Subrayado amarillo bajo los títulos (como el logo SIRAE) */
+.sd-sec-head h3,
+.sg1-head h2 {
+  position: relative;
+  display: inline-block;
+  padding-bottom: 6px;
+}
+.sd-sec-head h3::after,
+.sg1-head h2::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 70%;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--yellow);
+}
 
 /* ---------- 3. LAYOUT PRINCIPAL (2 COLUMNAS) ---------- */
 .sd {
@@ -73,7 +129,6 @@
   box-shadow: var(--shadow-md);
   color: #fff;
 }
-/* Imagen de fondo nítida (sin filtros ni blur) */
 .sd-banner__img {
   position: absolute;
   inset: 0;
@@ -88,7 +143,6 @@
   transform: translateZ(0);
   backface-visibility: hidden;
 }
-/* Degradado solo en la zona del texto: el resto de la foto queda limpio */
 .sd-banner::before {
   content: '';
   position: absolute;
@@ -827,10 +881,25 @@
   .sd-pills { width: 100%; justify-content: center; }
   .sg1-hero { padding: 16px 20px; gap: 14px; }
   .sg1-logo { width: 68px; height: 68px; }
+  .sd::before, .sd::after, .sg1::before, .sg1::after { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .sd-qcard, .sd-kpi, .sg1-card, .sg1-spin {
     transition: none;
+    animation: none;
+  }
+  .sd-qcard::before,
+  .sd-qcard::after,
+  .sd-kpi::before,
+  .sd-kpi::after,
+  .sd-card::before,
+  .sd-card::after,
+  .sd-aside::before,
+  .sd-aside::after,
+  .sg1-card::before,
+  .sg1-card::after,
+  .sd-banner::after, .sg1-hero::after,
+  .sd::before, .sd::after, .sg1::before, .sg1::after {
     animation: none;
   }
 }
@@ -839,7 +908,85 @@
 <!-- ======================================================================= -->
 <!-- A. PASO 1 · ELEGIR INSTITUCIÓN                                          -->
 <!-- ======================================================================= -->
+<!-- Pulsos del circuito: se definen una vez y se reutilizan en cada sección -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <g id="fx-tile" class="fx-defs">
+      <path d="M263 377 L176 377 L146 374 L186 333 L207 332 L234 305 L492 305 L505 317 L508 314" pathLength="100" style="--t:66.7s;--dash:4.67;animation-delay:-41.5s"/>
+      <path d="M182 35 L242 34 L261 37 L304 78 L423 79 L466 37 L481 34 L545 35" pathLength="100" style="--t:51.6s;--dash:6.04;animation-delay:-38.3s"/>
+      <path d="M182 362 L261 360 L306 317 L423 318 L466 360 L545 363" pathLength="100" style="--t:51.6s;--dash:6.04;animation-delay:-41.0s"/>
+      <path d="M659 378 L633 377 L589 334 L548 334 L545 340 L581 373 L580 377 L465 377" pathLength="100" style="--t:39.4s;--dash:7.92;animation-delay:-37.1s"/>
+      <path d="M463 22 L588 22 L545 64 L488 65" pathLength="100" style="--t:31.4s;--dash:9.91;animation-delay:-23.3s"/>
+      <path d="M291 395 L291 366 L297 357 L312 345 L415 345 L436 365 L436 395" pathLength="100" style="--t:28.7s;--dash:10.86;animation-delay:-26.5s"/>
+      <path d="M64 21 L89 21 L135 64 L184 63 L141 21 L115 21" pathLength="100" style="--t:29.0s;--dash:10.76;animation-delay:-0.8s"/>
+      <path d="M508 202 L509 188 L517 181 L568 181 L570 188 L598 187 L615 202 L671 203" pathLength="100" style="--t:24.6s;--dash:12.66;animation-delay:-11.5s"/>
+      <path d="M1 75 L65 75 L98 106 L179 106" pathLength="100" style="--t:24.7s;--dash:12.61;animation-delay:-23.3s"/>
+      <path d="M548 294 L631 293 L658 320 L726 320" pathLength="100" style="--t:24.6s;--dash:12.69;animation-delay:-15.9s"/>
+      <path d="M178 236 L97 235 L70 261 L2 262" pathLength="100" style="--t:24.2s;--dash:12.87;animation-delay:-21.8s"/>
+      <path d="M499 229 L499 187 L515 173 L610 173 L627 189" pathLength="100" style="--t:23.6s;--dash:13.22;animation-delay:-2.7s"/>
+      <path d="M62 198 L115 198 L129 212 L157 212 L159 218 L209 218 L217 210 L217 198" pathLength="100" style="--t:23.4s;--dash:13.30;animation-delay:-11.0s"/>
+      <path d="M292 7 L291 31 L313 53 L415 53 L434 35" pathLength="100" style="--t:23.8s;--dash:13.09;animation-delay:-5.9s"/>
+      <path d="M226 168 L225 213 L212 225 L116 225 L102 211 L103 209" pathLength="100" style="--t:23.5s;--dash:13.28;animation-delay:-12.8s"/>
+      <path d="M536 228 L534 267 L548 281 L644 281 L661 266" pathLength="100" style="--t:23.1s;--dash:13.52;animation-delay:-13.2s"/>
+      <path d="M447 16 L446 35 L418 66 L310 66 L303 59" pathLength="100" style="--t:23.2s;--dash:13.43;animation-delay:-0.3s"/>
+      <path d="M203 171 L203 130 L219 116 L308 116 L325 131" pathLength="100" style="--t:22.6s;--dash:13.80;animation-delay:-4.9s"/>
+      <path d="M139 147 L138 166 L98 166 L96 173 L138 174 L154 188 L194 188" pathLength="100" style="--t:22.0s;--dash:14.15;animation-delay:-6.2s"/>
+      <path d="M184 140 L184 134 L176 126 L126 126 L123 131 L94 131 L80 144 L29 144" pathLength="100" style="--t:22.4s;--dash:13.93;animation-delay:-20.5s"/>
+      <path d="M70 131 L84 118 L179 118 L192 131 L192 171" pathLength="100" style="--t:22.4s;--dash:13.91;animation-delay:-17.2s"/>
+      <path d="M281 381 L280 364 L310 331 L421 333" pathLength="100" style="--t:22.4s;--dash:13.90;animation-delay:-3.6s"/>
+      <path d="M524 230 L524 269 L511 281 L419 281 L404 265" pathLength="100" style="--t:22.2s;--dash:14.07;animation-delay:-17.7s"/>
+      <path d="M113 1 L160 1 L181 21 L263 21" pathLength="100" style="--t:20.5s;--dash:15.19;animation-delay:-2.8s"/>
+      <path d="M713 55 L648 54 L608 93 L566 95" pathLength="100" style="--t:21.2s;--dash:14.73;animation-delay:-13.1s"/>
+      <path d="M162 303 L121 303 L79 345 L18 346" pathLength="100" style="--t:21.0s;--dash:14.87;animation-delay:-2.7s"/>
+      <path d="M216 72 L236 91 L357 91" pathLength="100" style="--t:19.3s;--dash:16.15;animation-delay:-0.0s"/>
+      <path d="M205 318 L232 292 L340 294" pathLength="100" style="--t:18.9s;--dash:16.49;animation-delay:-16.5s"/>
+      <path d="M206 76 L234 104 L342 105" pathLength="100" style="--t:19.2s;--dash:16.26;animation-delay:-4.0s"/>
+      <path d="M387 292 L495 293 L521 320" pathLength="100" style="--t:18.9s;--dash:16.50;animation-delay:-4.1s"/>
+      <path d="M175 291 L119 290 L79 329 L50 330" pathLength="100" style="--t:18.3s;--dash:17.03;animation-delay:-18.0s"/>
+      <path d="M675 70 L647 70 L610 106 L551 107" pathLength="100" style="--t:18.0s;--dash:17.31;animation-delay:-15.7s"/>
+      <path d="M482 66 L458 91 L368 91" pathLength="100" style="--t:16.2s;--dash:19.25;animation-delay:-4.7s"/>
+      <path d="M311 34 L338 34 L353 17 L375 17 L390 34 L416 34" pathLength="100" style="--t:15.6s;--dash:19.94;animation-delay:-15.0s"/>
+      <path d="M311 365 L337 364 L353 381 L373 381 L391 364 L417 364" pathLength="100" style="--t:15.6s;--dash:19.98;animation-delay:-8.4s"/>
+      <path d="M88 306 L89 275 L107 258 L163 258" pathLength="100" style="--t:14.5s;--dash:21.47;animation-delay:-9.8s"/>
+      <path d="M562 316 L616 316 L639 337 L639 363" pathLength="100" style="--t:14.4s;--dash:21.59;animation-delay:-3.0s"/>
+      <path d="M616 130 L549 132 L534 146 L534 162" pathLength="100" style="--t:13.4s;--dash:23.18;animation-delay:-12.7s"/>
+      <path d="M645 148 L628 164 L564 164 L549 161" pathLength="100" style="--t:13.3s;--dash:23.38;animation-delay:-9.2s"/>
+      <path d="M192 238 L191 253 L177 267 L109 267" pathLength="100" style="--t:13.4s;--dash:23.34;animation-delay:-12.9s"/>
+      <path d="M602 269 L633 268 L648 254 L699 254" pathLength="100" style="--t:13.3s;--dash:23.41;animation-delay:-11.9s"/>
+      <path d="M116 76 L178 76 L193 91 L194 105" pathLength="100" style="--t:12.6s;--dash:24.68;animation-delay:-3.8s"/>
+      <path d="M88 64 L85 48 L68 48 L54 61 L13 61" pathLength="100" style="--t:12.1s;--dash:25.70;animation-delay:-4.4s"/>
+      <path d="M534 210 L573 210 L580 213 L587 223 L618 224" pathLength="100" style="--t:11.7s;--dash:26.71;animation-delay:-1.9s"/>
+      <path d="M213 146 L212 134 L222 125 L283 126" pathLength="100" style="--t:11.2s;--dash:27.74;animation-delay:-1.6s"/>
+      <path d="M625 224 L630 224 L629 231 L589 231 L588 253" pathLength="100" style="--t:9.6s;--dash:32.39;animation-delay:-0.6s"/>
+      <path d="M151 155 L151 172 L159 180 L207 181" pathLength="100" style="--t:9.9s;--dash:31.44;animation-delay:-3.0s"/>
+      <path d="M140 243 L102 244 L67 277" pathLength="100" style="--t:11.2s;--dash:27.87;animation-delay:-6.7s"/>
+      <path d="M659 122 L625 153 L587 153" pathLength="100" style="--t:10.9s;--dash:28.57;animation-delay:-0.0s"/>
+      <path d="M523 78 L496 104 L452 104" pathLength="100" style="--t:10.6s;--dash:29.45;animation-delay:-7.2s"/>
+      <path d="M589 303 L625 303 L659 336" pathLength="100" style="--t:10.8s;--dash:28.78;animation-delay:-3.7s"/>
+      <path d="M69 89 L68 104 L54 118 L15 116" pathLength="100" style="--t:9.6s;--dash:32.48;animation-delay:-3.0s"/>
+      <path d="M14 222 L55 222 L68 235 L69 250" pathLength="100" style="--t:9.7s;--dash:32.25;animation-delay:-7.9s"/>
+      <path d="M711 282 L672 281 L658 294 L658 309" pathLength="100" style="--t:9.5s;--dash:32.82;animation-delay:-4.6s"/>
+      <path d="M657 148 L657 161 L672 176 L711 176" pathLength="100" style="--t:9.5s;--dash:32.78;animation-delay:-3.0s"/>
+      <path d="M713 335 L677 335 L659 351 L645 351" pathLength="100" style="--t:9.6s;--dash:32.40;animation-delay:-4.6s"/>
+      <path d="M727 134 L661 135" pathLength="100" style="--t:8.6s;--dash:36.36;animation-delay:-6.0s"/>
+      <path d="M647 107 L657 107 L672 122 L712 122" pathLength="100" style="--t:9.2s;--dash:33.70;animation-delay:-0.5s"/>
+      <path d="M14 277 L54 276 L69 291 L79 291" pathLength="100" style="--t:9.3s;--dash:33.70;animation-delay:-9.0s"/>
+      <path d="M542 257 L542 267 L551 275 L595 275" pathLength="100" style="--t:8.6s;--dash:36.34;animation-delay:-0.2s"/>
+      <path d="M387 104 L448 104" pathLength="100" style="--t:7.9s;--dash:39.34;animation-delay:-5.9s"/>
+      <path d="M107 82 L164 83" pathLength="100" style="--t:7.4s;--dash:40.00;animation-delay:-6.3s"/>
+      <path d="M541 219 L569 219 L578 228 L578 244" pathLength="100" style="--t:7.4s;--dash:40.00;animation-delay:-0.1s"/>
+      <path d="M514 71 L494 91 L464 91" pathLength="100" style="--t:7.6s;--dash:40.00;animation-delay:-6.0s"/>
+      <path d="M635 95 L635 124 L620 139" pathLength="100" style="--t:6.5s;--dash:40.00;animation-delay:-2.4s"/>
+    </g>
+  </defs>
+</svg>
+
 <section *ngIf="!institucionActiva" class="sg1">
+  <div class="fx-bg" aria-hidden="true">
+    <svg viewBox="0 0 729 3288" focusable="false"><use href="#fx-tile" y="0"/><use href="#fx-tile" y="411"/><use href="#fx-tile" y="822"/><use href="#fx-tile" y="1233"/><use href="#fx-tile" y="1644"/><use href="#fx-tile" y="2055"/><use href="#fx-tile" y="2466"/><use href="#fx-tile" y="2877"/></svg>
+  </div>
+
+
 
   <div *ngIf="cargando && instituciones.length === 0" class="sg1-state sg1-state--solid">
     <span class="material-symbols-outlined sg1-spin sg1-state__icon">progress_activity</span>
@@ -896,6 +1043,11 @@
 <!-- B. PASO 2 · INICIO DEL SUPERVISOR (institución ya seleccionada)         -->
 <!-- ======================================================================= -->
 <section *ngIf="institucionActiva as inst" class="sd">
+  <div class="fx-bg" aria-hidden="true">
+    <svg viewBox="0 0 729 3288" focusable="false"><use href="#fx-tile" y="0"/><use href="#fx-tile" y="411"/><use href="#fx-tile" y="822"/><use href="#fx-tile" y="1233"/><use href="#fx-tile" y="1644"/><use href="#fx-tile" y="2055"/><use href="#fx-tile" y="2466"/><use href="#fx-tile" y="2877"/></svg>
+  </div>
+
+
 
   <!-- ===================================================================== -->
   <!-- COLUMNA IZQUIERDA (WORKSPACE PRINCIPAL)                               -->
