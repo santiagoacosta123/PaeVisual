@@ -2691,6 +2691,23 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
     });
 
     // 2. Limpiar pasos anteriores de este plato si existen para evitar duplicados en la móvil
+    const registrarNuevosPasos = () => {
+      let contadorGlobal = 1;
+      for (const comp of receta.componentes || []) {
+        for (const paso of comp.pasos || []) {
+          const texto = (paso.descripcion_paso || '').trim();
+          if (!texto) continue;
+          this.bancoDatosService
+            .crearDato('pasos_preparacion', {
+              id_plato: idPlato,
+              numero_paso: String(contadorGlobal++),
+              descripcion: `[${comp.nombre_componente}] ${texto}`
+            })
+            .subscribe({ error: () => {} });
+        }
+      }
+    };
+
     this.bancoDatosService.obtenerDatos('pasos_preparacion').subscribe({
       next: (resPasos: any) => {
         const todosPasos = this.normalizarRespuesta(resPasos);
@@ -2698,23 +2715,6 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
           const pPlatoId = typeof p.id_plato === 'object' ? (p.id_plato?.id_plato || p.id_plato?.id) : p.id_plato;
           return Number(pPlatoId) === Number(idPlato);
         });
-
-        const registrarNuevosPasos = () => {
-          let contadorGlobal = 1;
-          for (const comp of receta.componentes || []) {
-            for (const paso of comp.pasos || []) {
-              const texto = (paso.descripcion_paso || '').trim();
-              if (!texto) continue;
-              this.bancoDatosService
-                .crearDato('pasos_preparacion', {
-                  id_plato: idPlato,
-                  numero_paso: contadorGlobal++,
-                  descripcion_paso: `[${comp.nombre_componente}] ${texto}`
-                })
-                .subscribe({ error: () => {} });
-            }
-          }
-        };
 
         if (viejos.length > 0) {
           const borrarObservables = viejos.map((v: any) => {
@@ -2731,22 +2731,7 @@ export class BancoDatosComponent implements OnInit, OnDestroy {
           registrarNuevosPasos();
         }
       },
-      error: () => {
-        let contadorGlobal = 1;
-        for (const comp of receta.componentes || []) {
-          for (const paso of comp.pasos || []) {
-            const texto = (paso.descripcion_paso || '').trim();
-            if (!texto) continue;
-            this.bancoDatosService
-              .crearDato('pasos_preparacion', {
-                id_plato: idPlato,
-                numero_paso: contadorGlobal++,
-                descripcion_paso: `[${comp.nombre_componente}] ${texto}`
-              })
-              .subscribe({ error: () => {} });
-          }
-        }
-      }
+      error: () => registrarNuevosPasos()
     });
   }
 

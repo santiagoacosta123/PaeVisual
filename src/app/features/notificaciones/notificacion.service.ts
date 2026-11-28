@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, BehaviorSubject, tap, catchError, of } from 'rxjs';
+import { Observable, BehaviorSubject, map, tap, catchError, of } from 'rxjs';
 import {
   EnviarNotificacionResponse,
   Notificacion,
@@ -241,11 +241,26 @@ export class NotificacionService {
     }
   }
 
+  private ordenarMasRecientesPrimero(lista: Notificacion[]): Notificacion[] {
+    return [...lista].sort((a, b) => {
+      const fA = a.fecha_hora || a.fecha_creacion || '';
+      const fB = b.fecha_hora || b.fecha_creacion || '';
+      const tsA = fA ? new Date(fA).getTime() : 0;
+      const tsB = fB ? new Date(fB).getTime() : 0;
+      if (!Number.isNaN(tsA) && !Number.isNaN(tsB) && tsB !== tsA) {
+        return tsB - tsA;
+      }
+      const idA = Number(a.id_notificacion ?? a.id ?? 0);
+      const idB = Number(b.id_notificacion ?? b.id ?? 0);
+      return idB - idA;
+    });
+  }
+
   // Listar todas con sincronización reactiva
   obtenerNotificaciones(): Observable<Notificacion[]> {
     return this.http.get<Notificacion[]>(`${this.apiUrl}/`).pipe(
-      tap((lista) => {
-        const notificaciones = Array.isArray(lista) ? lista : [];
+      map((lista) => this.ordenarMasRecientesPrimero(Array.isArray(lista) ? lista : [])),
+      tap((notificaciones) => {
         this.notificacionesSubject.next(notificaciones);
         const conteo = notificaciones.filter(n => !n.leida).length;
         this.noLeidasSubject.next(conteo);

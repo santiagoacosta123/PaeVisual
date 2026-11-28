@@ -359,20 +359,18 @@ details[open] > .tri-sum .chev::before,
             Momentos que atiende esta sede:
           </span>
           <div class="inline-flex items-center gap-1.5 flex-wrap">
-            <button *ngFor="let mom of ['Desayuno', 'Almuerzo', 'Merienda']"
-              type="button"
-              (click)="toggleMomentoEnSede(sedeSeleccionadaId, mom)"
-              [ngClass]="sedeManejaMomento(sedeSeleccionadaId, mom)
-                ? 'bg-white text-slate-900 font-bold border-[#F5B81F]/40 shadow-2xs ring-1 ring-[#F5B81F]/30'
-                : 'bg-slate-100/80 text-slate-400 line-through border-slate-200 hover:bg-white hover:text-slate-600'"
-              class="px-3 py-1 rounded-lg text-xs border transition cursor-pointer inline-flex items-center"
-              [title]="'Haz clic para habilitar o deshabilitar ' + mom + ' en esta sede'">
+            <span *ngFor="let mom of obtenerMomentosDeSede(sedeSeleccionadaId)"
+              class="px-3 py-1 rounded-lg text-xs border bg-white text-slate-900 font-bold border-amber-300 shadow-2xs ring-1 ring-amber-200 inline-flex items-center">
               <span>{{ mom }}</span>
-            </button>
+            </span>
+            <span *ngIf="obtenerMomentosDeSede(sedeSeleccionadaId).length === 0"
+              class="text-xs italic text-slate-400">
+              Sin secciones configuradas en el contrato
+            </span>
           </div>
         </div>
         <span class="text-[11px] text-slate-500">
-          * Mantén activos únicamente los momentos que sirve esta sede.
+          * Secciones establecidas directamente en el contrato vigente de la sede.
         </span>
       </div>
     </div>
@@ -383,59 +381,18 @@ details[open] > .tri-sum .chev::before,
   <!-- ===================================================================== -->
   <div *ngIf="pestanaActiva === 'minuta'" class="flex flex-col gap-4">
 
-    <!-- RESUMEN GENERAL DE PROGRAMACIÓN DE MENÚS (CICLO DE 20 DÍAS) — desplegable -->
-    <details open class="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-xs">
-      <summary class="tri-sum flex-wrap justify-between gap-2">
-        <div class="flex items-center gap-2.5 flex-wrap">
-          <span class="chev" aria-hidden="true"></span>
-          <span class="text-xs font-extrabold uppercase tracking-wide text-slate-800">
-            Ciclo de 20 días — {{ sedeActualObj?.nombre_sede || 'Sede' }}
-          </span>
-          <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#fdf3d7] text-[#7a5a0b] border border-[#F5B81F]/30">
-            {{ resumenProgramacionCicloSede.diasProgramados }} / 20 programados ({{ resumenProgramacionCicloSede.porcentaje }}%)
-          </span>
-        </div>
-        <span class="text-[11px] text-slate-500">
-          Haz clic en cualquier día para programar o revisar su menú
-        </span>
-      </summary>
-
-      <div class="flex flex-col gap-3 mt-3">
-        <!-- Barra de progreso visual -->
-        <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-          <div class="bg-gradient-to-r from-[#F5B81F] to-[#2B5424] h-full transition-all duration-500 rounded-full"
-            [style.width.%]="resumenProgramacionCicloSede.porcentaje"></div>
-        </div>
-
-        <!-- Cuadrícula interactiva de los 20 Menús del ciclo -->
-        <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-10 gap-2">
-          <div *ngFor="let dia of resumenProgramacionCicloSede.listaDias"
-            (click)="irADiaYProgramar(dia.semana, dia.numeroMenu)"
-            class="p-2 rounded-xl border text-left cursor-pointer transition hover:shadow-2xs flex flex-col gap-1"
-            [ngClass]="dia.programado
-              ? 'bg-[#eaf2e8]/50 border-[#2B5424]/30 hover:border-[#2B5424]'
-              : 'bg-slate-50/70 border-slate-200/80 hover:border-[#F5B81F] hover:bg-[#fdf3d7]/20'"
-            [title]="'Semana ' + dia.semana + ' • ' + dia.diaSemana + ' • Menú ' + dia.numeroMenu">
-            <div class="flex items-center justify-between gap-1">
-              <span class="text-[10px] font-black uppercase tracking-tight"
-                [ngClass]="dia.programado ? 'text-[#2B5424]' : 'text-slate-500'">
-                M{{ dia.numeroMenu }} · {{ dia.diaSemana.substring(0, 3) }}
-              </span>
-            </div>
-            <div class="text-[10.5px] font-semibold leading-tight truncate"
-              [ngClass]="dia.programado ? 'text-slate-800' : 'text-slate-400 italic'">
-              {{ dia.programado ? (dia.momentos[0]?.nombre_plato || 'Configurado') : 'Sin asignar' }}
-            </div>
-          </div>
-        </div>
-      </div>
-    </details>
-
-    <!-- SELECTOR DE SEMANAS (1 A 4) Y FILTROS -->
+    <!-- FILTROS DE SEMANA ACTUAL / SIGUIENTE Y MOMENTO -->
     <div class="bg-white border border-slate-200/90 rounded-2xl p-3.5 shadow-xs flex flex-wrap items-center justify-between gap-3">
-      <!-- Selector de Semana 1 a 4 -->
       <div class="flex flex-wrap items-center gap-1.5">
-        <span class="text-xs font-bold text-slate-600 mr-1">Semana:</span>
+        <button type="button" (click)="toggleMinutasAnteriores()"
+          [ngClass]="mostrarMinutasAnteriores
+            ? 'bg-amber-100 text-amber-950 border-amber-300'
+            : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'"
+          class="px-3 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer inline-flex items-center gap-1 mr-1"
+          title="Ver minuta de las 4 semanas anteriores">
+          <span>Minutas</span>
+          <span class="text-[10px]">{{ mostrarMinutasAnteriores ? '▲' : '▼' }}</span>
+        </button>
         <button *ngFor="let s of [1, 2, 3, 4]" type="button" (click)="semanaSeleccionada = s" [ngClass]="semanaSeleccionada === s
             ? 'bg-[#F5B81F] text-slate-950 font-bold border-[#F5B81F] shadow-2xs'
             : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200 font-semibold'"
@@ -461,6 +418,59 @@ details[open] > .tri-sum .chev::before,
       </div>
     </div>
 
+    <!-- MINUTA DE LAS 4 SEMANAS ANTERIORES (desplegable al dar clic en "Minutas") -->
+    <div *ngIf="mostrarMinutasAnteriores"
+      class="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col gap-3">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <div class="flex items-center gap-2.5 flex-wrap">
+          <button type="button" (click)="toggleMinutasAnteriores()" class="chev cursor-pointer border-0"
+            title="Ocultar minutas anteriores"></button>
+          <span class="text-xs font-extrabold uppercase tracking-wide text-slate-800">
+            Minuta del {{ minutaCicloAnterior.rangoTexto }} — {{ sedeActualObj?.nombre_sede || 'Sede' }}
+          </span>
+          <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-950 border border-amber-200">
+            {{ minutaCicloAnterior.diasConMenu }} / 20 días preparados
+          </span>
+          <div class="inline-flex items-center gap-1 ml-1">
+            <button type="button" (click)="cambiarCicloAnteriorMinutas(-1)"
+              class="px-2 py-0.5 rounded-lg text-[11px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 cursor-pointer transition">
+              ‹ Anterior
+            </button>
+            <button *ngIf="cicloAnteriorOffset < -1" type="button" (click)="cambiarCicloAnteriorMinutas(1)"
+              class="px-2 py-0.5 rounded-lg text-[11px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 cursor-pointer transition">
+              Siguiente ›
+            </button>
+          </div>
+        </div>
+        <span class="text-[11px] text-slate-500">
+          Elección y preparación de las 4 semanas anteriores
+        </span>
+      </div>
+
+      <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-10 gap-2">
+        <div *ngFor="let dia of minutaCicloAnterior.dias"
+          class="p-2.5 rounded-xl border text-left flex flex-col gap-1"
+          [ngClass]="dia.tieneMenu ? 'bg-amber-50/40 border-amber-200/80' : 'bg-slate-50/70 border-slate-200/80'">
+          <div class="flex items-center justify-between gap-1">
+            <span class="text-[10px] font-black uppercase tracking-tight"
+              [ngClass]="dia.tieneMenu ? 'text-amber-950' : 'text-slate-500'">
+              M{{ dia.numeroMenu }} · {{ dia.diaAbrev }}
+            </span>
+            <span class="text-[10px] font-bold text-slate-500">{{ dia.fechaCorta }}</span>
+          </div>
+          <div *ngIf="dia.desayuno" class="text-[10.5px] leading-tight text-slate-800 truncate" [title]="dia.desayuno">
+            <strong class="text-amber-900">Des:</strong> {{ dia.desayuno }}
+          </div>
+          <div *ngIf="dia.almuerzo" class="text-[10.5px] leading-tight text-slate-800 truncate" [title]="dia.almuerzo">
+            <strong class="text-emerald-800">Alm:</strong> {{ dia.almuerzo }}
+          </div>
+          <div *ngIf="!dia.tieneMenu" class="text-[10.5px] text-slate-400 italic">
+            Sin asignar
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- TARJETA DE LA SEMANA SELECCIONADA -->
     <div *ngIf="semanaActualMinuta as semana"
       class="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col gap-4">
@@ -470,7 +480,7 @@ details[open] > .tri-sum .chev::before,
         <div>
           <div class="flex items-center gap-2 flex-wrap">
             <h2 class="text-base font-extrabold text-slate-900 m-0">
-              Semana {{ semana.numeroSemana }}
+              {{ esSupervisor ? 'Semana ' + semana.numeroSemana + ' (' + rangoSemanaSeleccionadaTexto + ')' : 'Semana ' + semana.numeroSemana }}
             </h2>
             <span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-[#fdf3d7] text-[#7a5a0b] border border-[#F5B81F]/30">
               Menús {{ (semana.numeroSemana - 1) * 5 + 1 }} al {{ semana.numeroSemana * 5 }}
@@ -608,10 +618,6 @@ details[open] > .tri-sum .chev::before,
                             {{ dia.momentos[mom].nombre_plato }}
                           </div>
 
-                          <div class="text-[10.5px] text-slate-500 leading-tight">
-                            {{ dia.momentos[mom].componentes.proteico }} • {{ dia.momentos[mom].componentes.cereal }}
-                          </div>
-
                           <div *ngIf="dia.momentos[mom].estado_aprobacion === 'RECHAZADO'"
                             class="p-2 rounded-lg bg-rose-50 border border-rose-200 text-rose-950 text-[10px]">
                             <div class="font-bold">Motivo del rechazo:</div>
@@ -624,14 +630,14 @@ details[open] > .tri-sum .chev::before,
                               class="flex-1 py-1 px-2 rounded-lg text-[10.5px] font-bold bg-[#2B5424] hover:bg-[#1d3f1b] text-white cursor-pointer transition text-center">
                               Aprobar
                             </button>
-                            <button *ngIf="dia.momentos[mom].estado_aprobacion !== 'RECHAZADO'"
+                            <button *ngIf="puedeRechazarMomento(dia, mom)"
                               type="button" (click)="abrirModalRechazoSupervisor(dia, mom)"
                               class="flex-1 py-1 px-2 rounded-lg text-[10.5px] font-bold bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 cursor-pointer transition text-center">
                               Rechazar
                             </button>
                           </div>
 
-                          <div *ngIf="esSupervisor || esJefaManipuladoras || esSuperAdmin"
+                          <div *ngIf="esJefaManipuladoras || esSuperAdmin"
                             class="flex items-center justify-between gap-1 pt-2 border-t border-slate-100 text-[10.5px]">
                             <ng-container *ngIf="!esJefaManipuladoras || !obtenerAprobacionSemana(semana.numeroSemana).aprobado_supervisor; else semanaBloqueadaTpl">
                               <button type="button" (click)="abrirModalProgramarMenuDiaMomento(dia, mom)"
@@ -695,20 +701,20 @@ details[open] > .tri-sum .chev::before,
                         <!-- CASO 4: SIN ASIGNAR / PENDIENTE -->
                         <div *ngIf="!dia.momentos[mom].tiene_menu_registrado && dia.momentos[mom].estado_aprobacion !== 'CANCELADO' && dia.momentos[mom].estado_aprobacion !== 'SIN_SERVICIO'"
                           class="bg-white/70 border border-dashed border-slate-300 rounded-xl p-3 flex flex-col items-center justify-center gap-1.5 text-center min-h-[92px]">
-                          <div *ngIf="esSupervisor || esJefaManipuladoras || esSuperAdmin" class="flex flex-col items-center gap-1.5 w-full">
+                          <div *ngIf="esJefaManipuladoras || esSuperAdmin" class="flex flex-col items-center gap-1.5 w-full">
                             <button type="button" (click)="abrirModalProgramarMenuDiaMomento(dia, mom)"
                               class="w-full py-1.5 px-2 rounded-lg text-xs font-bold bg-[#fdf3d7] hover:bg-[#F5B81F] text-[#7a5a0b] border border-[#F5B81F]/40 cursor-pointer transition">
                               + Asignar {{ mom }}
                             </button>
-                            <button *ngIf="esJefaManipuladoras || esSuperAdmin" type="button" (click)="abrirModalNovedadMomento(dia, mom, 'SIN_SERVICIO')"
+                            <button type="button" (click)="abrirModalNovedadMomento(dia, mom, 'SIN_SERVICIO')"
                               class="text-[10px] text-slate-500 hover:text-slate-700 cursor-pointer">
                               Sin clase (No aplica)
                             </button>
                           </div>
 
-                          <div *ngIf="!esSupervisor && !esJefaManipuladoras && !esSuperAdmin" class="flex flex-col items-center gap-0.5">
+                          <div *ngIf="!esJefaManipuladoras && !esSuperAdmin" class="flex flex-col items-center gap-0.5">
                             <span class="text-xs font-semibold text-slate-500">Sin asignar</span>
-                            <span class="text-[10px] text-slate-400">Pendiente de programación</span>
+                            <span class="text-[10px] text-slate-400">Pendiente de asignación por la Jefa</span>
                           </div>
                         </div>
 

@@ -125,11 +125,17 @@ export class MenusComponent implements OnInit {
   // Sedes de la institución y Jefa asignada por sede
   sedesInstitucion: any[] = [];
   sedeSeleccionadaId: number | null = null;
+  momentosPorSedeContrato: Record<number, string[]> = {};
   usuariosInstitucion: any[] = [];
 
   // Filtros de la Minuta de 20 días por Sede
   filtroSeccionMinuta: 'TODAS' | 'Desayuno' | 'Almuerzo' | 'Merienda' = 'TODAS';
-  semanaSeleccionada: number = 1;
+  semanaSeleccionada: number = 2;
+  vistaSemanaSupervisor: 'ACTUAL' | 'SIGUIENTE' = 'ACTUAL';
+  semanaSupervisorOffset: number = 0; // 0 = actual, -1 = anterior, +1 = siguiente
+  cicloOffset: number = 0;
+  mostrarMinutasAnteriores: boolean = false;
+  cicloAnteriorOffset: number = -1;
 
   // Filtros y estado del Catálogo de Platos y Recetas
   filtroMomentoPlatos: string = 'TODAS';
@@ -172,12 +178,12 @@ export class MenusComponent implements OnInit {
     label: string;
     icon: string;
   }[] = [
-    { key: 'bebida_leche', label: 'Bebida con leche', icon: 'local_cafe' },
-    { key: 'proteico', label: 'Alimento proteico', icon: 'egg_alt' },
-    { key: 'cereal', label: 'Cereal acompañante', icon: 'bakery_dining' },
-    { key: 'fruta', label: 'Fruta', icon: 'nutrition' },
-    { key: 'agua', label: 'Agua', icon: 'water_drop' }
-  ];
+      { key: 'bebida_leche', label: 'Bebida con leche', icon: 'local_cafe' },
+      { key: 'proteico', label: 'Alimento proteico', icon: 'egg_alt' },
+      { key: 'cereal', label: 'Cereal acompañante', icon: 'bakery_dining' },
+      { key: 'fruta', label: 'Fruta', icon: 'nutrition' },
+      { key: 'agua', label: 'Agua', icon: 'water_drop' }
+    ];
 
   // Datos crudos del backend
   menusDiarios: any[] = [];
@@ -298,7 +304,7 @@ export class MenusComponent implements OnInit {
     private cdr: ChangeDetectorRef,
     private authService: AuthService,
     private sweetAlert: SweetAlertService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.currentUser = this.authService.obtenerUsuario();
@@ -324,7 +330,7 @@ export class MenusComponent implements OnInit {
   cargarContextoSedesYDatos(): void {
     forkJoin({
       sedes: this.http.get<any>(`${this.apiUrl}/sedes/`).pipe(catchError(() => of([]))),
-      usuarios: this.http.get<any>(`${this.apiUrl}/usuarios/`).pipe(catchError(() => of([]))),
+      usuarios: this.http.get<any>(`${this.apiUrl}/usuarios/?page_size=500&funcionalidad=supervision_pae`).pipe(catchError(() => of([]))),
       jornadas: this.http.get<any>(`${this.apiUrl}/jornadas/`).pipe(catchError(() => of([]))),
       contratos: this.http.get<any>(`${this.apiUrl}/contratos/`).pipe(catchError(() => of([]))),
       contratosSecciones: this.http.get<any>(`${this.apiUrl}/contratos-secciones-menu/`).pipe(catchError(() => of([]))),
@@ -389,6 +395,7 @@ export class MenusComponent implements OnInit {
 
       this.jornadas = Array.isArray(jornadas) ? jornadas : (jornadas?.results || []);
       this.contratos = Array.isArray(contratos) ? contratos : (contratos?.results || []);
+      this.semanaSeleccionada = this.calcularSemanaActualDelCiclo();
       this.contratosSeccionesMenu = Array.isArray(contratosSecciones) ? contratosSecciones : (contratosSecciones?.results || []);
       const secApi = Array.isArray(secciones) ? secciones : (secciones?.results || []);
       if (secApi.length > 0) {
@@ -439,8 +446,28 @@ export class MenusComponent implements OnInit {
       }
 
       this.cargarCatalogoBasePlatos();
+      this.cargarMomentosRealesDesdeContrato();
       this.cdr.detectChanges();
     });
+  }
+
+  private extraerNombreRolUsuario(u: any): string {
+    return (
+      u?.rol_detalle?.nombre_rol ||
+      u?.rol_detalle?.nombre ||
+      u?.rol?.nombre_rol ||
+      u?.rol?.nombre ||
+      u?.rol_nombre ||
+      u?.nombre_rol ||
+      (typeof u?.rol === 'string' ? u.rol : '')
+    ).toString().toLowerCase().trim();
+  }
+
+  private extraerIdSedeUsuario(u: any): number {
+    const raw = typeof u?.id_sede === 'object' && u?.id_sede !== null
+      ? (u.id_sede?.id_sede || u.id_sede?.id)
+      : (u?.id_sede ?? u?.sede_id ?? u?.sede?.id_sede ?? u?.sede?.id);
+    return Number(raw || 0);
   }
 
   // ============================================================
@@ -457,10 +484,9 @@ export class MenusComponent implements OnInit {
   obtenerJefaDeSede(idSede: number | null): any | null {
     if (!idSede) return null;
     return this.usuariosInstitucion.find(u => {
-      if (u.is_active === false) return false;
-      const uSede = typeof u.id_sede === 'object' ? (u.id_sede?.id_sede || u.id_sede?.id) : u.id_sede;
-      if (Number(uSede) !== Number(idSede)) return false;
-      const rolNom = (u.rol_detalle?.nombre_rol || u.rol_detalle?.nombre || u.rol || '').toString().toLowerCase();
+      if (u.is_active === false || String(u.estado || '').toLowerCase() === 'inactivo') return false;
+      if (this.extraerIdSedeUsuario(u) !== Number(idSede)) return false;
+      const rolNom = this.extraerNombreRolUsuario(u);
       return rolNom.includes('jefa') || rolNom.includes('jefe');
     }) || null;
   }
@@ -479,6 +505,19 @@ export class MenusComponent implements OnInit {
 
   seleccionarSede(idSede: number): void {
     this.sedeSeleccionadaId = Number(idSede);
+    const sedeObj = this.sedeActualObj;
+    if (sedeObj) {
+      const idInst = typeof sedeObj.id_institucion === 'object'
+        ? (sedeObj.id_institucion?.id_institucion || sedeObj.id_institucion?.id)
+        : sedeObj.id_institucion;
+      const instActiva = this.authService.obtenerInstitucionActiva();
+      this.authService.establecerSedeActiva({
+        id_sede: Number(sedeObj.id_sede || sedeObj.id || idSede),
+        nombre_sede: sedeObj.nombre_sede || sedeObj.nombre || 'Sede',
+        id_institucion: idInst ? Number(idInst) : instActiva?.id_institucion,
+        nombre_institucion: instActiva?.nombre_institucion
+      });
+    }
     this.cdr.detectChanges();
   }
 
@@ -774,21 +813,196 @@ export class MenusComponent implements OnInit {
   }
 
   // ============================================================
-  // CONFIGURACIÓN DE MOMENTOS (SECCIONES) POR SEDE
+  // CONFIGURACIÓN DE MOMENTOS (SECCIONES) POR SEDE (100% DESDE CONTRATO)
   // ============================================================
-  obtenerMomentosDeSede(idSede: number | null): string[] {
-    if (!idSede) return ['Desayuno', 'Almuerzo', 'Merienda'];
-    try {
-      const raw = localStorage.getItem(this.STORAGE_SEDES_MOMENTOS_KEY);
-      const mapa = raw ? JSON.parse(raw) : {};
-      if (mapa[String(idSede)] && Array.isArray(mapa[String(idSede)]) && mapa[String(idSede)].length > 0) {
-        return mapa[String(idSede)];
-      }
-    } catch (e) {
-      console.error('Error al leer momentos de la sede:', e);
+
+  private normalizarNombreMomento(idSec?: number, nomSec?: string): string | null {
+    const n = (nomSec || '').toLowerCase().trim();
+    if (idSec === 1 || n.includes('desayun')) return 'Desayuno';
+    if (idSec === 2 || n.includes('almuerz')) return 'Almuerzo';
+    if (idSec === 3 || n.includes('meriend') || n.includes('refrigerio')) return 'Merienda';
+    return null;
+  }
+
+  private cargarMomentosRealesDesdeContrato(): void {
+    const mapa: Record<number, string[]> = {};
+    const ordenados = [...(this.contratos || [])].sort((a, b) => {
+      const aAct = String(a.estado || '').toLowerCase() === 'activo' ? 1 : 0;
+      const bAct = String(b.estado || '').toLowerCase() === 'activo' ? 1 : 0;
+      if (aAct !== bAct) return bAct - aAct;
+      return Number(b.id_contrato || b.id || 0) - Number(a.id_contrato || a.id || 0);
+    });
+
+    const idsContratosRelevantes = Array.from(new Set(
+      ordenados.map(c => Number(c.id_contrato || c.id || 0)).filter(id => id > 0)
+    ));
+
+    // 1. Revisar distribuciones guardadas localmente del contrato (si existen)
+    for (const idC of idsContratosRelevantes) {
+      try {
+        const rawDist = localStorage.getItem(`sirae_distribucion_contrato_${idC}`);
+        if (!rawDist) continue;
+        const dist = JSON.parse(rawDist);
+        if (Array.isArray(dist?.sedes)) {
+          for (const s of dist.sedes) {
+            const idS = Number(s.id_sede || s.id || 0);
+            if (!idS || mapa[idS]?.length) continue;
+            const secs: string[] = [];
+            if (Array.isArray(s.secciones_ids)) {
+              for (const secId of s.secciones_ids) {
+                const nom = this.normalizarNombreMomento(Number(secId), this.getNombreSeccion(Number(secId)));
+                if (nom && !secs.includes(nom)) secs.push(nom);
+              }
+            }
+            if (secs.length > 0) mapa[idS] = secs;
+          }
+        }
+      } catch (_) { }
     }
 
-    // 1. Consultar el contrato configurado específicamente para esta sede
+    this.momentosPorSedeContrato = { ...mapa };
+
+    // 2. Consultar en tiempo real /contratos/{id}/distribucion/ y /sedes/{id}/configuracion/
+    const instSedesIds = new Set(this.sedesInstitucion.map(s => Number(s.id_sede || s.id || 0)).filter(Boolean));
+    const contratosDeInst = ordenados.filter(c => {
+      const cInst = typeof c.id_institucion === 'object' ? (c.id_institucion?.id_institucion || c.id_institucion?.id) : c.id_institucion;
+      const cSede = typeof c.id_sede === 'object' ? (c.id_sede?.id_sede || c.id_sede?.id) : c.id_sede;
+      return (cSede && instSedesIds.has(Number(cSede))) ||
+        this.sedesInstitucion.some(s => {
+          const sInst = typeof s.id_institucion === 'object' ? (s.id_institucion?.id_institucion || s.id_institucion?.id) : s.id_institucion;
+          return Number(sInst) === Number(cInst);
+        });
+    });
+
+    const contratosAConsultar = (contratosDeInst.length > 0 ? contratosDeInst : ordenados).slice(0, 3);
+    const distRequests = contratosAConsultar.map(c => {
+      const idC = Number(c.id_contrato || c.id);
+      return this.http.get<any>(`${this.apiUrl}/contratos/${idC}/distribucion/`).pipe(catchError(() => of(null)));
+    });
+    const sedesConfigRequests = this.sedesInstitucion.map(s => {
+      const idS = Number(s.id_sede || s.id);
+      return this.http.get<any>(`${this.apiUrl}/sedes/${idS}/configuracion/`).pipe(catchError(() => of(null)));
+    });
+
+    forkJoin({
+      dists: distRequests.length > 0 ? forkJoin(distRequests) : of([]),
+      configs: sedesConfigRequests.length > 0 ? forkJoin(sedesConfigRequests) : of([])
+    }).subscribe(({ dists, configs }) => {
+      const nuevoMapa: Record<number, string[]> = { ...this.momentosPorSedeContrato };
+
+      // A) Secciones explícitas desde /contratos/{id}/distribucion/
+      for (const dist of (dists as any[])) {
+        if (!dist || !Array.isArray(dist.sedes)) continue;
+        for (const s of dist.sedes) {
+          const idS = Number(s.id_sede || s.id || 0);
+          if (!idS) continue;
+          const secs: string[] = [];
+          if (Array.isArray(s.secciones_ids)) {
+            for (const secId of s.secciones_ids) {
+              const nom = this.normalizarNombreMomento(Number(secId), this.getNombreSeccion(Number(secId)));
+              if (nom && !secs.includes(nom)) secs.push(nom);
+            }
+          }
+          if (Array.isArray(s.secciones)) {
+            for (const sec of s.secciones) {
+              const sid = typeof sec === 'object' ? Number(sec.id_seccion || sec.id || 0) : Number(sec);
+              const snom = typeof sec === 'object' ? (sec.nombre_seccion || sec.nombre) : String(sec);
+              const nom = this.normalizarNombreMomento(sid || undefined, snom);
+              if (nom && !secs.includes(nom)) secs.push(nom);
+            }
+          }
+          if (secs.length > 0) {
+            nuevoMapa[idS] = secs;
+          }
+        }
+      }
+
+      // B) Si la distribución no trajo secciones_ids por sede, revisar /sedes/{id}/configuracion/
+      (configs as any[]).forEach((conf, idx) => {
+        const s = this.sedesInstitucion[idx];
+        const idS = Number(s?.id_sede || s?.id || 0);
+        if (!idS || (nuevoMapa[idS] && nuevoMapa[idS].length > 0)) return;
+        const secs: string[] = [];
+        if (conf && Array.isArray(conf.jornadas)) {
+          for (const j of conf.jornadas) {
+            if (!j.habilitada && !(Number(j.cupos || 0) > 0) && !(Array.isArray(j.secciones) && j.secciones.length > 0)) continue;
+            for (const sec of (j.secciones || [])) {
+              const sid = Number(sec.id_seccion || sec.id || 0);
+              const snom = sec.nombre_seccion || sec.nombre || '';
+              const nom = this.normalizarNombreMomento(sid || undefined, snom);
+              if (nom && !secs.includes(nom)) secs.push(nom);
+            }
+          }
+        }
+        if (secs.length > 0) {
+          nuevoMapa[idS] = secs;
+        }
+      });
+
+      // C) Si /sedes/{id}/configuracion/ no está autorizado para Supervisor o no trajo secciones,
+      // cruzar contratosSeccionesMenu del contrato con las jornadas habilitadas de cada sede en /distribucion/
+      for (let dIdx = 0; dIdx < (dists as any[]).length; dIdx++) {
+        const dist = (dists as any[])[dIdx];
+        const idContratoDist = Number(dist?.id_contrato || contratosAConsultar[dIdx]?.id_contrato || contratosAConsultar[dIdx]?.id || 0);
+        if (!dist || !Array.isArray(dist.sedes)) continue;
+
+        const relsContrato = (this.contratosSeccionesMenu || []).filter(rel => {
+          const relCId = typeof rel.id_contrato === 'object'
+            ? (rel.id_contrato?.id_contrato || rel.id_contrato?.id)
+            : rel.id_contrato;
+          return !idContratoDist || Number(relCId) === idContratoDist;
+        });
+
+        for (const s of dist.sedes) {
+          const idS = Number(s.id_sede || s.id || 0);
+          if (!idS || (nuevoMapa[idS] && nuevoMapa[idS].length > 0)) continue;
+
+          const jNombres = Array.isArray(s.jornadas) ? s.jornadas.map((j: any) => String(j).toLowerCase()) : [];
+          const tieneManana = Boolean(s.jornada_manana) || jNombres.some((j: string) => j.includes('mañan') || j.includes('manan'));
+          const tieneTarde = Boolean(s.jornada_tarde) || jNombres.some((j: string) => j.includes('tard'));
+
+          const secs: string[] = [];
+          for (const r of relsContrato) {
+            const secId = typeof r.id_seccion === 'object'
+              ? (r.id_seccion?.id_seccion || r.id_seccion?.id)
+              : r.id_seccion;
+            const secNomObj = typeof r.id_seccion === 'object'
+              ? (r.id_seccion?.nombre_seccion || r.id_seccion?.nombre)
+              : (r.nombre_seccion || this.getNombreSeccion(Number(secId)));
+            const nom = this.normalizarNombreMomento(Number(secId), secNomObj);
+            if (!nom) continue;
+
+            const esManana = nom === 'Desayuno';
+            const esTarde = nom === 'Almuerzo' || nom === 'Merienda';
+            const coincide = (!tieneManana && !tieneTarde) || (tieneManana && esManana) || (tieneTarde && esTarde);
+            if (coincide && !secs.includes(nom)) {
+              secs.push(nom);
+            }
+          }
+
+          if (secs.length === 0) {
+            if (tieneManana) secs.push('Desayuno');
+            if (tieneTarde) secs.push('Almuerzo');
+          }
+          if (secs.length > 0) {
+            nuevoMapa[idS] = secs;
+          }
+        }
+      }
+
+      this.momentosPorSedeContrato = nuevoMapa;
+      this.cdr.detectChanges();
+    });
+  }
+
+  obtenerMomentosDeSede(idSede: number | null): string[] {
+    if (!idSede) return [];
+    const delContrato = this.momentosPorSedeContrato[Number(idSede)];
+    if (delContrato && delContrato.length > 0) {
+      return delContrato;
+    }
+
+    // Fallback al contrato directo de la sede o contratosSeccionesMenu (sin datos quemados)
     const contratosSede = (this.contratos || []).filter(c => {
       const cSede = typeof c.id_sede === 'object' ? (c.id_sede?.id_sede || c.id_sede?.id) : c.id_sede;
       return Number(cSede) === Number(idSede);
@@ -803,35 +1017,22 @@ export class MenusComponent implements OnInit {
         return idsContratos.includes(Number(relContratoId));
       });
 
-      if (rels.length > 0) {
-        const momentosContrato: string[] = [];
-        for (const r of rels) {
-          const secId = typeof r.id_seccion === 'object'
-            ? (r.id_seccion?.id_seccion || r.id_seccion?.id)
-            : r.id_seccion;
-          const secNom = this.getNombreSeccion(Number(secId));
-          if (secNom && !momentosContrato.includes(secNom)) {
-            momentosContrato.push(secNom);
-          }
+      const momentosContrato: string[] = [];
+      for (const r of rels) {
+        const secId = typeof r.id_seccion === 'object'
+          ? (r.id_seccion?.id_seccion || r.id_seccion?.id)
+          : r.id_seccion;
+        const secNom = this.normalizarNombreMomento(Number(secId), this.getNombreSeccion(Number(secId)));
+        if (secNom && !momentosContrato.includes(secNom)) {
+          momentosContrato.push(secNom);
         }
-        if (momentosContrato.length > 0) {
-          return momentosContrato;
-        }
+      }
+      if (momentosContrato.length > 0) {
+        return momentosContrato;
       }
     }
 
-    // 2. Verificación por sede institucional (ej. Piagua solo Desayuno, Valencia todas las jornadas)
-    const sedeObj = this.sedesInstitucion.find(s => Number(s.id_sede || s.id) === Number(idSede));
-    const nomSede = (sedeObj?.nombre_sede || sedeObj?.nombre || '').toLowerCase();
-    if (nomSede.includes('piagua')) {
-      return ['Desayuno'];
-    }
-    if (nomSede.includes('valencia')) {
-      return ['Desayuno', 'Almuerzo', 'Merienda'];
-    }
-
-    // 3. Por defecto cualquier otra sede sin contrato restrictivo maneja normalmente todas sus jornadas
-    return ['Desayuno', 'Almuerzo', 'Merienda'];
+    return [];
   }
 
   obtenerOpcionesFiltroMomentoSede(idSede: number | null): string[] {
@@ -931,7 +1132,7 @@ export class MenusComponent implements OnInit {
       localStorage.removeItem('sirae_platos_catalogo_personalizados_v5');
       localStorage.removeItem('sirae_catalogo_componentes_pae_v1');
       localStorage.removeItem('sirae_catalogo_platos_pae_estipulados_v1');
-    } catch {}
+    } catch { }
 
     const baseMenus = this.getCatalogo20MenusBasePAE();
     const baseMap = new Map<string, any>();
@@ -1071,8 +1272,8 @@ export class MenusComponent implements OnInit {
       const secRaw = baseMatch
         ? [...baseMatch.secciones]
         : (p.secciones && p.secciones.length > 0
-            ? p.secciones
-            : (p.seccion ? [p.seccion] : ['Desayuno', 'Almuerzo', 'Merienda']));
+          ? p.secciones
+          : (p.seccion ? [p.seccion] : ['Desayuno', 'Almuerzo', 'Merienda']));
 
       mapaUnicos.set(claveCanon, {
         ...p,
@@ -1425,7 +1626,7 @@ export class MenusComponent implements OnInit {
             eliminados.push(claveCanon);
             localStorage.setItem('sirae_platos_eliminados_v1', JSON.stringify(eliminados));
           }
-        } catch {}
+        } catch { }
 
         if (plato.id_plato) {
           this.http.delete(`${this.apiUrl}/platos/${plato.id_plato}/`).pipe(
@@ -1599,8 +1800,8 @@ export class MenusComponent implements OnInit {
     const idx = this.platosEstipuladosPAE.findIndex(p => {
       const c = this.obtenerClaveCanonicaPlato(p.nombre_plato);
       return (claveSel && c === claveSel) ||
-             (claveCanon && c === claveCanon) ||
-             (p.id_plato && this.menuRecetaForm.id_plato && Number(p.id_plato) === Number(this.menuRecetaForm.id_plato));
+        (claveCanon && c === claveCanon) ||
+        (p.id_plato && this.menuRecetaForm.id_plato && Number(p.id_plato) === Number(this.menuRecetaForm.id_plato));
     });
 
     const platoActualizado = {
@@ -1655,15 +1856,15 @@ export class MenusComponent implements OnInit {
     const idSeccionPrincipal = this.obtenerIdSeccionDeLista(platoActualizado.secciones);
     const req = (this.modoEdicionReceta && platoActualizado.id_plato)
       ? this.http.put<any>(`${this.apiUrl}/platos/${platoActualizado.id_plato}/`, {
-          nombre_plato: nombre.slice(0, 100),
-          componente: (compTexto || 'Componentes PAE').slice(0, 50),
-          id_seccion: idSeccionPrincipal
-        })
+        nombre_plato: nombre.slice(0, 100),
+        componente: (compTexto || 'Componentes PAE').slice(0, 50),
+        id_seccion: idSeccionPrincipal
+      })
       : this.http.post<any>(`${this.apiUrl}/platos/`, {
-          nombre_plato: nombre.slice(0, 100),
-          componente: (compTexto || 'Componentes PAE').slice(0, 50),
-          id_seccion: idSeccionPrincipal
-        });
+        nombre_plato: nombre.slice(0, 100),
+        componente: (compTexto || 'Componentes PAE').slice(0, 50),
+        id_seccion: idSeccionPrincipal
+      });
 
     req.pipe(catchError(() => of(null))).subscribe((respPlato: any) => {
       this.guardandoReceta = false;
@@ -1775,7 +1976,23 @@ export class MenusComponent implements OnInit {
     const sedeId = this.sedeSeleccionadaId || 0;
     const mapa = this.obtenerAprobacionesLocales();
     const clave = `sede_${sedeId}_sem_${semana}`;
-    return mapa[clave] || { aprobado_jefa: false, aprobado_supervisor: false };
+    const local = mapa[clave] || { aprobado_jefa: false, aprobado_supervisor: false };
+    if (local.aprobado_supervisor) return local;
+
+    const semObj = this.semanaActualMinuta?.numeroSemana === semana
+      ? this.semanaActualMinuta
+      : this.semanasMinutaSedeActual.find(s => s.numeroSemana === semana);
+    if (semObj) {
+      const registrados = semObj.dias.flatMap(d =>
+        (['Desayuno', 'Almuerzo', 'Merienda'] as const)
+          .map(m => d.momentos[m])
+          .filter(item => item && item.tiene_menu_registrado && item.estado_aprobacion !== 'CANCELADO' && item.estado_aprobacion !== 'SIN_SERVICIO')
+      );
+      if (registrados.length > 0 && registrados.every(item => item.estado_aprobacion === 'APROBADO')) {
+        return { ...local, aprobado_jefa: true, aprobado_supervisor: true };
+      }
+    }
+    return local;
   }
 
   aprobarSemanaComoSupervisor(semana: number): void {
@@ -1801,7 +2018,9 @@ export class MenusComponent implements OnInit {
         localStorage.setItem(this.STORAGE_APROBACIONES_KEY, JSON.stringify(mapa));
 
         // Actualizar todos los momentos de los días de la semana a APROBADO
-        const semObj = this.semanasMinutaSedeActual.find(s => s.numeroSemana === semana);
+        const semObj = (this.semanaActualMinuta?.numeroSemana === semana
+          ? this.semanaActualMinuta
+          : this.semanasMinutaSedeActual.find(s => s.numeroSemana === semana));
         if (semObj) {
           for (const dia of semObj.dias) {
             for (const mom of ['Desayuno', 'Almuerzo', 'Merienda'] as const) {
@@ -1813,7 +2032,7 @@ export class MenusComponent implements OnInit {
                 this.guardarMomentoEnMinutaLocalSede(Number(sedeId), dia.numeroMenu, mom, item);
 
                 if (item.id_menu) {
-                  this.http.put<any>(`${this.apiUrl}/menus/${item.id_menu}/`, { estado: 'Aprobado' })
+                  this.http.patch<any>(`${this.apiUrl}/menus/${item.id_menu}/`, { estado: 'Aprobado' })
                     .pipe(catchError(() => of(null))).subscribe();
                 }
               }
@@ -1869,10 +2088,19 @@ export class MenusComponent implements OnInit {
     this.guardarMomentoEnMinutaLocalSede(idSede, dia.numeroMenu, momento, item);
 
     if (item.id_menu) {
-      this.http.put<any>(`${this.apiUrl}/menus/${item.id_menu}/`, {
+      this.http.patch<any>(`${this.apiUrl}/menus/${item.id_menu}/`, {
         estado: 'Aprobado'
       }).pipe(catchError(() => of(null))).subscribe();
     }
+
+    const formData = new FormData();
+    formData.append('titulo', `Plato Aprobado (${momento} · ${dia.diaSemana})`);
+    formData.append(
+      'mensaje',
+      `El Supervisor PAE (${item.usuario_evaluador}) aprobó "${item.nombre_plato}" (${momento} del ${dia.diaSemana}) para la sede ${this.sedeActualObj?.nombre_sede || 'asignada'}.`
+    );
+    this.http.post(`${this.apiUrl}/notificaciones/enviar/`, formData)
+      .pipe(catchError(() => of(null))).subscribe();
 
     this.sweetAlert.success(
       'Plato Aprobado',
@@ -1881,7 +2109,29 @@ export class MenusComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
+  puedeRechazarMomento(dia: CeldaDiaMinutaSede, momento: 'Desayuno' | 'Almuerzo' | 'Merienda'): boolean {
+    const item = dia.momentos[momento];
+    if (!item || item.estado_aprobacion === 'RECHAZADO') return false;
+    if (item.estado_aprobacion === 'APROBADO' && dia.fecha && /^\d{4}-\d{2}-\d{2}$/.test(dia.fecha)) {
+      const [y, m, d] = dia.fecha.split('-').map(Number);
+      const fechaPlato = new Date(y, m - 1, d);
+      const hoy = new Date();
+      const limite = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() + 1);
+      if (fechaPlato.getTime() <= limite.getTime()) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   abrirModalRechazoSupervisor(dia: CeldaDiaMinutaSede, momento: 'Desayuno' | 'Almuerzo' | 'Merienda'): void {
+    if (!this.puedeRechazarMomento(dia, momento)) {
+      this.sweetAlert.warning(
+        'No se puede rechazar',
+        'Los platos que ya fueron aprobados hasta un día antes de su fecha ya no se pueden rechazar.'
+      );
+      return;
+    }
     this.rechazoForm = {
       dia,
       momento,
@@ -1914,7 +2164,7 @@ export class MenusComponent implements OnInit {
       this.guardarMomentoEnMinutaLocalSede(idSede, dia.numeroMenu, momento, item);
 
       if (item.id_menu) {
-        this.http.put<any>(`${this.apiUrl}/menus/${item.id_menu}/`, {
+        this.http.patch<any>(`${this.apiUrl}/menus/${item.id_menu}/`, {
           estado: 'Rechazado'
         }).pipe(catchError(() => of(null))).subscribe();
       }
@@ -2196,7 +2446,8 @@ export class MenusComponent implements OnInit {
             nombreExtraido = matchJefa[1].trim();
           }
 
-          const nombrePlato = nombreExtraido || platoDet?.nombre_plato || platoCatalogo?.nombre_plato || menuBackend.nombre_plato || `Menú ${numMenu}`;
+          const nombrePlatoCrudo = nombreExtraido || platoDet?.nombre_plato || platoCatalogo?.nombre_plato || menuBackend.nombre_plato || `Menú ${numMenu}`;
+          const nombrePlato = nombrePlatoCrudo.replace(/^Menú\s+\d+\s*:\s*/i, '').trim() || nombrePlatoCrudo;
           const compTexto = platoDet?.componente || platoCatalogo?.componente || menuBackend.componente_plato || '';
           const infoLimpia = String(menuBackend.informacion_nutricional_limpia || menuBackend.informacion_nutricional || '');
           const esIA = infoLimpia.toUpperCase().includes('IA');
@@ -2262,7 +2513,375 @@ export class MenusComponent implements OnInit {
     return semanas;
   }
 
+  private obtenerLunesDeFecha(ref: Date): Date {
+    const d = new Date(ref.getFullYear(), ref.getMonth(), ref.getDate());
+    const day = d.getDay(); // 0=Dom, 1=Lun..6=Sab
+    const diff = day === 0 ? -6 : 1 - day;
+    d.setDate(d.getDate() + diff);
+    return d;
+  }
+
+  private formatearFechaISO(d: Date): string {
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
+  private formatearRangoFechas(lunes: Date): string {
+    const viernes = new Date(lunes.getFullYear(), lunes.getMonth(), lunes.getDate() + 4);
+    const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+    if (lunes.getMonth() === viernes.getMonth()) {
+      return `${lunes.getDate()} al ${viernes.getDate()} de ${meses[lunes.getMonth()]}`;
+    }
+    return `${lunes.getDate()} ${meses[lunes.getMonth()]} al ${viernes.getDate()} ${meses[viernes.getMonth()]}`;
+  }
+
+  get rangoSemanaActualTexto(): string {
+    return this.formatearRangoFechas(this.obtenerLunesDeFecha(new Date()));
+  }
+
+  get rangoSiguienteSemanaTexto(): string {
+    const lunes = this.obtenerLunesDeFecha(new Date());
+    lunes.setDate(lunes.getDate() + 7);
+    return this.formatearRangoFechas(lunes);
+  }
+
+  cambiarCiclo20Dias(delta: number, event?: Event): void {
+    if (event) event.stopPropagation();
+    const siguiente = this.cicloOffset + delta;
+    if (siguiente > 0) return;
+    this.cicloOffset = siguiente;
+    this.cdr.detectChanges();
+  }
+
+  get etiquetaCicloActual(): string {
+    const lunesActual = this.obtenerLunesDeFecha(new Date());
+    const lunesSemana1 = new Date(
+      lunesActual.getFullYear(),
+      lunesActual.getMonth(),
+      lunesActual.getDate() - 21 + this.cicloOffset * 28
+    );
+    const viernesSemana4 = new Date(
+      lunesSemana1.getFullYear(),
+      lunesSemana1.getMonth(),
+      lunesSemana1.getDate() + 25
+    );
+    const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+    if (lunesSemana1.getMonth() === viernesSemana4.getMonth()) {
+      return `${lunesSemana1.getDate()} al ${viernesSemana4.getDate()} de ${meses[lunesSemana1.getMonth()]} ${viernesSemana4.getFullYear()}`;
+    }
+    return `${lunesSemana1.getDate()} ${meses[lunesSemana1.getMonth()]} al ${viernesSemana4.getDate()} ${meses[viernesSemana4.getMonth()]} ${viernesSemana4.getFullYear()}`;
+  }
+
+  private obtenerFechaRealDiaCiclo(numeroMenu: number): string {
+    // Ciclo de 20 días (4 semanas de lunes a viernes), desplazado según cicloOffset para consultar ciclos anteriores
+    const lunesActual = this.obtenerLunesDeFecha(new Date());
+    const lunesSemana1 = new Date(
+      lunesActual.getFullYear(),
+      lunesActual.getMonth(),
+      lunesActual.getDate() - 21 + this.cicloOffset * 28
+    );
+    const semIdx = Math.floor((numeroMenu - 1) / 5);
+    const diaIdx = (numeroMenu - 1) % 5;
+    const d = new Date(lunesSemana1.getFullYear(), lunesSemana1.getMonth(), lunesSemana1.getDate() + semIdx * 7 + diaIdx);
+    return this.formatearFechaISO(d);
+  }
+
+  private construirSemanaPorLunes(lunes: Date, numeroSemanaBase: number): SemanaMinutaSede {
+    const menusSede = [...this.menusDeSedeSeleccionada].sort((a, b) =>
+      String(a.fecha || '').localeCompare(String(b.fecha || ''))
+    );
+    const idSede = Number(this.sedeSeleccionadaId || 0);
+    const minutasLocalesSede = this.leerMinutasLocalesPorSede()[String(idSede)] || {};
+    const diasSemanaNombres = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
+    const momentosNombres: ('Desayuno' | 'Almuerzo' | 'Merienda')[] = ['Desayuno', 'Almuerzo', 'Merienda'];
+    const dias: CeldaDiaMinutaSede[] = [];
+
+    for (let dIdx = 0; dIdx < 5; dIdx++) {
+      const fechaObj = new Date(lunes.getFullYear(), lunes.getMonth(), lunes.getDate() + dIdx);
+      const fechaIso = this.formatearFechaISO(fechaObj);
+      const numMenu = (numeroSemanaBase - 1) * 5 + dIdx + 1;
+      const momentosDia: Record<'Desayuno' | 'Almuerzo' | 'Merienda', MomentoDiaMinuta> = {
+        Desayuno: this.crearMomentoVacio('Desayuno'),
+        Almuerzo: this.crearMomentoVacio('Almuerzo'),
+        Merienda: this.crearMomentoVacio('Merienda')
+      };
+
+      for (const m of momentosNombres) {
+        const idSec = m === 'Desayuno' ? 1 : (m === 'Merienda' ? 3 : 2);
+        const slotKey = `${numMenu}_${m.toLowerCase()}`;
+        const localSlot = minutasLocalesSede[slotKey] || (minutasLocalesSede[numMenu]?.seccion === m ? minutasLocalesSede[numMenu] : null);
+        const menuBackend = menusSede.find(mb => {
+          const fBackend = String(mb.fecha || '').slice(0, 10);
+          if (fBackend !== fechaIso) return false;
+          if (this.esSupervisor && String(mb.estado || '').toLowerCase().includes('borrador')) {
+            return false;
+          }
+          const secExplicita = Number(mb.id_seccion || 0);
+          if (secExplicita > 0) return secExplicita === idSec;
+          const rawInfo = String(mb.informacion_nutricional || '');
+          const matchTagSec = rawInfo.match(/\[SEC:(\d+)\]/i);
+          if (matchTagSec) return Number(matchTagSec[1]) === idSec;
+          const jor = Number(mb.id_jornada || 0);
+          if (jor === 3) return idSec === 1;
+          if (jor === 5) return rawInfo.toLowerCase().includes('merienda') ? idSec === 3 : idSec === 2;
+          return jor === idSec;
+        });
+
+        if (menuBackend) {
+          const platoDet = (menuBackend.platos_detalle && menuBackend.platos_detalle[0]) || null;
+          const platoCatalogo = platoDet?.id_plato
+            ? this.platos.find(p => Number(p.id_plato) === Number(platoDet.id_plato))
+            : (menuBackend.id_plato ? this.platos.find(p => Number(p.id_plato) === Number(menuBackend.id_plato)) : null);
+
+          let nombreExtraido = '';
+          const matchJefa = String(menuBackend.informacion_nutricional || '').match(/\[Elegido Jefa\]\s*([^|]+)/i);
+          if (matchJefa && matchJefa[1]) nombreExtraido = matchJefa[1].trim();
+
+          const nombrePlatoCrudo = nombreExtraido || platoDet?.nombre_plato || platoCatalogo?.nombre_plato || menuBackend.nombre_plato || `Menú ${numMenu}`;
+          const nombrePlato = nombrePlatoCrudo.replace(/^Menú\s+\d+\s*:\s*/i, '').trim() || nombrePlatoCrudo;
+          const compTexto = platoDet?.componente || platoCatalogo?.componente || menuBackend.componente_plato || '';
+          const infoLimpia = String(menuBackend.informacion_nutricional_limpia || menuBackend.informacion_nutricional || '');
+          const esIA = infoLimpia.toUpperCase().includes('IA');
+
+          let estadoBackend: 'PENDIENTE' | 'APROBADO' | 'RECHAZADO' | 'CANCELADO' | 'SIN_SERVICIO' = 'PENDIENTE';
+          if (menuBackend.estado?.toLowerCase().includes('aprob')) estadoBackend = 'APROBADO';
+          else if (menuBackend.estado?.toLowerCase().includes('rechaz')) estadoBackend = 'RECHAZADO';
+          else if (menuBackend.estado?.toLowerCase().includes('cancel')) estadoBackend = 'CANCELADO';
+
+          momentosDia[m] = {
+            momento: m,
+            tiene_menu_registrado: true,
+            id_menu: menuBackend.id_menu,
+            id_plato: platoDet?.id_plato || platoCatalogo?.id_plato,
+            nombre_plato: nombrePlato,
+            origen: esIA ? 'SUGERENCIA_IA' : 'PAE_ESTIPULADO',
+            ninos_presentes: Number(menuBackend.ninos_presentes || 120),
+            estado_aprobacion: estadoBackend,
+            motivo_rechazo_o_cancelacion: localSlot?.motivo_rechazo_o_cancelacion || '',
+            componentes: this.extraerComponentesDesdePlato(nombrePlato, compTexto, platoCatalogo),
+            ingredientes: (platoCatalogo?.receta_componentes || []).map((rc: any) => rc.nombre_ingrediente || rc.nombre_componente).filter(Boolean),
+            pasos: (platoCatalogo?.pasos_preparacion || []).map((ps: any) => ps.descripcion_paso).filter(Boolean)
+          };
+        }
+      }
+
+      const momentosActivos = Object.values(momentosDia).filter(x => x.tiene_menu_registrado);
+      const primero = momentosActivos[0];
+      dias.push({
+        numeroMenu: numMenu,
+        semana: numeroSemanaBase,
+        diaSemana: `${diasSemanaNombres[dIdx]} ${fechaObj.getDate()}`,
+        fecha: fechaIso,
+        momentos: momentosDia,
+        tiene_menu_registrado: momentosActivos.length > 0,
+        jornada: 'Mañana / Tarde',
+        seccion: primero?.momento || 'Desayuno',
+        id_menu: primero?.id_menu,
+        id_plato: primero?.id_plato,
+        nombre_plato: primero?.nombre_plato || '',
+        origen: primero?.origen || 'PENDIENTE',
+        ninos_presentes: primero?.ninos_presentes || 120,
+        estado: primero?.estado_aprobacion || 'PENDIENTE',
+        componentes: primero?.componentes || { bebida_leche: '—', proteico: '—', cereal: '—', fruta: '—', agua: '—' },
+        ingredientes: primero?.ingredientes || [],
+        pasos: primero?.pasos || []
+      });
+    }
+
+    return {
+      numeroSemana: numeroSemanaBase,
+      titulo: `Semana (${this.formatearRangoFechas(lunes)})`,
+      dias
+    };
+  }
+
+  get tieneMenusSiguienteSemana(): boolean {
+    const lunesSig = this.obtenerLunesDeFecha(new Date());
+    lunesSig.setDate(lunesSig.getDate() + 7);
+    const semSig = this.construirSemanaPorLunes(lunesSig, 1);
+    return semSig.dias.some(d => d.tiene_menu_registrado);
+  }
+
+  private obtenerLunesInicioCicloActual(): Date {
+    const idSede = Number(this.sedeSeleccionadaId || 0);
+    const idInst = Number(
+      typeof this.sedeActualObj?.id_institucion === 'object'
+        ? (this.sedeActualObj?.id_institucion?.id_institucion || this.sedeActualObj?.id_institucion?.id)
+        : (this.sedeActualObj?.id_institucion || 0)
+    );
+    const contrato =
+      this.contratos.find((c: any) => {
+        const cSede = typeof c.id_sede === 'object' ? (c.id_sede?.id_sede || c.id_sede?.id) : c.id_sede;
+        return idSede > 0 && Number(cSede) === idSede && String(c.estado || '').toLowerCase() === 'activo';
+      }) ||
+      this.contratos.find((c: any) => {
+        const cInst = typeof c.id_institucion === 'object' ? (c.id_institucion?.id_institucion || c.id_institucion?.id) : c.id_institucion;
+        return idInst > 0 && Number(cInst) === idInst && String(c.estado || '').toLowerCase() === 'activo';
+      }) ||
+      this.contratos.find((c: any) => {
+        const cInst = typeof c.id_institucion === 'object' ? (c.id_institucion?.id_institucion || c.id_institucion?.id) : c.id_institucion;
+        return idInst > 0 && Number(cInst) === idInst;
+      }) ||
+      this.contratos.find((c: any) => String(c.estado || '').toLowerCase() === 'activo') ||
+      this.contratos[0];
+
+    const fechaFinStr = String(contrato?.fecha_fin || '2026-12-11').slice(0, 10);
+    const partesFin = fechaFinStr.split('-').map(Number);
+    const baseFin = partesFin.length === 3 && partesFin[0] > 2000
+      ? new Date(partesFin[0], partesFin[1] - 1, partesFin[2])
+      : new Date(2026, 11, 11); // 11 de diciembre de 2026
+
+    // La semana de fecha_fin (7 al 11 de dic) es la Semana 4 del ciclo; restamos 21 días para obtener Semana 1 (16 nov)
+    const lunesSemana4Fin = this.obtenerLunesDeFecha(baseFin);
+    const lunesCicloBase = new Date(
+      lunesSemana4Fin.getFullYear(),
+      lunesSemana4Fin.getMonth(),
+      lunesSemana4Fin.getDate() - 21 + this.cicloOffset * 28
+    );
+    return lunesCicloBase;
+  }
+
+  private calcularSemanaActualDelCiclo(): number {
+    const lunesCiclo = this.obtenerLunesInicioCicloActual();
+    const lunesHoy = this.obtenerLunesDeFecha(new Date());
+    const diffSemanas = Math.floor(Math.round((lunesHoy.getTime() - lunesCiclo.getTime()) / 86400000) / 7);
+    return Math.min(4, Math.max(1, diffSemanas + 1));
+  }
+
+  get rangoSemanaSeleccionadaTexto(): string {
+    const lunesCiclo = this.obtenerLunesInicioCicloActual();
+    const numSem = Number(this.semanaSeleccionada || 2);
+    const lunes = new Date(lunesCiclo.getFullYear(), lunesCiclo.getMonth(), lunesCiclo.getDate() + (numSem - 1) * 7);
+    return this.formatearRangoFechas(lunes);
+  }
+
+  get rangoSemanaSupervisorTexto(): string {
+    return this.rangoSemanaSeleccionadaTexto;
+  }
+
+  cambiarSemanaSupervisor(delta: number): void {
+    const siguiente = this.semanaSupervisorOffset + delta;
+    if (siguiente > 1) return;
+    this.semanaSupervisorOffset = siguiente;
+    this.vistaSemanaSupervisor = siguiente === 1 ? 'SIGUIENTE' : 'ACTUAL';
+    this.cdr.detectChanges();
+  }
+
+  irASemanaSupervisor(offset: number): void {
+    this.semanaSupervisorOffset = offset;
+    this.vistaSemanaSupervisor = offset === 1 ? 'SIGUIENTE' : 'ACTUAL';
+    this.cdr.detectChanges();
+  }
+
+  toggleMinutasAnteriores(): void {
+    this.mostrarMinutasAnteriores = !this.mostrarMinutasAnteriores;
+    this.cdr.detectChanges();
+  }
+
+  cambiarCicloAnteriorMinutas(delta: number): void {
+    const siguiente = this.cicloAnteriorOffset + delta;
+    if (siguiente > -1) return;
+    this.cicloAnteriorOffset = siguiente;
+    this.cdr.detectChanges();
+  }
+
+  get minutaCicloAnterior(): {
+    rangoTexto: string;
+    diasConMenu: number;
+    dias: {
+      numeroMenu: number;
+      diaAbrev: string;
+      fechaCorta: string;
+      fechaIso: string;
+      desayuno: string;
+      almuerzo: string;
+      tieneMenu: boolean;
+    }[];
+  } {
+    const lunesActualCiclo = this.obtenerLunesInicioCicloActual();
+    const lunesInicioAnt = new Date(
+      lunesActualCiclo.getFullYear(),
+      lunesActualCiclo.getMonth(),
+      lunesActualCiclo.getDate() + this.cicloAnteriorOffset * 28
+    );
+    const viernesFinAnt = new Date(
+      lunesInicioAnt.getFullYear(),
+      lunesInicioAnt.getMonth(),
+      lunesInicioAnt.getDate() + 25
+    );
+
+    const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+    const rangoTexto = `${lunesInicioAnt.getDate()} de ${meses[lunesInicioAnt.getMonth()]} al ${viernesFinAnt.getDate()} de ${meses[viernesFinAnt.getMonth()]}`;
+
+    const diasAbrev = ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE'];
+    const menusSede = this.menusDeSedeSeleccionada;
+    const dias = [];
+    let diasConMenu = 0;
+
+    for (let i = 0; i < 20; i++) {
+      const semIdx = Math.floor(i / 5);
+      const diaIdx = i % 5;
+      const d = new Date(
+        lunesInicioAnt.getFullYear(),
+        lunesInicioAnt.getMonth(),
+        lunesInicioAnt.getDate() + semIdx * 7 + diaIdx
+      );
+      const fechaIso = this.formatearFechaISO(d);
+      const fechaCorta = `${d.getDate()} ${meses[d.getMonth()]}`;
+
+      const buscarMomento = (idSec: number): string => {
+        const mb = menusSede.find((m: any) => {
+          const f = String(m.fecha || '').slice(0, 10);
+          if (f !== fechaIso) return false;
+          const secExp = Number(m.id_seccion || 0);
+          if (secExp > 0) return secExp === idSec;
+          const info = String(m.informacion_nutricional || '');
+          const tag = info.match(/\[SEC:(\d+)\]/i);
+          if (tag) return Number(tag[1]) === idSec;
+          const jor = Number(m.id_jornada || 0);
+          if (jor === 3) return idSec === 1;
+          if (jor === 5) return info.toLowerCase().includes('merienda') ? idSec === 3 : idSec === 2;
+          return jor === idSec;
+        });
+        if (!mb) return '';
+        const info = String(mb.informacion_nutricional || '');
+        const matchJefa = info.match(/\[Elegido Jefa\]\s*([^|]+)/i);
+        const crudo = (matchJefa && matchJefa[1] ? matchJefa[1].trim() : '') || mb.nombre_plato || '';
+        return crudo.replace(/^Menú\s+\d+\s*:\s*/i, '').trim() || crudo;
+      };
+
+      const desayuno = buscarMomento(1);
+      const almuerzo = buscarMomento(2);
+      const tieneMenu = Boolean(desayuno || almuerzo);
+      if (tieneMenu) diasConMenu++;
+
+      dias.push({
+        numeroMenu: i + 1,
+        diaAbrev: diasAbrev[diaIdx],
+        fechaCorta,
+        fechaIso,
+        desayuno,
+        almuerzo,
+        tieneMenu,
+      });
+    }
+
+    return { rangoTexto, diasConMenu, dias };
+  }
+
   get semanaActualMinuta(): SemanaMinutaSede | undefined {
+    if (this.esSupervisor) {
+      const lunesCiclo = this.obtenerLunesInicioCicloActual();
+      const numSem = Math.min(4, Math.max(1, Number(this.semanaSeleccionada || 2)));
+      const lunes = new Date(
+        lunesCiclo.getFullYear(),
+        lunesCiclo.getMonth(),
+        lunesCiclo.getDate() + (numSem - 1) * 7
+      );
+      return this.construirSemanaPorLunes(lunes, numSem);
+    }
     return this.semanasMinutaSedeActual.find(s => s.numeroSemana === Number(this.semanaSeleccionada)) || this.semanasMinutaSedeActual[0];
   }
 
@@ -2298,6 +2917,7 @@ export class MenusComponent implements OnInit {
       diaSemana: string;
       fecha: string;
       programado: boolean;
+      nombreAprobado: string;
       momentos: {
         momento: string;
         nombre_plato: string;
@@ -2310,7 +2930,18 @@ export class MenusComponent implements OnInit {
     const celdas = this.obtenerTodasCeldasMinutaSede();
 
     const listaDias = celdas.map(c => {
+      const fechaEsperada = this.obtenerFechaRealDiaCiclo(c.numeroMenu);
+      const menusDia = this.menusDeSedeSeleccionada.filter(mb => String(mb.fecha || '').slice(0, 10) === fechaEsperada);
+
       const momentosValidos = momentosSede.map(m => {
+        const idSec = m === 'Desayuno' ? 1 : (m === 'Merienda' ? 3 : 2);
+        const mb = menusDia.find(x => Number(x.id_seccion) === idSec);
+        if (mb) {
+          const matchJefa = String(mb.informacion_nutricional || '').match(/\[Elegido Jefa\]\s*([^|]+)/i);
+          const nom = (matchJefa && matchJefa[1] ? matchJefa[1].trim() : '') || mb.nombre_plato || '';
+          const est = String(mb.estado || '').toLowerCase().includes('aprob') ? 'APROBADO' : 'PENDIENTE';
+          return { momento: m, nombre_plato: nom, estado: est };
+        }
         const item = c.momentos[m as 'Desayuno' | 'Almuerzo' | 'Merienda'];
         return {
           momento: m,
@@ -2319,14 +2950,16 @@ export class MenusComponent implements OnInit {
         };
       });
 
-      const programado = momentosValidos.some(m => !!m.nombre_plato);
+      const aprobados = momentosValidos.filter(m => !!m.nombre_plato && m.estado === 'APROBADO');
+      const programado = aprobados.length > 0;
 
       return {
         numeroMenu: c.numeroMenu,
         semana: c.semana,
         diaSemana: c.diaSemana,
-        fecha: c.fecha,
+        fecha: fechaEsperada,
         programado,
+        nombreAprobado: aprobados[0]?.nombre_plato || '',
         momentos: momentosValidos
       };
     });
@@ -2342,6 +2975,9 @@ export class MenusComponent implements OnInit {
   }
 
   irADiaYProgramar(semana: number, numeroMenu: number): void {
+    if (this.esSupervisor) {
+      return;
+    }
     this.semanaSeleccionada = semana;
     const celdas = this.obtenerTodasCeldasMinutaSede();
     const celda = celdas.find(c => c.numeroMenu === numeroMenu);

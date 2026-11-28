@@ -230,7 +230,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
     if (this.authService.estaAutenticado?.() && this.notificacionService?.conectarWebSocket) {
       this.notificacionService.conectarWebSocket(this.authService.obtenerToken?.());
     }
-    this.notificacionesSubscription = interval(20_000).subscribe(() => {
+    this.notificacionesSubscription = interval(1_000).subscribe(() => {
       if (this.authService.estaAutenticado?.() && !this.notificacionService?.estaWebSocketConectado?.()) {
         this.cargarNotificacionesHeader(true);
       }
@@ -247,8 +247,9 @@ export class LayoutComponent implements OnInit, OnDestroy {
     if (this.notificacionService?.notificaciones$) {
       this.notificacionService.notificaciones$.subscribe((lista) => {
         if (Array.isArray(lista) && (lista.length > 0 || this.listaNotificaciones.length > 0)) {
-          this.listaNotificaciones = lista;
-          this.notificacionesNoLeidas = lista.filter(n => !n.leida).length;
+          const filtrada = this.filtrarNotificacionesPorInstitucion(lista);
+          this.listaNotificaciones = filtrada;
+          this.notificacionesNoLeidas = filtrada.filter(n => !n.leida).length;
           this.refrescarVista();
         }
       });
