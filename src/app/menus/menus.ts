@@ -336,7 +336,7 @@ export class MenusComponent implements OnInit {
       contratosSecciones: this.http.get<any>(`${this.apiUrl}/contratos-secciones-menu/`).pipe(catchError(() => of([]))),
       secciones: this.http.get<any>(`${this.apiUrl}/secciones-menu/`).pipe(catchError(() => of([]))),
       platos: this.http.get<any>(`${this.apiUrl}/platos/`).pipe(catchError(() => of([]))),
-      menus: this.http.get<any>(`${this.apiUrl}/menus/`).pipe(catchError(() => of([]))),
+      menus: this.http.get<any>(`${this.apiUrl}/menus/?page_size=500`).pipe(catchError(() => of([]))),
       detalles: this.http.get<any>(`${this.apiUrl}/detalle-platos/`).pipe(catchError(() => of([]))),
       preparaciones: this.http.get<any>(`${this.apiUrl}/preparaciones-asignadas/`).pipe(catchError(() => of([]))),
       ingredientes: this.http.get<any>(`${this.apiUrl}/ingredientes/`).pipe(catchError(() => of([])))
@@ -2613,14 +2613,18 @@ export class MenusComponent implements OnInit {
         const slotKey = `${numMenu}_${m.toLowerCase()}`;
         const localSlot = minutasLocalesSede[slotKey] || (minutasLocalesSede[numMenu]?.seccion === m ? minutasLocalesSede[numMenu] : null);
         const menuBackend = menusSede.find(mb => {
-          const fBackend = String(mb.fecha || '').slice(0, 10);
-          if (fBackend !== fechaIso) return false;
           if (this.esSupervisor && String(mb.estado || '').toLowerCase().includes('borrador')) {
             return false;
           }
+          const rawInfo = String(mb.informacion_nutricional || '');
+          // Buscar por fecha exacta O por [MENU_CICLO:N] como fallback (compatibilidad con menus guardados por jefa)
+          const fBackend = String(mb.fecha || '').slice(0, 10);
+          const matchCiclo = rawInfo.match(/\[MENU_CICLO:(\d+)\]/);
+          const coincideFecha = fBackend === fechaIso;
+          const coincideCiclo = matchCiclo ? Number(matchCiclo[1]) === numMenu : false;
+          if (!coincideFecha && !coincideCiclo) return false;
           const secExplicita = Number(mb.id_seccion || 0);
           if (secExplicita > 0) return secExplicita === idSec;
-          const rawInfo = String(mb.informacion_nutricional || '');
           const matchTagSec = rawInfo.match(/\[SEC:(\d+)\]/i);
           if (matchTagSec) return Number(matchTagSec[1]) === idSec;
           const jor = Number(mb.id_jornada || 0);
@@ -3391,7 +3395,7 @@ export class MenusComponent implements OnInit {
   }
 
   cargarMenus(): void {
-    this.http.get<any[]>(`${this.apiUrl}/menus/`).subscribe({
+    this.http.get<any[]>(`${this.apiUrl}/menus/?page_size=500`).subscribe({
       next: (data) => {
         this.menusDiarios = Array.isArray(data) ? data : (data as any).results || [];
         this.cdr.detectChanges();
