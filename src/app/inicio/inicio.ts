@@ -18,7 +18,7 @@ import { environment } from '../../environments/environment';
 Chart.defaults.font.family = "'Roboto', system-ui, -apple-system, sans-serif";
 Chart.defaults.color = '#64748b';
 
-// Paleta institucional tipo semáforo
+// Paleta institucional tipo semáforo (Super Administrador)
 const VERDE = '#2B5424';
 const VERDE_BORDE = '#1d3f1b';
 const AMARILLO = '#F5B81F';
@@ -27,6 +27,11 @@ const ROJO = '#dc2626';
 const ROJO_BORDE = '#b91c1c';
 const LIMA = '#84cc16';
 const LIMA_BORDE = '#65a30d';
+
+// Colores de las gráficas del Administrador Institucional
+const VERDE_VIVO = '#16a34a';
+const AMARILLO_VIVO = '#F5B81F';
+const TRACK_GAUGE = '#e2e8f0';
 
 const TOOLTIP_BLANCO = {
   backgroundColor: '#ffffff',
@@ -121,20 +126,6 @@ export interface MetricasAdminInstitucional {
   lotesPorVencer7Dias: number;
   lotesPorVencer15Dias: number;
   entregasRecibidasMes: number;
-}
-
-export interface MenuDelDiaAdmin {
-  ciclo: string;
-  diaSemana: string;
-  tipoRacion: string;
-  platoPrincipal: string;
-  guarnicion: string;
-  verduraEnsalada: string;
-  fruta: string;
-  bebida: string;
-  caloriasAprox: number;
-  horaServicio: string;
-  estadoAprobacion: string;
 }
 
 @Component({
@@ -501,20 +492,6 @@ export class InicioComponent implements OnInit, AfterViewInit, OnDestroy {
       responsable: 'Alba Nelly Gómez'
     }
   ];
-
-  menuDelDia: MenuDelDiaAdmin = {
-    ciclo: 'Ciclo Regular 2026 · Minuta Patrón Aprobada',
-    diaSemana: 'Miércoles',
-    tipoRacion: 'Almuerzo Ración Caliente Preparada en Sitio',
-    platoPrincipal: 'Pechuga de Pollo en Salsa Criolla Campesina',
-    guarnicion: 'Arroz Blanco Fortificado y Lentejas Guisadas',
-    verduraEnsalada: 'Ensalada Fresca de Zanahoria, Maíz Dulce y Cilantro',
-    fruta: 'Mandarina Dulce de Temporada',
-    bebida: 'Jugo de Fruta Natural en Agua Hervida',
-    caloriasAprox: 685,
-    horaServicio: '11:45 AM - 01:30 PM',
-    estadoAprobacion: 'Verificado por Nutrición y Calidad PAE'
-  };
 
   // Nombres de meses en español
   mesesNombres = [
@@ -1007,6 +984,7 @@ export class InicioComponent implements OnInit, AfterViewInit, OnDestroy {
     this.categoriaFiltroInventario = 'TODAS';
     this.filtroSoloAlertas = false;
     this.busquedaInsumo = '';
+    this.actualizarGraficosAdmin();
     this.cdRef.markForCheck();
   }
 
@@ -1018,7 +996,8 @@ export class InicioComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private inicializarGraficosAdmin(intentos = 0): void {
-    if (!this.chartAdminSedesCanvas?.nativeElement || !this.chartAdminStockCanvas?.nativeElement) {
+    if (!this.chartAdminSedesCanvas?.nativeElement ||
+        !this.chartAdminStockCanvas?.nativeElement) {
       if (intentos < 12) {
         if (this.timerRenderAdmin) clearTimeout(this.timerRenderAdmin);
         this.timerRenderAdmin = setTimeout(() => this.inicializarGraficosAdmin(intentos + 1), 60);
@@ -1030,6 +1009,7 @@ export class InicioComponent implements OnInit, AfterViewInit, OnDestroy {
     this.crearGraficoAdminStock();
   }
 
+  // Dona 1: raciones servidas vs. pendientes del día (respeta el filtro de sede)
   private crearGraficoAdminSedes(): void {
     if (!this.chartAdminSedesCanvas?.nativeElement) return;
     const ctx = this.chartAdminSedesCanvas.nativeElement.getContext('2d');
@@ -1039,78 +1019,42 @@ export class InicioComponent implements OnInit, AfterViewInit, OnDestroy {
       this.chartAdminSedes.destroy();
     }
 
-    const labels = this.sedesAdmin.map(s => s.nombre);
-    const racionesServidas = this.sedesAdmin.map(s => s.racionesServidas);
-    const racionesAsignadas = this.sedesAdmin.map(s => s.racionesAsignadas);
+    const servidas = this.totalRacionesServidas;
+    const pendientes = this.racionesPendientes;
+    const sinDatos = servidas + pendientes === 0;
 
     this.chartAdminSedes = new Chart(ctx, {
-      type: 'bar',
+      type: 'doughnut',
       data: {
-        labels: labels,
-        datasets: [
-          {
-            label: 'Raciones Servidas Hoy',
-            data: racionesServidas,
-            backgroundColor: VERDE,
-            borderColor: VERDE_BORDE,
-            borderWidth: 1.5,
-            borderRadius: 6,
-            barPercentage: 0.5,
-            categoryPercentage: 0.7
-          },
-          {
-            label: 'Meta Programada',
-            data: racionesAsignadas,
-            backgroundColor: AMARILLO,
-            borderColor: AMARILLO_BORDE,
-            borderWidth: 1.5,
-            borderRadius: 6,
-            barPercentage: 0.5,
-            categoryPercentage: 0.7
-          }
-        ]
+        labels: sinDatos ? ['Sin datos'] : ['Servidas', 'Pendientes'],
+        datasets: [{
+          data: sinDatos ? [1] : [servidas, pendientes],
+          backgroundColor: sinDatos ? [TRACK_GAUGE] : [VERDE_VIVO, AMARILLO_VIVO],
+          borderWidth: 0,
+          borderRadius: 6,
+          spacing: sinDatos ? 0 : 3
+        }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        animation: { duration: 300 },
+        cutout: '74%',
+        animation: { duration: 400 },
         plugins: {
-          legend: {
-            display: true,
-            position: 'top',
-            labels: {
-              boxWidth: 12,
-              font: { family: 'Roboto', size: 11, weight: 'bold' }
-            }
-          },
+          legend: { display: false },
           tooltip: {
             ...TOOLTIP_BLANCO,
+            enabled: !sinDatos,
             callbacks: {
-              label: (c) => ` ${c.dataset.label}: ${c.parsed.y} raciones`
+              label: (c) => ` ${c.label}: ${c.parsed} raciones`
             }
-          }
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            ticks: { precision: 0, font: { family: 'Roboto', size: 11 } },
-            grid: { color: '#f1f5f9' }
-          },
-          x: {
-            ticks: {
-              font: { family: 'Roboto', weight: 'bold', size: 10 },
-              callback: function(val: any) {
-                const label = this.getLabelForValue(val) as string;
-                return label.length > 16 ? label.slice(0, 16) + '…' : label;
-              }
-            },
-            grid: { display: false }
           }
         }
       }
     });
   }
 
+  // Dona 2: estado del inventario (óptimo / reorden / crítico)
   private crearGraficoAdminStock(): void {
     if (!this.chartAdminStockCanvas?.nativeElement) return;
     const ctx = this.chartAdminStockCanvas.nativeElement.getContext('2d');
@@ -1120,75 +1064,34 @@ export class InicioComponent implements OnInit, AfterViewInit, OnDestroy {
       this.chartAdminStock.destroy();
     }
 
-    const categorias = ['Abarrotes', 'Lácteos', 'Cárnicos', 'Frutas/Verduras'];
-    const actual = [
-      this.insumosAdmin.filter(i => i.categoria === 'Abarrotes').reduce((acc, i) => acc + i.stockActual, 0),
-      this.insumosAdmin.filter(i => i.categoria === 'Lácteos').reduce((acc, i) => acc + i.stockActual, 0),
-      this.insumosAdmin.filter(i => i.categoria === 'Cárnicos y Huevos').reduce((acc, i) => acc + i.stockActual, 0),
-      this.insumosAdmin.filter(i => i.categoria === 'Frutas y Verduras').reduce((acc, i) => acc + i.stockActual, 0),
-    ];
-
-    const minimos = [
-      this.insumosAdmin.filter(i => i.categoria === 'Abarrotes').reduce((acc, i) => acc + i.stockMinimo, 0),
-      this.insumosAdmin.filter(i => i.categoria === 'Lácteos').reduce((acc, i) => acc + i.stockMinimo, 0),
-      this.insumosAdmin.filter(i => i.categoria === 'Cárnicos y Huevos').reduce((acc, i) => acc + i.stockMinimo, 0),
-      this.insumosAdmin.filter(i => i.categoria === 'Frutas y Verduras').reduce((acc, i) => acc + i.stockMinimo, 0),
-    ];
+    const c = this.conteoInventario;
+    const sinDatos = c.total === 0;
 
     this.chartAdminStock = new Chart(ctx, {
-      type: 'bar',
+      type: 'doughnut',
       data: {
-        labels: categorias,
-        datasets: [
-          {
-            label: 'Stock Actual (Kg/L/Und)',
-            data: actual,
-            backgroundColor: [AMARILLO, ROJO, VERDE, LIMA],
-            borderColor: [AMARILLO_BORDE, ROJO_BORDE, VERDE_BORDE, LIMA_BORDE],
-            borderWidth: 1.5,
-            borderRadius: 6,
-            barPercentage: 0.45
-          },
-          {
-            label: 'Stock Mínimo Seguridad',
-            data: minimos,
-            backgroundColor: '#cbd5e1',
-            borderColor: '#94a3b8',
-            borderWidth: 1.5,
-            borderRadius: 6,
-            barPercentage: 0.45
-          }
-        ]
+        labels: sinDatos ? ['Sin datos'] : ['Óptimo', 'Reorden', 'Crítico'],
+        datasets: [{
+          data: sinDatos ? [1] : [c.optimo, c.bajo, c.critico],
+          backgroundColor: sinDatos ? [TRACK_GAUGE] : [VERDE_VIVO, AMARILLO_VIVO, ROJO],
+          borderWidth: 0,
+          borderRadius: 6,
+          spacing: sinDatos ? 0 : 3
+        }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        animation: { duration: 300 },
+        cutout: '74%',
+        animation: { duration: 400 },
         plugins: {
-          legend: {
-            display: true,
-            position: 'top',
-            labels: {
-              boxWidth: 12,
-              font: { family: 'Roboto', size: 11, weight: 'bold' }
-            }
-          },
+          legend: { display: false },
           tooltip: {
             ...TOOLTIP_BLANCO,
+            enabled: !sinDatos,
             callbacks: {
-              label: (c) => ` ${c.dataset.label}: ${c.parsed.y}`
+              label: (ctxTip) => ` ${ctxTip.label}: ${ctxTip.parsed} insumos`
             }
-          }
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            ticks: { precision: 0, font: { family: 'Roboto', size: 11 } },
-            grid: { color: '#f1f5f9' }
-          },
-          x: {
-            ticks: { font: { family: 'Roboto', weight: 'bold', size: 10 } },
-            grid: { display: false }
           }
         }
       }
@@ -1200,19 +1103,9 @@ export class InicioComponent implements OnInit, AfterViewInit, OnDestroy {
       this.programarRenderGraficosAdmin(15);
       return;
     }
-    this.chartAdminSedes.data.labels = this.sedesAdmin.map(s => s.nombre);
-    this.chartAdminSedes.data.datasets[0].data = this.sedesAdmin.map(s => s.racionesServidas);
-    this.chartAdminSedes.data.datasets[1].data = this.sedesAdmin.map(s => s.racionesAsignadas);
-    this.chartAdminSedes.update();
-
-    const actual = [
-      this.insumosAdmin.filter(i => i.categoria === 'Abarrotes').reduce((acc, i) => acc + i.stockActual, 0),
-      this.insumosAdmin.filter(i => i.categoria === 'Lácteos').reduce((acc, i) => acc + i.stockActual, 0),
-      this.insumosAdmin.filter(i => i.categoria === 'Cárnicos y Huevos').reduce((acc, i) => acc + i.stockActual, 0),
-      this.insumosAdmin.filter(i => i.categoria === 'Frutas y Verduras').reduce((acc, i) => acc + i.stockActual, 0),
-    ];
-    this.chartAdminStock.data.datasets[0].data = actual;
-    this.chartAdminStock.update();
+    // Las donas se redibujan completas: son livianas y así cambian sus colores si no hay datos
+    this.crearGraficoAdminSedes();
+    this.crearGraficoAdminStock();
   }
 
   private destruirGraficosAdmin(): void {
@@ -1251,12 +1144,13 @@ export class InicioComponent implements OnInit, AfterViewInit, OnDestroy {
       insumosOptimos,
       lotesPorVencer7Dias,
       lotesPorVencer15Dias,
-      entregasRecibidasMes: 18
+      entregasRecibidasMes: this.metricasAdmin.entregasRecibidasMes
     };
   }
 
   seleccionarFiltroSede(sede: string): void {
     this.sedeFiltroSeleccionada = sede;
+    this.actualizarGraficosAdmin();
     this.cdRef.markForCheck();
   }
 
@@ -1295,6 +1189,61 @@ export class InicioComponent implements OnInit, AfterViewInit, OnDestroy {
   get sedesFiltradas(): SedeAdminDashboard[] {
     if (this.sedeFiltroSeleccionada === 'TODAS') return this.sedesAdmin;
     return this.sedesAdmin.filter(s => s.nombre === this.sedeFiltroSeleccionada);
+  }
+
+  // Remesas y entregas calculadas de forma 100% dinámica para el Administrador
+  get remesasPendientesAdmin(): Entrega[] {
+    const lista = Array.isArray(this.entregasBase) && this.entregasBase.length > 0
+      ? this.entregasBase
+      : this.obtenerEntregasFallback();
+    return lista.filter(e => {
+      const st = String(e.estado || 'EN_TRANSITO').toUpperCase();
+      return st === 'EN_TRANSITO' || st === 'PENDIENTE' || st === 'EN_PROCESO' || st === 'POR_RECIBIR';
+    }).slice(0, 5);
+  }
+
+  get remesasRecibidasAdmin(): Entrega[] {
+    const lista = Array.isArray(this.entregasBase) && this.entregasBase.length > 0
+      ? this.entregasBase
+      : this.obtenerEntregasFallback();
+    return lista.filter(e => {
+      const st = String(e.estado || '').toUpperCase();
+      return st === 'RECIBIDA' || st === 'ACEPTADA';
+    }).slice(0, 4);
+  }
+
+  get totalDespachosPorRecibir(): number {
+    return this.remesasPendientesAdmin.length;
+  }
+
+  // Getters del resumen y del indicador semicircular (respetan el filtro de sede)
+  get totalRacionesServidas(): number {
+    return this.sedesFiltradas.reduce((acc, s) => acc + (s.racionesServidas || 0), 0);
+  }
+
+  get totalRacionesAsignadas(): number {
+    return this.sedesFiltradas.reduce((acc, s) => acc + (s.racionesAsignadas || 0), 0);
+  }
+
+  get porcentajeGlobalRaciones(): number {
+    return this.totalRacionesAsignadas > 0
+      ? Math.round((this.totalRacionesServidas / this.totalRacionesAsignadas) * 100)
+      : 0;
+  }
+
+  get insumosEnRiesgo(): number {
+    return this.insumosAdmin.filter(i => i.estado === 'CRITICO' || i.estado === 'BAJO').length;
+  }
+
+  get racionesPendientes(): number {
+    return Math.max(0, this.totalRacionesAsignadas - this.totalRacionesServidas);
+  }
+
+  get conteoInventario(): { optimo: number; bajo: number; critico: number; total: number } {
+    const optimo = this.insumosAdmin.filter(i => i.estado === 'OPTIMO').length;
+    const bajo = this.insumosAdmin.filter(i => i.estado === 'BAJO').length;
+    const critico = this.insumosAdmin.filter(i => i.estado === 'CRITICO').length;
+    return { optimo, bajo, critico, total: optimo + bajo + critico };
   }
 
   // =========================================================================
@@ -1512,9 +1461,7 @@ export class InicioComponent implements OnInit, AfterViewInit, OnDestroy {
       // =======================================================================
       // CICLO DE 8 DÍAS: Suministro semanal prioritario de alimentos perecederos
       // =======================================================================
-      // Contratos en ejecución activa semanal: 6 vigentes, 1 en revisión
       const contratosVigentes = 6;
-      const contratosPorVencer = 1;
       const totalContratos = 7;
 
       // Facturas radicadas en el ciclo activo de 8 días: 45 facturas
@@ -1549,7 +1496,6 @@ export class InicioComponent implements OnInit, AfterViewInit, OnDestroy {
       // =======================================================================
       // CICLO DE 20 DÍAS: Consolidado mensual escolar completo (20 días hábiles)
       // =======================================================================
-      // Contratos PAE totales vigencia 2026: 7 vigentes, 2 por vencer, 1 finalizado
       const contratosVigentes = 7;
       const totalContratos = 10;
 
