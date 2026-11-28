@@ -126,6 +126,9 @@ export interface PlanillaKardexData {
   periodo: string;
   fechaInicio: string;
   fechaTerminacion: string;
+  diasVentana?: string[];
+  racionesDia?: number[];
+  totalAtendido?: number;
   filas: FilaKardex[];
   firmas: FirmasPlanilla;
   guardadoManual?: boolean;
@@ -482,6 +485,10 @@ export class PlanillasOperativasService {
     const diasIso: string[] = Array.isArray(kardexRaw.dias) && kardexRaw.dias.length > 0
       ? kardexRaw.dias
       : this.generarDiasHabiles(params.fechaInicio);
+    const offset = Math.max(0, diasIso.length - 20);
+    const diasVentana = diasIso.slice(offset, offset + 20);
+    const racionesRaw: number[] = Array.isArray(kardexRaw.raciones_dia) ? kardexRaw.raciones_dia : [];
+    const racionesDia: number[] = Array.from({ length: 20 }, (_, i) => Number(racionesRaw[offset + i] || 0));
     const diasSemanaNombres: Array<'L' | 'M' | 'M' | 'J' | 'V'> = ['L', 'M', 'M', 'J', 'V'];
 
     const filas: FilaKardex[] = (kardexRaw.alimentos || []).map((al: any, idx: number) => {
@@ -500,12 +507,20 @@ export class PlanillasOperativasService {
 
       for (let s = 0; s < 4; s++) {
         for (let d = 0; d < 5; d++) {
-          const diaIdx = s * 5 + d;
-          const fechaDia = diasIso[diaIdx] || '';
+          const localIdx = s * 5 + d;
+          const diaIdx = offset + localIdx;
+          const fechaDia = diasVentana[localIdx] || '';
           const cant = al.id_ingrediente != null ? Number(gastos[diaIdx] || 0) : 0;
+          let letraDia = diasSemanaNombres[d];
+          if (fechaDia) {
+            const dow = new Date(`${fechaDia}T00:00:00`).getDay();
+            if (dow >= 1 && dow <= 5) {
+              letraDia = diasSemanaNombres[dow - 1];
+            }
+          }
           semanas[s].dias.push({
-            diaSemana: diasSemanaNombres[d],
-            diaNumero: diaIdx + 1,
+            diaSemana: letraDia,
+            diaNumero: localIdx + 1,
             fecha: fechaDia,
             cantidad: cant,
           });
@@ -521,7 +536,7 @@ export class PlanillasOperativasService {
       return {
         id: idx + 1,
         alimento: al.nombre || '',
-        fechaEntrada: al.fechaEntrada || diasIso[0] || params.fechaInicio,
+        fechaEntrada: al.fechaEntrada || diasVentana[0] || params.fechaInicio,
         menu: al.menu || 'Minuta SIRAE',
         cantidadEntrada: entradaReal,
         unidad: al.unidad || 'g',
@@ -531,6 +546,12 @@ export class PlanillasOperativasService {
       };
     });
 
+    filas.sort((a, b) => {
+      const aAct = a.cantidadEntrada > 0 || a.totalSalidas > 0 || a.saldoMes > 0 ? 1 : 0;
+      const bAct = b.cantidadEntrada > 0 || b.totalSalidas > 0 || b.saldoMes > 0 ? 1 : 0;
+      return bAct - aAct;
+    });
+
     return {
       municipio: enc.municipio || '_________________',
       institucionEducativa: enc.nombre_institucion || params.institucionNombre,
@@ -538,6 +559,9 @@ export class PlanillasOperativasService {
       periodo: params.periodo || 'PRIMERA',
       fechaInicio: enc.fecha_inicio || params.fechaInicio,
       fechaTerminacion: enc.fecha_fin || params.fechaFin,
+      diasVentana,
+      racionesDia,
+      totalAtendido: Number(kardexRaw.total_atendido || 0),
       filas,
       firmas: this.mapearFirmasDesdeBackend(resp, params),
     };
