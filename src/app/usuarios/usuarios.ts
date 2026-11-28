@@ -119,19 +119,19 @@ export class UsuariosComponent implements OnInit {
     this.cargarInstitucionesYSedes();
   }
 
-  cargarInstitucionesYSedes(): void {
-    this.bancoDatosService.obtenerDatos('instituciones').subscribe({
+  cargarInstitucionesYSedes(forzarRecarga = false): void {
+    this.bancoDatosService.obtenerDatos('instituciones', forzarRecarga).subscribe({
       next: (datos: any) => {
         this.instituciones = Array.isArray(datos) ? datos : (datos.results || datos.data || []);
-        this.cdr.detectChanges();
+        (this.cdr as any).detectChanges?.();
       },
       error: (err) => console.error('Error al cargar instituciones en usuarios:', err)
     });
 
-    this.bancoDatosService.obtenerDatos('sedes').subscribe({
+    this.bancoDatosService.obtenerDatos('sedes', forzarRecarga).subscribe({
       next: (datos: any) => {
         this.sedes = Array.isArray(datos) ? datos : (datos.results || datos.data || []);
-        this.cdr.detectChanges();
+        (this.cdr as any).detectChanges?.();
       },
       error: (err) => console.error('Error al cargar sedes en usuarios:', err)
     });
@@ -767,20 +767,20 @@ export class UsuariosComponent implements OnInit {
                 this.sweetAlert.success('¡Actualizado!', 'El usuario y sus asignaciones se guardaron correctamente.');
                 this.cerrarFormulario();
                 this.cargarUsuarios();
-                this.cargarInstitucionesYSedes();
+                this.cargarInstitucionesYSedes(true);
               },
               error: () => {
                 this.sweetAlert.success('¡Actualizado!', 'El usuario se actualizó correctamente.');
                 this.cerrarFormulario();
                 this.cargarUsuarios();
-                this.cargarInstitucionesYSedes();
+                this.cargarInstitucionesYSedes(true);
               }
             });
           } else {
             this.sweetAlert.success('¡Actualizado!', 'El usuario se actualizó correctamente.');
             this.cerrarFormulario();
             this.cargarUsuarios();
-            this.cargarInstitucionesYSedes();
+            this.cargarInstitucionesYSedes(true);
           }
         },
         error: (err) => {
@@ -804,20 +804,20 @@ export class UsuariosComponent implements OnInit {
                 this.sweetAlert.success('¡Creado!', 'El usuario y sus asignaciones se registraron correctamente.');
                 this.cerrarFormulario();
                 this.cargarUsuarios();
-                this.cargarInstitucionesYSedes();
+                this.cargarInstitucionesYSedes(true);
               },
               error: () => {
                 this.sweetAlert.success('¡Creado!', 'El usuario se registró correctamente.');
                 this.cerrarFormulario();
                 this.cargarUsuarios();
-                this.cargarInstitucionesYSedes();
+                this.cargarInstitucionesYSedes(true);
               }
             });
           } else {
             this.sweetAlert.success('¡Creado!', 'El usuario se registró correctamente.');
             this.cerrarFormulario();
             this.cargarUsuarios();
-            this.cargarInstitucionesYSedes();
+            this.cargarInstitucionesYSedes(true);
           }
         },
         error: (err) => {
@@ -847,11 +847,12 @@ export class UsuariosComponent implements OnInit {
     this.usuarioService.actualizarUsuario(id, datosEnviar).subscribe({
       next: () => {
         usuario.is_active = nuevoEstado;
+        this.cargarInstitucionesYSedes(true);
         this.sweetAlert.success(
           nuevoEstado ? 'Usuario activado' : 'Usuario inactivado',
           `El usuario ahora está ${nuevoEstado ? 'Activo' : 'Inactivo'}.`
         );
-        this.cdr.detectChanges();
+        (this.cdr as any).detectChanges?.();
       },
       error: (err) => {
         const mensajeError = this.formatearMensajeError(err);

@@ -8,6 +8,16 @@ describe('ContratosComponent', () => {
   let cdrMock: any;
   let sweetAlertMock: any;
 
+  const fechaEnDias = (dias: number): string => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + dias);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
   const contratosMock = [
     {
       id_contrato: 1,
@@ -17,7 +27,7 @@ describe('ContratosComponent', () => {
       id_usuario_supervisor: 12,
       supervisor_nombre: 'Ing. Carlos Mendoza',
       fecha_inicio: '2026-01-15',
-      fecha_fin: '2026-11-25', // Dentro de 15 días (Próximo a vencer)
+      fecha_fin: fechaEnDias(15), // Dentro de 15 días (Próximo a vencer)
       estado: 'Activo',
       zona: 'Norte'
     },
@@ -29,7 +39,7 @@ describe('ContratosComponent', () => {
       id_usuario_supervisor: null,
       supervisor_nombre: null,
       fecha_inicio: '2026-02-01',
-      fecha_fin: '2026-10-15', // Fecha pasada pero con estado Inactivo
+      fecha_fin: fechaEnDias(-30), // Fecha pasada pero con estado Inactivo
       estado: 'Inactivo',
       zona: 'Sur'
     },
@@ -41,7 +51,7 @@ describe('ContratosComponent', () => {
       id_usuario_supervisor: null,
       supervisor_nombre: null,
       fecha_inicio: '2026-01-01',
-      fecha_fin: '2026-10-31', // Fecha pasada con estado original Activo -> debe pasar a Finalizado
+      fecha_fin: fechaEnDias(-10), // Fecha pasada con estado original Activo -> debe pasar a Finalizado
       estado: 'Activo',
       zona: 'Rural'
     },
@@ -53,7 +63,7 @@ describe('ContratosComponent', () => {
       id_usuario_supervisor: 14,
       supervisor_nombre: 'Dra. Elena Ruiz',
       fecha_inicio: '2026-01-10',
-      fecha_fin: '2027-06-30', // Más de 30 días -> Activo Vigente normal
+      fecha_fin: fechaEnDias(180), // Más de 30 días -> Activo Vigente normal
       estado: 'Activo',
       zona: 'Centro'
     }

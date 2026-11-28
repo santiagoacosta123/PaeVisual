@@ -167,6 +167,7 @@ export class ContratosComponent implements OnInit {
               : (c.id_institucion ?? null),
             codigo: c.numero_cor || c.codigo,
             institucion: c.institucion || c.institucion_nombre || 'Sin institución',
+            id_usuario_supervisor: c.id_usuario_supervisor || null,
             fechaInicio: c.fecha_inicio || c.inicio,
             fechaFin: fechaFinStr,
             estado: vigencia.estado,
@@ -868,6 +869,12 @@ export class ContratosComponent implements OnInit {
     if (idInst) {
       payload.id_institucion = Number(idInst);
     }
+    if (this.contratoActual.cupos !== undefined && this.contratoActual.cupos !== null) {
+      payload.cupos = Number(this.contratoActual.cupos) || 0;
+    }
+    if (this.contratoActual.id_usuario_supervisor) {
+      payload.id_usuario_supervisor = Number(this.contratoActual.id_usuario_supervisor);
+    }
 
     const nombreNorm = String(this.contratoActual.institucion || '').trim().toLowerCase();
     const contratoDuplicado = (this.contratos || []).find((c: any) => {
@@ -918,18 +925,36 @@ export class ContratosComponent implements OnInit {
 
   toggleEstadoContrato(c: any) {
     const nuevoEstado = c.estado === 'Activo' ? 'Inactivo' : 'Activo';
-    const payload = {
+    const payload: any = {
       numero_cor: c.codigo,
       institucion: c.institucion,
       zona: c.zona,
       fecha_inicio: c.fechaInicio,
       fecha_fin: c.fechaFin,
-      estado: nuevoEstado
+      estado: nuevoEstado,
+      cupos: Number(c.cupos) || 0
     };
+    if (c.id_institucion) {
+      payload.id_institucion = typeof c.id_institucion === 'object'
+        ? Number(c.id_institucion.id_institucion ?? c.id_institucion.id)
+        : Number(c.id_institucion);
+    }
+    if (c.id_usuario_supervisor) {
+      payload.id_usuario_supervisor = typeof c.id_usuario_supervisor === 'object'
+        ? Number(c.id_usuario_supervisor.id_usuario ?? c.id_usuario_supervisor.id)
+        : Number(c.id_usuario_supervisor);
+    }
 
     this.siraeService.actualizarContrato(c.id, payload).subscribe({
       next: () => {
         c.estado = nuevoEstado;
+        c.estadoOriginal = nuevoEstado;
+        const vig = this.evaluarVigencia(c.fechaFin, nuevoEstado);
+        c.estado = vig.estado;
+        c.esProximoAVencer = vig.esProximoAVencer;
+        c.diasRestantes = vig.diasRestantes;
+        c.mensajeVigencia = vig.mensajeVigencia;
+        c.alertaNivel = vig.alertaNivel;
         this.cdr.detectChanges();
       },
       error: (err) => {

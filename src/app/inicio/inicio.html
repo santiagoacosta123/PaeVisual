@@ -239,424 +239,370 @@
 
 
   <!-- =========================================================================
-       CASO 2: ADMINISTRADOR INSTITUCIONAL Y OTROS ROLES (SIN ICONOS)
+       CASO 2: ADMINISTRADOR INSTITUCIONAL
+       Sin iconos · Roboto · Amarillo #F5B81F · Gráficas circulares (dona)
+       1. Encabezado y resumen ejecutivo
+       2. Remesas por recibir + alertas de almacén (datos reales del inventario)
+       3. Gráficas circulares: raciones del día y estado del inventario
+       4. Supervisión de comedores por sede (anillos de progreso)
        ========================================================================= -->
+  <main *ngIf="!esSuperAdministrador" class="flex flex-col gap-5"
+    style="font-family: 'Roboto', system-ui, -apple-system, sans-serif;">
 
-  <!-- =========================================================================
-       DASHBOARD EJECUTIVO Y OPERATIVO DEL ADMINISTRADOR INSTITUCIONAL
-       ========================================================================= -->
-  <main *ngIf="!esSuperAdministrador" class="flex flex-col gap-5">
-
-    <!-- 1. CONTEXTO INSTITUCIONAL Y FILTRO DE SEDES -->
-    <section class="w-full rounded-2xl border border-slate-200/80 bg-white px-5 py-4 shadow-sm">
-      <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div class="min-w-0">
-          <div class="flex flex-wrap items-center gap-2">
-            <h2 class="m-0 text-[16px] font-bold tracking-tight text-slate-900">{{ institucionNombre }}</h2>
-            <span class="rounded-full border border-[#2B5424]/30 bg-[#eaf2e8] px-2.5 py-0.5 text-[11px] font-bold text-[#2B5424]">
-              {{ metricasAdmin.sedesOperativas }}/{{ metricasAdmin.totalSedes }} sedes operativas
-            </span>
-          </div>
-          <p class="m-0 mt-1 text-xs text-slate-500">Gestión de comedores escolares, asignación de raciones y control de almacén PAE</p>
-        </div>
-
-        <!-- Selector de sede y acciones de sincronización -->
-        <div class="flex flex-wrap items-center gap-2 lg:justify-end">
-          <span class="text-xs font-semibold text-slate-500">Filtrar sede:</span>
-          <button type="button"
-            (click)="seleccionarFiltroSede('TODAS')"
-            class="h-8 cursor-pointer whitespace-nowrap rounded-full border px-3.5 text-xs font-bold transition-all"
-            [ngClass]="sedeFiltroSeleccionada === 'TODAS'
-              ? 'border-[#F5B81F] bg-[#F5B81F] text-white shadow-xs'
-              : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'">
-            Todas (consolidado)
-          </button>
-          <button *ngFor="let s of sedesAdmin" type="button"
-            (click)="seleccionarFiltroSede(s.nombre)"
-            class="h-8 cursor-pointer whitespace-nowrap rounded-full border px-3.5 text-xs font-bold transition-all"
-            [ngClass]="sedeFiltroSeleccionada === s.nombre
-              ? 'border-[#F5B81F] bg-[#F5B81F] text-white shadow-xs'
-              : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'">
-            {{ s.nombre }}
-          </button>
-
-          <!-- Botón Refrescar en tiempo real -->
-          <button type="button"
-            (click)="refrescarDatosAdmin()"
-            [disabled]="refrescandoDatos"
-            title="Sincronizar y refrescar datos"
-            class="h-8 cursor-pointer rounded-full border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 transition hover:bg-slate-50">
-            {{ refrescandoDatos ? 'Actualizando...' : 'Actualizar' }}
-          </button>
-        </div>
-      </div>
-    </section>
-
-    <!-- 2. PRIORIDAD OPERATIVA -->
-    <section class="flex flex-col justify-between gap-3 rounded-2xl border border-[#F3DFA2] px-5 py-3.5 shadow-[0_2px_10px_rgba(250,201,75,0.14)] sm:flex-row sm:items-center"
-      style="background: linear-gradient(135deg, #FFF8E1 0%, #FFFBEF 100%);">
+    <!-- 0. ENCABEZADO -->
+    <section class="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white px-6 py-5 shadow-sm md:flex-row md:items-center md:justify-between"
+      style="border-left: 6px solid #F5B81F;">
       <div class="min-w-0">
-        <h3 class="m-0 flex flex-wrap items-center gap-2 text-[16px] font-bold tracking-tight text-slate-900">
-          Prioridad operativa
-          <span class="rounded-full bg-[#FBE08A] px-2.5 py-0.5 text-[11.5px] font-bold text-[#8A4B08]">Atención</span>
-        </h3>
-        <p class="m-0 mt-0.5 text-[13px] leading-relaxed text-slate-700">
-          Se radicó remesa de perecederos: 35 litros de leche y 42 kg de carne molida.
-        </p>
+        <p class="m-0 text-[11px] font-bold uppercase tracking-[0.14em] text-[#B45309]">Panel del administrador</p>
+        <h1 class="m-0 mt-1 text-[24px] font-bold leading-tight tracking-tight text-slate-900">{{ institucionNombre }}</h1>
+        <p class="m-0 mt-1 text-[13px] capitalize text-slate-500">{{ fechaActual }}</p>
       </div>
-      <div class="flex shrink-0 flex-wrap items-center gap-2.5">
-        <a routerLink="/historial-entregas"
-          class="inline-flex h-9 items-center justify-center rounded-full border border-[#E8C468] bg-white px-5 text-[13px] font-bold text-slate-800 no-underline transition hover:bg-[#FFF4D6]">
-          Recepción de entregas
-        </a>
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="rounded-full border border-[#2B5424]/30 bg-[#eaf2e8] px-3 py-1 text-[12px] font-bold text-[#2B5424]">
+          {{ metricasAdmin.sedesOperativas }} de {{ metricasAdmin.totalSedes }} {{ metricasAdmin.totalSedes === 1 ? 'sede operativa' : 'sedes operativas' }}
+        </span>
+        <button type="button"
+          (click)="abrirModalNuevoInsumo()"
+          class="h-9 cursor-pointer rounded-full border-none bg-[#F5B81F] px-5 text-[13px] font-bold text-white transition hover:brightness-95">
+          + Nuevo insumo
+        </button>
       </div>
     </section>
 
-    <!-- 3. BLOQUE CENTRAL: SEDES + EXISTENCIAS/MOVIMIENTOS -->
-    <div class="grid grid-cols-1 items-stretch gap-5 xl:grid-cols-12">
+    <!-- 1. RESUMEN EJECUTIVO (4 TARJETAS) -->
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
 
-      <!-- COLUMNA IZQUIERDA -->
-      <div class="flex flex-col gap-5 xl:col-span-7">
-
-        <section class="flex flex-1 flex-col rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
-          <div class="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 pb-3">
-            <div>
-              <h3 class="m-0 text-[18px] font-bold tracking-tight text-slate-900">Sedes de la institución</h3>
-              <p class="m-0 mt-0.5 text-xs text-slate-500">Estado operativo, cupos asignados y raciones servidas hoy</p>
-            </div>
-            <a routerLink="/sedes-institucion" class="text-[13px] font-bold text-[#B45309] no-underline hover:text-[#8A4B08]">
-              Gestionar sedes &rarr;
-            </a>
+      <a routerLink="/historial-entregas"
+        class="flex cursor-pointer flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 no-underline shadow-sm transition hover:border-[#F5B81F] hover:shadow-md">
+        <div class="flex items-center justify-between">
+          <span class="h-1.5 w-10 rounded-full bg-[#F5B81F]"></span>
+          <span class="rounded-full bg-[#fdf3d7] px-2.5 py-0.5 text-[11px] font-bold text-[#8A4B08]">En tránsito</span>
+        </div>
+        <div class="mt-4">
+          <div class="text-[12px] font-bold uppercase tracking-wide text-slate-500">Despachos por recibir</div>
+          <div class="mt-1.5 flex items-baseline justify-between">
+            <span class="text-[34px] font-bold leading-none text-slate-900">{{ totalDespachosPorRecibir }}</span>
+            <span class="text-xs font-bold text-[#B45309]">Recibir remesa</span>
           </div>
+        </div>
+      </a>
 
-          <!-- Tarjetas de sede -->
-          <div class="mt-4 grid grid-cols-1 gap-3"
-            [ngClass]="sedesFiltradas.length === 1 ? 'sm:grid-cols-1' : 'sm:grid-cols-2'">
-            <div *ngFor="let sede of sedesFiltradas"
-              class="rounded-xl border border-slate-200/80 p-3.5 shadow-[0_2px_8px_rgba(15,23,42,0.04)] transition-all hover:border-[#F3DFA2] hover:shadow-md"
-              style="background: linear-gradient(160deg, #FFFFFF 0%, #F6F8F6 100%);">
-              <div class="flex items-start justify-between gap-2">
-                <div class="min-w-0">
-                  <h4 class="m-0 text-[14px] font-bold leading-tight text-slate-900">{{ sede.nombre }}</h4>
-                  <p class="m-0 mt-0.5 truncate text-[11px] text-slate-500">{{ sede.direccion }}</p>
-                </div>
-                <span class="shrink-0 rounded-full border px-2.5 py-0.5 text-[10.5px] font-bold"
-                  [ngClass]="sede.estadoComedor === 'OPERATIVO'
-                    ? 'border-[#2B5424]/30 bg-[#eaf2e8] text-[#2B5424]'
-                    : 'border-[#F5B81F]/30 bg-[#fdf3d7] text-[#7a5a0b]'">
-                  {{ sede.estadoComedor === 'OPERATIVO' ? 'Comedor activo' : 'En servicio' }}
-                </span>
-              </div>
-
-              <div class="mt-3">
-                <div class="mb-1.5 flex items-center justify-between text-xs">
-                  <span class="font-medium text-slate-600">Raciones del día:</span>
-                  <span class="font-bold text-slate-900">{{ sede.racionesServidas }} / {{ sede.racionesAsignadas }} ({{ sede.porcentajeCumplimiento }}%)</span>
-                </div>
-                <div class="h-2 w-full overflow-hidden rounded-full bg-slate-200">
-                  <div class="h-full rounded-full transition-all duration-500"
-                    [style.width.%]="sede.porcentajeCumplimiento"
-                    [ngClass]="sede.porcentajeCumplimiento >= 90
-                      ? 'bg-[#2B5424]'
-                      : 'bg-[#F5B81F]'">
-                  </div>
-                </div>
-              </div>
-
-              <div class="mt-2.5 border-t border-slate-200/70 pt-2 flex items-center justify-between text-[11.5px] text-slate-600">
-                <span>Jornada: {{ sede.jornadas }}</span>
-                <button type="button"
-                  (click)="abrirModalRacionesSede(sede)"
-                  class="cursor-pointer border-none bg-[#fdf3d7] hover:bg-[#fdf3d7] text-[#8A4B08] font-bold px-2.5 py-1 rounded-md text-[11px] transition-all">
-                  Actualizar raciones
-                </button>
-              </div>
-            </div>
+      <div class="flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+        <div class="flex items-center justify-between">
+          <span class="h-1.5 w-10 rounded-full bg-[#2B5424]"></span>
+          <span class="rounded-full bg-[#eaf2e8] px-2.5 py-0.5 text-[11px] font-bold text-[#2B5424]">{{ porcentajeGlobalRaciones }}% servido</span>
+        </div>
+        <div class="mt-4">
+          <div class="text-[12px] font-bold uppercase tracking-wide text-slate-500">Raciones del día</div>
+          <div class="mt-1.5 flex items-baseline justify-between">
+            <span class="text-[34px] font-bold leading-none text-slate-900">{{ totalRacionesServidas }}</span>
+            <span class="text-xs text-slate-500">de {{ totalRacionesAsignadas }} cupos</span>
           </div>
-
-          <!-- Gráfico: raciones servidas vs meta -->
-          <div class="mt-4 flex flex-1 flex-col border-t border-slate-100 pt-3">
-            <h4 class="m-0 text-[15px] font-bold text-slate-900">Raciones servidas vs. meta por sede</h4>
-            <div class="mb-2 mt-1.5 flex flex-wrap items-center gap-5 text-xs text-slate-600">
-              <span class="inline-flex items-center gap-1.5"><span class="inline-block h-3 w-3 rounded-sm bg-[#16a34a]"></span>Raciones servidas hoy</span>
-              <span class="inline-flex items-center gap-1.5"><span class="inline-block h-3 w-3 rounded-sm bg-[#FACC15]"></span>Meta programada</span>
-            </div>
-            <div class="relative min-h-[200px] w-full flex-1">
-              <div class="absolute inset-0">
-                <canvas #chartAdminSedesCanvas></canvas>
-              </div>
-            </div>
-          </div>
-        </section>
-
+        </div>
       </div>
 
-      <!-- COLUMNA DERECHA -->
-      <div class="flex flex-col gap-5 xl:col-span-5">
-
-        <!-- Existencias vs mínimo -->
-        <section class="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
-          <div class="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
-            <div>
-              <h3 class="m-0 text-[18px] font-bold leading-tight tracking-tight text-slate-900">Existencias vs. mínimo de seguridad</h3>
-              <p class="m-0 mt-0.5 text-xs text-slate-500">Balance por categorías alimentarias en bodega</p>
-            </div>
-            <a routerLink="/reporte-inventario" class="text-[13px] font-bold text-[#B45309] no-underline hover:text-[#8A4B08]">
-              Kardex
-            </a>
+      <a routerLink="/ingredientes"
+        class="flex cursor-pointer flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 no-underline shadow-sm transition hover:border-rose-300 hover:shadow-md">
+        <div class="flex items-center justify-between">
+          <span class="h-1.5 w-10 rounded-full" [ngClass]="insumosEnRiesgo > 0 ? 'bg-rose-500' : 'bg-[#2B5424]'"></span>
+          <span class="rounded-full px-2.5 py-0.5 text-[11px] font-bold"
+            [ngClass]="insumosEnRiesgo > 0 ? 'border border-rose-200 bg-rose-50 text-rose-700' : 'bg-[#eaf2e8] text-[#2B5424]'">
+            {{ insumosEnRiesgo > 0 ? 'Stock crítico' : 'Normal' }}
+          </span>
+        </div>
+        <div class="mt-4">
+          <div class="text-[12px] font-bold uppercase tracking-wide text-slate-500">Insumos en riesgo</div>
+          <div class="mt-1.5 flex items-baseline justify-between">
+            <span class="text-[34px] font-bold leading-none" [ngClass]="insumosEnRiesgo > 0 ? 'text-rose-600' : 'text-slate-900'">{{ insumosEnRiesgo }}</span>
+            <span class="text-xs font-bold text-rose-700">Revisar stock</span>
           </div>
+        </div>
+      </a>
 
-          <div class="mb-1 mt-3 flex flex-wrap items-center justify-center gap-5 text-xs text-slate-600">
-            <span class="inline-flex items-center gap-1.5"><span class="inline-block h-3 w-3 rounded-sm bg-[#FACC15]"></span>Stock actual (kg/L/und)</span>
-            <span class="inline-flex items-center gap-1.5"><span class="inline-block h-3 w-3 rounded-sm bg-slate-300"></span>Mínimo de seguridad</span>
+      <a routerLink="/sedes-institucion"
+        class="flex cursor-pointer flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 no-underline shadow-sm transition hover:border-[#F5B81F] hover:shadow-md">
+        <div class="flex items-center justify-between">
+          <span class="h-1.5 w-10 rounded-full bg-[#F5B81F]"></span>
+          <span class="rounded-full bg-[#fdf3d7] px-2.5 py-0.5 text-[11px] font-bold text-[#8A4B08]">
+            {{ metricasAdmin.totalSedes > 0 ? ((metricasAdmin.sedesOperativas / metricasAdmin.totalSedes) * 100).toFixed(0) : 0 }}% activas
+          </span>
+        </div>
+        <div class="mt-4">
+          <div class="text-[12px] font-bold uppercase tracking-wide text-slate-500">Sedes operativas</div>
+          <div class="mt-1.5 flex items-baseline justify-between">
+            <span class="text-[34px] font-bold leading-none text-slate-900">{{ metricasAdmin.sedesOperativas }} / {{ metricasAdmin.totalSedes }}</span>
+            <span class="text-xs font-bold text-[#B45309]">Ver sedes</span>
           </div>
-
-          <div class="relative w-full" style="height: 200px;">
-            <canvas #chartAdminStockCanvas></canvas>
-          </div>
-
-          <div class="mt-3 flex items-center justify-between gap-2 border-t border-slate-100 pt-2.5 text-xs text-slate-600">
-            <span class="flex items-center gap-1.5">
-              <span class="inline-block h-2.5 w-2.5 rounded-full bg-rose-500"></span>
-              Alerta: Lácteos por debajo del mínimo.
-            </span>
-            <a routerLink="/ingredientes" class="font-bold text-slate-900 no-underline hover:text-[#B45309]">
-              Ver detalle &rarr;
-            </a>
-          </div>
-        </section>
-
-        <!-- Movimientos recientes -->
-        <section class="flex flex-1 flex-col rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
-          <div class="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
-            <div>
-              <h3 class="m-0 text-[18px] font-bold tracking-tight text-slate-900">Movimientos recientes de bodega</h3>
-              <p class="m-0 mt-0.5 text-xs text-slate-500">Entradas de operador y despachos a comedores</p>
-            </div>
-            <button type="button"
-              (click)="abrirModalNuevoInsumo()"
-              class="cursor-pointer border-none bg-transparent text-[13px] font-bold text-[#B45309] hover:text-[#8A4B08]">
-              + Nuevo
-            </button>
-          </div>
-
-          <div class="mt-3 flex flex-col gap-2">
-            <div *ngFor="let m of movimientosAdmin"
-              class="flex items-center justify-between gap-3 rounded-lg border border-slate-200/70 bg-slate-50/70 px-3 py-2">
-              <div class="min-w-0">
-                <div class="truncate text-[13px] font-bold text-slate-900">{{ m.insumo }}</div>
-                <div class="truncate text-[11.5px] text-slate-500">{{ m.origenDestino }}</div>
-              </div>
-              <div class="shrink-0 text-right">
-                <div class="text-[14px] font-extrabold"
-                  [ngClass]="m.tipo === 'ENTRADA' ? 'text-[#2B5424]' : 'text-slate-900'">
-                  {{ m.tipo === 'ENTRADA' ? '+' : '−' }}{{ m.cantidad }} {{ m.unidad }}
-                </div>
-                <div class="text-[10.5px] text-slate-500">{{ m.fechaHora }}</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="mt-auto border-t border-slate-100 pt-3 text-center">
-            <a routerLink="/historial-entregas" class="text-[13px] font-bold text-slate-800 no-underline hover:text-[#B45309]">
-              Ver historial de remesas y entregas
-            </a>
-          </div>
-        </section>
-
-      </div>
+        </div>
+      </a>
 
     </div>
 
-    <!-- 4. MINUTA Y MENÚ DE HOY -->
-    <section class="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
-      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
-        <div>
-          <h3 class="m-0 text-[18px] font-bold tracking-tight text-slate-900">Minuta y menú de hoy</h3>
-          <p class="m-0 mt-0.5 text-xs text-slate-500">{{ menuDelDia.tipoRacion }}</p>
-        </div>
-        <div class="flex flex-wrap items-center gap-4">
-          <span class="inline-flex h-8 items-center rounded-full border border-[#2B5424]/40 bg-[#eaf2e8] px-4 text-[12.5px] font-bold text-[#2B5424]">
-            Minuta aprobada
-          </span>
-          <span class="text-[13px] text-slate-700">Horario del almuerzo: {{ menuDelDia.horaServicio }}</span>
-        </div>
-      </div>
+    <!-- 2. REMESAS PENDIENTES + ALERTAS DE ALMACÉN -->
+    <div class="grid grid-cols-1 items-stretch gap-5 lg:grid-cols-12">
 
-      <div class="mt-3.5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div class="rounded-xl border border-slate-200/80 px-4 py-2.5" style="background: linear-gradient(160deg, #FFFFFF 0%, #F6F8F6 100%);">
-          <div class="text-[13px] font-bold text-slate-900">Proteína</div>
-          <div class="mt-0.5 text-[13px] text-slate-700">{{ menuDelDia.platoPrincipal }}</div>
-        </div>
-        <div class="rounded-xl border border-slate-200/80 px-4 py-2.5" style="background: linear-gradient(160deg, #FFFFFF 0%, #F6F8F6 100%);">
-          <div class="text-[13px] font-bold text-slate-900">Cereal y leguminosa</div>
-          <div class="mt-0.5 text-[13px] text-slate-700">{{ menuDelDia.guarnicion }}</div>
-        </div>
-        <div class="rounded-xl border border-slate-200/80 px-4 py-2.5" style="background: linear-gradient(160deg, #FFFFFF 0%, #F6F8F6 100%);">
-          <div class="text-[13px] font-bold text-slate-900">Ensalada</div>
-          <div class="mt-0.5 text-[13px] text-slate-700">{{ menuDelDia.verduraEnsalada }}</div>
-        </div>
-        <div class="rounded-xl border border-slate-200/80 px-4 py-2.5" style="background: linear-gradient(160deg, #FFFFFF 0%, #F6F8F6 100%);">
-          <div class="text-[13px] font-bold text-slate-900">Fruta y bebida</div>
-          <div class="mt-0.5 text-[13px] text-slate-700">{{ menuDelDia.fruta }} y {{ menuDelDia.bebida }}</div>
-        </div>
-      </div>
-
-      <div class="mt-3 text-[12.5px] text-slate-600">
-        Aporte calórico: <strong class="text-slate-900">{{ menuDelDia.caloriasAprox }} kcal</strong> por ración
-      </div>
-    </section>
-
-    <!-- 5. INVENTARIO DE ALIMENTOS Y MATERIAS PRIMAS -->
-    <section class="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
-      <div class="flex flex-col justify-between gap-3 border-b border-slate-100 pb-3 md:flex-row md:items-center">
-        <div>
-          <h3 class="m-0 text-[18px] font-bold tracking-tight text-slate-900">Inventario de alimentos y materias primas</h3>
-          <p class="m-0 mt-0.5 text-xs text-slate-500">Control de existencias físicas, stock mínimo de reserva y semáforo de vencimientos</p>
+      <section class="flex flex-col rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm lg:col-span-7">
+        <div class="mb-4 flex items-start justify-between gap-3">
+          <div>
+            <h3 class="m-0 text-[16px] font-bold leading-tight text-slate-900">Recepción y conformidad de remesas</h3>
+            <p class="m-0 mt-0.5 text-xs text-slate-500">Despachos del operador pendientes por dar visto bueno</p>
+          </div>
+          <a routerLink="/historial-entregas" class="whitespace-nowrap text-[13px] font-bold text-[#B45309] no-underline hover:text-[#8A4B08]">
+            Historial completo
+          </a>
         </div>
 
-        <div class="flex items-center gap-2 w-full md:w-auto">
-          <!-- Buscador con botón de limpiar -->
-          <div class="relative w-full md:w-72">
-            <input type="text"
-              [value]="busquedaInsumo"
-              (input)="onBusquedaInsumo($event)"
-              placeholder="Buscar insumo o lote..."
-              aria-label="Buscar insumo o lote"
-              class="h-10 w-full rounded-full border border-slate-300 bg-slate-50 px-4 text-[13px] text-slate-800 transition-all placeholder:text-slate-500 focus:border-[#F5B81F] focus:bg-white focus:outline-none" />
-            <button *ngIf="busquedaInsumo"
-              type="button"
-              (click)="busquedaInsumo = ''"
-              class="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 border-none bg-transparent cursor-pointer font-bold text-sm">
-              &times;
-            </button>
+        <div class="flex flex-col gap-3">
+
+          <!-- Remesas pendientes por recibir (dinámicas) -->
+          <ng-container *ngFor="let r of remesasPendientesAdmin">
+            <div class="flex flex-col justify-between gap-3 rounded-xl border border-[#F3DFA2] bg-[#FFFBEF] p-4 sm:flex-row sm:items-center"
+              style="border-left: 4px solid #F5B81F;">
+              <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="text-[13px] font-bold text-slate-900">{{ r.numeroFactura || ('Remisión ' + (r.id || 'PAE')) }}</span>
+                  <span class="rounded-full bg-[#FBE08A] px-2 py-0.5 text-[10.5px] font-bold text-[#8A4B08]">Por recibir</span>
+                </div>
+                <div class="mt-1 text-xs text-slate-700">
+                  {{ r.cantidad }} {{ r.unidad || 'kg' }} de {{ r.ingrediente }} · Sede: {{ r.sedeNombre || 'Central' }}
+                </div>
+                <div class="mt-0.5 text-[11px] text-slate-500">
+                  Operador PAE · Fecha programada: {{ (r.fechaRecepcion | date:'dd/MM/yyyy') || 'Hoy' }}
+                </div>
+              </div>
+              <a routerLink="/historial-entregas"
+                class="shrink-0 rounded-lg bg-[#F5B81F] px-4 py-2 text-center text-xs font-bold text-white no-underline transition hover:brightness-95">
+                Verificar y recibir
+              </a>
+            </div>
+          </ng-container>
+
+          <!-- Remesas recibidas conforme (dinámicas) -->
+          <ng-container *ngFor="let rec of remesasRecibidasAdmin">
+            <div class="flex items-center justify-between gap-3 rounded-xl border border-slate-200/80 bg-slate-50 p-4"
+              style="border-left: 4px solid #2B5424;">
+              <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="text-[13px] font-bold text-slate-800">{{ rec.numeroFactura || ('Remisión ' + (rec.id || 'PAE')) }}</span>
+                  <span class="rounded-full bg-[#eaf2e8] px-2 py-0.5 text-[10.5px] font-bold text-[#2B5424]">Recibida conforme</span>
+                </div>
+                <div class="mt-1 text-xs text-slate-600">
+                  {{ rec.cantidad }} {{ rec.unidad || 'kg' }} de {{ rec.ingrediente }} · {{ rec.sedeNombre || 'Sede Principal' }}
+                </div>
+              </div>
+              <span class="whitespace-nowrap text-[11px] font-semibold text-slate-500">
+                {{ (rec.fechaRecepcion | date:'dd/MM/yyyy') || 'Reciente' }}
+              </span>
+            </div>
+          </ng-container>
+
+          <div *ngIf="remesasPendientesAdmin.length === 0 && remesasRecibidasAdmin.length === 0"
+            class="rounded-xl border border-slate-200 bg-slate-50 p-6 text-center text-xs text-slate-500">
+            No hay remesas registradas para este período.
+          </div>
+
+        </div>
+      </section>
+
+      <section class="flex flex-col rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm lg:col-span-5">
+        <div class="mb-4 flex items-start justify-between gap-3">
+          <div>
+            <h3 class="m-0 text-[16px] font-bold leading-tight text-slate-900">Alertas de almacén</h3>
+            <p class="m-0 mt-0.5 text-xs text-slate-500">Insumos que requieren reorden o consumo</p>
+          </div>
+          <a routerLink="/ingredientes" class="whitespace-nowrap text-[13px] font-bold text-[#B45309] no-underline hover:text-[#8A4B08]">
+            Kardex
+          </a>
+        </div>
+
+        <div class="flex max-h-[340px] flex-col gap-2.5 overflow-y-auto pr-1">
+
+          <ng-container *ngFor="let i of insumosAdmin">
+            <div *ngIf="i.estado !== 'OPTIMO' || i.diasVencimientoProximo <= 7"
+              class="flex items-center justify-between gap-3 rounded-xl border p-3"
+              [ngClass]="i.estado === 'CRITICO' ? 'border-rose-200 bg-rose-50/60' : 'border-[#F3DFA2] bg-[#FFFBEF]'">
+              <div class="min-w-0">
+                <div class="truncate text-[13px] font-bold text-slate-900">{{ i.nombre }}</div>
+                <div class="text-[11.5px] text-slate-600">
+                  Stock: <strong [ngClass]="i.estado === 'CRITICO' ? 'text-rose-700' : 'text-[#8A4B08]'">{{ i.stockActual }} {{ i.unidad }}</strong>
+                  <span *ngIf="i.stockMinimo > 0"> (mínimo {{ i.stockMinimo }})</span>
+                </div>
+                <div *ngIf="i.diasVencimientoProximo <= 7" class="text-[11.5px] font-semibold text-rose-600">Caduca en {{ i.diasVencimientoProximo }} días</div>
+              </div>
+              <div class="flex shrink-0 flex-col items-end gap-1.5">
+                <span class="rounded-md px-2 py-0.5 text-[10.5px] font-bold"
+                  [ngClass]="i.estado === 'CRITICO' ? 'bg-rose-100 text-rose-800' : 'bg-[#FBE08A] text-[#8A4B08]'">
+                  {{ i.estado === 'CRITICO' ? 'Stock crítico' : (i.estado === 'BAJO' ? 'Reorden' : 'Próximo a vencer') }}
+                </span>
+                <button type="button" (click)="abrirModalAjuste(i)"
+                  class="cursor-pointer rounded-md border border-[#F0CF72] bg-white px-2.5 py-0.5 text-[11px] font-bold text-[#8A4B08] transition hover:bg-[#F5B81F] hover:text-white">
+                  Ajustar
+                </button>
+              </div>
+            </div>
+          </ng-container>
+
+          <div *ngIf="insumosEnRiesgo === 0 && metricasAdmin.lotesPorVencer7Dias === 0"
+            class="rounded-xl border border-[#2B5424]/25 bg-[#eaf2e8] p-4 text-center text-[13px] font-semibold text-[#2B5424]">
+            Todo el inventario está en niveles óptimos.
+          </div>
+
+        </div>
+      </section>
+
+    </div>
+
+    <!-- 3. GRÁFICAS CIRCULARES -->
+    <div class="grid grid-cols-1 items-stretch gap-5 lg:grid-cols-2">
+
+      <!-- Dona 1: Raciones del día -->
+      <section class="flex flex-col rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+        <h3 class="m-0 text-[16px] font-bold text-slate-900">Cumplimiento de raciones del día</h3>
+        <p class="m-0 mt-0.5 text-xs text-slate-500">Raciones servidas frente a la meta programada</p>
+
+        <div class="mt-4 flex flex-1 flex-col items-center justify-center gap-6 sm:flex-row">
+          <div class="relative h-[200px] w-[200px] shrink-0">
+            <canvas #chartAdminSedesCanvas></canvas>
+            <div class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+              <span class="text-[34px] font-bold leading-none text-slate-900">{{ porcentajeGlobalRaciones }}%</span>
+              <span class="mt-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">servido</span>
+            </div>
+          </div>
+
+          <div class="flex w-full flex-col gap-3 sm:w-auto sm:min-w-[190px]">
+            <div class="flex items-center justify-between gap-6 border-b border-slate-100 pb-2">
+              <span class="inline-flex items-center gap-2 text-[13px] font-semibold text-slate-700">
+                <span class="inline-block h-3 w-3 rounded-full" style="background: #16a34a;"></span>Servidas
+              </span>
+              <span class="text-[16px] font-bold text-slate-900">{{ totalRacionesServidas }}</span>
+            </div>
+            <div class="flex items-center justify-between gap-6 border-b border-slate-100 pb-2">
+              <span class="inline-flex items-center gap-2 text-[13px] font-semibold text-slate-700">
+                <span class="inline-block h-3 w-3 rounded-full" style="background: #F5B81F;"></span>Pendientes
+              </span>
+              <span class="text-[16px] font-bold text-slate-900">{{ racionesPendientes }}</span>
+            </div>
+            <div class="flex items-center justify-between gap-6">
+              <span class="text-[13px] font-semibold text-slate-500">Meta programada</span>
+              <span class="text-[16px] font-bold text-slate-900">{{ totalRacionesAsignadas }}</span>
+            </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      <!-- Filtros por categoría -->
-      <div class="mt-3.5 flex flex-wrap items-center justify-between gap-2">
+      <!-- Dona 2: Estado del inventario -->
+      <section class="flex flex-col rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+        <h3 class="m-0 text-[16px] font-bold text-slate-900">Estado del inventario</h3>
+        <p class="m-0 mt-0.5 text-xs text-slate-500">Insumos según su stock frente al mínimo de seguridad</p>
+
+        <div class="mt-4 flex flex-1 flex-col items-center justify-center gap-6 sm:flex-row">
+          <div class="relative h-[200px] w-[200px] shrink-0">
+            <canvas #chartAdminStockCanvas></canvas>
+            <div class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+              <span class="text-[34px] font-bold leading-none text-slate-900">{{ conteoInventario.total }}</span>
+              <span class="mt-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">insumos</span>
+            </div>
+          </div>
+
+          <div class="flex w-full flex-col gap-3 sm:w-auto sm:min-w-[190px]">
+            <div class="flex items-center justify-between gap-6 border-b border-slate-100 pb-2">
+              <span class="inline-flex items-center gap-2 text-[13px] font-semibold text-slate-700">
+                <span class="inline-block h-3 w-3 rounded-full" style="background: #16a34a;"></span>Óptimo
+              </span>
+              <span class="text-[16px] font-bold text-slate-900">{{ conteoInventario.optimo }}</span>
+            </div>
+            <div class="flex items-center justify-between gap-6 border-b border-slate-100 pb-2">
+              <span class="inline-flex items-center gap-2 text-[13px] font-semibold text-slate-700">
+                <span class="inline-block h-3 w-3 rounded-full" style="background: #F5B81F;"></span>Reorden
+              </span>
+              <span class="text-[16px] font-bold text-slate-900">{{ conteoInventario.bajo }}</span>
+            </div>
+            <div class="flex items-center justify-between gap-6">
+              <span class="inline-flex items-center gap-2 text-[13px] font-semibold text-slate-700">
+                <span class="inline-block h-3 w-3 rounded-full" style="background: #dc2626;"></span>Crítico
+              </span>
+              <span class="text-[16px] font-bold text-slate-900">{{ conteoInventario.critico }}</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- 4. SUPERVISIÓN DE COMEDORES POR SEDE -->
+    <section class="flex flex-col rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+      <div class="mb-4 flex flex-col justify-between gap-3 lg:flex-row lg:items-center">
+        <div>
+          <h3 class="m-0 text-[16px] font-bold text-slate-900">Supervisión de comedores y raciones por sede</h3>
+          <p class="m-0 mt-0.5 text-xs text-slate-500">Control diario del cumplimiento en la entrega de complementos a estudiantes</p>
+        </div>
         <div class="flex flex-wrap items-center gap-2">
           <button type="button"
-            (click)="seleccionarCategoria('TODAS')"
-            class="h-9 cursor-pointer whitespace-nowrap rounded-full border px-4 text-[13px] font-bold transition-all"
-            [ngClass]="categoriaFiltroInventario === 'TODAS'
-              ? 'border-[#12243A] bg-[#12243A] text-white shadow-sm'
-              : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'">
-            Todas
+            (click)="seleccionarFiltroSede('TODAS')"
+            class="h-8 cursor-pointer whitespace-nowrap rounded-full border px-3.5 text-xs font-bold transition"
+            [ngClass]="sedeFiltroSeleccionada === 'TODAS' ? 'border-[#F5B81F] bg-[#F5B81F] text-white' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'">
+            Todas las sedes
           </button>
-          <button type="button"
-            (click)="seleccionarCategoria('Abarrotes')"
-            class="h-9 cursor-pointer whitespace-nowrap rounded-full border px-4 text-[13px] font-bold transition-all"
-            [ngClass]="categoriaFiltroInventario === 'Abarrotes'
-              ? 'border-[#12243A] bg-[#12243A] text-white shadow-sm'
-              : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'">
-            Abarrotes
-          </button>
-          <button type="button"
-            (click)="seleccionarCategoria('Lácteos')"
-            class="h-9 cursor-pointer whitespace-nowrap rounded-full border px-4 text-[13px] font-bold transition-all"
-            [ngClass]="categoriaFiltroInventario === 'Lácteos'
-              ? 'border-[#12243A] bg-[#12243A] text-white shadow-sm'
-              : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'">
-            Lácteos
-          </button>
-          <button type="button"
-            (click)="seleccionarCategoria('Cárnicos y Huevos')"
-            class="h-9 cursor-pointer whitespace-nowrap rounded-full border px-4 text-[13px] font-bold transition-all"
-            [ngClass]="categoriaFiltroInventario === 'Cárnicos y Huevos'
-              ? 'border-[#12243A] bg-[#12243A] text-white shadow-sm'
-              : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'">
-            Cárnicos y huevos
-          </button>
-          <button type="button"
-            (click)="seleccionarCategoria('Frutas y Verduras')"
-            class="h-9 cursor-pointer whitespace-nowrap rounded-full border px-4 text-[13px] font-bold transition-all"
-            [ngClass]="categoriaFiltroInventario === 'Frutas y Verduras'
-              ? 'border-[#12243A] bg-[#12243A] text-white shadow-sm'
-              : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'">
-            Frutas y verduras
+          <button *ngFor="let s of sedesAdmin" type="button"
+            (click)="seleccionarFiltroSede(s.nombre)"
+            class="h-8 cursor-pointer whitespace-nowrap rounded-full border px-3.5 text-xs font-bold transition"
+            [ngClass]="sedeFiltroSeleccionada === s.nombre ? 'border-[#F5B81F] bg-[#F5B81F] text-white' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'">
+            {{ s.nombre }}
           </button>
         </div>
-
-        <button type="button"
-          (click)="toggleSoloAlertas()"
-          class="h-9 cursor-pointer whitespace-nowrap rounded-full border px-5 text-[13px] font-bold transition-all"
-          [ngClass]="filtroSoloAlertas
-            ? 'border-rose-600 bg-rose-600 text-white shadow-sm'
-            : 'border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100'">
-          Solo en riesgo
-        </button>
       </div>
 
-      <!-- Tabla de Insumos -->
-      <div class="mt-3 overflow-x-auto rounded-xl border border-slate-200/80">
-        <table class="w-full border-collapse text-left text-[13px]">
+      <div class="overflow-x-auto rounded-xl border border-slate-200/80">
+        <table class="w-full border-collapse text-left text-xs">
           <thead>
-            <tr class="border-b border-slate-200/80 bg-slate-50 text-[12.5px] font-bold text-slate-600">
-              <th class="px-4 py-2.5">Insumo y lote</th>
-              <th class="px-3 py-2.5">Categoría</th>
-              <th class="px-3 py-2.5 text-center">Stock actual</th>
-              <th class="px-3 py-2.5 text-center">Mínimo</th>
-              <th class="px-3 py-2.5">Nivel</th>
+            <tr class="border-b border-slate-200/80 bg-slate-50 text-[11.5px] font-bold text-slate-600">
+              <th class="px-4 py-2.5">Sede educativa</th>
+              <th class="px-3 py-2.5">Jornada y responsable</th>
+              <th class="px-3 py-2.5 text-center">Cumplimiento</th>
+              <th class="px-3 py-2.5 text-center">Raciones servidas</th>
               <th class="px-3 py-2.5 text-center">Estado</th>
-              <th class="px-3 py-2.5">Vencimiento</th>
               <th class="px-4 py-2.5 text-right">Acción</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100">
-            <tr *ngFor="let item of insumosFiltrados" class="transition-colors hover:bg-[#fdf3d7]/30">
-              <td class="px-4 py-2.5">
-                <div class="font-bold text-slate-900">{{ item.nombre }}</div>
-                <div class="text-[12px] text-slate-500">Lote: {{ item.lote }}</div>
+            <tr *ngFor="let s of sedesFiltradas" class="transition-colors hover:bg-[#fdf3d7]/30">
+              <td class="px-4 py-3.5">
+                <div class="text-[13px] font-bold text-slate-900">{{ s.nombre }}</div>
+                <div class="text-[11px] text-slate-500">{{ s.direccion }}</div>
               </td>
-              <td class="px-3 py-2.5">
-                <span class="inline-block whitespace-nowrap rounded-full border border-slate-200 bg-slate-100 px-2.5 py-0.5 text-[11.5px] font-medium text-slate-700">
-                  {{ item.categoria }}
-                </span>
+              <td class="px-3 py-3.5">
+                <span class="font-semibold text-slate-700">{{ s.jornadas }}</span>
+                <div class="text-[11px] text-slate-500">Responsable: {{ s.responsableCocina }}</div>
               </td>
-              <td class="whitespace-nowrap px-3 py-2.5 text-center">
-                <span class="text-[14px] font-extrabold text-slate-900">{{ item.stockActual }}</span>
-                <span class="ml-1 text-[12.5px] text-slate-700">{{ item.unidad }}</span>
-              </td>
-              <td class="whitespace-nowrap px-3 py-2.5 text-center text-slate-600">
-                {{ item.stockMinimo }} {{ item.unidad }}
-              </td>
-              <td class="w-36 px-3 py-2.5">
-                <div class="mb-0.5 text-[11.5px] text-slate-600">{{ (item.stockActual / item.stockMinimo * 100).toFixed(0) }}%</div>
-                <div class="h-2 w-full overflow-hidden rounded-full bg-slate-200">
-                  <div class="h-full rounded-full"
-                    [style.width.%]="calcularPorcentajeStock(item.stockActual, item.stockMinimo)"
-                    [ngClass]="item.estado === 'CRITICO' ? 'bg-rose-500' : (item.estado === 'BAJO' ? 'bg-[#F5B81F]' : 'bg-[#2B5424]')">
+              <td class="px-3 py-3.5">
+                <!-- Anillo de progreso circular -->
+                <div class="relative mx-auto h-[52px] w-[52px] rounded-full"
+                  [style.background]="'conic-gradient(' + (s.porcentajeCumplimiento >= 90 ? '#2B5424' : (s.porcentajeCumplimiento >= 60 ? '#F5B81F' : '#e11d48')) + ' ' + (s.porcentajeCumplimiento > 100 ? 100 : s.porcentajeCumplimiento) + '%, #e2e8f0 0)'">
+                  <div class="absolute inset-[6px] grid place-items-center rounded-full bg-white text-[11px] font-bold text-slate-800">
+                    {{ s.porcentajeCumplimiento }}%
                   </div>
                 </div>
               </td>
-              <td class="px-3 py-2.5 text-center">
-                <span class="inline-block rounded-full border px-3 py-0.5 text-[12px] font-bold"
-                  [ngClass]="item.estado === 'CRITICO'
-                    ? 'border-rose-200 bg-rose-50 text-rose-700'
-                    : (item.estado === 'BAJO'
-                      ? 'border-[#F5B81F]/30 bg-[#fdf3d7] text-[#7a5a0b]'
-                      : 'border-[#2B5424]/30 bg-[#eaf2e8] text-[#2B5424]')">
-                  {{ item.estado === 'CRITICO' ? 'Crítico' : (item.estado === 'BAJO' ? 'Reorden' : 'Óptimo') }}
+              <td class="whitespace-nowrap px-3 py-3.5 text-center">
+                <span class="text-sm font-bold text-slate-900">{{ s.racionesServidas }}</span>
+                <span class="font-semibold text-slate-500"> / {{ s.racionesAsignadas }}</span>
+              </td>
+              <td class="px-3 py-3.5 text-center">
+                <span class="inline-block whitespace-nowrap rounded-full border px-2.5 py-0.5 text-[11px] font-bold"
+                  [ngClass]="s.estadoComedor === 'OPERATIVO' ? 'border-[#2B5424]/30 bg-[#eaf2e8] text-[#2B5424]' : 'border-[#F5B81F]/30 bg-[#fdf3d7] text-[#8A4B08]'">
+                  {{ s.estadoComedor === 'OPERATIVO' ? 'Comedor activo' : 'En servicio' }}
                 </span>
               </td>
-              <td class="whitespace-nowrap px-3 py-2.5 text-[12.5px] font-semibold"
-                [ngClass]="item.diasVencimientoProximo <= 7 ? 'text-rose-600' : (item.diasVencimientoProximo <= 15 ? 'text-orange-600' : 'text-slate-800')">
-                En {{ item.diasVencimientoProximo }} días
-              </td>
-              <td class="px-4 py-2.5 text-right">
+              <td class="px-4 py-3.5 text-right">
                 <button type="button"
-                  (click)="abrirModalAjuste(item)"
-                  class="cursor-pointer inline-flex h-8 items-center justify-center rounded-full border border-[#F0CF72] bg-[#FFF4D6] px-4 text-[12.5px] font-bold text-[#7A4A06] transition-colors hover:bg-[#F5B81F] hover:text-slate-900">
-                  Ajustar
+                  (click)="abrirModalRacionesSede(s)"
+                  class="cursor-pointer whitespace-nowrap rounded-lg border border-[#F0CF72] bg-[#FFF4D6] px-3 py-1.5 text-xs font-bold text-[#8A4B08] transition hover:bg-[#F5B81F] hover:text-white">
+                  Actualizar raciones
                 </button>
               </td>
             </tr>
-            <tr *ngIf="insumosFiltrados.length === 0">
-              <td colspan="8" class="py-8 text-center text-slate-400">
-                No se encontraron alimentos que coincidan con el filtro seleccionado.
-              </td>
+            <tr *ngIf="sedesFiltradas.length === 0">
+              <td colspan="6" class="py-8 text-center text-slate-400">No hay sedes para el filtro seleccionado.</td>
             </tr>
           </tbody>
         </table>
@@ -664,105 +610,105 @@
     </section>
 
     <!-- =========================================================================
-         MODAL 1: AJUSTE RÁPIDO DE STOCK (TOTALMENTE FUNCIONAL)
+         MODAL 1: AJUSTE RÁPIDO DE STOCK
          ========================================================================= -->
     <div *ngIf="modalAjusteAbierto && itemAjuste"
-      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
-      <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-slate-200 animate-fadeIn">
-        <div class="flex items-start justify-between border-b border-slate-100 pb-3">
+      class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs">
+      <div class="animate-fadeIn w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
+        <div class="flex items-start justify-between border-b border-slate-200 pb-3">
           <div>
-            <h3 class="m-0 text-base font-bold text-slate-900">Ajustar Stock de Insumo</h3>
+            <h3 class="m-0 text-base font-bold text-slate-900">Ajustar stock de insumo</h3>
             <p class="m-0 mt-0.5 text-xs text-slate-500">{{ itemAjuste.nombre }} (Lote: {{ itemAjuste.lote }})</p>
           </div>
           <button type="button" (click)="cerrarModalAjuste()"
-            class="text-slate-400 hover:text-slate-600 border-none bg-transparent cursor-pointer text-xl font-bold">
+            class="cursor-pointer border-none bg-transparent text-xl font-bold text-slate-500 hover:text-slate-700">
             &times;
           </button>
         </div>
 
         <div class="mt-4 flex flex-col gap-3.5">
-          <div class="rounded-xl bg-[#fdf3d7] border border-[#F5B81F]/30/80 p-3 flex items-center justify-between text-xs">
-            <span class="text-slate-600 font-medium">Stock actual en bodega:</span>
+          <div class="flex items-center justify-between rounded-xl border border-[#F5B81F]/30 bg-[#fdf3d7] p-3 text-xs">
+            <span class="font-medium text-slate-600">Stock actual en bodega:</span>
             <span class="text-sm font-extrabold text-slate-900">{{ itemAjuste.stockActual }} {{ itemAjuste.unidad }}</span>
           </div>
 
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1.5">Tipo de Movimiento</label>
+            <label class="mb-1.5 block text-xs font-bold text-slate-600">Tipo de movimiento</label>
             <div class="grid grid-cols-3 gap-2">
               <button type="button" (click)="tipoAjuste = 'ENTRADA'"
-                class="h-9 rounded-lg border text-xs font-bold cursor-pointer transition-all"
-                [ngClass]="tipoAjuste === 'ENTRADA' ? 'bg-[#2B5424] text-white border-[#2B5424]' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'">
+                class="h-9 cursor-pointer rounded-lg border text-xs font-bold transition-all"
+                [ngClass]="tipoAjuste === 'ENTRADA' ? 'border-[#2B5424] bg-[#2B5424] text-white' : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'">
                 + Entrada
               </button>
               <button type="button" (click)="tipoAjuste = 'SALIDA'"
-                class="h-9 rounded-lg border text-xs font-bold cursor-pointer transition-all"
-                [ngClass]="tipoAjuste === 'SALIDA' ? 'bg-[#F5B81F] text-white border-[#F5B81F]' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'">
+                class="h-9 cursor-pointer rounded-lg border text-xs font-bold transition-all"
+                [ngClass]="tipoAjuste === 'SALIDA' ? 'border-[#dc2626] bg-[#dc2626] text-white' : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'">
                 − Salida
               </button>
               <button type="button" (click)="tipoAjuste = 'DIRECTO'"
-                class="h-9 rounded-lg border text-xs font-bold cursor-pointer transition-all"
-                [ngClass]="tipoAjuste === 'DIRECTO' ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'">
-                = Fijar Total
+                class="h-9 cursor-pointer rounded-lg border text-xs font-bold transition-all"
+                [ngClass]="tipoAjuste === 'DIRECTO' ? 'border-[#F5B81F] bg-[#F5B81F] text-white' : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'">
+                = Fijar total
               </button>
             </div>
           </div>
 
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">
-              {{ tipoAjuste === 'DIRECTO' ? 'Nueva Cantidad Física (' + itemAjuste.unidad + ')' : 'Cantidad a ' + (tipoAjuste === 'ENTRADA' ? 'Ingresar' : 'Retirar') + ' (' + itemAjuste.unidad + ')' }}
+            <label class="mb-1 block text-xs font-bold text-slate-600">
+              {{ tipoAjuste === 'DIRECTO' ? 'Nueva cantidad física (' + itemAjuste.unidad + ')' : 'Cantidad a ' + (tipoAjuste === 'ENTRADA' ? 'ingresar' : 'retirar') + ' (' + itemAjuste.unidad + ')' }}
             </label>
             <input type="number" [(ngModel)]="cantidadAjuste" min="0" placeholder="Ej. 25"
-              class="w-full h-10 px-3.5 rounded-lg border border-slate-300 text-sm focus:border-[#F5B81F] focus:outline-none" />
+              class="h-10 w-full rounded-lg border border-slate-200 bg-slate-50 px-3.5 text-sm text-slate-900 placeholder:text-slate-500 focus:border-[#F5B81F] focus:outline-none" />
           </div>
 
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Motivo / Destino (Opcional)</label>
-            <input type="text" [(ngModel)]="motivoAjuste" placeholder="Ej. Despacho a Sede Principal, Remesa recibida..."
-              class="w-full h-10 px-3.5 rounded-lg border border-slate-300 text-xs focus:border-[#F5B81F] focus:outline-none" />
+            <label class="mb-1 block text-xs font-bold text-slate-600">Motivo / destino (opcional)</label>
+            <input type="text" [(ngModel)]="motivoAjuste" placeholder="Ej. Despacho a Sede Principal, remesa recibida..."
+              class="h-10 w-full rounded-lg border border-slate-200 bg-slate-50 px-3.5 text-xs text-slate-900 placeholder:text-slate-500 focus:border-[#F5B81F] focus:outline-none" />
           </div>
         </div>
 
-        <div class="mt-6 flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+        <div class="mt-6 flex items-center justify-end gap-2.5 border-t border-slate-200 pt-3">
           <button type="button" (click)="cerrarModalAjuste()"
-            class="h-9 px-4 rounded-full border border-slate-300 bg-white text-xs font-bold text-slate-700 cursor-pointer hover:bg-slate-50">
+            class="h-9 cursor-pointer rounded-full border border-slate-200 bg-slate-50 px-4 text-xs font-bold text-slate-700 hover:bg-slate-100">
             Cancelar
           </button>
           <button type="button" (click)="guardarAjuste()"
-            class="h-9 px-5 rounded-full border-none bg-[#F5B81F] text-xs font-bold text-slate-900 cursor-pointer hover:bg-[#F5B81F] shadow-xs">
-            Guardar Ajuste
+            class="h-9 cursor-pointer rounded-full border-none bg-[#F5B81F] px-5 text-xs font-bold text-white hover:brightness-95">
+            Guardar ajuste
           </button>
         </div>
       </div>
     </div>
 
     <!-- =========================================================================
-         MODAL 2: REGISTRAR NUEVO INSUMO (TOTALMENTE FUNCIONAL)
+         MODAL 2: REGISTRAR NUEVO INSUMO
          ========================================================================= -->
     <div *ngIf="modalNuevoInsumoAbierto"
-      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
-      <div class="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl border border-slate-200 animate-fadeIn">
-        <div class="flex items-start justify-between border-b border-slate-100 pb-3">
+      class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs">
+      <div class="animate-fadeIn w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
+        <div class="flex items-start justify-between border-b border-slate-200 pb-3">
           <div>
-            <h3 class="m-0 text-base font-bold text-slate-900">Registrar Nuevo Insumo en Bodega</h3>
+            <h3 class="m-0 text-base font-bold text-slate-900">Registrar nuevo insumo en bodega</h3>
             <p class="m-0 mt-0.5 text-xs text-slate-500">Agrega un nuevo alimento al inventario y al kardex institucional</p>
           </div>
           <button type="button" (click)="cerrarModalNuevoInsumo()"
-            class="text-slate-400 hover:text-slate-600 border-none bg-transparent cursor-pointer text-xl font-bold">
+            class="cursor-pointer border-none bg-transparent text-xl font-bold text-slate-500 hover:text-slate-700">
             &times;
           </button>
         </div>
 
-        <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+        <div class="mt-4 grid grid-cols-1 gap-3.5 sm:grid-cols-2">
           <div class="sm:col-span-2">
-            <label class="block text-xs font-bold text-slate-700 mb-1">Nombre del Alimento *</label>
-            <input type="text" [(ngModel)]="nuevoInsumoForm.nombre" placeholder="Ej. Frijol Rojo Calima, Atún en Agua..."
-              class="w-full h-10 px-3.5 rounded-lg border border-slate-300 text-sm focus:border-[#F5B81F] focus:outline-none" />
+            <label class="mb-1 block text-xs font-bold text-slate-600">Nombre del alimento *</label>
+            <input type="text" [(ngModel)]="nuevoInsumoForm.nombre" placeholder="Ej. Frijol rojo Calima, atún en agua..."
+              class="h-10 w-full rounded-lg border border-slate-200 bg-slate-50 px-3.5 text-sm text-slate-900 placeholder:text-slate-500 focus:border-[#F5B81F] focus:outline-none" />
           </div>
 
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Categoría</label>
+            <label class="mb-1 block text-xs font-bold text-slate-600">Categoría</label>
             <select [(ngModel)]="nuevoInsumoForm.categoria"
-              class="w-full h-10 px-3 rounded-lg border border-slate-300 text-xs focus:border-[#F5B81F] focus:outline-none bg-white">
+              class="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-900 focus:border-[#F5B81F] focus:outline-none">
               <option value="Abarrotes">Abarrotes</option>
               <option value="Lácteos">Lácteos</option>
               <option value="Cárnicos y Huevos">Cárnicos y Huevos</option>
@@ -771,9 +717,9 @@
           </div>
 
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Unidad de Medida</label>
+            <label class="mb-1 block text-xs font-bold text-slate-600">Unidad de medida</label>
             <select [(ngModel)]="nuevoInsumoForm.unidad"
-              class="w-full h-10 px-3 rounded-lg border border-slate-300 text-xs focus:border-[#F5B81F] focus:outline-none bg-white">
+              class="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-900 focus:border-[#F5B81F] focus:outline-none">
               <option value="Kg">Kilogramos (Kg)</option>
               <option value="Litros">Litros</option>
               <option value="Unds">Unidades (Unds)</option>
@@ -782,91 +728,91 @@
           </div>
 
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Stock Inicial *</label>
+            <label class="mb-1 block text-xs font-bold text-slate-600">Stock inicial *</label>
             <input type="number" [(ngModel)]="nuevoInsumoForm.stockActual" min="0" placeholder="Ej. 60"
-              class="w-full h-10 px-3.5 rounded-lg border border-slate-300 text-sm focus:border-[#F5B81F] focus:outline-none" />
+              class="h-10 w-full rounded-lg border border-slate-200 bg-slate-50 px-3.5 text-sm text-slate-900 placeholder:text-slate-500 focus:border-[#F5B81F] focus:outline-none" />
           </div>
 
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Stock Mínimo Seguridad *</label>
+            <label class="mb-1 block text-xs font-bold text-slate-600">Stock mínimo de seguridad *</label>
             <input type="number" [(ngModel)]="nuevoInsumoForm.stockMinimo" min="1" placeholder="Ej. 20"
-              class="w-full h-10 px-3.5 rounded-lg border border-slate-300 text-sm focus:border-[#F5B81F] focus:outline-none" />
+              class="h-10 w-full rounded-lg border border-slate-200 bg-slate-50 px-3.5 text-sm text-slate-900 placeholder:text-slate-500 focus:border-[#F5B81F] focus:outline-none" />
           </div>
 
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Código de Lote</label>
+            <label class="mb-1 block text-xs font-bold text-slate-600">Código de lote</label>
             <input type="text" [(ngModel)]="nuevoInsumoForm.lote" placeholder="Ej. LOT-2026-001"
-              class="w-full h-10 px-3.5 rounded-lg border border-slate-300 text-xs focus:border-[#F5B81F] focus:outline-none" />
+              class="h-10 w-full rounded-lg border border-slate-200 bg-slate-50 px-3.5 text-xs text-slate-900 placeholder:text-slate-500 focus:border-[#F5B81F] focus:outline-none" />
           </div>
 
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Días para Vencimiento</label>
+            <label class="mb-1 block text-xs font-bold text-slate-600">Días para vencimiento</label>
             <input type="number" [(ngModel)]="nuevoInsumoForm.diasVencimiento" min="1" placeholder="Ej. 45"
-              class="w-full h-10 px-3.5 rounded-lg border border-slate-300 text-xs focus:border-[#F5B81F] focus:outline-none" />
+              class="h-10 w-full rounded-lg border border-slate-200 bg-slate-50 px-3.5 text-xs text-slate-900 placeholder:text-slate-500 focus:border-[#F5B81F] focus:outline-none" />
           </div>
         </div>
 
-        <div class="mt-6 flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+        <div class="mt-6 flex items-center justify-end gap-2.5 border-t border-slate-200 pt-3">
           <button type="button" (click)="cerrarModalNuevoInsumo()"
-            class="h-9 px-4 rounded-full border border-slate-300 bg-white text-xs font-bold text-slate-700 cursor-pointer hover:bg-slate-50">
+            class="h-9 cursor-pointer rounded-full border border-slate-200 bg-slate-50 px-4 text-xs font-bold text-slate-700 hover:bg-slate-100">
             Cancelar
           </button>
           <button type="button" (click)="guardarNuevoInsumo()"
-            class="h-9 px-5 rounded-full border-none bg-[#F5B81F] text-xs font-bold text-slate-900 cursor-pointer hover:bg-[#F5B81F] shadow-xs">
-            Guardar Insumo
+            class="h-9 cursor-pointer rounded-full border-none bg-[#F5B81F] px-5 text-xs font-bold text-white hover:brightness-95">
+            Guardar insumo
           </button>
         </div>
       </div>
     </div>
 
     <!-- =========================================================================
-         MODAL 3: REGISTRO DE RACIONES POR SEDE (TOTALMENTE FUNCIONAL)
+         MODAL 3: REGISTRO DE RACIONES POR SEDE
          ========================================================================= -->
     <div *ngIf="modalRacionesSedeAbierto && sedeRacionesSeleccionada"
-      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
-      <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-slate-200 animate-fadeIn">
-        <div class="flex items-start justify-between border-b border-slate-100 pb-3">
+      class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs">
+      <div class="animate-fadeIn w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
+        <div class="flex items-start justify-between border-b border-slate-200 pb-3">
           <div>
-            <h3 class="m-0 text-base font-bold text-slate-900">Actualizar Raciones del Día</h3>
+            <h3 class="m-0 text-base font-bold text-slate-900">Actualizar raciones del día</h3>
             <p class="m-0 mt-0.5 text-xs text-slate-500">{{ sedeRacionesSeleccionada.nombre }}</p>
           </div>
           <button type="button" (click)="cerrarModalRacionesSede()"
-            class="text-slate-400 hover:text-slate-600 border-none bg-transparent cursor-pointer text-xl font-bold">
+            class="cursor-pointer border-none bg-transparent text-xl font-bold text-slate-500 hover:text-slate-700">
             &times;
           </button>
         </div>
 
         <div class="mt-4 flex flex-col gap-3.5">
-          <div class="rounded-xl bg-slate-50 border border-slate-200 p-3 flex items-center justify-between text-xs">
-            <span class="text-slate-600 font-medium">Meta programada de raciones:</span>
+          <div class="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs">
+            <span class="font-medium text-slate-600">Meta programada de raciones:</span>
             <span class="text-sm font-extrabold text-slate-900">{{ sedeRacionesSeleccionada.racionesAsignadas }} raciones</span>
           </div>
 
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Raciones Servidas Hoy *</label>
+            <label class="mb-1 block text-xs font-bold text-slate-600">Raciones servidas hoy *</label>
             <input type="number" [(ngModel)]="racionesServidasInput" min="0" [max]="sedeRacionesSeleccionada.racionesAsignadas * 1.5"
-              class="w-full h-10 px-3.5 rounded-lg border border-slate-300 text-sm focus:border-[#F5B81F] focus:outline-none" />
+              class="h-10 w-full rounded-lg border border-slate-200 bg-slate-50 px-3.5 text-sm text-slate-900 focus:border-[#F5B81F] focus:outline-none" />
           </div>
 
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Estado Operativo del Comedor</label>
+            <label class="mb-1 block text-xs font-bold text-slate-600">Estado operativo del comedor</label>
             <select [(ngModel)]="estadoComedorInput"
-              class="w-full h-10 px-3 rounded-lg border border-slate-300 text-xs focus:border-[#F5B81F] focus:outline-none bg-white">
-              <option value="OPERATIVO">Comedor Activo / Abastecido</option>
-              <option value="EN_SERVICIO">En Servicio / Preparación</option>
-              <option value="ABASTECIDO">Servicio Concluido</option>
+              class="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-900 focus:border-[#F5B81F] focus:outline-none">
+              <option value="OPERATIVO">Comedor activo / abastecido</option>
+              <option value="EN_SERVICIO">En servicio / preparación</option>
+              <option value="ABASTECIDO">Servicio concluido</option>
             </select>
           </div>
         </div>
 
-        <div class="mt-6 flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+        <div class="mt-6 flex items-center justify-end gap-2.5 border-t border-slate-200 pt-3">
           <button type="button" (click)="cerrarModalRacionesSede()"
-            class="h-9 px-4 rounded-full border border-slate-300 bg-white text-xs font-bold text-slate-700 cursor-pointer hover:bg-slate-50">
+            class="h-9 cursor-pointer rounded-full border border-slate-200 bg-slate-50 px-4 text-xs font-bold text-slate-700 hover:bg-slate-100">
             Cancelar
           </button>
           <button type="button" (click)="guardarRacionesSede()"
-            class="h-9 px-5 rounded-full border-none bg-[#F5B81F] text-xs font-bold text-slate-900 cursor-pointer hover:bg-[#F5B81F] shadow-xs">
-            Guardar Raciones
+            class="h-9 cursor-pointer rounded-full border-none bg-[#F5B81F] px-5 text-xs font-bold text-white hover:brightness-95">
+            Guardar raciones
           </button>
         </div>
       </div>

@@ -569,7 +569,7 @@
             <h4>MINUTA PATRÓN Y CLASIFICACIÓN NUTRICIONAL POR NIVELES</h4>
             <div class="membrete-meta">
               <span><strong>INSTITUCIÓN:</strong> {{ institucionActiva.nombre_institucion }}</span>
-              <span><strong>SEDE:</strong> {{ sedeActiva?.nombre_sede || 'General' }}</span>
+              <span><strong>SEDE:</strong> {{ planillaRemision?.sede || sedeActiva?.nombre_sede || 'Todas las sedes' }}</span>
               <span><strong>CUPOS TOTALES:</strong> {{ planillaRemision?.cupos?.totalCupos ?? 0 }}</span>
               <span><strong>RACIONES PERIODO:</strong> {{ planillaRemision?.cupos?.racionesTotales ?? 0 }}</span>
             </div>

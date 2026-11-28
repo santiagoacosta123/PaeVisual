@@ -416,7 +416,9 @@ describe('Módulo de Conservación Segura de Sesión (Persistencia de Sesión)',
     const req = httpMock.expectOne(`${environment.apiUrl}/auth/verify/`);
     req.flush({ detail: 'Token inválido o sesión revocada.' }, { status: 401, statusText: 'Unauthorized' });
 
-    expect(resultadoValidacion).toBe(false);
+    // verificarSesionInicial no bloquea el arranque (retorna true), pero en segundo plano
+    // limpia la sesión y redirige a /login ante un 401 del servidor.
+    expect(resultadoValidacion).toBe(true);
     expect(localStorage.getItem('access_token')).toBeNull();
     expect(localStorage.getItem('usuario')).toBeNull();
     expect(service.estaAutenticado()).toBe(false);

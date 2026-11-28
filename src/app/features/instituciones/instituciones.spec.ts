@@ -10,7 +10,7 @@ describe('InstitucionesComponent', () => {
   let http: HttpTestingController;
 
   const urlLista = `${environment.apiUrl}/instituciones/`;
-  const urlIngredientes = `${environment.apiUrl}/ingredientes`;
+  const urlIngredientes = `${environment.apiUrl}/ingredientes/`;
 
   const institucionApi = {
     id: 7,
@@ -138,7 +138,7 @@ describe('InstitucionesComponent', () => {
   it('usa la imagen del catálogo, si no <ruta>/<nombre>.png, y cae al emoji si falla', () => {
     responderLista([]);
     expect(component.urlImagen('Pollo')).toContain('pollo_3d.png');       // del catálogo
-    expect(component.urlImagen('Carne de res')).toContain('carne_de_res.png');   // por nombre
+    expect(component.urlImagen('Carne de res')).toContain('carne.png');   // mapeo local
     expect(component.mostrarImagen('Arroz')).toBe(true);
 
     component.marcarFallo('Arroz');

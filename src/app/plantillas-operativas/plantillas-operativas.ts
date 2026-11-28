@@ -232,16 +232,24 @@ export class PlanillasOperativasComponent implements OnInit, OnDestroy {
   // =====================================================
 
   cargarPlanillas(mostrarCargando = true): void {
+    const idInstitucion = this.institucionActiva?.id_institucion;
+    if (!idInstitucion) {
+      this.cargandoPlanillas = false;
+      this.cdr.markForCheck();
+      return;
+    }
+
     if (mostrarCargando) {
       this.cargandoPlanillas = true;
       this.cdr.detectChanges();
     }
 
-    const idInstitucion = this.institucionActiva?.id_institucion || 1;
     const nombreInstitucion = this.institucionActiva?.nombre_institucion || 'Institución Educativa';
-    const idSede = this.sedeActiva?.id_sede ?? (typeof this.sedeFiltro === 'number' ? this.sedeFiltro : 1);
-    const sedeObj = this.sedesBase.find(s => s.id === idSede);
-    const nombreSede = this.sedeActiva?.nombre_sede ?? (sedeObj?.nombre || 'Sede Principal');
+    const idSede = typeof this.sedeFiltro === 'number'
+      ? this.sedeFiltro
+      : (this.sedeActiva?.id_sede ?? undefined);
+    const sedeObj = idSede ? this.sedesBase.find(s => s.id === idSede) : undefined;
+    const nombreSede = sedeObj?.nombre || (idSede && this.sedeActiva?.id_sede === idSede ? this.sedeActiva.nombre_sede : 'Todas las sedes');
     const codigoDaneSede = sedeObj?.codigoDane || (this.institucionActiva as any)?.codigo_dane || (this.institucionActiva as any)?.dane || '';
     const cuposSede = sedeObj?.cupos || 0;
     const usuarioActual = this.auth.obtenerUsuario();
@@ -249,75 +257,28 @@ export class PlanillasOperativasComponent implements OnInit, OnDestroy {
       ? `${usuarioActual.nombre} ${usuarioActual.apellido || ''}`.trim()
       : '';
 
-    forkJoin({
-      remision: this.planillasPaeService.obtenerPlanillaRemision({
-        institucionId: idInstitucion,
-        institucionNombre: nombreInstitucion,
-        institucionRector: this.institucionActiva?.representante_legal || '',
-        institucionTelefono: this.institucionActiva?.telefono || '',
-        sedeId: idSede,
-        sedeNombre: nombreSede,
-        sedeCodigoDane: codigoDaneSede,
-        periodo: this.periodoSeleccionado,
-        fechaInicio: this.fechaInicioPlanilla,
-        fechaFin: this.fechaFinPlanilla,
-        cuposBase: cuposSede,
-        forzarRecarga: !mostrarCargando,
-        nombreUsuario,
-        usuarioActual: usuarioActual ? {
-          nombre: nombreUsuario,
-          cedula: usuarioActual.numero_documento || '',
-          rol: usuarioActual.rol || ''
-        } : undefined
-      }),
-      kardex: this.planillasPaeService.obtenerPlanillaKardex({
-        institucionId: idInstitucion,
-        institucionNombre: nombreInstitucion,
-        institucionRector: this.institucionActiva?.representante_legal || '',
-        institucionTelefono: this.institucionActiva?.telefono || '',
-        sedeId: idSede,
-        sedeNombre: nombreSede,
-        periodo: this.periodoSeleccionado,
-        fechaInicio: this.fechaInicioPlanilla,
-        fechaFin: this.fechaFinPlanilla,
-        cuposBase: cuposSede,
-        forzarRecarga: !mostrarCargando,
-        nombreUsuario,
-        usuarioActual: usuarioActual ? {
-          nombre: nombreUsuario,
-          cedula: usuarioActual.numero_documento || '',
-          rol: usuarioActual.rol || ''
-        } : undefined
-      })
+    this.planillasPaeService.obtenerPlanillasDesdeBackend({
+      institucionId: idInstitucion,
+      institucionNombre: nombreInstitucion,
+      institucionRector: this.institucionActiva?.representante_legal || '',
+      institucionTelefono: this.institucionActiva?.telefono || '',
+      sedeId: idSede,
+      sedeNombre: nombreSede,
+      sedeCodigoDane: codigoDaneSede,
+      periodo: this.periodoSeleccionado,
+      fechaInicio: this.fechaInicioPlanilla,
+      fechaFin: this.fechaFinPlanilla,
+      forzarRecarga: !mostrarCargando,
     }).subscribe({
-      next: ({ remision, kardex }) => {
-        // Garantizar que la remisión tenga los cupos de la sede/contrato si vienen vacíos
-        if (!remision.cupos || !remision.cupos.totalCupos || remision.cupos.totalCupos === 0) {
-          const cupoFallback = cuposSede;
-          const pre = Math.round(cupoFallback * 0.11);
-          const p13 = Math.round(cupoFallback * 0.22);
-          const p45 = Math.round(cupoFallback * 0.22);
-          const sec = Math.round(cupoFallback * 0.30);
-          const med = Math.max(0, cupoFallback - (pre + p13 + p45 + sec));
-          remision.cupos = {
-            preescolar: pre,
-            primaria13: p13,
-            primaria45: p45,
-            secundaria: sec,
-            media: med,
-            totalCupos: cupoFallback,
-            racionesTotales: cupoFallback * 20
-          };
-        }
+      next: ({ remision, kardex, minutaPatron }) => {
         this.planillaRemision = remision;
         this.planillaKardex = kardex;
-        this.minutaPatron = this.planillasPaeService.obtenerMinutaPatron(remision.cupos, remision.diasAtender);
+        this.minutaPatron = minutaPatron;
         this.cargandoPlanillas = false;
         this.cdr.detectChanges();
       },
       error: (err) => {
-        console.error('Error al cargar planillas PAE:', err);
-        // Fallback seguro para que la interfaz nunca quede en blanco
+        console.error('Error al cargar planillas PAE desde backend:', err);
         if (!this.planillaRemision) {
           this.planillaRemision = this.planillasPaeService.crearPlanillaRemisionVacia({
             institucionNombre: nombreInstitucion,
@@ -349,25 +310,31 @@ export class PlanillasOperativasComponent implements OnInit, OnDestroy {
     this.cargarPlanillas(true);
   }
 
+  private obtenerSedeKeyActual(): number {
+    return typeof this.sedeFiltro === 'number'
+      ? this.sedeFiltro
+      : (this.sedeActiva?.id_sede ?? 0);
+  }
+
   sincronizarConManipuladoras(): void {
     // Limpiar claves temporales para regenerar con los datos más recientes del backend
     if (!this.institucionActiva) return;
     const idInst = this.institucionActiva.id_institucion;
-    const idSede = this.sedeActiva?.id_sede ?? 0;
+    const idSede = this.obtenerSedeKeyActual();
     localStorage.removeItem(`pae_remision_${idInst}_${idSede}_${this.periodoSeleccionado}_${this.fechaInicioPlanilla}`);
     localStorage.removeItem(`pae_kardex_${idInst}_${idSede}_${this.periodoSeleccionado}_${this.fechaInicioPlanilla}`);
 
     this.cargarPlanillas(true);
     void this.alertas.success(
       'Datos Sincronizados',
-      'Las planillas se han autocompletado con las entregas y las asistencias registradas por las jefas de manipuladoras.'
+      'Las planillas se han actualizado con los datos reales de la sede en SIRAE.'
     );
   }
 
   guardarPlanillas(): void {
     if (!this.institucionActiva || !this.planillaRemision || !this.planillaKardex) return;
     const idInst = this.institucionActiva.id_institucion;
-    const idSede = this.sedeActiva?.id_sede ?? 0;
+    const idSede = this.obtenerSedeKeyActual();
     const claveRemision = `pae_remision_${idInst}_${idSede}_${this.periodoSeleccionado}_${this.fechaInicioPlanilla}`;
     const claveKardex = `pae_kardex_${idInst}_${idSede}_${this.periodoSeleccionado}_${this.fechaInicioPlanilla}`;
 

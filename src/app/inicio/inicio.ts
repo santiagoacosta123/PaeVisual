@@ -18,7 +18,7 @@ import { environment } from '../../environments/environment';
 Chart.defaults.font.family = "'Roboto', system-ui, -apple-system, sans-serif";
 Chart.defaults.color = '#64748b';
 
-// Paleta institucional tipo semáforo
+// Paleta institucional tipo semáforo (Super Administrador)
 const VERDE = '#2B5424';
 const VERDE_BORDE = '#1d3f1b';
 const AMARILLO = '#F5B81F';
@@ -27,6 +27,11 @@ const ROJO = '#dc2626';
 const ROJO_BORDE = '#b91c1c';
 const LIMA = '#84cc16';
 const LIMA_BORDE = '#65a30d';
+
+// Colores de las gráficas del Administrador Institucional
+const VERDE_VIVO = '#16a34a';
+const AMARILLO_VIVO = '#F5B81F';
+const TRACK_GAUGE = '#e2e8f0';
 
 const TOOLTIP_BLANCO = {
   backgroundColor: '#ffffff',
@@ -123,20 +128,6 @@ export interface MetricasAdminInstitucional {
   entregasRecibidasMes: number;
 }
 
-export interface MenuDelDiaAdmin {
-  ciclo: string;
-  diaSemana: string;
-  tipoRacion: string;
-  platoPrincipal: string;
-  guarnicion: string;
-  verduraEnsalada: string;
-  fruta: string;
-  bebida: string;
-  caloriasAprox: number;
-  horaServicio: string;
-  estadoAprobacion: string;
-}
-
 @Component({
   selector: 'app-inicio',
   standalone: true,
@@ -201,6 +192,8 @@ export class InicioComponent implements OnInit, AfterViewInit, OnDestroy {
   entregasBase: Entrega[] = [];
   institucionesBase: any[] = [];
   sedesBase: any[] = [];
+  facturasBase: any[] = [];
+  datosRealesSuperAdmin = false;
 
   // =========================================================================
   //  ESTADO DEL DASHBOARD DEL ADMINISTRADOR INSTITUCIONAL
@@ -499,20 +492,6 @@ export class InicioComponent implements OnInit, AfterViewInit, OnDestroy {
       responsable: 'Alba Nelly Gómez'
     }
   ];
-
-  menuDelDia: MenuDelDiaAdmin = {
-    ciclo: 'Ciclo Regular 2026 · Minuta Patrón Aprobada',
-    diaSemana: 'Miércoles',
-    tipoRacion: 'Almuerzo Ración Caliente Preparada en Sitio',
-    platoPrincipal: 'Pechuga de Pollo en Salsa Criolla Campesina',
-    guarnicion: 'Arroz Blanco Fortificado y Lentejas Guisadas',
-    verduraEnsalada: 'Ensalada Fresca de Zanahoria, Maíz Dulce y Cilantro',
-    fruta: 'Mandarina Dulce de Temporada',
-    bebida: 'Jugo de Fruta Natural en Agua Hervida',
-    caloriasAprox: 685,
-    horaServicio: '11:45 AM - 01:30 PM',
-    estadoAprobacion: 'Verificado por Nutrición y Calidad PAE'
-  };
 
   // Nombres de meses en español
   mesesNombres = [
@@ -1005,6 +984,7 @@ export class InicioComponent implements OnInit, AfterViewInit, OnDestroy {
     this.categoriaFiltroInventario = 'TODAS';
     this.filtroSoloAlertas = false;
     this.busquedaInsumo = '';
+    this.actualizarGraficosAdmin();
     this.cdRef.markForCheck();
   }
 
@@ -1016,7 +996,8 @@ export class InicioComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private inicializarGraficosAdmin(intentos = 0): void {
-    if (!this.chartAdminSedesCanvas?.nativeElement || !this.chartAdminStockCanvas?.nativeElement) {
+    if (!this.chartAdminSedesCanvas?.nativeElement ||
+        !this.chartAdminStockCanvas?.nativeElement) {
       if (intentos < 12) {
         if (this.timerRenderAdmin) clearTimeout(this.timerRenderAdmin);
         this.timerRenderAdmin = setTimeout(() => this.inicializarGraficosAdmin(intentos + 1), 60);
@@ -1028,6 +1009,7 @@ export class InicioComponent implements OnInit, AfterViewInit, OnDestroy {
     this.crearGraficoAdminStock();
   }
 
+  // Dona 1: raciones servidas vs. pendientes del día (respeta el filtro de sede)
   private crearGraficoAdminSedes(): void {
     if (!this.chartAdminSedesCanvas?.nativeElement) return;
     const ctx = this.chartAdminSedesCanvas.nativeElement.getContext('2d');
@@ -1037,78 +1019,42 @@ export class InicioComponent implements OnInit, AfterViewInit, OnDestroy {
       this.chartAdminSedes.destroy();
     }
 
-    const labels = this.sedesAdmin.map(s => s.nombre);
-    const racionesServidas = this.sedesAdmin.map(s => s.racionesServidas);
-    const racionesAsignadas = this.sedesAdmin.map(s => s.racionesAsignadas);
+    const servidas = this.totalRacionesServidas;
+    const pendientes = this.racionesPendientes;
+    const sinDatos = servidas + pendientes === 0;
 
     this.chartAdminSedes = new Chart(ctx, {
-      type: 'bar',
+      type: 'doughnut',
       data: {
-        labels: labels,
-        datasets: [
-          {
-            label: 'Raciones Servidas Hoy',
-            data: racionesServidas,
-            backgroundColor: VERDE,
-            borderColor: VERDE_BORDE,
-            borderWidth: 1.5,
-            borderRadius: 6,
-            barPercentage: 0.5,
-            categoryPercentage: 0.7
-          },
-          {
-            label: 'Meta Programada',
-            data: racionesAsignadas,
-            backgroundColor: AMARILLO,
-            borderColor: AMARILLO_BORDE,
-            borderWidth: 1.5,
-            borderRadius: 6,
-            barPercentage: 0.5,
-            categoryPercentage: 0.7
-          }
-        ]
+        labels: sinDatos ? ['Sin datos'] : ['Servidas', 'Pendientes'],
+        datasets: [{
+          data: sinDatos ? [1] : [servidas, pendientes],
+          backgroundColor: sinDatos ? [TRACK_GAUGE] : [VERDE_VIVO, AMARILLO_VIVO],
+          borderWidth: 0,
+          borderRadius: 6,
+          spacing: sinDatos ? 0 : 3
+        }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        animation: { duration: 300 },
+        cutout: '74%',
+        animation: { duration: 400 },
         plugins: {
-          legend: {
-            display: true,
-            position: 'top',
-            labels: {
-              boxWidth: 12,
-              font: { family: 'Roboto', size: 11, weight: 'bold' }
-            }
-          },
+          legend: { display: false },
           tooltip: {
             ...TOOLTIP_BLANCO,
+            enabled: !sinDatos,
             callbacks: {
-              label: (c) => ` ${c.dataset.label}: ${c.parsed.y} raciones`
+              label: (c) => ` ${c.label}: ${c.parsed} raciones`
             }
-          }
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            ticks: { precision: 0, font: { family: 'Roboto', size: 11 } },
-            grid: { color: '#f1f5f9' }
-          },
-          x: {
-            ticks: {
-              font: { family: 'Roboto', weight: 'bold', size: 10 },
-              callback: function(val: any) {
-                const label = this.getLabelForValue(val) as string;
-                return label.length > 16 ? label.slice(0, 16) + '…' : label;
-              }
-            },
-            grid: { display: false }
           }
         }
       }
     });
   }
 
+  // Dona 2: estado del inventario (óptimo / reorden / crítico)
   private crearGraficoAdminStock(): void {
     if (!this.chartAdminStockCanvas?.nativeElement) return;
     const ctx = this.chartAdminStockCanvas.nativeElement.getContext('2d');
@@ -1118,75 +1064,34 @@ export class InicioComponent implements OnInit, AfterViewInit, OnDestroy {
       this.chartAdminStock.destroy();
     }
 
-    const categorias = ['Abarrotes', 'Lácteos', 'Cárnicos', 'Frutas/Verduras'];
-    const actual = [
-      this.insumosAdmin.filter(i => i.categoria === 'Abarrotes').reduce((acc, i) => acc + i.stockActual, 0),
-      this.insumosAdmin.filter(i => i.categoria === 'Lácteos').reduce((acc, i) => acc + i.stockActual, 0),
-      this.insumosAdmin.filter(i => i.categoria === 'Cárnicos y Huevos').reduce((acc, i) => acc + i.stockActual, 0),
-      this.insumosAdmin.filter(i => i.categoria === 'Frutas y Verduras').reduce((acc, i) => acc + i.stockActual, 0),
-    ];
-
-    const minimos = [
-      this.insumosAdmin.filter(i => i.categoria === 'Abarrotes').reduce((acc, i) => acc + i.stockMinimo, 0),
-      this.insumosAdmin.filter(i => i.categoria === 'Lácteos').reduce((acc, i) => acc + i.stockMinimo, 0),
-      this.insumosAdmin.filter(i => i.categoria === 'Cárnicos y Huevos').reduce((acc, i) => acc + i.stockMinimo, 0),
-      this.insumosAdmin.filter(i => i.categoria === 'Frutas y Verduras').reduce((acc, i) => acc + i.stockMinimo, 0),
-    ];
+    const c = this.conteoInventario;
+    const sinDatos = c.total === 0;
 
     this.chartAdminStock = new Chart(ctx, {
-      type: 'bar',
+      type: 'doughnut',
       data: {
-        labels: categorias,
-        datasets: [
-          {
-            label: 'Stock Actual (Kg/L/Und)',
-            data: actual,
-            backgroundColor: [AMARILLO, ROJO, VERDE, LIMA],
-            borderColor: [AMARILLO_BORDE, ROJO_BORDE, VERDE_BORDE, LIMA_BORDE],
-            borderWidth: 1.5,
-            borderRadius: 6,
-            barPercentage: 0.45
-          },
-          {
-            label: 'Stock Mínimo Seguridad',
-            data: minimos,
-            backgroundColor: '#cbd5e1',
-            borderColor: '#94a3b8',
-            borderWidth: 1.5,
-            borderRadius: 6,
-            barPercentage: 0.45
-          }
-        ]
+        labels: sinDatos ? ['Sin datos'] : ['Óptimo', 'Reorden', 'Crítico'],
+        datasets: [{
+          data: sinDatos ? [1] : [c.optimo, c.bajo, c.critico],
+          backgroundColor: sinDatos ? [TRACK_GAUGE] : [VERDE_VIVO, AMARILLO_VIVO, ROJO],
+          borderWidth: 0,
+          borderRadius: 6,
+          spacing: sinDatos ? 0 : 3
+        }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        animation: { duration: 300 },
+        cutout: '74%',
+        animation: { duration: 400 },
         plugins: {
-          legend: {
-            display: true,
-            position: 'top',
-            labels: {
-              boxWidth: 12,
-              font: { family: 'Roboto', size: 11, weight: 'bold' }
-            }
-          },
+          legend: { display: false },
           tooltip: {
             ...TOOLTIP_BLANCO,
+            enabled: !sinDatos,
             callbacks: {
-              label: (c) => ` ${c.dataset.label}: ${c.parsed.y}`
+              label: (ctxTip) => ` ${ctxTip.label}: ${ctxTip.parsed} insumos`
             }
-          }
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            ticks: { precision: 0, font: { family: 'Roboto', size: 11 } },
-            grid: { color: '#f1f5f9' }
-          },
-          x: {
-            ticks: { font: { family: 'Roboto', weight: 'bold', size: 10 } },
-            grid: { display: false }
           }
         }
       }
@@ -1198,19 +1103,9 @@ export class InicioComponent implements OnInit, AfterViewInit, OnDestroy {
       this.programarRenderGraficosAdmin(15);
       return;
     }
-    this.chartAdminSedes.data.labels = this.sedesAdmin.map(s => s.nombre);
-    this.chartAdminSedes.data.datasets[0].data = this.sedesAdmin.map(s => s.racionesServidas);
-    this.chartAdminSedes.data.datasets[1].data = this.sedesAdmin.map(s => s.racionesAsignadas);
-    this.chartAdminSedes.update();
-
-    const actual = [
-      this.insumosAdmin.filter(i => i.categoria === 'Abarrotes').reduce((acc, i) => acc + i.stockActual, 0),
-      this.insumosAdmin.filter(i => i.categoria === 'Lácteos').reduce((acc, i) => acc + i.stockActual, 0),
-      this.insumosAdmin.filter(i => i.categoria === 'Cárnicos y Huevos').reduce((acc, i) => acc + i.stockActual, 0),
-      this.insumosAdmin.filter(i => i.categoria === 'Frutas y Verduras').reduce((acc, i) => acc + i.stockActual, 0),
-    ];
-    this.chartAdminStock.data.datasets[0].data = actual;
-    this.chartAdminStock.update();
+    // Las donas se redibujan completas: son livianas y así cambian sus colores si no hay datos
+    this.crearGraficoAdminSedes();
+    this.crearGraficoAdminStock();
   }
 
   private destruirGraficosAdmin(): void {
@@ -1249,12 +1144,13 @@ export class InicioComponent implements OnInit, AfterViewInit, OnDestroy {
       insumosOptimos,
       lotesPorVencer7Dias,
       lotesPorVencer15Dias,
-      entregasRecibidasMes: 18
+      entregasRecibidasMes: this.metricasAdmin.entregasRecibidasMes
     };
   }
 
   seleccionarFiltroSede(sede: string): void {
     this.sedeFiltroSeleccionada = sede;
+    this.actualizarGraficosAdmin();
     this.cdRef.markForCheck();
   }
 
@@ -1295,6 +1191,61 @@ export class InicioComponent implements OnInit, AfterViewInit, OnDestroy {
     return this.sedesAdmin.filter(s => s.nombre === this.sedeFiltroSeleccionada);
   }
 
+  // Remesas y entregas calculadas de forma 100% dinámica para el Administrador
+  get remesasPendientesAdmin(): Entrega[] {
+    const lista = Array.isArray(this.entregasBase) && this.entregasBase.length > 0
+      ? this.entregasBase
+      : this.obtenerEntregasFallback();
+    return lista.filter(e => {
+      const st = String(e.estado || 'EN_TRANSITO').toUpperCase();
+      return st === 'EN_TRANSITO' || st === 'PENDIENTE' || st === 'EN_PROCESO' || st === 'POR_RECIBIR';
+    }).slice(0, 5);
+  }
+
+  get remesasRecibidasAdmin(): Entrega[] {
+    const lista = Array.isArray(this.entregasBase) && this.entregasBase.length > 0
+      ? this.entregasBase
+      : this.obtenerEntregasFallback();
+    return lista.filter(e => {
+      const st = String(e.estado || '').toUpperCase();
+      return st === 'RECIBIDA' || st === 'ACEPTADA';
+    }).slice(0, 4);
+  }
+
+  get totalDespachosPorRecibir(): number {
+    return this.remesasPendientesAdmin.length;
+  }
+
+  // Getters del resumen y del indicador semicircular (respetan el filtro de sede)
+  get totalRacionesServidas(): number {
+    return this.sedesFiltradas.reduce((acc, s) => acc + (s.racionesServidas || 0), 0);
+  }
+
+  get totalRacionesAsignadas(): number {
+    return this.sedesFiltradas.reduce((acc, s) => acc + (s.racionesAsignadas || 0), 0);
+  }
+
+  get porcentajeGlobalRaciones(): number {
+    return this.totalRacionesAsignadas > 0
+      ? Math.round((this.totalRacionesServidas / this.totalRacionesAsignadas) * 100)
+      : 0;
+  }
+
+  get insumosEnRiesgo(): number {
+    return this.insumosAdmin.filter(i => i.estado === 'CRITICO' || i.estado === 'BAJO').length;
+  }
+
+  get racionesPendientes(): number {
+    return Math.max(0, this.totalRacionesAsignadas - this.totalRacionesServidas);
+  }
+
+  get conteoInventario(): { optimo: number; bajo: number; critico: number; total: number } {
+    const optimo = this.insumosAdmin.filter(i => i.estado === 'OPTIMO').length;
+    const bajo = this.insumosAdmin.filter(i => i.estado === 'BAJO').length;
+    const critico = this.insumosAdmin.filter(i => i.estado === 'CRITICO').length;
+    return { optimo, bajo, critico, total: optimo + bajo + critico };
+  }
+
   // =========================================================================
   //  SELECTOR DE RANGO DE DÍAS (8 vs 20 DÍAS - ACTUALIZACIÓN INMEDIATA)
   // =========================================================================
@@ -1305,6 +1256,7 @@ export class InicioComponent implements OnInit, AfterViewInit, OnDestroy {
     this.recalcularMetricas();
     this.actualizarGraficos();
     this.cdRef.markForCheck();
+    (this.cdRef as any).detectChanges?.();
   }
 
   // =========================================================================
@@ -1384,13 +1336,132 @@ export class InicioComponent implements OnInit, AfterViewInit, OnDestroy {
   // =========================================================================
 
   recalcularMetricas(): void {
+    if (this.datosRealesSuperAdmin) {
+      const contratosFiltrados = this.rangoDias === 8
+        ? this.contratosBase.filter(c => c.estado !== 'FINALIZADO')
+        : this.contratosBase;
+
+      const vigentes = contratosFiltrados.filter(c => c.estado === 'VIGENTE').length;
+      const porVencer = contratosFiltrados.filter(c => c.estado === 'POR_VENCER').length;
+      const contratosVigentes = vigentes + porVencer;
+      const totalContratos = contratosFiltrados.length;
+
+      const instActivas = this.institucionesBase.filter(
+        (i: any) => String(i.estado ?? 'ACTIVO').toUpperCase() !== 'INACTIVO'
+      );
+      const sedesActivas = this.sedesBase.filter(
+        (s: any) => String(s.estado ?? 'ACTIVO').toUpperCase() !== 'INACTIVO'
+      );
+      const totalInstituciones = instActivas.length || this.institucionesBase.length;
+      const totalSedes = sedesActivas.length || this.sedesBase.length;
+
+      const facturasRegistradas = (this.facturasBase || []).filter(
+        (f: any) => String(f.estado || 'REGISTRADA').toUpperCase() !== 'ANULADA'
+      );
+
+      const hoy = new Date();
+      hoy.setHours(0, 0, 0, 0);
+      const limiteVentanaMs = this.rangoDias * 24 * 60 * 60 * 1000;
+
+      const facturasEnRango = this.rangoDias === 8
+        ? facturasRegistradas.filter((f: any) => {
+            const raw = f.fecha_compra || f.fecha_creacion;
+            if (!raw) return true;
+            const d = new Date(raw);
+            if (isNaN(d.getTime())) return true;
+            const diff = hoy.getTime() - d.getTime();
+            return diff <= limiteVentanaMs && diff >= -86400000;
+          })
+        : facturasRegistradas;
+
+      const conteoPorMes = new Array(12).fill(0);
+      const fuenteCurva = facturasRegistradas.length > 0 ? facturasRegistradas : [];
+      for (const f of fuenteCurva) {
+        const raw = f.fecha_compra || f.fecha_creacion;
+        if (!raw) continue;
+        const partes = String(raw).slice(0, 10).split('-');
+        const mesIdx = partes.length >= 2 ? Number(partes[1]) - 1 : new Date(raw).getMonth();
+        if (mesIdx >= 0 && mesIdx < 12) {
+          conteoPorMes[mesIdx]++;
+        }
+      }
+      if (fuenteCurva.length === 0 && this.entregasBase.length > 0) {
+        for (const e of this.entregasBase) {
+          const raw = e.fechaRecepcion;
+          if (!raw) continue;
+          const partes = String(raw).slice(0, 10).split('-');
+          const mesIdx = partes.length >= 2 ? Number(partes[1]) - 1 : new Date(raw).getMonth();
+          if (mesIdx >= 0 && mesIdx < 12) {
+            conteoPorMes[mesIdx]++;
+          }
+        }
+      }
+      this.facturasPorMes = conteoPorMes;
+
+      // Clasificar lotes por fecha de vencimiento (detalles de facturas registradas + entregas)
+      let criticos = 0;
+      let alerta = 0;
+      let proximos = 0;
+      let optimos = 0;
+
+      const fechasVencimiento: string[] = [];
+      for (const f of facturasRegistradas) {
+        for (const det of (f.detalles || [])) {
+          if (det?.fecha_vencimiento) {
+            fechasVencimiento.push(String(det.fecha_vencimiento).slice(0, 10));
+          } else {
+            optimos++;
+          }
+        }
+      }
+      if (fechasVencimiento.length === 0 && optimos === 0) {
+        for (const e of this.entregasBase) {
+          if (e?.fechaVencimiento) {
+            fechasVencimiento.push(String(e.fechaVencimiento).slice(0, 10));
+          }
+        }
+      }
+
+      for (const fv of fechasVencimiento) {
+        const p = fv.split('-');
+        const dVenc = p.length === 3
+          ? new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]))
+          : new Date(fv);
+        if (isNaN(dVenc.getTime())) {
+          optimos++;
+          continue;
+        }
+        const dias = Math.round((dVenc.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24));
+        if (dias <= 7) criticos++;
+        else if (dias <= 15) alerta++;
+        else if (dias <= 30) proximos++;
+        else optimos++;
+      }
+
+      this.resumenLotes = { criticos, alerta, proximos, optimos };
+      const lotesEnRiesgo = this.rangoDias === 8 ? criticos : (criticos + alerta);
+
+      const totalFacturas = this.rangoDias === 8
+        ? (facturasEnRango.length > 0 ? facturasEnRango.length : facturasRegistradas.length)
+        : facturasRegistradas.length;
+
+      this.metricas = {
+        totalContratos,
+        contratosVigentes,
+        totalInstituciones,
+        totalSedes,
+        totalFacturas,
+        lotesEnRiesgo,
+        totalEntregas: this.entregasBase.length || totalFacturas
+      };
+      return;
+    }
+
     if (this.rangoDias === 8) {
       // =======================================================================
       // CICLO DE 8 DÍAS: Suministro semanal prioritario de alimentos perecederos
       // =======================================================================
-      // Contratos en ejecución activa semanal: 6 vigentes, 1 en revisión
       const contratosVigentes = 6;
-      const contratosPorVencer = 1;
       const totalContratos = 7;
 
       // Facturas radicadas en el ciclo activo de 8 días: 45 facturas
@@ -1425,7 +1496,6 @@ export class InicioComponent implements OnInit, AfterViewInit, OnDestroy {
       // =======================================================================
       // CICLO DE 20 DÍAS: Consolidado mensual escolar completo (20 días hábiles)
       // =======================================================================
-      // Contratos PAE totales vigencia 2026: 7 vigentes, 2 por vencer, 1 finalizado
       const contratosVigentes = 7;
       const totalContratos = 10;
 
@@ -1468,20 +1538,24 @@ export class InicioComponent implements OnInit, AfterViewInit, OnDestroy {
 
     forkJoin({
       contratos: this.siraeService.getContratos().pipe(
-        timeout(1800),
-        catchError(() => of([]))
+        timeout(45000),
+        catchError(() => of(null))
+      ),
+      facturas: this.http.get<any>(`${environment.apiUrl}/facturas-compra/`).pipe(
+        timeout(45000),
+        catchError(() => of(null))
       ),
       entregas: this.entregasService.cargar(false).pipe(
-        timeout(1800),
-        catchError(() => of([]))
+        timeout(45000),
+        catchError(() => of(null))
       ),
       instituciones: this.bancoDatosService.obtenerDatos('instituciones').pipe(
-        timeout(1800),
-        catchError(() => of([]))
+        timeout(45000),
+        catchError(() => of(null))
       ),
       sedes: this.bancoDatosService.obtenerDatos('sedes').pipe(
-        timeout(1800),
-        catchError(() => of([]))
+        timeout(45000),
+        catchError(() => of(null))
       )
     }).pipe(
       finalize(() => {
@@ -1489,34 +1563,73 @@ export class InicioComponent implements OnInit, AfterViewInit, OnDestroy {
         this.recalcularMetricas();
         this.actualizarGraficos();
         this.cdRef.markForCheck();
+        (this.cdRef as any).detectChanges?.();
       })
     ).subscribe({
       next: (res) => {
-        const listaContratos = this.extraerLista(res.contratos);
-        if (listaContratos.length > 0) {
+        let respondioBackend = false;
+
+        if (res.contratos !== null) {
+          respondioBackend = true;
+          const listaContratos = this.extraerLista(res.contratos);
           this.contratosBase = listaContratos.map((c: any, index: number) => ({
-            id: c.id || index + 1,
-            numero_contrato: c.numero_contrato || c.codigo || `CT-PAE-${this.filtroPeriodo}-${index + 1}`,
-            vigencia: String(c.vigencia || c.anio || this.filtroPeriodo),
-            estado: this.normalizarEstadoContrato(c.estado || 'VIGENTE'),
-            raciones: Number(c.raciones || c.numero_raciones || 1200 + index * 150),
+            id: c.id_contrato || c.id || index + 1,
+            numero_contrato: c.numero_cor || c.numero_contrato || c.codigo || `CT-PAE-${this.filtroPeriodo}-${index + 1}`,
+            vigencia: String(c.vigencia || c.anio || (c.fecha_inicio ? String(c.fecha_inicio).slice(0, 4) : this.filtroPeriodo)),
+            estado: this.clasificarEstadoContratoReal(c),
+            raciones: Number(c.cupos || c.raciones || c.numero_raciones || 0),
             valor: Number(c.valor_total || c.valor || 0)
           }));
         }
 
-        const listaEntregas = Array.isArray(res.entregas) ? res.entregas : [];
-        if (listaEntregas.length > 0) {
-          this.entregasBase = listaEntregas;
+        if (res.facturas !== null) {
+          respondioBackend = true;
+          this.facturasBase = this.extraerLista(res.facturas);
         }
 
-        const listaInst = this.extraerLista(res.instituciones);
-        if (listaInst.length > 0) this.institucionesBase = listaInst;
+        if (res.entregas !== null && Array.isArray(res.entregas)) {
+          respondioBackend = true;
+          this.entregasBase = res.entregas;
+        }
 
-        const listaSedes = this.extraerLista(res.sedes);
-        if (listaSedes.length > 0) this.sedesBase = listaSedes;
+        if (res.instituciones !== null) {
+          respondioBackend = true;
+          this.institucionesBase = this.extraerLista(res.instituciones);
+        }
+
+        if (res.sedes !== null) {
+          respondioBackend = true;
+          this.sedesBase = this.extraerLista(res.sedes);
+        }
+
+        if (respondioBackend) {
+          this.datosRealesSuperAdmin = true;
+        }
       },
       error: () => {}
     });
+  }
+
+  private clasificarEstadoContratoReal(c: any): string {
+    const estRaw = String(c?.estado || 'Activo').trim().toUpperCase();
+    if (estRaw.includes('INACT') || estRaw.includes('FINALIZ') || estRaw.includes('VENCID') || estRaw.includes('TERMIN')) {
+      return 'FINALIZADO';
+    }
+    const fechaFin = c?.fecha_fin || c?.fin;
+    if (fechaFin) {
+      const partes = String(fechaFin).slice(0, 10).split('-');
+      const dFin = partes.length === 3
+        ? new Date(Number(partes[0]), Number(partes[1]) - 1, Number(partes[2]))
+        : new Date(fechaFin);
+      if (!isNaN(dFin.getTime())) {
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+        const diasRestantes = Math.round((dFin.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24));
+        if (diasRestantes < 0) return 'FINALIZADO';
+        if (diasRestantes <= 30) return 'POR_VENCER';
+      }
+    }
+    return this.normalizarEstadoContrato(c?.estado || 'VIGENTE');
   }
 
   private extraerLista(respuesta: any): any[] {
@@ -1550,7 +1663,7 @@ export class InicioComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   irAFacturas(): void {
-    const ruta = this.buscarRutaFacturas(this.router.config) ?? '/facturas';
+    const ruta = this.buscarRutaFacturas(this.router.config) ?? '/facturas-compra';
     this.router.navigateByUrl(ruta);
   }
 
@@ -1633,6 +1746,14 @@ export class InicioComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private obtenerConteoContratos(): number[] {
+    if (this.datosRealesSuperAdmin) {
+      const vigentes = this.contratosBase.filter(c => c.estado === 'VIGENTE').length;
+      const porVencer = this.contratosBase.filter(c => c.estado === 'POR_VENCER').length;
+      const finalizados = this.rangoDias === 8
+        ? 0
+        : this.contratosBase.filter(c => c.estado === 'FINALIZADO').length;
+      return [vigentes, porVencer, finalizados];
+    }
     if (this.rangoDias === 8) {
       return [6, 1, 0];
     }
@@ -1911,6 +2032,34 @@ export class InicioComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private obtenerDistribucionSedes(): { labels: string[], data: number[] } {
+    if (this.datosRealesSuperAdmin && this.institucionesBase.length > 0) {
+      const conteoPorInst = this.institucionesBase
+        .filter((inst: any) => String(inst.estado ?? 'ACTIVO').toUpperCase() !== 'INACTIVO')
+        .map((inst: any) => {
+          const instId = Number(inst.id_institucion ?? inst.id);
+          const nombre = inst.nombre_institucion || inst.nombre || `Institución #${instId}`;
+          const sedesCount = this.sedesBase.length > 0
+            ? this.sedesBase.filter((s: any) => {
+                const sInst = typeof s.id_institucion === 'object' && s.id_institucion !== null
+                  ? Number(s.id_institucion.id_institucion ?? s.id_institucion.id)
+                  : Number(s.id_institucion);
+                return sInst === instId && String(s.estado ?? 'ACTIVO').toUpperCase() !== 'INACTIVO';
+              }).length
+            : (Array.isArray(inst.sedes) ? inst.sedes.length : 0);
+          return { nombre, total: sedesCount };
+        })
+        .sort((a, b) => b.total - a.total || a.nombre.localeCompare(b.nombre, 'es'));
+
+      const limite = this.rangoDias === 8 ? 4 : 6;
+      const top = conteoPorInst.slice(0, limite);
+      if (top.length > 0) {
+        return {
+          labels: top.map(x => x.nombre),
+          data: top.map(x => x.total)
+        };
+      }
+    }
+
     if (this.rangoDias === 8) {
       return {
         labels: [

@@ -293,21 +293,23 @@ export class LayoutComponent implements OnInit, OnDestroy {
 
     if (this.esSuperAdministrador) {
       this.contratosService.getContratos().subscribe({
-        next: (data) => {
-          if (Array.isArray(data) && data.length > 0) {
-            this.conteoContratos = data.length;
-            this.cdr.detectChanges();
+        next: (data: any) => {
+          const lista = Array.isArray(data) ? data : (data?.results || []);
+          if (Array.isArray(lista)) {
+            this.conteoContratos = lista.length;
+            this.refrescarVista();
           }
         },
         error: () => {}
       });
 
       this.facturasService.getFacturas().subscribe({
-        next: (data) => {
-          if (Array.isArray(data) && data.length > 0) {
-            const pendientes = data.filter((f: any) => f.estado === 'REGISTRADA').length;
-            this.conteoFacturas = pendientes > 0 ? pendientes : data.length;
-            this.cdr.detectChanges();
+        next: (data: any) => {
+          const lista = Array.isArray(data) ? data : (data?.results || []);
+          if (Array.isArray(lista)) {
+            const pendientes = lista.filter((f: any) => f.estado === 'REGISTRADA').length;
+            this.conteoFacturas = pendientes > 0 ? pendientes : lista.length;
+            this.refrescarVista();
           }
         },
         error: () => {}

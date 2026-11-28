@@ -311,7 +311,7 @@ export class EntregasService {
     return this.http.delete(`${this.apiUrl}${id}/`, this.getHeaders());
   }
 
-  // ---------- MÃ©todos agregados para completar Historias de Usuario Jira ----------
+  // ---------- Métodos agregados para completar Historias de Usuario Jira ----------
   
   // SP-246: Obtener detalle individual de una entrega
   getEntregaPorId(id: number): Observable<Entrega> {
@@ -329,7 +329,7 @@ export class EntregasService {
     });
   }
 
-  // Confirmar recepciÃ³n tÃ©cnica y control de calidad (Administrador)
+  // Confirmar recepción técnica y control de calidad (Administrador)
   confirmarRecepcion(id: number, payload: {
     cantidad_recibida: number;
     cantidad_rechazada?: number;
@@ -392,7 +392,7 @@ export class EntregasService {
   private listaDe(data: any): any[] {
     if (Array.isArray(data)) return data;
     if (Array.isArray(data?.results)) return data.results;
-    throw new Error('El backend devolviÃ³ una respuesta de lista no vÃ¡lida.');
+    throw new Error('El backend devolvió una respuesta de lista no válida.');
   }
 
   private normalizar(item: any, mapaIng?: Map<number, string>, mapaTipos?: Map<number, string>): Entrega {
@@ -539,7 +539,7 @@ export class EntregasService {
     if (!e.fechaVencimiento) return 'Vigente';
     const dias = this.diasRestantes(e);
     if (dias < 0) return 'Vencido';
-    if (dias <= this.umbralAlerta(e)) return 'PrÃ³ximo a vencer';
+    if (dias <= this.umbralAlerta(e)) return 'Próximo a vencer';
     return 'Vigente';
   }
 

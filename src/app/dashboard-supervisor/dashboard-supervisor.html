@@ -161,10 +161,10 @@
 }
 .sd-pills button:hover { color: var(--ink); }
 .sd-pills button.on {
-  background: var(--yellow);
-  color: var(--g800);
+  background: #F5B81F;
+  color: #ffffff;
   font-weight: 800;
-  box-shadow: 0 4px 10px -4px rgba(245, 163, 0, 0.7);
+  box-shadow: 0 4px 10px -4px rgba(245, 184, 31, 0.7);
 }
 
 /* ---------- 5. Títulos de sección ---------- */
@@ -195,23 +195,24 @@
   justify-content: space-between;
   gap: 18px;
   padding: 18px;
-  border: 1px solid var(--line);
+  border: 1px solid rgba(245, 184, 31, 0.4);
   border-radius: 20px;
-  background: var(--surface);
-  box-shadow: var(--shadow-sm);
+  background: #F5B81F;
+  box-shadow: 0 8px 20px -8px rgba(245, 184, 31, 0.45);
   text-align: left;
   cursor: pointer;
   font: inherit;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, filter 0.2s ease;
 }
 .sd-qcard:hover,
 .sd-qcard:focus-visible {
   transform: translateY(-3px);
-  border-color: var(--amber);
-  background: linear-gradient(135deg, #ffd84d 0%, #f5a300 100%);
-  box-shadow: var(--shadow-pae);
+  border-color: #e0a312;
+  background: #F5B81F;
+  box-shadow: 0 14px 28px -10px rgba(245, 184, 31, 0.6);
+  filter: brightness(1.03);
 }
-.sd-qcard:focus-visible { outline: 3px solid var(--deep); outline-offset: 2px; }
+.sd-qcard:focus-visible { outline: 3px solid #7a5200; outline-offset: 2px; }
 
 .sd-qcard__top {
   display: flex;
@@ -226,13 +227,14 @@
   width: 44px;
   height: 44px;
   border-radius: 13px;
-  background: var(--g50);
+  background: rgba(255, 255, 255, 0.95);
+  color: #7a5200;
   transition: background 0.2s ease, color 0.2s ease;
 }
 .sd-qcard:hover .sd-qcard__ic,
 .sd-qcard:focus-visible .sd-qcard__ic {
-  background: rgba(255, 255, 255, 0.95);
-  color: var(--deep);
+  background: #ffffff;
+  color: #2B1D00;
 }
 .sd-qcard__ic .material-symbols-outlined { font-size: 22px; }
 
@@ -243,39 +245,40 @@
   padding: 4px 10px;
   border-radius: 999px;
   font-size: 11px;
-  font-weight: 700;
-  background: var(--g50);
-  border: 1px solid var(--line);
-  color: var(--g700);
+  font-weight: 800;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  color: #7a5200;
   transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 .sd-qcard:hover .sd-qcard__badge,
 .sd-qcard:focus-visible .sd-qcard__badge {
   border-color: transparent;
-  background: rgba(255, 255, 255, 0.55);
-  color: #5c3d00;
+  background: #ffffff;
+  color: #2B1D00;
 }
 
 .sd-qcard__title {
-  font-size: 14.5px;
-  font-weight: 800;
-  color: var(--ink);
+  font-size: 15px;
+  font-weight: 900;
+  color: #ffffff;
   line-height: 1.25;
   transition: color 0.2s ease;
 }
 .sd-qcard:hover .sd-qcard__title,
 .sd-qcard:focus-visible .sd-qcard__title {
-  color: var(--g900);
+  color: #ffffff;
 }
 .sd-qcard__sub {
   margin-top: 3px;
   font-size: 12px;
-  color: var(--mute);
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
   transition: color 0.2s ease;
 }
 .sd-qcard:hover .sd-qcard__sub,
 .sd-qcard:focus-visible .sd-qcard__sub {
-  color: #5c3d00;
+  color: #ffffff;
   font-weight: 600;
 }
 

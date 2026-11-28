@@ -64,6 +64,9 @@ export class BancoDatosService {
 
   crearDato(tabla: string, data: any): Observable<any> {
     delete this.cacheTablas[tabla];
+    if (tabla === 'ingredientes') {
+      delete this.cacheTablas['gramajes'];
+    }
     if (tabla === 'sedes' || tabla === 'instituciones') {
       delete this.cacheTablas['instituciones'];
       delete this.cacheTablas['sedes'];
@@ -75,6 +78,9 @@ export class BancoDatosService {
 
   actualizarDato(tabla: string, id: number, data: any): Observable<any> {
     delete this.cacheTablas[tabla];
+    if (tabla === 'ingredientes') {
+      delete this.cacheTablas['gramajes'];
+    }
     if (tabla === 'sedes' || tabla === 'instituciones') {
       delete this.cacheTablas['instituciones'];
       delete this.cacheTablas['sedes'];
@@ -86,6 +92,9 @@ export class BancoDatosService {
 
   eliminarDato(tabla: string, id: number): Observable<any> {
     delete this.cacheTablas[tabla];
+    if (tabla === 'ingredientes') {
+      delete this.cacheTablas['gramajes'];
+    }
     if (tabla === 'sedes' || tabla === 'instituciones') {
       delete this.cacheTablas['instituciones'];
       delete this.cacheTablas['sedes'];
