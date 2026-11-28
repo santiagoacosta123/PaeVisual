@@ -114,9 +114,15 @@ export class PlanillasOperativasComponent implements OnInit, OnDestroy {
   // Selector de Periodos y Fechas de las Planillas
   periodoSeleccionado = 'PRIMERA';
   periodosDisponibles: string[] = ['PRIMERA', 'SEGUNDA', 'TERCERA', 'CUARTA', 'QUINTA', 'SEXTA'];
-  fechaInicioPlanilla = '2026-10-19';
-  fechaFinPlanilla = '2026-11-13';
+  fechaInicioPlanilla = this.calcularInicioPeriodoActual();
+  fechaFinPlanilla = this.hoyISO();
   diasAtenderPlanilla = 20;
+
+  private calcularInicioPeriodoActual(): string {
+    const inicio = new Date();
+    inicio.setDate(inicio.getDate() - 27);
+    return this.isoDe(inicio);
+  }
 
   // ===================== PLANILLAS OFICIALES PAE =====================
   planillaRemision: PlanillaRemisionData | null = null;
