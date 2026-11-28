@@ -1,6 +1,8 @@
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable, forkJoin, of } from 'rxjs';
 import { map, catchError, timeout } from 'rxjs/operators';
+import { environment } from '@env/environment';
 import { EntregasService, Entrega } from '../features/entregas/services/entregas.service';
 import { AsistenciaDiariaService, AsistenciaDiaria } from './asistencia-diaria.service';
 import { SiraeService } from '../features/contratos/services/contratos_pae.service';
@@ -234,10 +236,342 @@ export class PlanillasOperativasService {
   ];
 
   constructor(
+    private http: HttpClient,
     private entregasService: EntregasService,
     private asistenciaService: AsistenciaDiariaService,
     private siraeService: SiraeService
   ) {}
+
+  /**
+   * Consulta el endpoint unificado del backend con datos reales de SIRAE por institución y sede.
+   */
+  obtenerPlanillasDesdeBackend(params: {
+    institucionId: number;
+    institucionNombre: string;
+    institucionRector?: string;
+    institucionTelefono?: string;
+    sedeId?: number | null;
+    sedeNombre?: string;
+    sedeCodigoDane?: string;
+    periodo: string;
+    fechaInicio: string;
+    fechaFin: string;
+    forzarRecarga?: boolean;
+  }): Observable<{
+    remision: PlanillaRemisionData;
+    kardex: PlanillaKardexData;
+    minutaPatron: ItemMinutaPatron[];
+    resumenActividad: {
+      entregas_count: number;
+      salidas_count: number;
+      entradas_count: number;
+      asistencias_count: number;
+    };
+    origenCupos: string;
+  }> {
+    const sedeKey = params.sedeId || 0;
+    const cacheRemKey = `pae_remision_${params.institucionId}_${sedeKey}_${params.periodo}_${params.fechaInicio}`;
+    const cacheKarKey = `pae_kardex_${params.institucionId}_${sedeKey}_${params.periodo}_${params.fechaInicio}`;
+
+    let httpParams = new HttpParams()
+      .set('id_institucion', String(params.institucionId))
+      .set('fecha_inicio', params.fechaInicio || '')
+      .set('fecha_fin', params.fechaFin || '');
+    if (params.sedeId && params.sedeId > 0) {
+      httpParams = httpParams.set('id_sede', String(params.sedeId));
+    }
+
+    return this.http
+      .get<any>(`${environment.apiUrl}/reportes/plantillas-operativas/datos/`, { params: httpParams })
+      .pipe(
+        timeout(15000),
+        map((resp) => {
+          const remGuardada = !params.forzarRecarga ? this.leerCacheManual<PlanillaRemisionData>(cacheRemKey) : null;
+          const karGuardado = !params.forzarRecarga ? this.leerCacheManual<PlanillaKardexData>(cacheKarKey) : null;
+
+          const remision = remGuardada || this.mapearRemisionDesdeBackend(resp, params);
+          const kardex = karGuardado || this.mapearKardexDesdeBackend(resp, params);
+          const minutaPatron = this.mapearMinutaDesdeBackend(resp);
+
+          return {
+            remision,
+            kardex,
+            minutaPatron,
+            resumenActividad: resp?.resumen_actividad || {
+              entregas_count: 0,
+              salidas_count: 0,
+              entradas_count: 0,
+              asistencias_count: 0,
+            },
+            origenCupos: resp?.cupos?.origen || 'SIN_CONFIGURAR',
+          };
+        })
+      );
+  }
+
+  private leerCacheManual<T extends { guardadoManual?: boolean }>(clave: string): T | null {
+    const raw = localStorage.getItem(clave);
+    if (!raw) return null;
+    try {
+      const parsed = JSON.parse(raw);
+      const str = JSON.stringify(parsed);
+      const tieneDatosQuemados =
+        str.includes('ARY MEDARDO') ||
+        str.includes('34.567.890') ||
+        str.includes('MARÍA YOLANDA') ||
+        str.includes('Isa Pérez') ||
+        str.includes('Carlos Méndez');
+      if (parsed && parsed.guardadoManual && !tieneDatosQuemados) {
+        return parsed as T;
+      }
+    } catch {
+      return null;
+    }
+    return null;
+  }
+
+  private mapearFirmasDesdeBackend(resp: any, params: { institucionRector?: string; institucionTelefono?: string }): FirmasPlanilla {
+    const r = resp?.responsables || {};
+    const enc = resp?.encabezado || {};
+    const inst = resp?.institucion || {};
+
+    const manip = r.manipuladora_jefe || r.manipuladora || r.receptor_entrega || null;
+    const admin = r.administrador || null;
+    const sup = r.supervisor || null;
+
+    return {
+      manipuladoraNombre: manip?.nombre || '_________________',
+      manipuladoraCedula: manip?.numero_documento || '_________________',
+      rectorNombre: admin?.nombre || inst.representante_legal || params.institucionRector || '_________________',
+      rectorCedula: admin?.numero_documento || '_________________',
+      rectorTelefono: enc.telefono || inst.telefono || params.institucionTelefono || '_________________',
+      rectorCargo: 'RECTOR / DIRECTIVO DOCENTE',
+      operadorNombre: sup?.nombre || enc.operador || '_________________',
+      operadorCedula: sup?.numero_documento || '_________________',
+      operadorTelefono: sup?.correo || '_________________',
+      operadorCargo: 'SUPERVISOR / OPERADOR PAE',
+    };
+  }
+
+  private mapearRemisionDesdeBackend(
+    resp: any,
+    params: {
+      institucionNombre: string;
+      institucionRector?: string;
+      institucionTelefono?: string;
+      sedeNombre?: string;
+      sedeCodigoDane?: string;
+      periodo: string;
+      fechaInicio: string;
+      fechaFin: string;
+    }
+  ): PlanillaRemisionData {
+    const enc = resp?.encabezado || {};
+    const cRaw = resp?.cupos || {};
+    const diasAtender = Number(enc.dias_atender || 20);
+    const totalCupos = Number(cRaw.total || 0);
+
+    const cupos: CuposNivel = {
+      preescolar: Number(cRaw.preescolar || 0),
+      primaria13: Number(cRaw.primaria13 || 0),
+      primaria45: Number(cRaw.primaria45 || 0),
+      secundaria: Number(cRaw.secundaria || 0),
+      media: Number(cRaw.media || 0),
+      totalCupos,
+      racionesTotales: totalCupos * diasAtender,
+    };
+
+    const noPerecederos: FilaNoPerecedero[] = (resp?.remision?.no_perecederos || []).map((item: any, idx: number) => {
+      const enBd = item.id_ingrediente != null && Boolean(item.tieneActividadSede || item.programado > 0 || item.despachado > 0 || item.recibido > 0);
+      return {
+        id: idx + 1,
+        alimento: item.producto || '',
+        gramajes: {
+          preescolar: Number(item.gramajes?.preescolar || 0),
+          primaria13: Number(item.gramajes?.primaria13 || 0),
+          primaria45: Number(item.gramajes?.primaria45 || 0),
+          secundaria: Number(item.gramajes?.secundaria || 0),
+          media: Number(item.gramajes?.media || 0),
+        },
+        unidad: item.unidad || 'g',
+        cantidadEntregar: enBd ? Number(item.aEntregar || item.programado || 0) : 0,
+        cantidadRecibida: enBd ? Number(item.recibido || 0) : 0,
+        observaciones: item.observaciones || '',
+      };
+    });
+
+    const perecederos: FilaPerecedero[] = (resp?.remision?.perecederos || []).map((item: any, idx: number) => {
+      const enBd = item.id_ingrediente != null && Boolean(item.tieneActividadSede || item.programadoTotal > 0 || item.despachado > 0 || item.recibido > 0);
+      const rawSemanas = Array.isArray(item.entregas) ? item.entregas : [];
+      const entregas: [EntregaPerecedero, EntregaPerecedero, EntregaPerecedero, EntregaPerecedero] = [0, 1, 2, 3].map((w) => ({
+        aEntregar: enBd ? Number(rawSemanas[w]?.aEntregar || 0) : 0,
+        recibida: enBd ? Number(rawSemanas[w]?.recibida || 0) : 0,
+      })) as [EntregaPerecedero, EntregaPerecedero, EntregaPerecedero, EntregaPerecedero];
+
+      const totalEntregado = Math.round(entregas.reduce((s, e) => s + e.aEntregar, 0) * 100) / 100;
+      const totalRecibido = enBd
+        ? Math.round((Number(item.recibido || 0) || entregas.reduce((s, e) => s + e.recibida, 0)) * 100) / 100
+        : 0;
+
+      return {
+        id: idx + 1,
+        alimento: item.producto || '',
+        gramajes: {
+          preescolar: Number(item.gramajes?.preescolar || 0),
+          primaria13: Number(item.gramajes?.primaria13 || 0),
+          primaria45: Number(item.gramajes?.primaria45 || 0),
+          secundaria: Number(item.gramajes?.secundaria || 0),
+          media: Number(item.gramajes?.media || 0),
+        },
+        unidad: item.unidad || 'g',
+        entregas,
+        totalEntregado,
+        totalRecibido,
+        observaciones: item.observaciones || '',
+      };
+    });
+
+    const aseo: FilaAseo[] = (resp?.remision?.aseo || []).map((item: any, idx: number) => {
+      const enBd = item.id_ingrediente != null && Boolean(item.tieneActividadSede || item.aEntregar > 0 || item.recibido > 0);
+      return {
+        id: idx + 1,
+        item: item.producto || '',
+        unidad: item.unidad || 'Und',
+        cantidadEntregar: enBd ? Number(item.aEntregar || 0) : 0,
+        cantidadRecibida: enBd ? Number(item.recibido || 0) : 0,
+        observaciones: item.observaciones || '',
+      };
+    });
+
+    return {
+      municipio: enc.municipio || '_________________',
+      periodo: params.periodo || 'PRIMERA',
+      fechaInicio: enc.fecha_inicio || params.fechaInicio,
+      fechaTerminacion: enc.fecha_fin || params.fechaFin,
+      contratoNumero: enc.numero_contrato || '_________________',
+      operador: enc.operador || '_________________',
+      institucionEducativa: enc.nombre_institucion || params.institucionNombre,
+      sede: enc.nombre_sede || params.sedeNombre || 'Todas las sedes',
+      codigoDane: enc.codigo_dane || params.sedeCodigoDane || '_________________',
+      modalidad: 'RACIÓN PREPARADA EN SITIO - RPS',
+      tipo: 'COMPLEMENTO ALIMENTARIO CAJ/CAJT',
+      diasAtender,
+      cupos,
+      ciclosMenus: '1 - 20',
+      noPerecederos,
+      perecederos,
+      aseo,
+      firmas: this.mapearFirmasDesdeBackend(resp, params),
+    };
+  }
+
+  private mapearKardexDesdeBackend(
+    resp: any,
+    params: {
+      institucionNombre: string;
+      institucionRector?: string;
+      institucionTelefono?: string;
+      sedeNombre?: string;
+      periodo: string;
+      fechaInicio: string;
+      fechaFin: string;
+    }
+  ): PlanillaKardexData {
+    const enc = resp?.encabezado || {};
+    const kardexRaw = resp?.kardex || {};
+    const diasIso: string[] = Array.isArray(kardexRaw.dias) && kardexRaw.dias.length > 0
+      ? kardexRaw.dias
+      : this.generarDiasHabiles(params.fechaInicio);
+    const diasSemanaNombres: Array<'L' | 'M' | 'M' | 'J' | 'V'> = ['L', 'M', 'M', 'J', 'V'];
+
+    const filas: FilaKardex[] = (kardexRaw.alimentos || []).map((al: any, idx: number) => {
+      const entradaReal =
+        al.id_ingrediente != null
+          ? Math.round((Number(al.entradaEntregas || 0) + Number(al.entradaInventarioManual || 0)) * 100) / 100
+          : 0;
+      const gastos: number[] = Array.isArray(al.gastos) ? al.gastos : [];
+
+      const semanas: [SemanaSalida, SemanaSalida, SemanaSalida, SemanaSalida] = [
+        { semanaNumero: 1, dias: [] },
+        { semanaNumero: 2, dias: [] },
+        { semanaNumero: 3, dias: [] },
+        { semanaNumero: 4, dias: [] },
+      ];
+
+      for (let s = 0; s < 4; s++) {
+        for (let d = 0; d < 5; d++) {
+          const diaIdx = s * 5 + d;
+          const fechaDia = diasIso[diaIdx] || '';
+          const cant = al.id_ingrediente != null ? Number(gastos[diaIdx] || 0) : 0;
+          semanas[s].dias.push({
+            diaSemana: diasSemanaNombres[d],
+            diaNumero: diaIdx + 1,
+            fecha: fechaDia,
+            cantidad: cant,
+          });
+        }
+      }
+
+      const totalSalidas = al.id_ingrediente != null ? Number(al.totalGasto || 0) : 0;
+      const saldoMes =
+        al.id_ingrediente != null && al.stockActualInventario != null
+          ? Number(al.stockActualInventario)
+          : Math.max(0, Math.round((entradaReal - totalSalidas) * 100) / 100);
+
+      return {
+        id: idx + 1,
+        alimento: al.nombre || '',
+        fechaEntrada: al.fechaEntrada || diasIso[0] || params.fechaInicio,
+        menu: al.menu || 'Minuta SIRAE',
+        cantidadEntrada: entradaReal,
+        unidad: al.unidad || 'g',
+        semanas,
+        totalSalidas,
+        saldoMes,
+      };
+    });
+
+    return {
+      municipio: enc.municipio || '_________________',
+      institucionEducativa: enc.nombre_institucion || params.institucionNombre,
+      sede: enc.nombre_sede || params.sedeNombre || 'Todas las sedes',
+      periodo: params.periodo || 'PRIMERA',
+      fechaInicio: enc.fecha_inicio || params.fechaInicio,
+      fechaTerminacion: enc.fecha_fin || params.fechaFin,
+      filas,
+      firmas: this.mapearFirmasDesdeBackend(resp, params),
+    };
+  }
+
+  private mapearMinutaDesdeBackend(resp: any): ItemMinutaPatron[] {
+    const gruposValidos: Array<ItemMinutaPatron['grupo']> = [
+      'NO PERECEDEROS',
+      'CÁRNICOS Y PROTEÍNAS',
+      'VERDURAS Y TUBÉRCULOS',
+      'FRUTAS',
+      'LÁCTEOS Y HUEVOS',
+      'ASEO',
+    ];
+    return (resp?.minuta_patron || []).map((item: any) => {
+      const compUpper = String(item.componente || '').toUpperCase();
+      const grupo: ItemMinutaPatron['grupo'] = gruposValidos.includes(compUpper as ItemMinutaPatron['grupo'])
+        ? (compUpper as ItemMinutaPatron['grupo'])
+        : 'NO PERECEDEROS';
+      return {
+        grupo,
+        alimento: item.alimento || '',
+        unidad: item.unidad || 'g',
+        gramajes: {
+          preescolar: Number(item.gramajePreescolar || 0),
+          primaria13: Number(item.gramajePrimaria13 || 0),
+          primaria45: Number(item.gramajePrimaria45 || 0),
+          secundaria: Number(item.gramajeSecundaria || 0),
+          media: Number(item.gramajeMedia || 0),
+        },
+        calculoMesGramos: Number(item.totalKgLitros || 0),
+      };
+    });
+  }
 
   /**
    * Normaliza respuestas DRF paginadas { results: [...] } o arrays planos de forma segura
@@ -755,31 +1089,25 @@ export class PlanillasOperativasService {
       alimento: item.alimento,
       gramajes: { ...item.gramajes },
       unidad: item.unidad,
-      cantidadEntregar: item.baseMes,
+      cantidadEntregar: 0,
       cantidadRecibida: 0,
       observaciones: ''
     }));
 
-    const perecederos: FilaPerecedero[] = this.PERECEDEROS_BASE.map((item, idx) => {
-      const e1 = item.baseSemanal[0] || 0;
-      const e2 = item.baseSemanal[1] || 0;
-      const e3 = item.baseSemanal[2] || 0;
-      const e4 = item.baseSemanal[3] || 0;
-      return {
-        id: idx + 1,
-        alimento: item.alimento,
-        gramajes: { ...item.gramajes },
-        unidad: item.unidad,
-        entregas: [
-          { aEntregar: e1, recibida: 0 },
-          { aEntregar: e2, recibida: 0 },
-          { aEntregar: e3, recibida: 0 },
-          { aEntregar: e4, recibida: 0 }
-        ],
-        totalEntregado: Math.round((e1 + e2 + e3 + e4) * 100) / 100,
-        totalRecibido: 0
-      };
-    });
+    const perecederos: FilaPerecedero[] = this.PERECEDEROS_BASE.map((item, idx) => ({
+      id: idx + 1,
+      alimento: item.alimento,
+      gramajes: { ...item.gramajes },
+      unidad: item.unidad,
+      entregas: [
+        { aEntregar: 0, recibida: 0 },
+        { aEntregar: 0, recibida: 0 },
+        { aEntregar: 0, recibida: 0 },
+        { aEntregar: 0, recibida: 0 }
+      ],
+      totalEntregado: 0,
+      totalRecibido: 0
+    }));
 
     const aseo: FilaAseo[] = this.ASEO_BASE.map((item, idx) => ({
       id: idx + 1,
@@ -791,34 +1119,34 @@ export class PlanillasOperativasService {
     }));
 
     return {
-      municipio: 'POPAYÁN',
+      municipio: '_________________',
       periodo: params.periodo || 'PRIMERA',
-      fechaInicio: params.fechaInicio || '2026-10-19',
-      fechaTerminacion: params.fechaFin || '2026-11-13',
-      contratoNumero: 'CTR-PAE-2026-ANT-01',
-      operador: 'Carlos Méndez',
-      institucionEducativa: params.institucionNombre || 'INSTITUCIÓN EDUCATIVA SAN JOSÉ',
-      sede: params.sedeNombre || 'SEDE PRINCIPAL',
-      codigoDane: '11900100001',
+      fechaInicio: params.fechaInicio || '',
+      fechaTerminacion: params.fechaFin || '',
+      contratoNumero: '_________________',
+      operador: '_________________',
+      institucionEducativa: params.institucionNombre || '_________________',
+      sede: params.sedeNombre || 'Todas las sedes',
+      codigoDane: '_________________',
       modalidad: 'RACIÓN PREPARADA EN SITIO - RPS',
       tipo: 'COMPLEMENTO ALIMENTARIO CAJ/CAJT',
       diasAtender: 20,
       cupos,
-      ciclosMenus: '1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20',
+      ciclosMenus: '1 - 20',
       noPerecederos,
       perecederos,
       aseo,
       firmas: {
-        manipuladoraNombre: params.nombreUsuario || 'Isa Pérez',
-        manipuladoraCedula: '1.061.789.432',
-        rectorNombre: 'Carlos Mendoza',
-        rectorCedula: '10.543.890',
-        rectorTelefono: '602 8234567',
+        manipuladoraNombre: params.nombreUsuario || '_________________',
+        manipuladoraCedula: '_________________',
+        rectorNombre: '_________________',
+        rectorCedula: '_________________',
+        rectorTelefono: '_________________',
         rectorCargo: 'RECTOR / DIRECTIVO DOCENTE',
-        operadorNombre: 'Carlos Méndez',
-        operadorCedula: '76.321.456',
-        operadorTelefono: '312 4567890',
-        operadorCargo: 'SUPERVISOR OPERATIVO PAE'
+        operadorNombre: '_________________',
+        operadorCedula: '_________________',
+        operadorTelefono: '_________________',
+        operadorCargo: 'SUPERVISOR / OPERADOR PAE'
       }
     };
   }
