@@ -464,6 +464,9 @@ details[open] > .tri-sum .chev::before,
           <div *ngIf="dia.almuerzo" class="text-[10.5px] leading-tight text-slate-800 truncate" [title]="dia.almuerzo">
             <strong class="text-emerald-800">Alm:</strong> {{ dia.almuerzo }}
           </div>
+          <div *ngIf="dia.merienda" class="text-[10.5px] leading-tight text-slate-800 truncate" [title]="dia.merienda">
+            <strong class="text-sky-800">Mer:</strong> {{ dia.merienda }}
+          </div>
           <div *ngIf="!dia.tieneMenu" class="text-[10.5px] text-slate-400 italic">
             Sin asignar
           </div>
@@ -480,7 +483,7 @@ details[open] > .tri-sum .chev::before,
         <div>
           <div class="flex items-center gap-2 flex-wrap">
             <h2 class="text-base font-extrabold text-slate-900 m-0">
-              {{ esSupervisor ? 'Semana ' + semana.numeroSemana + ' (' + rangoSemanaSeleccionadaTexto + ')' : 'Semana ' + semana.numeroSemana }}
+              Semana {{ semana.numeroSemana }} ({{ rangoSemanaSeleccionadaTexto }})
             </h2>
             <span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-[#fdf3d7] text-[#7a5a0b] border border-[#F5B81F]/30">
               Menús {{ (semana.numeroSemana - 1) * 5 + 1 }} al {{ semana.numeroSemana * 5 }}

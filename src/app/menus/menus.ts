@@ -1977,7 +1977,6 @@ export class MenusComponent implements OnInit {
     const mapa = this.obtenerAprobacionesLocales();
     const clave = `sede_${sedeId}_sem_${semana}`;
     const local = mapa[clave] || { aprobado_jefa: false, aprobado_supervisor: false };
-    if (local.aprobado_supervisor) return local;
 
     const semObj = this.semanaActualMinuta?.numeroSemana === semana
       ? this.semanaActualMinuta
@@ -1988,8 +1987,13 @@ export class MenusComponent implements OnInit {
           .map(m => d.momentos[m])
           .filter(item => item && item.tiene_menu_registrado && item.estado_aprobacion !== 'CANCELADO' && item.estado_aprobacion !== 'SIN_SERVICIO')
       );
-      if (registrados.length > 0 && registrados.every(item => item.estado_aprobacion === 'APROBADO')) {
-        return { ...local, aprobado_jefa: true, aprobado_supervisor: true };
+      if (registrados.length > 0) {
+        const todosAprobados = registrados.every(item => item.estado_aprobacion === 'APROBADO');
+        return {
+          ...local,
+          aprobado_jefa: true,
+          aprobado_supervisor: todosAprobados
+        };
       }
     }
     return local;
@@ -2021,6 +2025,7 @@ export class MenusComponent implements OnInit {
         const semObj = (this.semanaActualMinuta?.numeroSemana === semana
           ? this.semanaActualMinuta
           : this.semanasMinutaSedeActual.find(s => s.numeroSemana === semana));
+        const patchReqs: any[] = [];
         if (semObj) {
           for (const dia of semObj.dias) {
             for (const mom of ['Desayuno', 'Almuerzo', 'Merienda'] as const) {
@@ -2032,12 +2037,19 @@ export class MenusComponent implements OnInit {
                 this.guardarMomentoEnMinutaLocalSede(Number(sedeId), dia.numeroMenu, mom, item);
 
                 if (item.id_menu) {
-                  this.http.patch<any>(`${this.apiUrl}/menus/${item.id_menu}/`, { estado: 'Aprobado' })
-                    .pipe(catchError(() => of(null))).subscribe();
+                  const mMem = this.menusDiarios.find(m => Number(m.id_menu) === Number(item.id_menu));
+                  if (mMem) mMem.estado = 'Aprobado';
+                  patchReqs.push(
+                    this.http.patch<any>(`${this.apiUrl}/menus/${item.id_menu}/`, { estado: 'Aprobado' })
+                      .pipe(catchError(() => of(null)))
+                  );
                 }
               }
             }
           }
+        }
+        if (patchReqs.length > 0) {
+          forkJoin(patchReqs).subscribe(() => this.cargarMenus());
         }
 
         // Notificar al móvil de la Jefa de la Sede
@@ -2088,9 +2100,11 @@ export class MenusComponent implements OnInit {
     this.guardarMomentoEnMinutaLocalSede(idSede, dia.numeroMenu, momento, item);
 
     if (item.id_menu) {
+      const mMem = this.menusDiarios.find(m => Number(m.id_menu) === Number(item.id_menu));
+      if (mMem) mMem.estado = 'Aprobado';
       this.http.patch<any>(`${this.apiUrl}/menus/${item.id_menu}/`, {
         estado: 'Aprobado'
-      }).pipe(catchError(() => of(null))).subscribe();
+      }).pipe(catchError(() => of(null))).subscribe(() => this.cargarMenus());
     }
 
     const formData = new FormData();
@@ -2164,9 +2178,11 @@ export class MenusComponent implements OnInit {
       this.guardarMomentoEnMinutaLocalSede(idSede, dia.numeroMenu, momento, item);
 
       if (item.id_menu) {
+        const mMem = this.menusDiarios.find(m => Number(m.id_menu) === Number(item.id_menu));
+        if (mMem) mMem.estado = 'Rechazado';
         this.http.patch<any>(`${this.apiUrl}/menus/${item.id_menu}/`, {
           estado: 'Rechazado'
-        }).pipe(catchError(() => of(null))).subscribe();
+        }).pipe(catchError(() => of(null))).subscribe(() => this.cargarMenus());
       }
 
       // Enviar notificación a la Jefa de la Sede con el motivo del rechazo
@@ -2363,154 +2379,15 @@ export class MenusComponent implements OnInit {
    * Muestra Desayuno, Almuerzo y Merienda para cada día con datos 100% dinámicos.
    */
   get semanasMinutaSedeActual(): SemanaMinutaSede[] {
-    const menusSede = [...this.menusDeSedeSeleccionada].sort((a, b) =>
-      String(a.fecha || '').localeCompare(String(b.fecha || ''))
-    );
-
-    const idSede = Number(this.sedeSeleccionadaId || 0);
-    const minutasLocalesSede = this.leerMinutasLocalesPorSede()[String(idSede)] || {};
-    const diasSemanaNombres = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
-    const celdas20: CeldaDiaMinutaSede[] = [];
-
-    for (let i = 0; i < 20; i++) {
-      const numMenu = i + 1;
-      const numSemana = Math.floor(i / 5) + 1;
-      const diaNombre = diasSemanaNombres[i % 5];
-      let fechaDia = `Día ${numMenu}`;
-
-      const momentosDia: Record<'Desayuno' | 'Almuerzo' | 'Merienda', MomentoDiaMinuta> = {
-        Desayuno: this.crearMomentoVacio('Desayuno'),
-        Almuerzo: this.crearMomentoVacio('Almuerzo'),
-        Merienda: this.crearMomentoVacio('Merienda')
-      };
-
-      const momentosNombres: ('Desayuno' | 'Almuerzo' | 'Merienda')[] = ['Desayuno', 'Almuerzo', 'Merienda'];
-
-      for (const m of momentosNombres) {
-        const idSec = m === 'Desayuno' ? 1 : (m === 'Merienda' ? 3 : 2);
-        const slotKey = `${numMenu}_${m.toLowerCase()}`;
-
-        // 1. Ver si existe en local
-        const localSlot = minutasLocalesSede[slotKey] || (minutasLocalesSede[numMenu]?.seccion === m ? minutasLocalesSede[numMenu] : null);
-
-        // 2. Ver si existe en backend
-        const menuBackend = menusSede.find(mb => {
-          const matchSec = Number(mb.id_seccion) === idSec;
-          const info = String(mb.informacion_nutricional || '');
-          const matchDia = info.match(/\[MENU_CICLO:(\d+)\]/);
-          const matchCiclo = matchDia ? Number(matchDia[1]) === numMenu : false;
-          const matchFecha = (localSlot?.fecha && mb.fecha === localSlot.fecha) || (fechaDia && mb.fecha === fechaDia);
-          return matchSec && (matchCiclo || matchFecha);
-        });
-
-        if (menuBackend && !fechaDia.includes('-') && menuBackend.fecha) {
-          fechaDia = menuBackend.fecha;
-        }
-        if (localSlot && !fechaDia.includes('-') && localSlot.fecha) {
-          fechaDia = localSlot.fecha;
-        }
-
-        if (localSlot && (localSlot.nombre_plato || localSlot.estado_aprobacion === 'CANCELADO' || localSlot.estado_aprobacion === 'SIN_SERVICIO')) {
-          momentosDia[m] = {
-            momento: m,
-            tiene_menu_registrado: localSlot.tiene_menu_registrado !== undefined ? localSlot.tiene_menu_registrado : Boolean(localSlot.nombre_plato),
-            id_menu: localSlot.id_menu || menuBackend?.id_menu,
-            id_plato: localSlot.id_plato,
-            nombre_plato: localSlot.nombre_plato || '',
-            origen: localSlot.origen || 'PAE_ESTIPULADO',
-            ninos_presentes: Number(localSlot.ninos_presentes || 120),
-            estado_aprobacion: localSlot.estado_aprobacion || 'PENDIENTE',
-            motivo_rechazo_o_cancelacion: localSlot.motivo_rechazo_o_cancelacion || '',
-            usuario_jefa: localSlot.usuario_jefa || 'Jefa de Cocina',
-            usuario_evaluador: localSlot.usuario_evaluador,
-            fecha_evaluacion: localSlot.fecha_evaluacion,
-            componentes: localSlot.componentes || {
-              bebida_leche: '—',
-              proteico: '—',
-              cereal: '—',
-              fruta: '—',
-              agua: '—'
-            },
-            ingredientes: localSlot.ingredientes || [],
-            pasos: localSlot.pasos || []
-          };
-        } else if (menuBackend) {
-          const platoDet = (menuBackend.platos_detalle && menuBackend.platos_detalle[0]) || null;
-          const platoCatalogo = platoDet?.id_plato
-            ? this.platos.find(p => Number(p.id_plato) === Number(platoDet.id_plato))
-            : (menuBackend.id_plato ? this.platos.find(p => Number(p.id_plato) === Number(menuBackend.id_plato)) : null);
-
-          let nombreExtraido = '';
-          const matchJefa = String(menuBackend.informacion_nutricional || '').match(/\[Elegido Jefa\]\s*([^|]+)/i);
-          if (matchJefa && matchJefa[1]) {
-            nombreExtraido = matchJefa[1].trim();
-          }
-
-          const nombrePlatoCrudo = nombreExtraido || platoDet?.nombre_plato || platoCatalogo?.nombre_plato || menuBackend.nombre_plato || `Menú ${numMenu}`;
-          const nombrePlato = nombrePlatoCrudo.replace(/^Menú\s+\d+\s*:\s*/i, '').trim() || nombrePlatoCrudo;
-          const compTexto = platoDet?.componente || platoCatalogo?.componente || menuBackend.componente_plato || '';
-          const infoLimpia = String(menuBackend.informacion_nutricional_limpia || menuBackend.informacion_nutricional || '');
-          const esIA = infoLimpia.toUpperCase().includes('IA');
-
-          const comps = this.extraerComponentesDesdePlato(nombrePlato, compTexto, platoCatalogo);
-          const ingList = (platoCatalogo?.receta_componentes || []).map((rc: any) => rc.nombre_ingrediente || rc.nombre_componente).filter(Boolean);
-          const pasosList = (platoCatalogo?.pasos_preparacion || []).map((ps: any) => ps.descripcion_paso).filter(Boolean);
-
-          let estadoBackend: 'PENDIENTE' | 'APROBADO' | 'RECHAZADO' | 'CANCELADO' | 'SIN_SERVICIO' = 'PENDIENTE';
-          if (menuBackend.estado?.toLowerCase().includes('aprob')) estadoBackend = 'APROBADO';
-          else if (menuBackend.estado?.toLowerCase().includes('rechaz')) estadoBackend = 'RECHAZADO';
-          else if (menuBackend.estado?.toLowerCase().includes('cancel')) estadoBackend = 'CANCELADO';
-
-          momentosDia[m] = {
-            momento: m,
-            tiene_menu_registrado: true,
-            id_menu: menuBackend.id_menu,
-            id_plato: platoDet?.id_plato || platoCatalogo?.id_plato,
-            nombre_plato: nombrePlato,
-            origen: esIA ? 'SUGERENCIA_IA' : 'PAE_ESTIPULADO',
-            ninos_presentes: Number(menuBackend.ninos_presentes || 120),
-            estado_aprobacion: estadoBackend,
-            motivo_rechazo_o_cancelacion: '',
-            componentes: comps,
-            ingredientes: ingList,
-            pasos: pasosList
-          };
-        }
-      }
-
-      const celda: CeldaDiaMinutaSede = {
-        numeroMenu: numMenu,
-        semana: numSemana,
-        diaSemana: diaNombre,
-        fecha: fechaDia,
-        momentos: momentosDia,
-        tiene_menu_registrado: Object.values(momentosDia).some(m => m.tiene_menu_registrado),
-        nombre_plato: momentosDia.Almuerzo?.nombre_plato || momentosDia.Desayuno?.nombre_plato || '',
-        seccion: 'Almuerzo',
-        origen: 'PAE_ESTIPULADO',
-        ninos_presentes: 120,
-        estado: 'Elegido por Jefa',
-        componentes: momentosDia.Almuerzo?.componentes || momentosDia.Desayuno?.componentes,
-        ingredientes: [],
-        pasos: []
-      };
-
-      celdas20.push(celda);
-    }
-
-    const semanas: SemanaMinutaSede[] = [1, 2, 3, 4].map(numSem => {
-      const inicio = (numSem - 1) * 5 + 1;
-      const fin = numSem * 5;
-      const diasDeSemana = celdas20.filter(c => c.semana === numSem);
-
-      return {
-        numeroSemana: numSem,
-        titulo: `Semana ${numSem} (Menú ${inicio} al Menú ${fin})`,
-        dias: diasDeSemana
-      };
+    const lunesCiclo = this.obtenerLunesInicioCicloActual();
+    return [1, 2, 3, 4].map(numSem => {
+      const lunes = new Date(
+        lunesCiclo.getFullYear(),
+        lunesCiclo.getMonth(),
+        lunesCiclo.getDate() + (numSem - 1) * 7
+      );
+      return this.construirSemanaPorLunes(lunes, numSem);
     });
-
-    return semanas;
   }
 
   private obtenerLunesDeFecha(ref: Date): Date {
@@ -2613,18 +2490,14 @@ export class MenusComponent implements OnInit {
         const slotKey = `${numMenu}_${m.toLowerCase()}`;
         const localSlot = minutasLocalesSede[slotKey] || (minutasLocalesSede[numMenu]?.seccion === m ? minutasLocalesSede[numMenu] : null);
         const menuBackend = menusSede.find(mb => {
+          const fBackend = String(mb.fecha || '').slice(0, 10);
+          if (fBackend !== fechaIso) return false;
           if (this.esSupervisor && String(mb.estado || '').toLowerCase().includes('borrador')) {
             return false;
           }
-          const rawInfo = String(mb.informacion_nutricional || '');
-          // Buscar por fecha exacta O por [MENU_CICLO:N] como fallback (compatibilidad con menus guardados por jefa)
-          const fBackend = String(mb.fecha || '').slice(0, 10);
-          const matchCiclo = rawInfo.match(/\[MENU_CICLO:(\d+)\]/);
-          const coincideFecha = fBackend === fechaIso;
-          const coincideCiclo = matchCiclo ? Number(matchCiclo[1]) === numMenu : false;
-          if (!coincideFecha && !coincideCiclo) return false;
           const secExplicita = Number(mb.id_seccion || 0);
           if (secExplicita > 0) return secExplicita === idSec;
+          const rawInfo = String(mb.informacion_nutricional || '');
           const matchTagSec = rawInfo.match(/\[SEC:(\d+)\]/i);
           if (matchTagSec) return Number(matchTagSec[1]) === idSec;
           const jor = Number(mb.id_jornada || 0);
@@ -2635,16 +2508,31 @@ export class MenusComponent implements OnInit {
 
         if (menuBackend) {
           const platoDet = (menuBackend.platos_detalle && menuBackend.platos_detalle[0]) || null;
-          const platoCatalogo = platoDet?.id_plato
+
+          let nombreExtraido = '';
+          const rawInfoMenu = String(menuBackend.informacion_nutricional || '');
+          const matchJefa = rawInfoMenu.match(/\[Elegido Jefa\]\s*([^|]+)/i);
+          if (matchJefa && matchJefa[1]) nombreExtraido = matchJefa[1].trim();
+          else {
+            const matchOrigen = rawInfoMenu.match(/\[(?:Estipulado PAE|Sugerencia IA)\]\s*([^|]+)/i);
+            if (matchOrigen && matchOrigen[1]) nombreExtraido = matchOrigen[1].trim();
+          }
+
+          let platoCatalogo = platoDet?.id_plato
             ? this.platos.find(p => Number(p.id_plato) === Number(platoDet.id_plato))
             : (menuBackend.id_plato ? this.platos.find(p => Number(p.id_plato) === Number(menuBackend.id_plato)) : null);
 
-          let nombreExtraido = '';
-          const matchJefa = String(menuBackend.informacion_nutricional || '').match(/\[Elegido Jefa\]\s*([^|]+)/i);
-          if (matchJefa && matchJefa[1]) nombreExtraido = matchJefa[1].trim();
-
           const nombrePlatoCrudo = nombreExtraido || platoDet?.nombre_plato || platoCatalogo?.nombre_plato || menuBackend.nombre_plato || `Menú ${numMenu}`;
           const nombrePlato = nombrePlatoCrudo.replace(/^Menú\s+\d+\s*:\s*/i, '').trim() || nombrePlatoCrudo;
+
+          if (!platoCatalogo && nombrePlato) {
+            const normBusq = nombrePlato.toLowerCase().trim();
+            platoCatalogo = this.platos.find(p => {
+              const pn = String(p.nombre_plato || '').replace(/^Menú\s+\d+\s*:\s*/i, '').toLowerCase().trim();
+              return pn === normBusq || (pn.length > 4 && (pn.includes(normBusq) || normBusq.includes(pn)));
+            }) || null;
+          }
+
           const compTexto = platoDet?.componente || platoCatalogo?.componente || menuBackend.componente_plato || '';
           const infoLimpia = String(menuBackend.informacion_nutricional_limpia || menuBackend.informacion_nutricional || '');
           const esIA = infoLimpia.toUpperCase().includes('IA');
@@ -2667,6 +2555,30 @@ export class MenusComponent implements OnInit {
             componentes: this.extraerComponentesDesdePlato(nombrePlato, compTexto, platoCatalogo),
             ingredientes: (platoCatalogo?.receta_componentes || []).map((rc: any) => rc.nombre_ingrediente || rc.nombre_componente).filter(Boolean),
             pasos: (platoCatalogo?.pasos_preparacion || []).map((ps: any) => ps.descripcion_paso).filter(Boolean)
+          };
+        } else if (!this.esSupervisor && localSlot && (!localSlot.fecha || localSlot.fecha === fechaIso) && (localSlot.nombre_plato || localSlot.estado_aprobacion === 'CANCELADO' || localSlot.estado_aprobacion === 'SIN_SERVICIO')) {
+          momentosDia[m] = {
+            momento: m,
+            tiene_menu_registrado: localSlot.tiene_menu_registrado !== undefined ? localSlot.tiene_menu_registrado : Boolean(localSlot.nombre_plato),
+            id_menu: localSlot.id_menu,
+            id_plato: localSlot.id_plato,
+            nombre_plato: localSlot.nombre_plato || '',
+            origen: localSlot.origen || 'PAE_ESTIPULADO',
+            ninos_presentes: Number(localSlot.ninos_presentes || 120),
+            estado_aprobacion: localSlot.estado_aprobacion || 'PENDIENTE',
+            motivo_rechazo_o_cancelacion: localSlot.motivo_rechazo_o_cancelacion || '',
+            usuario_jefa: localSlot.usuario_jefa || 'Jefa de Cocina',
+            usuario_evaluador: localSlot.usuario_evaluador,
+            fecha_evaluacion: localSlot.fecha_evaluacion,
+            componentes: localSlot.componentes || {
+              bebida_leche: '—',
+              proteico: '—',
+              cereal: '—',
+              fruta: '—',
+              agua: '—'
+            },
+            ingredientes: localSlot.ingredientes || [],
+            pasos: localSlot.pasos || []
           };
         }
       }
@@ -2801,6 +2713,7 @@ export class MenusComponent implements OnInit {
       fechaIso: string;
       desayuno: string;
       almuerzo: string;
+      merienda: string;
       tieneMenu: boolean;
     }[];
   } {
@@ -2839,6 +2752,7 @@ export class MenusComponent implements OnInit {
         const mb = menusSede.find((m: any) => {
           const f = String(m.fecha || '').slice(0, 10);
           if (f !== fechaIso) return false;
+          if (this.esSupervisor && String(m.estado || '').toLowerCase().includes('borrador')) return false;
           const secExp = Number(m.id_seccion || 0);
           if (secExp > 0) return secExp === idSec;
           const info = String(m.informacion_nutricional || '');
@@ -2851,14 +2765,15 @@ export class MenusComponent implements OnInit {
         });
         if (!mb) return '';
         const info = String(mb.informacion_nutricional || '');
-        const matchJefa = info.match(/\[Elegido Jefa\]\s*([^|]+)/i);
+        const matchJefa = info.match(/\[(?:Elegido Jefa|Estipulado PAE|Sugerencia IA)\]\s*([^|]+)/i);
         const crudo = (matchJefa && matchJefa[1] ? matchJefa[1].trim() : '') || mb.nombre_plato || '';
         return crudo.replace(/^Menú\s+\d+\s*:\s*/i, '').trim() || crudo;
       };
 
       const desayuno = buscarMomento(1);
       const almuerzo = buscarMomento(2);
-      const tieneMenu = Boolean(desayuno || almuerzo);
+      const merienda = buscarMomento(3);
+      const tieneMenu = Boolean(desayuno || almuerzo || merienda);
       if (tieneMenu) diasConMenu++;
 
       dias.push({
@@ -2868,6 +2783,7 @@ export class MenusComponent implements OnInit {
         fechaIso,
         desayuno,
         almuerzo,
+        merienda,
         tieneMenu,
       });
     }
@@ -3302,8 +3218,9 @@ export class MenusComponent implements OnInit {
 
     if (contratoSede && this.jornadas.length > 0) {
       this.guardandoMenuDia = true;
+      const idSecGuardar = Number(this.programarDiaForm.id_seccion || 1);
       const etiquetaOrigen = this.programarDiaForm.origen_eleccion === 'SUGERENCIA_IA' ? 'Sugerencia IA' : 'Estipulado PAE';
-      const infoNutricional = `[SEDE:${idSede}] [MENU_CICLO:${numMenu}] [${etiquetaOrigen}] ${this.programarDiaForm.nombre_plato} | Bebida: ${this.programarDiaForm.bebida_leche} | Proteico: ${this.programarDiaForm.proteico} | Cereal: ${this.programarDiaForm.cereal} | Fruta: ${this.programarDiaForm.fruta}`;
+      const infoNutricional = `[SEDE:${idSede}] [SEC:${idSecGuardar}] [MENU_CICLO:${numMenu}] [${etiquetaOrigen}] ${this.programarDiaForm.nombre_plato} | Bebida: ${this.programarDiaForm.bebida_leche} | Proteico: ${this.programarDiaForm.proteico} | Cereal: ${this.programarDiaForm.cereal} | Fruta: ${this.programarDiaForm.fruta}`;
 
       this.http.post<any>(`${this.apiUrl}/menus/`, {
         id_jornada: Number(this.programarDiaForm.id_jornada || this.jornadas[0].id_jornada),
