@@ -1056,7 +1056,7 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
       const k = `${this.claveProducto(e.idIngrediente, e.ingrediente)}|${unidad}`;
       const d = mapa.get(k) ?? {
         clave: k, ingrediente: e.ingrediente,
-        categoria: this.categoriasInventario.get(e.idIngrediente ?? -1) ?? this.categoriaDe(e.ingrediente),
+        categoria: this.categoriaDe(e.ingrediente, this.categoriasInventario.get(e.idIngrediente ?? -1)),
         tipoMercado: this.tipoConservacionVisible(e.tipoMercado), unidad, cantidad: 0, veces: 0,
         vencimiento: '', estado: '', frecuencia: e.frecuencia, lotes: [],
         disponible: e.idIngrediente != null && this.saldosInventario.has(e.idIngrediente) ? this.saldosInventario.get(e.idIngrediente)! : null,
@@ -1198,18 +1198,93 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
     return archivo ? '/' + archivo : null;
   }
 
-  categoriaDe(nombre: string): string {
-    const n = (nombre || '').toLowerCase();
-    const mapa: [string[], string][] = [
-      [['arroz', 'frijol', 'lenteja', 'garbanzo', 'arveja', 'pasta', 'harina', 'avena', 'maíz', 'maiz'], 'Granos y cereales'],
-      [['azúcar', 'azucar', 'sal', 'aceite', 'panela'], 'Despensa'],
-      [['leche', 'queso', 'yogur'], 'Lácteos'],
-      [['huevo'], 'Huevos'],
-      [['pollo', 'pechuga', 'carne', 'res', 'cerdo', 'tocino', 'pescado', 'atún', 'atun', 'jamón', 'jamon', 'chorizo'], 'Carnes'],
-      [['papa', 'yuca', 'zanahoria', 'tomate', 'cebolla', 'lechuga', 'verdura'], 'Verduras'],
-      [['plátano', 'platano', 'banano', 'manzana', 'naranja', 'mango'], 'Frutas'],
-    ];
-    return mapa.find(([claves]) => claves.some(k => n.includes(k)))?.[1] ?? 'Otros';
+  categoriaDe(nombre: string, categoriaOriginal?: string): string {
+    const n = this.norm(nombre || '');
+
+    // 1. Verduras, hortalizas, tubérculos y hierbas culinarias (guascas, acelga, apio, espinaca, cilantro, ajo, etc.)
+    if (
+      [
+        'guascas', 'guasca', 'papa', 'yuca', 'zanahoria', 'tomate', 'cebolla', 'lechuga',
+        'ahuyama', 'auyama', 'repollo', 'pepino', 'habichuela', 'acelga', 'espinaca',
+        'apio', 'cilantro', 'ajo', 'pimenton', 'pimentón', 'aguacate', 'remolacha',
+        'coliflor', 'brocoli', 'brócoli', 'calabaza', 'verdura', 'hortaliza', 'tuberculo',
+        'platano', 'plátano'
+      ].some(k => n.includes(k))
+    ) {
+      return 'Verduras';
+    }
+
+    // 2. Frutas (frescas y pulpas: banano, guayaba, mango, lulo, etc.)
+    if (
+      [
+        'fruta', 'banano', 'guayaba', 'mango', 'lulo', 'manzana', 'naranja', 'mandarina',
+        'papaya', 'pina', 'piña', 'maracuya', 'maracuyá', 'fresa', 'mora', 'pera',
+        'melon', 'melón', 'sandia', 'sandía', 'uva', 'limon', 'limón', 'durazno'
+      ].some(k => n.includes(k))
+    ) {
+      return 'Frutas';
+    }
+
+    // 3. Carnes, pescados y aves (proteínas cárnicas)
+    if (
+      [
+        'carne', 'res', 'cerdo', 'pollo', 'pechuga', 'pescado', 'atun', 'atún',
+        'tocino', 'jamon', 'jamón', 'chorizo', 'molida', 'albondiga', 'albóndiga',
+        'salchicha', 'filete', 'lomo', 'costilla', 'visceras', 'hígado', 'higado'
+      ].some(k => n.includes(k))
+    ) {
+      return 'Carnes';
+    }
+
+    // 4. Huevos
+    if (n.includes('huevo')) {
+      return 'Huevos';
+    }
+
+    // 5. Granos, pastas y cereales
+    if (
+      [
+        'arroz', 'frijol', 'fríjol', 'lenteja', 'garbanzo', 'arveja', 'pasta', 'fideo',
+        'espagueti', 'cabello de angel', 'cabello de ángel', 'harina', 'avena', 'maiz',
+        'maíz', 'cebada', 'trigo', 'cereal', 'quinoa', 'galleta', 'galletas'
+      ].some(k => n.includes(k))
+    ) {
+      return 'Granos y cereales';
+    }
+
+    // 6. Despensa, abarrotes y condimentos (chocolate, arequipe, bocadillo, aceite, panela, sal, azúcar, vinagre, mayonesa, etc.)
+    if (
+      [
+        'chocolate', 'arequipe', 'bocadillo', 'quesillo', 'azucar', 'azúcar', 'sal',
+        'aceite', 'panela', 'cafe', 'café', 'vinagre', 'oregano', 'orégano',
+        'condimento', 'color', 'especias', 'mayonesa', 'salsa', 'polvo de hornear',
+        'dulce', 'postre'
+      ].some(k => n.includes(k))
+    ) {
+      return 'Despensa';
+    }
+
+    // 7. Lácteos genuinos (leche, queso, yogur, mantequilla, cuajada)
+    if (
+      ['leche', 'queso', 'yogur', 'yogurt', 'mantequilla', 'cuajada', 'suero'].some(k => n.includes(k))
+    ) {
+      return 'Lácteos';
+    }
+
+    // 8. Respaldo por categoría original si no coincide con los anteriores
+    const cOrg = this.norm(categoriaOriginal || '');
+    if (categoriaOriginal && !['general', 'otros', '', 'null', 'undefined'].includes(cOrg)) {
+      if (cOrg.includes('verdura') || cOrg.includes('hortaliza')) return 'Verduras';
+      if (cOrg.includes('fruta')) return 'Frutas';
+      if (cOrg.includes('carn') || cOrg.includes('pollo') || cOrg.includes('pescad')) return 'Carnes';
+      if (cOrg.includes('huevo')) return 'Huevos';
+      if (cOrg.includes('grano') || cOrg.includes('cereal') || cOrg.includes('pasta')) return 'Granos y cereales';
+      if (cOrg.includes('lacte') && !['avena', 'harina', 'aceite', 'arroz'].some(k => n.includes(k))) return 'Lácteos';
+      if (cOrg.includes('despensa') || cOrg.includes('abarrote')) return 'Despensa';
+      return categoriaOriginal.trim();
+    }
+
+    return 'Despensa';
   }
 
   private emojiDeCategoria(c: string): string {
@@ -1244,7 +1319,8 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
   private get catalogoMenu(): ProductoCatalogo[] {
     return this.ingredientes.map(ing => {
       const ultima = this.ultimaEntradaDe(ing.id);
-      const categoria = this.categoriasInventario.get(ing.id) ?? this.categoriaDe(ing.nombre);
+      const catInv = this.categoriasInventario.get(ing.id);
+      const categoria = this.categoriaDe(ing.nombre, catInv);
       const tipoMercado = this.tiposInventario.get(ing.id) || undefined;
       const n = this.norm(ing.nombre);
       const nLimpio = this.norm((ing.nombre || '').replace(/[()]/g, ''));
@@ -1288,21 +1364,34 @@ export class RegistrarEntregaAlimentosComponent implements OnInit, OnDestroy {
   ];
 
   esPerecedero(p: ProductoCatalogo): boolean {
+    const n = this.norm(p.nombre || '');
+    const cat = this.norm(p.categoria || '');
+
+    // No perecederos claros: abarrotes, despensa, pastas, granos, chocolate, arequipe, enlatados, etc.
+    if (['pasta', 'fideo', 'espagueti', 'cabello de angel', 'arroz', 'frijol', 'lenteja', 'garbanzo', 'harina', 'avena', 'aceite', 'azucar', 'sal', 'panela', 'chocolate', 'arequipe', 'bocadillo', 'cafe', 'enlatado', 'atun en lata'].some(k => n.includes(k))) {
+      return false;
+    }
+
+    // Perecederos claros: frutas frescas, verduras frescas, carnes frescas, huevos, lácteos
+    if (['banano', 'guayaba', 'manzana', 'naranja', 'mango', 'fruta', 'papa', 'tomate', 'cebolla', 'zanahoria', 'lechuga', 'verdura', 'carne', 'pollo', 'res', 'cerdo', 'pescado', 'leche', 'queso', 'yogur', 'huevo'].some(k => n.includes(k))) {
+      return true;
+    }
+
+    // Por categoría
+    if (['carn', 'huevo', 'lact', 'verd', 'frut'].some(prefijo => cat.startsWith(prefijo))) return true;
+    if (['grano', 'mecato', 'despensa'].some(prefijo => cat.startsWith(prefijo))) return false;
+
     const tipo = this.claveTipoMercado(
       p.tipoMercado ?? this.tiposMercado.find(t => t.id === p.idTipoMercado)?.nombre,
     );
     if (tipo === 'no perecedero') return false;
     if (tipo === 'perecedero') return true;
-    const categoria = this.norm(p.categoria);
-    if (['carn', 'huevo', 'lact', 'verd', 'frut'].some(prefijo => categoria.startsWith(prefijo))) return true;
-    if (['grano', 'mecato', 'despensa'].some(prefijo => categoria.startsWith(prefijo))) return false;
-    return p.nombre.toLowerCase().split(/\s+/).some(w =>
-      this.perecederosPorNombre.some(k => w === k || (k.length >= 4 && w.startsWith(k))));
+
+    return false;
   }
 
   nombreTipo(p: ProductoCatalogo): string {
-    return p.tipoMercado || this.tiposMercado.find(t => t.id === p.idTipoMercado)?.nombre
-      || (this.esPerecedero(p) ? 'Perecedero' : 'No perecedero');
+    return this.esPerecedero(p) ? 'Perecedero' : 'No perecedero';
   }
 
   // Solo cambia lo que se ve en las tarjetas; imágenes, categorías y envíos usan el nombre original

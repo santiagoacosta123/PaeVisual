@@ -49,6 +49,13 @@ button, input, select, textarea, a {
   border-radius: 9999px;
 }
 
+/* Modales y backdrops fijos siempre por encima del header/navbar sticky */
+.modal-fondo,
+.fixed.inset-0.z-50,
+div[role="dialog"] {
+  z-index: 2000 !important;
+}
+
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
